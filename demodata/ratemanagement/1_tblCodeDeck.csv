@@ -1,0 +1,4 @@
+CodeDeckId,CompanyId,CodeDeckName,created_at,CreatedBy,updated_at,ModifiedBy
+1,1,CustomerCodedeck,"convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",NULL
+2,1,VendorCodedeck,"convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",NULL
+6,1,Retail Customer Codedeck,"convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",NULL

@@ -1,0 +1,9 @@
+VendorTrunkID,CompanyID,CodeDeckId,AccountID,TrunkID,CompanyGatewayIDs,Status,created_at,CreatedBy,updated_at
+2,3,VendorCodedeck,an-telecom,GOLD,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+3,3,VendorCodedeck,an-telecom,SILVER,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+4,3,VendorCodedeck,an-telecom,GOLD,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+5,3,VendorCodedeck,an-telecom,SILVER,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+6,3,VendorCodedeck,cal-sol,GOLD,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+7,3,VendorCodedeck,cal-sol,SILVER,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+8,3,VendorCodedeck,dail-tel,GOLD,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+9,3,VendorCodedeck,dail-tel,SILVER,SIPPY2,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL

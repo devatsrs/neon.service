@@ -1,0 +1,211 @@
+<?php namespace App\Console\Commands;
+
+use App\Lib\Account;
+use App\Lib\Company;
+use App\Lib\CompanySetting;
+use App\Lib\Currency;
+use App\Lib\DataTableSql;
+use App\Lib\Helper;
+use App\Lib\Invoice;
+use App\Lib\InvoiceLog;
+use App\Lib\InvoiceDetail;
+use App\Lib\InvoiceTemplate;
+use App\Lib\Product;
+use App\Lib\TaxRate;
+use App\Lib\User;
+use Symfony\Component\Console\Input\InputArgument;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Lib\Job;
+
+use Webpatser\Uuid\Uuid;
+
+class BulkInvoiceSend extends Command {
+
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'bulkinvoicesend';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description.';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+            ['JobID', InputArgument::REQUIRED, 'Argument JobID '],
+        ];
+    }
+
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function fire()
+    {
+        $arguments = $this->argument();
+        $getmypid = getmypid(); // get proccess id added by abubakar
+        $JobID = $arguments["JobID"];
+        $job = Job::find($JobID);
+        $ProcessID = Uuid::generate();
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+        $jobdata = array();
+        $errorslog = array();
+        $CompanyID = $arguments["CompanyID"];
+        Log::useFiles(storage_path().'/logs/bulkinvoicesend-'.$JobID.'-'.date('Y-m-d').'.log');
+        try {
+            $Company = Company::find($CompanyID);
+            $UserEmail = '';
+            $InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+            $InvoiceGenerationEmail_main = ($InvoiceGenerationEmail_main =='Invalid Key')?$Company->Email:$InvoiceGenerationEmail_main;
+            if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
+                $User = User::getUserInfo($job->JobLoggedUserID);
+                // $UserEmail= $User->EmailAddress;
+                // $InvoiceGenerationEmail .= ',' . $UserEmail;
+            }
+            if(!empty($job)){
+                $joboptions = json_decode($job->Options);
+                $email_sending_failed = array();
+                $InvoiceIDs =array_filter(explode(',',$joboptions->InvoiceIDs),'intval');
+                foreach($InvoiceIDs as $InvoiceID) {
+                    $InvoiceGenerationEmail = $InvoiceGenerationEmail_main;
+                    $Invoice = Invoice::find($InvoiceID);
+                    $Account = Account::find($Invoice->AccountID);
+                    $Currency = Currency::find($Account->CurrencyId);
+                    $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
+                    $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
+                    $_InvoiceNumber = $InvoiceTemplate->InvoiceNumberPrefix . $Invoice->InvoiceNumber;
+                    $emaildata['data'] = array(
+                        'InvoiceNumber' => $_InvoiceNumber,
+                        'CompanyName' => $Company->CompanyName,
+                        'InvoiceGrandTotal' => $Invoice->GrandTotal,
+                        'CurrencyCode' => $CurrencyCode,
+                        'InvoiceLink' => getenv("WEBURL") . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
+                    );
+                    $emaildata['EmailToName'] = $Company->CompanyName;
+                    $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $Company->CompanyName.' to ('.$Account->AccountName.')';
+                    $emaildata['CompanyID'] = $CompanyID;
+                    //Log::info($InvoiceGenerationEmail);
+                    if(!empty($Account->Owner))
+                    {
+                        $AccountManager = User::find($Account->Owner);
+                        if(is_array($InvoiceGenerationEmail)){
+                            $InvoiceGenerationEmail = implode(',',$InvoiceGenerationEmail);
+                        }
+                        $InvoiceGenerationEmail .= ',' . $AccountManager->EmailAddress;
+                    }
+                    $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
+                    Log::info($InvoiceGenerationEmail);
+
+                    foreach($InvoiceGenerationEmail as $singleemail) {
+                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                            $emaildata['EmailTo'] = $singleemail;
+                            $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                        }
+                    }
+                    if(getenv('EmailToCustomer') == 1){
+                        $CustomerEmail = $Account->BillingEmail;
+                    }else{
+                        $CustomerEmail = Company::getEmail($CompanyID);;
+                    }
+                    $CustomerEmail = explode(",",$CustomerEmail);
+                    $customeremail_status['status'] = 0;
+                    $customeremail_status['message'] = '';
+                    $customeremail_status['body'] = '';
+                    Log::info($CustomerEmail);
+                    foreach($CustomerEmail as $singleemail){
+                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                            $emaildata['EmailTo'] = $singleemail;
+                            $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email='.$singleemail;
+                            $customeremail_status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                        }
+                    }
+                    Log::info($customeremail_status);
+                    //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    if ($customeremail_status['status'] == 0) {
+                        $email_sending_failed[] = $Account->AccountName;
+                        $status['status'] = 'failure';
+                    } else {
+                        $status['status'] = "success";
+                        $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+                        /**
+                         * Insert Data in InvoiceLog
+                         */
+                        $invoiceloddata = array();
+                        $invoiceloddata['InvoiceID'] = $InvoiceID;
+                        $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
+                        $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                        $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                        InvoiceLog::insert($invoiceloddata);
+                        $logData = ['AccountID'=>$Account->AccountID,
+                            'ProcessID'=>$ProcessID,
+                            'JobID'=>$JobID,
+                            'User'=>$User,
+                            'EmailFrom'=>$User->EmailAddress,
+                            'EmailTo'=>$emaildata['EmailTo'],
+                            'Subject'=>$emaildata['Subject'],
+                            'Message'=>$customeremail_status['body']];
+                        $statuslog = Helper::email_log($logData);
+                        if($statuslog['status']==0) {
+                            $errorslog[] = $Account->AccountName.' email log exception:'.$statuslog['message'];
+                        }
+                    }
+                }
+
+                Log::info($email_sending_failed);
+                if(count($email_sending_failed)){
+                    $jobdata['JobStatusMessage'] =( count($email_sending_failed)>0?' \n\r Email Sending Failed: '.implode(',\n\r',$email_sending_failed):'');
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                }else{
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = 'Bulk Invoice Sent Successfully';
+                }
+            }else{
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = 'No Data Found';
+            }
+
+            if(count($errorslog)>0){
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] .= count($errorslog).' Email log errors: '.implode(',\n\r',$errorslog);
+            }
+            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+            $jobdata['ModifiedBy'] = 'RMScheduler';
+            Job::where(["JobID" => $JobID])->update($jobdata);
+            Job::send_job_status_email($job,$CompanyID);
+        } catch (\Exception $e) {
+            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+            $jobdata['JobStatusMessage'] = 'Exception: '.$e->getMessage();
+            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+            $jobdata['ModifiedBy'] = 'RMScheduler';
+            Job::where(["JobID" => $JobID])->update($jobdata);
+            Log::error($e);
+        }
+    }
+
+
+
+}

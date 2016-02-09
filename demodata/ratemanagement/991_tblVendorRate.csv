@@ -1,0 +1,13 @@
+VendorRateID,AccountId,TrunkID,RateId,Rate,EffectiveDate,updated_at,created_at,created_by,updated_by,Interval1,IntervalN
+132816,an-telecom,GOLD,10011,6.639999,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132817,an-telecom,GOLD,10012,6.5,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132818,an-telecom,GOLD,1055,5.482899,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132819,an-telecom,GOLD,108,4.5,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132820,an-telecom,GOLD,109,3.549999,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132821,an-telecom,GOLD,11,3.4944,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132822,cal-sol,GOLD,1120,3.299999,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132823,cal-sol,GOLD,1123,2.7658,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132824,cal-sol,GOLD,1128,2.6275,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132825,dail-tel,GOLD,1129,2.6223,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132826,dail-tel,GOLD,1139,2,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132827,dail-tel,GOLD,1144,1.8025,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1

@@ -1,0 +1,523 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: srs2
+ * Date: 25/05/2015
+ * Time: 06:58 
+ */
+
+namespace App\Console\Commands;
+
+
+use App\Lib\Account;
+use App\Lib\AmazonS3;
+use App\Lib\Company;
+use App\Lib\Currency;
+use App\Lib\Helper;
+use App\Lib\Job;
+use App\Lib\RateSheetDetails;
+use App\Lib\User;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\Console\Input\InputArgument;
+use Webpatser\Uuid\Uuid;
+use \Exception;
+
+class CustomerRateSheetGenerator extends Command {
+
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'customerratesheet';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description.';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['JobID', InputArgument::REQUIRED, 'Argument JobID '],
+        ];
+    }
+
+    public function handle__queue(){
+        $arguments = $this->argument();
+        $JobID = $arguments["JobID"];
+        $CompanyID = $arguments["CompanyID"];
+        //Queue::push(new CustomerRateSheetGenerator2($JobID,$CompanyID));
+
+    }
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function handle()
+    {
+        /* $id  = 0;
+          while($id < 10) {
+             Queue::push(new CustomerRateSheetGenerator2($id));
+             $id++;
+         }
+
+         exit;*/
+        $arguments = $this->argument();
+        $getmypid = getmypid(); // get proccess id added by abubakar
+        $JobID = $arguments["JobID"];
+        $CompanyID = $arguments["CompanyID"];
+        $job = Job::find($JobID);
+        $accounts = '';
+        $countuser = 0;
+        $countcust = 0;
+        $errorsuser = array();
+        $errorscustomer = array();
+        $errorslog = array();
+        $emailstatus = array('status' => 0, 'message' => '');
+        $sheetstatusupdate = array();
+        $userInfo = User::getUserInfo($job->JobLoggedUserID);
+        if (!empty($job)) {
+            $ProcessID = Uuid::generate();
+            $joboptions = json_decode($job->Options);
+            if (count($joboptions) > 0) {
+                if(isset($joboptions->SelectedIDs)){
+                    $ids = $joboptions->SelectedIDs;
+                }else if($job->AccountID >0 ){
+                    $ids = $job->AccountID;
+                }
+
+                $criteria = '';
+                if (!empty($joboptions->criteria)) {
+                    $criteria = json_decode($joboptions->criteria);
+                }
+                $count = 0;
+                Log::useFiles(storage_path() . '/logs/customerratesheet-' . $JobID . '-' . date('Y-m-d') . '.log');
+                Log::info('job start ' . $JobID);
+                $Company = Company::find($CompanyID);
+                DB::beginTransaction();
+                Log::info('job transaction start ' . $JobID);
+                Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+                if (!empty($ids)) {
+                    $ids = explode(',', $ids);
+                    if (count($ids) > 0) {
+                        $accounts = Account::whereIn('AccountID', $ids)->get();
+                    } else {
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                        $jobdata['JobStatusMessage'] = 'ids is empty';
+                    }
+                } else {
+                    if (!empty($criteria)) {
+                        $account = Account::leftjoin('tblUser', 'tblAccount.Owner', '=', 'tblUser.UserID')->select('tblAccount.*');
+                        $account->where(["tblAccount.CompanyID" => $CompanyID]);
+                        $account->where(["tblAccount.AccountType" => 1]);
+                        if (isset($criteria->account_name) && !empty($criteria->account_name)) {
+                            $account->where('tblAccount.AccountName', 'like', '%' . $criteria->account_name . '%');
+                        }
+                        if (isset($criteria->account_number) && !empty($criteria->account_number)) {
+                            $account->where('tblAccount.Number', 'like', '%' . $criteria->account_number . '%');
+                        }
+                        if (isset($criteria->contact_name) && !empty($criteria->contact_name)) {
+                            $account->leftjoin('tblContact', 'tblContact.Owner', '=', 'tblAccount.AccountID');
+                            $account->whereRaw(" CONCAT(tblContact.FirstName,' ',tblContact.LastName) like '%" . $criteria->contact_name . "%'");
+                        }
+                        if (isset($criteria->account_active)) {
+                            if ($criteria->account_active == 'true') {
+                                $account->where('tblAccount.Status', 1);
+                            } else {
+                                $account->where('tblAccount.Status', 0);
+                            }
+                        }
+                        if (isset($criteria->vendor_on_off) && $criteria->vendor_on_off == 'true') {
+                            $account->where('tblAccount.IsVendor', 1);
+                        }
+                        if (isset($criteria->customer_on_off) && $criteria->customer_on_off == 'true') {
+                            $account->where('tblAccount.IsCustomer', 1);
+                        }
+                        if (isset($criteria->verification_status) && trim($criteria->verification_status) >= 0) {
+                            $account->where('tblAccount.VerificationStatus', (int)$criteria->verification_status);
+                        }
+
+                        if (isset($criteria->tag) && trim($criteria->tag) != '') {
+                            $account->where('tblAccount.tags', 'like', '%' . trim($criteria->tag) . '%');
+                        }
+
+                        if (isset($criteria->account_owners) && trim($criteria->account_owners) > 0) {
+                            $account->where('tblAccount.Owner', (int)$criteria->account_owners);
+                        }
+                        //DB::enableQueryLog();
+                        $accounts = $account->get();
+                    } else {
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                        $jobdata['JobStatusMessage'] = 'id or criteria is not given';
+                    }
+                }
+                if (!empty($accounts)) {
+                    foreach ($accounts as $account) {
+                        try {
+                            $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+                            $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
+                            $local_dir = getenv('UPLOAD_PATH') . '/' . $amazonPath;
+                            $excel_data_all = array();
+                            $data = array();
+                            $currency = '';
+                            $symbol = '';
+                            $data['Company'] = $Company;
+                            $data['Account'] = $account;
+                            if (!empty($account->CurrencyId)) {
+                                $currency = Currency::getCurrencyCode($account->CurrencyId);
+                                $symbol = Currency::getCurrencySymbol(Currency::getCurrencyCode($account->CurrencyId));
+                            }
+                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,$account->RoundChargesAmount);
+                            $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
+                            $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
+                            $data['extra'] = $extra;
+                            $data['replace'] = $replace;
+                            $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
+                            if (isset($joboptions->isMerge) && $joboptions->isMerge ==1 && isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
+                                foreach ($joboptions->Trunks as $trunk) {
+                                    if(in_array($trunk,$trunks)) {
+                                        $excel_data = array();
+                                        $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
+                                        Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
+                                        Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        $excel_data = json_decode(json_encode($excel_data), true);
+                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
+                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
+                                        $data['excel_data'][$trunkname] = $excel_data;
+                                    }
+                                }
+                                $this->generatemultisheetexcel($file_name, $data, $local_dir);
+                                $file_name .= '.xlsx';
+                                Log::info('job is merge 1 ' . $JobID);
+                                $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
+                                extract($sheetstatusupdate);
+                                if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                    throw new Exception('Error in Amazon upload');
+                                }
+
+                            } else if (isset($joboptions->isMerge) && $joboptions->isMerge ==0 &&  isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
+                                foreach ($joboptions->Trunks as $trunk) {
+                                    if (in_array($trunk, $trunks)) {
+                                        Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
+                                        Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        $excel_data = json_decode(json_encode($excel_data), true);
+                                        $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
+                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
+                                        $data['excel_data'] = $excel_data;
+                                        $this->generateexcel($file_name, $data, $local_dir);
+                                        $file_name .= '.xlsx';
+                                        Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
+                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
+                                        Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
+                                        $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
+                                        extract($sheetstatusupdate);
+                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                            throw new Exception('Error in Amazon upload');
+                                        }
+                                        Log::info('job is merge 0 ' . $JobID);
+                                    }
+                                }
+
+                            }else if (isset($joboptions->Trunks) && !is_array($joboptions->Trunks)) {
+                                if(in_array($joboptions->Trunks,$trunks)) {
+                                    Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                    $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "')");
+                                    Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                    Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                    $excel_data = json_decode(json_encode($excel_data), true);
+                                    $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->Trunks))->pluck('Trunk');
+                                    $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
+                                    $data['excel_data'] = $excel_data;
+                                    $this->generateexcel($file_name, $data, $local_dir);
+                                    $file_name .= '.xlsx';
+                                    Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
+                                    RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
+                                    Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
+                                    $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
+                                    extract($sheetstatusupdate);
+                                    if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                        throw new Exception('Error in Amazon upload');
+                                    }
+                                    Log::info('job is merge 0 old logic' . $JobID);
+                                }
+                            }
+                            if ($joboptions->sendMail == 0) {
+                                $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
+                                $jobdata['OutputFilePath'] = $fullPath;
+                                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                                $jobdata['ModifiedBy'] = 'RMScheduler';
+                                Job::where(["JobID" => $JobID])->update($jobdata);
+                            }
+                            DB::commit();
+                            Log::info('job transaction commit ' . $JobID);
+                        } catch (Exception $e) {
+                            try {
+                                DB::rollback();
+                            } catch (Exception $err) {
+                                Log::error($err);
+                            }
+                            $errorslog[] = 'Account '.$account->AccountName.' exception '. $e->getMessage();
+                            Log::error('Account'.$account->AccountName.' exception '.$e);
+                        }
+                    }
+
+                    if (count($errorsuser)>0 || count($errorscustomer)>0 || count($errorslog)>0) {
+                        $jobdata['JobStatusMessage'] = 'RateSheet Generated Successfully, ' ;
+                        $jobdata['JobStatusMessage'] .= $countuser.' email sent to users, '.count($errorsuser).' Skipped users ,'.implode(',\n\r',$errorsuser);
+                        $jobdata['JobStatusMessage'] .= $countcust.' email sent to account, '.count($errorscustomer).' Skipped Account ,'.implode(',\n\r',$errorscustomer);
+                        $jobdata['JobStatusMessage'] .= count($errorslog).' accounts email log data not saved ,'.implode(',\n\r',$errorslog);
+
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
+                        $emaildata['Status'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('Title');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    } else {
+                        $jobdata['JobStatusMessage'] = 'RateSheet Generated Successfully';
+                        if ($joboptions->sendMail == 1) {
+                            $jobdata['JobStatusMessage'] .= ' and send mail to customer';
+                        }
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
+                        $emaildata['Status'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('Title');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }
+
+                } else {
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = 'No Data Found';
+                }
+            } else {
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = 'No Data Found';
+            }
+        } else {
+            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+            $jobdata['JobStatusMessage'] = 'No Data Found';
+        }
+        $emaildata['JobStatusMessage'] = $jobdata['JobStatusMessage'];
+        $emaildata['Title'] = $job->Title;
+        $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+        $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
+        $emaildata['Subject'] = $job->Title;
+        $emaildata['CompanyID'] = $CompanyID;
+        if ($emailstatus['status'] == 0) {
+            Job::send_job_status_email($job,$CompanyID);
+        }else {
+            Job::where(["JobID" => $JobID])->update(array('EmailSentStatus' => $emailstatus['status'], 'EmailSentStatusMessage' => $emailstatus['message']));
+            Log::info('job end ' . $JobID);
+        }
+    }
+    protected function setSheetHeader($sheet,$data,$header_data){
+        $count = 1;
+        $sheet->row($count++, array());
+        $sheet->mergeCells('A'.$count.':H'.$count);
+        $sheet->getCell('A'.$count)->setValue('Company Name: '.$data['Company']->CompanyName);
+        $sheet->cells('A'.$count, function($cells) {
+            $cells->setFontWeight('bold');
+        });
+        $count++;
+        $sheet->mergeCells('A'.$count.':H'.$count);
+        $sheet->getCell('A'.$count)->setValue('Reference Number: '.date('Ymd'));
+        $sheet->cells('A'.$count, function($cells) {
+            $cells->setFontWeight('bold');
+        });
+
+        $count++;
+        $sheet->row($count++, array());
+        $sheet->row($count, $header_data);
+        $sheet->row($count, function($row) {
+            // call cell manipulation methods
+            $row->setFontWeight('bold');
+        });
+
+
+        return $count;
+    }
+    protected function setSheetFooter($sheet,$count,$data){
+        $sheet->row($count, array());
+        $count++;
+        $data['text'] = $data['Company']->RateSheetExcellNote;
+        $notelist = explode(PHP_EOL, generic_replace($data));
+        foreach($notelist as $line){
+            $sheet->mergeCells('A'.$count.':H'.$count);
+            $sheet->getCell('A'.$count)->setValue($line);
+            $count++;
+        }
+        return $sheet;
+    }
+    public function generateexcel($file_name,$data,$local_dir){
+        $excel_data_sheet = array();
+        $header_data = array();
+        $excel_data = $data['excel_data'];
+        foreach($excel_data as $excel_data_rr){
+            array_shift($excel_data_rr);
+            array_shift($excel_data_rr);
+            array_shift($excel_data_rr);
+            $excel_data_sheet[] = $excel_data_rr;
+            $header_data = array_keys($excel_data_rr);
+        }
+        $header_data  = array_map('ucwords',$header_data);
+        array_walk($header_data , 'custom_replace');
+        if(count($header_data) == 0){
+            $header_data[] = 'Destination';
+            $header_data[] = 'Codes';
+            $header_data[] = 'Tech Prefix';
+            $header_data[] = 'Interval';
+            $data['text'] = 'Rate Per Minute (USD)';
+            $header_data[] = generic_replace($data);
+            $header_data[] = 'Level';
+            $header_data[] = 'Change';
+            $header_data[] = 'Effective Date';
+        }
+        for($i=0;$i<count($header_data);$i++){
+            $data['text'] = $header_data[$i];
+            $header_data[$i] = generic_replace($data);
+        }
+        Excel::create($file_name, function ($excel) use ($excel_data_sheet,$header_data,$file_name,$data) {
+            $excel->sheet('Sheet', function ($sheet) use ($excel_data_sheet,$header_data,$data) {
+                $count = $this->setSheetHeader($sheet,$data,$header_data);
+                $count++;
+                $sheet->fromArray($excel_data_sheet,'','A'.$count,'',false);
+                $count = count($excel_data_sheet)+$count;
+                $this->setSheetFooter($sheet,$count,$data);
+            });
+        })->store('xlsx',$local_dir);
+    }
+    public function generatemultisheetexcel($file_name,$data,$local_dir){
+
+        Excel::create($file_name, function ($excel) use ($data,$file_name) {
+            $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
+            foreach($excel_data as $trunk => $excel_rows) {
+                $excel_data_sheet = array();
+                $header_data = array();
+                foreach($excel_rows as $excel_data_rr){
+                    array_shift($excel_data_rr);
+                    array_shift($excel_data_rr);
+                    array_shift($excel_data_rr);
+                    $excel_data_sheet[] = $excel_data_rr;
+                    $header_data = array_keys($excel_data_rr);
+                }
+                $header_data  = array_map('ucwords',$header_data);
+                array_walk($header_data , 'custom_replace');
+                if(count($header_data) == 0){
+                    $header_data[] = 'Destination';
+                    $header_data[] = 'Codes';
+                    $header_data[] = 'Tech Prefix';
+                    $header_data[] = 'Interval';
+                    $header_data[] = 'Rate Per Minute (USD)';
+                    $header_data[] = 'Level';
+                    $header_data[] = 'Change';
+                    $header_data[] = 'Effective Date';
+                }
+                $excel->sheet($trunk, function ($sheet) use ($excel_data_sheet, $header_data, $data) {
+                    $count = $this->setSheetHeader($sheet, $data, $header_data);
+                    $count++;
+                    $sheet->fromArray($excel_data_sheet, '', 'A' . $count, '', false);
+                    $count = count($excel_data_sheet) + $count;
+                    $this->setSheetFooter($sheet, $count, $data);
+                });
+            }
+        })->store('xlsx',$local_dir);
+    }
+
+    public function sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser){
+        if ($joboptions->sendMail == 1) {
+            $emaildata['Subject'] = $joboptions->subject;
+            $emaildata['Message'] = $joboptions->message;
+            $emaildata['attach'] = $local_dir . basename($file_name);
+            $Signature = '';
+            if (!empty($userInfo)) {
+                $emaildata['EmailFrom'] = $userInfo->EmailAddress;
+                $emaildata['EmailFromName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
+                if(isset($userInfo->EmailFooter) && trim($userInfo->EmailFooter) != '')
+                {
+                    $Signature = $userInfo->EmailFooter;
+                }
+            }
+            if ($joboptions->test == 1) {
+                $emaildata['EmailTo'] = $joboptions->testEmail;
+                $emaildata['EmailToName'] = 'test name';
+            } else if(getenv('EmailToCustomer') == 1){
+                $emaildata['EmailTo'] = $account->Email;
+                $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
+            }else{
+                $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
+            }
+            if(!is_array($emaildata['EmailTo'])){
+                $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
+            }
+            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
+            $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{Signature}}'];
+            $replace = [$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country, $Signature];
+            $emaildata['extra'] = $extra;
+            $emaildata['replace'] = $replace;
+            $emaildata['CompanyName'] = $Company->CompanyName;
+            $emaildata['CompanyID'] = $CompanyID;
+            $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+
+            if (isset($emailstatuscustomer["status"]) && $emailstatuscustomer["status"] == 0) {
+                $errorscustomer[] = $account->AccountName .' Email Exception'. $emailstatuscustomer["message"];
+            } else {
+                $countcust++;
+                $logData = ['AccountID' => $account->AccountID,
+                    'ProcessID' => $ProcessID,
+                    'JobID' => $JobID,
+                    'User' => $userInfo,
+                    'EmailFrom' => $userInfo->EmailAddress,
+                    'EmailTo' => $emaildata['EmailTo'],
+                    'Subject' => $emaildata['Subject'],
+                    'Message' => $emailstatuscustomer['body']];
+                $statuslog = Helper::email_log($logData);
+                if ($statuslog['status'] == 0) {
+                    $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
+                }
+            }
+        }else{
+            $emaildata['attach'] = $local_dir . basename($file_name);
+            $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+            $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
+            $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
+            $emaildata['CompanyName'] = $Company->CompanyName;
+            $emaildata['CompanyID'] = $CompanyID;
+            $emailstatus = Helper::sendMail('emails.ratesheetgenerator', $emaildata);
+
+            if($emailstatus['status']==0){
+                $errorsuser[] = $userInfo->FirstName.' Email exception: '.$emailstatus['status'];
+            }else{
+                $countuser ++;
+            }
+        }
+        $sheetstatusupdate['countcust'] = $countcust;
+        $sheetstatusupdate['countuser'] = $countuser;
+        $sheetstatusupdate['errorscustomer'] = $errorscustomer;
+        $sheetstatusupdate['errorslog'] = $errorslog;
+        $sheetstatusupdate['errorsuser'] = $errorsuser;
+        $sheetstatusupdate['emailstatus'] =$emailstatus;
+        return $sheetstatusupdate;
+    }
+
+
+}

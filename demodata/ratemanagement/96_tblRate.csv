@@ -1,0 +1,1000 @@
+RateID,CountryID,CompanyID,CodeDeckId,Code,Description,updated_at,created_at,UpdatedBy,CreatedBy,Interval1,IntervalN
+1,1,1,CustomerCodedeck,93,Afghanistan-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+2,1,1,CustomerCodedeck,9375,Afghanistan-Mobile-Afghan,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+3,1,1,CustomerCodedeck,9370,Afghanistan-Mobile-AWCC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+4,1,1,CustomerCodedeck,9377,Afghanistan-Mobile-Areeba,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+5,1,1,CustomerCodedeck,9378,Afghanistan-Mobile-Etisalat,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+6,1,1,CustomerCodedeck,937,Afghanistan Cellular-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+7,1,1,CustomerCodedeck,9379,Afghanistan Mobile Roshan,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+8,2,1,CustomerCodedeck,355,Albania-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+9,2,1,CustomerCodedeck,35568,Albania-Mobile-AMC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+10,2,1,CustomerCodedeck,35567,Albania-Mobile-Eagle,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+11,2,1,CustomerCodedeck,35566,Albania-Mobile-Plus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+12,2,1,CustomerCodedeck,35569,Albania-Mobile-Vodafone,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+13,2,1,CustomerCodedeck,355422,Albania-Fixed-Tirana,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+14,2,1,CustomerCodedeck,355423,Albania-Fixed-Tirana,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+15,3,1,CustomerCodedeck,213,Algeria-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+16,3,1,CustomerCodedeck,2136,ALGERIA MOBILE MPTA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+17,3,1,CustomerCodedeck,21377,Algeria-Mobile-Orascom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+18,3,1,CustomerCodedeck,213780,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+19,3,1,CustomerCodedeck,2137810,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+20,3,1,CustomerCodedeck,2137811,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+21,3,1,CustomerCodedeck,2137812,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+22,3,1,CustomerCodedeck,2137813,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+23,3,1,CustomerCodedeck,2137814,Algeria Cellular-Djezzy,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+24,3,1,CustomerCodedeck,21379,Algeria-Mobile-Orascom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+25,3,1,CustomerCodedeck,2135,Algeria-Mobile-Ooredoo,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+26,3,1,CustomerCodedeck,21321,Algeria-Fixed-Algiers,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+28,254,1,CustomerCodedeck,684,SAMOA EASTERN ALL,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+29,4,1,CustomerCodedeck,16842,American Samoa-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+30,4,1,CustomerCodedeck,168473,American Samoa-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+31,5,1,CustomerCodedeck,376,Andorra-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+32,5,1,CustomerCodedeck,3763,Andorra-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+33,5,1,CustomerCodedeck,3764,Andorra-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+34,5,1,CustomerCodedeck,3765,Andorra-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+35,5,1,CustomerCodedeck,3766,Andorra-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+36,6,1,CustomerCodedeck,244,Angola-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+37,6,1,CustomerCodedeck,2449,Angola Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+38,6,1,CustomerCodedeck,24492,Angola-Mobile-Unitel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+39,6,1,CustomerCodedeck,24493,Angola-Mobile-Unitel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+40,7,1,CustomerCodedeck,1264,Anguilla-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+41,7,1,CustomerCodedeck,1264235,Anguilla-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+42,7,1,CustomerCodedeck,1264469,Anguilla-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+43,7,1,CustomerCodedeck,1264476,Anguilla-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+44,7,1,CustomerCodedeck,1264536,Anguilla-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+45,7,1,CustomerCodedeck,1264537,Anguilla-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+46,7,1,CustomerCodedeck,1264538,Anguilla-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+47,7,1,CustomerCodedeck,1264539,Anguilla-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+48,7,1,CustomerCodedeck,1264543,Anguilla-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+49,7,1,CustomerCodedeck,126458,Anguilla Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+50,7,1,CustomerCodedeck,1264729,Anguilla-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+51,7,1,CustomerCodedeck,1264772,Anguilla-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+52,7,1,CustomerCodedeck,1264581,Anguilla-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+53,7,1,CustomerCodedeck,1264582,Anguilla-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+54,7,1,CustomerCodedeck,1264583,Anguilla-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+55,7,1,CustomerCodedeck,1264584,Anguilla-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+56,8,1,CustomerCodedeck,672,Antarctica-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+57,8,1,CustomerCodedeck,6723,Antarctica-Fixed-Norfolk Island,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+58,9,1,CustomerCodedeck,1268,Antigua & Barbuda-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+59,9,1,CustomerCodedeck,1268464,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+60,9,1,CustomerCodedeck,1268716,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+61,9,1,CustomerCodedeck,1268717,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+62,9,1,CustomerCodedeck,1268718,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+63,9,1,CustomerCodedeck,1268719,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64,9,1,CustomerCodedeck,126872,ANTIGUA AND BARBUDA MOBILE,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+65,9,1,CustomerCodedeck,1268764,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+66,9,1,CustomerCodedeck,1268770,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+67,9,1,CustomerCodedeck,1268771,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+68,9,1,CustomerCodedeck,1268772,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+69,9,1,CustomerCodedeck,1268773,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+70,9,1,CustomerCodedeck,1268774,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+71,9,1,CustomerCodedeck,1268775,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+72,9,1,CustomerCodedeck,1268779,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+73,9,1,CustomerCodedeck,1268780,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+74,9,1,CustomerCodedeck,1268781,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+75,9,1,CustomerCodedeck,1268782,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+76,9,1,CustomerCodedeck,1268783,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+77,9,1,CustomerCodedeck,1268784,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+78,9,1,CustomerCodedeck,1268785,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+79,9,1,CustomerCodedeck,1268786,Antigua & Barbuda-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+80,9,1,CustomerCodedeck,1268788,Antigua & Barbuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+81,10,1,CustomerCodedeck,54,Argentina-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+82,10,1,CustomerCodedeck,549,Argentina-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+83,10,1,CustomerCodedeck,54911,Argentina Cellular-Buenos Aires,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+84,10,1,CustomerCodedeck,54291,Argentina-Fixed-Bahia Blanca,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+85,10,1,CustomerCodedeck,5411,Argentina-Fixed-Buenos Aires,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+86,10,1,CustomerCodedeck,543489,Argentina-Campana,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+87,10,1,CustomerCodedeck,542293,ARGENTINA FIXED MIRAMAR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+88,10,1,CustomerCodedeck,542302,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+89,10,1,CustomerCodedeck,542362,ARGENTINA FIXED JUNIN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+90,10,1,CustomerCodedeck,54237,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+91,10,1,CustomerCodedeck,54332,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+92,10,1,CustomerCodedeck,54343,ARGENTINA FIXED PARANA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+93,10,1,CustomerCodedeck,543461,ARGENTINA FIXED SANNICOLAS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+94,10,1,CustomerCodedeck,543462,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+95,10,1,CustomerCodedeck,543464,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+96,10,1,CustomerCodedeck,543476,ARGENTINA FIXED SANLORENZO,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+97,10,1,CustomerCodedeck,543541,ARGENTINA FIXED VILLACARLOSPAZ,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+98,10,1,CustomerCodedeck,543543,ARGENTINA FIXED ARGUELLO,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+99,10,1,CustomerCodedeck,543571,ARGENTINA FIXED RIO TERCERO,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+100,10,1,CustomerCodedeck,54372,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+101,10,1,CustomerCodedeck,543783,ARGENTINA FIXED CORRIENTES,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+102,10,1,CustomerCodedeck,54379,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+103,10,1,CustomerCodedeck,54387400,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+104,10,1,CustomerCodedeck,54387401,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+105,10,1,CustomerCodedeck,5438742,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+106,10,1,CustomerCodedeck,54387431,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+107,10,1,CustomerCodedeck,54387432,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+108,10,1,CustomerCodedeck,54387434,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+109,10,1,CustomerCodedeck,54387435,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+110,10,1,CustomerCodedeck,54387436,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+111,10,1,CustomerCodedeck,54387437,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+112,10,1,CustomerCodedeck,543874384,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+113,10,1,CustomerCodedeck,543874385,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+114,10,1,CustomerCodedeck,543874386,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+115,10,1,CustomerCodedeck,543874387,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+116,10,1,CustomerCodedeck,543874388,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+117,10,1,CustomerCodedeck,54387439,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+118,10,1,CustomerCodedeck,54387495,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+119,10,1,CustomerCodedeck,54387497,Argentina-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+120,10,1,CustomerCodedeck,54351,Argentina-Fixed-Cordoba,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+121,10,1,CustomerCodedeck,54358,Argentina-Fixed-Rio Cuarto,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+122,10,1,CustomerCodedeck,54230,Argentina-Fixed-La Pampa,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+123,10,1,CustomerCodedeck,54221,Argentina-Fixed-La Plata,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+124,10,1,CustomerCodedeck,542323,Argentina-Lujan,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+125,10,1,CustomerCodedeck,54223,Argentina-Fixed-Mar del Plata,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+126,10,1,CustomerCodedeck,54261,Argentina-Fixed-Mendoza,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+127,10,1,CustomerCodedeck,54299,Argentina-Fixed-Neuquen,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+128,10,1,CustomerCodedeck,54232,Argentina-Fixed-Pilar,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+129,10,1,CustomerCodedeck,54362,ARGENTINA FIXED CORRIDOR,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+130,10,1,CustomerCodedeck,543722,Argentina-Resistencia,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+131,10,1,CustomerCodedeck,54341,Argentina-Fixed-Rosario,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+132,10,1,CustomerCodedeck,54387,Argentina-Fixed-Salta,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+133,10,1,CustomerCodedeck,542652,Argentina-San Luis,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+134,10,1,CustomerCodedeck,542664,Argentina-San Luis,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+135,10,1,CustomerCodedeck,54342,Argentina-Fixed-Santa Fe,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+136,10,1,CustomerCodedeck,54381,Argentina-Fixed-Tucuman,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+137,10,1,CustomerCodedeck,54348,Argentina-Fixed-Campana,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+138,11,1,CustomerCodedeck,374,Armenia-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+139,11,1,CustomerCodedeck,3745,Armenia Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+140,11,1,CustomerCodedeck,3747,Armenia Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+141,11,1,CustomerCodedeck,3749,ARMENIA MOBILE,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+142,11,1,CustomerCodedeck,37491,Armenia-Mobile-Armentel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+143,11,1,CustomerCodedeck,37496,Armenia-Mobile-Armentel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+144,11,1,CustomerCodedeck,37499,Armenia-Mobile-Armentel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+145,11,1,CustomerCodedeck,37497,Armenia-Mobile-Nagorny Karabakh,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+146,11,1,CustomerCodedeck,37455,Armenia-Mobile-Orange,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+147,11,1,CustomerCodedeck,37495,Armenia-Mobile-Orange,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+148,11,1,CustomerCodedeck,37477,Armenia-Mobile-VivaCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+149,11,1,CustomerCodedeck,37493,Armenia-Mobile-VivaCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+150,11,1,CustomerCodedeck,37494,Armenia-Mobile-VivaCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+151,11,1,CustomerCodedeck,37498,Armenia-Mobile-VivaCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+152,11,1,CustomerCodedeck,37447,Armenia-Fixed-Karabakh,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+153,11,1,CustomerCodedeck,37410,Armenia-Fixed-Yerevan,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+154,12,1,CustomerCodedeck,297,Aruba-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+155,12,1,CustomerCodedeck,29756,Aruba-Mobile-Setar,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+156,12,1,CustomerCodedeck,29759,Aruba-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+157,12,1,CustomerCodedeck,297600,Aruba-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+158,12,1,CustomerCodedeck,297622,Aruba-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+159,12,1,CustomerCodedeck,29766,Aruba-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+160,12,1,CustomerCodedeck,29769,Aruba-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+161,12,1,CustomerCodedeck,2979,Aruba Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+162,12,1,CustomerCodedeck,297630,Aruba-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+163,12,1,CustomerCodedeck,297640,Aruba-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+164,12,1,CustomerCodedeck,297641,Aruba-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+165,12,1,CustomerCodedeck,29773,Aruba-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+166,12,1,CustomerCodedeck,29774,Aruba-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+167,13,1,CustomerCodedeck,247,Ascension Island-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+168,14,1,CustomerCodedeck,61,Australia-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+169,14,1,CustomerCodedeck,61891,Australia - Christmas Islands,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+170,14,1,CustomerCodedeck,614,Australia-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+171,14,1,CustomerCodedeck,61401,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+172,14,1,CustomerCodedeck,61402,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+173,14,1,CustomerCodedeck,61403,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+174,14,1,CustomerCodedeck,61411,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+175,14,1,CustomerCodedeck,61412,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+176,14,1,CustomerCodedeck,61413,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+177,14,1,CustomerCodedeck,61421,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+178,14,1,CustomerCodedeck,61422,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+179,14,1,CustomerCodedeck,61423,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+180,14,1,CustomerCodedeck,61431,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+181,14,1,CustomerCodedeck,61432,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+182,14,1,CustomerCodedeck,61434,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+183,14,1,CustomerCodedeck,61435,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+184,14,1,CustomerCodedeck,61466,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+185,14,1,CustomerCodedeck,614685,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+186,14,1,CustomerCodedeck,614686,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+187,14,1,CustomerCodedeck,614687,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+188,14,1,CustomerCodedeck,614688,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+189,14,1,CustomerCodedeck,614689,Australia-Mobile-Optus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+190,14,1,CustomerCodedeck,611,Australia-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+191,14,1,CustomerCodedeck,6114331,Australia- Satellite Premium 1,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+192,14,1,CustomerCodedeck,6187,Australia-Adelaide,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+193,14,1,CustomerCodedeck,61881,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+194,14,1,CustomerCodedeck,61882,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+195,14,1,CustomerCodedeck,61883,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+196,14,1,CustomerCodedeck,61884,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+197,14,1,CustomerCodedeck,6173,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+198,14,1,CustomerCodedeck,61261,Australia-Fixed-Canberra,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+199,14,1,CustomerCodedeck,61262,Australia-Fixed-Canberra,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+200,14,1,CustomerCodedeck,6138,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+201,14,1,CustomerCodedeck,6139,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+202,14,1,CustomerCodedeck,6186,Australia-Perth,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+203,14,1,CustomerCodedeck,61892,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+204,14,1,CustomerCodedeck,61893,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+205,14,1,CustomerCodedeck,61894,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+206,14,1,CustomerCodedeck,6128,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+207,14,1,CustomerCodedeck,6129,Australia-Fixed-Metro Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+208,16,1,CustomerCodedeck,43,Austria-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+209,16,1,CustomerCodedeck,43664,Austria-Mobile-A1,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+210,16,1,CustomerCodedeck,43680,Austria-Mobile-A1,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+211,16,1,CustomerCodedeck,43688,Austria-Mobile-A1,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+212,16,1,CustomerCodedeck,43660,Austria-Mobile-H3G,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+213,16,1,CustomerCodedeck,4367833,Austria-Mobile-H3G,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+214,16,1,CustomerCodedeck,4367890,Austria-Mobile-H3G,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+215,16,1,CustomerCodedeck,4367891,Austria-Mobile-H3G,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+216,16,1,CustomerCodedeck,43681,Austria-Mobile-Orange,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+217,16,1,CustomerCodedeck,43699,Austria-Mobile-Orange,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+218,16,1,CustomerCodedeck,43644,Austria-Mobile-A1,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+219,16,1,CustomerCodedeck,43651,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+220,16,1,CustomerCodedeck,43652,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+221,16,1,CustomerCodedeck,43653,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+222,16,1,CustomerCodedeck,43655,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+223,16,1,CustomerCodedeck,43657,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+224,16,1,CustomerCodedeck,43659,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+225,16,1,CustomerCodedeck,43661,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+226,16,1,CustomerCodedeck,43663,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+227,16,1,CustomerCodedeck,43665,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+228,16,1,CustomerCodedeck,43666,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+229,16,1,CustomerCodedeck,43667,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+230,16,1,CustomerCodedeck,43668,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+231,16,1,CustomerCodedeck,43669,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+232,16,1,CustomerCodedeck,43678,Austria Cellular-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+233,16,1,CustomerCodedeck,4368,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+234,16,1,CustomerCodedeck,4369,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+235,16,1,CustomerCodedeck,43650,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+236,16,1,CustomerCodedeck,43676,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+237,16,1,CustomerCodedeck,43677,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+238,16,1,CustomerCodedeck,4386034,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+239,16,1,CustomerCodedeck,4386061,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+240,16,1,CustomerCodedeck,4386064,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+241,16,1,CustomerCodedeck,4386134,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+242,16,1,CustomerCodedeck,4386164,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+243,16,1,CustomerCodedeck,438703411,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+244,16,1,CustomerCodedeck,438706411,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+245,16,1,CustomerCodedeck,438713411,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+246,16,1,CustomerCodedeck,438716411,Austria-Mobile-T Mobile,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+247,16,1,CustomerCodedeck,4357,Austria-Fixed-Corporate,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+248,16,1,CustomerCodedeck,4359,Austria-Fixed-Corporate,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+249,16,1,CustomerCodedeck,43710,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+250,16,1,CustomerCodedeck,43711,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+251,16,1,CustomerCodedeck,43718,Austria-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+252,16,1,CustomerCodedeck,43720,Austria-Fixed-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+253,16,1,CustomerCodedeck,43730,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+254,16,1,CustomerCodedeck,43740,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+255,16,1,CustomerCodedeck,43780,Austria-Fixed-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+256,16,1,CustomerCodedeck,43800,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+257,16,1,CustomerCodedeck,43804,Austria-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+258,16,1,CustomerCodedeck,43810,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+259,16,1,CustomerCodedeck,43820,Austria-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+260,16,1,CustomerCodedeck,43821,Austria-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+261,16,1,CustomerCodedeck,43828,Austria-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+262,16,1,CustomerCodedeck,431,Austria-Fixed-Vienna,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+263,17,1,CustomerCodedeck,994,Azerbaijan-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+264,17,1,CustomerCodedeck,99444,Azerbaijan-Mobile-CDMA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+265,17,1,CustomerCodedeck,99460,Azerbaijan-Mobile-Nakhtel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+266,17,1,CustomerCodedeck,99450,Azerbaijan-Mobile-AzerCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+267,17,1,CustomerCodedeck,99451,Azerbaijan-Mobile-AzerCell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+268,17,1,CustomerCodedeck,99470,Azerbaijan-Mobile-Azerfon,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+269,17,1,CustomerCodedeck,99477,Azerbaijan-Mobile-Azerfon,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+270,17,1,CustomerCodedeck,99455,Azerbaijan-Mobile-Bakcell,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+271,17,1,CustomerCodedeck,99440,Azerbaijan-Mobile-Catel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+272,17,1,CustomerCodedeck,99412,Azerbaijan-Fixed-Baku,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+273,18,1,CustomerCodedeck,1242,Bahamas-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+274,18,1,CustomerCodedeck,1242357,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+275,18,1,CustomerCodedeck,1242359,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+276,18,1,CustomerCodedeck,1242375,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+277,18,1,CustomerCodedeck,1242376,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+278,18,1,CustomerCodedeck,1242395,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+279,18,1,CustomerCodedeck,1242422,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+280,18,1,CustomerCodedeck,1242423,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+281,18,1,CustomerCodedeck,1242424,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+282,18,1,CustomerCodedeck,1242425,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+283,18,1,CustomerCodedeck,1242426,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+284,18,1,CustomerCodedeck,1242427,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+285,18,1,CustomerCodedeck,1242428,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+286,18,1,CustomerCodedeck,1242429,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+287,18,1,CustomerCodedeck,1242431,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+288,18,1,CustomerCodedeck,1242432,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+289,18,1,CustomerCodedeck,1242433,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+290,18,1,CustomerCodedeck,1242434,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+291,18,1,CustomerCodedeck,1242436,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+292,18,1,CustomerCodedeck,1242439,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+293,18,1,CustomerCodedeck,1242441,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+294,18,1,CustomerCodedeck,1242442,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+295,18,1,CustomerCodedeck,1242443,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+296,18,1,CustomerCodedeck,1242445,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+297,18,1,CustomerCodedeck,1242446,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+298,18,1,CustomerCodedeck,1242447,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+299,18,1,CustomerCodedeck,1242448,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+300,18,1,CustomerCodedeck,1242449,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+301,18,1,CustomerCodedeck,1242451,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+302,18,1,CustomerCodedeck,1242452,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+303,18,1,CustomerCodedeck,1242453,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+304,18,1,CustomerCodedeck,1242454,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+305,18,1,CustomerCodedeck,1242455,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+306,18,1,CustomerCodedeck,1242456,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+307,18,1,CustomerCodedeck,1242457,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+308,18,1,CustomerCodedeck,1242458,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+309,18,1,CustomerCodedeck,1242462,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+310,18,1,CustomerCodedeck,1242463,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+311,18,1,CustomerCodedeck,1242464,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+312,18,1,CustomerCodedeck,1242465,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+313,18,1,CustomerCodedeck,1242466,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+314,18,1,CustomerCodedeck,1242467,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+315,18,1,CustomerCodedeck,1242468,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+316,18,1,CustomerCodedeck,1242470,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+317,18,1,CustomerCodedeck,1242471,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+318,18,1,CustomerCodedeck,1242472,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+319,18,1,CustomerCodedeck,1242473,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+320,18,1,CustomerCodedeck,1242474,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+321,18,1,CustomerCodedeck,1242475,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+322,18,1,CustomerCodedeck,1242476,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+323,18,1,CustomerCodedeck,1242477,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+324,18,1,CustomerCodedeck,1242478,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+325,18,1,CustomerCodedeck,1242479,Bahamas Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+326,18,1,CustomerCodedeck,1242481,Bahamas-Fixed-MSRN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+327,18,1,CustomerCodedeck,1242524,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+328,18,1,CustomerCodedeck,1242525,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+329,18,1,CustomerCodedeck,1242533,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+330,18,1,CustomerCodedeck,1242535,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+331,18,1,CustomerCodedeck,1242544,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+332,18,1,CustomerCodedeck,1242551,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+333,18,1,CustomerCodedeck,1242552,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+334,18,1,CustomerCodedeck,1242553,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+335,18,1,CustomerCodedeck,1242554,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+336,18,1,CustomerCodedeck,1242556,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+337,18,1,CustomerCodedeck,1242557,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+338,18,1,CustomerCodedeck,1242558,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+339,18,1,CustomerCodedeck,1242559,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+340,18,1,CustomerCodedeck,1242565,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+341,18,1,CustomerCodedeck,1242577,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+342,18,1,CustomerCodedeck,1242636,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+343,18,1,CustomerCodedeck,1242646,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+344,18,1,CustomerCodedeck,1242727,Bahamas-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+345,19,1,CustomerCodedeck,973,Bahrain-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+346,19,1,CustomerCodedeck,9733,Bahrain Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+347,19,1,CustomerCodedeck,9737,Bahrain Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+348,19,1,CustomerCodedeck,973383,Bahrain-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+349,19,1,CustomerCodedeck,973384,Bahrain-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+350,19,1,CustomerCodedeck,973385,Bahrain-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+351,19,1,CustomerCodedeck,973388,Bahrain-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+352,19,1,CustomerCodedeck,97339,Bahrain-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+353,19,1,CustomerCodedeck,97336,Bahrain-Mobile-MTC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+354,19,1,CustomerCodedeck,973377,Bahrain-Mobile-MTC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+355,19,1,CustomerCodedeck,973663,Bahrain-Mobile-MTC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+356,19,1,CustomerCodedeck,973666,Bahrain-Mobile-MTC,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+357,19,1,CustomerCodedeck,9738,Bahrain-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+358,19,1,CustomerCodedeck,9739,Bahrain-Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+359,19,1,CustomerCodedeck,973136,Bahrain-Zain Wimax,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+360,20,1,CustomerCodedeck,880,Bangladesh-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+361,20,1,CustomerCodedeck,8801,Bangladesh-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+362,20,1,CustomerCodedeck,88018,Bangladesh Cellular-Aktel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+363,20,1,CustomerCodedeck,88011,Bangladesh Cellular-City,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+364,20,1,CustomerCodedeck,88017,Bangladesh Cellular-Grameen,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+365,20,1,CustomerCodedeck,88019,Bangladesh Cellular-Sheba,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+366,20,1,CustomerCodedeck,88031,BANGLADESH FIXED CHITTAGONG,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+367,20,1,CustomerCodedeck,8802,BANGLADESH FIXED DHAKA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+368,20,1,CustomerCodedeck,880821,BANGLADESH FIXED SYLHET,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+369,21,1,CustomerCodedeck,1246,Barbados-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+370,21,1,CustomerCodedeck,124623,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+371,21,1,CustomerCodedeck,124624,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+372,21,1,CustomerCodedeck,1246250,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+373,21,1,CustomerCodedeck,1246251,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+374,21,1,CustomerCodedeck,1246252,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+375,21,1,CustomerCodedeck,1246253,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+376,21,1,CustomerCodedeck,1246254,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+377,21,1,CustomerCodedeck,1246255,Barbados-Mobile-CW,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+378,21,1,CustomerCodedeck,1246256,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+379,21,1,CustomerCodedeck,1246257,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+380,21,1,CustomerCodedeck,1246258,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+381,21,1,CustomerCodedeck,1246259,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+382,21,1,CustomerCodedeck,124626,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+383,21,1,CustomerCodedeck,124682,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+384,21,1,CustomerCodedeck,124683,Barbados-Mobile-Digicel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+385,22,1,CustomerCodedeck,375,Belarus-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+386,22,1,CustomerCodedeck,37525,Belarus-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+387,22,1,CustomerCodedeck,37529,Belarus-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+388,22,1,CustomerCodedeck,37533,Belarus-Mobile-MTS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+389,22,1,CustomerCodedeck,375292,Belarus-Mobile-MTS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+390,22,1,CustomerCodedeck,375295,Belarus-Mobile-MTS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+391,22,1,CustomerCodedeck,375297,Belarus-Mobile-MTS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+392,22,1,CustomerCodedeck,375298,Belarus-Mobile-MTS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+393,22,1,CustomerCodedeck,375291,Belarus-Mobile-Velcom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+394,22,1,CustomerCodedeck,375293,Belarus-Mobile-Velcom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+395,22,1,CustomerCodedeck,375296,Belarus-Mobile-Velcom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+396,22,1,CustomerCodedeck,375299,Belarus-Mobile-Velcom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+397,22,1,CustomerCodedeck,37544,Belarus-Mobile-Velcom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+398,22,1,CustomerCodedeck,37517,Belarus-Fixed-Minsk,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+399,23,1,CustomerCodedeck,32,Belgium-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+400,23,1,CustomerCodedeck,3248,BELGIUM MOBILE BASE,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+401,23,1,CustomerCodedeck,3249,Belgium-Mobile-Mobistar,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+402,23,1,CustomerCodedeck,324630,Belgium-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+403,23,1,CustomerCodedeck,32460,Belgium-Mobile-Proximus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+404,23,1,CustomerCodedeck,3247,Belgium-Mobile-Proximus,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+405,23,1,CustomerCodedeck,324681,Belgium-Mobile-Telenet,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+406,23,1,CustomerCodedeck,324682,Belgium-Mobile-Telenet,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+407,23,1,CustomerCodedeck,324683,Belgium-Mobile-Telenet,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+408,23,1,CustomerCodedeck,3217,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+409,23,1,CustomerCodedeck,3218,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+410,23,1,CustomerCodedeck,3244,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+411,23,1,CustomerCodedeck,3245,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+412,23,1,CustomerCodedeck,3270,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+413,23,1,CustomerCodedeck,3272,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+414,23,1,CustomerCodedeck,3273,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+415,23,1,CustomerCodedeck,3275,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+416,23,1,CustomerCodedeck,3277,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+417,23,1,CustomerCodedeck,3290,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+418,23,1,CustomerCodedeck,3295,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+419,23,1,CustomerCodedeck,3296,Belgium Premium,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+420,23,1,CustomerCodedeck,323,Belgium-Antwerp,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+421,23,1,CustomerCodedeck,322,Belgium-Brussels,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+422,24,1,CustomerCodedeck,501,Belize-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+423,24,1,CustomerCodedeck,5016,Belize-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+424,24,1,CustomerCodedeck,50166,Belize Cellular-Speednet,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+425,24,1,CustomerCodedeck,50167,Belize Cellular-Speednet,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+426,24,1,CustomerCodedeck,5012,Belize-Belize City,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+427,25,1,CustomerCodedeck,229,Benin-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+428,25,1,CustomerCodedeck,2299,Benin Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+429,25,1,CustomerCodedeck,22992,Benin-Mobile-BBCOM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+430,25,1,CustomerCodedeck,22993,Benin-Mobile-BBCOM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+431,25,1,CustomerCodedeck,22968,BENIN MOBILE GLOBACOM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+432,25,1,CustomerCodedeck,22998,Benin-Mobile-Globacom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+433,25,1,CustomerCodedeck,22999,Benin-Mobile-Globacom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+434,25,1,CustomerCodedeck,22990,Benin-Mobile-Libercom,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+435,25,1,CustomerCodedeck,22966,Benin-Mobile-MTN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+436,25,1,CustomerCodedeck,22967,Benin-Mobile-MTN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+437,25,1,CustomerCodedeck,22996,Benin-Mobile-MTN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+438,25,1,CustomerCodedeck,22997,Benin-Mobile-MTN,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+439,25,1,CustomerCodedeck,22964,Benin-Mobile-Moov,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+440,25,1,CustomerCodedeck,22994,Benin-Mobile-Moov,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+441,25,1,CustomerCodedeck,22995,Benin-Mobile-Moov,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+442,26,1,CustomerCodedeck,1441,Bermuda-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+443,26,1,CustomerCodedeck,14413,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+444,26,1,CustomerCodedeck,144150,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+445,26,1,CustomerCodedeck,144151,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+446,26,1,CustomerCodedeck,144152,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+447,26,1,CustomerCodedeck,144153,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+448,26,1,CustomerCodedeck,1441590,Bermuda Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+449,26,1,CustomerCodedeck,1441599,Bermuda Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+450,26,1,CustomerCodedeck,14417,Bermuda-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+451,27,1,CustomerCodedeck,975,Bhutan-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+452,27,1,CustomerCodedeck,97516,Bhutan-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+453,27,1,CustomerCodedeck,97517,Bhutan-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+454,27,1,CustomerCodedeck,97577,Bhutan-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+455,27,1,CustomerCodedeck,97593,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+456,27,1,CustomerCodedeck,97594,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+457,27,1,CustomerCodedeck,97595,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+458,27,1,CustomerCodedeck,97596,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+459,27,1,CustomerCodedeck,97597,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+460,27,1,CustomerCodedeck,97598,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+461,27,1,CustomerCodedeck,97599,Bhutan Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+462,28,1,CustomerCodedeck,591,Bolivia-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+463,28,1,CustomerCodedeck,5916,Bolivia-Mobile-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+464,28,1,CustomerCodedeck,5917,Bolivia Cellular,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+465,28,1,CustomerCodedeck,59167,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+466,28,1,CustomerCodedeck,59168,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+467,28,1,CustomerCodedeck,59171,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+468,28,1,CustomerCodedeck,59172,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+469,28,1,CustomerCodedeck,59173,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+470,28,1,CustomerCodedeck,59174,Bolivia-Mobile-Entel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+471,28,1,CustomerCodedeck,59160,Bolivia-Mobile-Nuevatel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+472,28,1,CustomerCodedeck,59165,Bolivia-Mobile-Nuevatel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+473,28,1,CustomerCodedeck,59170,Bolivia-Mobile-Nuevatel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+474,28,1,CustomerCodedeck,59179,Bolivia-Mobile-Nuevatel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+475,28,1,CustomerCodedeck,59169,BOLIVIA MOBILE TELCEL,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+476,28,1,CustomerCodedeck,59175,Bolivia-Mobile-Telecel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+477,28,1,CustomerCodedeck,59176,Bolivia-Mobile-Telecel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+478,28,1,CustomerCodedeck,59177,Bolivia-Mobile-Telecel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+479,28,1,CustomerCodedeck,59178,Bolivia-Mobile-Telecel,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+480,28,1,CustomerCodedeck,5912500,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+481,28,1,CustomerCodedeck,5912510,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+482,28,1,CustomerCodedeck,5912511,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+483,28,1,CustomerCodedeck,5912512,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+484,28,1,CustomerCodedeck,59125130,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+485,28,1,CustomerCodedeck,59125131,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+486,28,1,CustomerCodedeck,5912514,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+487,28,1,CustomerCodedeck,59125176,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+488,28,1,CustomerCodedeck,59125177,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+489,28,1,CustomerCodedeck,59125188,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+490,28,1,CustomerCodedeck,59125189,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+491,28,1,CustomerCodedeck,59125190,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+492,28,1,CustomerCodedeck,59125191,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+493,28,1,CustomerCodedeck,591251991,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+494,28,1,CustomerCodedeck,591251992,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+495,28,1,CustomerCodedeck,591251993,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+496,28,1,CustomerCodedeck,591251994,Bolivia-Cities,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+497,28,1,CustomerCodedeck,5912520,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+498,28,1,CustomerCodedeck,5912521,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+499,28,1,CustomerCodedeck,5912522,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+500,28,1,CustomerCodedeck,5912523,Bolivia-Fixed-EA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+1001,28,1,CustomerCodedeck,59146966,Bolivia-Rural,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64288,NULL,1,VendorCodedeck,??978600880,BANGLADESH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64289,NULL,1,VendorCodedeck,?9786118801,Bangladesh Mobile Cli ,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64290,238,1,VendorCodedeck,1,USA-Fixed-Others,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64291,NULL,1,VendorCodedeck,10011,ITFS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64292,NULL,1,VendorCodedeck,10012,ITFS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64293,NULL,1,VendorCodedeck,1055,ITFS,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64294,39,1,VendorCodedeck,108,CANADA_CLI,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64295,39,1,VendorCodedeck,109,CANADA_CLI,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64296,238,1,VendorCodedeck,11,USA-blocked,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64297,238,1,VendorCodedeck,1120,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64298,238,1,VendorCodedeck,1123,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64299,NULL,1,VendorCodedeck,1128,UNITED STATES,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64300,39,1,VendorCodedeck,1129,Canada,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64301,39,1,VendorCodedeck,1139,Canada,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64302,NULL,1,VendorCodedeck,1144,UNITED STATES,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64303,238,1,VendorCodedeck,1150,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64304,238,1,VendorCodedeck,1161,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64305,238,1,VendorCodedeck,1168,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64306,39,1,VendorCodedeck,1171,Canada,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64307,238,1,VendorCodedeck,1177,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64308,238,1,VendorCodedeck,1181,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64309,238,1,VendorCodedeck,1183,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64310,39,1,VendorCodedeck,1186,Canada,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64311,238,1,VendorCodedeck,1187,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64312,238,1,VendorCodedeck,1190,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64313,238,1,VendorCodedeck,1193,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64314,238,1,VendorCodedeck,1198,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64315,238,1,VendorCodedeck,1199,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64316,NULL,1,VendorCodedeck,1200,UNITED STATES OF AMERICA ,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64317,238,1,VendorCodedeck,1201,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64318,238,1,VendorCodedeck,1201202,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64319,238,1,VendorCodedeck,1201219,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64320,238,1,VendorCodedeck,1201353,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64321,238,1,VendorCodedeck,1201355,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64322,238,1,VendorCodedeck,1201365,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64323,238,1,VendorCodedeck,1201382,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64324,238,1,VendorCodedeck,1201409,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64325,238,1,VendorCodedeck,1201442,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64326,238,1,VendorCodedeck,1201472,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64327,238,1,VendorCodedeck,1201473,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64328,238,1,VendorCodedeck,1201484,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64329,238,1,VendorCodedeck,1201492,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64330,238,1,VendorCodedeck,1201495,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64331,238,1,VendorCodedeck,1201502,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64332,238,1,VendorCodedeck,1201517,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64333,238,1,VendorCodedeck,1201534,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64334,238,1,VendorCodedeck,1201542,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64335,238,1,VendorCodedeck,1201545,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64336,238,1,VendorCodedeck,1201555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64337,NULL,1,VendorCodedeck,12015551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64338,238,1,VendorCodedeck,1201562,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64339,238,1,VendorCodedeck,1201570,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64340,238,1,VendorCodedeck,1201578,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64341,238,1,VendorCodedeck,1201603,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64342,238,1,VendorCodedeck,1201604,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64343,238,1,VendorCodedeck,1201605,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64344,238,1,VendorCodedeck,1201606,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64345,238,1,VendorCodedeck,1201607,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64346,238,1,VendorCodedeck,1201608,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64347,238,1,VendorCodedeck,1201613,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64348,238,1,VendorCodedeck,1201619,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64349,238,1,VendorCodedeck,1201621,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64350,238,1,VendorCodedeck,1201622,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64351,238,1,VendorCodedeck,1201623,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64352,238,1,VendorCodedeck,1201625,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64353,238,1,VendorCodedeck,1201627,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64354,238,1,VendorCodedeck,1201632,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64355,238,1,VendorCodedeck,1201642,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64356,238,1,VendorCodedeck,1201643,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64357,238,1,VendorCodedeck,1201676,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64358,238,1,VendorCodedeck,1201688,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64359,238,1,VendorCodedeck,1201698,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64360,238,1,VendorCodedeck,1201699,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64361,238,1,VendorCodedeck,1201726,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64362,238,1,VendorCodedeck,1201734,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64363,238,1,VendorCodedeck,1201742,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64364,238,1,VendorCodedeck,1201763,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64365,238,1,VendorCodedeck,1201764,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64366,238,1,VendorCodedeck,1201783,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64367,238,1,VendorCodedeck,1201821,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64368,238,1,VendorCodedeck,1201822,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64369,238,1,VendorCodedeck,1201829,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64370,238,1,VendorCodedeck,1201834,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64371,238,1,VendorCodedeck,1201835,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64372,238,1,VendorCodedeck,1201853,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64373,238,1,VendorCodedeck,1201901,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64374,238,1,VendorCodedeck,1201961,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64375,238,1,VendorCodedeck,1201972,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64376,238,1,VendorCodedeck,1201979,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64377,238,1,VendorCodedeck,1202,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64378,238,1,VendorCodedeck,1202241,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64379,238,1,VendorCodedeck,1202247,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64380,238,1,VendorCodedeck,1202248,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64381,238,1,VendorCodedeck,1202249,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64382,238,1,VendorCodedeck,1202250,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64383,238,1,VendorCodedeck,1202349,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64384,238,1,VendorCodedeck,1202360,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64385,238,1,VendorCodedeck,1202372,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64386,238,1,VendorCodedeck,1202428,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64387,238,1,VendorCodedeck,1202495,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64388,238,1,VendorCodedeck,1202509,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64389,238,1,VendorCodedeck,1202517,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64390,238,1,VendorCodedeck,1202524,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64391,238,1,VendorCodedeck,1202555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64392,NULL,1,VendorCodedeck,12025551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64393,238,1,VendorCodedeck,1202558,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64394,238,1,VendorCodedeck,1202559,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64395,238,1,VendorCodedeck,1202567,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64396,238,1,VendorCodedeck,1202601,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64397,238,1,VendorCodedeck,1202621,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64398,238,1,VendorCodedeck,1202683,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64399,238,1,VendorCodedeck,1202684,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64400,238,1,VendorCodedeck,1202688,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64401,238,1,VendorCodedeck,1203,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64402,238,1,VendorCodedeck,1203547,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64403,238,1,VendorCodedeck,1203555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64404,NULL,1,VendorCodedeck,12035551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64405,238,1,VendorCodedeck,1203902,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64406,39,1,VendorCodedeck,1204,Canada-Others-All,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64407,39,1,VendorCodedeck,1204131,Canada,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64408,39,1,VendorCodedeck,1204555,Canada-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64409,238,1,VendorCodedeck,1205,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64410,238,1,VendorCodedeck,1205221,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64411,238,1,VendorCodedeck,1205232,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64412,238,1,VendorCodedeck,1205273,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64413,238,1,VendorCodedeck,1205274,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64414,238,1,VendorCodedeck,1205277,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64415,238,1,VendorCodedeck,1205280,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64416,238,1,VendorCodedeck,1205295,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64417,238,1,VendorCodedeck,1205302,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64418,238,1,VendorCodedeck,1205313,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64419,238,1,VendorCodedeck,1205314,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64420,238,1,VendorCodedeck,1205341,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64421,238,1,VendorCodedeck,1205351,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64422,238,1,VendorCodedeck,1205364,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64423,238,1,VendorCodedeck,1205367,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64424,238,1,VendorCodedeck,1205371,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64425,238,1,VendorCodedeck,1205373,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64426,238,1,VendorCodedeck,1205375,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64427,238,1,VendorCodedeck,1205378,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64428,238,1,VendorCodedeck,1205384,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64429,238,1,VendorCodedeck,1205387,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64430,238,1,VendorCodedeck,1205398,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64431,238,1,VendorCodedeck,1205418,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64432,238,1,VendorCodedeck,1205429,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64433,238,1,VendorCodedeck,1205433,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64434,238,1,VendorCodedeck,1205446,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64435,238,1,VendorCodedeck,1205455,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64436,238,1,VendorCodedeck,1205459,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64437,238,1,VendorCodedeck,1205465,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64438,238,1,VendorCodedeck,1205466,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64439,238,1,VendorCodedeck,1205467,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64440,238,1,VendorCodedeck,1205468,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64441,238,1,VendorCodedeck,1205472,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64442,238,1,VendorCodedeck,1205479,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64443,238,1,VendorCodedeck,1205483,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64444,238,1,VendorCodedeck,1205485,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64445,238,1,VendorCodedeck,1205486,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64446,238,1,VendorCodedeck,1205487,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64447,238,1,VendorCodedeck,1205489,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64448,238,1,VendorCodedeck,1205498,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64449,238,1,VendorCodedeck,1205509,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64450,238,1,VendorCodedeck,1205512,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64451,238,1,VendorCodedeck,1205517,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64452,238,1,VendorCodedeck,1205537,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64453,238,1,VendorCodedeck,1205539,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64454,238,1,VendorCodedeck,1205543,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64455,238,1,VendorCodedeck,1205555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64456,NULL,1,VendorCodedeck,12055551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64457,238,1,VendorCodedeck,1205559,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64458,238,1,VendorCodedeck,1205561,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64459,238,1,VendorCodedeck,1205571,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64460,238,1,VendorCodedeck,1205573,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64461,238,1,VendorCodedeck,1205576,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64462,238,1,VendorCodedeck,1205579,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64463,238,1,VendorCodedeck,1205580,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64464,238,1,VendorCodedeck,1205582,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64465,238,1,VendorCodedeck,1205584,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64466,238,1,VendorCodedeck,1205589,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64467,238,1,VendorCodedeck,1205594,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64468,238,1,VendorCodedeck,1205596,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64469,238,1,VendorCodedeck,1205622,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64470,238,1,VendorCodedeck,1205625,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64471,238,1,VendorCodedeck,1205629,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64472,238,1,VendorCodedeck,1205634,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64473,238,1,VendorCodedeck,1205635,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64474,238,1,VendorCodedeck,1205651,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64475,238,1,VendorCodedeck,1205653,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64476,238,1,VendorCodedeck,1205654,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64477,238,1,VendorCodedeck,1205658,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64478,238,1,VendorCodedeck,1205662,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64479,238,1,VendorCodedeck,1205673,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64480,238,1,VendorCodedeck,1205684,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64481,238,1,VendorCodedeck,1205686,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64482,238,1,VendorCodedeck,1205689,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64483,238,1,VendorCodedeck,1205695,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64484,238,1,VendorCodedeck,1205697,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64485,238,1,VendorCodedeck,1205698,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64486,238,1,VendorCodedeck,1205699,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64487,238,1,VendorCodedeck,1205702,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64488,238,1,VendorCodedeck,1205709,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64489,238,1,VendorCodedeck,1205721,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64490,238,1,VendorCodedeck,1205728,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64491,238,1,VendorCodedeck,1205729,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64492,238,1,VendorCodedeck,1205748,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64493,238,1,VendorCodedeck,1205755,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64494,238,1,VendorCodedeck,1205775,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64495,238,1,VendorCodedeck,1205848,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64496,238,1,VendorCodedeck,1205860,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64497,238,1,VendorCodedeck,1205893,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64498,238,1,VendorCodedeck,1205904,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64499,238,1,VendorCodedeck,1205921,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64500,238,1,VendorCodedeck,1205924,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64501,238,1,VendorCodedeck,1205932,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64502,238,1,VendorCodedeck,1205935,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64503,238,1,VendorCodedeck,1205952,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64504,238,1,VendorCodedeck,1205993,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64505,238,1,VendorCodedeck,1205998,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64506,238,1,VendorCodedeck,1206,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64507,238,1,VendorCodedeck,1206202,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64508,238,1,VendorCodedeck,1206203,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64509,238,1,VendorCodedeck,1206208,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64510,238,1,VendorCodedeck,1206222,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64511,NULL,1,VendorCodedeck,1206229,UNITED STATES OF AMERICA ,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64512,238,1,VendorCodedeck,1206278,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64513,238,1,VendorCodedeck,1206279,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64514,238,1,VendorCodedeck,1206309,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64515,238,1,VendorCodedeck,1206312,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64516,238,1,VendorCodedeck,1206315,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64517,238,1,VendorCodedeck,1206333,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64518,238,1,VendorCodedeck,1206337,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64519,238,1,VendorCodedeck,1206338,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64520,238,1,VendorCodedeck,1206339,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64521,238,1,VendorCodedeck,1206350,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64522,238,1,VendorCodedeck,1206357,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64523,238,1,VendorCodedeck,1206376,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64524,238,1,VendorCodedeck,1206395,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64525,238,1,VendorCodedeck,1206397,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64526,238,1,VendorCodedeck,1206400,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64527,238,1,VendorCodedeck,1206407,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64528,238,1,VendorCodedeck,1206415,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64529,238,1,VendorCodedeck,1206424,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64530,238,1,VendorCodedeck,1206426,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64531,238,1,VendorCodedeck,1206428,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64532,238,1,VendorCodedeck,1206438,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64533,238,1,VendorCodedeck,1206456,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64534,238,1,VendorCodedeck,1206457,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64535,238,1,VendorCodedeck,1206466,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64536,238,1,VendorCodedeck,1206479,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64537,238,1,VendorCodedeck,1206493,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64538,238,1,VendorCodedeck,1206495,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64539,238,1,VendorCodedeck,1206555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64540,NULL,1,VendorCodedeck,12065551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64541,238,1,VendorCodedeck,1206578,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64542,238,1,VendorCodedeck,1206600,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64543,238,1,VendorCodedeck,1206666,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64544,238,1,VendorCodedeck,1206673,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64545,238,1,VendorCodedeck,1206678,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64546,238,1,VendorCodedeck,1206681,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64547,238,1,VendorCodedeck,1206687,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64548,238,1,VendorCodedeck,1206736,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64549,238,1,VendorCodedeck,1206737,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64550,238,1,VendorCodedeck,1206740,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64551,238,1,VendorCodedeck,1206765,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64552,238,1,VendorCodedeck,1206826,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64553,238,1,VendorCodedeck,1206832,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64554,238,1,VendorCodedeck,1206877,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64555,238,1,VendorCodedeck,1206888,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64556,238,1,VendorCodedeck,1206902,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64557,238,1,VendorCodedeck,1206905,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64558,238,1,VendorCodedeck,1206984,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64559,238,1,VendorCodedeck,1207,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64560,238,1,VendorCodedeck,12072,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64561,238,1,VendorCodedeck,1207224,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64562,238,1,VendorCodedeck,1207225,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64563,238,1,VendorCodedeck,1207230,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64564,238,1,VendorCodedeck,1207234,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64565,238,1,VendorCodedeck,1207235,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64566,238,1,VendorCodedeck,1207236,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64567,238,1,VendorCodedeck,1207237,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64568,238,1,VendorCodedeck,1207238,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64569,238,1,VendorCodedeck,1207243,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64570,238,1,VendorCodedeck,1207246,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64571,238,1,VendorCodedeck,1207247,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64572,238,1,VendorCodedeck,1207257,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64573,238,1,VendorCodedeck,1207265,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64574,238,1,VendorCodedeck,1207268,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64575,238,1,VendorCodedeck,1207269,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64576,238,1,VendorCodedeck,1207273,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64577,238,1,VendorCodedeck,1207277,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64578,238,1,VendorCodedeck,1207278,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64579,238,1,VendorCodedeck,1207293,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64580,238,1,VendorCodedeck,1207296,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64581,238,1,VendorCodedeck,1207297,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64582,238,1,VendorCodedeck,12073,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64583,238,1,VendorCodedeck,1207325,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64584,238,1,VendorCodedeck,1207328,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64585,238,1,VendorCodedeck,1207334,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64586,238,1,VendorCodedeck,1207335,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64587,238,1,VendorCodedeck,1207336,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64588,238,1,VendorCodedeck,1207338,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64589,238,1,VendorCodedeck,1207339,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64590,238,1,VendorCodedeck,1207354,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64591,238,1,VendorCodedeck,1207355,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64592,238,1,VendorCodedeck,1207362,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64593,238,1,VendorCodedeck,1207366,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64594,238,1,VendorCodedeck,1207372,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64595,238,1,VendorCodedeck,1207377,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64596,238,1,VendorCodedeck,1207379,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64597,238,1,VendorCodedeck,1207388,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64598,238,1,VendorCodedeck,1207392,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64599,238,1,VendorCodedeck,1207394,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64600,238,1,VendorCodedeck,1207395,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64601,238,1,VendorCodedeck,1207397,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64602,238,1,VendorCodedeck,1207398,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64603,238,1,VendorCodedeck,12074,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64604,238,1,VendorCodedeck,1207403,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64605,238,1,VendorCodedeck,1207425,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64606,238,1,VendorCodedeck,1207426,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64607,238,1,VendorCodedeck,1207428,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64608,238,1,VendorCodedeck,1207429,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64609,238,1,VendorCodedeck,1207434,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64610,238,1,VendorCodedeck,1207435,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64611,238,1,VendorCodedeck,1207437,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64612,238,1,VendorCodedeck,1207438,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64613,238,1,VendorCodedeck,1207439,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64614,238,1,VendorCodedeck,1207444,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64615,238,1,VendorCodedeck,1207445,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64616,238,1,VendorCodedeck,1207448,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64617,238,1,VendorCodedeck,1207451,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64618,238,1,VendorCodedeck,1207453,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64619,238,1,VendorCodedeck,1207455,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64620,238,1,VendorCodedeck,1207456,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64621,238,1,VendorCodedeck,1207465,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64622,238,1,VendorCodedeck,1207472,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64623,238,1,VendorCodedeck,1207473,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64624,238,1,VendorCodedeck,1207474,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64625,238,1,VendorCodedeck,1207475,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64626,238,1,VendorCodedeck,1207476,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64627,238,1,VendorCodedeck,1207477,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64628,238,1,VendorCodedeck,1207486,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64629,238,1,VendorCodedeck,1207487,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64630,238,1,VendorCodedeck,1207488,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64631,238,1,VendorCodedeck,1207489,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64632,238,1,VendorCodedeck,1207492,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64633,238,1,VendorCodedeck,1207493,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64634,238,1,VendorCodedeck,1207495,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64635,238,1,VendorCodedeck,1207496,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64636,238,1,VendorCodedeck,1207498,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64637,238,1,VendorCodedeck,120750,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64638,238,1,VendorCodedeck,120751,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64639,238,1,VendorCodedeck,120752,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64640,238,1,VendorCodedeck,1207521,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64641,238,1,VendorCodedeck,1207524,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64642,238,1,VendorCodedeck,1207525,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64643,238,1,VendorCodedeck,1207526,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64644,238,1,VendorCodedeck,1207527,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64645,238,1,VendorCodedeck,1207529,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64646,238,1,VendorCodedeck,120753,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64647,238,1,VendorCodedeck,1207532,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64648,238,1,VendorCodedeck,1207533,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64649,238,1,VendorCodedeck,1207537,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64650,238,1,VendorCodedeck,1207538,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64651,238,1,VendorCodedeck,120754,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64652,238,1,VendorCodedeck,1207543,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64653,238,1,VendorCodedeck,1207545,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64654,238,1,VendorCodedeck,1207548,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64655,238,1,VendorCodedeck,1207553,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64656,238,1,VendorCodedeck,1207554,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64657,238,1,VendorCodedeck,1207555,USA Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64658,NULL,1,VendorCodedeck,12075551212,United States-Directory Assistance,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64659,238,1,VendorCodedeck,120756,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64660,238,1,VendorCodedeck,1207563,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64661,238,1,VendorCodedeck,1207566,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64662,238,1,VendorCodedeck,1207568,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64663,238,1,VendorCodedeck,120757,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64664,238,1,VendorCodedeck,120758,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64665,238,1,VendorCodedeck,1207584,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64666,238,1,VendorCodedeck,1207585,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64667,238,1,VendorCodedeck,1207586,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64668,238,1,VendorCodedeck,1207587,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64669,238,1,VendorCodedeck,120759,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64670,238,1,VendorCodedeck,1207593,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64671,238,1,VendorCodedeck,1207594,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64672,238,1,VendorCodedeck,1207596,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64673,238,1,VendorCodedeck,1207597,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64674,238,1,VendorCodedeck,12076,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64675,238,1,VendorCodedeck,1207620,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64676,238,1,VendorCodedeck,1207628,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64677,238,1,VendorCodedeck,1207630,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64678,238,1,VendorCodedeck,1207634,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64679,238,1,VendorCodedeck,1207635,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64680,238,1,VendorCodedeck,1207638,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64681,238,1,VendorCodedeck,1207639,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64682,238,1,VendorCodedeck,1207643,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64683,238,1,VendorCodedeck,1207644,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64684,238,1,VendorCodedeck,1207652,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64685,238,1,VendorCodedeck,1207654,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64686,238,1,VendorCodedeck,1207657,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64687,238,1,VendorCodedeck,1207658,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64688,238,1,VendorCodedeck,1207663,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64689,238,1,VendorCodedeck,1207665,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64690,238,1,VendorCodedeck,1207668,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64691,238,1,VendorCodedeck,1207669,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64692,238,1,VendorCodedeck,1207672,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64693,238,1,VendorCodedeck,1207674,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64694,238,1,VendorCodedeck,1207677,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64695,238,1,VendorCodedeck,1207678,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64696,238,1,VendorCodedeck,1207679,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64697,238,1,VendorCodedeck,1207680,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64698,238,1,VendorCodedeck,1207683,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64699,238,1,VendorCodedeck,1207684,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64700,238,1,VendorCodedeck,1207689,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64701,238,1,VendorCodedeck,1207696,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64702,238,1,VendorCodedeck,1207697,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64703,238,1,VendorCodedeck,1207698,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64704,238,1,VendorCodedeck,12077,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64705,238,1,VendorCodedeck,1207701,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64706,238,1,VendorCodedeck,1207706,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64707,238,1,VendorCodedeck,1207724,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64708,238,1,VendorCodedeck,1207727,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64709,238,1,VendorCodedeck,1207728,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64710,238,1,VendorCodedeck,1207732,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64711,238,1,VendorCodedeck,1207734,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64712,238,1,VendorCodedeck,1207739,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64713,238,1,VendorCodedeck,1207748,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64714,238,1,VendorCodedeck,1207760,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64715,238,1,VendorCodedeck,1207762,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64716,238,1,VendorCodedeck,1207763,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64717,238,1,VendorCodedeck,1207764,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64718,238,1,VendorCodedeck,1207768,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64719,238,1,VendorCodedeck,1207769,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64720,238,1,VendorCodedeck,1207785,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64721,238,1,VendorCodedeck,1207789,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64722,238,1,VendorCodedeck,12078,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64723,238,1,VendorCodedeck,1207817,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64724,238,1,VendorCodedeck,1207824,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64725,238,1,VendorCodedeck,1207826,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64726,238,1,VendorCodedeck,1207832,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64727,238,1,VendorCodedeck,1207834,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64728,238,1,VendorCodedeck,1207836,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64729,238,1,VendorCodedeck,1207858,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64730,238,1,VendorCodedeck,1207859,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64731,238,1,VendorCodedeck,1207861,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64732,238,1,VendorCodedeck,1207862,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64733,238,1,VendorCodedeck,1207863,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64734,238,1,VendorCodedeck,1207867,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64735,238,1,VendorCodedeck,1207868,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64736,238,1,VendorCodedeck,1207872,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64737,238,1,VendorCodedeck,1207873,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64738,238,1,VendorCodedeck,1207875,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64739,238,1,VendorCodedeck,1207877,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64740,238,1,VendorCodedeck,1207884,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64741,238,1,VendorCodedeck,1207887,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64742,238,1,VendorCodedeck,1207889,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64743,238,1,VendorCodedeck,1207895,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64744,238,1,VendorCodedeck,1207896,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64745,238,1,VendorCodedeck,12079,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64746,238,1,VendorCodedeck,1207922,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64747,238,1,VendorCodedeck,1207923,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64748,238,1,VendorCodedeck,1207925,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64749,238,1,VendorCodedeck,1207926,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64750,238,1,VendorCodedeck,1207928,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64751,238,1,VendorCodedeck,1207929,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64752,238,1,VendorCodedeck,1207930,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64753,238,1,VendorCodedeck,1207933,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64754,238,1,VendorCodedeck,1207935,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64755,238,1,VendorCodedeck,1207938,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64756,238,1,VendorCodedeck,1207946,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64757,238,1,VendorCodedeck,1207948,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64758,238,1,VendorCodedeck,1207966,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64759,238,1,VendorCodedeck,1207968,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64760,238,1,VendorCodedeck,1207992,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64761,238,1,VendorCodedeck,1207999,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64762,238,1,VendorCodedeck,1208,USA,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64763,238,1,VendorCodedeck,12082,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64764,238,1,VendorCodedeck,1208212,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64765,238,1,VendorCodedeck,1208222,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64766,238,1,VendorCodedeck,1208224,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64767,238,1,VendorCodedeck,1208225,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64768,238,1,VendorCodedeck,1208253,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64769,238,1,VendorCodedeck,1208256,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64770,238,1,VendorCodedeck,1208257,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64771,238,1,VendorCodedeck,1208259,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64772,238,1,VendorCodedeck,1208267,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64773,238,1,VendorCodedeck,1208276,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64774,238,1,VendorCodedeck,1208289,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64775,238,1,VendorCodedeck,1208298,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64776,238,1,VendorCodedeck,1208299,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64777,238,1,VendorCodedeck,12083,USA PREMIUM,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64778,238,1,VendorCodedeck,1208325,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64779,238,1,VendorCodedeck,1208326,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64780,238,1,VendorCodedeck,1208328,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64781,238,1,VendorCodedeck,1208335,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64782,238,1,VendorCodedeck,1208347,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64783,238,1,VendorCodedeck,1208349,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64784,238,1,VendorCodedeck,1208354,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64785,238,1,VendorCodedeck,1208355,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1
+64786,238,1,VendorCodedeck,1208356,USA HIGH,NULL,"'convert(varchar,GETDATE(),120)'",NULL,NULL,1,1

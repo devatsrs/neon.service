@@ -1,0 +1,5 @@
+GatewayAccountID,CompanyID,CompanyGatewayID,AccountName,AccountDetailInfo,Status,IsVendor,GatewayVendorID,AccountID
+162,1,SIPPY1,an-telecom,NULL,NULL,NULL,NULL,an-telecom
+163,1,SIPPY1,buraq-tel,NULL,NULL,NULL,NULL,buraq-tel
+164,1,SIPPY2,fortress,NULL,NULL,NULL,NULL,fortress
+165,1,SIPPY2,grace-telecome,NULL,NULL,NULL,NULL,grace-telecome

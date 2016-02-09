@@ -1,0 +1,7 @@
+InvoiceID,CompanyID,AccountID,Address,InvoiceNumber,IssueDate,CurrencyID,PONumber,SubTotal,TotalDiscount,TotalTax,InvoiceTotal,GrandTotal,Note,Terms,CreatedBy,ModifiedBy,created_at,updated_at,Description,Attachment,InvoiceType,InvoiceStatus
+12,3,an-telecom,UNITED KINGDOM,INV-23,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'",4,NULL,NULL,0,0,NULL,400,NULL,NULL,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,2,NULL
+11,3,an-telecom,UNITED KINGDOM,INV-22,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'",4,NULL,NULL,0,0,NULL,450,NULL,NULL,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,2,NULL
+10,3,an-telecom,UNITED KINGDOM,INV-21,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'",4,NULL,NULL,0,0,NULL,4500,NULL,NULL,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,2,NULL
+20,3,an-telecom,UNITED KINGDOM,4444,"convert(varchar,DATEADD(dd, -5, GETDATE()),120)'",7,,75,0,0,NULL,75,,,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,1,3
+21,3,an-telecom,UNITED KINGDOM,4445,"convert(varchar,DATEADD(dd, -5, GETDATE()),120)'",7,,75,0,0,NULL,75,,,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,1,3
+22,3,an-telecom,UNITED KINGDOM,4446,"convert(varchar,DATEADD(dd, -5, GETDATE()),120)'",7,,60,0,0,NULL,60,,,NEONSOFTSystem,NULL,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NULL,1,3

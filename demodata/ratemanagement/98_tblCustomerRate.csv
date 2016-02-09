@@ -1,0 +1,16 @@
+CustomerRateID,RateID,CustomerID,LastModifiedDate,LastModifiedBy,CreatedDate,TrunkID,Rate,EffectiveDate,PreviousRate,Interval1,IntervalN,RoutinePlan
+2085060,99477,an-telecom,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085055,99455,an-telecom,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085050,99440,an-telecom,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085061,99412,grace-telecome,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085056,1242,grace-telecome,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085051,1242357,grace-telecome,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085062,1242359,fortress,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085057,1242375,fortress,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085052,1242376,fortress,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085063,1242395,larance,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085058,1242422,larance,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085053,2136,larance,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085064,21377,moon-ray,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085059,213780,moon-ray,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL
+2085054,2137810,moon-ray,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",GOLD,0.015,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",0,1,1,NULL

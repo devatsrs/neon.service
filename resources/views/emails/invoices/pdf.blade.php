@@ -1,0 +1,418 @@
+@extends('layout.print')
+
+@section('content')
+<style>
+*{
+    font-family: Arial;
+    font-size: 12px;
+    line-height: normal;
+}
+p{ line-height: 20px;}
+.text-left{ text-align: left}
+.text-right{ text-align: right}
+.text-center{ text-align: center}
+table.invoice th{ padding:3px; background-color: #f5f5f6}
+.bg_graycolor{background-color: #f5f5f6}
+table.invoice td , table.invoice_total td{ padding:3px;}
+.page_break{ padding: 10px 0; page-break-after: always;}
+@media print {
+    * {
+        background-color: auto !important;
+        background: auto !important;
+        color: auto !important;
+    }
+    th,td{ padding: 1px; margin: 1px;}
+}
+table{
+  width: 100%;
+  border-spacing: 0;
+  margin-bottom: 30px;
+}
+
+</style>
+<br/><br/><br/>
+        <table border="0" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="col-md-6" valign="top">
+                    @if(!empty($logo))
+                   <img src="{{get_image_data($logo)}}" style="max-width: 250px">
+                   @endif
+                </td>
+                <td class="col-md-6 text-right" valign="top">
+                    <br>
+                   <strong>Invoice From:</strong>
+                   <p><strong>{{ nl2br($InvoiceTemplate->Header)}}</strong></p>
+
+                </td>
+            </tr>
+        </table>
+        <br />
+
+        <table border="0" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="col-md-6"  valign="top" >
+                        <br>
+                        <strong>Invoice To</strong>
+                        <p>{{$Account->AccountName}}</p>
+                        <p>{{nl2br($Invoice->Address)}}</p>
+                </td>
+                <td class="col-md-6 text-right"  valign="top" >
+                        <p><b>Invoice No: </b>{{$InvoiceTemplate->InvoiceNumberPrefix}}{{$Invoice->InvoiceNumber}}</p>
+                        <p><b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</p>
+                        <p><b>Due Date: </b>{{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$Account->PaymentDueInDays.' days'))}}</p>
+                </td>
+            </tr>
+        </table>
+        <br /><br /><br /><br /><br /><br />
+        <?php
+        $InvoiceTo =$InvoiceFrom = '';
+        $is_sub = $is_charge = false;
+        $subscriptiontotal = $chargetotal =$useagetotal= 0;
+        $subscriptionarray= array();
+            foreach($InvoiceDetail as $ProductRow){
+                if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION){
+                    $subscriptiontotal += $ProductRow->LineTotal;
+                    $is_sub = true;
+                }
+                if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE){
+                    $chargetotal += $ProductRow->LineTotal;
+                    $is_charge = true;
+                }
+                if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+                    $useagetotal += $ProductRow->LineTotal;
+                    $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
+                    $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
+                }
+            }
+
+        ?>
+        <table width="100%" border="0">
+            <tbody>
+            <tr>
+                <td width="40%">
+					@if($InvoiceTemplate->ShowBillingPeriod == 1)
+                    <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice table table-bordered">
+                        <thead>
+                        <tr>
+                            <th style="text-align: right;border-right: 0px solid black !important;"><br>&nbsp;Invoice</th><th style="text-align: left;border-left: 0px solid black !important;"><br>&nbsp;Period</th>
+                        </tr>
+                        <tr>
+                            <th style="text-align: center;">From</th>
+                            <th style="text-align: center;">To</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="text-center">{{$InvoiceFrom}}</td>
+                            <td class="text-center">{{$InvoiceTo}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+					@endif
+					</td>
+                <td width="25%"></td>
+                <td width="35%">
+                    @if($InvoiceTemplate->ShowPrevBal)
+                    <table class="table table-bordered" style="width: 100%; text-align: right;">
+                        <tbody>
+                        <tr>
+                            <td style="border-top: 1px solid black;text-align: left;">Previous Balance</td>
+                            <td style="border-top: 1px solid black; text-align: right;">{{number_format($Invoice->PreviousBalance,$Account->RoundChargesAmount)}}</td>
+                        </tr>
+                        <tr>
+                            <td style="border-top: 1px solid black;text-align: left;">Charges for this period</td>
+                            <td style="border-top: 1px solid black; text-align: right;">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}}</td>
+                        </tr>
+                        <tr>
+                            <td style="border-top: 2px solid black;text-align: left;">Total Due ({{$CurrencyCode}})</td>
+                            <td style="border-top: 2px solid black; text-align: right;">{{number_format($Invoice->TotalDue,$Account->RoundChargesAmount)}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    @endif
+                    </td>
+            </tr>
+            </tbody>
+        </table>
+<br /><br /><br />
+<div class="row">
+    <div class="col-md-12">
+        <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
+            <tfoot>
+                <tr>
+                        <td class="text-left" ><strong>Usage</strong></td>
+                        <td class="text-right">{{number_format($useagetotal,$Account->RoundChargesAmount)}}</td>
+                </tr>
+                @if($is_sub == true)
+                <tr>
+                        <td class="text-left"><strong>Subscription</strong></td>
+                        <td class="text-right">{{number_format($subscriptiontotal,$Account->RoundChargesAmount)}}</td>
+                </tr>
+                @endif
+
+                 @if($is_charge == true)
+                <tr>
+                        <td class="text-left"><strong>Additional Charges</strong></td>
+                        <td class="text-right">{{number_format($chargetotal,$Account->RoundChargesAmount)}}</td>
+                </tr>
+                @endif
+            </tfoot>
+        </table>
+    </div>
+</div>
+<br /><br /><br />
+    <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                                <table border="0" width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td class="col-md-5" valign="top" width="55%">
+                                                <p><a class="form-control" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+                                        </td>
+                                        <td class="col-md-6"  valign="top" width="35%" >
+                                                <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
+                                                    <tfoot>
+                                                        <tr>
+                                                            <td class="text-right"><strong>SubTotal</strong></td>
+                                                            <td class="text-right">{{number_format($Invoice->SubTotal,$Account->RoundChargesAmount)}}</td>
+                                                        </tr>
+                                                        @if(count($InvoiceTaxRates))
+                                                        @foreach($InvoiceTaxRates as $InvoiceTaxRate)
+                                                        <tr>
+                                                                <td class="text-right"><strong>{{$InvoiceTaxRate->Title}}</strong></td>
+                                                                <td class="text-right">{{number_format($InvoiceTaxRate->TaxAmount,$Account->RoundChargesAmount)}}</td>
+                                                        </tr>
+                                                        @endforeach
+                                                        @endif
+                                                        @if($Invoice->TotalDiscount > 0)
+                                                        <tr>
+                                                                <td class="text-right"><strong>Discount</strong></td>
+                                                                <td class="text-right">{{number_format($Invoice->TotalDiscount,$Account->RoundChargesAmount)}}</td>
+                                                        </tr>
+                                                        @endif
+                                                        <tr>
+                                                                <td class="text-right"><strong>Invoice Total ({{$CurrencyCode}})</strong></td>
+                                                                <td class="text-right">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}} </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                                </br>
+                                </br>
+                                </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <br><br><br>
+<div class="page_break"> </div>
+<br/><br/><br/>
+<h5>Usage Charges</h5>
+<table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
+        <thead>
+        <tr>
+            <th style="text-align: center;">Title</th>
+            <th style="text-align: center;">Description</th>
+            <th style="text-align: center;">Price</th>
+            <th style="text-align: center;">Quantity</th>
+            <th style="text-align: center;">Date From</th>
+            <th style="text-align: center;">Date To</th>
+            <th style="text-align: center;">Line Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach($InvoiceDetail as $ProductRow)
+        @if($ProductRow->ProductType == \App\Lib\Product::USAGE)
+        <tr>
+            <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+            <td class="text-center">{{$ProductRow->Description}}</td>
+            <td class="text-center">{{number_format($ProductRow->Price,$Account->RoundChargesAmount)}}</td>
+            <td class="text-center">{{$ProductRow->Qty}}</td>
+            <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+            <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+            <td class="text-center">{{number_format($ProductRow->LineTotal,$Account->RoundChargesAmount)}}</td>
+        </tr>
+        @endif
+        @endforeach
+        </tbody>
+    </table>
+    @if($is_sub == true)
+    <br /> 
+    <h5>Subscription Charges</h5>
+    <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
+            <thead>
+            <tr>
+                <th style="text-align: center;">Title</th>
+                <th style="text-align: center;">Description</th>
+                <th style="text-align: center;">Price</th>
+                <th style="text-align: center;">Quantity</th>
+                <th style="text-align: center;">Date From</th>
+                <th style="text-align: center;">Date To</th>
+                <th style="text-align: center;">Line Total</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($InvoiceDetail as $ProductRow)
+            @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION)
+            <tr>
+                <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+                <td class="text-center">{{$ProductRow->Description}}</td>
+                <td class="text-center">{{number_format($ProductRow->Price,$Account->RoundChargesAmount)}}</td>
+                <td class="text-center">{{$ProductRow->Qty}}</td>
+                <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                <td class="text-center">{{number_format($ProductRow->LineTotal,$Account->RoundChargesAmount)}}</td>
+            </tr>
+            @endif
+            @endforeach
+            </tbody>
+        </table>
+    @endif
+    @if($is_charge == true)
+        <br />
+        <h5> Additional Charges </h5>
+        <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
+                <thead>
+                <tr>
+                    <th style="text-align: center;">Title</th>
+                    <th style="text-align: center;">Description</th>
+                    <th style="text-align: center;">Price</th>
+                    <th style="text-align: center;">Quantity</th>
+                    <th style="text-align: center;">Date</th>
+                    <th style="text-align: center;">Line Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($InvoiceDetail as $ProductRow)
+                @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE)
+                <tr>
+                    <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+                    <td class="text-center">{{$ProductRow->Description}}</td>
+                    <td class="text-center">{{number_format($ProductRow->Price,$Account->RoundChargesAmount)}}</td>
+                    <td class="text-center">{{$ProductRow->Qty}}</td>
+                    <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                    <td class="text-center">{{number_format($ProductRow->LineTotal,$Account->RoundChargesAmount)}}</td>
+                </tr>
+                @endif
+                @endforeach
+                </tbody>
+            </table>
+        @endif
+
+     @if(count($usage_data) > 0 && $Account->CDRType != \App\Lib\Account::NO_CDR)
+             <br><br><br>
+              <div class="page_break"></div>
+               <br />
+               <br />
+
+
+                     <h2 class="text-center">Usage</h2>
+                     @if($Account->CDRType == \App\Lib\Account::SUMMARY_CDR)
+                     <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
+                          <tr>
+                             <th class="text-center" width="10%">Trunk</th>
+                             <th width="10%">Prefix</th>
+                             <th width="10%">Country</th>
+                             <th width="20%">Description</th>
+                             <th width="10%">No. of Calls</th>
+                             <th width="10%">Duration<br>mm:ss</th>
+                             <th class="text-center" width="10%">Billed Duration<br>mm:ss</th>
+                             <th class="text-center" width="10%">Charged Amount</th>
+                         </tr>
+                              <?php
+                                 $totalCalls=0;
+                                 $totalDuration=0;
+                                 $totalBillDuration=0;
+                                 $totalTotalCharges=0;
+                             ?>
+                             @foreach($usage_data as $row)
+                             <?php
+                                 $totalCalls  += $row['NoOfCalls'];
+                                 if(strpos($row['Duration'],":")){
+                                     $_Duration = explode(":",$row['Duration']);
+                                     $totalDuration  += $_Duration[0]*60 + $_Duration[1];
+                                 }else{
+                                     $totalDuration  += $row['Duration'];
+                                 }
+                                 if(strpos($row['BillDuration'],":")){
+                                     $_BillDuration = explode(":",$row['BillDuration']);
+                                     $totalBillDuration  +=  $_BillDuration[0]*60 + $_BillDuration[1];
+                                 }else{
+                                     $totalBillDuration  += $row['BillDuration'];
+                                 }
+                                 $totalTotalCharges  += $row['TotalCharges'];
+                             ?>
+                                 <tr>
+                                 <td class="text-center">{{$row['Trunk']}}</td>
+                                 <td>{{$row['AreaPrefix']}}</td>
+                                 <td>{{$row['Country']}}</td>
+                                 <td>{{$row['Description']}}</td>
+                                 <td>{{$row['NoOfCalls']}}</td>
+                                 <td>{{$row['Duration']}}</td>
+                                 <td class="text-center">{{$row['BillDuration']}}</td>
+                                 <td class="text-center">{{$row['TotalCharges']}}</td>
+                                </tr>
+                             @endforeach
+                             <?php
+                             $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
+                             $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
+                             ?>
+                              <tr>
+                                 <th class="text-right" colspan="4"><strong>Total</strong></th>
+                                 <th>{{$totalCalls}}</th>
+                                 <th>{{$totalDuration}}</th>
+                                 <th class="text-center">{{$totalBillDuration}}</th>
+                                 <th class="text-center">{{$totalTotalCharges}}</th>
+                             </tr>
+                      </table>
+                     @endif
+
+
+                     @if($Account->CDRType == \App\Lib\Account::DETAIL_CDR)
+                     <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
+                          <tr>
+                             <th class="text-center" width="10%">Prefix</th>
+                             <th width="10%">Cli</th>
+                             <th width="20%">Cld</th>
+                             <th width="10%">Connect Time</th>
+                             <th width="10%">Disconnect Time</th>
+                             <th class="text-center" width="10%">Duration</th>
+                             <th class="text-center" width="10%">Charged Amount</th>
+                         </tr>
+                              <?php
+                                 $totalBillDuration=0;
+                                 $totalTotalCharges=0;
+                             ?>
+                             @foreach($usage_data as $row)
+                             <?php
+                                 $totalBillDuration  +=  $row['billed_duration'];
+                                 $totalTotalCharges  += $row['cost'];
+                             ?>
+                             <tr>
+                             <td class="text-center">{{$row['area_prefix']}}</td>
+                             <td>{{$row['cli']}}</td>
+                             <td>{{$row['cld']}}</td>
+                             <td>{{$row['connect_time']}}</td>
+                             <td>{{$row['disconnect_time']}}</td>
+                             <td class="text-center">{{$row['billed_duration']}}</td>
+                             <td class="text-center">{{ number_format($row['cost'],$Account->RoundChargesAmount)}}</td>
+                             </tr>
+                             @endforeach
+                              <tr>
+                              <th class="text-right" colspan="5"><strong>Total</strong></th>
+                              <th class="text-center">{{$totalBillDuration}}</th>
+                              <th class="text-center">{{number_format($totalTotalCharges,$Account->RoundChargesAmount)}}</th>
+                              </tr>
+                      </table>
+                     @endif
+
+
+              @endif
+
+
+ @stop

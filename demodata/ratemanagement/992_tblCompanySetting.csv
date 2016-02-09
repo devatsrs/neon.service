@@ -1,0 +1,11 @@
+﻿CompanyID,Key,Value
+2,LastAccountNo,1057
+2,BillingTimezone,Europe/London
+2,CDRType,1
+2,RoundChargesAmount,2
+2,PaymentDueInDays,2
+2,BillingCycleType,weekly
+2,BillingCycleValue,monday
+2,InvoiceTemplateID,3
+2,RateGenerationEmail,"abubakar@code-desk.com,girish.vadher@code-desk.com"
+2,InvoiceGenerationEmail,

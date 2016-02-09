@@ -1,0 +1,8 @@
+PaymentID,CompanyID,AccountID,InvoiceNo,PaymentDate,PaymentMethod,Currency,PaymentType,Notes,Amount,Status,created_at,updated_at,ModifyBy,CreatedBy,PaymentProof
+8,3,an-telecom,INV-23,"convert(varchar,DATEADD(dd, -2, GETDATE()),120)'",PAYPAL,USD,Payment Out,,400,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+10,3,an-telecom,INV-22,"convert(varchar,DATEADD(dd, -2, GETDATE()),120)'",BANK TRANSFER,USD,Payment Out,,450,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+11,3,an-telecom,INV-21,"convert(varchar,DATEADD(dd, -2, GETDATE()),120)'",BANK TRANSFER,USD,Payment Out,,4500,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+12,3,an-telecom,,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",CHEQUE,USD,Payment Out,Utilities,100,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+17,3,an-telecom,4444,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",CREDIT CARD,USD,Payment In,,75,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+18,3,an-telecom,4445,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",CASH,USD,Payment In,,75,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL
+19,3,an-telecom,4446,"convert(varchar,DATEADD(dd, -1, GETDATE()),120)'",CASH,USD,Payment In,,60,Approved,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",,NEONSOFTSystem,NULL

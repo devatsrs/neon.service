@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+HOME=/
+* * * * * php /var/www/html/neon-service-branch/dev-mysql/service/RMService/artisan neonservice
+# place this file in /etc/cron.d

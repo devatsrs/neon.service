@@ -1,0 +1,3 @@
+RateTableId,CompanyId,CodeDeckId,RateTableName,RateGeneratorID,TrunkID,Status,created_at,CreatedBy,updated_at,ModifiedBy
+19,1,CustomerCodedeck,A-Z GOLD,PREMIUM,GOLD,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",NULL
+21,1,CustomerCodedeck,Retail A-Z GOLD ,Gold,GOLD,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",NULL

@@ -1,0 +1,7 @@
+InvoiceDetailID,InvoiceID,ProductID,Description,Price,Qty,Discount,TaxRateID,TaxAmount,LineTotal,CreatedBy,ModifiedBy,created_at,updated_at,StartDate,EndDate
+16,INV-23,0,Invoice In,400,1,NULL,NULL,0,400,NEONSOFTSystem,NULL,GETDATE(),NULL,"convert(varchar,DATEADD(dd, -20 ,GETDATE()),120)'","convert(varchar,DATEADD(dd, -5, GETDATE()),120)'"
+15,INV-22,0,Invoice In,450,1,NULL,NULL,0,450,NEONSOFTSystem,NULL,GETDATE(),NULL,"convert(varchar,DATEADD(dd, -20 ,GETDATE()),120)'","convert(varchar,DATEADD(dd, -5, GETDATE()),120)'"
+14,INV-21,0,Invoice In,4500,1,NULL,NULL,0,4500,NEONSOFTSystem,NULL,GETDATE(),NULL,"convert(varchar,DATEADD(dd, -20 ,GETDATE()),120)'","convert(varchar,DATEADD(dd, -5, GETDATE()),120)'"
+20,4444,sippy softphone,ssp,15,5,0,0,0,75,NEONSOFTSystem,NULL,GETDATE(),NULL,1/1/1900 0:00,1/1/1900 0:00
+21,4445,sippy softphone,ssp,15,5,0,0,0,75,NEONSOFTSystem,NULL,GETDATE(),NULL,1/1/1900 0:00,1/1/1900 0:00
+22,4446,sippy softphone,ssp,15,4,0,0,0,60,NEONSOFTSystem,NULL,GETDATE(),NULL,1/1/1900 0:00,1/1/1900 0:00

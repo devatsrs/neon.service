@@ -1,0 +1,2 @@
+TaxRateId,CompanyId,Title,Amount,Status,created_at,created_by,updated_at,updated_by
+2,1,VAT 20%,20,1,"'convert(varchar,GETDATE(),120)'",NULL,"'convert(varchar,GETDATE(),120)'",NULL

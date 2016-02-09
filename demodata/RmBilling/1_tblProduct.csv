@@ -1,0 +1,7 @@
+ProductID,CompanyID,Name,Description,Amount,CreatedBy,ModifiedBy,created_at,updated_at,Code,Active,Note
+2,1,IP Phone,IP Phone,10,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",IPP,0,
+9,1,sippy softphone,ssp,15,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",ssp,1,
+10,1,Yealink T19 PN,Yealink new phone.,54.25,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",YT19PN,1,
+11,1,Yealink T20 PN,Yealink new phones offering freat features.,99.32,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",YealinkT20pn,1,
+12,1,Yealink T41 PN,YT41PN,80,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",YT41PN,1,
+13,1,Yealink T46GN,T46GN,140,ali imran,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",T46GN,1,

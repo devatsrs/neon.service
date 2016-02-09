@@ -1,0 +1,3 @@
+RateGeneratorId,CompanyID,CodeDeckId,RateGeneratorName,TrunkID,RatePosition,RateTableId,UseAverage,Sources,Status,created_at,CreatedBy,updated_at,ModifiedBy
+1,1,CustomerCodedeck,ICC GOLD,GOLD,2,NULL,0,All,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,NULL
+2,1,CustomerCodedeck,ICC SILVER,SILVER,3,NULL,1,All,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,NULL

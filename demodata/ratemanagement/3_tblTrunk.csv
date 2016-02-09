@@ -1,0 +1,4 @@
+TrunkID,Trunk,CompanyId,RatePrefix,AreaPrefix,Prefix,Status,created_at,updated_at
+1,GOLD,1,2222,NULL,2222,1,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'"
+2,SILVER,1,NULL,0,0,1,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'"
+3,PLATINUM,1,NULL,NULL,NULL,1,"convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'"

@@ -1,0 +1,5 @@
+CurrencyId,CompanyId,Code,Description,Status,created_at,CreatedBy,updated_at,ModifiedBy
+2,1,GBP,Great Britain Pound,1,"'convert(varchar,GETDATE(),120)'",sa,"'convert(varchar,GETDATE(),120)'",NULL
+3,1,USD,United States Dollars,1,"'convert(varchar,GETDATE(),120)'",sa,"'convert(varchar,GETDATE(),120)'",NULL
+4,1,AED,Dhirams,1,"'convert(varchar,GETDATE(),120)'",sa,"'convert(varchar,GETDATE(),120)'",NULL
+5,1,EUR,EUR,1,"'convert(varchar,GETDATE(),120)'",sa,"'convert(varchar,GETDATE(),120)'",NULL

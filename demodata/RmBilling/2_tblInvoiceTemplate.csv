@@ -1,0 +1,2 @@
+InvoiceTemplateID,Name,CompanyID,InvoiceStartNumber,CompanyLogoAS3Key,CompanyLogoUrl,Pages,Header,Footer,Terms,Status,CreatedBy,ModifiedBy,created_at,updated_at,InvoicePages,InvoiceNumberPrefix,LastInvoiceNumber
+2,DemoInvoiceTemplate,3,4444,1/InvoiceCompanyLogos/2015/04/15/invoicetemplate1_48F2D235-D987-0BCD-DE89-4B4818AF84BB.jpg,https://s3-us-west-2.amazonaws.com/ratemanagement.staging/1/InvoiceCompanyLogos/2015/04/15/invoicetemplate1_48F2D235-D987-0BCD-DE89-4B4818AF84BB.jpg,NULL,NULL,NULL,NULL,0,NULL,NEONSOFTSystem,"'convert(varchar,GETDATE(),120)'",,single,NULL,10000

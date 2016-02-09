@@ -1,0 +1,16 @@
+RateTableRateID,RateID,RateTableId,Rate,EffectiveDate,created_at,updated_at,CreatedBy,ModifiedBy,PreviousRate,Interval1,IntervalN
+59151,1242359,A-Z GOLD,0.000112,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.000112,1,1
+59152,1242357,A-Z GOLD,0.000112,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.000112,1,1
+59153,1242,A-Z GOLD,0.000112,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.000112,1,1
+59154,1242359,A-Z GOLD,0.000112,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.000112,1,1
+59155,1242357,A-Z GOLD,0.000112,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.000112,1,1
+59156,1242,A-Z GOLD,0.006691,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006691,1,1
+59157,1242359,A-Z GOLD,0.006757,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006757,1,1
+59158,1242357,A-Z GOLD,0.006757,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006757,1,1
+59159,1242,A-Z GOLD,0.006757,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006757,1,1
+59160,1242359,A-Z GOLD,0.006757,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006757,1,1
+59161,1242357,A-Z GOLD,0.006757,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.006757,1,1
+59162,1242,Retail A-Z GOLD ,0.011198,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.011198,1,1
+59163,1242359,Retail A-Z GOLD ,0.011198,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.011198,1,1
+59164,1242357,Retail A-Z GOLD ,0.011198,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.011198,1,1
+59165,1242,Retail A-Z GOLD ,0.011165,"convert(varchar,DATEADD(dd, -7, GETDATE()),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem,NULL,0.011165,1,1

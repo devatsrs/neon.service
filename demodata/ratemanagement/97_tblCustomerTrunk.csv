@@ -1,0 +1,11 @@
+CustomerTrunkID,RateTableID,CompanyID,CodeDeckId,AccountID,TrunkID,Prefix,IncludePrefix,Status,created_at,CreatedBy,updated_at,ModifiedBy,RoutinePlanStatus,CompanyGatewayIDs,RateTableAssignDate
+2100,0,3,CustomerCodedeck,an-telecom,GOLD,22222,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2101,0,3,CustomerCodedeck,an-telecom,SILVER,22223,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2102,0,3,CustomerCodedeck,kia-connect,GOLD,22224,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2103,0,3,CustomerCodedeck,kia-connect,SILVER,22225,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2104,0,3,CustomerCodedeck,larance,GOLD,22226,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2105,0,3,CustomerCodedeck,larance,SILVER,22227,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2106,0,3,CustomerCodedeck,emer-com,GOLD,22228,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2107,0,3,CustomerCodedeck,emer-com,SILVER,22229,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2108,0,3,CustomerCodedeck,fortress,GOLD,22230,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL
+2109,0,3,CustomerCodedeck,fortress,SILVER,22231,0,1,"'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL,,0,NULL,NULL

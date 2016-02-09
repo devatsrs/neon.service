@@ -1,0 +1,238 @@
+<?php namespace App\Console\Commands;
+
+use App\Lib\Account;
+use App\Lib\CompanySetting;
+use App\Lib\Invoice;
+use App\Lib\InvoiceDetail;
+use App\Lib\Job;
+use App\Lib\Product;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Input\InputArgument;
+use Webpatser\Uuid\Uuid;
+
+class RegenerateInvoice extends Command {
+
+	/**
+	 * The console command name.
+	 *
+	 * @var string
+	 */
+	protected $name = 'regenerateinvoice';
+
+	/**
+	 * The console command description.
+	 *
+	 * @var string
+	 */
+	protected $description = 'Command description.';
+
+	/**
+	 * Create a new command instance.
+	 *
+	 * @return void
+	 */
+
+	public function __construct()
+	{
+		parent::__construct();
+	}
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['JobID', InputArgument::REQUIRED, 'Argument JobID '],
+        ];
+    }
+
+	/**
+	 * Execute the console command.
+	 *
+	 * @return mixed
+	 */
+    public function fire()
+    {
+        $arguments = $this->argument();
+        $getmypid = getmypid(); // get proccess id added by abubakar
+        $CompanyID = $arguments["CompanyID"];
+        $JobID = $arguments["JobID"];
+        $errors = array();
+        $message = array();
+        $jobdata = array();
+
+        $job = Job::find($JobID);
+        $joboptions = json_decode($job->Options);
+        $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+        $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
+        $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
+        $ProcessID = Uuid::generate();
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
+        Log::useFiles(storage_path() . '/logs/regenerateinvoice-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
+
+        try {
+
+            if (isset($joboptions->InvoiceIDs)) {
+
+                $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
+
+                if (count($InvoiceIDs) > 0) {
+
+                    foreach ($InvoiceIDs as $InvoiceID) {
+                        $Invoice = Invoice::find($InvoiceID);
+                        if(!empty($Invoice)){
+
+                        $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
+                        $Account = Account::find((int)$Invoice->AccountID);
+                        $AccountID = $Account->AccountID;
+
+                        try {
+
+                            DB::beginTransaction();
+                            DB::connection('sqlsrv2')->beginTransaction();
+
+
+                            $hasUsageInInvoice =  InvoiceDetail::where("InvoiceID",$InvoiceID)
+                                ->Where(function($query)
+                                {
+                                    $query->where("ProductType",Product::USAGE)
+                                        ->orWhere("ProductType",Product::SUBSCRIPTION);
+                                })->count();
+
+                            if($hasUsageInInvoice == 0){
+
+                                $errors[] = $Account->AccountName .' ' . ' Invoice has no usage or Subscription';
+
+                                DB::commit();
+                                DB::connection('sqlsrv2')->commit();
+
+                            }else {
+
+
+                                if (!empty($Invoice) && !empty($InvoiceDetail)) {
+
+                                    $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
+
+
+                                    if (strtotime($EndDate) <= strtotime(date("Y-m-d"))) {
+
+                                        Log::info(' ========================== Invoice Send Start =============================');
+
+                                        $response = Invoice::regenerateInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceGenerationEmail,$ProcessID,$JobID);
+
+                                        if (isset($response["status"]) && $response["status"] == 'success') {
+
+                                            Log::info('Invoice created - ' . print_r($response, true));
+                                            $message[] = $response["message"];
+
+                                        } else {
+
+                                            $errors[] = $response["message"];
+                                            DB::rollback();
+                                            DB::connection('sqlsrv2')->rollback();
+                                            Log::info(' ========================== Error  =============================');
+                                            Log::info('Invoice with Error - ' . print_r($response, true));
+
+                                            continue;
+
+                                        }
+
+                                        if (count($errors) == 0) {
+
+                                            Log::info('Invoice Commited  AccountID = ' . $AccountID);
+
+                                            DB::commit();
+                                            DB::connection('sqlsrv2')->commit();
+                                        }
+                                    }
+                                }
+                            }
+
+                            Log::error(' ========================== Invoice Send End =============================');
+
+
+                        } catch (\Exception $e) {
+
+                            try {
+
+                                Log::error('Invoice Rollback InvoiceID = ' . $InvoiceID);
+                                DB::rollback();
+                                DB::connection('sqlsrv2')->rollback();
+                                Log::error($e);
+
+                                $errors[] = $e->getTraceAsString();
+
+
+                            } catch (\Exception $err) {
+                                Log::error($err);
+                                $errors[] = $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                            }
+
+                        }}else{
+                            $errors[] = 'Invoice ID Not Found '.$InvoiceID;
+                        }
+                    } //loop over
+
+
+                    Log::error(' ========================== Invoice Send Loop End =============================');
+
+                    Log::error('count($errors) '.count($errors));
+
+                   if (count($errors) > 0) {
+                       if (count($errors) >= count($InvoiceIDs) ) {
+                           $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                       }else{
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
+                       }
+                       $jobdata['JobStatusMessage'] = 'Skipped account: ' . implode(',\n\r', $errors);
+
+                    }else if(count($message)){
+
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
+                        $jobdata['JobStatusMessage'] = 'Invoice Recreated Successfully' . implode(',\n\r', $message);
+                    }
+
+                    Log::error('jobdata '.$JobID . print_r($jobdata,true));
+
+                    $jobdata['ModifiedBy'] = 'RMScheduler';
+                    $job = Job::find($JobID);
+                    $job->update($jobdata);
+                    Job::send_job_status_email($job, $CompanyID);
+                    Log::info(' ========================== Job Updated =============================');
+
+
+                }
+            }
+
+        } catch (\Exception $e) {
+
+            try {
+                Log::info(' ========================== Exception occured =============================');
+                Log::error($e);
+                if ($JobID > 0) {
+                    $job = Job::find($JobID);
+                    $JobStatusMessage = $job->JobStatusMessage;
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getTraceAsString();
+                    Job::where(["JobID" => $JobID])->update($jobdata);
+                    $job = Job::find($JobID);
+                    Job::send_job_status_email($job, $CompanyID);
+                    Log::info(' ========================== Exception updated in job and email sent =============================');
+                }
+
+                Log::info(' =======================================================');
+
+            } catch (\Exception $err) {
+                Log::error($err);
+            }
+
+        }
+    }
+
+}

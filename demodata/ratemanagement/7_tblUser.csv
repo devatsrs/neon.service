@@ -1,0 +1,6 @@
+UserID,CompanyID,FirstName,LastName,EmailAddress,password,AdminUser,AccountingUser,Status,Roles,remember_token,updated_at,created_at,created_by,updated_by
+1,1,ali,imran,ali@iccnetworks.com,123,1,1,1,Admin,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+2,1,babar,zaheer,babar@iccnetworks.com,123,1,1,1,"Admin,Billing Admin",NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+3,1,danish,zain,danish@iccnetworks.com,123,1,0,1,"Admin,Rate Manager",NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NEONSOFTSystem
+25,1,farakh,riaz,farakh@iccnetworks.com,123,1,0,1,Rate Manager,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL
+26,1,hasan,saeed,hasan@iccnetworks.com,123,1,1,0,Admin,NULL,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NEONSOFTSystem,NULL

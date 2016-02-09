@@ -1,0 +1,2 @@
+SubscriptionID,CompanyID,Name,Description,PeriodicFee,FeePeriod,CurrencyID,InvoiceLineDescription,ActivationFee,RoundChargedAmount,SubscriptionChargesApplied,created_at,updated_at,ModifiedBy,CreatedBy
+1,2,Internet,Broadband,40,Monthly,USD,Broadband,10,2,after_billing_period,"'convert(varchar,GETDATE(),120)'","'convert(varchar,GETDATE(),120)'",NULL,NEONSOFTSystem
