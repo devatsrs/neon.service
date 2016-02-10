@@ -8,7 +8,7 @@
     left: 0;
     right: 0;
     color: #aaa;
-    font-size: 0.9em;
+    font-size: 10px;
     text-align: center;
 }
 </style>
