@@ -39,7 +39,7 @@ return [
 	|
 	*/
 
-	'timezone' => env('APP_TIMEZONE'),
+	'timezone' => env('APP_TIMEZONE','Europe/London'),
 
 	/*
 	|--------------------------------------------------------------------------

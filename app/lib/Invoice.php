@@ -485,7 +485,8 @@ class Invoice extends \Eloquent {
 
                         if(empty($error)) {
 
-                            $status = self::EmailToCustomer($Account,$totals['TotalDue'],$Invoice,$InvoiceTemplate->InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
+                            $status = self::EmailToCustomer($Account,$totals['GrandTotal'],$Invoice,$InvoiceTemplate->InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
+
 
                             if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
                                 $error_1 = $status['message'];
@@ -990,7 +991,8 @@ class Invoice extends \Eloquent {
 
                         if(empty($error)) {
 
-                            $status = self::EmailToCustomer($Account,$totals['TotalDue'],$Invoice,$InvoiceTemplate->InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
+                            $status = self::EmailToCustomer($Account,$totals['GrandTotal'],$Invoice,$InvoiceTemplate->InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
+
 
                             if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
                                 $error_1 = $status['message'];
@@ -1017,7 +1019,8 @@ class Invoice extends \Eloquent {
         }
     }
 
-    public static  function EmailToCustomer($Account,$TotalDue,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID){
+    public static  function EmailToCustomer($Account,$GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID){
+
 
         $status = array();
         $errorslog = array();
@@ -1032,7 +1035,7 @@ class Invoice extends \Eloquent {
         $emaildata['data'] = array(
             'InvoiceNumber' => $_InvoiceNumber,
             'CompanyName' => $CompanyName,
-            'InvoiceGrandTotal' => $TotalDue,
+            'InvoiceGrandTotal' => $GrandTotal,
             'CurrencyCode' => $CurrencyCode,
             'InvoiceLink' => getenv("WEBURL") . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
         );
@@ -1064,7 +1067,8 @@ class Invoice extends \Eloquent {
 
         /** Email to Customer * */
         // Send only When Auto Invoice is On and GrandTotal is set.
-        if( getenv('EmailToCustomer') == 1  && $Account->SendInvoiceSetting == 'automatically' && $TotalDue > 0 ) {
+        if( getenv('EmailToCustomer') == 1  && $Account->SendInvoiceSetting == 'automatically' && $GrandTotal > 0 ) {
+
 
             $CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';

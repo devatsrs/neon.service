@@ -157,7 +157,7 @@ class ImportSummeryData extends Command {
                             $tempItemData['TotalCharge'] = number_format(str_replace(",", "", $temp_row['charged_amount']), 8 , "." , "" );
                         }
                         if (isset($temp_row['customer_name']) && !empty($temp_row['customer_name']) && isset($temp_row['charged_amount']) && isset($temp_row['charged_amount'])) {
-                            Log::error($tempItemData);
+                            //Log::error($tempItemData);
                             SummeryData::create($tempItemData);
                             Log::error($lineno . ' line no. Inserted ');
                         } else {
@@ -174,14 +174,7 @@ class ImportSummeryData extends Command {
                 }
 
             }
-           $query  = " UPDATE tblSummeryData
-			SET AccountID = a.AccountID
-	    FROM tblSummeryData ga
 
-                LEFT JOIN Ratemanagement3.dbo.tblAccount a
-                    ON a.AccountName + '-' + convert(varchar(max),a.Number) = ga.GatewayAccountID
-                    AND a.Status = 1 and a.IsCustomer =1 and a.CompanyID = 1 and ga.CompanyID = 1 ";
-            DB::connection('sqlsrv2')->statement($query);
         }catch (\Exception $ex){
 
             Log::error($ex);
