@@ -103,7 +103,6 @@ class PaymentsUpload extends Command
                 $batchinsert= [];
                 foreach($results as $row){
                     $batchinsert[$counter] = array('CompanyID'=>$CompanyID,
-                        'ProcessID'=>$ProcessID,
                         'AccountID'=>$Accounts[$row['Account Name']],
                         'PaymentDate'=>$row['Payment Date'],
                         'PaymentMethod'=>$row['Payment Method'],
