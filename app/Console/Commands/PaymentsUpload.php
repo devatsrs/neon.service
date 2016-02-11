@@ -12,6 +12,7 @@ use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\Payment;
+use App\Lib\User;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
