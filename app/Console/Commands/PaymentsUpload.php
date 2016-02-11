@@ -94,6 +94,7 @@ class PaymentsUpload extends Command
                         $jobfile->FilePath = $path;
                     }
                 }
+                Config::set('excel.import.heading','original');
                 $results =  Excel::load($jobfile->FilePath, function ($reader){
                     $reader->formatDates(true, 'Y-m-d');
                 })->get();
