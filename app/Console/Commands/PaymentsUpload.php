@@ -108,7 +108,10 @@ class PaymentsUpload extends Command
                         'PaymentMethod'=>$row['Payment Method'],
                         'PaymentType'=>$row['Action'],
                         'Amount'=>$row['Amount'],
-                        'Notes'=>$row['Note']);
+                        'Notes'=>$row['Note'],
+                        'Status'=>'Pending Approval',
+                        'CreatedBy'=>$user->FirstName.' '.$user->LastName,
+                        'created_at'=>DB::raw('Now()'));
                     $counter++;
                 }
                 if(Payment::insert($batchinsert)){
