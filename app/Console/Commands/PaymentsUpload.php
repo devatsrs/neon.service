@@ -70,6 +70,12 @@ class PaymentsUpload extends Command
         $ProcessID = Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
+        $where = ['CompanyId'=>$CompanyID];
+        $user = User::find($job->JobLoggedUserID);
+        if($user->AdminUser!=1){
+            $where['Owner']=$job->JobLoggedUserID;
+        }
+        $Accounts = Account::where($where)->select(['AccountName','AccountID'])->lists('AccountID','AccountName');
         Log::useFiles(storage_path() . '/logs/paymentsfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
             if (!empty($job)) {
@@ -90,7 +96,20 @@ class PaymentsUpload extends Command
                     $reader->formatDates(true, 'Y-m-d');
                 })->get();
                 $results = json_decode(json_encode($results), true);
-                if(Payment::insert($results)){
+                $counter = 0;
+                $batchinsert= [];
+                foreach($results as $row){
+                    $batchinsert[$counter] = array('CompanyID'=>$CompanyID,
+                        'ProcessID'=>$ProcessID,
+                        'AccountID'=>$Accounts[$row['Account Name']],
+                        'PaymentDate'=>$row['Payment Date'],
+                        'PaymentMethod'=>$row['Payment Method'],
+                        'PaymentType'=>$row['Action'],
+                        'Amount'=>$row['Amount'],
+                        'Notes'=>$row['Note']);
+                    $counter++;
+                }
+                if(Payment::insert($batchinsert)){
                     $jobdata['JobStatusMessage'] = 'Payments inserted successfully';
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                 }else{
