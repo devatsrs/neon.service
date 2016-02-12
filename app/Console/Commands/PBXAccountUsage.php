@@ -131,6 +131,7 @@ class PBXAccountUsage extends Command
                     //$data['AccountID'] = $rowdata->AccountID;
                     $data['trunk'] = 'Other';
                     $data['area_prefix'] = 'Other';
+                    $data['pincode'] = $row_account['pincode'];
                     $data['ProcessID'] = $processID;
                     $data['ID'] = $row_account['ID'];
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");

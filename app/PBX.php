@@ -53,7 +53,7 @@ class PBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc,c.accountcode,c.firstdst,c.lastdst,cc.cc_cost from asteriskcdrdb.cdr c
+                $query = "select c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc,c.accountcode,c.firstdst,c.lastdst,cc.cc_cost,c.pincode from asteriskcdrdb.cdr c
 inner join asterisk.cc_callcosts cc on cc.cc_uniqueid = c.uniqueid
  where `start` >= '".$addparams['start_date_ymd']."' and `end` < '".$addparams['end_date_ymd']."'
 and userfield like '%outbound%' ";
