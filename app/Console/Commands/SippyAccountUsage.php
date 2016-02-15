@@ -74,7 +74,7 @@ class SippyAccountUsage extends Command
         $dataactive['PID'] = $getmypid;
         $CronJob->update($dataactive);
         $processID = Uuid::generate();
-        $data_count = 0;
+        $data_count =$totaldata_count = 0;
         $insertLimit = 1000;
 
 
@@ -173,6 +173,7 @@ class SippyAccountUsage extends Command
                                 $data_count = 0;
                             }
                             $data_count++;
+                            $totaldata_count++;
                         } // loop over
                         if(!empty($InserData)){
                             DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
@@ -215,7 +216,7 @@ class SippyAccountUsage extends Command
 
                 DB::connection('sqlsrvcdrazure')->commit();
                 DB::connection('sqlsrv2')->commit();
-                $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 $joblogdata['Message'] .= "CDR StartTime " . $addparam['start_date'] . " - End Time " . $addparam['end_date'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,$end_time);
