@@ -76,6 +76,8 @@ class CompanyGateway extends \Eloquent {
                                     `billed_duration` INT(11) NULL DEFAULT NULL,
                                     `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `pincode` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `extension` VARCHAR(50) NULL DEFAULT NULL ,
                                     `cli` VARCHAR(500) NULL DEFAULT NULL ,
                                     `cld` VARCHAR(500) NULL DEFAULT NULL ,
                                     `cost` DOUBLE NULL DEFAULT NULL,
