@@ -33,7 +33,7 @@ class TempUsageDetail extends \Eloquent {
 
         // Update  tblGatewayAccount
         Log::error(' prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'','1')"); // Procedure Updated - 05-10-2015
+        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1')"); // Procedure Updated - 05-10-2015
         Log::error(' prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
 
 

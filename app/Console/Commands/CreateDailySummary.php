@@ -73,8 +73,13 @@ class CreateDailySummary extends Command{
             CronJob::createLog($CronJobID);
             Log::useFiles(storage_path() . '/logs/createdailysummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
+            //Update tblUsageHeader
             DB::connection('sqlsrv2')->statement('CALL  prc_setAccountID(' . $CompanyID . ")");
 
+            //Update tblVendorCDRHeader
+            Log::error('Start CALL  prc_setVendorAccountID(' . $CompanyID.")");
+            DB::connection('sqlsrv2')->statement('CALL  prc_setVendorAccountID(' . $CompanyID.")");
+            Log::error('End  CALL  prc_setVendorAccountID(' . $CompanyID.")");
             $UsageHeaders = TempUsageDownloadLog::where(array('DailySummaryStatus'=>0,'CompanyID'=>$CompanyID))->select(["TempUsageDownloadLogID","CompanyID","CompanyGatewayID","ProcessID"])->take(5)->get();
             //$UsageHeaders = UsageHeader::where(array('DailySummaryStatus'=>1,'CompanyID'=>$CompanyID))->select(["CompanyID","CompanyGatewayID","UsageHeaderID"])->get();
             foreach ($UsageHeaders as $UsageHeader) {

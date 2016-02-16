@@ -14,39 +14,28 @@ class TempVendorCDR extends \Eloquent {
 
     protected  $primaryKey = "TempVendorCDRID";
 
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable){
         $skiped_account_data =array();
-        Log::error(' prc_insertGatewayVendorAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "')");
-        Log::error(' prc_insertGatewayVendorAccount end CompanyGatewayID = '.$CompanyGatewayID);
+        Log::error("start $CompanyGatewayID CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
+        DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
+        Log::error("end $CompanyGatewayID CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
 
 
         //Update tblGatewayAccount
-        Log::error(' prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount(' . $CompanyID . "," . $CompanyGatewayID." ,'','1')"); // Procedure Updated - 05-10-2015
-        Log::error(' prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
-
-        //Update tblVendorCDRHeader
-        Log::error(' prc_setVendorAccountID start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_setVendorAccountID(' . $CompanyID.")");
-        Log::error(' prc_setVendorAccountID end CompanyGatewayID = '.$CompanyGatewayID);
-
+        Log::error('start  prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
+        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount(' . $CompanyID . "," . $CompanyGatewayID." ,'0','1')"); // Procedure Updated - 05-10-2015
+        Log::error('end prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
 
         if($RateFormat == Company::PREFIX) {
-            Log::error(' prc_updateVendorPrefixTrunk start CompanyGatewayID = '.$CompanyGatewayID);
-            DB::connection('sqlsrv2')->statement("CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "')");
-            Log::error(' prc_updateVendorPrefixTrunk end CompanyGatewayID = '.$CompanyGatewayID);
+            Log::error("start CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "',,'".$tempVendortable."')");
+            DB::connection('sqlsrv2')->statement("CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "','".$tempVendortable."')");
+            Log::error("end CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "',,'".$tempVendortable."')");
         }
 
+        Log::error("start $CompanyGatewayID CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
+        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
+        Log::error("end $CompanyGatewayID CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
 
-        Log::error(' prc_setVendorAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL prc_setVendorAccountIDCDR('" . $CompanyID . "','" . $ProcessID . "')");
-        Log::error(' prc_setVendorAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
-
-
-        Log::error(' prc_insertTempVendorCDR  start');
-        DB::connection('sqlsrv2')->statement("CALL  prc_insertTempVendorCDR('" . $ProcessID . "')");
-        Log::error('prc_insertTempVendorCDR  end');
         return $skiped_account_data;
 
     }

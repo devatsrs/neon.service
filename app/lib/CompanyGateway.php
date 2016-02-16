@@ -62,8 +62,8 @@ class CompanyGateway extends \Eloquent {
         if(!empty($UniqueID)) {
             $tbltempusagedetail_name = self::getUsagedetailTablenameByUniqueID($UniqueID);
 
-            Log::error(' prc_create_tempusagedetail_table = ' . $tbltempusagedetail_name);
-            //DB::connection('sqlsrvcdr')->statement("CALL  prc_create_tempusagedetail_table ('" . $tbltempusagedetail_name . "')");
+            Log::error( $tbltempusagedetail_name);
+
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
@@ -91,16 +91,61 @@ class CompanyGateway extends \Eloquent {
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
 
-            Log::error(' prc_create_tempusagedetail_table done ');
+            Log::error(' done ');
 
             return $tbltempusagedetail_name;
         }
     }
 
-    public static function getUsagedetailTablenameByUniqueID($UniqueID){
-
+    public static function getUsagedetailTablenameByUniqueID($UniqueID,$vendor=0){
         $tblPrefix = "tblTempUsageDetail_";
+        if($vendor == 1){
+            $tblPrefix = "tblTempVendorCDR_";
+        }
         return $tbltempusagedetail_name  = $tblPrefix. $UniqueID;
 
+    }
+    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID){
+
+        $UniqueID = self::getUniqueID($CompanyGatewayID);
+
+        if( empty($UniqueID)){
+            $UniqueID = $CompanyID.$CompanyGatewayID;
+            CompanyGateway::where("CompanyGatewayID",$CompanyGatewayID)->update(["UniqueID"=>$UniqueID]);
+        }
+
+        if(!empty($UniqueID)) {
+            $tbltempusagedetail_name = self::getUsagedetailTablenameByUniqueID($UniqueID,1);
+
+            Log::error($tbltempusagedetail_name);
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
+            	`TempVendorCDRID` INT(11) NOT NULL AUTO_INCREMENT,
+                `CompanyID` INT(11) NULL DEFAULT NULL,
+                `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                `GatewayAccountID` VARCHAR(100) NULL DEFAULT NULL,
+                `AccountID` INT(11) NULL DEFAULT NULL,
+                `billed_duration` INT(11) NULL DEFAULT NULL,
+                `duration` INT(11) NULL DEFAULT NULL,
+                `ID` INT(11) NULL DEFAULT NULL,
+                `selling_cost` DOUBLE NULL DEFAULT NULL,
+                `buying_cost` DOUBLE NULL DEFAULT NULL,
+                `connect_time` DATETIME NULL DEFAULT NULL,
+                `disconnect_time` DATETIME NULL DEFAULT NULL,
+                `cli` VARCHAR(500) NULL DEFAULT NULL ,
+                `cld` VARCHAR(500) NULL DEFAULT NULL ,
+                `trunk` VARCHAR(50) NULL DEFAULT NULL ,
+                `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
+                `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
+                `ProcessID` VARCHAR(200) NULL DEFAULT NULL ,
+                 PRIMARY KEY (`TempVendorCDRID`),
+                 INDEX `IX_'.$tbltempusagedetail_name.'_CompanyID_CompanyGatewayID_ProcessID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`)
+                 )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
+            DB::connection('sqlsrvcdr')->statement($sql_create_table);
+
+            Log::error('done ');
+
+            return $tbltempusagedetail_name;
+        }
     }
 }
