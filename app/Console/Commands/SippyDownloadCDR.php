@@ -65,22 +65,22 @@ class SippyDownloadCDR extends Command {
         $dataactive['DownloadActive'] = 1;
         $CronJob->update($dataactive);
         $CompanyGatewayID =  $cronsetting->CompanyGatewayID;
-        Log::useFiles(storage_pathg().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+        Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
             Log::info("Start");
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
-            if (!file_exists(Config::get('app.sippy_location') .$CompanyGatewayID)) {
-                mkdir(Config::get('app.sippy_location') .$CompanyGatewayID, 0777, true);
+            if (!file_exists(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID)) {
+                mkdir(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID, 0777, true);
             }
             Log::info('sippy File download Count '.count($filenames));
             foreach($filenames as $filename) {
 
-                if(!file_exists(Config::get('app.sippy_location').$CompanyGatewayID.'/' . basename($filename))) {
+                if(!file_exists(getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/' . basename($filename))) {
                     $param = array();
                     $param['filename'] = $filename;
-                    $param['download_path'] = Config::get('app.sippy_location').$CompanyGatewayID.'/';
+                    $param['download_path'] = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/';
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $sippy->downloadCDR($param);
                     Log::info("SippySSH download file".$filename);

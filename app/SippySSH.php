@@ -15,7 +15,7 @@ class SippySSH{
     public static $vendor_cdr_file_name = "cdrs_connections-thrift.bin.";
 
     public function __construct($CompanyGatewayID){
-        $setting = GatewayAPI::getSetting($CompanyGatewayID,'SippyFile');
+        $setting = GatewayAPI::getSetting($CompanyGatewayID,'SippySFTP');
         foreach((array)$setting as $configkey => $configval){
             if($configkey == 'password'){
                 self::$config[$configkey] = Crypt::decrypt($configval);
@@ -80,8 +80,8 @@ class SippySSH{
         if($status== "progress-to-pending" ) {
             if( is_array($delete_files) && count($delete_files)>0) {
                 foreach ($delete_files as $filename) {
-                    $inproress_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $complete_name = str_replace('progress', 'pending', Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename));
+                    $inproress_name = SIPPY_LOCATION . $CompanyGatewayID . '/' . basename($filename);
+                    $complete_name = str_replace('progress', 'pending', getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename));
                     rename($inproress_name, $complete_name);
                     Log::info('progress-to-pending ' . $complete_name);
 
@@ -91,9 +91,9 @@ class SippySSH{
         if($status== "pending-to-progress" ) {
             if($isSingle == true && is_string($delete_files) ){
                 $filename = $delete_files;
-                $inproress_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename);
+                $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
                 $complete_file_name = str_replace('pending', 'progress', basename($filename));
-                $complete_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . $complete_file_name;
+                $complete_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . $complete_file_name;
                 rename($inproress_name, $complete_name);
                 Log::info('pending-to-progress ' . $complete_name);
                 return array("new_filename"=>$complete_file_name,"new_file_fullpath"=>$complete_name);
@@ -101,9 +101,9 @@ class SippySSH{
             if( is_array($delete_files) && count($delete_files)>0) {
                 foreach ($delete_files as $filename) {
 
-                    $inproress_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename);
+                    $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
                     $complete_file_name = str_replace('pending', 'progress', basename($filename));
-                    $complete_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . $complete_file_name;
+                    $complete_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . $complete_file_name;
                     rename($inproress_name, $complete_name);
                     Log::info('pending-to-progress ' . $complete_name);
                 }
@@ -112,8 +112,8 @@ class SippySSH{
         if($status== "progress-to-complete" ) {
             if( is_array($delete_files) && count($delete_files)>0) {
                 foreach ($delete_files as $filename) {
-                    $inproress_name = Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $complete_name = str_replace('progress', 'complete', Config::get('app.sippy_location') . $CompanyGatewayID . '/' . basename($filename));
+                    $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
+                    $complete_name = str_replace('progress', 'complete', getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename));
                     rename($inproress_name, $complete_name);
                     Log::info('progress-to-complete ' . $complete_name);
 
