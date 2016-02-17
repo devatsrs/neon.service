@@ -105,7 +105,7 @@ class SippyAccountUsage extends Command
             Log::info("Start");
 
             $filenames = array();
-            $new_filenames = scandir(Config::get('app.sippy_location') . $CompanyGatewayID);
+            $new_filenames = scandir(getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID);
             foreach ((array)$new_filenames as $file) {
                 if (strpos($file, 'pending_'.SippySSH::$customer_cdr_file_name) !== false) {
                     $filenames[] = $file;
