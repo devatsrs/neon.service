@@ -69,7 +69,8 @@ class RMService extends Command {
                 'CustomerVOSSheetDownload',
                 'VendorVOSSheetDownload',
                 'RateTableGeneration',
-                'RateTableFileUpload'));
+                'RateTableFileUpload',
+                'VendorCDRUpload'));
 
             $cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
@@ -259,6 +260,15 @@ class RMService extends Command {
                         pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            foreach($allpending['data']['VendorCDRUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
