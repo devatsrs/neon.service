@@ -96,22 +96,29 @@ class SippyAccountUsage extends Command
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
-        $delete_files = array();
+        $delete_files = $vdelete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/sippyaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
 
-            $filenames = array();
+            $filenames = $vfilenames = array();
             $new_filenames = scandir(getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID);
             foreach ((array)$new_filenames as $file) {
                 if (strpos($file, 'pending_'.SippySSH::$customer_cdr_file_name) !== false) {
                     $filenames[] = $file;
                 }
             }
+            foreach ((array)$new_filenames as $file) {
+                if (strpos($file, 'pending_'.SippySSH::$vendor_cdr_file_name) !== false) {
+                    $vfilenames[] = $file;
+                }
+            }
             $lastelse = array_pop($filenames);
+            $lastelse = array_pop($vfilenames);
 
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
@@ -128,6 +135,9 @@ class SippyAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
+            /**
+             * Insert Customer CDR to temp table
+             */
             foreach ($filenames as $filename) {
                 Log::info("Loop Start");
 
@@ -145,7 +155,7 @@ class SippyAccountUsage extends Command
                         $inproress_name = $file_result['new_file_fullpath'];
                     }
 
-                    $csv_response = SippySSH::get_file_content($inproress_name);
+                    $csv_response = SippySSH::get_customer_file_content($inproress_name);
 
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
 
@@ -153,26 +163,26 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_rows['i_account']) || ($IpBased ==1 && !empty($cdr_rows['remote_ip']))) {
+                            if (!empty($cdr_row['i_account']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                 $uddata['CompanyID'] = $CompanyID;
                                 if($IpBased){
-                                    $uddata['GatewayAccountID'] = $cdr_rows['remote_ip'];
+                                    $uddata['GatewayAccountID'] = $cdr_row['remote_ip'];
                                 }else{
-                                    $uddata['GatewayAccountID'] = $cdr_rows['i_account'];
+                                    $uddata['GatewayAccountID'] = $cdr_row['i_account'];
                                 }
-                                $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_rows['connect_time']);
-                                $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_rows['disconnect_time']);
-                                $uddata['cost'] = (float)$cdr_rows['cost'];
-                                $uddata['cld'] = str_replace('2222', '', $cdr_rows['cld_in']);
-                                $uddata['cli'] = $cdr_rows['cld_in'];
-                                $uddata['billed_duration'] = $cdr_rows['billed_duration'];
-                                $uddata['duration'] = $cdr_rows['billed_duration'];
+                                $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
+                                $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
+                                $uddata['cost'] = (float)$cdr_row['cost'];
+                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_in']);
+                                $uddata['cli'] = $cdr_row['cld_in'];
+                                $uddata['billed_duration'] = $cdr_row['billed_duration'];
+                                $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = $cdr_rows['prefix'];
-                                $uddata['remote_ip'] = $cdr_rows['remote_ip'];
+                                $uddata['area_prefix'] = $cdr_row['prefix'];
+                                $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
                                 $InserData[] = $uddata;
@@ -196,7 +206,7 @@ class SippyAccountUsage extends Command
                     } else {
 
                         $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
-                        Log::error("Error Reading Sippy Encoded File. " . $return_var);
+                        Log::error("Error Reading Sippy Customer Encoded File. " . $return_var);
 
                     }
 
@@ -208,7 +218,100 @@ class SippyAccountUsage extends Command
                 }
                 Log::info("Loop End");
 
-            }
+            } // Customer cdr over.
+
+
+            /**
+             * Insert Vendor CDRs to Temp table
+             *
+             */
+            $data_count = 0;
+            foreach ($vfilenames as $filename) {
+                Log::info("Loop Start");
+
+                if ($filename != '' && $file_count <= $FilesMaxProccess) {
+
+                    $param = array();
+                    $param['filename'] = $filename;
+
+                    Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
+
+                    $file_result = SippySSH::changeCDRFilesStatus("pending-to-progress" , $filename , $CompanyGatewayID ,true );
+                    if(!empty($file_result) && isset($file_result['new_filename']) &&  !empty($file_result['new_filename']) && isset($file_result['new_file_fullpath']) &&  !empty($file_result['new_file_fullpath']) ) {
+
+                        $vdelete_files[] = $file_result['new_filename'];
+                        $inproress_name = $file_result['new_file_fullpath'];
+                    }
+
+                    $csv_response = SippySSH::get_vendor_file_content($inproress_name);
+
+                    if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
+
+                        $cdr_rows = $csv_response["output"];
+                        $InserData = $InserVData = array();
+                        foreach($cdr_rows as $cdr_row){
+
+                            if (!empty($cdr_row['i_account_debug']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+
+                                $uddata = array();
+                                $uddata['CompanyGatewayID'] = $CompanyGatewayID;
+                                $uddata['CompanyID'] = $CompanyID;
+                                if($IpBased){
+                                    $uddata['GatewayAccountID'] = $cdr_row['remote_ip'];
+                                }else{
+                                    $uddata['GatewayAccountID'] = $cdr_row['i_account_debug'];
+                                }
+                                $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
+                                $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
+                                //$uddata['buying_cost'] = 0; // # is provided only in the cdrs table
+                                $uddata['cost'] = (float)$cdr_row['cost'];
+                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
+                                $uddata['cli'] = $cdr_row['cld_out'];
+                                $uddata['billed_duration'] = $cdr_row['billed_duration'];
+                                $uddata['duration'] = $cdr_row['billed_duration'];
+                                $uddata['trunk'] = 'Other';
+                                $uddata['area_prefix'] = $cdr_row['prefix'];
+                                $uddata['remote_ip'] = $cdr_row['remote_ip'];
+                                $uddata['ProcessID'] = $processID;
+
+                                $InserData[] = $uddata;
+                                if($data_count > $insertLimit &&  !empty($InserData)){
+                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserData);
+                                    $InserData = array();
+                                    $data_count = 0;
+                                }
+                            }
+
+                            $data_count++;
+
+
+                        }//loop
+
+                        if(!empty($InserData)){
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+
+                        }
+                        if(!empty($InserVData)){
+                            DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                        }
+
+
+                    } else {
+
+                        $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
+                        Log::error("Error Reading Sippy Vendor Encoded File. " . $return_var);
+
+                    }
+
+
+                    Log::info("CDR Insert END");
+                    $file_count++;
+                } else {
+                    break;
+                }
+                Log::info("Loop End");
+
+            } // Vendor cdr over
 
 
             Log::error(' ========================== sippy transaction end =============================');
@@ -222,7 +325,7 @@ class SippyAccountUsage extends Command
                 $RateFormat = $companysetting->RateFormat;
             }
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            //TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
@@ -252,7 +355,7 @@ class SippyAccountUsage extends Command
 
             Log::error('sippy prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            //DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "')");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('sippy prc_insertCDR end');
 
 
@@ -261,6 +364,7 @@ class SippyAccountUsage extends Command
             try {
                 // Rename files to complete or delete
                 SippySSH::changeCDRFilesStatus("progress-to-complete" , $delete_files , $CompanyGatewayID );
+                SippySSH::changeCDRFilesStatus("progress-to-complete" , $vdelete_files , $CompanyGatewayID );
 
                 date_default_timezone_set(Config::get('app.timezone'));
                 $CdrBehindData = array();
@@ -276,6 +380,7 @@ class SippyAccountUsage extends Command
                 Log::error('sippy delete file count ' . count($delete_files));
 
                 DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
@@ -293,6 +398,7 @@ class SippyAccountUsage extends Command
             try {
                 // Rename files to complete or delete
                 SippySSH::changeCDRFilesStatus("progress-to-pending" , $delete_files , $CompanyGatewayID );
+                SippySSH::changeCDRFilesStatus("progress-to-pending" , $vdelete_files , $CompanyGatewayID );
 
             } catch (Exception $err) {
                 Log::error($err);
@@ -300,9 +406,8 @@ class SippyAccountUsage extends Command
             // delete temp table if process fail
             try {
                 DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
-                //TempUsageDetail::where(["processId" => $processID])->delete();
-                //TempVendorCDR::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
+                DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where(["processId" => $processID])->delete();
+
             } catch (\Exception $err) {
                 Log::error($err);
             }
