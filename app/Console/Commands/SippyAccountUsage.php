@@ -225,7 +225,7 @@ class SippyAccountUsage extends Command
              * Insert Vendor CDRs to Temp table
              *
              */
-            $data_count = 0;
+            $data_count = $file_count = 0;
             foreach ($vfilenames as $filename) {
                 Log::info("Loop Start");
 
@@ -274,10 +274,10 @@ class SippyAccountUsage extends Command
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
-                                $InserData[] = $uddata;
-                                if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserData);
-                                    $InserData = array();
+                                $InserVData[] = $uddata;
+                                if($data_count > $insertLimit &&  !empty($InserVData)){
+                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                                    $InserVData = array();
                                     $data_count = 0;
                                 }
                             }
@@ -315,6 +315,9 @@ class SippyAccountUsage extends Command
 
 
             Log::error(' ========================== sippy transaction end =============================');
+            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+            $vtotaldata_count = DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where('ProcessID',$processID)->count();
+
             //ProcessCDR
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
@@ -333,13 +336,20 @@ class SippyAccountUsage extends Command
 
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
             $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
+            $vresult = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $tempVendortable. "')");
 
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+
             DB::connection('sqlsrv2')->beginTransaction();
             DB::connection('sqlsrvcdrazure')->beginTransaction();
 
+            $filedetail = "";
+            if (!empty($vresult[0]->min_date)) {
+                $filedetail .= '<br>Vendor From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $vtotaldata_count;
+            }else{
+                $filedetail .= '<br> No VendorCDR Data Found!!';
+            }
             if (!empty($result[0]->min_date)) {
-                $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
+                $filedetail .= '<br>Customer From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
                 date_default_timezone_set(Config::get('app.timezone'));
                 $logdata['CompanyGatewayID'] = $CompanyGatewayID;
                 $logdata['CompanyID'] = $CompanyID;
@@ -350,7 +360,7 @@ class SippyAccountUsage extends Command
                 TempUsageDownloadLog::insert($logdata);
 
             } else {
-                $filedetail = '<br> No Data Found!!';
+                $filedetail .= '<br> No CustomerCDR Data Found!!';
             }
 
             Log::error('sippy prc_insertCDR start'.$processID);

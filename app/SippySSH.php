@@ -85,7 +85,7 @@ class SippySSH{
         if($status== "progress-to-pending" ) {
             if( is_array($delete_files) && count($delete_files)>0) {
                 foreach ($delete_files as $filename) {
-                    $inproress_name = SIPPY_LOCATION . $CompanyGatewayID . '/' . basename($filename);
+                    $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
                     $complete_name = str_replace('progress', 'pending', getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename));
                     rename($inproress_name, $complete_name);
                     Log::info('progress-to-pending ' . $complete_name);
