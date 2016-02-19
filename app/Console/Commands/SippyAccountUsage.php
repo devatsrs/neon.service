@@ -263,8 +263,8 @@ class SippyAccountUsage extends Command
                                 }
                                 $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
-                                //$uddata['buying_cost'] = 0; // # is provided only in the cdrs table
-                                $uddata['cost'] = (float)$cdr_row['cost'];
+                                //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
+                                $uddata['buying_cost'] = (float)$cdr_row['cost'];
                                 $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
                                 $uddata['cli'] = $cdr_row['cld_out'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];

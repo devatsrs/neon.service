@@ -18,9 +18,9 @@ t = TTransport.TFileObjectTransport(fd)
 p = TBinaryProtocol.TBinaryProtocolAccelerated(t)
 while True:
     if cdr_type == 'customer':
-    obj = Cdrs()
+        obj = Cdrs()
     else:
-    obj = CdrsConnections()
+        obj = CdrsConnections()
     try:
         obj.read(p)
         if cdr_type == 'customer':

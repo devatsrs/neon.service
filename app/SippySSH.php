@@ -292,40 +292,40 @@ class SippySSH{
             remote_ip - remote_ip
 
             ==================================================
-            0	=	i_cdrs_connection
-            1	=	i_call
-            2	=	i_connection
-            3	=	result
-            4	=	cost
-            5	=	delay
-            6	=	duration
-            7	=	billed_duration
-            8	=	setup_time
-            9	=	connect_time
-            10	=	disconnect_time
-            11	=	cld_out
-            12	=	cli_out
-            13	=	prefix
-            14	=	price_1
-            15	=	price_n
-            16	=	interval_1
-            17	=	interval_n
-            18	=	post_call_surcharge
-            19	=	connect_fee
-            20	=	free_seconds
-            21	=	grace_period
-            22	=	user_agent
-            23	=	pdd100
-            24	=	pdd1xx
-            25	=	i_account_debug
-            26	=	i_protocol
-            27	=	release_source
-            28	=	call_setup_time
-            29	=	lrn_cld
-            30	=	area_name
-            31	=	i_media_relay
-            32	=	remote_ip
-            33	=	vendor_name
+            0	=	i_cdrs_connection           = 1559871575
+            1	=	i_call                      = 1008178101
+            2	=	i_connection                = 832
+            3	=	result                      = 480
+            4	=	cost                        = 0
+            5	=	delay                       = 0
+            6	=	duration                    = 0
+            7	=	billed_duration             = 0
+            8	=	setup_time                  = 1455775800
+            9	=	connect_time                = 1455775800
+            10	=	disconnect_time             = 1455775800
+            11	=	cld_out                     = 101923013216748
+            12	=	cli_out                     = zakirullah612
+            13	=	prefix                      = 9230
+            14	=	price_1                     = 0.0105
+            15	=	price_n                     = 0.0105
+            16	=	interval_1                  = 1
+            17	=	interval_n                  = 1
+            18	=	post_call_surcharge         = 0
+            19	=	connect_fee                 = 0
+            20	=	free_seconds                = 0
+            21	=	grace_period                = 0
+            22	=	user_agent                  = VOS3000 V2.1.3.2
+            23	=	pdd100                      = 0.042545173
+            24	=	pdd1xx                      = 0.207991183
+            25	=	i_account_debug             = 43
+            26	=	i_protocol                  = 1
+            27	=	release_source              = callee
+            28	=	call_setup_time             = 1455775799
+            29	=	lrn_cld                     = None
+            30	=	area_name                   = None
+            31	=	i_media_relay               = NullInt64(v=8)
+            32	=	remote_ip                   = NullString(s=u'167.114.11.15')
+            33	=	vendor_name                 = NullString(s=u'GlobalTelecom-Buy')
              * ==================================================
              **/
 
