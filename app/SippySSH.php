@@ -162,6 +162,7 @@ class SippySSH{
 
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " customer " . $sippy_file ,$output,$return_var);
+        Log::info($sippy_decoder . " customer " . $sippy_file );
 
         $cdr_array = [];
         foreach($output as $op_row){
@@ -269,6 +270,7 @@ class SippySSH{
 
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " vendor " . $sippy_file ,$output,$return_var);
+        Log::info($sippy_decoder . " vendor " . $sippy_file );
 
         $cdr_array = [];
         foreach($output as $op_row){

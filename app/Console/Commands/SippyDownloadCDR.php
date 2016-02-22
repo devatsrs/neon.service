@@ -84,7 +84,7 @@ class SippyDownloadCDR extends Command {
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $sippy->downloadCDR($param);
                     Log::info("SippySSH download file".$filename);
-                    //$sippy->deleteCDR($param);
+                    $sippy->deleteCDR($param);
                 }
             }
         }catch (Exception $e) {

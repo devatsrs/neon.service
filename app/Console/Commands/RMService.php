@@ -70,7 +70,9 @@ class RMService extends Command {
                 'VendorVOSSheetDownload',
                 'RateTableGeneration',
                 'RateTableFileUpload',
-                'VendorCDRUpload'));
+                'VendorCDRUpload',
+                'getSippyDownloadCommand'
+            ));
 
             $cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
@@ -273,6 +275,18 @@ class RMService extends Command {
                 }
             }
 
+            /* Sippy CDR File download */
+            $cmdarray = $allpending['data']['getSippyDownloadCommand'];
+            foreach ($cmdarray as $com) {
+                if (isset($com->CronJobID) && $com->CronJobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
+                    }else{
+                        pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
+                    }
+
+                }
+            }
 
             //------------------------ Cron job start here------------------------//
 
