@@ -344,7 +344,7 @@ class SippyAccountUsage extends Command
 
             $filedetail = "";
             if (!empty($vresult[0]->min_date)) {
-                $filedetail .= '<br>Vendor From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $vtotaldata_count;
+                $filedetail .= '<br>Vendor From' . date('Y-m-d H:i:00', strtotime($vresult[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($vresult[0]->max_date)) .' count '. $vtotaldata_count;
             }else{
                 $filedetail .= '<br> No VendorCDR Data Found!!';
             }
