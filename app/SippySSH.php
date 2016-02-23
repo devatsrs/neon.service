@@ -52,9 +52,11 @@ class SippySSH{
     public static function deleteCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            $status =  RemoteFacade::delete(self::$config['cdr_folder'].'/'.$addparams['filename']);
+            $status =  RemoteFacade::delete(rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
             if($status == true){
-
+                //Log::info('File deleted on server ' . rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
+            }else{
+                Log::info('Failed to delete on server ' . rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
             }
         }
         return $status;
@@ -62,7 +64,7 @@ class SippySSH{
     public static function downloadCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            $source = self::$config['cdr_folder'] .'/'. $addparams['filename'];
+            $source = rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'];
             $destination = $addparams['download_path'] .'pending_'. $addparams['filename'];
             $status = RemoteFacade::get($source, $destination );
 
@@ -70,7 +72,7 @@ class SippySSH{
             //self::encode_file($destination);
 
             if(isset($addparams['download_temppath'])){
-                RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_temppath'] .'pending_'. $addparams['filename']);
+                RemoteFacade::get(rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'], $addparams['download_temppath'] .'pending_'. $addparams['filename']);
             }
         }
         return $status;
