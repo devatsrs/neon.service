@@ -139,7 +139,7 @@ class SippyAccountUsage extends Command
              * Insert Customer CDR to temp table
              */
             foreach ($filenames as $filename) {
-                Log::info("Loop Start");
+                Log::info("Loop Start" . SippySSH::get_file_datetime($filename));
 
                 if ($filename != '' && $file_count <= $FilesMaxProccess) {
 
@@ -156,7 +156,6 @@ class SippyAccountUsage extends Command
                     }
 
                     $csv_response = SippySSH::get_customer_file_content($inproress_name);
-
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
 
                         $cdr_rows = $csv_response["output"];

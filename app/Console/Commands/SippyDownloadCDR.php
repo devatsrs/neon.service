@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 use App\Lib\CronJob;
 use App\SippySSH;
+use App\UsageDownloadFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -74,6 +75,7 @@ class SippyDownloadCDR extends Command {
             if (!file_exists(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID)) {
                 mkdir(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID, 0777, true);
             }
+            $filenames = $sippy->remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
             foreach($filenames as $filename) {
 
@@ -83,8 +85,9 @@ class SippyDownloadCDR extends Command {
                     $param['download_path'] = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/';
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $sippy->downloadCDR($param);
-                    Log::info("SippySSH download file".$filename);
-                    $sippy->deleteCDR($param);
+                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "filename" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
+                    Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
+                    //$sippy->deleteCDR($param);
                 }
             }
         }catch (Exception $e) {

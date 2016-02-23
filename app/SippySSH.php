@@ -5,6 +5,7 @@ use Collective\Remote\RemoteFacade;
 use \Exception;
 use App\Lib\GatewayAPI;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 class SippySSH{
@@ -376,5 +377,32 @@ class SippySSH{
         }
 
         return ["return_var"=>$return_var,"output" => $cdr_array ];
+    }
+
+    /**
+     * Remove already downloaded files from array
+     */
+    public static function remove_downloaded_files($CompanyGatewayID,$files){
+        $response_files = $tmp_files = [];
+        if(count($files)> 0) {
+            $p_files = implode(",", $files);
+            $result = DB::connection('sqlsrv2')->select("CALL prc_checkIfFileAlreadyDownloaded(" . $CompanyGatewayID . ",'" . $p_files . "');");
+            foreach($result as $row){
+                $tmp_files[] = $row->filename;
+            }
+            $response_files = array_diff($files , $tmp_files);
+        }
+        return $response_files;
+
+    }
+
+    /**
+     * get date time from unix timestamp
+     */
+    public static function get_file_datetime($filename){
+        $timestamp = substr(strrchr($filename, "."), 1);
+        if($timestamp > 0 ){
+            return gmdate('Y-m-d H:i:s', $timestamp);
+        }
     }
 }
