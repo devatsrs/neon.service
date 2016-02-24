@@ -1,6 +1,7 @@
 <?php namespace App\Lib;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class UsageDownloadFiles extends Model {
 
