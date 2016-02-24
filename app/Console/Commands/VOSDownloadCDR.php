@@ -93,12 +93,14 @@ class VOSDownloadCDR extends Command {
                     $vos->deleteCDR($param);
                 }
             }
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }catch (Exception $e) {
             Log::error($e);
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }
         Log::info("VOS end");
-        $dataactive['DownloadActive'] = 0;
-        $CronJob->update($dataactive);
     }
 
 }

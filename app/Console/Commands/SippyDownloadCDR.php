@@ -90,12 +90,14 @@ class SippyDownloadCDR extends Command {
                     //$sippy->deleteCDR($param);
                 }
             }
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }catch (Exception $e) {
             Log::error($e);
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }
         Log::info("SippySSH end");
-        $dataactive['DownloadActive'] = 0;
-        $CronJob->update($dataactive);
     }
 
 }
