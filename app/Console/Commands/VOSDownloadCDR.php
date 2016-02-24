@@ -11,7 +11,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CronJob;
-use App\UsageDownloadFiles;
+use App\Lib\UsageDownloadFiles;
 use App\VOS;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;

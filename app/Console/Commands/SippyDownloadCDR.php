@@ -10,7 +10,7 @@ namespace App\Console\Commands;
 
 use App\Lib\CronJob;
 use App\SippySSH;
-use App\UsageDownloadFiles;
+use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
