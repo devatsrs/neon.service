@@ -176,4 +176,13 @@ class VOS{
         }
     }
 
+    /**
+     * get date time from unix timestamp
+     */
+    public static function get_file_datetime($filename){
+        $timestamp = substr(strrchr($filename, "."), 1);
+        if($timestamp > 0 ){
+            return gmdate('Y-m-d H:i:s', $timestamp);
+        }
+    }
 }
