@@ -209,7 +209,6 @@ table{
                 </div>
             </div>
         </div>
-    <br><br><br>
 <div class="page_break"> </div>
 <br/><br/><br/>
 <h5>Usage Charges</h5>
@@ -305,7 +304,7 @@ table{
         @endif
 
      @if(count($usage_data) > 0 && $Account->CDRType != \App\Lib\Account::NO_CDR)
-             <br><br><br>
+
               <div class="page_break"></div>
                <br />
                <br />
