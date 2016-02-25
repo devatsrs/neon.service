@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CronJob;
+use App\Lib\UsageDownloadFiles;
 use App\VOS;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -77,6 +78,7 @@ class VOSDownloadCDR extends Command {
             if (!file_exists(Config::get('app.vos_location') .$CompanyGatewayID)) {
                 mkdir(Config::get('app.vos_location') .$CompanyGatewayID, 0777, true);
             }
+            $filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
             foreach($filenames as $filename) {
 
@@ -86,16 +88,19 @@ class VOSDownloadCDR extends Command {
                     $param['download_path'] = Config::get('app.vos_location').$CompanyGatewayID.'/';
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $vos->downloadCDR($param);
+                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "filename" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("VOS download file".$filename);
                     $vos->deleteCDR($param);
                 }
             }
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }catch (Exception $e) {
             Log::error($e);
+            $dataactive['DownloadActive'] = 0;
+            $CronJob->update($dataactive);
         }
         Log::info("VOS end");
-        $dataactive['DownloadActive'] = 0;
-        $CronJob->update($dataactive);
     }
 
 }

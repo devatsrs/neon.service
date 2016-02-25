@@ -99,6 +99,7 @@ class VOSAccountUsage extends Command
         $joblogdata['Message'] = '';
         $delete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         try {
@@ -211,7 +212,7 @@ class VOSAccountUsage extends Command
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){
-                                    TempVendorCDR::insert($InserVData);
+                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
                                     $InserVData = array();
                                     $data_countv =0;
                                 }
@@ -226,7 +227,7 @@ class VOSAccountUsage extends Command
 
                         }
                         if(!empty($InserVData)){
-                            TempVendorCDR::insert($InserVData);
+                            DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
                         }
 
                         fclose($handle);
@@ -252,7 +253,7 @@ class VOSAccountUsage extends Command
                 $RateFormat = $companysetting->RateFormat;
             }
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            //TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
@@ -282,7 +283,7 @@ class VOSAccountUsage extends Command
 
             Log::error('vos prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            //DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "')");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 			
 

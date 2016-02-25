@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\Inspire',
 		'App\Console\Commands\DBCleanUpCommand',
 		'App\Console\Commands\SippyAccountUsage',
+		'App\Console\Commands\SippyDownloadCDR',
         'App\Console\Commands\RMService',
         'App\Console\Commands\CDRUpload',
         'App\Console\Commands\RateGenerator',
@@ -57,6 +58,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\NeonService',
         'App\Console\Commands\MigrateMSSQLtoMYSQL',
         'App\Console\Commands\RateTableRateUpload',
+		'App\Console\Commands\VCDRUpload',
 
 	];
 
