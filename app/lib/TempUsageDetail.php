@@ -138,7 +138,7 @@ class TempUsageDetail extends \Eloquent {
         $result = DB::connection('sqlsrvcdr')->select("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
         if(count($result) > 0) {
             foreach ($result as $row ) {
-                $response[] =  'ROWID = ' . $row->TempUsageDetailID  .' - ' . $row->Message;
+                $response[] =  $row->Message;
             }
         }
         return $response;
