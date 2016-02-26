@@ -58,6 +58,15 @@ class TempUsageDetail extends \Eloquent {
 
         if($RateCDR == 1){
             $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
+        }else{
+            /**
+             * IF PBX Gateway
+             * Incomming CDR Rerate
+             */
+            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID, $ProcessID, $temptableName);
+            if (count($inbound_errors) > 0) {
+                $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
+            }
         }
 
         Log::error(' prc_insertTempCDR start');
@@ -90,6 +99,16 @@ class TempUsageDetail extends \Eloquent {
         foreach($FailedAccounts as $FailedAccount){
             $skiped_account_data[] = 'Account Not Matched '.$FailedAccount->GatewayAccountID;
         }
+
+        /**
+         * IF PBX Gateway
+         * Incomming CDR Rerate
+         */
+        $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$ProcessID,$temptableName);
+        if(count($inbound_errors) > 0){
+            $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
+        }
+
         return $skiped_account_data;
     }
     public static function GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$JobTitle){

@@ -169,14 +169,6 @@ class PBXAccountUsage extends Command
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
             }
-            /**
-             * IF PBX Gateway
-             * Incomming CDR Rerate
-             */
-            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$processID,$temptableName);
-            if(count($inbound_errors) > 0){
-                $joblogdata['Message'] .= ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
-            }
 
             DB::connection('sqlsrvcdrazure')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
