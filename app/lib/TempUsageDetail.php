@@ -134,8 +134,8 @@ class TempUsageDetail extends \Eloquent {
     public static function inbound_rerate($CompanyID,$processID,$temptableName){
 
         $response = array();
-        $result = DB::connection('sqlsrv2')->statement("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
-
+        Log::info("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
+        $result = DB::connection('sqlsrvcdr')->select("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
         if(count($result) > 0) {
             foreach ($result as $row ) {
                 $response[] =  'ROWID = ' . $row->TempUsageDetailID  .' - ' . $row->Message;
