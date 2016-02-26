@@ -126,5 +126,23 @@ class TempUsageDetail extends \Eloquent {
         }
     }
 
+    /**
+     * For PBX Gateway
+     * for is_inbound = 1 it will rerate based on Inbound RateTAble assign on Account.
+     * Rerate Inbound CDRs
+     */
+    public static function inbound_rerate($CompanyID,$processID,$temptableName){
+
+        $response = array();
+        $result = DB::connection('sqlsrv2')->statement("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
+
+        if(count($result) > 0) {
+            foreach ($result as $row ) {
+                $response[] =  'ROWID = ' . $row->TempUsageDetailID  .' - ' . $row->Message;
+            }
+        }
+        return $response;
+
+    }
 
 }

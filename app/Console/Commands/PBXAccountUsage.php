@@ -135,6 +135,7 @@ class PBXAccountUsage extends Command
                     $data['extension'] = $row_account['extension'];
                     $data['ProcessID'] = $processID;
                     $data['ID'] = $row_account['ID'];
+                    $data['is_inbound'] = ($pbx->check_inbound($row_account))?1:0;
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                     if (count($UniqueID) == 0) {
                         //TempUsageDetail::insert($data);
@@ -163,9 +164,18 @@ class PBXAccountUsage extends Command
                 $RateFormat = $companysetting->RateFormat;
             }
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
+
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
+            }
+            /**
+             * IF PBX Gateway
+             * Incomming CDR Rerate
+             */
+            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$processID,$temptableName);
+            if(count($inbound_errors) > 0){
+                $joblogdata['Message'] .= ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
             }
 
             DB::connection('sqlsrvcdrazure')->beginTransaction();
