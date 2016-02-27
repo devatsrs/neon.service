@@ -96,7 +96,6 @@ class RateTableRateUpload extends Command
                             file_put_contents($file, file_get_contents($path));
                             $jobfile->FilePath = $file;
                         } else {
-                            $path = env('UPLOAD_PATH').'/'.$jobfile->FilePath;
                             $jobfile->FilePath = $path;
                         }
                     }
