@@ -70,12 +70,4 @@ class PBX{
 
     }
 
-    public static function check_inbound($cdr_row){
-
-        if(isset($cdr_row['userfield']) && strpos($cdr_row['userfield'],"inbound") !== false ) {
-            return true;
-        }
-        return  false;
-    }
-
 }

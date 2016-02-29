@@ -164,4 +164,11 @@ class TempUsageDetail extends \Eloquent {
 
     }
 
+    public static function check_inbound($userfield){
+
+        if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
+            return true;
+        }
+        return  false;
+    }
 }

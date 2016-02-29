@@ -135,7 +135,7 @@ class PBXAccountUsage extends Command
                     $data['extension'] = $row_account['extension'];
                     $data['ProcessID'] = $processID;
                     $data['ID'] = $row_account['ID'];
-                    $data['is_inbound'] = (PBX::check_inbound($row_account))?1:0;
+                    $data['is_inbound'] = (TempUsageDetail::check_inbound($row_account["userfield"]))?1:0;
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                     if (count($UniqueID) == 0) {
                         //TempUsageDetail::insert($data);
@@ -185,7 +185,7 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             CronJobLog::insert($joblogdata);
-            DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+            //DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
         } catch (\Exception $e) {
             try {
