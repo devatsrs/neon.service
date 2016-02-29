@@ -162,6 +162,8 @@ class RateTableRateUpload extends Command
                             }catch (\Exception $e){
                                 $error[] = 'Date format is Wrong  at line no:'.$lineno;
                             }
+                        }elseif(empty($attrselection->EffectiveDate)){
+                            $tempratetabledata['EffectiveDate'] = date('Y-m-d');
                         }else{
                             $error[] = 'EffectiveDate is blank at line no:'.$lineno;
                         }
