@@ -164,9 +164,10 @@ class VendorRateUpload extends Command
                             }catch (\Exception $e){
                                 $error[] = 'Date format is Wrong  at line no:'.$lineno;
                             }
-                        }else{
+                        }elseif(empty($attrselection->EffectiveDate)){
                             $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                            //$error[] = 'EffectiveDate is blank at line no:'.$lineno;
+                        }else{
+                            $error[] = 'EffectiveDate is blank at line no:'.$lineno;
                         }
                         if (isset($attrselection->Action) && !empty($attrselection->Action)) {
                             $action_value = $temp_row[$attrselection->Action];
