@@ -58,6 +58,15 @@ class TempUsageDetail extends \Eloquent {
 
         if($RateCDR == 1){
             $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
+        }else{
+            /**
+             * IF PBX Gateway
+             * Incomming CDR Rerate
+             */
+            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID, $ProcessID, $temptableName);
+            if (count($inbound_errors) > 0) {
+                $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
+            }
         }
 
         Log::error(' prc_insertTempCDR start');
@@ -90,6 +99,16 @@ class TempUsageDetail extends \Eloquent {
         foreach($FailedAccounts as $FailedAccount){
             $skiped_account_data[] = 'Account Not Matched '.$FailedAccount->GatewayAccountID;
         }
+
+        /**
+         * IF PBX Gateway
+         * Incomming CDR Rerate
+         */
+        $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$ProcessID,$temptableName);
+        if(count($inbound_errors) > 0){
+            $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
+        }
+
         return $skiped_account_data;
     }
     public static function GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$JobTitle){
@@ -126,5 +145,30 @@ class TempUsageDetail extends \Eloquent {
         }
     }
 
+    /**
+     * For PBX Gateway
+     * for is_inbound = 1 it will rerate based on Inbound RateTAble assign on Account.
+     * Rerate Inbound CDRs
+     */
+    public static function inbound_rerate($CompanyID,$processID,$temptableName){
 
+        $response = array();
+        Log::info("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
+        $result = DB::connection('sqlsrvcdr')->select("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
+        if(count($result) > 0) {
+            foreach ($result as $row ) {
+                $response[] =  $row->Message;
+            }
+        }
+        return $response;
+
+    }
+
+    public static function check_inbound($userfield){
+
+        if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
+            return true;
+        }
+        return  false;
+    }
 }

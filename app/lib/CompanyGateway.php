@@ -85,6 +85,7 @@ class CompanyGateway extends \Eloquent {
                                     `ID` INT(11) NULL DEFAULT NULL,
                                     `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
                                     `duration` INT(11) NULL DEFAULT NULL,
+                                    `is_inbound` TINYINT(1) DEFAULT 0,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'_CompanyID_CompanyGatewayID_ProcessID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`)
                                 )
@@ -148,4 +149,6 @@ class CompanyGateway extends \Eloquent {
             return $tbltempusagedetail_name;
         }
     }
+
+
 }

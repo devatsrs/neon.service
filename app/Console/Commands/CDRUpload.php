@@ -78,8 +78,6 @@ class CDRUpload extends Command
         $skipped_cli = array();
         $active_cli = array();
         try {
-            DB::beginTransaction();
-            DB::connection('sqlsrv2')->beginTransaction();
             $joboptions = json_decode($job->Options);
             //print_r($joboptions);exit;//CheckCustomerCLI,RateCDR
             $CompanyGatewayID = $joboptions->CompanyGatewayID;
@@ -147,6 +145,10 @@ class CDRUpload extends Command
                 if ($csvoption->Firstrow == 'data') {
                     $lineno = 1;
                 }
+                $counter = 0;
+                $bacth_insert_limit = 1000;
+                $batch_insert_array = array();
+
                 if ((count($skipped_cli) == 0 && $joboptions->CheckCustomerCLI == 1) || $joboptions->CheckCustomerCLI == 0) {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
@@ -192,22 +194,49 @@ class CDRUpload extends Command
                             }
 
                         }
+                        if (isset($attrselection->extension) && !empty($attrselection->extension)) {
+                            $cdrdata['extension'] = $temp_row[$attrselection->extension];
+                        }
+                        if (isset($attrselection->pincode) && !empty($attrselection->pincode)) {
+                            $cdrdata['pincode'] = $temp_row[$attrselection->pincode];
+                        }
+                        if (isset($attrselection->ID) && !empty($attrselection->ID)) {
+                            $cdrdata['ID'] = $temp_row[$attrselection->ID];
+                        }
+                        if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+                            $cdrdata['is_inbound'] = (TempUsageDetail::check_inbound($temp_row[$attrselection->is_inbound]))?1:0;
+                        }
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                         }
                         //print_r($cdrdata);exit;
                         if(!empty($cdrdata['GatewayAccountID'])) {
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($cdrdata);
+
+                            $batch_insert_array[] = $cdrdata;
+
+                            if($counter >= $bacth_insert_limit){
+                                Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                                Log::info('insertion end');
+                                $batch_insert_array = [];
+                                $counter = 0;
+                            }
+                            $counter++;
+
                         }
                         $lineno++;
+                    } // loop
+
+                    if(!empty($batch_insert_array)){
+                        Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                        Log::info('insertion end');
                     }
-                }
-                if(count($skiped_account_data) == 0) {
-                    DB::commit();
-                    DB::connection('sqlsrv2')->commit();
-                }else{
-                    DB::rollback();
-                    DB::connection('sqlsrv2')->rollback();
+
                 }
 
                 //ProcessCDR
@@ -219,11 +248,14 @@ class CDRUpload extends Command
 
 
                 if(count($skiped_account_data) == 0) {
-                    DB::connection('sqlsrvcdrazure')->beginTransaction();
+                    DB::connection('sqlsrvcdr')->beginTransaction();
 
                     if (!empty($result[0]->min_date)) {
                         $StartDate = $result[0]->min_date;
                         $EndDate = $result[0]->max_date;
+
+                        /*Add CDR log for Invoice generation. - to check cdr is available.
+                         * */
                         $logdata['CompanyGatewayID'] = 0;
                         $logdata['CompanyID'] = $CompanyID;
                         $logdata['start_time'] = $result[0]->min_date;
@@ -231,16 +263,17 @@ class CDRUpload extends Command
                         $logdata['created_at'] = date('Y-m-d H:i:s');
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
+
+                        // Delete old records.
                         DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "','')");
 
                     }
 
                     Log::error(' prc_insertCDR start');
-                    DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $ProcessID . "', '".$temptableName."' )");
+                    DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $ProcessID . "', '".$temptableName."' )");
                     Log::error(' prc_insertCDR end');
-                    DB::connection('sqlsrvcdrazure')->commit();
+                    DB::connection('sqlsrvcdr')->commit();
                 }
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 foreach ($skiped_account as $accountrow) {
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
@@ -273,8 +306,8 @@ class CDRUpload extends Command
             DB::connection('sqlsrv2')->rollback();
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
+                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
             } catch (\Exception $err) {
                 Log::error($err);
             }
