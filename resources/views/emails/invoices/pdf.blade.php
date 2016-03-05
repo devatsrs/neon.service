@@ -124,7 +124,7 @@ table{
                             <td style="border-top: 1px solid black; text-align: right;">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}}</td>
                         </tr>
                         <tr>
-                            <td style="border-top: 2px solid black;text-align: left;">Total Due ({{$CurrencyCode}})</td>
+                            <td style="border-top: 2px solid black;text-align: left;">Total Due ({{$CurrencySymbol}})</td>
                             <td style="border-top: 2px solid black; text-align: right;">{{number_format($Invoice->TotalDue,$Account->RoundChargesAmount)}}</td>
                         </tr>
                         </tbody>
@@ -193,7 +193,7 @@ table{
                                                         </tr>
                                                         @endif
                                                         <tr>
-                                                                <td class="text-right"><strong>Invoice Total ({{$CurrencyCode}})</strong></td>
+                                                                <td class="text-right"><strong>Invoice Total ({{$CurrencySymbol}})</strong></td>
                                                                 <td class="text-right">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}} </td>
                                                         </tr>
                                                     </tfoot>
