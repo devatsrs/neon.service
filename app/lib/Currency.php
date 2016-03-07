@@ -12,7 +12,9 @@ class Currency extends \Eloquent {
         }
     }
 
-    public static function getCurrencySymbol($code){
-        return Intl::getCurrencyBundle()->getCurrencySymbol($code);
+    public static function getCurrencySymbol($CurrencyID){
+        if($CurrencyID>0){
+            return Currency::where("CurrencyId",$CurrencyID)->pluck('Symbol');
+        }
     }
 }
