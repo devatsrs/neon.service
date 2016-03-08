@@ -57,11 +57,9 @@ table{
                         <p>{{nl2br($Invoice->Address)}}</p>
                 </td>
                 <td class="col-md-6 text-right"  valign="top" >
-
                         <p><b>Invoice No: </b>{{$InvoiceTemplate->InvoiceNumberPrefix}}{{$Invoice->InvoiceNumber}}</p>
                         <p><b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</p>
-                        <p><b>Due Date: </b>{{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$Account->PaymentDueInDays.' days'))}}</p>
-                        <p><b>VAT No: </b>{{$VatNumber}}</p>
+                        <p><b>Due Date: </b>{{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$Account->PaymentDueInDays.' days'))}}</p>                        
                 </td>
             </tr>
         </table>
