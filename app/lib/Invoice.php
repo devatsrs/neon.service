@@ -676,7 +676,9 @@ class Invoice extends \Eloquent {
                 }
             }
 
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo'))->render();
+
+
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
