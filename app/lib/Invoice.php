@@ -676,14 +676,9 @@ class Invoice extends \Eloquent {
                     }
                 }
             }
-            $CompanyID = $Account->CompanyId;
-            $Company = Company::find($CompanyID);
-            $VatNumber = '';
-            if(!empty($Company->VAT)){
-                $VatNumber = $Company->VAT;
-            }
 
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol','logo','VatNumber'))->render();
+            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo'))->render();
+
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
