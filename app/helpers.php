@@ -202,6 +202,13 @@ function time_elapsed($start_time,$end_time){
     $interval = $datetime1->diff($datetime2);
     return $elapsed = $interval->format('%i minutes %S seconds');
 }
+function fix_jobstatus_meassage($message){
+    if(count($message)>100) {
+        $message = array_slice($message, 0, 100);
+        $message[] = '...';
+    }
+    return $message;
+}
 
 
 

@@ -223,15 +223,17 @@ class VendorRateUpload extends Command
                     Log::info($JobStatusMessage);
                     Log::info(count($JobStatusMessage));
                     if(!empty($error) || count($JobStatusMessage) > 1){
+                        $prc_error = array();
                         foreach ($JobStatusMessage as $JobStatusMessage) {
-                            $error[] = $JobStatusMessage['Message'];
+                            $prc_error[] = $JobStatusMessage['Message'];
                         }
+                        $error = array_merge($prc_error,$error);
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Log::info($jobdata);
+                        //Log::info($jobdata);
                         Job::where(["JobID" => $JobID])->update($jobdata);
                     }elseif(!empty($JobStatusMessage[0]['Message'])){
                         $job = Job::find($JobID);

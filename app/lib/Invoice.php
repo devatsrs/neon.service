@@ -615,6 +615,7 @@ class Invoice extends \Eloquent {
             $Account = Account::find($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+            $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                 $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -675,7 +676,9 @@ class Invoice extends \Eloquent {
                     }
                 }
             }
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+
+            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo'))->render();
+
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
@@ -1184,6 +1187,9 @@ class Invoice extends \Eloquent {
                 $isAdvanceSubscription =0;
                 /**check for advance subscription*/
                 Log::info( ' SubscriptionID - ' . $AccountSubscription->SubscriptionID );
+                if($AccountSubscription->EndDate == '0000-00-00'){
+                    $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
+                }
                 if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID)){
                 $isAdvanceSubscription =1;
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
@@ -1631,6 +1637,7 @@ class Invoice extends \Eloquent {
                         $Account = Account::find($Invoice->AccountID);
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -1685,7 +1692,7 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
@@ -2005,6 +2012,7 @@ class Invoice extends \Eloquent {
                         $Account = Account::find($Invoice->AccountID);
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -2059,7 +2067,7 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
