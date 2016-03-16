@@ -67,6 +67,7 @@ class PBXAccountUsage extends Command
         $cronsetting = json_decode($CronJob->Settings,true);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
 
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
