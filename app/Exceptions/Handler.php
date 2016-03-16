@@ -29,7 +29,7 @@ class Handler extends ExceptionHandler {
         $subject = "RM Service has Problem";
         $txt = "Error Message:".$e->getMessage();
         $headers = "From: no-reply@code-desk.com" . "\r\n" .
-            "CC: shriramsoft@gmail.com";
+            "CC: shriramsoft@gmail.com,bhavin@code-desk.com";
         @mail($to,$subject,$txt,$headers);
         return parent::report($e);
 	}
