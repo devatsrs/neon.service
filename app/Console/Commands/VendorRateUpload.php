@@ -110,18 +110,12 @@ class VendorRateUpload extends Command
                         Config::set('excel.csv.line_ending', $csvoption->Escape);
                     }
                     Config::set('excel.import.heading','original');
+                    Config::set('excel.import.dates.enable',false);
                     $isExcel = in_array(pathinfo($jobfile->FilePath, PATHINFO_EXTENSION),['xls','xlsx'])?true:false;
                     $results =  Excel::selectSheetsByIndex(0)->load($jobfile->FilePath, function ($reader) use ($csvoption,$isExcel) {
                         if ($csvoption->Firstrow == 'data') {
                             $reader->noHeading();
                         }
-                        if(!$isExcel) {
-                            $reader->formatDates(true, 'Y-m-d');
-                        }else{
-                            $reader->formatDates(false);
-                            $reader->setReadDataOnly(true);
-                        }
-
                     })->get();
                     $results = json_decode(json_encode($results), true);
                     $lineno = 2;

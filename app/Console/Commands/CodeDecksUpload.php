@@ -90,7 +90,6 @@ class CodeDecksUpload extends Command
                     }
 
                     $results =  Excel::load($jobfile->FilePath, function ($reader){
-                        $reader->formatDates(true, 'Y-m-d');
                     })->get();
                     $results = json_decode(json_encode($results), true);
                     $error = array();
