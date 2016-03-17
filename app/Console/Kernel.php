@@ -59,6 +59,7 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\MigrateMSSQLtoMYSQL',
         'App\Console\Commands\RateTableRateUpload',
 		'App\Console\Commands\VCDRUpload',
+		'App\Console\Commands\AccountBalanceWarning',
 
 	];
 
