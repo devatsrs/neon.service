@@ -129,7 +129,7 @@ class PBXAccountUsage extends Command
                         $cld =   $row_account['firstdst'];
                     }else{
                         $cli =   $row_account['src'];
-                        $cld =   $row_account['lastdst'];
+                        $cld =   !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
                     }
                     $data['CompanyGatewayID'] = $CompanyGatewayID;
                     $data['CompanyID'] = $CompanyID;
