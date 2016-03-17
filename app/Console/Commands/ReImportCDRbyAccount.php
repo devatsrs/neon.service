@@ -108,7 +108,7 @@ class ReImportCDRbyAccount extends Command {
             $AccountID = 105;
             $GatewayAccountID = 102360;
             //Delete old CDR on same duration.
-            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR(1 , 1 , '".$param['start_date_ymd']."', '".$param['end_date_ymd']."',".$AccountID.")");
+            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR(1 , 1 , '".$param['start_date_ymd']."', '".$param['end_date_ymd']."',".$AccountID.",'')");
 
 
             //foreach ($accounts as $GatewayAccountID) {

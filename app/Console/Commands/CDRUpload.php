@@ -265,7 +265,7 @@ class CDRUpload extends Command
                         TempUsageDownloadLog::insert($logdata);
 
                         // Delete old records.
-                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "','')");
+                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',0,'')");
 
                     }
 

@@ -58,7 +58,7 @@ class ManualPortaAccountCDRImport extends Command {
         //print_r($results);
         //exit;
         $lineno = 2;
-        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',$AccountID )");
+        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',$AccountID,'' )");
         $error = array();
         foreach ($results as $temp_row) {
 
