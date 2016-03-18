@@ -76,7 +76,7 @@ class VendorRateUpload extends Command
         $counter = 0;
         Log::useFiles(storage_path() . '/logs/vendorfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
-            DB::beginTransaction();
+
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
@@ -132,7 +132,7 @@ class VendorRateUpload extends Command
                         }
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
-                        $tempvendordata['ProcessId'] = $ProcessID;
+                        $tempvendordata['ProcessId'] = (string) $ProcessID;
                         if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
                             $tempvendordata['Code'] = $temp_row[$attrselection->Code];
                         }else{
@@ -201,18 +201,29 @@ class VendorRateUpload extends Command
                             $counter = 0;
                         }
                         $lineno++;
-                    }
+                    } // loop over
+
                     if(!empty($batch_insert_array)){
                         Log::info('Batch insert start');
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
+                        Log::info('last batch insert ' . count($batch_insert_array));
+                        Log::info(print_r($batch_insert_array,true));
+
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
-
                     Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                    try{
+                        DB::beginTransaction();
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        DB::commit();
+                    }catch ( Exception $err ){
+                        DB::rollback();
+                        Log::error($err);
+                    }
+
                     $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                     Log::info($JobStatusMessage);
                     Log::info(count($JobStatusMessage));
@@ -241,14 +252,8 @@ class VendorRateUpload extends Command
                 }
             }
             
-            DB::commit();
 
         } catch (\Exception $e) {
-            try{
-                DB::rollback();
-            }catch (Exception $err) {
-                Log::error($err);
-            }
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
