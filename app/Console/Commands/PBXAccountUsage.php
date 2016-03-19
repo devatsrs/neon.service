@@ -67,6 +67,7 @@ class PBXAccountUsage extends Command
         $cronsetting = json_decode($CronJob->Settings,true);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
 
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
@@ -124,8 +125,8 @@ class PBXAccountUsage extends Command
                     $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
                     $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
                     $data['cost'] = (float)$row_account['cc_cost'];
-                    $data['cli'] =  $row_account['firstdst']; //$row_account['realsrc']
-                    $data['cld'] =  $row_account['lastdst'];
+                    $data['cli'] =  $row_account['src']; //$row_account['firstdst']; //$row_account['realsrc']
+                    $data['cld'] =  $row_account['firstdst'];  //$row_account['lastdst'];
                     $data['billed_duration'] = $row_account['billsec'];
                     $data['duration'] = $row_account['duration'];
                     //$data['AccountID'] = $rowdata->AccountID;

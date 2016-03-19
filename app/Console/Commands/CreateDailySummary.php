@@ -62,6 +62,7 @@ class CreateDailySummary extends Command{
         $CronJob =  CronJob::find($CronJobID);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
 
         try {
