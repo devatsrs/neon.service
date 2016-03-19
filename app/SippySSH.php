@@ -133,6 +133,16 @@ class SippySSH{
                 }
             }
         }
+        if($status== "complete-to-pending" ) {
+            if( is_array($delete_files) && count($delete_files)>0) {
+                foreach ($delete_files as $filename) {
+                    $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
+                    $complete_name = str_replace('complete', 'pending', getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename));
+                    rename($inproress_name, $complete_name);
+                    Log::info('complete-to-pending ' . $complete_name);
+                 }
+            }
+        }
     }
 
     //Encode file into csv
