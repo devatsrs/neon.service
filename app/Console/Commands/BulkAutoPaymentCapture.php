@@ -65,6 +65,7 @@ class BulkAutoPaymentCapture extends Command {
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
