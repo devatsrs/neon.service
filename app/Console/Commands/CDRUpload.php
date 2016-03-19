@@ -116,11 +116,11 @@ class CDRUpload extends Command
                     Config::set('excel::csv.line_ending', $csvoption->Escape);
                 }
                 Config::set('excel.import.heading','original');
+                Config::set('excel.import.dates.enable',false);
                 $excel = Excel::load($jobfile->FilePath, function ($reader) use ($csvoption) {
                     if ($csvoption->Firstrow == 'data') {
                         $reader->noHeading();
                     }
-                    $reader->formatDates(true, 'Y-m-d');
                 })->get();
                 $results = json_decode(json_encode($excel), true);
                 if (isset($joboptions->CheckCustomerCLI) && $joboptions->CheckCustomerCLI == 1) {

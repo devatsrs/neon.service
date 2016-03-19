@@ -63,6 +63,7 @@ class InvoiceGenerator extends Command {
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
 
         $joblogdata = array();
@@ -110,7 +111,7 @@ class InvoiceGenerator extends Command {
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs));
+            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
             $jobdata["updated_at"] = date('Y-m-d H:i:s');
             $JobID = Job::insertGetId($jobdata);
             $jobdata = array();

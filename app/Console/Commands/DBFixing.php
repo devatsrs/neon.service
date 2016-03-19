@@ -65,6 +65,7 @@ class DBFixing extends Command
         $CronJob =  CronJob::find($CronJobID);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
         $cronsetting = json_decode($CronJob->Settings,true);
 
