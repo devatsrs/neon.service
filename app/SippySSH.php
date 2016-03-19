@@ -370,6 +370,12 @@ class SippySSH{
             $cdr_row['remote_ip']					=	$col_vals[32];
             $cdr_row['vendor_name']					=	$col_vals[33];
 
+            /**
+             * Extract IP from NullString(s=u'167.114.11.15') string.
+             * */
+            if (preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $cdr_row['remote_ip'], $ip)) {
+                $cdr_row['remote_ip'] = array_pop($ip);
+            }
 
             $cdr_array[] = $cdr_row;
             unset($cdr_row);
