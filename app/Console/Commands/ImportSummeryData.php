@@ -145,7 +145,7 @@ class ImportSummeryData extends Command {
                             $tempItemData['AreaName'] = $temp_row['description'];
                         }
                         if (isset($temp_row['billed_duration_min'])) {
-                            $tempItemData['Duration'] = $temp_row['billed_duration_min'];
+                            $tempItemData['Duration'] = $temp_row['billed_duration_min']*60;
                         }
                         if (isset($temp_row['number_of_calls'])) {
                             $tempItemData['TotalCalls'] = $temp_row['number_of_calls'];
