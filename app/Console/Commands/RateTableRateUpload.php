@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempRateTableRate;
 use App\Lib\VendorFileUploadTemplate;
 use Illuminate\Support\Facades\DB;
