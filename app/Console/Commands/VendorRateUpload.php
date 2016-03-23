@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
 use Illuminate\Support\Facades\DB;
@@ -100,24 +101,9 @@ class VendorRateUpload extends Command
                         }
                     };
 
-                    if (!empty($csvoption->Delimiter)) {
-                        Config::set('excel.csv.delimiter', $csvoption->Delimiter);
-                    }
-                    if (!empty($csvoption->Enclosure)) {
-                        Config::set('excel.csv.enclosure', $csvoption->Enclosure);
-                    }
-                    if (!empty($csvoption->Escape)) {
-                        Config::set('excel.csv.line_ending', $csvoption->Escape);
-                    }
-                    Config::set('excel.import.heading','original');
-                    Config::set('excel.import.dates.enable',false);
-                    $isExcel = in_array(pathinfo($jobfile->FilePath, PATHINFO_EXTENSION),['xls','xlsx'])?true:false;
-                    $results =  Excel::selectSheetsByIndex(0)->load($jobfile->FilePath, function ($reader) use ($csvoption,$isExcel) {
-                        if ($csvoption->Firstrow == 'data') {
-                            $reader->noHeading();
-                        }
-                    })->get();
-                    $results = json_decode(json_encode($results), true);
+                    $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                    $results = $NeonExcel->read();
+
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;

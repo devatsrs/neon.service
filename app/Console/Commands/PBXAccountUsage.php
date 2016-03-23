@@ -124,6 +124,8 @@ class PBXAccountUsage extends Command
                      * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
                      * */
                     $is_inbound = (TempUsageDetail::check_inbound($row_account["userfield"]))?1:0;
+                    $is_outbound = (TempUsageDetail::check_inbound($row_account["userfield"]))?1:0;
+
                     if($is_inbound){
                         $cli =   $row_account['src'];
                         $cld =   $row_account['firstdst'];
@@ -149,6 +151,33 @@ class PBXAccountUsage extends Command
                     $data['ProcessID'] = $processID;
                     $data['ID'] = $row_account['ID'];
                     $data['is_inbound'] = $is_inbound;
+
+
+                    if($is_inbound && $is_outbound){
+                        // logic to insert 2 rows.
+
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        $data['GatewayAccountID'] = $row_account['accountcode'];
+                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['cost'] = (float)$row_account['cc_cost'];
+                        $data['cli'] =  $cli;
+                        $data['cld'] =  $cld;
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+                        //$data['AccountID'] = $rowdata->AccountID;
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['pincode'] = $row_account['pincode'];
+                        $data['extension'] = $row_account['extension'];
+                        $data['ProcessID'] = $processID;
+                        $data['ID'] = $row_account['ID'];
+                        $data['is_inbound'] = $is_inbound;
+                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+
+                    }
+
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                     if (count($UniqueID) == 0) {
                         //TempUsageDetail::insert($data);

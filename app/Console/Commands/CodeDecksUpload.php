@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempCodeDeck;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -67,11 +68,13 @@ class CodeDecksUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+        $ProcessID = (string) Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
+        $start_time = date('Y-m-d H:i:s');
+
         Log::useFiles(storage_path() . '/logs/codedecksfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
             if (!empty($job)) {
@@ -81,50 +84,55 @@ class CodeDecksUpload extends Command
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath);
                         if (strpos($path, "https://") !== false) {
-                            $file = Config::get('app.temp_location') . basename($path);
+                            $file = getenv("TEMP_PATH") . basename($path);
                             file_put_contents($file, file_get_contents($path));
                             $jobfile->FilePath = $file;
                         } else {
                             $jobfile->FilePath = $path;
                         }
                     }
+                    Log::info($jobfile->FilePath);
 
-                    $results =  Excel::load($jobfile->FilePath, function ($reader){
-                    })->get();
-                    $results = json_decode(json_encode($results), true);
+                    $NeonExcel = new NeonExcelIO($jobfile->FilePath);
+                    $results = $NeonExcel->read();
+
+                    /*$results =  Excel::load($jobfile->FilePath, function ($reader){
+                    })->get();*/
+                    //$results = json_decode(json_encode($results), true);
                     $error = array();
                     $lineno = 2;
                     $batch_insert_array = [];
                     foreach ($results as $row) {
+
                         $tempcodedeckdata = array();
                         $tempcodedeckdata['codedeckid'] = $joboptions->codedeckid;
                         $tempcodedeckdata['ProcessId'] = $ProcessID;
                         $tempcodedeckdata['CompanyId'] = $CompanyID;
-                        if (isset($row['code']) && !empty($row['code'])) {
-                            $tempcodedeckdata['code'] = $row['code'];
+                        if (isset($row['Code']) && !empty($row['Code'])) {
+                            $tempcodedeckdata['Code'] = $row['Code'];
                         }else{
                             $error[] = 'code is blank at line no:'.$lineno;
                         }
-                        if (isset($row['country']) && !empty($row['country'])) {
-                            $tempcodedeckdata['country'] = $row['country'];
+                        if (isset($row['Country']) && !empty($row['Country'])) {
+                            $tempcodedeckdata['Country'] = $row['Country'];
                         }
-                        if (isset($row['description']) && !empty($row['description'])) {
-                            $tempcodedeckdata['description'] = $row['description'];
+                        if (isset($row['Description']) && !empty($row['Description'])) {
+                            $tempcodedeckdata['Description'] = $row['Description'];
                         }else{
                             $error[] = 'description is blank at line no:'.$lineno;
                         }
-                        if (isset($row['interval1']) && !empty($row['interval1'])) {
-                            $tempcodedeckdata['interval1'] = $row['interval1'];
+                        if (isset($row['Interval1']) && !empty($row['Interval1'])) {
+                            $tempcodedeckdata['Interval1'] = $row['Interval1'];
                         }
-                        if (isset($row['intervaln']) && !empty($row['intervaln'])) {
-                            $tempcodedeckdata['intervaln'] = $row['intervaln'];
+                        if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
+                            $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
                         }
-                        if (isset($row['action']) && !empty($row['action'])) {
-                            $tempcodedeckdata['action'] = $row['action'];
+                        if (isset($row['Action']) && !empty($row['Action'])) {
+                            $tempcodedeckdata['Action'] = $row['Action'];
                         }else{
-                            $tempcodedeckdata['action'] = 'I';
+                            $tempcodedeckdata['Action'] = 'I';
                         }
-                        if(isset($tempcodedeckdata['code']) && isset($tempcodedeckdata['description'])){
+                        if(isset($tempcodedeckdata['Code']) && isset($tempcodedeckdata['Description'])){
                             $batch_insert_array[] = $tempcodedeckdata;
                             $counter++;
                         }
@@ -132,17 +140,20 @@ class CodeDecksUpload extends Command
                             Log::info('Batch insert start');
                             Log::info('global counter'.$lineno);
                             Log::info('insertion start');
+                            Log::info('count ' . count($batch_insert_array));
                             TempCodeDeck::insert($batch_insert_array);
                             Log::info('insertion end');
                             $batch_insert_array = [];
                             $counter = 0;
                         }
                         $lineno++;
-                    }
+                    } // loop end
+
                     if(!empty($batch_insert_array)){
                         Log::info('Batch insert start');
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
+                        Log::info('count ' . count($batch_insert_array));
                         TempCodeDeck::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
@@ -153,19 +164,24 @@ class CodeDecksUpload extends Command
                     Log::info("end CALL  prc_WSProcessCodeDeck ('" . $ProcessID . "','" . $CompanyID . "')");
                     DB::commit();
                     $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+
+                    $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+
+
                     if(!empty($error) || count($JobStatusMessage) > 1){
                         foreach ($JobStatusMessage as $JobStatusMessage) {
                             $error[] = $JobStatusMessage['Message'];
                         }
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error) .  $time_taken;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
                     }elseif(!empty($JobStatusMessage[0]['Message'])) {
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
+
+                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] . $time_taken;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';

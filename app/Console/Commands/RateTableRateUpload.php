@@ -99,7 +99,11 @@ class RateTableRateUpload extends Command
                             $jobfile->FilePath = $path;
                         }
                     }
-                    if (!empty($csvoption->Delimiter)) {
+
+                    $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                    $results = $NeonExcel->read();
+
+                    /*if (!empty($csvoption->Delimiter)) {
                         Config::set('excel.csv.delimiter', $csvoption->Delimiter);
                     }
                     if (!empty($csvoption->Enclosure)) {
@@ -116,7 +120,7 @@ class RateTableRateUpload extends Command
                             $reader->noHeading();
                         }
                     })->get();
-                    $results = json_decode(json_encode($results), true);
+                    $results = json_decode(json_encode($results), true);*/
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;

@@ -15,7 +15,10 @@ use App\Lib\GatewayAccount;
 use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\User;
+use Box\Spout\Common\Type;
+use Box\Spout\Writer\WriterFactory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +77,7 @@ class PortaVendorSheet extends Command {
         $ProcessID = Uuid::generate();
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
+        $start_time = date('Y-m-d H:i:s');
 
         Log::useFiles(storage_path().'/logs/portavendorsheet-'.$JobID.'-'.date('Y-m-d').'.log');
         DB::beginTransaction();
@@ -87,23 +91,25 @@ class PortaVendorSheet extends Command {
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendordownload');
             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
-            $local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+
+            $amazonPath = $amazonPath .  $file_name . '.xlsx';
+            $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
 
             $excel_data = DB::select("CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."')");
-            $excel_data = json_decode(json_encode($excel_data),true);
-            Excel::create($file_name, function ($excel) use ($excel_data,$file_name) {
-                $excel->sheet('Sheet', function ($sheet) use ($excel_data) {
-                    $sheet->fromArray($excel_data);
-                });
-            })->store('xlsx',$local_dir);
-            $file_name .='.xlsx';
 
-            if(!AmazonS3::upload($local_dir.'/'.$file_name,$amazonPath)){
+            $excel_data = json_decode(json_encode($excel_data),true);
+
+            $NeonExcel = new NeonExcelIO($file_path);
+            $NeonExcel->write_excel($excel_data);
+
+            if(!AmazonS3::upload($file_path,$amazonPath)){
                 throw new Exception('Error in Amazon upload');
             }
-            $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
-            $jobdata['OutputFilePath'] = $fullPath;
-            $jobdata['JobStatusMessage'] = 'Porta File Generated Successfully';
+
+            $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+
+            $jobdata['OutputFilePath'] = $amazonPath;
+            $jobdata['JobStatusMessage'] = 'Porta File Generated Successfully' . $time_taken;
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
             $jobdata['ModifiedBy'] = 'RMScheduler';
