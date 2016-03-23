@@ -90,9 +90,9 @@ class PortaVendorSheet extends Command {
                 $tunkids = $joboptions->Trunks;
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendordownload');
-            $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
+            $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
 
-            $amazonPath = $amazonPath .  $file_name . '.xlsx';
+            $amazonPath = $amazonDir .  $file_name . '.xlsx';
             $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
 
             $excel_data = DB::select("CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."')");
@@ -102,7 +102,7 @@ class PortaVendorSheet extends Command {
             $NeonExcel = new NeonExcelIO($file_path);
             $NeonExcel->write_excel($excel_data);
 
-            if(!AmazonS3::upload($file_path,$amazonPath)){
+            if(!AmazonS3::upload($file_path,$amazonDir)){
                 throw new Exception('Error in Amazon upload');
             }
 
