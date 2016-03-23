@@ -180,6 +180,7 @@ class NeonExcelIO
      */
     public function read_csv($filepath,$limit=0) {
 
+        $result = array();
         $this->reader = ReaderFactory::create(Type::CSV); // for XLSX files
         $this->set_file_settings();
         $this->reader->open($filepath);
@@ -221,6 +222,7 @@ class NeonExcelIO
     }
 
     public function read_excel($filepath,$limit=0){
+
 
         $this->reader = ReaderFactory::create(Type::XLSX); // for XLSX files
         $this->reader->open($filepath);
