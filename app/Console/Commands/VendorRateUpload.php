@@ -103,7 +103,6 @@ class VendorRateUpload extends Command
 
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
-
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
@@ -194,8 +193,6 @@ class VendorRateUpload extends Command
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
                         Log::info('last batch insert ' . count($batch_insert_array));
-                        Log::info(print_r($batch_insert_array,true));
-
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }

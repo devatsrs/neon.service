@@ -166,6 +166,7 @@ class CodeDecksUpload extends Command
                     $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
 
                     $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+                    Log::info($time_taken);
 
 
                     if(!empty($error) || count($JobStatusMessage) > 1){
@@ -173,7 +174,7 @@ class CodeDecksUpload extends Command
                             $error[] = $JobStatusMessage['Message'];
                         }
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error) .  $time_taken;
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error) ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
@@ -181,7 +182,7 @@ class CodeDecksUpload extends Command
                     }elseif(!empty($JobStatusMessage[0]['Message'])) {
                         $job = Job::find($JobID);
 
-                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] . $time_taken;
+                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';

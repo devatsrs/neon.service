@@ -200,13 +200,13 @@ class NeonExcelIO
                         $first_row = $row;
                         $this->set_columns($first_row);
                         $this->row_cnt++;
-                        $limit++;
+                        if($limit > 0 ){
+                            $limit++;
+                        }
                         continue;
                     }
 
                     $result[] = $this->set_row($row);
-
-
 
                     $this->row_cnt++;
 
@@ -243,7 +243,9 @@ class NeonExcelIO
                         $first_row = $row;
                         $this->set_columns($first_row);
                         $this->row_cnt++;
-                        $limit++;
+                        if($limit > 0 ){
+                            $limit++;
+                        }
                         continue;
                     }
 

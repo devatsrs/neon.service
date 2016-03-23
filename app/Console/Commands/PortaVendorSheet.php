@@ -107,9 +107,9 @@ class PortaVendorSheet extends Command {
             }
 
             $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
-
+            Log::info($time_taken);
             $jobdata['OutputFilePath'] = $amazonPath;
-            $jobdata['JobStatusMessage'] = 'Porta File Generated Successfully' . $time_taken;
+            $jobdata['JobStatusMessage'] = 'Porta File Generated Successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
             $jobdata['ModifiedBy'] = 'RMScheduler';
