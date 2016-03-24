@@ -168,6 +168,10 @@ class CodeDecksUpload extends Command
                     $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
                     Log::info($time_taken);
 
+                    if(count($error)>20) {
+                        $error = array_slice($error, 0, 20);
+                        $error = array_merge($error,['...']);
+                    }
 
                     if(!empty($error) || count($JobStatusMessage) > 1){
                         foreach ($JobStatusMessage as $JobStatusMessage) {
