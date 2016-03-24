@@ -55,6 +55,9 @@ class SippyMissingCDRFileFix extends Command {
 
 				Log::useFiles(storage_path() . '/logs/sippy_missing_cdrfile_fix-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
+				Log::info("SIPPYFILE_LOCATION  " . getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID );
+
+
 				$all_sippy_filenames = scandir(getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID);
 
 				foreach ((array)$all_sippy_filenames as $file) {
@@ -63,16 +66,25 @@ class SippyMissingCDRFileFix extends Command {
 						$split_arr = explode(".",$file);
 						$cdrfile_time = array_pop($split_arr);
 
-						$datefrom = strtotime("2016-03-13 22:00:00");
+						$datefrom = strtotime("2016-03-13 00:00:00");
 						$dateto = strtotime("2016-03-20 00:00:00");
+
+
 
 						if(is_numeric($cdrfile_time) && $cdrfile_time >= $datefrom && $cdrfile_time <= $dateto ){
 
+							Log::info("cdrfile_time  " . $cdrfile_time . " datefrom " . $datefrom . " dateto " . $dateto );
+
 							Log::info("file converted " . $file);
 
-							$pending_file_name = str_replace('complete', 'pending', basename($file) );
+							$pending_file_name = str_replace('complete_', '', basename($file) );
 							SippySSH::changeCDRFilesStatus("complete-to-pending" , $file , $CompanyGatewayID ,true );
 							UsageDownloadFiles::where("CompanyGatewayID",$CompanyGatewayID)->where("filename",$pending_file_name)->delete();
+							Log::info("  pending_file_name  " . $pending_file_name);
+						}else{
+
+							Log::info("--cdrfile_time  " . $cdrfile_time . " datefrom " . $datefrom . " dateto " . $dateto );
+
 						}
 					}
 				}
@@ -86,10 +98,10 @@ class SippyMissingCDRFileFix extends Command {
 
 		}
 
-			//Log::error(print_r($error,true));
+		//Log::error(print_r($error,true));
 
 
-    }
+	}
 
 
 }
