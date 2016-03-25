@@ -82,13 +82,10 @@ class PBXAccountUsage extends Command
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
-        $processID = Uuid::generate();
+        $processID = (string) Uuid::generate();
         $accounts = array();
         try {
-            DB::beginTransaction();
-            DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
-            Log::error(' ========================== pbx transaction start =============================');
+
             CronJob::createLog($CronJobID);
 
             $pbx = new PBX($CompanyGatewayID);
@@ -117,8 +114,11 @@ class PBXAccountUsage extends Command
             $response = json_decode(json_encode($response), true);
             Log::info('count ==' . count($response));
             if (!isset($response['faultCode'])) {
+
                 foreach ((array)$response as $row_account) {
-                    $data = array();
+
+                    $data = $data_outbound = array();
+
                     /**  User Field
                      * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
                      * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
@@ -133,56 +133,72 @@ class PBXAccountUsage extends Command
                      */
                     $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
 
+                    //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
 
-                    if($call_type == 'inbound' || $call_type == 'both' ) {
+                    $data['CompanyGatewayID'] = $CompanyGatewayID;
+                    $data['CompanyID'] = $CompanyID;
+                    $data['GatewayAccountID'] = $row_account['accountcode'];
+                    $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                    $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                    $data['billed_duration'] = $row_account['billsec'];
+                    $data['duration'] = $row_account['duration'];
+                    $data['trunk'] = 'Other';
+                    $data['area_prefix'] = 'Other';
+                    $data['pincode'] = $row_account['pincode'];
+                    $data['extension'] = $row_account['extension'];
+                    $data['ProcessID'] = $processID;
+                    $data['ID'] = $row_account['ID'];
+                    $data['is_inbound'] = 0;
+                    $data['cost'] = (float)$row_account['cc_cost'];
+                    $data['cli'] = $row_account['src'];
 
-                        $data['CompanyGatewayID'] = $CompanyGatewayID;
-                        $data['CompanyID'] = $CompanyID;
-                        $data['GatewayAccountID'] = $row_account['accountcode'];
-                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
-                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                        $data['cost'] = (float)$row_account['cc_cost'];
-                        $data['cli'] = $row_account['src'];
+
+                    if($call_type == 'inbound' ) {
+
                         $data['cld'] = $row_account['firstdst'];
-                        $data['billed_duration'] = $row_account['billsec'];
-                        $data['duration'] = $row_account['duration'];
-                        $data['trunk'] = 'Other';
-                        $data['area_prefix'] = 'Other';
-                        $data['pincode'] = $row_account['pincode'];
-                        $data['extension'] = $row_account['extension'];
-                        $data['ProcessID'] = $processID;
-                        $data['ID'] = $row_account['ID'];
                         $data['is_inbound'] = 1;
+
+
+                    }else if($call_type == 'outbound' ) {
+
+                        $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+
                     }
 
-                    if($call_type == 'outbound' || $call_type == 'both' ) {
+                    if($call_type == 'both' ) {
 
-                        $data['CompanyGatewayID'] = $CompanyGatewayID;
-                        $data['CompanyID'] = $CompanyID;
-                        $data['GatewayAccountID'] = $row_account['accountcode'];
-                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
-                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                        $data['cost'] = (float)$row_account['cc_cost'];
-                        $data['cli'] =  $row_account['firstdst'];
-                        $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
-                        $data['billed_duration'] = $row_account['billsec'];
-                        $data['duration'] = $row_account['duration'];
-                        $data['trunk'] = 'Other';
-                        $data['area_prefix'] = 'Other';
-                        $data['pincode'] = $row_account['pincode'];
-                        $data['extension'] = $row_account['extension'];
-                        $data['ProcessID'] = $processID;
-                        $data['ID'] = $row_account['ID'];
-                        $data['is_inbound'] = ($call_type == 'both')?1:0;
+                        /**
+                         * Inbound Entry
+                         */
 
-                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+                        $data['cld'] = $row_account['firstdst'];
+                        $data['cost'] = 0;
+                        $data['is_inbound'] = 1;
+
+                        /**
+                         * Outbound Entry
+                         */
+                        $data_outbound = $data;
+
+                        $data_outbound['cli'] =  $row_account['firstdst'];
+                        $data_outbound['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+                        $data_outbound['cost'] = (float)$row_account['cc_cost'];
+                        $data_outbound['is_inbound'] = 0;
 
                     }
 
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                     if (count($UniqueID) == 0) {
-                        //TempUsageDetail::insert($data);
+
                         DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+
+
+                        if($call_type == 'both' && !empty($data_outbound) ) {
+
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data_outbound);
+
+                        }
+
                     }
 
                 }
@@ -191,9 +207,6 @@ class PBXAccountUsage extends Command
 
             $joblogdata['Message'] = "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'];
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            DB::commit();
-            DB::connection('sqlsrv2')->commit();
-            DB::connection('sqlsrvcdrazure')->commit();
             Log::error("pbx CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== pbx transaction end =============================');
 
@@ -228,20 +241,13 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             CronJobLog::insert($joblogdata);
-            //DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
+
         } catch (\Exception $e) {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
                 DB::connection('sqlsrvcdrazure')->rollback();
-            } catch (\Exception $err) {
-                Log::error($err);
-            }
-            // delete temp table if process fail
-            try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
             } catch (\Exception $err) {
                 Log::error($err);
             }

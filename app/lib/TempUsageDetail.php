@@ -167,6 +167,14 @@ class TempUsageDetail extends \Eloquent {
     public static function check_call_type($userfield){
 
         $is_inbound = $is_outbound = false;
+
+        /**
+         * if blank , mark out bound.
+         */
+        if(empty($userfield) ) {
+            $is_outbound = true;
+        }
+
         if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
             $is_inbound = true;
         }
