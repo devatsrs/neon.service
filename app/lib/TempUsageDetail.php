@@ -164,11 +164,22 @@ class TempUsageDetail extends \Eloquent {
 
     }
 
-    public static function check_inbound($userfield){
+    public static function check_call_type($userfield){
 
+        $is_inbound = $is_outbound = false;
         if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
-            return true;
+            $is_inbound = true;
         }
-        return  false;
+        if(isset($userfield) && strpos($userfield,"outbound") !== false ) {
+            $is_outbound = true;
+        }
+
+        if($is_inbound && $is_outbound ){
+            return 'both';
+        }else if($is_inbound){
+            return 'inbound';
+        }else if($is_outbound){
+            return 'outbound';
+        }
     }
 }
