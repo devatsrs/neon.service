@@ -123,32 +123,62 @@ class PBXAccountUsage extends Command
                      * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
                      * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
                      * */
-                    $is_inbound = (TempUsageDetail::check_inbound($row_account["userfield"]))?1:0;
-                    if($is_inbound){
-                        $cli =   $row_account['src'];
-                        $cld =   $row_account['firstdst'];
-                    }else{
-                        $cli =   $row_account['src'];
-                        $cld =   !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+                    /**
+                     * <InboundOutbound>
+
+                    split into two rows Inbound = Src,FirstDst
+
+                    Outbound = FirstDst,LstDst
+
+                     */
+                    $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
+
+
+                    if($call_type == 'inbound' || $call_type == 'both' ) {
+
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        $data['GatewayAccountID'] = $row_account['accountcode'];
+                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['cost'] = (float)$row_account['cc_cost'];
+                        $data['cli'] = $row_account['src'];
+                        $data['cld'] = $row_account['firstdst'];
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['pincode'] = $row_account['pincode'];
+                        $data['extension'] = $row_account['extension'];
+                        $data['ProcessID'] = $processID;
+                        $data['ID'] = $row_account['ID'];
+                        $data['is_inbound'] = 1;
                     }
-                    $data['CompanyGatewayID'] = $CompanyGatewayID;
-                    $data['CompanyID'] = $CompanyID;
-                    $data['GatewayAccountID'] = $row_account['accountcode'];
-                    $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
-                    $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                    $data['cost'] = (float)$row_account['cc_cost'];
-                    $data['cli'] =  $cli;
-                    $data['cld'] =  $cld;
-                    $data['billed_duration'] = $row_account['billsec'];
-                    $data['duration'] = $row_account['duration'];
-                    //$data['AccountID'] = $rowdata->AccountID;
-                    $data['trunk'] = 'Other';
-                    $data['area_prefix'] = 'Other';
-                    $data['pincode'] = $row_account['pincode'];
-                    $data['extension'] = $row_account['extension'];
-                    $data['ProcessID'] = $processID;
-                    $data['ID'] = $row_account['ID'];
-                    $data['is_inbound'] = $is_inbound;
+
+                    if($call_type == 'outbound' || $call_type == 'both' ) {
+
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        $data['GatewayAccountID'] = $row_account['accountcode'];
+                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['cost'] = (float)$row_account['cc_cost'];
+                        $data['cli'] =  $row_account['firstdst'];
+                        $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['pincode'] = $row_account['pincode'];
+                        $data['extension'] = $row_account['extension'];
+                        $data['ProcessID'] = $processID;
+                        $data['ID'] = $row_account['ID'];
+                        $data['is_inbound'] = ($call_type == 'both')?1:0;
+
+                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+
+                    }
+
                     $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                     if (count($UniqueID) == 0) {
                         //TempUsageDetail::insert($data);
