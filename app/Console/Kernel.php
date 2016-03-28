@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel {
 	 */
 	protected $commands = [
 		'App\Console\Commands\Inspire',
-		'App\Console\Commands\DBCleanUpCommand',
+		'App\Console\Commands\DBCleanUp',
 		'App\Console\Commands\SippyAccountUsage',
 		'App\Console\Commands\SippyDownloadCDR',
         'App\Console\Commands\RMService',
