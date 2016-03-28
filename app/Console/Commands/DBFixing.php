@@ -9,10 +9,11 @@ use App\Lib\UsageHeader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use League\Flysystem\Exception;
+use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\Helper;
 use App\Lib\Company;
+
 
 class DBFixing extends Command
 {
@@ -103,7 +104,7 @@ class DBFixing extends Command
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] ='Error:'.$e->getMessage();
