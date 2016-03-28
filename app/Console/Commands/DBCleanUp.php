@@ -1,11 +1,14 @@
 <?php namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Lib\CronJob;
+use App\Lib\CronJobLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use League\Flysystem\Exception;
+use \Exception;
+use Symfony\Component\Console\Input\InputArgument;
 
-class DBCleanUpCommand extends Command {
+class DBCleanUp extends Command {
 
 	/**
 	 * The console command name.
@@ -31,6 +34,14 @@ class DBCleanUpCommand extends Command {
 		parent::__construct();
 	}
 
+	protected function getArguments()
+	{
+		return [
+			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+			['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+		];
+	}
+
 	/**
 	 * Execute the console command.
 	 *
@@ -47,6 +58,7 @@ class DBCleanUpCommand extends Command {
 		$CronJob =  CronJob::find($CronJobID);
 		$dataactive['Active'] = 1;
 		$dataactive['PID'] = $getmypid;
+		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
 		$CronJob->update($dataactive);
 		$cronsetting = json_decode($CronJob->Settings,true);
 
@@ -80,7 +92,7 @@ class DBCleanUpCommand extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 
-		}catch (Exception $e){
+		}catch (\Exception $e){
 			Log::info('DBcleanup Rollback Today.');
 			DB::rollback();
 
@@ -107,7 +119,7 @@ class DBCleanUpCommand extends Command {
 			Log::error("**Email Sent Status ".$result['status']);
 			Log::error("**Email Sent message ".$result['message']);
 		}
-		Log::error(" CronJobId end" . $CronJobID);
+		Log::error(" CronJobId end " . $CronJobID);
 
     }
 
