@@ -39,25 +39,75 @@ class DBCleanUpCommand extends Command {
     public function handle()
 	{
 
-        try{
+		$arguments = $this->argument();
+		$getmypid = getmypid(); // get proccess id
+		$CompanyID = $arguments["CompanyID"];
+		$CronJobID = $arguments["CronJobID"];
 
-            DB::beginTransaction();
-                Log::info('DBcleanup Starts.');
-            DB::statement("CALL prc_WSCronJobDeleteOldVendorRate()");
-                Log::info('DBcleanup: prc_WSCronJobDeleteOldVendorRate Done.');
-            DB::statement("CALL prc_WSCronJobDeleteOldCustomerRate()");
-                Log::info('DBcleanup: prc_WSCronJobDeleteOldCustomerRate Done.');
-            DB::statement("CALL prc_WSCronJobDeleteOldRateTableRate()");
-                Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableRate Done.');
-            DB::statement("CALL prc_WSCronJobDeleteOldRateSheetDetails()");
-                Log::info('DBcleanup: prc_WSCronJobDeleteOldRateSheetDetails Done.');
-            DB::commit();
-            Log::info('DBcleanup Done.');
+		$CronJob =  CronJob::find($CronJobID);
+		$dataactive['Active'] = 1;
+		$dataactive['PID'] = $getmypid;
+		$CronJob->update($dataactive);
+		$cronsetting = json_decode($CronJob->Settings,true);
 
-        }catch (Exception $e){
-            Log::info('DBcleanup Rollback Today.');
-            DB::rollback();
-        }
+
+
+		try{
+
+			$joblogdata = array();
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = date('Y-m-d H:i:s');
+			$joblogdata['created_by'] = 'RMScheduler';
+			CronJob::createLog($CronJobID);
+			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+
+
+
+			DB::beginTransaction();
+			Log::info('DBcleanup Starts.');
+			DB::statement("CALL prc_WSCronJobDeleteOldVendorRate()");
+			Log::info('DBcleanup: prc_WSCronJobDeleteOldVendorRate Done.');
+			DB::statement("CALL prc_WSCronJobDeleteOldCustomerRate()");
+			Log::info('DBcleanup: prc_WSCronJobDeleteOldCustomerRate Done.');
+			DB::statement("CALL prc_WSCronJobDeleteOldRateTableRate()");
+			Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableRate Done.');
+			DB::statement("CALL prc_WSCronJobDeleteOldRateSheetDetails()");
+			Log::info('DBcleanup: prc_WSCronJobDeleteOldRateSheetDetails Done.');
+			DB::commit();
+			Log::info('DBcleanup Done.');
+
+			$joblogdata['Message'] = 'Success';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			CronJobLog::insert($joblogdata);
+
+		}catch (Exception $e){
+			Log::info('DBcleanup Rollback Today.');
+			DB::rollback();
+
+			Log::error($e);
+			$this->info('Failed:' . $e->getMessage());
+			$joblogdata['Message'] ='Error:'.$e->getMessage();
+			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+			CronJobLog::insert($joblogdata);
+			if(!empty($cronsetting['ErrorEmail'])) {
+
+				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+				Log::error("**Email Sent Status " . $result['status']);
+				Log::error("**Email Sent message " . $result['message']);
+			}
+
+
+		}
+
+		$dataactive['Active'] = 0;
+		$dataactive['PID'] = '';
+		$CronJob->update($dataactive);
+		if(!empty($cronsetting['SuccessEmail'])) {
+			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
+			Log::error("**Email Sent Status ".$result['status']);
+			Log::error("**Email Sent message ".$result['message']);
+		}
+		Log::error(" CronJobId end" . $CronJobID);
 
     }
 
