@@ -15,6 +15,7 @@ use App\Lib\Company;
 use App\Lib\Currency;
 use App\Lib\Helper;
 use App\Lib\Job;
+use App\Lib\NeonExcelIO;
 use App\Lib\RateSheetDetails;
 use App\Lib\User;
 use Illuminate\Console\Command;
@@ -116,6 +117,8 @@ class CustomerRateSheetGenerator extends Command {
                 Log::info('job transaction start ' . $JobID);
                 Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
                 if (!empty($ids)) {
+
+
                     $ids = explode(',', $ids);
                     if (count($ids) > 0) {
                         $accounts = Account::whereIn('AccountID', $ids)->get();
@@ -124,7 +127,9 @@ class CustomerRateSheetGenerator extends Command {
                         $jobdata['JobStatusMessage'] = 'ids is empty';
                     }
                 } else {
+
                     if (!empty($criteria)) {
+
                         $account = Account::leftjoin('tblUser', 'tblAccount.Owner', '=', 'tblUser.UserID')->select('tblAccount.*');
                         $account->where(["tblAccount.CompanyID" => $CompanyID]);
                         $account->where(["tblAccount.AccountType" => 1]);
@@ -191,7 +196,11 @@ class CustomerRateSheetGenerator extends Command {
                             $data['extra'] = $extra;
                             $data['replace'] = $replace;
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
+
+
                             if (isset($joboptions->isMerge) && $joboptions->isMerge ==1 && isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
+
+
                                 foreach ($joboptions->Trunks as $trunk) {
                                     if(in_array($trunk,$trunks)) {
                                         $excel_data = array();
@@ -215,6 +224,9 @@ class CustomerRateSheetGenerator extends Command {
                                 }
 
                             } else if (isset($joboptions->isMerge) && $joboptions->isMerge ==0 &&  isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
+
+
+
                                 foreach ($joboptions->Trunks as $trunk) {
                                     if (in_array($trunk, $trunks)) {
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
@@ -240,6 +252,9 @@ class CustomerRateSheetGenerator extends Command {
                                 }
 
                             }else if (isset($joboptions->Trunks) && !is_array($joboptions->Trunks)) {
+
+                                //Log::info("Trunks" . $joboptions->Trunks );
+
                                 if(in_array($joboptions->Trunks,$trunks)) {
                                     Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "')");
@@ -369,34 +384,13 @@ class CustomerRateSheetGenerator extends Command {
         return $sheet;
     }
     public function generateexcel($file_name,$data,$local_dir){
-        $excel_data_sheet = array();
-        $header_data = array();
-        $excel_data = $data['excel_data'];
-        foreach($excel_data as $excel_data_rr){
-            array_shift($excel_data_rr);
-            array_shift($excel_data_rr);
-            array_shift($excel_data_rr);
-            $excel_data_sheet[] = $excel_data_rr;
-            $header_data = array_keys($excel_data_rr);
-        }
-        $header_data  = array_map('ucwords',$header_data);
-        array_walk($header_data , 'custom_replace');
-        if(count($header_data) == 0){
-            $header_data[] = 'Destination';
-            $header_data[] = 'Codes';
-            $header_data[] = 'Tech Prefix';
-            $header_data[] = 'Interval';
-            $data['text'] = 'Rate Per Minute (USD)';
-            $header_data[] = generic_replace($data);
-            $header_data[] = 'Level';
-            $header_data[] = 'Change';
-            $header_data[] = 'Effective Date';
-        }
-        for($i=0;$i<count($header_data);$i++){
-            $data['text'] = $header_data[$i];
-            $header_data[$i] = generic_replace($data);
-        }
-        Excel::create($file_name, function ($excel) use ($excel_data_sheet,$header_data,$file_name,$data) {
+
+        $file_path = $local_dir.$file_name.'.xlsx';
+
+        $NeonExcel = new NeonExcelIO($file_path);
+        $NeonExcel->write_ratessheet_excel_generate($data);
+
+        /*Excel::create($file_name, function ($excel) use ($excel_data_sheet,$header_data,$file_name,$data) {
             $excel->sheet('Sheet', function ($sheet) use ($excel_data_sheet,$header_data,$data) {
                 $count = $this->setSheetHeader($sheet,$data,$header_data);
                 $count++;
@@ -404,10 +398,18 @@ class CustomerRateSheetGenerator extends Command {
                 $count = count($excel_data_sheet)+$count;
                 $this->setSheetFooter($sheet,$count,$data);
             });
-        })->store('xlsx',$local_dir);
+        })->store('xlsx',$local_dir);*/
     }
+
+
     public function generatemultisheetexcel($file_name,$data,$local_dir){
 
+        $file_path = $local_dir.$file_name.'.xlsx';
+
+        $NeonExcel = new NeonExcelIO($file_path);
+        $NeonExcel->write_multi_ratessheet_excel_generate($data);
+
+        /*
         Excel::create($file_name, function ($excel) use ($data,$file_name) {
             $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
             foreach($excel_data as $trunk => $excel_rows) {
@@ -440,7 +442,8 @@ class CustomerRateSheetGenerator extends Command {
                     $this->setSheetFooter($sheet, $count, $data);
                 });
             }
-        })->store('xlsx',$local_dir);
+        })->store('xlsx',$local_dir);*/
+
     }
 
     public function sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser){
