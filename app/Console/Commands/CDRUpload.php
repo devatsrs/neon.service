@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
 use Symfony\Component\Console\Input\InputArgument;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Webpatser\Uuid\Uuid;
 
 class CDRUpload extends Command
@@ -106,6 +107,11 @@ class CDRUpload extends Command
                         $jobfile->FilePath = $path;
                     }
                 }
+
+                $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                $results = $NeonExcel->read();
+
+                /*
                 if (!empty($csvoption->Delimiter)) {
                     Config::set('excel::csv.delimiter', $csvoption->Delimiter);
                 }
@@ -116,13 +122,14 @@ class CDRUpload extends Command
                     Config::set('excel::csv.line_ending', $csvoption->Escape);
                 }
                 Config::set('excel.import.heading','original');
+                Config::set('excel.import.dates.enable',false);
                 $excel = Excel::load($jobfile->FilePath, function ($reader) use ($csvoption) {
                     if ($csvoption->Firstrow == 'data') {
                         $reader->noHeading();
                     }
-                    $reader->formatDates(true, 'Y-m-d');
                 })->get();
-                $results = json_decode(json_encode($excel), true);
+                $results = json_decode(json_encode($excel), true);*/
+
                 if (isset($joboptions->CheckCustomerCLI) && $joboptions->CheckCustomerCLI == 1) {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
@@ -162,9 +169,9 @@ class CDRUpload extends Command
                         $cdrdata['trunk'] = 'Other';
                         $cdrdata['area_prefix'] = 'Other';
                         if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
-                            $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_datetime]);
+                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]));
                         } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
-                            $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]);
+                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]));
                         }
                         if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
                             $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
@@ -173,7 +180,7 @@ class CDRUpload extends Command
                             $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
                         }
                         if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
-                            $cdrdata['disconnect_time'] = formatDate($temp_row[$attrselection->disconnect_time]);
+                            $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]));
                         } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
                             $strtotime = strtotime($cdrdata['connect_time']);
                             $billed_duration = $cdrdata['billed_duration'];
@@ -265,7 +272,7 @@ class CDRUpload extends Command
                         TempUsageDownloadLog::insert($logdata);
 
                         // Delete old records.
-                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "','')");
+                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',0,'')");
 
                     }
 

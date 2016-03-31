@@ -19,29 +19,29 @@ use Webpatser\Uuid\Uuid;
 
 class CDRRecalculate extends Command {
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'cdrrecal';
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'cdrrecal';
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'Command description.';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description.';
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		parent::__construct();
-	}
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
     /**
      * Get the console command arguments.
      *
@@ -55,13 +55,13 @@ class CDRRecalculate extends Command {
         ];
     }
 
-	/**
-	 * Execute the console command.
-	 *
-	 * @return mixed
-	 */
-	public function handle()
-	{
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function handle()
+    {
         $arguments = $this->argument();
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
@@ -79,8 +79,8 @@ class CDRRecalculate extends Command {
 
             $joboptions = json_decode($job->Options);
             if(!empty($job)) {
-                $AccountID='';
-                $startdate = $enddate= '';
+                $AccountID=0;
+                $CDRType = $startdate = $enddate= '';
                 $CompanyGatewayID = $joboptions->CompanyGatewayID;
                 $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
                 if(!empty($joboptions->AccountID) && $joboptions->AccountID> 0){
@@ -93,24 +93,27 @@ class CDRRecalculate extends Command {
                 if(!empty($joboptions->EndDate)) {
                     $enddate = $joboptions->EndDate;
                 }
+                if(isset($joboptions->CDRType)) {
+                    $CDRType = $joboptions->CDRType;
+                }
                 if(!empty($startdate) && !empty($enddate)){
-                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."')");
+                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."')");
                     $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
 
                 }
                 if (count($skiped_account_data)) {
                     $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
-                if(count($skiped_account_data) == 0) {
-                    DB::connection('sqlsrvcdrazure')->beginTransaction();
-                    DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "')");
-                    DB::connection('sqlsrvcdrazure')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
-                    DB::connection('sqlsrvcdrazure')->commit();
-                }
+                //if(count($skiped_account_data) == 0) {
+                DB::connection('sqlsrvcdrazure')->beginTransaction();
+                DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."')");
+                DB::connection('sqlsrvcdrazure')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
+                DB::connection('sqlsrvcdrazure')->commit();
+                //}
                 DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== cdr transaction end =============================');
                 $jobdata['updated_at'] = date('Y-m-d H:i:s');
@@ -143,6 +146,6 @@ class CDRRecalculate extends Command {
         }
         Job::send_job_status_email($job,$CompanyID);
 
-	}
+    }
 }
 
