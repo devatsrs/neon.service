@@ -104,24 +104,6 @@ class RateTableRateUpload extends Command
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
 
-                    /*if (!empty($csvoption->Delimiter)) {
-                        Config::set('excel.csv.delimiter', $csvoption->Delimiter);
-                    }
-                    if (!empty($csvoption->Enclosure)) {
-                        Config::set('excel.csv.enclosure', $csvoption->Enclosure);
-                    }
-                    if (!empty($csvoption->Escape)) {
-                        Config::set('excel.csv.line_ending', $csvoption->Escape);
-                    }
-                    Config::set('excel.import.heading','original');
-                    Config::set('excel.import.dates.enable',false);
-                    $isExcel = in_array(pathinfo($jobfile->FilePath, PATHINFO_EXTENSION),['xls','xlsx'])?true:false;
-                    $results =  Excel::selectSheetsByIndex(0)->load($jobfile->FilePath, function ($reader) use ($csvoption,$isExcel) {
-                        if ($csvoption->Firstrow == 'data') {
-                            $reader->noHeading();
-                        }
-                    })->get();
-                    $results = json_decode(json_encode($results), true);*/
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
@@ -157,7 +139,7 @@ class RateTableRateUpload extends Command
                         }
                         if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
                             try {
-                                $tempratetabledata['EffectiveDate'] = formatSmallDate($temp_row[$attrselection->EffectiveDate], $attrselection->DateFormat);
+                                $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
                             }catch (\Exception $e){
                                 $error[] = 'Date format is Wrong  at line no:'.$lineno;
                             }
@@ -242,7 +224,7 @@ class RateTableRateUpload extends Command
 
                 }
             }
-            
+
             DB::commit();
 
         } catch (\Exception $e) {

@@ -305,4 +305,122 @@ class NeonExcelIO
         return $col_row;
     }
 
+
+    /**
+     * Generare Rate Sheet Excel file
+     * @param $excel_data_sheet
+     * @param $header_data
+     * @param $data
+     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
+     */
+    public function write_ratessheet_excel_generate($data){
+        $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+        $writer->openToFile($this->file); // write data to a file or to a PHP stream
+
+        $excel_data_sheet = array();
+        $header_data = array();
+        $excel_data = $data['excel_data'];
+        foreach($excel_data as $excel_data_rr){
+            array_shift($excel_data_rr);
+            array_shift($excel_data_rr);
+            array_shift($excel_data_rr);
+            $excel_data_sheet[] = $excel_data_rr;
+            $header_data = array_keys($excel_data_rr);
+        }
+        $header_data  = array_map('ucwords',$header_data);
+        array_walk($header_data , 'custom_replace');
+        if(count($header_data) == 0){
+            $header_data[] = 'Destination';
+            $header_data[] = 'Codes';
+            $header_data[] = 'Tech Prefix';
+            $header_data[] = 'Interval';
+            $data['text'] = 'Rate Per Minute (USD)';
+            $header_data[] = generic_replace($data);
+            $header_data[] = 'Level';
+            $header_data[] = 'Change';
+            $header_data[] = 'Effective Date';
+        }
+        for($i=0;$i<count($header_data);$i++){
+            $data['text'] = $header_data[$i];
+            $header_data[$i] = generic_replace($data);
+        }
+
+        if(isset($header_data)){
+            $writer->addRow($header_data);
+        }
+        if(isset($excel_data_sheet) > 0 ) {
+            $writer->addRows($excel_data_sheet); // add multiple rows at a time
+        }
+        $writer->close();
+    }
+
+    /**
+     * Generare Multi Rate Sheet Excel file
+     * @param $excel_data_sheet
+     * @param $header_data
+     * @param $data
+     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
+     */
+    public function write_multi_ratessheet_excel_generate($data){
+        $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+        $writer->openToFile($this->file); // write data to a file or to a PHP stream
+
+        Log::info( " writing to... " . $this->file );
+
+
+        $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
+        if(isset($excel_data) > 0 ) {
+
+            $sheet_index = 1;
+            foreach($excel_data as $trunk => $excel_rows) {
+
+                $excel_data_sheet = array();
+                $header_data = array();
+                foreach($excel_rows as $excel_data_rr){
+                    array_shift($excel_data_rr);
+                    array_shift($excel_data_rr);
+                    array_shift($excel_data_rr);
+                    $excel_data_sheet[] = $excel_data_rr;
+                    $header_data = array_keys($excel_data_rr);
+                }
+                $header_data  = array_map('ucwords',$header_data);
+                array_walk($header_data , 'custom_replace');
+                if(count($header_data) == 0){
+                    $header_data[] = 'Destination';
+                    $header_data[] = 'Codes';
+                    $header_data[] = 'Tech Prefix';
+                    $header_data[] = 'Interval';
+                    $header_data[] = 'Rate Per Minute (USD)';
+                    $header_data[] = 'Level';
+                    $header_data[] = 'Change';
+                    $header_data[] = 'Effective Date';
+                }
+
+                Log::info($trunk . " sheet index " . $sheet_index );
+                if($sheet_index == 1){
+
+
+                    $sheet = $writer->getCurrentSheet();
+                    $sheet_index++;
+                }else{
+
+                    $sheet = $writer->addNewSheetAndMakeItCurrent();
+                }
+
+                //$writer->setCurrentSheet($sheet);
+
+                $sheet->setName($trunk);
+
+                if(isset($header_data)){
+                    $writer->addRow($header_data);
+                }
+                $writer->addRows($excel_data_sheet); // add multiple rows at a time
+
+            }
+
+
+
+        }
+        $writer->close();
+    }
 }

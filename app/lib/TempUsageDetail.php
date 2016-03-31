@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TempUsageDetail extends \Eloquent {
-	protected $fillable = [];
+    protected $fillable = [];
     protected $connection = 'sqlsrv2';
     public $timestamps = false; // no created_at and updated_at
 
@@ -180,6 +180,8 @@ class TempUsageDetail extends \Eloquent {
             return 'inbound';
         }else if($is_outbound){
             return 'outbound';
+        }else if(empty($userfield) ) {
+            return 'none';
         }
     }
 }
