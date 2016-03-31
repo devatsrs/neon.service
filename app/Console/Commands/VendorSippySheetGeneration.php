@@ -8,6 +8,7 @@ use App\Lib\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
@@ -52,8 +53,8 @@ class VendorSippySheetGeneration extends Command {
                 $tunkids = $joboptions->Trunks;
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorsippydownload');
-            $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
-            $local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
+            //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
             $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."')");
             $excel_data = json_decode(json_encode($excel_data),true);
@@ -65,6 +66,17 @@ class VendorSippySheetGeneration extends Command {
                 }
             }
 
+            $amazonPath = $amazonDir .  $file_name . '.xlsx';
+            $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+
+            $NeonExcel = new NeonExcelIO($file_path);
+            $NeonExcel->write_excel($excel_data);
+
+            if(!AmazonS3::upload($file_path,$amazonDir)){
+                throw new Exception('Error in Amazon upload');
+            }
+
+            /*
             Excel::create($file_name, function ($excel) use ($excel_data,$file_name) {
                 $excel->sheet('Sheet', function ($sheet) use ($excel_data) {
                     $sheet->fromArray($excel_data);
@@ -74,8 +86,8 @@ class VendorSippySheetGeneration extends Command {
 
             if(!AmazonS3::upload($local_dir.'/'.$file_name,$amazonPath)){
                 throw new Exception('Error in Amazon upload');
-            }
-            $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
+            }*/
+            $fullPath = $amazonPath; //$destinationPath . $file_name;
             $jobdata['OutputFilePath'] = $fullPath;
             $jobdata['JobStatusMessage'] = 'Vendor Sippy File Generated Successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');

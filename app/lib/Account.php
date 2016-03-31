@@ -20,6 +20,7 @@ class Account extends \Eloquent {
     public static $req_cdr_summary_column_single = array('area_prefix','total_charges','total_duration','number_of_cdr');
 
 
+    // not in use
     public static function checkExcelFormat($cdr_type,$filepath,$single=0){
         $formatstaus=  'Column are missing:';
         if(isset($cdr_type) && $cdr_type>0) {
@@ -67,6 +68,8 @@ class Account extends \Eloquent {
         $cdr_type = Account::where(array('AccountID'=>$accountid))->pluck('CDRType');
         return $cdr_type;
     }
+
+    //not in use
     public static function getExcelFormat($filepath){
         $excel = Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()->toArray();
         $excel_array_key = array_keys($excel);
