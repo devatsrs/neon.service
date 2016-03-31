@@ -103,17 +103,17 @@ class CDRRecalculate extends Command {
                 }
                 if (count($skiped_account_data)) {
                     $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
-                if(count($skiped_account_data) == 0) {
+                //if(count($skiped_account_data) == 0) {
                     DB::connection('sqlsrvcdrazure')->beginTransaction();
                     DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."')");
                     DB::connection('sqlsrvcdrazure')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
                     DB::connection('sqlsrvcdrazure')->commit();
-                }
+                //}
                 DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== cdr transaction end =============================');
                 $jobdata['updated_at'] = date('Y-m-d H:i:s');
