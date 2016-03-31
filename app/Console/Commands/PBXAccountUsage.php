@@ -118,6 +118,7 @@ class PBXAccountUsage extends Command
                 foreach ((array)$response as $row_account) {
 
                     $data = $data_outbound = array();
+                    if(!empty($row_account['accountcode'])) {
 
                     /**  User Field
                      * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
@@ -163,6 +164,11 @@ class PBXAccountUsage extends Command
 
                         $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
 
+                    } else if ($call_type == 'none') {
+
+                        $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                        $data['is_inbound'] = 2;
+                        /** if user field is blank */
                     }
 
                     if($call_type == 'both' ) {
@@ -199,6 +205,7 @@ class PBXAccountUsage extends Command
 
                         }
 
+                    }
                     }
 
                 }

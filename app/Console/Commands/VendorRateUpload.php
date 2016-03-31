@@ -139,7 +139,7 @@ class VendorRateUpload extends Command
                         }
                         if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
                             try {
-                                $tempvendordata['EffectiveDate'] = formatSmallDate($temp_row[$attrselection->EffectiveDate], $attrselection->DateFormat);
+                                $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
                             }catch (\Exception $e){
                                 $error[] = 'Date format is Wrong  at line no:'.$lineno;
                             }
@@ -193,6 +193,8 @@ class VendorRateUpload extends Command
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
                         Log::info('last batch insert ' . count($batch_insert_array));
+                        Log::info(print_r($batch_insert_array,true));
+
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
