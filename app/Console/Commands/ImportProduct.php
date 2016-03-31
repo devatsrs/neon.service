@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -45,7 +46,9 @@ class ImportProduct extends Command {
 
 
 
-         $results =  Excel::load($file)->toArray();
+         //$results =  Excel::load($file)->toArray();
+        $NeonExcel = new NeonExcelIO($file);
+        $results = $NeonExcel->read();
          $lineno = 2;
         $error = array();
         foreach ($results as $temp_row) {

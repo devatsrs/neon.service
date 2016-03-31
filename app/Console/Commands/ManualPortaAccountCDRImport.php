@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
@@ -54,11 +55,13 @@ class ManualPortaAccountCDRImport extends Command {
         $file = 'C:/Users/deven/Desktop/TMP/CDR/CDRs/CDRs/HGA Accountants.csv';
         //Account	From	To	Country	Description	Date/Time	Charged time, hour:min:sec	Amount, GBP	Hidden
 
-        $results =  Excel::load($file)->toArray();
+        //$results =  Excel::load($file)->toArray();
+        $NeonExcel = new NeonExcelIO($file);
+        $results = $NeonExcel->read();
         //print_r($results);
         //exit;
         $lineno = 2;
-        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',$AccountID )");
+        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',$AccountID,'' )");
         $error = array();
         foreach ($results as $temp_row) {
 

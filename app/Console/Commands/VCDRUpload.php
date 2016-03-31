@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 
@@ -105,6 +106,7 @@ class VCDRUpload extends Command
                         $jobfile->FilePath = $path;
                     }
                 }
+                /*
                 if (!empty($csvoption->Delimiter)) {
                     Config::set('excel::csv.delimiter', $csvoption->Delimiter);
                 }
@@ -122,7 +124,9 @@ class VCDRUpload extends Command
                     $reader->formatDates(true, 'Y-m-d');
                 })->get();
                 $results = json_decode(json_encode($excel), true);
-
+                */
+                $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                $results = $NeonExcel->read();
 
                 $lineno = 2;
                 if ($csvoption->Firstrow == 'data') {
@@ -141,9 +145,9 @@ class VCDRUpload extends Command
                     $cdrdata['trunk'] = 'Other';
                     $cdrdata['area_prefix'] = 'Other';
                     if (!empty($attrselection->connect_datetime)) {
-                        $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_datetime]);
+                        $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]));
                     } elseif (!empty($attrselection->connect_date)) {
-                        $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]);
+                        $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]));
                     }
                     if (!empty($attrselection->billed_duration)) {
                         $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
@@ -152,7 +156,7 @@ class VCDRUpload extends Command
                         $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
                     }
                     if (!empty($attrselection->disconnect_time)) {
-                        $cdrdata['disconnect_time'] = formatDate($temp_row[$attrselection->disconnect_time]);
+                        $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]));
                     } elseif (!empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
                         $strtotime = strtotime($cdrdata['connect_time']);
                         $billed_duration = $cdrdata['billed_duration'];

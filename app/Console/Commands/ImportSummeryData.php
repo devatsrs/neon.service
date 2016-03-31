@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Webpatser\Uuid\Uuid;
 
 class ImportSummeryData extends Command {
@@ -59,7 +60,9 @@ class ImportSummeryData extends Command {
 
                 Log::info($filepath . '  - Processing ');
 
-                $results = Excel::load($filepath)->toArray();
+                //$results = Excel::load($filepath)->toArray();
+                $NeonExcel = new NeonExcelIO($filepath);
+                $results = $NeonExcel->read();
 
                 Log::info(count($results) . '  - Records Found ');
 
