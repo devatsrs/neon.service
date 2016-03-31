@@ -168,12 +168,7 @@ class TempUsageDetail extends \Eloquent {
 
         $is_inbound = $is_outbound = false;
 
-        /**
-         * if blank , mark out bound.
-         */
-        if(empty($userfield) ) {
-            $is_outbound = true;
-        }
+
 
         if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
             $is_inbound = true;
@@ -188,6 +183,8 @@ class TempUsageDetail extends \Eloquent {
             return 'inbound';
         }else if($is_outbound){
             return 'outbound';
+        }else if(empty($userfield) ) {
+            return 'none';
         }
     }
 }
