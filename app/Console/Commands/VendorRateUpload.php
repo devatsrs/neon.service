@@ -193,8 +193,6 @@ class VendorRateUpload extends Command
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
                         Log::info('last batch insert ' . count($batch_insert_array));
-                        Log::info(print_r($batch_insert_array,true));
-
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
