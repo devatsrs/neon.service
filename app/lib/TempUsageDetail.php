@@ -101,7 +101,7 @@ class TempUsageDetail extends \Eloquent {
          * IF PBX Gateway
          * Incomming CDR Rerate
          */
-        $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$ProcessID,$temptableName,1);
+        $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$ProcessID,$temptableName);
         if(count($inbound_errors) > 0){
             $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
         }
@@ -147,11 +147,11 @@ class TempUsageDetail extends \Eloquent {
      * for is_inbound = 1 it will rerate based on Inbound RateTAble assign on Account.
      * Rerate Inbound CDRs
      */
-    public static function inbound_rerate($CompanyID,$processID,$temptableName,$RateCDR){
+    public static function inbound_rerate($CompanyID,$processID,$temptableName){
 
         $response = array();
         Log::info("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
-        $result = DB::connection('sqlsrvcdr')->select("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "','".$RateCDR."')");
+        $result = DB::connection('sqlsrvcdr')->select("CALL  prc_update_inbound_call_rate ('" . $CompanyID . "','" . $processID . "', '" . $temptableName . "')");
         if(count($result) > 0) {
             foreach ($result as $row ) {
                 $response[] =  $row->Message;
