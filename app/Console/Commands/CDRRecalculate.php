@@ -82,7 +82,7 @@ class CDRRecalculate extends Command {
                 $AccountID=0;
                 $CDRType = $startdate = $enddate= '';
                 $CompanyGatewayID = $joboptions->CompanyGatewayID;
-                $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+                $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID,'recal');
                 if(!empty($joboptions->AccountID) && $joboptions->AccountID> 0){
                     $AccountID = (int)$joboptions->AccountID;
                 }
