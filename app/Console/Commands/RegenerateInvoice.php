@@ -129,7 +129,10 @@ class RegenerateInvoice extends Command {
                                         if (isset($response["status"]) && $response["status"] == 'success') {
 
                                             Log::info('Invoice created - ' . print_r($response, true));
+                                            Log::info('Invoice Commited  AccountID = ' . $AccountID);
                                             $message[] = $response["message"];
+                                            DB::commit();
+                                            DB::connection('sqlsrv2')->commit();
 
                                         } else {
 
@@ -143,13 +146,6 @@ class RegenerateInvoice extends Command {
 
                                         }
 
-                                        if (count($errors) == 0) {
-
-                                            Log::info('Invoice Commited  AccountID = ' . $AccountID);
-
-                                            DB::commit();
-                                            DB::connection('sqlsrv2')->commit();
-                                        }
                                     }
                                 }
                             }
