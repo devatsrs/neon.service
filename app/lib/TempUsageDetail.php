@@ -44,17 +44,15 @@ class TempUsageDetail extends \Eloquent {
         Log::error(' prc_setAccountID end CompanyGatewayID = '.$CompanyGatewayID);
 		*/
 
+        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
+        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
+        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
 
         if($RateFormat == Company::PREFIX) {
             Log::error(' prc_updatePrefixTrunk start CompanyGatewayID = '.$CompanyGatewayID);
             DB::connection('sqlsrv2')->statement("CALL  prc_updatePrefixTrunk ('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "' , '".$temptableName."')");
             Log::error(' prc_updatePrefixTrunk end CompanyGatewayID = '.$CompanyGatewayID);
         }
-
-
-        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
-        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
 
         if($RateCDR == 1){
             $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
