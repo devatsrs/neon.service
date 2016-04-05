@@ -106,7 +106,7 @@ class PBXAccountUsage extends Command
                 $CdrBehindData['startdatetime'] =$param['start_date_ymd'];
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
-             //CdrBehindDuration
+            //CdrBehindDuration
 
             $today_current = date('Y-m-d H:i:s');
 
@@ -120,92 +120,93 @@ class PBXAccountUsage extends Command
                     $data = $data_outbound = array();
                     if(!empty($row_account['accountcode'])) {
 
-                    /**  User Field
-                     * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
-                     * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
-                     * */
-                    /**
-                     * <InboundOutbound>
 
-                    split into two rows Inbound = Src,FirstDst
-
-                    Outbound = FirstDst,LstDst
-
-                     */
-                    $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
-
-                    //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
-
-                    $data['CompanyGatewayID'] = $CompanyGatewayID;
-                    $data['CompanyID'] = $CompanyID;
-                    $data['GatewayAccountID'] = $row_account['accountcode'];
-                    $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
-                    $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                    $data['billed_duration'] = $row_account['billsec'];
-                    $data['duration'] = $row_account['duration'];
-                    $data['trunk'] = 'Other';
-                    $data['area_prefix'] = 'Other';
-                    $data['pincode'] = $row_account['pincode'];
-                    $data['extension'] = $row_account['extension'];
-                    $data['ProcessID'] = $processID;
-                    $data['ID'] = $row_account['ID'];
-                    $data['is_inbound'] = 0;
-                    $data['cost'] = (float)$row_account['cc_cost'];
-                    $data['cli'] = $row_account['src'];
-
-
-                    if($call_type == 'inbound' ) {
-
-                        $data['cld'] = $row_account['firstdst'];
-                        $data['is_inbound'] = 1;
-
-
-                    }else if($call_type == 'outbound' ) {
-
-                        $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
-
-                    } else if ($call_type == 'none') {
-
-                        $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
-                        $data['is_inbound'] = 2;
-                        /** if user field is blank */
-                    }
-
-                    if($call_type == 'both' ) {
-
+                        /**  User Field
+                         * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
+                         * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
+                         * */
                         /**
-                         * Inbound Entry
+                         * <InboundOutbound>
+                         *
+                         * split into two rows Inbound = Src,FirstDst
+                         *
+                         * Outbound = FirstDst,LstDst
                          */
+                        $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
 
-                        $data['cld'] = $row_account['firstdst'];
-                        $data['cost'] = 0;
-                        $data['is_inbound'] = 1;
+                        //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
 
-                        /**
-                         * Outbound Entry
-                         */
-                        $data_outbound = $data;
-
-                        $data_outbound['cli'] =  $row_account['firstdst'];
-                        $data_outbound['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
-                        $data_outbound['cost'] = (float)$row_account['cc_cost'];
-                        $data_outbound['is_inbound'] = 0;
-
-                    }
-
-                    $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
-                    if (count($UniqueID) == 0) {
-
-                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        $data['GatewayAccountID'] = $row_account['accountcode'];
+                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['pincode'] = $row_account['pincode'];
+                        $data['extension'] = $row_account['extension'];
+                        $data['ProcessID'] = $processID;
+                        $data['ID'] = $row_account['ID'];
+                        $data['is_inbound'] = 0;
+                        $data['cost'] = (float)$row_account['cc_cost'];
+                        $data['cli'] = $row_account['src'];
 
 
-                        if($call_type == 'both' && !empty($data_outbound) ) {
+                        if ($call_type == 'inbound') {
 
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data_outbound);
+                            $data['cld'] = $row_account['firstdst'];
+                            $data['is_inbound'] = 1;
+
+
+                        } else if ($call_type == 'outbound') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+
+                        } else if ($call_type == 'none') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            $data['is_inbound'] = 2;
+                            /** if user field is blank */
+                        }
+
+                        if ($call_type == 'both') {
+
+                            /**
+                             * Inbound Entry
+                             */
+
+                            $data['cld'] = $row_account['firstdst'];
+                            $data['cost'] = 0;
+                            $data['is_inbound'] = 1;
+
+                            /**
+                             * Outbound Entry
+                             */
+                            $data_outbound = $data;
+
+                            $data_outbound['cli'] = $row_account['firstdst'];
+                            $data_outbound['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            $data_outbound['cost'] = (float)$row_account['cc_cost'];
+                            $data_outbound['is_inbound'] = 0;
 
                         }
 
-                    }
+                        $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
+                        if (count($UniqueID) == 0) {
+
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
+
+
+                            if ($call_type == 'both' && !empty($data_outbound)) {
+
+                                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data_outbound);
+
+                            }
+
+                        }
+
                     }
 
                 }

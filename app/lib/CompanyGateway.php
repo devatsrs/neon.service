@@ -88,7 +88,7 @@ class CompanyGateway extends \Eloquent {
                                     `is_inbound` TINYINT(1) DEFAULT 0,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`ProcessID`, `is_inbound`, `cld`)
+                                    INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`, `is_inbound`, `cld`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);

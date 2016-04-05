@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TempUsageDetail extends \Eloquent {
-	protected $fillable = [];
+    protected $fillable = [];
     protected $connection = 'sqlsrv2';
     public $timestamps = false; // no created_at and updated_at
 
@@ -44,6 +44,9 @@ class TempUsageDetail extends \Eloquent {
         Log::error(' prc_setAccountID end CompanyGatewayID = '.$CompanyGatewayID);
 		*/
 
+        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
+        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
+        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
 
         if($RateFormat == Company::PREFIX) {
             Log::error(' prc_updatePrefixTrunk start CompanyGatewayID = '.$CompanyGatewayID);
@@ -51,22 +54,8 @@ class TempUsageDetail extends \Eloquent {
             Log::error(' prc_updatePrefixTrunk end CompanyGatewayID = '.$CompanyGatewayID);
         }
 
-
-        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
-        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
-
         if($RateCDR == 1){
             $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
-        }else{
-            /**
-             * IF PBX Gateway
-             * Incomming CDR Rerate
-             */
-            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID, $ProcessID, $temptableName);
-            if (count($inbound_errors) > 0) {
-                $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
-            }
         }
 
         Log::error(' prc_insertTempCDR start');
@@ -80,6 +69,8 @@ class TempUsageDetail extends \Eloquent {
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $skiped_account_data = array();
+
+        //@TODO: create new procedure to fix Rerate even if account or trunk not setup and rerating is on.
         foreach($TempUsageDetails as $TempUsageDetail){
             $TrunkID = DB::table('tblTrunk')->where(array('trunk'=>$TempUsageDetail->trunk))->pluck('TrunkID');
             if($TrunkID>0) {
@@ -95,6 +86,10 @@ class TempUsageDetail extends \Eloquent {
                 Log::error("rarateaccount query = $TempUsageDetail->trunk");
             }
         }
+        // Update cost = 0 where AccountID not set and Trunk is not set.
+        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
+
         $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
         foreach($FailedAccounts as $FailedAccount){
             $skiped_account_data[] = 'Account Not Matched '.$FailedAccount->GatewayAccountID;
