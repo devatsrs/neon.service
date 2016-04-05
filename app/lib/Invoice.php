@@ -1401,10 +1401,11 @@ class Invoice extends \Eloquent {
                 $FirstTime = false;
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
-
+            $BillingCycleType = Account::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
+            $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
             //Get Subscription Amount
-            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime);
-            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .')');
+            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
+            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
             Log::info( 'SubscriptionCharge - ' . $SubscriptionCharge );
 
             /**
