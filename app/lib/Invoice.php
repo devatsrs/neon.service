@@ -229,6 +229,12 @@ class Invoice extends \Eloquent {
                         //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
                         foreach($result_data as $result_row){
                             if(isset($result_row['AreaPrefix'])){
+                                if(isset($result_row['DurationInSec'])){
+                                    unset($result_row['DurationInSec']);
+                                }
+                                if(isset($result_row['BillDurationInSec'])){
+                                    unset($result_row['BillDurationInSec']);
+                                }
                                 $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
                                 if(isset($usage_data[$key]['AreaPrefix'])){
                                     $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];

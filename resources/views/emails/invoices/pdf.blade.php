@@ -63,7 +63,7 @@ table{
                 </td>
             </tr>
         </table>
-        <br /><br /><br /><br /><br /><br />
+
         <?php
         $InvoiceTo =$InvoiceFrom = '';
         $is_sub = $is_charge = false;
@@ -134,7 +134,7 @@ table{
             </tr>
             </tbody>
         </table>
-<br /><br /><br />
+
 <div class="row">
     <div class="col-md-12">
         <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
@@ -160,7 +160,7 @@ table{
         </table>
     </div>
 </div>
-<br /><br /><br />
+
     <div class="row">
             <div class="col-md-12">
                 <div class="panel panel-default">
@@ -332,18 +332,8 @@ table{
                              @foreach($usage_data as $row)
                              <?php
                                  $totalCalls  += $row['NoOfCalls'];
-                                 if(strpos($row['Duration'],":")){
-                                     $_Duration = explode(":",$row['Duration']);
-                                     $totalDuration  += $_Duration[0]*60 + $_Duration[1];
-                                 }else{
-                                     $totalDuration  += $row['Duration'];
-                                 }
-                                 if(strpos($row['BillDuration'],":")){
-                                     $_BillDuration = explode(":",$row['BillDuration']);
-                                     $totalBillDuration  +=  $_BillDuration[0]*60 + $_BillDuration[1];
-                                 }else{
-                                     $totalBillDuration  += $row['BillDuration'];
-                                 }
+                                 $totalDuration  += $row['DurationInSec'];
+                                 $totalBillDuration  += $row['BillDurationInSec'];
                                  $totalTotalCharges  += $row['TotalCharges'];
                              ?>
                                  <tr>
