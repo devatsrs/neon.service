@@ -75,47 +75,50 @@ class ImportSummeryData extends Command {
 
                     foreach ($results as $temp_row) {
                         //Log::error($temp_row);
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            $tempItemData = array();
 
-                        $tempItemData = array();
-
-                        $tempItemData['ProcessID'] = $ProcessID;
-                        $tempItemData['CompanyID'] = 1;
-                        $tempItemData['IP'] = $IP;
-                        $tempItemData['Gateway'] = $filename;
+                            $tempItemData['ProcessID'] = $ProcessID;
+                            $tempItemData['CompanyID'] = 1;
+                            $tempItemData['IP'] = $IP;
+                            $tempItemData['Gateway'] = $filename;
 
 
-                        if (isset($temp_row['account_id']) && !empty($temp_row['account_id'])) {
-                            $tempItemData['GatewayAccountID'] = $temp_row['account_id'];
-                        } else {
-                            $error[] = 'account_id is blank at line no: ' . $lineno;
-                        }
-                        if (isset($temp_row['account_name'])) {
-                            $tempItemData['AccountName'] = trim($temp_row['account_name']);
-                        }
-                        if (isset($temp_row['area_prefix'])) {
-                            $tempItemData['AreaPrefix'] = $temp_row['area_prefix'];
-                        }
-                        if (isset($temp_row['area_name'])) {
-                            $tempItemData['AreaName'] = $temp_row['area_name'];
-                        }
-                        if (isset($temp_row['total_duration'])) {
-                            $tempItemData['Duration'] = $temp_row['total_duration'];
-                        }
-                        if (isset($temp_row['number_of_cdr'])) {
-                            $tempItemData['TotalCalls'] = $temp_row['number_of_cdr'];
-                        }
+                            if (isset($temp_row['account_id']) && !empty($temp_row['account_id'])) {
+                                $tempItemData['GatewayAccountID'] = $temp_row['account_id'];
+                            } else {
+                                $error[] = 'account_id is blank at line no: ' . $lineno;
+                            }
+                            if (isset($temp_row['account_name'])) {
+                                $tempItemData['AccountName'] = trim($temp_row['account_name']);
+                            }
+                            if (isset($temp_row['area_prefix'])) {
+                                $tempItemData['AreaPrefix'] = $temp_row['area_prefix'];
+                            }
+                            if (isset($temp_row['area_name'])) {
+                                $tempItemData['AreaName'] = $temp_row['area_name'];
+                            }
+                            if (isset($temp_row['total_duration'])) {
+                                $tempItemData['Duration'] = $temp_row['total_duration'];
+                            }
+                            if (isset($temp_row['number_of_cdr'])) {
+                                $tempItemData['TotalCalls'] = $temp_row['number_of_cdr'];
+                            }
 
-                        if (isset($temp_row['total_charges'])) {
-                            $tempItemData['TotalCharge'] = number_format(str_replace(",", "",$temp_row['total_charges']), 8 , "." , "" );
-                        }
-                        if (isset($temp_row['account_name']) && !empty($temp_row['account_name']) && isset($temp_row['total_charges']) && isset($temp_row['total_charges'])) {
+                            if (isset($temp_row['total_charges'])) {
+                                $tempItemData['TotalCharge'] = number_format(str_replace(",", "",$temp_row['total_charges']), 8 , "." , "" );
+                            }
+                            if (isset($temp_row['account_name']) && !empty($temp_row['account_name']) && isset($temp_row['total_charges']) && isset($temp_row['total_charges'])) {
 
-                             //Log::error($tempItemData);
-                            SummeryData::create($tempItemData);
-                            Log::error($temp_row['account_id'] . ' Inserted ');
-                        } else {
-                            Log::error($temp_row['account_id'] . ' skipped line number' . $lineno);
+                                //Log::error($tempItemData);
+                                SummeryData::create($tempItemData);
+                                Log::error($temp_row['account_id'] . ' Inserted ');
+                            } else {
+                                Log::error($temp_row['account_id'] . ' skipped line number' . $lineno);
 
+                            }
                         }
 
                         $lineno++;
@@ -125,48 +128,50 @@ class ImportSummeryData extends Command {
                 } else if (strstr($filename, "SIPPY")) {
 
                     foreach ($results as $temp_row) {
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            $tempItemData = array();
 
-                        $tempItemData = array();
+                            $tempItemData['ProcessID'] =$ProcessID;
+                            $tempItemData['CompanyID'] = 1;
+                            $tempItemData['IP'] = $IP;
+                            $tempItemData['Gateway'] = $filename;
 
-                        $tempItemData['ProcessID'] =$ProcessID;
-                        $tempItemData['CompanyID'] = 1;
-                        $tempItemData['IP'] = $IP;
-                        $tempItemData['Gateway'] = $filename;
-
-                        if (isset($temp_row['customer_name']) && !empty($temp_row['customer_name'])) {
-                            $tempItemData['GatewayAccountID'] = str_replace("Acct. ","",$temp_row['customer_name']);
-                        } else {
-                            $error[] = 'Account id is blank at line no: ' . $lineno;
+                            if (isset($temp_row['customer_name']) && !empty($temp_row['customer_name'])) {
+                                $tempItemData['GatewayAccountID'] = str_replace("Acct. ","",$temp_row['customer_name']);
+                            } else {
+                                $error[] = 'Account id is blank at line no: ' . $lineno;
+                            }
+                            if (isset($temp_row['customer_name'])) {
+                                $tempItemData['AccountName'] = trim($temp_row['customer_name']);
+                            }
+                            if (isset($temp_row['prefix'])) {
+                                $tempItemData['Areaprefix'] = $temp_row['prefix'];
+                            }
+                            if (isset($temp_row['description'])) {
+                                $tempItemData['AreaName'] = $temp_row['description'];
+                            }
+                            if (isset($temp_row['billed_duration_min'])) {
+                                $tempItemData['Duration'] = $temp_row['billed_duration_min']*60;
+                            }
+                            if (isset($temp_row['number_of_calls'])) {
+                                $tempItemData['TotalCalls'] = $temp_row['number_of_calls'];
+                            }
+                            if (isset($temp_row['country'])) {
+                                $tempItemData['Country'] = $temp_row['country'];
+                            }
+                            if (isset($temp_row['charged_amount'])) {
+                                $tempItemData['TotalCharge'] = number_format(str_replace(",", "", $temp_row['charged_amount']), 8 , "." , "" );
+                            }
+                            if (isset($temp_row['customer_name']) && !empty($temp_row['customer_name']) && isset($temp_row['charged_amount']) && isset($temp_row['charged_amount'])) {
+                                //Log::error($tempItemData);
+                                SummeryData::create($tempItemData);
+                                Log::error($lineno . ' line no. Inserted ');
+                            } else {
+                                Log::error(' skipped line number' . $lineno);
+                            }
                         }
-                        if (isset($temp_row['customer_name'])) {
-                            $tempItemData['AccountName'] = trim($temp_row['customer_name']);
-                        }
-                        if (isset($temp_row['prefix'])) {
-                            $tempItemData['Areaprefix'] = $temp_row['prefix'];
-                        }
-                        if (isset($temp_row['description'])) {
-                            $tempItemData['AreaName'] = $temp_row['description'];
-                        }
-                        if (isset($temp_row['billed_duration_min'])) {
-                            $tempItemData['Duration'] = $temp_row['billed_duration_min']*60;
-                        }
-                        if (isset($temp_row['number_of_calls'])) {
-                            $tempItemData['TotalCalls'] = $temp_row['number_of_calls'];
-                        }
-                        if (isset($temp_row['country'])) {
-                            $tempItemData['Country'] = $temp_row['country'];
-                        }
-                        if (isset($temp_row['charged_amount'])) {
-                            $tempItemData['TotalCharge'] = number_format(str_replace(",", "", $temp_row['charged_amount']), 8 , "." , "" );
-                        }
-                        if (isset($temp_row['customer_name']) && !empty($temp_row['customer_name']) && isset($temp_row['charged_amount']) && isset($temp_row['charged_amount'])) {
-                            //Log::error($tempItemData);
-                            SummeryData::create($tempItemData);
-                            Log::error($lineno . ' line no. Inserted ');
-                        } else {
-                            Log::error(' skipped line number' . $lineno);
-                        }
-
                         $lineno++;
 
                     }

@@ -109,6 +109,11 @@ class CustomerRateSheetGenerator extends Command {
                 if (!empty($joboptions->criteria)) {
                     $criteria = json_decode($joboptions->criteria);
                 }
+                if(!empty($joboptions->downloadtype)){
+                    $downloadtype = $joboptions->downloadtype;
+                }else{
+                    $downloadtype = 'csv';
+                }
                 $count = 0;
                 Log::useFiles(storage_path() . '/logs/customerratesheet-' . $JobID . '-' . date('Y-m-d') . '.log');
                 Log::info('job start ' . $JobID);
@@ -214,7 +219,8 @@ class CustomerRateSheetGenerator extends Command {
                                         $data['excel_data'][$trunkname] = $excel_data;
                                     }
                                 }
-                                $this->generatemultisheetexcel($file_name, $data, $local_dir);
+                                $this->generatemultisheetexcel($file_name, $data, $local_dir,$downloadtype);
+                                //$file_name .= '.'.$downloadtype;
                                 $file_name .= '.xlsx';
                                 Log::info('job is merge 1 ' . $JobID);
                                 $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
@@ -237,8 +243,8 @@ class CustomerRateSheetGenerator extends Command {
                                         $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                         $data['excel_data'] = $excel_data;
-                                        $this->generateexcel($file_name, $data, $local_dir);
-                                        $file_name .= '.xlsx';
+                                        $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
+                                        $file_name .= '.'.$downloadtype;
                                         Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
                                         RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
                                         Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
@@ -264,8 +270,8 @@ class CustomerRateSheetGenerator extends Command {
                                     $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->Trunks))->pluck('Trunk');
                                     $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                     $data['excel_data'] = $excel_data;
-                                    $this->generateexcel($file_name, $data, $local_dir);
-                                    $file_name .= '.xlsx';
+                                    $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
+                                    $file_name .= '.'.$downloadtype;
                                     Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
                                     RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
                                     Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
@@ -383,12 +389,17 @@ class CustomerRateSheetGenerator extends Command {
         }
         return $sheet;
     }
-    public function generateexcel($file_name,$data,$local_dir){
+    public function generateexcel($file_name,$data,$local_dir,$downloadtype){
 
-        $file_path = $local_dir.$file_name.'.xlsx';
+        if($downloadtype == 'xlsx'){
+            $file_path = $local_dir.$file_name.'.xlsx';
+        }else{
+            $file_path = $local_dir.$file_name.'.csv';
+        }
+
 
         $NeonExcel = new NeonExcelIO($file_path);
-        $NeonExcel->write_ratessheet_excel_generate($data);
+        $NeonExcel->write_ratessheet_excel_generate($data,$downloadtype);
 
         /*Excel::create($file_name, function ($excel) use ($excel_data_sheet,$header_data,$file_name,$data) {
             $excel->sheet('Sheet', function ($sheet) use ($excel_data_sheet,$header_data,$data) {
@@ -402,12 +413,17 @@ class CustomerRateSheetGenerator extends Command {
     }
 
 
-    public function generatemultisheetexcel($file_name,$data,$local_dir){
+    public function generatemultisheetexcel($file_name,$data,$local_dir,$downloadtype){
+
+        if($downloadtype == 'xlsx'){
+            $file_path = $local_dir.$file_name.'.xlsx';
+        }else{
+            $file_path = $local_dir.$file_name.'.csv';
+        }
 
         $file_path = $local_dir.$file_name.'.xlsx';
-
         $NeonExcel = new NeonExcelIO($file_path);
-        $NeonExcel->write_multi_ratessheet_excel_generate($data);
+        $NeonExcel->write_multi_ratessheet_excel_generate($data,$downloadtype);
 
         /*
         Excel::create($file_name, function ($excel) use ($data,$file_name) {

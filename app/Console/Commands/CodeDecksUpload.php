@@ -108,33 +108,38 @@ class CodeDecksUpload extends Command
                         $tempcodedeckdata['codedeckid'] = $joboptions->codedeckid;
                         $tempcodedeckdata['ProcessId'] = $ProcessID;
                         $tempcodedeckdata['CompanyId'] = $CompanyID;
-                        if (isset($row['Code']) && !empty($row['Code'])) {
-                            $tempcodedeckdata['Code'] = $row['Code'];
-                        }else{
-                            $error[] = 'code is blank at line no:'.$lineno;
-                        }
-                        if (isset($row['Country']) && !empty($row['Country'])) {
-                            $tempcodedeckdata['Country'] = $row['Country'];
-                        }
-                        if (isset($row['Description']) && !empty($row['Description'])) {
-                            $tempcodedeckdata['Description'] = $row['Description'];
-                        }else{
-                            $error[] = 'description is blank at line no:'.$lineno;
-                        }
-                        if (isset($row['Interval1']) && !empty($row['Interval1'])) {
-                            $tempcodedeckdata['Interval1'] = $row['Interval1'];
-                        }
-                        if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
-                            $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
-                        }
-                        if (isset($row['Action']) && !empty($row['Action'])) {
-                            $tempcodedeckdata['Action'] = $row['Action'];
-                        }else{
-                            $tempcodedeckdata['Action'] = 'I';
-                        }
-                        if(isset($tempcodedeckdata['Code']) && isset($tempcodedeckdata['Description'])){
-                            $batch_insert_array[] = $tempcodedeckdata;
-                            $counter++;
+
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($row['Code']) && !empty($row['Code'])) {
+                                $tempcodedeckdata['Code'] = $row['Code'];
+                            }else{
+                                $error[] = 'code is blank at line no:'.$lineno;
+                            }
+                            if (isset($row['Country']) && !empty($row['Country'])) {
+                                $tempcodedeckdata['Country'] = $row['Country'];
+                            }
+                            if (isset($row['Description']) && !empty($row['Description'])) {
+                                $tempcodedeckdata['Description'] = $row['Description'];
+                            }else{
+                                $error[] = 'description is blank at line no:'.$lineno;
+                            }
+                            if (isset($row['Interval1']) && !empty($row['Interval1'])) {
+                                $tempcodedeckdata['Interval1'] = $row['Interval1'];
+                            }
+                            if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
+                                $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
+                            }
+                            if (isset($row['Action']) && !empty($row['Action'])) {
+                                $tempcodedeckdata['Action'] = $row['Action'];
+                            }else{
+                                $tempcodedeckdata['Action'] = 'I';
+                            }
+                            if(isset($tempcodedeckdata['Code']) && isset($tempcodedeckdata['Description'])){
+                                $batch_insert_array[] = $tempcodedeckdata;
+                                $counter++;
+                            }
                         }
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');
@@ -148,6 +153,7 @@ class CodeDecksUpload extends Command
                         }
                         $lineno++;
                     } // loop end
+
 
                     if(!empty($batch_insert_array)){
                         Log::info('Batch insert start');

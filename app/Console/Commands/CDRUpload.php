@@ -168,70 +168,75 @@ class CDRUpload extends Command
                         $cdrdata['CompanyID'] = $CompanyID;
                         $cdrdata['trunk'] = 'Other';
                         $cdrdata['area_prefix'] = 'Other';
-                        if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
-                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]));
-                        } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
-                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]));
-                        }
-                        if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
-                            $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
-                        }
-                        if (isset($attrselection->duration) && !empty($attrselection->duration)) {
-                            $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
-                        }
-                        if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
-                            $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]));
-                        } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
-                            $strtotime = strtotime($cdrdata['connect_time']);
-                            $billed_duration = $cdrdata['billed_duration'];
-                            $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
-                        }
-                        if (isset($attrselection->cld) && !empty($attrselection->cld)) {
-                            $cdrdata['cld'] = $temp_row[$attrselection->cld];
-                        }
-                        if (isset($attrselection->cli) && !empty($attrselection->cli)) {
-                            $cdrdata['cli'] = $temp_row[$attrselection->cli];
-                        }
-                        if (isset($attrselection->cost) && !empty($attrselection->cost)) {
-                            if (isset($joboptions->RateCDR) && !empty($joboptions->RateCDR) && isset($joboptions->TrunkID) && !empty($joboptions->TrunkID) && $joboptions->TrunkID >0 && $RateFormat == Company::CHARGECODE) {
-                                $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
-                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
-                            }else{
-                                $cdrdata['cost'] = $temp_row[$attrselection->cost];
+
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
+                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]));
+                            } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
+                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]));
                             }
-
-                        }
-                        if (isset($attrselection->extension) && !empty($attrselection->extension)) {
-                            $cdrdata['extension'] = $temp_row[$attrselection->extension];
-                        }
-                        if (isset($attrselection->pincode) && !empty($attrselection->pincode)) {
-                            $cdrdata['pincode'] = $temp_row[$attrselection->pincode];
-                        }
-                        if (isset($attrselection->ID) && !empty($attrselection->ID)) {
-                            $cdrdata['ID'] = $temp_row[$attrselection->ID];
-                        }
-                        if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
-                            $cdrdata['is_inbound'] = (TempUsageDetail::check_inbound($temp_row[$attrselection->is_inbound]))?1:0;
-                        }
-                        if (isset($attrselection->Account) && !empty($attrselection->Account)) {
-                            $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                        }
-                        //print_r($cdrdata);exit;
-                        if(!empty($cdrdata['GatewayAccountID'])) {
-
-                            $batch_insert_array[] = $cdrdata;
-
-                            if($counter >= $bacth_insert_limit){
-                                Log::info('Batch insert start - count' . count($batch_insert_array));
-
-                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
-
-                                Log::info('insertion end');
-                                $batch_insert_array = [];
-                                $counter = 0;
+                            if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
+                                $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
                             }
-                            $counter++;
+                            if (isset($attrselection->duration) && !empty($attrselection->duration)) {
+                                $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
+                            }
+                            if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
+                                $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]));
+                            } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
+                                $strtotime = strtotime($cdrdata['connect_time']);
+                                $billed_duration = $cdrdata['billed_duration'];
+                                $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
+                            }
+                            if (isset($attrselection->cld) && !empty($attrselection->cld)) {
+                                $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                            }
+                            if (isset($attrselection->cli) && !empty($attrselection->cli)) {
+                                $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                            }
+                            if (isset($attrselection->cost) && !empty($attrselection->cost)) {
+                                if (isset($joboptions->RateCDR) && !empty($joboptions->RateCDR) && isset($joboptions->TrunkID) && !empty($joboptions->TrunkID) && $joboptions->TrunkID >0 && $RateFormat == Company::CHARGECODE) {
+                                    $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
+                                    $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
+                                }else{
+                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                }
 
+                            }
+                            if (isset($attrselection->extension) && !empty($attrselection->extension)) {
+                                $cdrdata['extension'] = $temp_row[$attrselection->extension];
+                            }
+                            if (isset($attrselection->pincode) && !empty($attrselection->pincode)) {
+                                $cdrdata['pincode'] = $temp_row[$attrselection->pincode];
+                            }
+                            if (isset($attrselection->ID) && !empty($attrselection->ID)) {
+                                $cdrdata['ID'] = $temp_row[$attrselection->ID];
+                            }
+                            if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+                                $cdrdata['is_inbound'] = (TempUsageDetail::check_inbound($temp_row[$attrselection->is_inbound]))?1:0;
+                            }
+                            if (isset($attrselection->Account) && !empty($attrselection->Account)) {
+                                $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                            }
+                            //print_r($cdrdata);exit;
+                            if(!empty($cdrdata['GatewayAccountID'])) {
+
+                                $batch_insert_array[] = $cdrdata;
+
+                                if($counter >= $bacth_insert_limit){
+                                    Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                                    Log::info('insertion end');
+                                    $batch_insert_array = [];
+                                    $counter = 0;
+                                }
+                                $counter++;
+
+                            }
                         }
                         $lineno++;
                     } // loop

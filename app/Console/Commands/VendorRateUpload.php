@@ -118,64 +118,70 @@ class VendorRateUpload extends Command
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
-                        if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                            $tempvendordata['Code'] = $temp_row[$attrselection->Code];
-                        }else{
-                            $error[] = 'Code is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                            $tempvendordata['Description'] = $temp_row[$attrselection->Description];
-                        }else{
-                            $error[] = 'Description is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
-                            if(is_numeric($temp_row[$attrselection->Rate])) {
-                                $tempvendordata['Rate'] = $temp_row[$attrselection->Rate];
+
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
+                                $tempvendordata['Code'] = $temp_row[$attrselection->Code];
                             }else{
-                                $error[] = 'Rate is not numeric at line no:'.$lineno;
+                                $error[] = 'Code is blank at line no:'.$lineno;
                             }
-                        }else{
-                            $error[] = 'Rate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                            try {
-                                $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
-                            }catch (\Exception $e){
-                                $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                            if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
+                                $tempvendordata['Description'] = $temp_row[$attrselection->Description];
+                            }else{
+                                $error[] = 'Description is blank at line no:'.$lineno;
                             }
-                        }elseif(empty($attrselection->EffectiveDate)){
-                            $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                        }else{
-                            $error[] = 'EffectiveDate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                            $action_value = $temp_row[$attrselection->Action];
-                            if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
-                                $tempvendordata['Change'] = 'D';
-                            }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
-                                $tempvendordata['Change'] = 'U';
-                            }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
-                                $tempvendordata['Change'] = 'I';
+                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
+                                if(is_numeric($temp_row[$attrselection->Rate])) {
+                                    $tempvendordata['Rate'] = $temp_row[$attrselection->Rate];
+                                }else{
+                                    $error[] = 'Rate is not numeric at line no:'.$lineno;
+                                }
+                            }else{
+                                $error[] = 'Rate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
+                                try {
+                                    $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
+                                }catch (\Exception $e){
+                                    $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                }
+                            }elseif(empty($attrselection->EffectiveDate)){
+                                $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                            }else{
+                                $error[] = 'EffectiveDate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                $action_value = $temp_row[$attrselection->Action];
+                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
+                                    $tempvendordata['Change'] = 'D';
+                                }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
+                                    $tempvendordata['Change'] = 'U';
+                                }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
+                                    $tempvendordata['Change'] = 'I';
+                                }else{
+                                    $tempvendordata['Change'] = 'I';
+                                }
                             }else{
                                 $tempvendordata['Change'] = 'I';
                             }
-                        }else{
-                            $tempvendordata['Change'] = 'I';
+
+                            if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                $tempvendordata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
+                            }
+                            if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                $tempvendordata['Interval1'] = $temp_row[$attrselection->Interval1];
+                            }
+                            if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                $tempvendordata['IntervalN'] = $temp_row[$attrselection->IntervalN];
+                            }
+                            if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
+                                $batch_insert_array[] = $tempvendordata;
+                                $counter++;
+                            }
                         }
 
-                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                            $tempvendordata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
-                        }
-                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                            $tempvendordata['Interval1'] = $temp_row[$attrselection->Interval1];
-                        }
-                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                            $tempvendordata['IntervalN'] = $temp_row[$attrselection->IntervalN];
-                        }
-                        if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
-                            $batch_insert_array[] = $tempvendordata;
-                            $counter++;
-                        }
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');
                             Log::info('global counter'.$lineno);

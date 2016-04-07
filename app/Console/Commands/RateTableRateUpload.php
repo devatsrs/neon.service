@@ -118,63 +118,68 @@ class RateTableRateUpload extends Command
                         $tempratetabledata = array();
                         $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
                         $tempratetabledata['ProcessId'] = $ProcessID;
-                        if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                            $tempratetabledata['Code'] = $temp_row[$attrselection->Code];
-                        }else{
-                            $error[] = 'Code is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                            $tempratetabledata['Description'] = $temp_row[$attrselection->Description];
-                        }else{
-                            $error[] = 'Description is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
-                            if(is_numeric($temp_row[$attrselection->Rate])) {
-                                $tempratetabledata['Rate'] = $temp_row[$attrselection->Rate];
-                            }else{
-                                $error[] = 'Rate is not numeric at line no:'.$lineno;
-                            }
-                        }else{
-                            $error[] = 'Rate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                            try {
-                                $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
-                            }catch (\Exception $e){
-                                $error[] = 'Date format is Wrong  at line no:'.$lineno;
-                            }
-                        }elseif(empty($attrselection->EffectiveDate)){
-                            $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                        }else{
-                            $error[] = 'EffectiveDate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                            $action_value = $temp_row[$attrselection->Action];
-                            if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
-                                $tempratetabledata['Change'] = 'D';
-                            }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
-                                $tempratetabledata['Change'] = 'U';
-                            }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
-                                $tempratetabledata['Change'] = 'I';
-                            }else{
-                                $tempratetabledata['Change'] = 'I';
-                            }
-                        }else{
-                            $tempratetabledata['Change'] = 'I';
-                        }
 
-                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                            $tempratetabledata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
-                        }
-                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                            $tempratetabledata['Interval1'] = $temp_row[$attrselection->Interval1];
-                        }
-                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                            $tempratetabledata['IntervalN'] = $temp_row[$attrselection->IntervalN];
-                        }
-                        if(isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && isset($tempratetabledata['Rate']) && isset($tempratetabledata['EffectiveDate'])){
-                            $batch_insert_array[] = $tempratetabledata;
-                            $counter++;
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
+                                $tempratetabledata['Code'] = $temp_row[$attrselection->Code];
+                            }else{
+                                $error[] = 'Code is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
+                                $tempratetabledata['Description'] = $temp_row[$attrselection->Description];
+                            }else{
+                                $error[] = 'Description is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
+                                if(is_numeric($temp_row[$attrselection->Rate])) {
+                                    $tempratetabledata['Rate'] = $temp_row[$attrselection->Rate];
+                                }else{
+                                    $error[] = 'Rate is not numeric at line no:'.$lineno;
+                                }
+                            }else{
+                                $error[] = 'Rate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
+                                try {
+                                    $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
+                                }catch (\Exception $e){
+                                    $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                }
+                            }elseif(empty($attrselection->EffectiveDate)){
+                                $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                            }else{
+                                $error[] = 'EffectiveDate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                $action_value = $temp_row[$attrselection->Action];
+                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
+                                    $tempratetabledata['Change'] = 'D';
+                                }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
+                                    $tempratetabledata['Change'] = 'U';
+                                }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
+                                    $tempratetabledata['Change'] = 'I';
+                                }else{
+                                    $tempratetabledata['Change'] = 'I';
+                                }
+                            }else{
+                                $tempratetabledata['Change'] = 'I';
+                            }
+
+                            if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                $tempratetabledata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
+                            }
+                            if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                $tempratetabledata['Interval1'] = $temp_row[$attrselection->Interval1];
+                            }
+                            if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                $tempratetabledata['IntervalN'] = $temp_row[$attrselection->IntervalN];
+                            }
+                            if(isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && isset($tempratetabledata['Rate']) && isset($tempratetabledata['EffectiveDate'])){
+                                $batch_insert_array[] = $tempratetabledata;
+                                $counter++;
+                            }
                         }
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');

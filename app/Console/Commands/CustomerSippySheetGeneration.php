@@ -53,10 +53,17 @@ class CustomerSippySheetGeneration extends Command {
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $tunkids = '';
+            $file_path = '';
+            $amazonPath = '';
             if(isset($joboptions->Trunks) && is_array($joboptions->Trunks)){
                 $tunkids = implode(',',$joboptions->Trunks);
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
+            }
+            if(!empty($joboptions->downloadtype)){
+                $downloadtype = $joboptions->downloadtype;
+            }else{
+                $downloadtype = 'csv';
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'customersippydownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
@@ -79,12 +86,17 @@ class CustomerSippySheetGeneration extends Command {
             })->store('csv',$local_dir);
             $file_name .='.csv';*/
 
-            $amazonPath = $amazonDir .  $file_name. '.csv';
-            $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath;
-
-
-            $NeonExcel = new NeonExcelIO($file_path);
-            $NeonExcel->write_csv($excel_data);
+            if($downloadtype == 'xlsx'){
+                $amazonPath = $amazonDir .  $file_name . '.xlsx';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_excel($excel_data);
+            }else if($downloadtype == 'csv'){
+                $amazonPath = $amazonDir .  $file_name . '.csv';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_csv($excel_data);
+            }
 
             if(!AmazonS3::upload($file_path,$amazonDir)){
                 throw new Exception('Error in Amazon upload');

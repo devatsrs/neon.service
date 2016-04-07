@@ -313,8 +313,13 @@ class NeonExcelIO
      * @param $data
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      */
-    public function write_ratessheet_excel_generate($data){
-        $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+    public function write_ratessheet_excel_generate($data,$downloadtype){
+        if($downloadtype == 'xlsx'){
+            $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+        }else{
+            $writer = WriterFactory::create(Type::CSV); // for CSV files
+        }
+
         $writer->openToFile($this->file); // write data to a file or to a PHP stream
 
         $excel_data_sheet = array();
@@ -361,8 +366,14 @@ class NeonExcelIO
      * @param $data
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      */
-    public function write_multi_ratessheet_excel_generate($data){
-        $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+    public function write_multi_ratessheet_excel_generate($data,$downloadtype){
+
+        /*if($downloadtype == 'xlsx'){
+            $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+        }else{
+            $writer = WriterFactory::create(Type::CSV); // for CSV files
+        }*/
+        $writer = WriterFactory::create(Type::XLSX);
         $writer->openToFile($this->file); // write data to a file or to a PHP stream
 
         Log::info( " writing to... " . $this->file );
