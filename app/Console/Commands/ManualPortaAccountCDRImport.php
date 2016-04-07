@@ -12,37 +12,37 @@ use Webpatser\Uuid\Uuid;
 
 class ManualPortaAccountCDRImport extends Command {
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'manualportaaccountcdrimport';
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'manualportaaccountcdrimport';
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'Import CDR Exported from Porta';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Import CDR Exported from Porta';
 
-	/**
-	 * Create a new command instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		parent::__construct();
-	}
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
-	/**
-	 * Execute the console command.
-	 *
-	 * @return mixed
-	 */
-	public function fire()
-	{
+    /**
+     * Execute the console command.
+     *
+     * @return mixed
+     */
+    public function fire()
+    {
         $arguments = $this->argument();
 
         $CompanyID = $arguments["CompanyID"];
@@ -92,11 +92,9 @@ class ManualPortaAccountCDRImport extends Command {
                     $tempItemData['GatewayAccountID'] = $GatewayAccountID;
                     $tempItemData['connect_time'] = formatDate($temp_row['datetime']);
 
-
                     $strtotime = strtotime($tempItemData['connect_time']);
                     $billed_duration = strtotime($temp_row['charged_time_hourminsec']); //billed_duration
                     $tempItemData['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + formatDuration($temp_row['charged_time_hourminsec']));
-
                     $tempItemData['duration'] = formatDuration($temp_row['charged_time_hourminsec']);
                     $tempItemData['billed_duration'] = formatDuration($temp_row['charged_time_hourminsec']);
                     $tempItemData['cli'] = $temp_row['from'];
@@ -126,19 +124,19 @@ class ManualPortaAccountCDRImport extends Command {
         DB::connection('sqlsrvcdrazure')->commit();
         TempUsageDetail::where(["processId" => $ProcessID])->delete();
         Log::error(print_r($error,true));
-	}
+    }
 
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
         return [
             ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
         ];
-	}
+    }
 
 
 

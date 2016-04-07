@@ -71,7 +71,7 @@ class CodeDecksUpload extends Command
         $ProcessID = (string) Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 1000;
+        $bacth_insert_limit = 250;
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
 

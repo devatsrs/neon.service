@@ -229,7 +229,7 @@ class RateTableRateUpload extends Command
 
                 }
             }
-            
+
             DB::commit();
 
         } catch (\Exception $e) {

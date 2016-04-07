@@ -50,7 +50,7 @@ class CompanyGateway extends \Eloquent {
     }
 
     /* Create tblTempUsageDetail Temp table as per UniqueID * */
-    public static function CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID){
+    public static function CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
 
         $UniqueID = self::getUniqueID($CompanyGatewayID);
 
@@ -63,7 +63,7 @@ class CompanyGateway extends \Eloquent {
             $tbltempusagedetail_name = self::getUsagedetailTablenameByUniqueID($UniqueID);
 
             Log::error( $tbltempusagedetail_name);
-
+            $tbltempusagedetail_name .=$extra_prefix;
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
@@ -87,7 +87,8 @@ class CompanyGateway extends \Eloquent {
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `is_inbound` TINYINT(1) DEFAULT 0,
                                     PRIMARY KEY (`TempUsageDetailID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'_CompanyID_CompanyGatewayID_ProcessID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`)
+                                    INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`),
+                                    INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`, `is_inbound`, `cld`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
