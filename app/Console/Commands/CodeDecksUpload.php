@@ -119,6 +119,8 @@ class CodeDecksUpload extends Command
                             }
                             if (isset($row['Country']) && !empty($row['Country'])) {
                                 $tempcodedeckdata['Country'] = $row['Country'];
+                            }else{
+                                $tempcodedeckdata['Country'] = '';
                             }
                             if (isset($row['Description']) && !empty($row['Description'])) {
                                 $tempcodedeckdata['Description'] = $row['Description'];
@@ -127,9 +129,13 @@ class CodeDecksUpload extends Command
                             }
                             if (isset($row['Interval1']) && !empty($row['Interval1'])) {
                                 $tempcodedeckdata['Interval1'] = $row['Interval1'];
+                            }else{
+                                $tempcodedeckdata['Interval1'] = '';
                             }
                             if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
                                 $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
+                            }else{
+                                $tempcodedeckdata['IntervalN'] = '';
                             }
                             if (isset($row['Action']) && !empty($row['Action'])) {
                                 $tempcodedeckdata['Action'] = $row['Action'];
