@@ -113,6 +113,9 @@ class PBXAccountUsage extends Command
             $response = $pbx->getAccountCDRs($param);
             $response = json_decode(json_encode($response), true);
             Log::info('count ==' . count($response));
+            $InserData = array();
+            $data_count = 0;
+            $insertLimit = 1000;
             if (!isset($response['faultCode'])) {
 
                 foreach ((array)$response as $row_account) {
@@ -193,21 +196,25 @@ class PBXAccountUsage extends Command
 
                         }
 
-                        $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
-                        if (count($UniqueID) == 0) {
+                        $InserData[] = $data;
+                        $data_count++;
 
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
-
-
-                            if ($call_type == 'both' && !empty($data_outbound)) {
-
-                                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data_outbound);
-
-                            }
+                        if ($call_type == 'both' && !empty($data_outbound)) {
+                            $InserData[] = $data_outbound;
+                            $data_count++;
 
                         }
-
+                        if ($data_count > $insertLimit && !empty($InserData)) {
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            $InserData = array();
+                            $data_count = 0;
+                        }
                     }
+
+                }//loop
+
+                if (!empty($InserData)) {
+                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
 
                 }
                 date_default_timezone_set(Config::get('app.timezone'));
@@ -218,6 +225,10 @@ class PBXAccountUsage extends Command
             Log::error("pbx CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== pbx transaction end =============================');
 
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
@@ -294,7 +305,7 @@ class PBXAccountUsage extends Command
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_INTERVAL') * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_PBX_INTERVAL') * 60);
         }
 
         return $endtimefinal;
@@ -306,8 +317,8 @@ class PBXAccountUsage extends Command
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
-        if ($minutes <= 70) {
-            $endtime = date('Y-m-d H:i:s', strtotime('-70 minute'));  //date('Y-m-d H:i:s');
+        if ($minutes <= env('USAGE_PBX_INTERVAL')) {
+            $endtime = date('Y-m-d H:i:s', strtotime('-'.env('USAGE_PBX_INTERVAL').' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-1 00:00:00');
