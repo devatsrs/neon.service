@@ -233,6 +233,7 @@ class SippyAccountUsage extends Command
                     $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
                     $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename);
 
+
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
 
                         $cdr_rows = $csv_response["output"];
