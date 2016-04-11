@@ -3,7 +3,7 @@
  * Created by PhpStorm.
  * User: srs2
  * Date: 25/05/2015
- * Time: 06:58 
+ * Time: 06:58
  */
 
 namespace App\Console\Commands;
@@ -90,7 +90,7 @@ class VOSDownloadCDR extends Command {
                     $vos->downloadCDR($param);
                     UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "filename" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("VOS download file".$filename);
-                    $vos->deleteCDR($param);
+                    //$vos->deleteCDR($param);
                 }
             }
             $dataactive['DownloadActive'] = 0;
