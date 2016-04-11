@@ -59,11 +59,12 @@ class VendorVOSSheetGeneration extends Command {
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
-            if(!empty($joboptions->downloadtype)){
+            /*if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
             }else{
                 $downloadtype = 'csv';
-            }
+            }*/
+            $downloadtype = 'csv';
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorvosdownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
@@ -120,11 +121,26 @@ class VendorVOSSheetGeneration extends Command {
                 $NeonExcel->write_csv($excel_data);
             }
 
-            if(!AmazonS3::upload($file_path,$amazonDir)){
+            $file_content = file_get_contents($file_path);
+            $file_content = str_replace(","," | ",$file_content);
+
+            $newfile_path = getenv('UPLOAD_PATH') . '/'.$amazonDir;
+            $file_name .='.txt';
+
+            file_put_contents($newfile_path.'/'.$file_name,$file_content);
+            @unlink($newfile_path.'/'.$file_name.'.csv');
+
+            if(!AmazonS3::upload($newfile_path.'/'.$file_name,$amazonDir)){
                 throw new Exception('Error in Amazon upload');
             }
-            //$fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
-            $jobdata['OutputFilePath'] = $amazonPath;
+
+            /*
+            if(!AmazonS3::upload($file_path,$amazonDir)){
+                throw new Exception('Error in Amazon upload');
+            }*/
+            $fullPath = $amazonDir . $file_name; //$destinationPath . $file_name;
+            //$jobdata['OutputFilePath'] = $amazonPath;
+            $jobdata['OutputFilePath'] = $fullPath;
             $jobdata['JobStatusMessage'] = 'Vendor VOS File Generated Successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
