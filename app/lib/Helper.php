@@ -2,6 +2,7 @@
 namespace App\Lib;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 class Helper{
@@ -216,6 +217,19 @@ class Helper{
             $status['status'] = 0;
         }
         return $status;
+    }
+    public static function sendFileRenamed($CompanyID,$ErrorEmail,$JobTitle,$renamefilenames){
+        $ComanyName = Company::getName($CompanyID);
+        $emaildata['CompanyID'] = $CompanyID;
+        $emaildata['CompanyName'] = $ComanyName;
+        $emaildata['EmailTo'] = $ErrorEmail;
+        $emaildata['EmailToName'] = '';
+        $emaildata['Subject'] = 'VOS CronJob File Has ReProcess Files';
+        $emaildata['JobTitle'] = $JobTitle;
+        $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
+        Log::info(' rename files');
+        Log::info($renamefilenames);
+        $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
 }
