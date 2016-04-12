@@ -255,7 +255,7 @@ class SippyAccountUsage extends Command
                                 //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                 $uddata['buying_cost'] = (float)$cdr_row['cost'];
                                 $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
-                                $uddata['cli'] = $cdr_row['cld_out'];
+                                $uddata['cli'] = $cdr_row['cli_out'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
