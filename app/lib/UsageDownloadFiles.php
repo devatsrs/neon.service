@@ -36,7 +36,9 @@ class UsageDownloadFiles extends Model {
         foreach($UsageDownloadFiles as $UsageDownloadFilesrow){
             $renamefilenames[] = $UsageDownloadFilesrow['filename'];
         }
-        Helper::sendFileRenamed($CompanyID,$ErrorEmail,$JobTitle,$renamefilenames);
+        if(count($renamefilenames)) {
+            Helper::sendFileRenamed($CompanyID, $ErrorEmail, $JobTitle, $renamefilenames);
+        }
     }
 
     /** get vos pending files */
