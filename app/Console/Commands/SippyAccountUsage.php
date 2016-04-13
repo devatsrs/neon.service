@@ -106,7 +106,7 @@ class SippyAccountUsage extends Command
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
             /** get process file make them pending*/
-            UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob);
+            UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
             /** get pending files */
             $filenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$customer_cdr_file_name);

@@ -71,7 +71,7 @@ class UsageDownloadFiles extends Model {
         }
     }
     /** get process file make them pending*/
-    public static function UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob){
+    public static function UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting){
         if(!empty($cronsetting['ErrorEmail'])) {
             UsageDownloadFiles::getInProcessfile($CompanyID,$CompanyGatewayID, $cronsetting['ErrorEmail'], $CronJob->JobTitle);
         }

@@ -61,6 +61,12 @@ class TempUsageDetail extends \Eloquent {
         Log::error(' prc_insertTempCDR start');
         //DB::connection('sqlsrv2')->statement("CALL  prc_insertTempCDR('" . $ProcessID . "')");
         Log::error('prc_insertTempCDR end');
+        $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
+        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
+        foreach($FailedAccounts as $FailedAccount){
+            $skiped_account_data[] = "Account: ".$FailedAccount->GatewayAccountID." - Gateway: ".$CompanyGateway->Title." - Doesn't exist in NEON";
+        }
+        $skiped_account_data = array_unique($skiped_account_data);
         return $skiped_account_data;
 
     }

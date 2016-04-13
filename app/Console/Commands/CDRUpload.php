@@ -82,7 +82,7 @@ class CDRUpload extends Command
             $joboptions = json_decode($job->Options);
             //print_r($joboptions);exit;//CheckCustomerCLI,RateCDR
             $CompanyGatewayID = $joboptions->CompanyGatewayID;
-            $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+            $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID,'cdr');
             $FileUploadTemplate = FileUploadTemplate::find($joboptions->FileUploadTemplateID);
             $TemplateOptions = json_decode($FileUploadTemplate->Options);
             $csvoption = $TemplateOptions->option;
@@ -258,7 +258,7 @@ class CDRUpload extends Command
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
 
-
+                $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->count();
                 if(count($skiped_account_data) == 0) {
                     DB::connection('sqlsrvcdr')->beginTransaction();
 
@@ -296,7 +296,7 @@ class CDRUpload extends Command
                     $jobdata['JobStatusMessage'] = 'CLI Not Verified:' . implode(',\n\r', $skipped_cli);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else {
-                    $jobdata['JobStatusMessage'] = 'Customer CDR Uploaded Successfully';
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r Customer CDR Uploaded Successfully';
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
                 $jobdata['updated_at'] = date('Y-m-d H:i:s');
