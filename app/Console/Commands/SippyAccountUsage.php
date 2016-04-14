@@ -143,13 +143,12 @@ class SippyAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    /** update file status to progress */
-                    UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
-                    $delete_files[] = $UsageDownloadFilesID;
                     $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
                     $csv_response = SippySSH::get_customer_file_content($fullpath.$filename);
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
-
+                        $delete_files[] = $UsageDownloadFilesID;
+                        /** update file status to progress */
+                        UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                         $cdr_rows = $csv_response["output"];
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
@@ -198,6 +197,8 @@ class SippyAccountUsage extends Command
 
                         $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
                         Log::error("Error Reading Sippy Customer Encoded File. " . $return_var);
+                        /** update file status to error */
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
 
                     }
 
@@ -227,15 +228,15 @@ class SippyAccountUsage extends Command
 
                     Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
 
-                    /** update file status to progress */
-                    UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
-                    $vdelete_files[] = $UsageDownloadFilesID;
+
                     $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
                     $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename);
 
 
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
-
+                        /** update file status to progress */
+                        UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
+                        $vdelete_files[] = $UsageDownloadFilesID;
                         $cdr_rows = $csv_response["output"];
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
