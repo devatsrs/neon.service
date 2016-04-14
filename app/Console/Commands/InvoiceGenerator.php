@@ -219,12 +219,12 @@ class InvoiceGenerator extends Command {
                         DB::connection('sqlsrv2')->rollback();
                         Log::error($e);
 
-                        $errors[] = $AccountName . " " . $e->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage();
 
 
                     }catch (Exception $err) {
                         Log::error($err);
-                        $errors[] = $AccountName . " " . $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
                     }
 
                 }
@@ -269,7 +269,7 @@ class InvoiceGenerator extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage ;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getTraceAsString();
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     if(!empty($InvoiceGenerationEmail)){
