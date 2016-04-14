@@ -277,7 +277,7 @@ class SippySSH{
         return ["return_var"=>$return_var,"output" => $cdr_array ];
         } catch (Exception $e) {
             Log::error($e);
-            return ['return_var',$e->getMessage()];
+            return ["return_var"=>$e->getMessage()];
         }
 
     }
@@ -403,7 +403,7 @@ class SippySSH{
         return ["return_var"=>$return_var,"output" => $cdr_array ];
         } catch (Exception $e) {
             Log::error($e);
-            return ['return_var',$e->getMessage()];
+            return ["return_var"=>$e->getMessage()];
         }
 
     }
