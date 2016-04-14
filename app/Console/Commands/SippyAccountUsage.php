@@ -290,7 +290,7 @@ class SippyAccountUsage extends Command
                         $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
                         Log::error("Error Reading Sippy Vendor Encoded File. " . $return_var);
                         /** update file status to error */
-                        UsageDownloadFiles::UpdateFileStausToProcess($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
 
                     }
 
