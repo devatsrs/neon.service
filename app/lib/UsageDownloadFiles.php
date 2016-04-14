@@ -91,5 +91,14 @@ class UsageDownloadFiles extends Model {
             UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->update(array('Status' => 1));
         }
     }
+    /** update file status to progress */
+    public static function UpdateFileStatusToError($CompanyID,$cronsetting,$JobTitle,$UsageDownloadFilesID,$errormsg){
+        $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
+        if(!empty($UsageDownloadFiles) && !empty($cronsetting['ErrorEmail'])){
+            $message = $UsageDownloadFiles->message.$errormsg;
+            $UsageDownloadFiles->update(array('Status'=>4,'message'=>$message));
+            Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->filename);
+        }
+    }
 
 }

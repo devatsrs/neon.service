@@ -174,6 +174,7 @@ class SippySSH{
      */
     public static function get_customer_file_content($sippy_file) {
 
+        try{
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " customer " . $sippy_file ,$output,$return_var);
         Log::info($sippy_decoder . " customer " . $sippy_file );
@@ -274,6 +275,11 @@ class SippySSH{
         }
 
         return ["return_var"=>$return_var,"output" => $cdr_array ];
+        } catch (Exception $e) {
+            Log::error($e);
+            return ['return_var',$e->getMessage()];
+        }
+
     }
 
     /** Decode Vendor cdr file and return array
@@ -282,6 +288,7 @@ class SippySSH{
      */
     public static function get_vendor_file_content($sippy_file) {
 
+        try{
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " vendor " . $sippy_file ,$output,$return_var);
         Log::info($sippy_decoder . " vendor " . $sippy_file );
@@ -394,6 +401,11 @@ class SippySSH{
         }
 
         return ["return_var"=>$return_var,"output" => $cdr_array ];
+        } catch (Exception $e) {
+            Log::error($e);
+            return ['return_var',$e->getMessage()];
+        }
+
     }
 
     /**

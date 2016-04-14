@@ -224,11 +224,24 @@ class Helper{
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'VOS CronJob File Has ReProcess Files';
+        $emaildata['Subject'] = 'CronJob File Has ReProcess Files';
         $emaildata['JobTitle'] = $JobTitle;
         $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
         Log::info(' rename files');
         Log::info($renamefilenames);
+        $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
+    }
+    public static function errorFiles($CompanyID,$ErrorEmail,$JobTitle,$errorfilenames){
+        $ComanyName = Company::getName($CompanyID);
+        $emaildata['CompanyID'] = $CompanyID;
+        $emaildata['CompanyName'] = $ComanyName;
+        $emaildata['EmailTo'] = $ErrorEmail;
+        $emaildata['EmailToName'] = '';
+        $emaildata['Subject'] = 'CronJob File Has Errors while Reading';
+        $emaildata['JobTitle'] = $JobTitle;
+        $emaildata['Message'] = 'Please check this file has error <br>'.$errorfilenames;
+        Log::info(' error files');
+        Log::info($errorfilenames);
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
