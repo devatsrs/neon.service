@@ -87,7 +87,7 @@ class CompanyGateway extends \Eloquent {
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `is_inbound` TINYINT(1) DEFAULT 0,
                                     PRIMARY KEY (`TempUsageDetailID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`),
+                                    INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`,`AccountID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`, `is_inbound`, `cld`)
                                 )
                                 ENGINE=InnoDB ; ';
@@ -141,7 +141,8 @@ class CompanyGateway extends \Eloquent {
                 `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
                 `ProcessID` VARCHAR(200) NULL DEFAULT NULL ,
                  PRIMARY KEY (`TempVendorCDRID`),
-                 INDEX `IX_'.$tbltempusagedetail_name.'_CompanyID_CompanyGatewayID_ProcessID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`)
+                 INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`,`AccountID`),
+                 INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`,`cld`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
 
