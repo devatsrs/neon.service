@@ -153,16 +153,21 @@ class VendorRateUpload extends Command
                                 $error[] = 'EffectiveDate is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                                $action_value = $temp_row[$attrselection->Action];
-                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete)) ) {
-                                    $tempvendordata['Change'] = 'D';
-                                }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
-                                    $tempvendordata['Change'] = 'U';
-                                }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                if(empty($temp_row[$attrselection->Action])){
                                     $tempvendordata['Change'] = 'I';
                                 }else{
-                                    $tempvendordata['Change'] = 'I';
+                                    $action_value = $temp_row[$attrselection->Action];
+                                    if (isset($attrselection->ActionDelete) && !empty(trim($attrselection->ActionDelete)) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete)) ) {
+                                        $tempvendordata['Change'] = 'D';
+                                    }else if (isset($attrselection->ActionUpdate) && !empty(trim($attrselection->ActionUpdate)) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
+                                        $tempvendordata['Change'] = 'U';
+                                    }else if (isset($attrselection->ActionInsert) && !empty(trim($attrselection->ActionInsert)) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                        $tempvendordata['Change'] = 'I';
+                                    }else{
+                                        $tempvendordata['Change'] = 'I';
+                                    }
                                 }
+
                             }else{
                                 $tempvendordata['Change'] = 'I';
                             }
