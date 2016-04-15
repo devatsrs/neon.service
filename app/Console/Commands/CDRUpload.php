@@ -88,12 +88,16 @@ class CDRUpload extends Command
             $csvoption = $TemplateOptions->option;
             $attrselection = $TemplateOptions->selection;
             $RateCDR = 0;
+            $NameFormat = '';
             if(isset($joboptions->RateCDR) && $joboptions->RateCDR){
                 $RateCDR = $joboptions->RateCDR;
             }
             $RateFormat = Company::PREFIX;
             if(isset($joboptions->RateFormat) && $joboptions->RateFormat){
                 $RateFormat = $joboptions->RateFormat;
+            }
+            if(isset($attrselection->Authentication) && $attrselection->Authentication){
+                $NameFormat = $attrselection->Authentication;
             }
 
             if (!empty($job) && !empty($jobfile)) {
@@ -130,7 +134,7 @@ class CDRUpload extends Command
                 })->get();
                 $results = json_decode(json_encode($excel), true);*/
 
-                if (isset($joboptions->CheckCustomerCLI) && $joboptions->CheckCustomerCLI == 1) {
+                if (isset($joboptions->CheckFile) && $joboptions->CheckFile == 1 && isset($attrselection->Authentication) && $attrselection->Authentication == 'CLI') {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
@@ -156,7 +160,7 @@ class CDRUpload extends Command
                 $bacth_insert_limit = 1000;
                 $batch_insert_array = array();
 
-                if ((count($skipped_cli) == 0 && $joboptions->CheckCustomerCLI == 1) || $joboptions->CheckCustomerCLI == 0) {
+                if ((count($skipped_cli) == 0 && $joboptions->CheckFile == 1) || $joboptions->CheckFile == 0) {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
@@ -253,13 +257,13 @@ class CDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
 
-                $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->count();
-                if(count($skiped_account_data) == 0) {
+                $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->count();
+                if ((count($skipped_cli) == 0 && count($skiped_account_data) == 0 && $joboptions->CheckFile == 1) || $joboptions->CheckFile == 0) {
                     DB::connection('sqlsrvcdr')->beginTransaction();
 
                     if (!empty($result[0]->min_date)) {
@@ -289,7 +293,10 @@ class CDRUpload extends Command
                 foreach ($skiped_account as $accountrow) {
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
-                if (count($skiped_account_data)) {
+                if (count($skiped_account_data) && $joboptions->CheckFile == 0) {
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' .'Skipped Code:'. implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
+                }else if (count($skiped_account_data)) {
                     $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else if(count($skipped_cli)){

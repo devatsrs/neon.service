@@ -24,7 +24,7 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat=''){
         $skiped_account_data =array();
         Log::error(' prc_insertGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID . ", '".$temptableName."'" );
         DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayAccount('" . $ProcessID . "' , '".$temptableName."');" );
@@ -32,9 +32,9 @@ class TempUsageDetail extends \Eloquent {
 
 
         // Update  tblGatewayAccount
-        Log::error(' prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1')"); // Procedure Updated - 05-10-2015
-        Log::error(' prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
+        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') start");
+        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."')"); // Procedure Updated - 05-10-2015
+        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') end");
 
 
         /*
