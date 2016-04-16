@@ -144,6 +144,7 @@ class VOSAccountUsage extends Command
                     UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                     $delete_files[] = $UsageDownloadFilesID;
                     $fullpath = getenv("VOS_LOCATION").$CompanyGatewayID. '/' ;
+                    try{
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
@@ -219,6 +220,13 @@ class VOSAccountUsage extends Command
 
                         fclose($handle);
                     }
+                    }catch(Exception $e){
+
+                        Log::error($e);
+                        /** update file status to error */
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$e->getMessage());
+                    }
+
                     Log::info("CDR Insert END");
                     $file_count++;
                 } else {
