@@ -82,13 +82,13 @@ class UsageDownloadFiles extends Model {
     /** update file process to completed */
     public static function UpdateProcessToComplete($delete_files = array()){
         if(!empty($delete_files)) {
-            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->update(array('Status' => 3));
+            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->where('Status',2)->update(array('Status' => 3));
         }
     }
     /** update file process to completed */
     public static function UpdateToPending($delete_files = array()){
         if(!empty($delete_files)) {
-            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->update(array('Status' => 1));
+            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->where('Status',2)->update(array('Status' => 1));
         }
     }
     /** update file status to progress */
