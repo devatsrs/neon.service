@@ -98,9 +98,12 @@ class PortaVendorSheet extends Command {
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendordownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
+            $Effective = 'Now';
+            if(!empty($joboptions->Effective)){
+                $Effective = $joboptions->Effective;
+            }
 
-
-            $excel_data = DB::select("CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."')");
+            $excel_data = DB::select("CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
 
             $excel_data = json_decode(json_encode($excel_data),true);
 
