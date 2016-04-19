@@ -141,9 +141,15 @@ class NeonExcelIO
      * @param $rows
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      */
-    public function write_csv($rows){
+    public function write_csv($rows,$csvoption=array()){
 
         $writer = WriterFactory::create(Type::CSV); // for XLSX files
+        if(isset($csvoption['delimiter'])){
+            $writer->setFieldDelimiter($csvoption['delimiter']);
+        }
+        if(isset($csvoption['enclosure'])){
+            $writer->setFieldEnclosure($csvoption['enclosure']);
+        }
         $writer->openToFile($this->file); // write data to a file or to a PHP stream
 
         if(isset($rows[0]) && count($rows[0]) > 0 ) {

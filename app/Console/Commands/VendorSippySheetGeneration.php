@@ -62,8 +62,13 @@ class VendorSippySheetGeneration extends Command {
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorsippydownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $Effective = 'Now';
+            if(!empty($joboptions->Effective)){
+                $Effective = $joboptions->Effective;
+            }
+            
 
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."')");
+            $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             //Fix .333 to 0.333 on following column

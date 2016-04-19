@@ -68,8 +68,12 @@ class VendorVOSSheetGeneration extends Command {
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorvosdownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $Effective = 'Now';
+            if(!empty($joboptions->Effective)){
+                $Effective = $joboptions->Effective;
+            }
 
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."')");
+            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');
@@ -117,12 +121,17 @@ class VendorVOSSheetGeneration extends Command {
             }else if($downloadtype == 'csv'){
                 $amazonPath = $amazonDir .  $file_name . '.csv';
                 $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $csvoption['delimiter'] = '|';
+                $csvoption['enclosure'] = ' ';
                 $NeonExcel = new NeonExcelIO($file_path);
-                $NeonExcel->write_csv($excel_data);
+                $NeonExcel->write_csv($excel_data,$csvoption);
             }
 
             $file_content = file_get_contents($file_path);
             $file_content = str_replace(","," | ",$file_content);
+            $file_content = str_replace("|"," | ",$file_content);
+            $file_content = str_replace("\n","\r\n",$file_content);
+
 
             $newfile_path = getenv('UPLOAD_PATH') . '/'.$amazonDir;
             $file_name .='.txt';
