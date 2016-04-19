@@ -88,11 +88,12 @@ class RateTableGenerator extends Command {
             DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
             //DB::commit();
 
-            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+            /*$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
             $jobdata['ModifiedBy'] = 'RMScheduler';
             $jobdata['JobStatusMessage'] = 'RateTable Created Successfully';
             Job::where(["JobID" => $JobID])->update($jobdata);
+            */
             if($CronJobID > 0) {
                 CronJob::sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$data['EffectiveDate']);
             }
