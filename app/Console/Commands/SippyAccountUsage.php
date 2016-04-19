@@ -167,7 +167,7 @@ class SippyAccountUsage extends Command
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 $uddata['cost'] = (float)$cdr_row['cost'];
                                 $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_in']);
-                                $uddata['cli'] = $cdr_row['cld_in'];
+                                $uddata['cli'] = $cdr_row['cli_in'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
