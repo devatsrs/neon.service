@@ -95,8 +95,17 @@ class PBXAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
+            $param['RateCDR'] = $RateCDR;
 
             Log::error(print_r($param, true));
 
@@ -230,14 +239,7 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
