@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -45,11 +46,15 @@ class ImportProduct extends Command {
 
 
 
-         $results =  Excel::load($file)->toArray();
+         //$results =  Excel::load($file)->toArray();
+        $NeonExcel = new NeonExcelIO($file);
+        $results = $NeonExcel->read();
          $lineno = 2;
         $error = array();
         foreach ($results as $temp_row) {
-
+            //check empty row
+            $checkemptyrow = array_filter(array_values($temp_row));
+            if(!empty($checkemptyrow)){
                 $tempItemData = array();
                 if(isset($temp_row['name']) && !empty($temp_row['name']) ){
                     $tempItemData['name'] =$temp_row['name'];
@@ -73,8 +78,7 @@ class ImportProduct extends Command {
                     Log::error($temp_row['name'] . ' skipped ');
 
                 }
-
-
+            }
                 $lineno++;
 
         }

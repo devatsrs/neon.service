@@ -162,12 +162,12 @@ class RegenerateInvoice extends Command {
                                 DB::connection('sqlsrv2')->rollback();
                                 Log::error($e);
 
-                                $errors[] = $e->getTraceAsString();
+                                $errors[] = $e->getMessage();
 
 
                             } catch (\Exception $err) {
                                 Log::error($err);
-                                $errors[] = $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                                $errors[] = $e->getMessage() . ' ## ' . $err->getMessage();
                             }
 
                         }}else{
@@ -215,7 +215,7 @@ class RegenerateInvoice extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getTraceAsString();
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     Job::send_job_status_email($job, $CompanyID);

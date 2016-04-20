@@ -79,7 +79,7 @@ class SippyMissingCDRFileFix extends Command {
 
 							$pending_file_name = str_replace('complete_', '', basename($file) );
 							SippySSH::changeCDRFilesStatus("complete-to-pending" , $file , $CompanyGatewayID ,true );
-							UsageDownloadFiles::where("CompanyGatewayID",$CompanyGatewayID)->where("filename",$pending_file_name)->delete();
+							UsageDownloadFiles::where("CompanyGatewayID",$CompanyGatewayID)->where("FileName",$pending_file_name)->delete();
 							Log::info("  pending_file_name  " . $pending_file_name);
 						}else{
 

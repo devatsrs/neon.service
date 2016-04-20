@@ -158,12 +158,12 @@ class RegenerateManualInvoice extends Command {
                                 DB::connection('sqlsrv2')->rollback();
                                 Log::error($e);
 
-                                $errors[] = $e->getTraceAsString();
+                                $errors[] = $e->getMessage();
 
 
                             } catch (\Exception $err) {
                                 Log::error($err);
-                                $errors[] = $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                                $errors[] = $e->getMessage() . ' ## ' . $err->getMessage();
                             }
 
                         }}else{

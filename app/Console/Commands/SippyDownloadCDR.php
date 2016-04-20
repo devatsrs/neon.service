@@ -85,7 +85,7 @@ class SippyDownloadCDR extends Command {
                     $param['download_path'] = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/';
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $sippy->downloadCDR($param);
-                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "filename" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
+                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
                     //$sippy->deleteCDR($param);
                 }

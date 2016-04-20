@@ -71,7 +71,7 @@ class CodeDecksUpload extends Command
         $ProcessID = (string) Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 1000;
+        $bacth_insert_limit = 250;
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
 
@@ -108,33 +108,44 @@ class CodeDecksUpload extends Command
                         $tempcodedeckdata['codedeckid'] = $joboptions->codedeckid;
                         $tempcodedeckdata['ProcessId'] = $ProcessID;
                         $tempcodedeckdata['CompanyId'] = $CompanyID;
-                        if (isset($row['Code']) && !empty($row['Code'])) {
-                            $tempcodedeckdata['Code'] = $row['Code'];
-                        }else{
-                            $error[] = 'code is blank at line no:'.$lineno;
-                        }
-                        if (isset($row['Country']) && !empty($row['Country'])) {
-                            $tempcodedeckdata['Country'] = $row['Country'];
-                        }
-                        if (isset($row['Description']) && !empty($row['Description'])) {
-                            $tempcodedeckdata['Description'] = $row['Description'];
-                        }else{
-                            $error[] = 'description is blank at line no:'.$lineno;
-                        }
-                        if (isset($row['Interval1']) && !empty($row['Interval1'])) {
-                            $tempcodedeckdata['Interval1'] = $row['Interval1'];
-                        }
-                        if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
-                            $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
-                        }
-                        if (isset($row['Action']) && !empty($row['Action'])) {
-                            $tempcodedeckdata['Action'] = $row['Action'];
-                        }else{
-                            $tempcodedeckdata['Action'] = 'I';
-                        }
-                        if(isset($tempcodedeckdata['Code']) && isset($tempcodedeckdata['Description'])){
-                            $batch_insert_array[] = $tempcodedeckdata;
-                            $counter++;
+
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($row['Code']) && !empty($row['Code'])) {
+                                $tempcodedeckdata['Code'] = $row['Code'];
+                            }else{
+                                $error[] = 'code is blank at line no:'.$lineno;
+                            }
+                            if (isset($row['Country']) && !empty($row['Country'])) {
+                                $tempcodedeckdata['Country'] = $row['Country'];
+                            }else{
+                                $tempcodedeckdata['Country'] = '';
+                            }
+                            if (isset($row['Description']) && !empty($row['Description'])) {
+                                $tempcodedeckdata['Description'] = $row['Description'];
+                            }else{
+                                $error[] = 'description is blank at line no:'.$lineno;
+                            }
+                            if (isset($row['Interval1']) && !empty($row['Interval1'])) {
+                                $tempcodedeckdata['Interval1'] = $row['Interval1'];
+                            }else{
+                                $tempcodedeckdata['Interval1'] = '';
+                            }
+                            if (isset($row['IntervalN']) && !empty($row['IntervalN'])) {
+                                $tempcodedeckdata['IntervalN'] = $row['IntervalN'];
+                            }else{
+                                $tempcodedeckdata['IntervalN'] = '';
+                            }
+                            if (isset($row['Action']) && !empty($row['Action'])) {
+                                $tempcodedeckdata['Action'] = $row['Action'];
+                            }else{
+                                $tempcodedeckdata['Action'] = 'I';
+                            }
+                            if(isset($tempcodedeckdata['Code']) && isset($tempcodedeckdata['Description'])){
+                                $batch_insert_array[] = $tempcodedeckdata;
+                                $counter++;
+                            }
                         }
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');
@@ -148,6 +159,7 @@ class CodeDecksUpload extends Command
                         }
                         $lineno++;
                     } // loop end
+
 
                     if(!empty($batch_insert_array)){
                         Log::info('Batch insert start');
@@ -168,6 +180,10 @@ class CodeDecksUpload extends Command
                     $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
                     Log::info($time_taken);
 
+                    if(count($error)>20) {
+                        $error = array_slice($error, 0, 20);
+                        $error = array_merge($error,['...']);
+                    }
 
                     if(!empty($error) || count($JobStatusMessage) > 1){
                         foreach ($JobStatusMessage as $JobStatusMessage) {

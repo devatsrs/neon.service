@@ -83,31 +83,32 @@ class ManualPortaAccountCDRImport extends Command {
             ,[duration]*/
 
             $tempItemData = array();
-            if(isset($temp_row['account']) && !empty($temp_row['account']) ){
-                $tempItemData['CompanyID'] = $CompanyID;
-                $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
-                $tempItemData['GatewayAccountID'] = $GatewayAccountID;
-                $tempItemData['connect_time'] = formatDate($temp_row['datetime']);
+            //check empty row
+            $checkemptyrow = array_filter(array_values($temp_row));
+            if(!empty($checkemptyrow)){
+                if(isset($temp_row['account']) && !empty($temp_row['account']) ){
+                    $tempItemData['CompanyID'] = $CompanyID;
+                    $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
+                    $tempItemData['GatewayAccountID'] = $GatewayAccountID;
+                    $tempItemData['connect_time'] = formatDate($temp_row['datetime']);
 
+                    $strtotime = strtotime($tempItemData['connect_time']);
+                    $billed_duration = strtotime($temp_row['charged_time_hourminsec']); //billed_duration
+                    $tempItemData['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + formatDuration($temp_row['charged_time_hourminsec']));
+                    $tempItemData['duration'] = formatDuration($temp_row['charged_time_hourminsec']);
+                    $tempItemData['billed_duration'] = formatDuration($temp_row['charged_time_hourminsec']);
+                    $tempItemData['cli'] = $temp_row['from'];
+                    $tempItemData['cld'] = $temp_row['to'];
+                    $tempItemData['cost'] = $temp_row['amount_gbp'];
+                    $tempItemData['ProcessID'] = $ProcessID;
+                    $tempItemData['AccountID'] = $AccountID;
 
-                $strtotime = strtotime($tempItemData['connect_time']);
-                $billed_duration = strtotime($temp_row['charged_time_hourminsec']); //billed_duration
-                $tempItemData['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + formatDuration($temp_row['charged_time_hourminsec']));
+                    TempUsageDetail::insert($tempItemData);
 
-                $tempItemData['duration'] = formatDuration($temp_row['charged_time_hourminsec']);
-                $tempItemData['billed_duration'] = formatDuration($temp_row['charged_time_hourminsec']);
-                $tempItemData['cli'] = $temp_row['from'];
-                $tempItemData['cld'] = $temp_row['to'];
-                $tempItemData['cost'] = $temp_row['amount_gbp'];
-                $tempItemData['ProcessID'] = $ProcessID;
-                $tempItemData['AccountID'] = $AccountID;
-
-                TempUsageDetail::insert($tempItemData);
-
-            }else{
-                Log::error($lineno . ' line number skipped.');
+                }else{
+                    Log::error($lineno . ' line number skipped.');
+                }
             }
-
             $lineno++;
 
         }

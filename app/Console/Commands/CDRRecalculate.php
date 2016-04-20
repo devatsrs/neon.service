@@ -99,7 +99,7 @@ class CDRRecalculate extends Command {
                 if(!empty($startdate) && !empty($enddate)){
                     DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."')");
                     DB::connection('sqlsrv2')->statement("CALL  prc_updatePrefixTrunk ('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "' , '".$temptableName."')");
-                    $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
+                    $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID);
 
                 }
                 if (count($skiped_account_data)) {

@@ -95,8 +95,17 @@ class PBXAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
+            $param['RateCDR'] = $RateCDR;
 
             Log::error(print_r($param, true));
 
@@ -123,17 +132,17 @@ class PBXAccountUsage extends Command
                     $data = $data_outbound = array();
                     if(!empty($row_account['accountcode'])) {
 
+
                         /**  User Field
                          * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
                          * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
                          * */
                         /**
                          * <InboundOutbound>
-
-                        split into two rows Inbound = Src,FirstDst
-
-                        Outbound = FirstDst,LstDst
-
+                         *
+                         * split into two rows Inbound = Src,FirstDst
+                         *
+                         * Outbound = FirstDst,LstDst
                          */
                         $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
 
@@ -155,26 +164,32 @@ class PBXAccountUsage extends Command
                         $data['is_inbound'] = 0;
                         $data['cost'] = (float)$row_account['cc_cost'];
                         $data['cli'] = $row_account['src'];
+                        $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
 
 
-                        if($call_type == 'inbound' ) {
+                        if ($call_type == 'inbound') {
 
                             $data['cld'] = $row_account['firstdst'];
                             $data['is_inbound'] = 1;
 
 
-                        }else if($call_type == 'outbound' ) {
+                        } else if ($call_type == 'outbound') {
 
-                            $data['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
 
                         } else if ($call_type == 'none') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data['is_inbound'] = 2;
                             /** if user field is blank */
+                        } else if ($call_type == 'both') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            /** if user field is both */
                         }
 
-                        if($call_type == 'both' ) {
+
+                        if ($call_type == 'both' && $RateCDR == 1) {
 
                             /**
                              * Inbound Entry
@@ -189,8 +204,8 @@ class PBXAccountUsage extends Command
                              */
                             $data_outbound = $data;
 
-                            $data_outbound['cli'] =  $row_account['firstdst'];
-                            $data_outbound['cld'] =  !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+                            $data_outbound['cli'] = $row_account['firstdst'];
+                            $data_outbound['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data_outbound['cost'] = (float)$row_account['cc_cost'];
                             $data_outbound['is_inbound'] = 0;
 
@@ -199,7 +214,7 @@ class PBXAccountUsage extends Command
                         $InserData[] = $data;
                         $data_count++;
 
-                        if ($call_type == 'both' && !empty($data_outbound)) {
+                        if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
                             $InserData[] = $data_outbound;
                             $data_count++;
 
@@ -230,14 +245,7 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);

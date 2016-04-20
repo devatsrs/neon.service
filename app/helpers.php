@@ -1,6 +1,6 @@
 <?php
 function custom_replace( &$item, $key ) {
-    $item = str_replace('usd', '{{currency}}', $item);
+    $item = str_replace('usd', '{{sign}}', $item);
 }
 function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
@@ -72,7 +72,6 @@ function next_billing_date($BillingCycleType,$BillingCycleValue,$BillingStartDat
                 $newDate = strtotime($year . '-' . $month . '-' . $day);
 
                 $NextInvoiceDate = date("Y-m-d", strtotime("+1 month", $newDate ));
-
 
                 break;
             case 'fortnightly':

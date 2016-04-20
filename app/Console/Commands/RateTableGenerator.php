@@ -66,8 +66,7 @@ class RateTableGenerator extends Command {
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/ratetablegenerator-'.$JobID.'-'.date('Y-m-d').'.log');
         Log::info('job start '.$JobID);
-        DB::beginTransaction();
-        Log::info('job transaction start '.$JobID);
+        Log::info('job start '.$JobID);
         $emailstatus = array('status'=>0,'message'=>'');
 
         try {
@@ -84,16 +83,17 @@ class RateTableGenerator extends Command {
             }
 
             $data['CompanyID'] = $CompanyID;
-
-
+            //DB::beginTransaction();
+            Log::info("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
             DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+            //DB::commit();
 
-            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+            /*$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
             $jobdata['ModifiedBy'] = 'RMScheduler';
             $jobdata['JobStatusMessage'] = 'RateTable Created Successfully';
             Job::where(["JobID" => $JobID])->update($jobdata);
-            DB::commit();
+            */
             if($CronJobID > 0) {
                 CronJob::sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$data['EffectiveDate']);
             }
