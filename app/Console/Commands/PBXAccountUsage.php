@@ -164,6 +164,7 @@ class PBXAccountUsage extends Command
                         $data['is_inbound'] = 0;
                         $data['cost'] = (float)$row_account['cc_cost'];
                         $data['cli'] = $row_account['src'];
+                        $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
 
 
                         if ($call_type == 'inbound') {
