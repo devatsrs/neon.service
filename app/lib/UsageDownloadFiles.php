@@ -23,7 +23,7 @@ class UsageDownloadFiles extends Model {
             $p_files = implode(",", $files);
             $result = DB::connection('sqlsrv2')->select("CALL prc_checkIfFileAlreadyDownloaded(" . $CompanyGatewayID . ",'" . $p_files . "');");
             foreach($result as $row){
-                $tmp_files[] = $row->filename;
+                $tmp_files[] = $row->FileName;
             }
             $response_files = array_diff($files , $tmp_files);
         }
@@ -31,10 +31,10 @@ class UsageDownloadFiles extends Model {
 
     }
     public static function getInProcessfile($CompanyID,$CompanyGatewayID,$ErrorEmail,$JobTitle){
-        $UsageDownloadFiles = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>2))->get(['filename'])->toArray();
+        $UsageDownloadFiles = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>2))->get(['FileName'])->toArray();
         $renamefilenames = array();
         foreach($UsageDownloadFiles as $UsageDownloadFilesrow){
-            $renamefilenames[] = $UsageDownloadFilesrow['filename'];
+            $renamefilenames[] = $UsageDownloadFilesrow['FileName'];
         }
         if(count($renamefilenames)) {
             Helper::sendFileRenamed($CompanyID, $ErrorEmail, $JobTitle, $renamefilenames);
@@ -46,7 +46,7 @@ class UsageDownloadFiles extends Model {
         $filenames = array();
         $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->orderby('created_at')->get();
         foreach ($new_filenames as $file) {
-            $filenames[$file->UsageDownloadFilesID] = $file->filename;
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
         }
         return $filenames;
 
@@ -55,9 +55,9 @@ class UsageDownloadFiles extends Model {
     public static function getSippyPendingFile($CompanyGatewayID,$type){
         $filenames = array();
         $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))
-            ->where('filename','like','%'.$type.'%')->orderby('created_at')->get();
+            ->where('FileName','like','%'.$type.'%')->orderby('created_at')->get();
         foreach ($new_filenames as $file) {
-            $filenames[$file->UsageDownloadFilesID] = $file->filename;
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
         }
         return $filenames;
 
@@ -66,10 +66,10 @@ class UsageDownloadFiles extends Model {
     public static function UpdateFileStausToProcess($UsageDownloadFilesID,$processID){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
         if(!empty($UsageDownloadFiles)){
-            $process_count = $UsageDownloadFiles->processcount+1;
+            $process_count = $UsageDownloadFiles->ProcessCount+1;
             $process_at = date('Y-m-d H:i:s');
-            $message = $UsageDownloadFiles->message.' process_at = '.$process_at.' processid = '.$processID.'\r\n';
-            $UsageDownloadFiles->update(array('Status'=>2,'processcount'=>$process_count,'process_at'=>$process_at,'message'=>$message));
+            $message = $UsageDownloadFiles->Message.' process_at = '.$process_at.' processid = '.$processID.'\r\n';
+            $UsageDownloadFiles->update(array('Status'=>2,'ProcessCount'=>$process_count,'process_at'=>$process_at,'Message'=>$message));
         }
     }
     /** get process file make them pending*/
@@ -95,9 +95,9 @@ class UsageDownloadFiles extends Model {
     public static function UpdateFileStatusToError($CompanyID,$cronsetting,$JobTitle,$UsageDownloadFilesID,$errormsg){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
         if(!empty($UsageDownloadFiles) && !empty($cronsetting['ErrorEmail'])){
-            $message = $UsageDownloadFiles->message.$errormsg;
-            $UsageDownloadFiles->update(array('Status'=>4,'message'=>$message));
-            Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->filename);
+            $message = $UsageDownloadFiles->Message.$errormsg;
+            $UsageDownloadFiles->update(array('Status'=>4,'Message'=>$message));
+            Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->FileName);
         }
     }
 
