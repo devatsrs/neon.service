@@ -182,7 +182,7 @@ class PBXAccountUsage extends Command
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data['is_inbound'] = 2;
                             /** if user field is blank */
-                        } else if ($call_type == 'none') {
+                        } else if ($call_type == 'both') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             /** if user field is both */
