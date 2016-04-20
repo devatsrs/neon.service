@@ -181,9 +181,14 @@ class PBXAccountUsage extends Command
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data['is_inbound'] = 2;
                             /** if user field is blank */
+                        } else if ($call_type == 'none') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            /** if user field is both */
                         }
 
-                        if ($call_type == 'both') {
+
+                        if ($call_type == 'both' && $RateCDR == 1) {
 
                             /**
                              * Inbound Entry
@@ -208,7 +213,7 @@ class PBXAccountUsage extends Command
                         $InserData[] = $data;
                         $data_count++;
 
-                        if ($call_type == 'both' && !empty($data_outbound)) {
+                        if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
                             $InserData[] = $data_outbound;
                             $data_count++;
 
