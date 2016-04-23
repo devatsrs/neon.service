@@ -153,6 +153,17 @@ return [
             'prefix'    => '',
             'strict'    => false,
         ],
+		'neon_report' => [
+			'driver'    => 'mysql',
+			'host'      => env('DB_HOSTREPORT', 'localhost'),
+			'database'  => env('DB_DATABASEREPORT', 'forge'),
+			'username'  => env('DB_USERNAMEREPORT', 'forge'),
+			'password'  => env('DB_PASSWORDREPORT', ''),
+			'charset'   => 'utf8',
+			'collation' => 'utf8_unicode_ci',
+			'prefix'    => '',
+			'strict'    => false,
+		],
 
 	],
 

@@ -483,5 +483,17 @@ class CronJob extends \Eloquent {
             Log::error("Rate Generate after email CronJobId" . $CronJobID . "job id" . $JobID);
         }
     }
+    public static function activateCronJob($CronJob){
+        $getmypid = getmypid(); // get proccess id
+        $dataactive['Active'] = 1;
+        $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
+        $CronJob->update($dataactive);
+    }
+    public static function deactivateCronJob($CronJob){
+        $dataactive['PID'] = '';
+        $dataactive['Active'] = 0;
+        $CronJob->update($dataactive);
+    }
 
 }
