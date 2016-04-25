@@ -92,6 +92,7 @@ class CompanyGateway extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
+            DB::connection('sqlsrvcdr')->statement(' TRUNCATE TABLE '.$tbltempusagedetail_name);
 
             Log::error(' done ');
 
