@@ -294,7 +294,7 @@ class CDRUpload extends Command
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
                 if (count($skiped_account_data) && $joboptions->CheckFile == 0) {
-                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' .'Skipped Code:'. implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' . implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 }else if (count($skiped_account_data)) {
                     $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
