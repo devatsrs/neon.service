@@ -115,7 +115,10 @@ class RateTableGenerator extends Command {
         }
 
         //Job::send_job_status_email($job,$CompanyID);
-        Job::send_job_status_email($job,$CompanyID);
+        if(isset($job->JobID) > 0) {
+
+            Job::send_job_status_email($job, $CompanyID);
+        }
 
 
         Log::info('job end '.$JobID);
