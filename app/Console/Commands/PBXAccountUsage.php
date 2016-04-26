@@ -180,7 +180,7 @@ class PBXAccountUsage extends Command
                         } else if ($call_type == 'none') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
-                            $data['is_inbound'] = 2;
+                            $data['is_inbound'] = 1;
                             /** if user field is blank */
                         } else if ($call_type == 'both') {
 
