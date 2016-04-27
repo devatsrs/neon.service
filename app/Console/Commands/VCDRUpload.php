@@ -237,7 +237,7 @@ class VCDRUpload extends Command
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
                 if (count($skiped_account_data)) {
-                    $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Vendor CDR Uploaded Successfully';
