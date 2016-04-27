@@ -103,7 +103,7 @@ class CDRRecalculate extends Command {
 
                 }
                 if (count($skiped_account_data)) {
-                    $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';

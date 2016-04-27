@@ -99,15 +99,69 @@ function next_billing_date($BillingCycleType,$BillingCycleValue,$BillingStartDat
     }
      return $NextInvoiceDate;
 }
-function formatDate($date)
+function formatDate($date,$dateformat='d-m-y')
 {
-    if (strpos($date,'/') !== false){
+   /* if (strpos($date,'/') !== false){
         $date = str_replace('/', '-', $date);
         $date = date('Y-m-d H:i:s', strtotime($date));
     }else{
         $date = date('Y-m-d H:i:s', strtotime($date));
     }
-    return $date;
+    return $date;*/
+
+    if(ctype_digit($date) && strlen($date)==5){
+        $UNIX_DATE = ($date - 25569) * 86400;
+        $datetime = gmdate("Y-m-d", $UNIX_DATE);
+    }else {
+        $m_d_y='((?:[0]?[1-9]|[1][012])[-:\\/.](?:(?:[0-2]?\\d{1})|(?:[3][01]{1}))[-:\\/.](?:(?:\\d{1}\\d{1})))(?![\\d])'; // for	m-d-y when converted from british
+        $d_m_y = '((?:(?:[0-2]?\\d{1})|(?:[3][01]{1}))[-:\\/.](?:[0]?[1-9]|[1][012])[-:\\/.](?:(?:\\d{1}\\d{1})))(?![\\d])';// for d-m-y british
+        if ($c = preg_match_all("/" . $d_m_y . "/is", $date, $matches)) {
+            $date_obj = \DateTime::createFromFormat('d-m-y H:i:s', $date);
+            if (!empty($date_obj)) {
+                $datetime = $date_obj->format('Y-m-d H:i:s');
+            }
+        }elseif($c = preg_match_all("/" . $m_d_y . "/is", $date, $matches)) {
+            $date_obj = \DateTime::createFromFormat('m-d-y H:i:s', $date);
+            if (!empty($date_obj)) {
+                $datetime = $date_obj->format('Y-m-d H:i:s');
+            }
+        }
+        if (!isset($datetime)|| empty($datetime)){
+            $date_obj = date_create($date);
+            if (is_object($date_obj)) {
+                $datetime = date_format($date_obj, "Y-m-d H:i:s");
+            } else {
+                $date_arr = date_parse($date);
+                if (!empty($date_arr['year']) && !empty($date_arr['month']) && !empty($date_arr['day'])) {
+                    $datetime = date("Y-m-d H:i:s", mktime(0, 0, 0, $date_arr['month'], $date_arr['day'], $date_arr['year']));
+                } else {
+                    if (strpos($date, '.') !== false) {
+                        $date = str_replace('.', '-', $date);
+                    }
+                    if (strpos($date, '/') !== false) {
+                        $date = str_replace('/', '-', $date);
+                    }
+                    /*if (strpos($date, ' ') !== false) {
+                        $date = str_replace(' ', '-', $date);
+                    }*/
+                    if ($dateformat == 'd-m-Y H:i:s' && strpos($date, '/') !== false) {
+                        $date = str_replace('/', '-', $date);
+                        $datetime = date('Y-m-d H:i:s', strtotime($date));
+                    } else if ($dateformat == 'm-d-Y' && strpos($date, '-') !== false) {
+                        $date = str_replace('-', '/', $date);
+                        $datetime = date('Y-m-d H:i:s', strtotime($date));
+                    } else {
+                        $datetime = date('Y-m-d H:i:s', strtotime($date));
+                    }
+                }
+            }
+        }
+    }
+
+    if ($datetime == '1970-01-01 01:00:00') {
+        throw new Exception('Invalid Date Format!!');
+    }
+    return $datetime;
 }
 function formatDuration($duration){
     if (strpos($duration,':') !== false){
