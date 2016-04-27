@@ -177,9 +177,9 @@ class CDRUpload extends Command
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
-                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]));
+                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]), $attrselection->DateFormat);
                             } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
-                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]));
+                                $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date].' '.$temp_row[$attrselection->connect_time]), $attrselection->DateFormat);
                             }
                             if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
                                 $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
@@ -188,7 +188,7 @@ class CDRUpload extends Command
                                 $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
                             }
                             if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
-                                $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]));
+                                $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
                             } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
                                 $strtotime = strtotime($cdrdata['connect_time']);
                                 $billed_duration = $cdrdata['billed_duration'];
@@ -224,7 +224,7 @@ class CDRUpload extends Command
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                             }
-                            //print_r($cdrdata);exit;
+
                             if(!empty($cdrdata['GatewayAccountID'])) {
 
                                 $batch_insert_array[] = $cdrdata;
