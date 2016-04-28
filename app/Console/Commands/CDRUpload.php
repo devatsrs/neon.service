@@ -272,7 +272,7 @@ class CDRUpload extends Command
 
                         /*Add CDR log for Invoice generation. - to check cdr is available.
                          * */
-                        $logdata['CompanyGatewayID'] = 0;
+                        $logdata['CompanyGatewayID'] = $CompanyGatewayID;
                         $logdata['CompanyID'] = $CompanyID;
                         $logdata['start_time'] = $result[0]->min_date;
                         $logdata['end_time'] = $result[0]->max_date;
