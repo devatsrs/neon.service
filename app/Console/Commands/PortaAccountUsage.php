@@ -191,7 +191,7 @@ class PortaAccountUsage extends Command {
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data) . '<br>';
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
             $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrvcdrazure')->beginTransaction();

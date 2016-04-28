@@ -180,7 +180,7 @@ class PBXAccountUsage extends Command
                         } else if ($call_type == 'none') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
-                            $data['is_inbound'] = 2;
+                            $data['is_inbound'] = 1;
                             /** if user field is blank */
                         } else if ($call_type == 'both') {
 
@@ -250,7 +250,7 @@ class PBXAccountUsage extends Command
 
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
 
             DB::connection('sqlsrvcdrazure')->beginTransaction();
