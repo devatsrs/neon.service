@@ -116,14 +116,14 @@ function formatDate($date,$dateformat='d-m-y',$smallDate = false)
 
     $_date_time = date_parse_from_format($dateformat, $date);
 
-    if (isset($_date_time['warnings']) && $_date_time['warnings'] > 0 ) {
+    if (isset($_date_time['warning_count']) &&  isset($_date_time['warnings']) && count($_date_time['warnings']) > 0 ) {
 
-        throw new Exception($date . ': Error  ' . implode(",",$_date_time['warnings']));
+        throw new Exception($date . ': Error  ' . implode(",",(array)$_date_time['warnings']));
     }
 
     if (isset($_date_time['error_count']) && $_date_time['error_count'] > 0 && isset($_date_time['errors'])) {
 
-        throw new Exception($date . ': Error  ' . implode(",",$_date_time['errors']));
+        throw new Exception($date . ': Error  ' . implode(",",(array)$_date_time['errors']));
     }
 
     $datetime = $_date_time['year'].'-'.$_date_time['month'].'-'.$_date_time['day'];
