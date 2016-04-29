@@ -106,11 +106,12 @@ function formatDate($date,$dateformat='d-m-y',$smallDate = false)
 
     if(!$smallDate){
 
-        if(strpos($date,":" !== FALSE )){
-            $dateformat = $dateformat ." H:i:s";
-        }
-        if(strpos(strtolower($date),"am") !== FALSE  || strpos(strtolower($date),"pm")  !== FALSE ){
-            $dateformat = $dateformat ." A";
+        if(strpos($date,":" ) !== FALSE ) {
+            $dateformat = $dateformat . " H:i:s";
+
+            if (strpos(strtolower($date), "am") !== FALSE || strpos(strtolower($date), "pm") !== FALSE) {
+                $dateformat = $dateformat . " A";
+            }
         }
     }
 
@@ -118,18 +119,22 @@ function formatDate($date,$dateformat='d-m-y',$smallDate = false)
 
     if (isset($_date_time['warning_count']) &&  isset($_date_time['warnings']) && count($_date_time['warnings']) > 0 ) {
 
-        throw new Exception($date . ': Error  ' . implode(",",(array)$_date_time['warnings']));
+        $error  = $date . ': Date Format Error  ' . implode(",",(array)$_date_time['warnings']);
+        //throw new Exception($error);
     }
 
     if (isset($_date_time['error_count']) && $_date_time['error_count'] > 0 && isset($_date_time['errors'])) {
 
-        throw new Exception($date . ': Error  ' . implode(",",(array)$_date_time['errors']));
+        $error = $date . ': Date Format Error  ' . implode(",",(array)$_date_time['errors']);
+        //throw new Exception($error);
+
     }
 
     $datetime = $_date_time['year'].'-'.$_date_time['month'].'-'.$_date_time['day'];
 
-    if(!empty($_date_time['hour']) && !empty($_date_time['minute']) && !empty($_date_time['second'])){
-        $datetime = ' '. $_date_time['hour'].':'.$_date_time['minute'].':'.$_date_time['second'];
+    if(is_numeric($_date_time['hour']) && is_numeric($_date_time['minute']) && is_numeric($_date_time['second'])){
+
+        $datetime = $datetime . ' '. $_date_time['hour'].':'.$_date_time['minute'].':'.$_date_time['second'];
     }
     return $datetime;
 
