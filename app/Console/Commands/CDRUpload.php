@@ -115,25 +115,6 @@ class CDRUpload extends Command
                 $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                 $results = $NeonExcel->read();
 
-                /*
-                if (!empty($csvoption->Delimiter)) {
-                    Config::set('excel::csv.delimiter', $csvoption->Delimiter);
-                }
-                if (!empty($csvoption->Enclosure)) {
-                    Config::set('excel::csv.enclosure', $csvoption->Enclosure);
-                }
-                if (!empty($csvoption->Escape)) {
-                    Config::set('excel::csv.line_ending', $csvoption->Escape);
-                }
-                Config::set('excel.import.heading','original');
-                Config::set('excel.import.dates.enable',false);
-                $excel = Excel::load($jobfile->FilePath, function ($reader) use ($csvoption) {
-                    if ($csvoption->Firstrow == 'data') {
-                        $reader->noHeading();
-                    }
-                })->get();
-                $results = json_decode(json_encode($excel), true);*/
-
                 if (isset($joboptions->CheckFile) && $joboptions->CheckFile == 1 && isset($attrselection->Authentication) && $attrselection->Authentication == 'CLI') {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
