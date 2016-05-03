@@ -70,14 +70,14 @@ class RateTableRateUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+        $ProcessID = (string) Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
         Log::useFiles(storage_path() . '/logs/ratetablefileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
-            DB::beginTransaction();
+
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
@@ -200,37 +200,51 @@ class RateTableRateUpload extends Command
                         TempRateTableRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
-
+                    $JobStatusMessage = array();
                     Log::info("start CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    $JobStatusMessage = DB::select("CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    Log::info("end CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
-                    Log::info($JobStatusMessage);
-                    Log::info(count($JobStatusMessage));
-                    if(!empty($error) || count($JobStatusMessage) > 1){
-                        foreach ($JobStatusMessage as $JobStatusMessage) {
-                            $error[] = $JobStatusMessage['Message'];
+                    try{
+                        DB::beginTransaction();
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        Log::info("end CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        DB::commit();
+
+                        $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                        Log::info($JobStatusMessage);
+                        Log::info(count($JobStatusMessage));
+                        if(!empty($error) || count($JobStatusMessage) > 1){
+                            foreach ($JobStatusMessage as $JobStatusMessage) {
+                                $error[] = $JobStatusMessage['Message'];
+                            }
+                            $job = Job::find($JobID);
+                            $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                            $jobdata['ModifiedBy'] = 'RMScheduler';
+                            Log::info($jobdata);
+                            Job::where(["JobID" => $JobID])->update($jobdata);
+                        }elseif(!empty($JobStatusMessage[0]['Message'])){
+                            $job = Job::find($JobID);
+                            $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                            $jobdata['ModifiedBy'] = 'RMScheduler';
+                            Job::where(["JobID" => $JobID])->update($jobdata);
                         }
-                        $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                        $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Log::info($jobdata);
-                        Job::where(["JobID" => $JobID])->update($jobdata);
-                    }elseif(!empty($JobStatusMessage[0]['Message'])){
-                        $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+
+                    }catch ( Exception $err ){
+                        DB::rollback();
+                        Log::error($err);
+
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                        $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
+                        Log::error($e);
                     }
 
                 }
             }
-
-            DB::commit();
 
         } catch (\Exception $e) {
             try{
