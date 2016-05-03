@@ -123,7 +123,7 @@ class VendorRateUpload extends Command
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                                $tempvendordata['Code'] = $temp_row[$attrselection->Code];
+                                $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
                             }else{
                                 $error[] = 'Code is blank at line no:'.$lineno;
                             }
@@ -132,9 +132,9 @@ class VendorRateUpload extends Command
                             }else{
                                 $error[] = 'Description is blank at line no:'.$lineno;
                             }
-                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
-                                if(is_numeric($temp_row[$attrselection->Rate])) {
-                                    $tempvendordata['Rate'] = $temp_row[$attrselection->Rate];
+                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
+                                    $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                 }else{
                                     $error[] = 'Rate is not numeric at line no:'.$lineno;
                                 }
@@ -173,13 +173,13 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                $tempvendordata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
+                                $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
                             }
                             if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                $tempvendordata['Interval1'] = $temp_row[$attrselection->Interval1];
+                                $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
                             }
                             if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                $tempvendordata['IntervalN'] = $temp_row[$attrselection->IntervalN];
+                                $tempvendordata['IntervalN'] = trim($temp_row[$attrselection->IntervalN]);
                             }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
                                 $batch_insert_array[] = $tempvendordata;
