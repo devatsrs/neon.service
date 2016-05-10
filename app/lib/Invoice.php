@@ -653,6 +653,10 @@ class Invoice extends \Eloquent {
                             $GatewayAccountRow['CompanyGatewayID'];
                             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
                             $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
+                            $AccountBillingTimeZone = Account::getBillingTimeZone($Invoice->AccountID);
+                            if(!empty($AccountBillingTimeZone)){
+                                $BillingTimeZone = $AccountBillingTimeZone;
+                            }
                             $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
                             $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
                             Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
