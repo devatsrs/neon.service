@@ -123,7 +123,7 @@ class CDRUpload extends Command
                         }
                         if (isset($attrselection->cli) && !empty($attrselection->cli)) {
                             $CustomerCLI = $temp_row[$attrselection->cli];
-                            $checkCustomerCli = DB::select("CALL prc_checkCustomerCli('" . $CompanyID . "','" . $CustomerCLI . "')");
+                            $checkCustomerCli = DB::select("CALL prc_checkCustomerCli(?,?)",array($CompanyID,$CustomerCLI));
                             if (isset($checkCustomerCli[0]->AccountID) && $checkCustomerCli[0]->AccountID) {
                                 $active_cli[] = $CustomerCLI;
                             } else {
