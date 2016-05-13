@@ -25,9 +25,9 @@ class Summary extends \Eloquent {
 
     public static function markFinalSummary($CompanyID,$startdate){
 
-        $query = "call prc_markSummaryFinal($CompanyID,'".$startdate."')";
+        /*$query = "call prc_markSummaryFinal($CompanyID,'".$startdate."')";
         Log::info($query);
-        DB::connection('neon_report')->statement($query);
+        DB::connection('neon_report')->statement($query);*/
     }
 
 }
