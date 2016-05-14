@@ -64,15 +64,15 @@ class CreateSummary extends Command{
         Log::useFiles(storage_path() . '/logs/createsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            DB::connection('neon_report')->beginTransaction();
+            //DB::connection('neon_report')->beginTransaction();
             Summary::generateSummary($CompanyID);
-            DB::connection('neon_report')->commit();
+            //DB::connection('neon_report')->commit();
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
         } catch (\Exception $e) {
             try {
-                DB::connection('neon_report')->rollback();
+                //DB::connection('neon_report')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }
