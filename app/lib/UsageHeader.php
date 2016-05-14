@@ -11,7 +11,7 @@ class UsageHeader extends \Eloquent {
     protected  $primaryKey = "UsageHeaderID";
 
     public static function getStartHeaderDate($CompanyID){
-        $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->min('StartDate');
+        $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblUsageSummary')->count();
         if($StartDate < date('Y-m-1', strtotime('-3 month')) && $usagecount > 0){
             $StartDate = date('Y-m-1', strtotime('-3 month'));

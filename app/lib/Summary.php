@@ -10,16 +10,28 @@ class Summary extends \Eloquent {
         $enddate  = date("Y-m-d", strtotime("-1 Day"));
         self::markFinalSummary($CompanyID,$startdate);
         $start = $startdate;
-        while($start < $enddate){
+        while($start <= $enddate){
 
             $start_summary = $start;
-            $end_summary = $start = date('Y-m-d', strtotime('+1 month',strtotime($start)));
+            $end_summary = $start = date('Y-m-d', strtotime('+1 day',strtotime($start)));
             if($end_summary>$enddate){
                 $end_summary = $enddate;
             }
-            $query = "call prc_generateSummary($CompanyID,'".$start_summary."','".$end_summary."')";
-            Log::info($query);
-            DB::connection('neon_report')->statement($query);
+            try {
+                DB::connection('neon_report')->beginTransaction();
+                $query = "call prc_generateSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "')";
+                Log::info($query);
+                DB::connection('neon_report')->statement($query);
+                DB::connection('neon_report')->commit();
+            } catch (\Exception $e) {
+                try {
+                    DB::connection('neon_report')->rollback();
+                } catch (\Exception $err) {
+                    Log::error($err);
+                }
+                Log::error($e);
+                Log::info($start_summary);
+            }
         }
     }
 
