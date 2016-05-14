@@ -177,6 +177,10 @@ class ImportAccount extends Command {
                                     $error[] = 'Country is blank at line no:' . $lineno;
                                 }
 
+                                if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
+                                        $tempItemData['Number'] = trim($temp_row[$attrselection->AccountNumber]);
+                                }
+
                                 if (isset($attrselection->Email) && !empty($attrselection->Email)) {
                                     $tempItemData['Email'] = trim($temp_row[$attrselection->Email]);
                                 }
