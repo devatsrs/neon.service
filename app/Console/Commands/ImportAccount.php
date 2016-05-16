@@ -111,7 +111,6 @@ class ImportAccount extends Command {
 
                      //manual import end
                     }else {//csv import start
-
                         if(!empty($joboptions->AccountType)) {
                             $AccountType=$joboptions->AccountType;
                         }
@@ -150,6 +149,7 @@ class ImportAccount extends Command {
                         if ($csvoption->Firstrow == 'data') {
                             $lineno = 1;
                         }
+                        $lastaccountnumber=Account::getLastAccountNo($CompanyID);
 
                         foreach ($results as $temp_row) {
                             if ($csvoption->Firstrow == 'data') {
@@ -158,7 +158,6 @@ class ImportAccount extends Command {
 
                             }
                             $tempItemData = array();
-
                             $checkemptyrow = array_filter(array_values($temp_row));
                             if(!empty($checkemptyrow)) {
                                 if (isset($attrselection->AccountName) && !empty($attrselection->AccountName) && !empty($temp_row[$attrselection->AccountName])) {
@@ -178,8 +177,25 @@ class ImportAccount extends Command {
                                 }
 
                                 if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
-                                        $tempItemData['Number'] = trim($temp_row[$attrselection->AccountNumber]);
+                                    $accountnumber = trim($temp_row[$attrselection->AccountNumber]);
+                                    if(Account::where(["CompanyID"=> $CompanyID,'Number'=>$accountnumber])->count()==0){
+                                        $tempItemData['Number'] = $accountnumber;
+                                    }else{
+                                        $tempItemData['Number'] = $lastaccountnumber;
+                                        $lastaccountnumber++;
+                                        while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$lastaccountnumber])->count() >=1 ){
+                                            $lastaccountnumber++;
+                                        }
+                                    }
+
+                                }else{
+                                    $tempItemData['Number'] = $lastaccountnumber;
+                                    $lastaccountnumber++;
+                                    while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$lastaccountnumber])->count() >=1 ){
+                                        $lastaccountnumber++;
+                                    }
                                 }
+
 
                                 if (isset($attrselection->Email) && !empty($attrselection->Email)) {
                                     $tempItemData['Email'] = trim($temp_row[$attrselection->Email]);
@@ -248,7 +264,6 @@ class ImportAccount extends Command {
                             }
                             $lineno++;
                         }
-
                         if (!empty($batch_insert_array)) {
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
