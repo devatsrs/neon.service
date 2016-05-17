@@ -4,6 +4,7 @@ use App\Lib\CompanyGateway;
 use App\Lib\Gateway;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
+use App\Lib\Currency;
 use App\Lib\JobFile;
 use App\Lib\FileUploadTemplate;
 use App\Lib\VendorFileUploadTemplate;
@@ -73,7 +74,7 @@ class ImportAccount extends Command {
         $jobdata = array();
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 100;
+        $bacth_insert_limit = 50;
         $counter = 0;
         $importoptions = array();
         $joboptions = array();
@@ -170,11 +171,18 @@ class ImportAccount extends Command {
                                 } else {
                                     $error[] = 'Firs tName is blank at line no:' . $lineno;
                                 }
-                                if (isset($attrselection->Country) && !empty($attrselection->Country) && !empty($temp_row[$attrselection->Country])) {
-                                    $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
-                                } else {
-                                    $error[] = 'Country is blank at line no:' . $lineno;
+                                if($AccountType==1){
+                                    if (isset($attrselection->Country) && !empty($attrselection->Country) && !empty($temp_row[$attrselection->Country])) {
+                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+                                    } else {
+                                        $error[] = 'Country is blank at line no:' . $lineno;
+                                    }
+                                }else{
+                                    if (isset($attrselection->Country) && !empty($attrselection->Country)) {
+                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+                                    }
                                 }
+
 
                                 if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
                                     $accountnumber = trim($temp_row[$attrselection->AccountNumber]);
@@ -201,8 +209,16 @@ class ImportAccount extends Command {
                                     $tempItemData['Email'] = trim($temp_row[$attrselection->Email]);
                                 }
 
-                                if (isset($attrselection->LastName) && !empty($attrselection->LastName)) {
-                                    $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
+                                if($AccountType==0) {
+                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)  && !empty($temp_row[$attrselection->LastName])) {
+                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
+                                    } else {
+                                        $error[] = 'Last Name is blank at line no:' . $lineno;
+                                    }
+                                }else{
+                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)) {
+                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
+                                    }
                                 }
 
                                 if (isset($attrselection->Title) && !empty($attrselection->Title)) {
@@ -240,17 +256,81 @@ class ImportAccount extends Command {
                                 if (isset($attrselection->NamePrefix) && !empty($attrselection->NamePrefix)) {
                                     $tempItemData['NamePrefix'] = trim($temp_row[$attrselection->NamePrefix]);
                                 }
-                                if (isset($tempItemData['AccountName']) && isset($tempItemData['Country']) && isset($tempItemData['FirstName'])) {
-                                    $tempItemData['AccountType'] = $AccountType;
-                                    $tempItemData['Status'] = 1;
-                                    $tempItemData['LeadSource'] = 'csv import';
-                                    $tempItemData['CompanyId'] = $CompanyID;
-                                    $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
-                                    $tempItemData['ProcessID'] = $ProcessID;
-                                    $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
-                                    $tempItemData['created_by'] = 'Imported';
-                                    $batch_insert_array[] = $tempItemData;
-                                    $counter++;
+
+                                if (isset($attrselection->Website) && !empty($attrselection->Website)) {
+                                    $tempItemData['Website'] = trim($temp_row[$attrselection->Website]);
+                                }
+
+                                if (isset($attrselection->Mobile) && !empty($attrselection->Mobile)) {
+                                    $tempItemData['Mobile'] = trim($temp_row[$attrselection->Mobile]);
+                                }
+
+                                if (isset($attrselection->Fax) && !empty($attrselection->Fax)) {
+                                    $tempItemData['Fax'] = trim($temp_row[$attrselection->Fax]);
+                                }
+
+                                if (isset($attrselection->Skype) && !empty($attrselection->Skype)) {
+                                    $tempItemData['Skype'] = trim($temp_row[$attrselection->Skype]);
+                                }
+
+                                if (isset($attrselection->Twitter) && !empty($attrselection->Twitter)) {
+                                    $tempItemData['Twitter'] = trim($temp_row[$attrselection->Twitter]);
+                                }
+
+                                if (isset($attrselection->Employee) && !empty($attrselection->Employee)) {
+                                    $tempItemData['Employee'] = trim($temp_row[$attrselection->Employee]);
+                                }
+
+                                if (isset($attrselection->Description) && !empty($attrselection->Description)) {
+                                    $tempItemData['Description'] = $temp_row[$attrselection->Description];
+                                }
+
+                                if (isset($attrselection->BillingEmail) && !empty($attrselection->BillingEmail)) {
+                                    $tempItemData['BillingEmail'] = trim($temp_row[$attrselection->BillingEmail]);
+                                }
+
+                                if (isset($attrselection->VatNumber) && !empty($attrselection->VatNumber)) {
+                                    $tempItemData['VatNumber'] = trim($temp_row[$attrselection->VatNumber]);
+                                }
+
+                                if (isset($attrselection->Currency) && !empty($attrselection->Currency)) {
+                                    // get currencyid from currency code
+                                    $cid = Currency::getCurrencyId(trim($temp_row[$attrselection->Currency]));
+                                    if(!empty($cid) && $cid>0){
+                                        $tempItemData['Currency'] = $cid;
+                                    }else{
+                                        $tempItemData['Currency'] = '';
+                                    }
+                                }
+
+                                if (isset($tempItemData['AccountName']) && isset($tempItemData['FirstName'])) {
+                                    if($AccountType==1){
+                                        if(isset($tempItemData['Country'])){
+                                            $tempItemData['AccountType'] = $AccountType;
+                                            $tempItemData['Status'] = 1;
+                                            $tempItemData['LeadSource'] = 'csv import';
+                                            $tempItemData['CompanyId'] = $CompanyID;
+                                            $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
+                                            $tempItemData['ProcessID'] = $ProcessID;
+                                            $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
+                                            $tempItemData['created_by'] = 'Imported';
+                                            $batch_insert_array[] = $tempItemData;
+                                            $counter++;
+                                        }
+                                    }elseif($AccountType==0){
+                                        if(isset($tempItemData['LastName'])){
+                                            $tempItemData['AccountType'] = $AccountType;
+                                            $tempItemData['Status'] = 1;
+                                            $tempItemData['LeadSource'] = 'csv import';
+                                            $tempItemData['CompanyId'] = $CompanyID;
+                                            $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
+                                            $tempItemData['ProcessID'] = $ProcessID;
+                                            $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
+                                            $tempItemData['created_by'] = 'Imported';
+                                            $batch_insert_array[] = $tempItemData;
+                                            $counter++;
+                                        }
+                                    }
                                 }
                             }
                             if ($counter == $bacth_insert_limit) {
