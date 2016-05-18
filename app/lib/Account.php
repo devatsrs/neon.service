@@ -3,6 +3,7 @@ namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\CompanySetting;
 
 class Account extends \Eloquent {
     protected $guarded = array("AccountID");
@@ -129,6 +130,19 @@ class Account extends \Eloquent {
         }
         $Outstanding= number_format($Outstanding,$decimal_places,'.', '');
         return $Outstanding;
+    }
+
+    public static function getLastAccountNo($CompanyID){
+        $LastAccountNo =  CompanySetting::getKeyVal($CompanyID,'LastAccountNo');
+        if($LastAccountNo == 'Invalid Key'){
+            $LastAccountNo = 1;
+            CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$LastAccountNo);
+        }
+
+        while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$LastAccountNo])->count() >=1 ){
+            $LastAccountNo++;
+        }
+        return $LastAccountNo;
     }
 
 }
