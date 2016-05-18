@@ -71,7 +71,7 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand'
+                'getSippyDownloadCommand',
 				'ImportAccount'
             ));
 
