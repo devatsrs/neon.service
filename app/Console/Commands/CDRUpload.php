@@ -99,7 +99,23 @@ class CDRUpload extends Command
             if(isset($attrselection->Authentication) && $attrselection->Authentication){
                 $NameFormat = $attrselection->Authentication;
             }
-
+            $clireplacement =$clipatternrules = $cldpatternrules = $cldreplacement = array();
+            if(!empty($attrselection->CLITranslationRule)){
+                $translation_rule = translation_rule($attrselection->CLITranslationRule);
+                $clireplacement =  $translation_rule['replacement'];
+                $clipatternrules =  $translation_rule['patternrules'];
+            }
+            if(!empty($attrselection->CLDTranslationRule)){
+                $translation_rule = translation_rule($attrselection->CLDTranslationRule);
+                $cldreplacement =  $translation_rule['replacement'];
+                $cldpatternrules =  $translation_rule['patternrules'];
+            }
+            Log::info('=======cli rules=======');
+            Log::info($clipatternrules);
+            Log::info($clireplacement);
+            Log::info('=======cld rules=======');
+            Log::info($cldpatternrules);
+            Log::info($cldreplacement);
             if (!empty($job) && !empty($jobfile)) {
                 if ($jobfile->FilePath) {
                     $path = AmazonS3::unSignedUrl($jobfile->FilePath);
@@ -176,10 +192,18 @@ class CDRUpload extends Command
                                 $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
                             }
                             if (isset($attrselection->cld) && !empty($attrselection->cld)) {
-                                $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                                if(!empty($cldpatternrules)){
+                                    $cdrdata['cld'] = preg_replace($cldpatternrules,$cldreplacement,$temp_row[$attrselection->cld]);
+                                }else{
+                                    $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                                }
                             }
                             if (isset($attrselection->cli) && !empty($attrselection->cli)) {
-                                $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                                if(!empty($clipatternrules)){
+                                    $cdrdata['cli'] = preg_replace($clipatternrules,$clireplacement,$temp_row[$attrselection->cli]);
+                                }else{
+                                    $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                                }
                             }
                             if (isset($attrselection->cost) && !empty($attrselection->cost)) {
                                 if (isset($joboptions->RateCDR) && !empty($joboptions->RateCDR) && isset($joboptions->TrunkID) && !empty($joboptions->TrunkID) && $joboptions->TrunkID >0 && $RateFormat == Company::CHARGECODE) {
