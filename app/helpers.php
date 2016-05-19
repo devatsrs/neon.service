@@ -271,6 +271,23 @@ function fix_jobstatus_meassage($message){
     }
     return $message;
 }
+function translation_rule($CLITranslationRule){
+    $replacement =$patternrules =  array();
+    $CLITranslationRule = explode(',',$CLITranslationRule);
+    foreach($CLITranslationRule as $CLITranslationRulerow){
+        $CLITranslation = explode('/',$CLITranslationRulerow);
+        if(isset($CLITranslation[1])) {
+            $patternrules[] = '/'.$CLITranslation[1].'/';
+        }
+        if(isset($CLITranslation[2])) {
+            $replacement[] = $CLITranslation[2];
+        }
+    }
+    $return['replacement'] = $replacement;
+    $return['patternrules'] = $patternrules;
+    return $return;
+
+}
 
 
 
