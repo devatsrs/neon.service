@@ -71,7 +71,8 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand'
+                'getSippyDownloadCommand',
+				'ImportAccount'
             ));
 
             $cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -285,6 +286,17 @@ class RMService extends Command {
                         pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
                     }
 
+                }
+            }
+			
+			//import account by csv or manually,import leads
+            foreach($allpending['data']['ImportAccount'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
                 }
             }
 
