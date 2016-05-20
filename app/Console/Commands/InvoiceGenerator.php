@@ -63,6 +63,7 @@ class InvoiceGenerator extends Command {
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
 
         $joblogdata = array();
@@ -110,7 +111,7 @@ class InvoiceGenerator extends Command {
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs));
+            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
             $jobdata["updated_at"] = date('Y-m-d H:i:s');
             $JobID = Job::insertGetId($jobdata);
             $jobdata = array();
@@ -218,12 +219,12 @@ class InvoiceGenerator extends Command {
                         DB::connection('sqlsrv2')->rollback();
                         Log::error($e);
 
-                        $errors[] = $AccountName . " " . $e->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage();
 
 
                     }catch (Exception $err) {
                         Log::error($err);
-                        $errors[] = $AccountName . " " . $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
                     }
 
                 }
@@ -268,7 +269,7 @@ class InvoiceGenerator extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage ;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getTraceAsString();
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     if(!empty($InvoiceGenerationEmail)){

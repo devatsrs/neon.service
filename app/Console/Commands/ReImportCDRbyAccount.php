@@ -13,19 +13,19 @@ use Webpatser\Uuid\Uuid;
 
 class ReImportCDRbyAccount extends Command {
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'reimportcdr';
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'reimportcdr';
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'When local CDR doesnt match with Gateway cdr run this service to reCollect CDR from gateway.';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'When local CDR doesnt match with Gateway cdr run this service to reCollect CDR from gateway.';
 
     /**
      * Create a new command instance.
@@ -108,7 +108,7 @@ class ReImportCDRbyAccount extends Command {
             $AccountID = 105;
             $GatewayAccountID = 102360;
             //Delete old CDR on same duration.
-            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR(1 , 1 , '".$param['start_date_ymd']."', '".$param['end_date_ymd']."',".$AccountID.")");
+            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR(1 , 1 , '".$param['start_date_ymd']."', '".$param['end_date_ymd']."',".$AccountID.",'')");
 
 
             //foreach ($accounts as $GatewayAccountID) {

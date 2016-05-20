@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 
 class CronJob extends \Eloquent {
 	protected $fillable = [];
@@ -347,7 +348,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = getenv("WEBURL") . '/activecronjob';
+        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
@@ -418,14 +419,20 @@ class CronJob extends \Eloquent {
         $rates =  DB::select("CALL prc_GetLastRateTableRate(".$CompanyID.",'".$cronsetting->rateTableID."','".$EffectiveDate."')");
         $excel_data = json_decode(json_encode($rates),true);
         $filename = 'rate_table_'.date('Y-m-d His');
-        Excel::create($filename, function ($excel) use ($excel_data) {
+
+        $file_path = Config::get('app.temp_location').$filename.'.xlsx';
+
+        $NeonExcel = new NeonExcelIO($file_path);
+        $NeonExcel->write_excel($excel_data);
+
+        /*Excel::create($filename, function ($excel) use ($excel_data) {
             $excel->sheet('Accounts', function ($sheet) use ($excel_data) {
                 $sheet->fromArray($excel_data);
             });
-        })->store('xls',Config::get('app.temp_location'));
+        })->store('xls',Config::get('app.temp_location'));*/
 
 
-        $emaildata['attach'] = Config::get('app.temp_location').$filename.'.xls';
+        $emaildata['attach'] = Config::get('app.temp_location').$filename.'.xlsx';
         $rgname = DB::table('tblRateGenerator')->where(array('RateGeneratorId'=>$cronsetting->rateGeneratorID))->pluck('RateGeneratorName');
         $rtname = DB::table('tblRateTable')->where(array('RateTableId'=>$cronsetting->rateTableID))->pluck('RateTableName');
         $emaildata['data'] = array(

@@ -62,10 +62,10 @@ class SippyDownloadCDR extends Command {
         $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
-        $cronsetting =   json_decode($CronJob->Settings);
+        $cronsetting = json_decode($CronJob->Settings, true);
         $dataactive['DownloadActive'] = 1;
         $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting->CompanyGatewayID;
+        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
             Log::info("Start");
@@ -85,7 +85,7 @@ class SippyDownloadCDR extends Command {
                     $param['download_path'] = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/';
                     //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                     $sippy->downloadCDR($param);
-                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "filename" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
+                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
                     //$sippy->deleteCDR($param);
                 }
@@ -96,6 +96,13 @@ class SippyDownloadCDR extends Command {
             Log::error($e);
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            if(!empty($cronsetting['ErrorEmail'])) {
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                Log::info("**Email Sent Status " . $result['status']);
+                Log::info("**Email Sent message " . $result['message']);
+            }
+
         }
         Log::info("SippySSH end");
     }

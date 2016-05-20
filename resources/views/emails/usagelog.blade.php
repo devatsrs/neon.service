@@ -1,4 +1,7 @@
-Hi
+Hi Admin,
 <br>
 
-Find An Attchement for Usage.
+Please check below error messages while re-rating cdrs.
+
+<br>
+{{$data['Message']}}

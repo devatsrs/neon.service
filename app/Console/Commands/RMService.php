@@ -71,7 +71,8 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand'
+                'getSippyDownloadCommand',
+				'ImportAccount'
             ));
 
             $cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -287,6 +288,17 @@ class RMService extends Command {
 
                 }
             }
+			
+			//import account by csv or manually,import leads
+            foreach($allpending['data']['ImportAccount'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
 
             //------------------------ Cron job start here------------------------//
 
@@ -298,13 +310,6 @@ class RMService extends Command {
                     }else {
                         pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID, "r"));
                     }
-                }
-            }
-            if( date('H:i:00') == '00:01:00' && $CompanyID ==1){
-                if(getenv('APP_OS') == 'Linux') {
-                    pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dbcleanup ". " &","r"));
-                }else {
-                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . "  dbcleanup", "r"));
                 }
             }
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
@@ -319,30 +324,6 @@ class RMService extends Command {
         }catch(\Exception $e){
             Log::error($e);
         }
-        /*if( date('H:i:00') == '10:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  dbfixing ". $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '10:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  invoicegenerator ". $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '11:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  bulkautopaymentcapture ". $CompanyID, "r"));
-        }
-        if($CompanyID ==1) {
-            //pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . "  tempcommand " . $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '09:00:00' && $CompanyID ==1 ) {
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  transactionlogemail ". $CompanyID, "r"));
-        }
-
-        if( date('H:i:00') == '06:00:00') {
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  accountactivityreminder ". $CompanyID, "r"));
-        }
-
-
-        /*$query = "prc_WSGetCustomerRateSheetPendingRequest " . $CompanyID ;
-        $allpendingrs = DataTableSql::of($query)->getProcResult(array('PendingRateSheetRequset'));
-        */
     }
 
     /**

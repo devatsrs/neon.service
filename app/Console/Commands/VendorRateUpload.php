@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
 use Illuminate\Support\Facades\DB;
@@ -76,7 +77,7 @@ class VendorRateUpload extends Command
         $counter = 0;
         Log::useFiles(storage_path() . '/logs/vendorfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
-            DB::beginTransaction();
+
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
@@ -100,30 +101,8 @@ class VendorRateUpload extends Command
                         }
                     };
 
-                    if (!empty($csvoption->Delimiter)) {
-                        Config::set('excel.csv.delimiter', $csvoption->Delimiter);
-                    }
-                    if (!empty($csvoption->Enclosure)) {
-                        Config::set('excel.csv.enclosure', $csvoption->Enclosure);
-                    }
-                    if (!empty($csvoption->Escape)) {
-                        Config::set('excel.csv.line_ending', $csvoption->Escape);
-                    }
-                    Config::set('excel.import.heading','original');
-                    $isExcel = in_array(pathinfo($jobfile->FilePath, PATHINFO_EXTENSION),['xls','xlsx'])?true:false;
-                    $results =  Excel::selectSheetsByIndex(0)->load($jobfile->FilePath, function ($reader) use ($csvoption,$isExcel) {
-                        if ($csvoption->Firstrow == 'data') {
-                            $reader->noHeading();
-                        }
-                        if(!$isExcel) {
-                            $reader->formatDates(true, 'Y-m-d');
-                        }else{
-                            $reader->formatDates(false);
-                            $reader->setReadDataOnly(true);
-                        }
-
-                    })->get();
-                    $results = json_decode(json_encode($results), true);
+                    $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                    $results = $NeonExcel->read();
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
@@ -138,65 +117,76 @@ class VendorRateUpload extends Command
                         }
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
-                        $tempvendordata['ProcessId'] = $ProcessID;
-                        if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                            $tempvendordata['Code'] = $temp_row[$attrselection->Code];
-                        }else{
-                            $error[] = 'Code is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                            $tempvendordata['Description'] = $temp_row[$attrselection->Description];
-                        }else{
-                            $error[] = 'Description is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
-                            if(is_numeric($temp_row[$attrselection->Rate])) {
-                                $tempvendordata['Rate'] = $temp_row[$attrselection->Rate];
+                        $tempvendordata['ProcessId'] = (string) $ProcessID;
+
+                        //check empty row
+                        $checkemptyrow = array_filter(array_values($temp_row));
+                        if(!empty($checkemptyrow)){
+                            if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
+                                $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
                             }else{
-                                $error[] = 'Rate is not numeric at line no:'.$lineno;
+                                $error[] = 'Code is blank at line no:'.$lineno;
                             }
-                        }else{
-                            $error[] = 'Rate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                            try {
-                                $tempvendordata['EffectiveDate'] = formatSmallDate($temp_row[$attrselection->EffectiveDate], $attrselection->DateFormat);
-                            }catch (\Exception $e){
-                                $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                            if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
+                                $tempvendordata['Description'] = $temp_row[$attrselection->Description];
+                            }else{
+                                $error[] = 'Description is blank at line no:'.$lineno;
                             }
-                        }elseif(empty($attrselection->EffectiveDate)){
-                            $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                        }else{
-                            $error[] = 'EffectiveDate is blank at line no:'.$lineno;
-                        }
-                        if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                            $action_value = $temp_row[$attrselection->Action];
-                            if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
-                                $tempvendordata['Change'] = 'D';
-                            }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
-                                $tempvendordata['Change'] = 'U';
-                            }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
-                                $tempvendordata['Change'] = 'I';
+                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
+                                    $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                }else{
+                                    $error[] = 'Rate is not numeric at line no:'.$lineno;
+                                }
+                            }else{
+                                $error[] = 'Rate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
+                                try {
+                                    $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
+                                }catch (\Exception $e){
+                                    $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                }
+                            }elseif(empty($attrselection->EffectiveDate)){
+                                $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                            }else{
+                                $error[] = 'EffectiveDate is blank at line no:'.$lineno;
+                            }
+                            if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                if(empty($temp_row[$attrselection->Action])){
+                                    $tempvendordata['Change'] = 'I';
+                                }else{
+                                    $action_value = $temp_row[$attrselection->Action];
+                                    if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete)) ) {
+                                        $tempvendordata['Change'] = 'D';
+                                    }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
+                                        $tempvendordata['Change'] = 'U';
+                                    }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                        $tempvendordata['Change'] = 'I';
+                                    }else{
+                                        $tempvendordata['Change'] = 'I';
+                                    }
+                                }
+
                             }else{
                                 $tempvendordata['Change'] = 'I';
                             }
-                        }else{
-                            $tempvendordata['Change'] = 'I';
+
+                            if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                            }
+                            if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
+                            }
+                            if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                $tempvendordata['IntervalN'] = trim($temp_row[$attrselection->IntervalN]);
+                            }
+                            if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
+                                $batch_insert_array[] = $tempvendordata;
+                                $counter++;
+                            }
                         }
 
-                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                            $tempvendordata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
-                        }
-                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                            $tempvendordata['Interval1'] = $temp_row[$attrselection->Interval1];
-                        }
-                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                            $tempvendordata['IntervalN'] = $temp_row[$attrselection->IntervalN];
-                        }
-                        if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
-                            $batch_insert_array[] = $tempvendordata;
-                            $counter++;
-                        }
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');
                             Log::info('global counter'.$lineno);
@@ -207,31 +197,42 @@ class VendorRateUpload extends Command
                             $counter = 0;
                         }
                         $lineno++;
-                    }
+                    } // loop over
+
                     if(!empty($batch_insert_array)){
                         Log::info('Batch insert start');
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
+                        Log::info('last batch insert ' . count($batch_insert_array));
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
-
                     Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                    Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                    try{
+                        DB::beginTransaction();
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        DB::commit();
+                    }catch ( Exception $err ){
+                        DB::rollback();
+                        Log::error($err);
+                    }
+
                     $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                     Log::info($JobStatusMessage);
                     Log::info(count($JobStatusMessage));
                     if(!empty($error) || count($JobStatusMessage) > 1){
+                        $prc_error = array();
                         foreach ($JobStatusMessage as $JobStatusMessage) {
-                            $error[] = $JobStatusMessage['Message'];
+                            $prc_error[] = $JobStatusMessage['Message'];
                         }
+                        $error = array_merge($prc_error,$error);
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Log::info($jobdata);
+                        //Log::info($jobdata);
                         Job::where(["JobID" => $JobID])->update($jobdata);
                     }elseif(!empty($JobStatusMessage[0]['Message'])){
                         $job = Job::find($JobID);
@@ -245,14 +246,8 @@ class VendorRateUpload extends Command
                 }
             }
             
-            DB::commit();
 
         } catch (\Exception $e) {
-            try{
-                DB::rollback();
-            }catch (Exception $err) {
-                Log::error($err);
-            }
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
             $jobdata['updated_at'] = date('Y-m-d H:i:s');

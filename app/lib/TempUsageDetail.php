@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TempUsageDetail extends \Eloquent {
-	protected $fillable = [];
+    protected $fillable = [];
     protected $connection = 'sqlsrv2';
     public $timestamps = false; // no created_at and updated_at
 
@@ -24,7 +24,7 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat=''){
         $skiped_account_data =array();
         Log::error(' prc_insertGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID . ", '".$temptableName."'" );
         DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayAccount('" . $ProcessID . "' , '".$temptableName."');" );
@@ -32,9 +32,9 @@ class TempUsageDetail extends \Eloquent {
 
 
         // Update  tblGatewayAccount
-        Log::error(' prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1')"); // Procedure Updated - 05-10-2015
-        Log::error(' prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
+        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') start");
+        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."')"); // Procedure Updated - 05-10-2015
+        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') end");
 
 
         /*
@@ -44,6 +44,9 @@ class TempUsageDetail extends \Eloquent {
         Log::error(' prc_setAccountID end CompanyGatewayID = '.$CompanyGatewayID);
 		*/
 
+        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
+        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
+        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
 
         if($RateFormat == Company::PREFIX) {
             Log::error(' prc_updatePrefixTrunk start CompanyGatewayID = '.$CompanyGatewayID);
@@ -51,35 +54,30 @@ class TempUsageDetail extends \Eloquent {
             Log::error(' prc_updatePrefixTrunk end CompanyGatewayID = '.$CompanyGatewayID);
         }
 
-
-        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
-        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
-
         if($RateCDR == 1){
-            $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName);
-        }else{
-            /**
-             * IF PBX Gateway
-             * Incomming CDR Rerate
-             */
-            $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID, $ProcessID, $temptableName);
-            if (count($inbound_errors) > 0) {
-                $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
-            }
+            $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID);
         }
 
         Log::error(' prc_insertTempCDR start');
         //DB::connection('sqlsrv2')->statement("CALL  prc_insertTempCDR('" . $ProcessID . "')");
         Log::error('prc_insertTempCDR end');
+        $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
+        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
+        foreach($FailedAccounts as $FailedAccount){
+            $skiped_account_data[] = "Account: ".$FailedAccount->GatewayAccountID." - Gateway: ".$CompanyGateway->Title." - Doesn't exist in NEON";
+        }
+        $skiped_account_data = array_unique($skiped_account_data);
         return $skiped_account_data;
 
     }
 
-    public static function RateCDR($CompanyID,$ProcessID,$temptableName){
+    public static function RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID){
+        $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $skiped_account_data = array();
+
+        //@TODO: create new procedure to fix Rerate even if account or trunk not setup and rerating is on.
         foreach($TempUsageDetails as $TempUsageDetail){
             $TrunkID = DB::table('tblTrunk')->where(array('trunk'=>$TempUsageDetail->trunk))->pluck('TrunkID');
             if($TrunkID>0) {
@@ -89,15 +87,39 @@ class TempUsageDetail extends \Eloquent {
                 //$AccountRates = DB::select($rarateaccount);
                 Log::error("rarateaccount query = $rarateaccount");
                 foreach($AccountRates as $AccountRate){
-                    $skiped_account_data[] = 'Account :: '.$AccountRate->AccountName.' Trunk ::'.$AccountRate->trunk.' Rate Code ::'.$AccountRate->area_prefix;
+                    $TempRateLogdata = array();
+                    $TempRateLogdata['CompanyID'] = $CompanyID;
+                    $TempRateLogdata['CompanyGatewayID'] = $CompanyGatewayID;
+                    $TempRateLogdata['MessageType'] = 2;
+                    $TempRateLogdata['RateDate'] = date("Y-m-d");
+                    $skiped_account_data[] = $TempRateLogdata['Message'] = "Account: ".$AccountRate->AccountName." - Trunk: ".$AccountRate->trunk." - Unable to Rerate number ".$AccountRate->area_prefix." - No Matching prefix found";
+                    if(DB::table('tblTempRateLog')->where($TempRateLogdata)->count() == 0){
+                        $TempRateLogdata['created_at'] = date("Y-m-d H:i:s");
+                        $TempRateLogdata['SentStatus'] = 0;
+                        DB::table('tblTempRateLog')->insert($TempRateLogdata);
+                    }
                 }
             }else{
                 Log::error("rarateaccount query = $TempUsageDetail->trunk");
             }
         }
+        // Update cost = 0 where AccountID not set and Trunk is not set.
+        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
+
         $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
         foreach($FailedAccounts as $FailedAccount){
-            $skiped_account_data[] = 'Account Not Matched '.$FailedAccount->GatewayAccountID;
+            $TempRateLogdata = array();
+            $TempRateLogdata['CompanyID'] = $CompanyID;
+            $TempRateLogdata['CompanyGatewayID'] = $CompanyGatewayID;
+            $TempRateLogdata['MessageType'] = 1;
+            $TempRateLogdata['RateDate'] = date("Y-m-d");
+            $skiped_account_data[] = $TempRateLogdata['Message'] =  "Account: ".$FailedAccount->GatewayAccountID." - Gateway: ".$CompanyGateway->Title." - Doesn't exist in NEON";
+            if(DB::table('tblTempRateLog')->where($TempRateLogdata)->count() == 0){
+                $TempRateLogdata['created_at'] = date("Y-m-d H:i:s");
+                $TempRateLogdata['SentStatus'] = 0;
+                DB::table('tblTempRateLog')->insert($TempRateLogdata);
+            }
         }
 
         /**
@@ -106,41 +128,62 @@ class TempUsageDetail extends \Eloquent {
          */
         $inbound_errors = TempUsageDetail::inbound_rerate($CompanyID,$ProcessID,$temptableName);
         if(count($inbound_errors) > 0){
-            $skiped_account_data[] = ' <br>Inbound Rerate Errors: <br>' . implode('<br>', $inbound_errors);
+            foreach($inbound_errors as $inbound_errors_row) {
+                $TempRateLogdata = array();
+                $TempRateLogdata['CompanyID'] = $CompanyID;
+                $TempRateLogdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $TempRateLogdata['MessageType'] = 3;
+                $TempRateLogdata['RateDate'] = date("Y-m-d");
+                $skiped_account_data[] = $TempRateLogdata['Message'] = $inbound_errors_row;
+                if(DB::table('tblTempRateLog')->where($TempRateLogdata)->count() == 0){
+                    $TempRateLogdata['created_at'] = date("Y-m-d H:i:s");
+                    $TempRateLogdata['SentStatus'] = 0;
+                    DB::table('tblTempRateLog')->insert($TempRateLogdata);
+                }
+            }
         }
 
         return $skiped_account_data;
     }
     public static function GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$JobTitle){
-        if(count($skiped_account_data)) {
-            $file_name = $CompanyGatewayID.'-'.date('Y-m-d').'.txt';
-            $usage_dir = getenv('UPLOAD_PATH') . '/UsageLog/'.$CompanyGatewayID.'/';
-            if (!file_exists($usage_dir)) {
-                @mkdir($usage_dir, 0777, TRUE);
-            }
-            $file_content = PHP_EOL.implode("\n\r".PHP_EOL, $skiped_account_data);
-            file_put_contents($usage_dir . '/' . $file_name, $file_content,FILE_APPEND);
 
-            $new_filenames = scandir($usage_dir);
-            $filenames = array();
-
-            foreach ((array)$new_filenames as $file) {
-                if (strpos($file,$CompanyGatewayID) !== false) {
-                    $filenames[] = $file;
+        $Messages = DB::table('tblTempRateLog')->where(array(
+            'CompanyID' => $CompanyID,
+            'CompanyGatewayID' => $CompanyGatewayID,
+            'SentStatus' => 0
+        ))
+            ->where('RateDate', '<', date("Y-m-d"))
+            ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
+        $error_msg = array();
+        $PrevMessageType=0;
+        foreach ($Messages as $Messagesrow) {
+            if($PrevMessageType != $Messagesrow->MessageType){
+                $PrevMessageType = $Messagesrow->MessageType;
+                if($Messagesrow->MessageType == 1){
+                    $error_msg[] = '<b>Below Accounts Doesn\'t exist in NEON</b><br/>';
+                }elseif($Messagesrow->MessageType == 2){
+                    $error_msg[] = '<br/><b>Outbound Rerate Errors</b><br/>';
+                }elseif($Messagesrow->MessageType == 3){
+                    $error_msg[] = '<br/><b>Inbound Rerate Errors</b><br/>';
                 }
             }
-            if(count($filenames)>1){
-                if(!empty($cronsetting['ErrorEmail'])) {
-                    $emaildata['CompanyID'] = $CompanyID;
-                    $emaildata['EmailTo'] = $cronsetting['ErrorEmail'];
-                    $emaildata['EmailToName'] = '';
-                    $emaildata['Subject'] = $JobTitle.' Usage Log file with Account and Trunk did not match ';
-                    $emaildata['attach'] = $usage_dir.$filenames[0];
-                    $result = Helper::sendMail('emails.usagelog', $emaildata);
-                    if($result['status'] == 1){
-                        @unlink($usage_dir.$filenames[0]);
-                    }
-                }
+
+            $error_msg[] = $Messagesrow->Message;
+
+        }
+        if (!empty($cronsetting['ErrorEmail']) && !empty($error_msg)) {
+            $emaildata['CompanyID'] = $CompanyID;
+            $emaildata['EmailTo'] = $cronsetting['ErrorEmail'];
+            $emaildata['EmailToName'] = '';
+            $emaildata['Message'] = implode('<br>', $error_msg);
+            $emaildata['Subject'] = $JobTitle . ' Usage Log file with Account and Trunk did not match ';
+            $result = Helper::sendMail('emails.usagelog', $emaildata);
+            if ($result['status'] == 1) {
+                DB::table('tblTempRateLog')->where(array(
+                    'CompanyID' => $CompanyID,
+                    'CompanyGatewayID' => $CompanyGatewayID,
+                    'SentStatus' => 0
+                ))->where('RateDate', '<', date("Y-m-d"))->update(array('SentStatus' => 1));
             }
         }
     }
@@ -164,11 +207,27 @@ class TempUsageDetail extends \Eloquent {
 
     }
 
-    public static function check_inbound($userfield){
+    public static function check_call_type($userfield){
+
+        $is_inbound = $is_outbound = false;
+
+
 
         if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
-            return true;
+            $is_inbound = true;
         }
-        return  false;
+        if(isset($userfield) && strpos($userfield,"outbound") !== false ) {
+            $is_outbound = true;
+        }
+
+        if($is_inbound && $is_outbound ){
+            return 'both';
+        }else if($is_inbound){
+            return 'inbound';
+        }else if($is_outbound){
+            return 'outbound';
+        }else if(empty($userfield) ) {
+            return 'none';
+        }
     }
 }

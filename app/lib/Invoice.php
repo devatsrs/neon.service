@@ -168,6 +168,8 @@ class Invoice extends \Eloquent {
                                     $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
                                     $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
                                     $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
+                                    $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                    $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
                                 }else{
                                     $usage_data[] = $result_row;
                                 }
@@ -229,6 +231,12 @@ class Invoice extends \Eloquent {
                         //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
                         foreach($result_data as $result_row){
                             if(isset($result_row['AreaPrefix'])){
+                                if(isset($result_row['DurationInSec'])){
+                                    unset($result_row['DurationInSec']);
+                                }
+                                if(isset($result_row['BillDurationInSec'])){
+                                    unset($result_row['BillDurationInSec']);
+                                }
                                 $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
                                 if(isset($usage_data[$key]['AreaPrefix'])){
                                     $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
@@ -615,6 +623,7 @@ class Invoice extends \Eloquent {
             $Account = Account::find($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+            $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                 $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -644,6 +653,10 @@ class Invoice extends \Eloquent {
                             $GatewayAccountRow['CompanyGatewayID'];
                             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
                             $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
+                            $AccountBillingTimeZone = Account::getBillingTimeZone($Invoice->AccountID);
+                            if(!empty($AccountBillingTimeZone)){
+                                $BillingTimeZone = $AccountBillingTimeZone;
+                            }
                             $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
                             $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
                             Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
@@ -660,6 +673,8 @@ class Invoice extends \Eloquent {
                                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
                                         $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
                                         $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
+                                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
                                     }else{
                                         $usage_data[] = $result_row;
                                     }
@@ -675,7 +690,9 @@ class Invoice extends \Eloquent {
                     }
                 }
             }
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+
+            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo'))->render();
+
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
@@ -1184,6 +1201,9 @@ class Invoice extends \Eloquent {
                 $isAdvanceSubscription =0;
                 /**check for advance subscription*/
                 Log::info( ' SubscriptionID - ' . $AccountSubscription->SubscriptionID );
+                if($AccountSubscription->EndDate == '0000-00-00'){
+                    $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
+                }
                 if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID)){
                 $isAdvanceSubscription =1;
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
@@ -1631,6 +1651,7 @@ class Invoice extends \Eloquent {
                         $Account = Account::find($Invoice->AccountID);
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -1666,6 +1687,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
                                             $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
                                             $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
+                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
                                         }else{
                                             $usage_data[$countkey]['Trunk'] = 'Other';
                                             $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
@@ -1675,6 +1698,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
+                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
+                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
                                         }
                                         $countkey++;
                                     }
@@ -1685,7 +1710,7 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
@@ -2005,6 +2030,7 @@ class Invoice extends \Eloquent {
                         $Account = Account::find($Invoice->AccountID);
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
@@ -2040,6 +2066,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
                                             $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
                                             $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
+                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
                                         }else{
                                             $usage_data[$countkey]['Trunk'] = 'Other';
                                             $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
@@ -2049,6 +2077,9 @@ class Invoice extends \Eloquent {
                                             $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
+                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
+                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
+
                                         }
                                         $countkey++;
                                     }
@@ -2059,7 +2090,7 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);

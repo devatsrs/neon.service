@@ -53,11 +53,36 @@ class PBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,cc.cc_cost,c.pincode, c.userfield
+                if($addparams['RateCDR'] == 1) {
+                    $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,0 as cc_cost,c.pincode, c.userfield
                         from asteriskcdrdb.cdr c
-                        inner join asterisk.cc_callcosts cc on cc.cc_uniqueid = c.uniqueid
-                        where `start` >= '".$addparams['start_date_ymd']."' and `end` < '".$addparams['end_date_ymd']."'
+                        where `end` >= '" . $addparams['start_date_ymd'] . "' and `end` < '" . $addparams['end_date_ymd'] . "'
+                        AND (
+                               userfield like '%outbound%'
+                            or userfield like '%inbound%'
+                            or ( userfield = '' AND  billsec > 0 AND LENGTH(lastdst)>=8 AND concat('',lastdst * 1) = lastdst )
+                            )
+                        AND ( dst<>'h' or duration <> 0 )
+                        and prevuniqueid=''
+                        group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,pincode
                         "; // and userfield like '%outbound%'  removed for inbound calls
+                }else{
+                    $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield
+                        from asteriskcdrdb.cdr c
+                        left outer join asterisk.cc_callcosts cc on
+                         c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) )
+                        where `end` >= '" . $addparams['start_date_ymd'] . "' and `end` < '" . $addparams['end_date_ymd'] . "'
+                        AND (
+                               userfield like '%outbound%'
+                            or userfield like '%inbound%'
+                            or ( userfield = '' AND  billsec > 0 AND LENGTH(lastdst)>=8 AND concat('',lastdst * 1) = lastdst )
+                            )
+                        AND ( dst<>'h' or duration <> 0 )
+                        and prevuniqueid=''
+                        group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,cc_country,cc_network,pincode
+                        "; // and userfield like '%outbound%'  removed for inbound calls
+                }
+                Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
             }catch(Exception $e){
                 $response['faultString'] =  $e->getMessage();

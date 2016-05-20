@@ -10,6 +10,7 @@ use App\Lib\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
@@ -53,16 +54,28 @@ class CustomerVOSSheetGeneration extends Command {
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $tunkids = '';
+            $file_path = '';
+            $amazonPath = '';
             if(isset($joboptions->Trunks) && is_array($joboptions->Trunks)){
                 $tunkids = implode(',',$joboptions->Trunks);
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            /*if(!empty($joboptions->downloadtype)){
+                $downloadtype = $joboptions->downloadtype;
+            }else{
+                $downloadtype = 'csv';
+            }*/
+            $downloadtype = 'csv';
+            $Effective = 'Now';
+            if(!empty($joboptions->Effective)){
+                $Effective = $joboptions->Effective;
+            }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'customervosdownload');
-            $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
-            $local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
+            //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
-            $excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."')");
+            $excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');
@@ -75,12 +88,26 @@ class CustomerVOSSheetGeneration extends Command {
                     }
             }
 
-            Excel::create($file_name, function ($excel) use ($excel_data,$file_name) {
+            if($downloadtype == 'xlsx'){
+                $amazonPath = $amazonDir .  $file_name . '.xlsx';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_excel($excel_data);
+            }else if($downloadtype == 'csv'){
+                $amazonPath = $amazonDir .  $file_name . '.csv';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $csvoption['delimiter'] = '|';
+                $csvoption['enclosure'] = ' ';
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_csv($excel_data,$csvoption);
+            }
+
+            /*Excel::create($file_name, function ($excel) use ($excel_data,$file_name) {
                 $excel->sheet('Sheet', function ($sheet) use ($excel_data) {
                     $sheet->fromArray($excel_data);
                 });
             })->store('txt',$local_dir);
-            $file_name .='.txt';
+            $file_name .='.txt';*/
 
            /* $csv = $local_dir.'\\'.$file_name.'.csv'; // Create CSV and replace , with |
 
@@ -93,12 +120,33 @@ class CustomerVOSSheetGeneration extends Command {
                 @unlink($csv);
             }
 
-            file_put_contents($local_dir.'\\'.$file_name,$file_content);*/
+            file_put_contents($local_dir.'\\'.$file_name,$file_content);
 
             if(!AmazonS3::upload($local_dir.'/'.$file_name,$amazonPath)){
                 throw new Exception('Error in Amazon upload');
             }
-            $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
+
+            if(!AmazonS3::upload($file_path,$amazonDir)){
+                throw new Exception('Error in Amazon upload');
+            }*/
+
+            $file_content = file_get_contents($file_path);
+            $file_content = str_replace(","," | ",$file_content);
+            $file_content = str_replace("|"," | ",$file_content);
+            $file_content = str_replace("\n","\r\n",$file_content);
+
+            $newfile_path = getenv('UPLOAD_PATH') . '/'.$amazonDir;
+            $file_name .='.txt';
+
+            file_put_contents($newfile_path.'/'.$file_name,$file_content);
+            @unlink($newfile_path.'/'.$file_name.'.csv');
+
+            if(!AmazonS3::upload($newfile_path.'/'.$file_name,$amazonDir)){
+                throw new Exception('Error in Amazon upload');
+            }
+
+            $fullPath = $amazonDir . $file_name; //$destinationPath . $file_name;
+            //$jobdata['OutputFilePath'] = $amazonPath;
             $jobdata['OutputFilePath'] = $fullPath;
             $jobdata['JobStatusMessage'] = 'Customer VOS File Generated Successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');

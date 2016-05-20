@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 
@@ -105,6 +106,7 @@ class VCDRUpload extends Command
                         $jobfile->FilePath = $path;
                     }
                 }
+                /*
                 if (!empty($csvoption->Delimiter)) {
                     Config::set('excel::csv.delimiter', $csvoption->Delimiter);
                 }
@@ -122,7 +124,9 @@ class VCDRUpload extends Command
                     $reader->formatDates(true, 'Y-m-d');
                 })->get();
                 $results = json_decode(json_encode($excel), true);
-
+                */
+                $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                $results = $NeonExcel->read();
 
                 $lineno = 2;
                 if ($csvoption->Firstrow == 'data') {
@@ -140,48 +144,53 @@ class VCDRUpload extends Command
                     $cdrdata['CompanyID'] = $CompanyID;
                     $cdrdata['trunk'] = 'Other';
                     $cdrdata['area_prefix'] = 'Other';
-                    if (!empty($attrselection->connect_datetime)) {
-                        $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_datetime]);
-                    } elseif (!empty($attrselection->connect_date)) {
-                        $cdrdata['connect_time'] = formatDate($temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]);
-                    }
-                    if (!empty($attrselection->billed_duration)) {
-                        $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
-                    }
-                    if (!empty($attrselection->duration)) {
-                        $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
-                    }
-                    if (!empty($attrselection->disconnect_time)) {
-                        $cdrdata['disconnect_time'] = formatDate($temp_row[$attrselection->disconnect_time]);
-                    } elseif (!empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
-                        $strtotime = strtotime($cdrdata['connect_time']);
-                        $billed_duration = $cdrdata['billed_duration'];
-                        $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
-                    }
-                    if (!empty($attrselection->cld)) {
-                        $cdrdata['cld'] = $temp_row[$attrselection->cld];
-                    }
-                    if (!empty($attrselection->cli)) {
-                        $cdrdata['cli'] = $temp_row[$attrselection->cli];
-                    }
-                    if (!empty($attrselection->buycost)) {
-                        $cdrdata['buying_cost'] = $temp_row[$attrselection->buycost];
-                    }
-                    if (!empty($attrselection->sellcost)) {
-                        if (!empty($joboptions->RateCDR) && !empty($attrselection->area_prefix) && !empty($joboptions->TrunkID) && $joboptions->TrunkID > 0) {
-                            $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
-                            $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->TrunkID))->Pluck('trunk');
-                            $RateFormat = Company::CHARGECODE;
-                        } else {
-                            $cdrdata['selling_cost'] = $temp_row[$attrselection->sellcost];
+
+                    //check empty row
+                    $checkemptyrow = array_filter(array_values($temp_row));
+                    if(!empty($checkemptyrow)){
+                        if (!empty($attrselection->connect_datetime)) {
+                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_datetime]), $attrselection->DateFormat);
+                        } elseif (!empty($attrselection->connect_date)) {
+                            $cdrdata['connect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]), $attrselection->DateFormat);
                         }
-                    }
-                    if (isset($attrselection->Account) && !empty($attrselection->Account)) {
-                        $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                    }
-                    //print_r($cdrdata);exit;
-                    if (!empty($cdrdata['GatewayAccountID'])) {
-                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($cdrdata);
+                        if (!empty($attrselection->billed_duration)) {
+                            $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
+                        }
+                        if (!empty($attrselection->duration)) {
+                            $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
+                        }
+                        if (!empty($attrselection->disconnect_time)) {
+                            $cdrdata['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+                        } elseif (!empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
+                            $strtotime = strtotime($cdrdata['connect_time']);
+                            $billed_duration = $cdrdata['billed_duration'];
+                            $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
+                        }
+                        if (!empty($attrselection->cld)) {
+                            $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                        }
+                        if (!empty($attrselection->cli)) {
+                            $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                        }
+                        if (!empty($attrselection->buycost)) {
+                            $cdrdata['buying_cost'] = $temp_row[$attrselection->buycost];
+                        }
+                        if (!empty($attrselection->sellcost)) {
+                            if (!empty($joboptions->RateCDR) && !empty($attrselection->area_prefix) && !empty($joboptions->TrunkID) && $joboptions->TrunkID > 0) {
+                                $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
+                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->TrunkID))->Pluck('trunk');
+                                $RateFormat = Company::CHARGECODE;
+                            } else {
+                                $cdrdata['selling_cost'] = $temp_row[$attrselection->sellcost];
+                            }
+                        }
+                        if (isset($attrselection->Account) && !empty($attrselection->Account)) {
+                            $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                        }
+                        //print_r($cdrdata);exit;
+                        if (!empty($cdrdata['GatewayAccountID'])) {
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($cdrdata);
+                        }
                     }
                     $lineno++;
                 }
@@ -198,6 +207,7 @@ class VCDRUpload extends Command
                 $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
+                $delet_cdr_account = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
                 Log::info(print_r($result, true));
 
 
@@ -214,7 +224,12 @@ class VCDRUpload extends Command
                         $logdata['created_at'] = date('Y-m-d H:i:s');
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
-                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "','')");
+                        foreach($delet_cdr_account as $delet_cdr_accountrow){
+                            // Delete old records.
+                            Log::info("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
+                            DB::connection('sqlsrv2')->statement("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
+                        }
+
 
                     }
 
@@ -228,7 +243,7 @@ class VCDRUpload extends Command
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
                 if (count($skiped_account_data)) {
-                    $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Vendor CDR Uploaded Successfully';

@@ -15,6 +15,7 @@ use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
+use App\Lib\UsageDownloadFiles;
 use App\VOS;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -105,19 +106,13 @@ class VOSAccountUsage extends Command
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
-            /*$vos = new VOS($CompanyGatewayID);
-            Log::info("VOS Connected");
-            $filenames = $vos->getCDRs();
-            */
-            $firsttime = true;
-            $new_filenames = array();
-            $filenames = array();
-            $new_filenames = scandir(Config::get('app.vos_location') . $CompanyGatewayID);
-            foreach ((array)$new_filenames as $file) {
-                if (strpos($file, 'pending_cdr_') !== false) {
-                    $filenames[] = $file;
-                }
-            }
+            /** get process file make them pending*/
+            UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
+
+            /** get pending files */
+            $filenames = UsageDownloadFiles::getVosPendingFile($CompanyGatewayID);
+
+            /** remove last downloaded */
             $lastelse = array_pop($filenames);
 
             Log::info("Files Names Collected");
@@ -135,7 +130,7 @@ class VOSAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
-            foreach ($filenames as $filename) {
+            foreach ($filenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
                 if ($filename != '' && $file_count <= $FilesMaxProccess) {
@@ -145,19 +140,12 @@ class VOSAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    $file_result = VOS::changeCDRFilesStatus("pending-to-progress" , $filename , $CompanyGatewayID ,true );
-                    if(!empty($file_result) && isset($file_result['new_filename']) &&  !empty($file_result['new_filename']) && isset($file_result['new_file_fullpath']) &&  !empty($file_result['new_file_fullpath']) ) {
-
-                        $delete_files[] = $file_result['new_filename'];
-                        $inproress_name = $file_result['new_file_fullpath'];
-                    }
-
-                    /*$pening_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $inproress_name = str_replace('pending','progress',basename($filename));
-                    $inproress_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' .$inproress_name;
-                    rename($pening_name,$inproress_name);*/
-
-                    if (($handle = fopen($inproress_name, "r")) !== FALSE) {
+                    /** update file status to progress */
+                    UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
+                    $delete_files[] = $UsageDownloadFilesID;
+                    $fullpath = getenv("VOS_LOCATION").$CompanyGatewayID. '/' ;
+                    try{
+                    if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
                             if (!empty($excelrow['33']) || ($IpBased ==1 && !empty($excelrow['4']))) {
@@ -232,6 +220,13 @@ class VOSAccountUsage extends Command
 
                         fclose($handle);
                     }
+                    }catch(Exception $e){
+
+                        Log::error($e);
+                        /** update file status to error */
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$e->getMessage());
+                    }
+
                     Log::info("CDR Insert END");
                     $file_count++;
                 } else {
@@ -256,7 +251,7 @@ class VOSAccountUsage extends Command
             TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
+                $joblogdata['Message'] .=  implode('<br>', $skiped_account_data);
             }
 
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
@@ -285,13 +280,14 @@ class VOSAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
-			
+
+            /** update file process to completed */
+            UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
             DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
-                // Rename files to complete or delete
-                VOS::changeCDRFilesStatus("progress-to-complete" , $delete_files , $CompanyGatewayID );
+
 
                 date_default_timezone_set(Config::get('app.timezone'));
                 $CdrBehindData = array();
@@ -322,8 +318,8 @@ class VOSAccountUsage extends Command
                 Log::error($err);
             }
             try {
-                // Rename files to complete or delete
-                VOS::changeCDRFilesStatus("progress-to-pending" , $delete_files , $CompanyGatewayID );
+                /** put back file to pending if any error occurred */
+                UsageDownloadFiles::UpdateToPending($delete_files);
 
             } catch (Exception $err) {
                 Log::error($err);

@@ -9,12 +9,14 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\Company;
 use App\Lib\CompanyGateway;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
+use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -23,7 +25,6 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 use \Exception;
-use App\Lib\Company;
 
 class SippyAccountUsage extends Command
 {
@@ -104,19 +105,13 @@ class SippyAccountUsage extends Command
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
+            /** get process file make them pending*/
+            UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
-            $filenames = $vfilenames = array();
-            $new_filenames = scandir(getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID);
-            foreach ((array)$new_filenames as $file) {
-                if (strpos($file, 'pending_'.SippySSH::$customer_cdr_file_name) !== false) {
-                    $filenames[] = $file;
-                }
-            }
-            foreach ((array)$new_filenames as $file) {
-                if (strpos($file, 'pending_'.SippySSH::$vendor_cdr_file_name) !== false) {
-                    $vfilenames[] = $file;
-                }
-            }
+            /** get pending files */
+            $filenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$customer_cdr_file_name);
+            $vfilenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$vendor_cdr_file_name);
+
             $lastelse = array_pop($filenames);
             $lastelse = array_pop($vfilenames);
 
@@ -138,7 +133,7 @@ class SippyAccountUsage extends Command
             /**
              * Insert Customer CDR to temp table
              */
-            foreach ($filenames as $filename) {
+            foreach ($filenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start" . SippySSH::get_file_datetime($filename));
 
                 if ($filename != '' && $file_count <= $FilesMaxProccess) {
@@ -148,16 +143,12 @@ class SippyAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    $file_result = SippySSH::changeCDRFilesStatus("pending-to-progress" , $filename , $CompanyGatewayID ,true );
-                    if(!empty($file_result) && isset($file_result['new_filename']) &&  !empty($file_result['new_filename']) && isset($file_result['new_file_fullpath']) &&  !empty($file_result['new_file_fullpath']) ) {
-
-                        $delete_files[] = $file_result['new_filename'];
-                        $inproress_name = $file_result['new_file_fullpath'];
-                    }
-
-                    $csv_response = SippySSH::get_customer_file_content($inproress_name);
+                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename);
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
-
+                        $delete_files[] = $UsageDownloadFilesID;
+                        /** update file status to progress */
+                        UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                         $cdr_rows = $csv_response["output"];
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
@@ -176,7 +167,7 @@ class SippyAccountUsage extends Command
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 $uddata['cost'] = (float)$cdr_row['cost'];
                                 $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_in']);
-                                $uddata['cli'] = $cdr_row['cld_in'];
+                                $uddata['cli'] = $cdr_row['cli_in'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
@@ -206,6 +197,8 @@ class SippyAccountUsage extends Command
 
                         $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
                         Log::error("Error Reading Sippy Customer Encoded File. " . $return_var);
+                        /** update file status to error */
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
 
                     }
 
@@ -225,7 +218,7 @@ class SippyAccountUsage extends Command
              *
              */
             $data_count = $file_count = 0;
-            foreach ($vfilenames as $filename) {
+            foreach ($vfilenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
                 if ($filename != '' && $file_count <= $FilesMaxProccess) {
@@ -235,17 +228,15 @@ class SippyAccountUsage extends Command
 
                     Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
 
-                    $file_result = SippySSH::changeCDRFilesStatus("pending-to-progress" , $filename , $CompanyGatewayID ,true );
-                    if(!empty($file_result) && isset($file_result['new_filename']) &&  !empty($file_result['new_filename']) && isset($file_result['new_file_fullpath']) &&  !empty($file_result['new_file_fullpath']) ) {
 
-                        $vdelete_files[] = $file_result['new_filename'];
-                        $inproress_name = $file_result['new_file_fullpath'];
-                    }
+                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename);
 
-                    $csv_response = SippySSH::get_vendor_file_content($inproress_name);
 
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
-
+                        /** update file status to progress */
+                        UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
+                        $vdelete_files[] = $UsageDownloadFilesID;
                         $cdr_rows = $csv_response["output"];
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
@@ -265,7 +256,7 @@ class SippyAccountUsage extends Command
                                 //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                 $uddata['buying_cost'] = (float)$cdr_row['cost'];
                                 $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
-                                $uddata['cli'] = $cdr_row['cld_out'];
+                                $uddata['cli'] = $cdr_row['cli_out'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
@@ -299,6 +290,8 @@ class SippyAccountUsage extends Command
 
                         $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
                         Log::error("Error Reading Sippy Vendor Encoded File. " . $return_var);
+                        /** update file status to error */
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
 
                     }
 
@@ -330,7 +323,7 @@ class SippyAccountUsage extends Command
             TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
 
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
@@ -366,14 +359,16 @@ class SippyAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('sippy prc_insertCDR end');
+            /** update file process to completed */
+            UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
+            /** update vendor file process to completed */
+            UsageDownloadFiles::UpdateProcessToComplete( $vdelete_files);
 
             DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
-                // Rename files to complete or delete
-                SippySSH::changeCDRFilesStatus("progress-to-complete" , $delete_files , $CompanyGatewayID );
-                SippySSH::changeCDRFilesStatus("progress-to-complete" , $vdelete_files , $CompanyGatewayID );
+
 
                 date_default_timezone_set(Config::get('app.timezone'));
                 $CdrBehindData = array();
@@ -406,8 +401,10 @@ class SippyAccountUsage extends Command
             }
             try {
                 // Rename files to complete or delete
-                SippySSH::changeCDRFilesStatus("progress-to-pending" , $delete_files , $CompanyGatewayID );
-                SippySSH::changeCDRFilesStatus("progress-to-pending" , $vdelete_files , $CompanyGatewayID );
+                /** put back file to pending if any error occurred */
+                UsageDownloadFiles::UpdateToPending($delete_files);
+                /** put back file to pending if any error occurred */
+                UsageDownloadFiles::UpdateToPending($vdelete_files);
 
             } catch (Exception $err) {
                 Log::error($err);
