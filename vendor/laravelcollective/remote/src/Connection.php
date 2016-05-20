@@ -258,4 +258,35 @@ class Connection implements ConnectionInterface {
 	public function setOutput( OutputInterface $output ) {
 		$this->output = $output;
 	}
+	/**
+	 * List  Dir.
+	 *
+	 * @param  string $dir
+	 *
+	 * @return \Collective\Remote\GatewayInterface
+	 */
+	public function nlist( $dir) {
+		return $this->getGateway()->nlist( $dir);
+	}
+	/**
+	 * List  Dir.
+	 *
+	 * @param  string $dir
+	 *
+	 * @return \Collective\Remote\GatewayInterface
+	 */
+	public function rawlist( $dir) {
+		return $this->getGateway()->rawlist( $dir);
+	}
+	/**
+	 * List  Dir.
+	 *
+	 * @param  string $path
+	 *
+	 * @return \Collective\Remote\GatewayInterface
+	 */
+	public function delete( $path) {
+		return $this->getGateway()->delete( $path);
+	}
+
 }

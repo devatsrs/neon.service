@@ -11,9 +11,7 @@ namespace App\Lib;
 use Box\Spout\Common\Type;
 use Box\Spout\Reader\ReaderFactory;
 use Box\Spout\Writer\WriterFactory;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
 
 class NeonExcelIO
 {
@@ -34,7 +32,6 @@ class NeonExcelIO
     public static $COLUMN_NAMES = 0 ;
     public static $DATA = 1;
     public static $EXCEL = 'xlsx'; // Excel file
-	public static $EXCELs  	= 	'xls'; // Excel file
     public static $CSV = 'csv'; // csv file
 
 
@@ -107,13 +104,8 @@ class NeonExcelIO
     }
 
     public function set_file_excel(){
-		$extension = pathinfo($this->file,PATHINFO_EXTENSION);
-		if($extension=='xls'){
-        	$this->file_type = self::$EXCELs;
-		}
-		if($extension=='xlsx'){
-        	$this->file_type = self::$EXCEL;
-		}
+
+        $this->file_type = self::$EXCEL;
     }
 
     public function set_file_csv(){
@@ -142,11 +134,6 @@ class NeonExcelIO
 
             return $this->read_excel($this->file,$limit);
         }
-		if($this->file_type == self::$EXCELs){
-
-            return $this->read_xls_excel($this->file,$limit);
-        }
-
     }
 
     /** Create CSV file from rows data from procedure.
@@ -280,37 +267,6 @@ class NeonExcelIO
         return $result;
 
     }
-		/*
-		Read xls file
-	*/
-	////////
-	 public function read_xls_excel($filepath,$limit=0){
-		  $result = array();
-		  $flag   = 0;			 
-			if(!empty($data['Firstrow'])){
-				$data['option']['Firstrow'] = $data['Firstrow'];
-			}
-		
-			if (!empty($data['option']['Firstrow'])) {
-				if ($data['option']['Firstrow'] == 'data') {
-					$flag = 1;
-				}
-			}
-
-			Config::set('excel.import.heading','original');
-            Config::set('excel.import.dates.enable',false);
-					
-			$isExcel = in_array(pathinfo($filepath, PATHINFO_EXTENSION),['xls','xlsx'])?true:false;
-			$results = Excel::selectSheetsByIndex(0)->load($filepath, function ($reader) use ($flag,$isExcel) {
-				if ($flag == 1) {
-					$reader->noHeading();
-				}
-			})->take($limit)->toArray();
-			
-			return $results;
-				 
-	 }
-	///////////
 
     /** Set Column Names from first row
      * @param $first_row
