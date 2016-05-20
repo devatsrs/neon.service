@@ -99,7 +99,23 @@ class CDRUpload extends Command
             if(isset($attrselection->Authentication) && $attrselection->Authentication){
                 $NameFormat = $attrselection->Authentication;
             }
-
+            $clireplacement =$clipatternrules = $cldpatternrules = $cldreplacement = array();
+            if(!empty($attrselection->CLITranslationRule)){
+                $translation_rule = translation_rule($attrselection->CLITranslationRule);
+                $clireplacement =  $translation_rule['replacement'];
+                $clipatternrules =  $translation_rule['patternrules'];
+            }
+            if(!empty($attrselection->CLDTranslationRule)){
+                $translation_rule = translation_rule($attrselection->CLDTranslationRule);
+                $cldreplacement =  $translation_rule['replacement'];
+                $cldpatternrules =  $translation_rule['patternrules'];
+            }
+            Log::info('=======cli rules=======');
+            Log::info($clipatternrules);
+            Log::info($clireplacement);
+            Log::info('=======cld rules=======');
+            Log::info($cldpatternrules);
+            Log::info($cldreplacement);
             if (!empty($job) && !empty($jobfile)) {
                 if ($jobfile->FilePath) {
                     $path = AmazonS3::unSignedUrl($jobfile->FilePath);
@@ -195,10 +211,18 @@ class CDRUpload extends Command
                                 $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
                             }
                             if (isset($attrselection->cld) && !empty($attrselection->cld)) {
-                                $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                                if(!empty($cldpatternrules)){
+                                    $cdrdata['cld'] = preg_replace($cldpatternrules,$cldreplacement,$temp_row[$attrselection->cld]);
+                                }else{
+                                    $cdrdata['cld'] = $temp_row[$attrselection->cld];
+                                }
                             }
                             if (isset($attrselection->cli) && !empty($attrselection->cli)) {
-                                $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                                if(!empty($clipatternrules)){
+                                    $cdrdata['cli'] = preg_replace($clipatternrules,$clireplacement,$temp_row[$attrselection->cli]);
+                                }else{
+                                    $cdrdata['cli'] = $temp_row[$attrselection->cli];
+                                }
                             }
                             if (isset($attrselection->cost) && !empty($attrselection->cost)) {
                                 if (isset($joboptions->RateCDR) && !empty($joboptions->RateCDR) && isset($joboptions->TrunkID) && !empty($joboptions->TrunkID) && $joboptions->TrunkID >0 && $RateFormat == Company::CHARGECODE) {
@@ -263,6 +287,7 @@ class CDRUpload extends Command
                 Log::info(print_r($result,true));
 
                 $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->count();
+                $delet_cdr_account = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
                 if ((count($skipped_cli) == 0 && count($skiped_account_data) == 0 && $joboptions->CheckFile == 1) || $joboptions->CheckFile == 0) {
                     DB::connection('sqlsrvcdr')->beginTransaction();
 
@@ -280,9 +305,11 @@ class CDRUpload extends Command
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
 
-                        // Delete old records.
-                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "',0,'')");
-
+                        foreach($delet_cdr_account as $delet_cdr_accountrow){
+                            // Delete old records.
+                            Log::info("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
+                            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
+                        }
                     }
 
                     Log::error(' prc_insertCDR start');

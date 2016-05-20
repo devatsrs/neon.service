@@ -87,7 +87,7 @@ class VendorRateUpload extends Command
                         $templateoptions = json_decode($uploadtemplate->Options);
                     }else{
                         $templateoptions = json_decode($joboptions->Options);
-                    }
+                    } 
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
                     if ($jobfile->FilePath) {
@@ -102,7 +102,7 @@ class VendorRateUpload extends Command
                     };
 
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
-                    $results = $NeonExcel->read();
+                    $results = $NeonExcel->read(); Log::info($results);
                     $lineno = 2;
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
@@ -118,7 +118,7 @@ class VendorRateUpload extends Command
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
-
+				
                         //check empty row
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)){
@@ -131,7 +131,9 @@ class VendorRateUpload extends Command
                                 $tempvendordata['Description'] = $temp_row[$attrselection->Description];
                             }else{
                                 $error[] = 'Description is blank at line no:'.$lineno;
-                            }
+                            }  
+							$array = json_decode(json_encode($attrselection), True);
+							Log::info($array);
                             if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
                                 if(is_numeric($temp_row[$attrselection->Rate])) {
                                     $tempvendordata['Rate'] = $temp_row[$attrselection->Rate];
