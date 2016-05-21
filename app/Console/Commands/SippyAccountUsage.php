@@ -118,6 +118,14 @@ class SippyAccountUsage extends Command
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
             $file_count = 1;
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
 
             Log::error(' ========================== sippy transaction start =============================');
             if (count($filenames)) {
@@ -171,7 +179,7 @@ class SippyAccountUsage extends Command
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = $cdr_row['prefix'];
+                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -260,7 +268,7 @@ class SippyAccountUsage extends Command
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = $cdr_row['prefix'];
+                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -311,14 +319,7 @@ class SippyAccountUsage extends Command
             $vtotaldata_count = DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where('ProcessID',$processID)->count();
 
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
