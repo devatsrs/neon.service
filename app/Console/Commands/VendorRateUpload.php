@@ -207,41 +207,66 @@ class VendorRateUpload extends Command
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
+                    $JobStatusMessage = array();
+                    $duplicatecode=0;
                     Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
                     try{
                         DB::beginTransaction();
                         $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
                         Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
                         DB::commit();
+
+                        $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                        Log::info($JobStatusMessage);
+                        Log::info(count($JobStatusMessage));
+
+                        if(!empty($error) || count($JobStatusMessage) > 1){
+                            $prc_error = array();
+                            foreach ($JobStatusMessage as $JobStatusMessage1) {
+                                $prc_error[] = $JobStatusMessage1['Message'];
+                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false){
+                                    $duplicatecode = 1;
+                                }
+                            }
+
+                            $job = Job::find($JobID);
+
+                            // if duplicate code exit job will fail
+                            if($duplicatecode == 1){
+                                $prc_error1[] = array_pop($prc_error);
+                                $error = array_merge($prc_error1,$error);
+                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                            }else{
+                                $error = array_merge($prc_error,$error);
+                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                            }
+
+                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                            $jobdata['ModifiedBy'] = 'RMScheduler';
+                            //Log::info($jobdata);
+                            Job::where(["JobID" => $JobID])->update($jobdata);
+                        }elseif(!empty($JobStatusMessage[0]['Message'])){
+                            $job = Job::find($JobID);
+                            $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                            $jobdata['ModifiedBy'] = 'RMScheduler';
+                            Job::where(["JobID" => $JobID])->update($jobdata);
+                        }
+
                     }catch ( Exception $err ){
                         DB::rollback();
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                        $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
                         Log::error($err);
                     }
 
-                    $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
-                    Log::info($JobStatusMessage);
-                    Log::info(count($JobStatusMessage));
-                    if(!empty($error) || count($JobStatusMessage) > 1){
-                        $prc_error = array();
-                        foreach ($JobStatusMessage as $JobStatusMessage) {
-                            $prc_error[] = $JobStatusMessage['Message'];
-                        }
-                        $error = array_merge($prc_error,$error);
-                        $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                        $jobdata['ModifiedBy'] = 'RMScheduler';
-                        //Log::info($jobdata);
-                        Job::where(["JobID" => $JobID])->update($jobdata);
-                    }elseif(!empty($JobStatusMessage[0]['Message'])){
-                        $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                        $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Job::where(["JobID" => $JobID])->update($jobdata);
-                    }
+
 
                 }
             }
