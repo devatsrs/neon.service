@@ -74,6 +74,7 @@ class CodeDecksUpload extends Command
         $bacth_insert_limit = 250;
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
+        $JobStatusMessage =array();
 
         Log::useFiles(storage_path() . '/logs/codedecksfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
@@ -180,17 +181,15 @@ class CodeDecksUpload extends Command
                     $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
                     Log::info($time_taken);
 
-                    if(count($error)>20) {
-                        $error = array_slice($error, 0, 20);
-                        $error = array_merge($error,['...']);
-                    }
-
                     if(!empty($error) || count($JobStatusMessage) > 1){
-                        foreach ($JobStatusMessage as $JobStatusMessage) {
-                            $error[] = $JobStatusMessage['Message'];
+                        $prc_error = array();
+                        foreach ($JobStatusMessage as $JobStatusMessage1) {
+                            $prc_error[] = $JobStatusMessage1['Message'];
                         }
+
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',$error) ;
+                        $error = array_merge($prc_error,$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error)) ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
