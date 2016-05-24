@@ -144,7 +144,7 @@ class PBXAccountUsage extends Command
                          *
                          * Outbound = FirstDst,LstDst
                          */
-                        $call_type = TempUsageDetail::check_call_type($row_account["userfield"]);
+                        $call_type = TempUsageDetail::check_call_type(strtolower($row_account["userfield"]),strtolower($row_account['cc_type']),strtolower($row_account['cc_type']));
 
                         //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
 
@@ -180,12 +180,17 @@ class PBXAccountUsage extends Command
                         } else if ($call_type == 'none') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
-                            $data['is_inbound'] = 1;
+                            //$data['is_inbound'] = 0;
                             /** if user field is blank */
                         } else if ($call_type == 'both') {
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             /** if user field is both */
+                        }else if ($call_type == 'failed') {
+                            Log::info($row_account["userfield"]);
+                            Log::info($row_account["ID"]);
+                            /** if user field is failed or blocked call any reason make duration zero */
+                            $data['billed_duration'] = 0;
                         }
 
 
