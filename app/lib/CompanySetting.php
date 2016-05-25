@@ -13,4 +13,13 @@ class CompanySetting extends \Eloquent {
             return 'Invalid Key';
         }
     }
+
+    public static function  setKeyVal($CompanyID,$key,$val){
+        $CompanySetting = CompanySetting::where(["CompanyID"=> $CompanyID,'key'=>$key])->first();
+        if(count($CompanySetting)>0){
+            CompanySetting::where(["CompanyID"=> $CompanyID,'key'=>$key])->update(array('Value'=>$val));
+        }else{
+            CompanySetting::insert(array('CompanyID' => $CompanyID, 'key' => $key,'Value'=>$val));
+        }
+    }
 }

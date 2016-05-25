@@ -62,6 +62,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\SippyMissingCDRFileFix',
 		'App\Console\Commands\CreateSummary',
 		'App\Console\Commands\CreateVendorSummary',
+		'App\Console\Commands\ImportAccount',
 
 	];
 

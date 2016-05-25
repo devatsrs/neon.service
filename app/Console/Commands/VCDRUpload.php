@@ -207,6 +207,7 @@ class VCDRUpload extends Command
                 $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
+                $delet_cdr_account = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
                 Log::info(print_r($result, true));
 
 
@@ -223,7 +224,12 @@ class VCDRUpload extends Command
                         $logdata['created_at'] = date('Y-m-d H:i:s');
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
-                        DB::connection('sqlsrv2')->statement("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $StartDate . "','" . $EndDate . "','')");
+                        foreach($delet_cdr_account as $delet_cdr_accountrow){
+                            // Delete old records.
+                            Log::info("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
+                            DB::connection('sqlsrv2')->statement("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
+                        }
+
 
                     }
 
