@@ -61,6 +61,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\VCDRUpload',
 		'App\Console\Commands\SippyMissingCDRFileFix',
 		'App\Console\Commands\CreateSummary',
+		'App\Console\Commands\CreateVendorSummary',
 
 	];
 

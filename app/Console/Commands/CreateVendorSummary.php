@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class CreateSummary extends Command{
+class CreateVendorSummary extends Command{
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'createsummary';
+    protected $name = 'createvednorsummary';
 
     /**
      * The console command description.
@@ -61,11 +61,11 @@ class CreateSummary extends Command{
         $CronJob =  CronJob::find($CronJobID);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/createsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/createvednorsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
             //DB::connection('neon_report')->beginTransaction();
-            Summary::generateSummary($CompanyID,1);
+            Summary::generateVendorSummary($CompanyID,1);
             //DB::connection('neon_report')->commit();
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
