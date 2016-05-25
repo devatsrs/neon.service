@@ -20,7 +20,7 @@ class CreateVendorSummary extends Command{
      *
      * @var string
      */
-    protected $name = 'createvednorsummary';
+    protected $name = 'createvendorsummary';
 
     /**
      * The console command description.
