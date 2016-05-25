@@ -171,18 +171,9 @@ class ImportAccount extends Command {
                                 } else {
                                     $error[] = 'Firs tName is blank at line no:' . $lineno;
                                 }
-                                if($AccountType==1){
-                                    if (isset($attrselection->Country) && !empty($attrselection->Country) && !empty($temp_row[$attrselection->Country])) {
-                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
-                                    } else {
-                                        $error[] = 'Country is blank at line no:' . $lineno;
-                                    }
-                                }else{
-                                    if (isset($attrselection->Country) && !empty($attrselection->Country)) {
-                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
-                                    }
+                                if (isset($attrselection->Country) && !empty($attrselection->Country)) {
+                                    $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
                                 }
-
 
                                 if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
                                     $accountnumber = trim($temp_row[$attrselection->AccountNumber]);
@@ -305,7 +296,6 @@ class ImportAccount extends Command {
 
                                 if (isset($tempItemData['AccountName']) && isset($tempItemData['FirstName'])) {
                                     if($AccountType==1){
-                                        if(isset($tempItemData['Country'])){
                                             $tempItemData['AccountType'] = $AccountType;
                                             $tempItemData['Status'] = 1;
                                             $tempItemData['LeadSource'] = 'csv import';
@@ -316,7 +306,6 @@ class ImportAccount extends Command {
                                             $tempItemData['created_by'] = 'Imported';
                                             $batch_insert_array[] = $tempItemData;
                                             $counter++;
-                                        }
                                     }elseif($AccountType==0){
                                         if(isset($tempItemData['LastName'])){
                                             $tempItemData['AccountType'] = $AccountType;
