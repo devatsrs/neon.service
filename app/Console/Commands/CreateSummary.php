@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CompanyGateway;
+use App\Lib\CompanySetting;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Summary;
@@ -65,7 +66,14 @@ class CreateSummary extends Command{
         try {
 
             //DB::connection('neon_report')->beginTransaction();
-            Summary::generateSummary($CompanyID,1);
+            $Date = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
+
+            if($Date == date("Y-m-d")) {
+                Summary::generateSummary($CompanyID, 1);
+            }else{
+                Summary::generateSummary($CompanyID, 0);
+                CompanySetting::setKeyVal($CompanyID,'LastCustomerSummaryDate',date("Y-m-d"));
+            }
             //DB::connection('neon_report')->commit();
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
