@@ -5,6 +5,7 @@ use App\Lib\Gateway;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\Currency;
+use App\Lib\Country;
 use App\Lib\JobFile;
 use App\Lib\FileUploadTemplate;
 use App\Lib\VendorFileUploadTemplate;
@@ -151,6 +152,7 @@ class ImportAccount extends Command {
                             $lineno = 1;
                         }
                         $lastaccountnumber=Account::getLastAccountNo($CompanyID);
+                        $erroraccountnumber = 0;
 
                         foreach ($results as $temp_row) {
                             if ($csvoption->Firstrow == 'data') {
@@ -162,31 +164,75 @@ class ImportAccount extends Command {
                             $checkemptyrow = array_filter(array_values($temp_row));
                             if(!empty($checkemptyrow)) {
                                 if (isset($attrselection->AccountName) && !empty($attrselection->AccountName) && !empty($temp_row[$attrselection->AccountName])) {
-                                    $tempItemData['AccountName'] = trim($temp_row[$attrselection->AccountName]);
-                                } else {
-                                    $error[] = 'AccountName is blank at line no:' . $lineno;
-                                }
-                                if (isset($attrselection->FirstName) && !empty($attrselection->FirstName) && !empty($temp_row[$attrselection->FirstName])) {
-                                    $tempItemData['FirstName'] = trim($temp_row[$attrselection->FirstName]);
-                                } else {
-                                    $error[] = 'Firs tName is blank at line no:' . $lineno;
-                                }
-                                if($AccountType==1){
-                                    if (isset($attrselection->Country) && !empty($attrselection->Country) && !empty($temp_row[$attrselection->Country])) {
-                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
-                                    } else {
-                                        $error[] = 'Country is blank at line no:' . $lineno;
+                                    $AccountName = trim($temp_row[$attrselection->AccountName]);
+                                    if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName,'AccountType'=>$AccountType])->count()==0){
+                                        $tempItemData['AccountName'] = $AccountName;
+                                    }else{
+                                        if($AccountType==0) {
+                                            $error[] = $AccountName.' - Company already exists.';
+                                        }else{
+                                            $error[] = $AccountName.' - Account Name already exists.';
+                                        }
                                     }
-                                }else{
-                                    if (isset($attrselection->Country) && !empty($attrselection->Country)) {
-                                        $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+
+                                } else {
+                                    if($AccountType==0) {
+                                        $error[] = 'Company is blank at line no:' . $lineno;
+                                    }else{
+                                        $error[] = 'Account Name is blank at line no:' . $lineno;
                                     }
                                 }
 
+                                //lead - first name and last name required
+                                if($AccountType==0) {
+                                    if (isset($attrselection->FirstName) && !empty($attrselection->FirstName) && !empty($temp_row[$attrselection->FirstName])) {
+                                        $tempItemData['FirstName'] = trim($temp_row[$attrselection->FirstName]);
+                                    } else {
+                                        $error[] = 'First Name is blank at line no:' . $lineno;
+                                    }
+
+                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)  && !empty($temp_row[$attrselection->LastName])) {
+                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
+                                    } else {
+                                        $error[] = 'Last Name is blank at line no:' . $lineno;
+                                    }
+                                }else{
+                                    if (isset($attrselection->FirstName) && !empty($attrselection->FirstName)) {
+                                        $tempItemData['FirstName'] = trim($temp_row[$attrselection->FirstName]);
+                                    }
+                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)) {
+                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
+                                    }
+                                }
+                                if (isset($attrselection->Country) && !empty($attrselection->Country)) {
+                                    //$tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+                                    $checkCountry=strtoupper(trim($temp_row[$attrselection->Country]));
+                                    $count = Country::where(["Country" => $checkCountry])->count();
+                                    if($count>0){
+                                        $tempItemData['Country'] = $checkCountry;
+                                    }else{
+                                        $tempItemData['Country'] = '';
+                                    }
+                                }
 
                                 if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
                                     $accountnumber = trim($temp_row[$attrselection->AccountNumber]);
-                                    if(Account::where(["CompanyID"=> $CompanyID,'Number'=>$accountnumber])->count()==0){
+                                    if(!empty($accountnumber))
+                                    {
+                                        if(Account::where(["CompanyID"=> $CompanyID,'Number'=>$accountnumber])->count()==0){
+                                            $tempItemData['Number'] = $accountnumber;
+                                            $erroraccountnumber = 0;
+                                        }else{
+                                            $error[] = $accountnumber.' - Account Number already exists.';
+                                            $erroraccountnumber = 1;
+                                        }
+
+                                    }else{
+                                        $erroraccountnumber = 0;
+                                        $tempItemData['Number'] = null;
+                                    }
+
+                                    /*if(Account::where(["CompanyID"=> $CompanyID,'Number'=>$accountnumber])->count()==0){
                                         $tempItemData['Number'] = $accountnumber;
                                     }else{
                                         $tempItemData['Number'] = $lastaccountnumber;
@@ -194,14 +240,16 @@ class ImportAccount extends Command {
                                         while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$lastaccountnumber])->count() >=1 ){
                                             $lastaccountnumber++;
                                         }
-                                    }
+                                    }*/
 
                                 }else{
-                                    $tempItemData['Number'] = $lastaccountnumber;
+                                    /*$tempItemData['Number'] = $lastaccountnumber;
                                     $lastaccountnumber++;
                                     while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$lastaccountnumber])->count() >=1 ){
                                         $lastaccountnumber++;
-                                    }
+                                    }*/
+                                    $erroraccountnumber = 0;
+                                    $tempItemData['Number'] = null;
                                 }
 
 
@@ -209,21 +257,10 @@ class ImportAccount extends Command {
                                     $tempItemData['Email'] = trim($temp_row[$attrselection->Email]);
                                 }
 
-                                if($AccountType==0) {
-                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)  && !empty($temp_row[$attrselection->LastName])) {
-                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
-                                    } else {
-                                        $error[] = 'Last Name is blank at line no:' . $lineno;
-                                    }
-                                }else{
-                                    if (isset($attrselection->LastName) && !empty($attrselection->LastName)) {
-                                        $tempItemData['LastName'] = trim($temp_row[$attrselection->LastName]);
-                                    }
-                                }
-
+                                /*
                                 if (isset($attrselection->Title) && !empty($attrselection->Title)) {
                                     $tempItemData['Title'] = trim($temp_row[$attrselection->Title]);
-                                }
+                                }*/
 
                                 if (isset($attrselection->Phone) && !empty($attrselection->Phone)) {
                                     $tempItemData['Phone'] = trim($temp_row[$attrselection->Phone]);
@@ -303,9 +340,8 @@ class ImportAccount extends Command {
                                     }
                                 }
 
-                                if (isset($tempItemData['AccountName']) && isset($tempItemData['FirstName'])) {
-                                    if($AccountType==1){
-                                        if(isset($tempItemData['Country'])){
+                                if (isset($tempItemData['AccountName'])) {
+                                    if($AccountType==1 && $erroraccountnumber==0){
                                             $tempItemData['AccountType'] = $AccountType;
                                             $tempItemData['Status'] = 1;
                                             $tempItemData['LeadSource'] = 'csv import';
@@ -316,9 +352,8 @@ class ImportAccount extends Command {
                                             $tempItemData['created_by'] = 'Imported';
                                             $batch_insert_array[] = $tempItemData;
                                             $counter++;
-                                        }
                                     }elseif($AccountType==0){
-                                        if(isset($tempItemData['LastName'])){
+                                        if(isset($tempItemData['FirstName']) && isset($tempItemData['LastName'])){
                                             $tempItemData['AccountType'] = $AccountType;
                                             $tempItemData['Status'] = 1;
                                             $tempItemData['LeadSource'] = 'csv import';
@@ -344,6 +379,7 @@ class ImportAccount extends Command {
                             }
                             $lineno++;
                         }
+
                         if (!empty($batch_insert_array)) {
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);

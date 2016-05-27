@@ -212,6 +212,14 @@ function translation_rule($CLITranslationRule){
     return $return;
 
 }
+function sippy_vos_areaprefix($area_prefix,$RateCDR){
+    if($RateCDR == 1 || empty($area_prefix)){
+        $area_prefix = 'Other';
+    }
+    $area_prefix = preg_replace('/^00/','',$area_prefix);
+    $area_prefix = preg_replace('/^2222/','',$area_prefix);
+return $area_prefix;
+}
 
 
 
