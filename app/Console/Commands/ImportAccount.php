@@ -5,6 +5,7 @@ use App\Lib\Gateway;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
 use App\Lib\Currency;
+use App\Lib\Country;
 use App\Lib\JobFile;
 use App\Lib\FileUploadTemplate;
 use App\Lib\VendorFileUploadTemplate;
@@ -164,13 +165,13 @@ class ImportAccount extends Command {
                             if(!empty($checkemptyrow)) {
                                 if (isset($attrselection->AccountName) && !empty($attrselection->AccountName) && !empty($temp_row[$attrselection->AccountName])) {
                                     $AccountName = trim($temp_row[$attrselection->AccountName]);
-                                    if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName])->count()==0){
+                                    if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName,'AccountType'=>$AccountType])->count()==0){
                                         $tempItemData['AccountName'] = $AccountName;
                                     }else{
                                         if($AccountType==0) {
-                                            $error[] = $AccountName.' - Company is already exists at line no:' . $lineno;
+                                            $error[] = $AccountName.' - Company already exists.';
                                         }else{
-                                            $error[] = $AccountName.' - AccountName is already exists at line no:' . $lineno;
+                                            $error[] = $AccountName.' - Account Name already exists.';
                                         }
                                     }
 
@@ -204,7 +205,14 @@ class ImportAccount extends Command {
                                     }
                                 }
                                 if (isset($attrselection->Country) && !empty($attrselection->Country)) {
-                                    $tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+                                    //$tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
+                                    $checkCountry=strtoupper(trim($temp_row[$attrselection->Country]));
+                                    $count = Country::where(["Country" => $checkCountry])->count();
+                                    if($count>0){
+                                        $tempItemData['Country'] = $checkCountry;
+                                    }else{
+                                        $tempItemData['Country'] = '';
+                                    }
                                 }
 
                                 if (isset($attrselection->AccountNumber) && !empty($attrselection->AccountNumber)) {
@@ -215,7 +223,7 @@ class ImportAccount extends Command {
                                             $tempItemData['Number'] = $accountnumber;
                                             $erroraccountnumber = 0;
                                         }else{
-                                            $error[] = $accountnumber.' - Account Number already exists at line no:' . $lineno;
+                                            $error[] = $accountnumber.' - Account Number already exists.';
                                             $erroraccountnumber = 1;
                                         }
 
