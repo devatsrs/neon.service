@@ -45,6 +45,7 @@ class CreateVendorSummary extends Command{
         return [
             ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
             ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+            ['Live', InputArgument::REQUIRED, 'Argument Live'],
         ];
     }
 
@@ -59,23 +60,16 @@ class CreateVendorSummary extends Command{
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
+        $Live = $arguments["Live"];
         $CronJob =  CronJob::find($CronJobID);
-        CronJob::activateCronJob($CronJob);
-        CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/createvednorsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+        $cronsetting = json_decode($CronJob->Settings,true);
+        Log::useFiles(storage_path() . '/logs/createvendorsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            //DB::connection('neon_report')->beginTransaction();
-            $Date = CompanySetting::getKeyVal($CompanyID,'LastVendorSummaryDate');
-            if($Date == date("Y-m-d")) {
-                Summary::generateVendorSummary($CompanyID, 1);
-            }else{
-                Summary::generateVendorSummary($CompanyID, 0);
+            Summary::generateVendorSummary($CompanyID, $Live);
+            if($Live == 0){
                 CompanySetting::setKeyVal($CompanyID,'LastVendorSummaryDate',date("Y-m-d"));
             }
-            //DB::connection('neon_report')->commit();
-            $joblogdata['Message'] = 'Success';
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
         } catch (\Exception $e) {
             try {
@@ -84,22 +78,12 @@ class CreateVendorSummary extends Command{
                 Log::error($err);
             }
             Log::error($e);
-            $joblogdata['Message'] ='Error:'.$e->getMessage();
-            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             if(!empty($cronsetting['ErrorEmail'])) {
 
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
                 Log::error("**Email Sent Status " . $result['status']);
                 Log::error("**Email Sent message " . $result['message']);
             }
-        }
-        CronJobLog::createLog($CronJobID,$joblogdata);
-        CronJob::deactivateCronJob($CronJob);
-        Log::error(" CronJobId end" . $CronJobID);
-        if(!empty($cronsetting['SuccessEmail'])) {
-            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-            Log::error("**Email Sent Status ".$result['status']);
-            Log::error("**Email Sent message ".$result['message']);
         }
 
     }

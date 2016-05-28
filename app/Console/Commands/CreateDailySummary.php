@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CompanyGateway;
+use App\Lib\CompanySetting;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -60,6 +61,7 @@ class CreateDailySummary extends Command{
         $getmypid = getmypid(); // get proccess id
 
         $CronJob =  CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings,true);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -81,7 +83,42 @@ class CreateDailySummary extends Command{
             Log::error('Start CALL  prc_setVendorAccountID(' . $CompanyID.")");
             DB::connection('sqlsrv2')->statement('CALL  prc_setVendorAccountID(' . $CompanyID.")");
             Log::error('End  CALL  prc_setVendorAccountID(' . $CompanyID.")");
-            $UsageHeaders = TempUsageDownloadLog::where(array('DailySummaryStatus'=>0,'CompanyID'=>$CompanyID))->select(["TempUsageDownloadLogID","CompanyID","CompanyGatewayID","ProcessID"])->take(5)->get();
+            $CustomerDate = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
+            if($CustomerDate == date("Y-m-d")) {
+                $Live = 1;
+                if(getenv('APP_OS') == 'Linux') {
+                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createsummary " . $CompanyID . " ".$CronJobID." ".$Live." &", "r"));
+                }else {
+                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createsummary " . $CompanyID . " $CronJobID $Live", "r"));
+                }
+            }else if(date("H") >= 2 ){
+                $Live = 0;
+                if(getenv('APP_OS') == 'Linux') {
+                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createsummary " . $CompanyID . " ".$CronJobID." ".$Live." &", "r"));
+                }else {
+                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createsummary " . $CompanyID . " $CronJobID $Live", "r"));
+                }
+
+            }
+
+            $VendorDate = CompanySetting::getKeyVal($CompanyID,'LastVendorSummaryDate');
+            if($VendorDate == date("Y-m-d")) {
+                $Live = 1;
+                if(getenv('APP_OS') == 'Linux') {
+                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createvendorsummary " . $CompanyID . " $CronJobID $Live &", "r"));
+                }else {
+                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createvendorsummary " . $CompanyID . " $CronJobID $Live", "r"));
+                }
+            }else if(date("H") >= 2 ){
+                $Live = 0;
+                if(getenv('APP_OS') == 'Linux') {
+                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createvendorsummary " . $CompanyID . " $CronJobID $Live &", "r"));
+                }else {
+                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " createvendorsummary " . $CompanyID . " $CronJobID $Live", "r"));
+                }
+
+            }
+            /*$UsageHeaders = TempUsageDownloadLog::where(array('DailySummaryStatus'=>0,'CompanyID'=>$CompanyID))->select(["TempUsageDownloadLogID","CompanyID","CompanyGatewayID","ProcessID"])->take(5)->get();
             //$UsageHeaders = UsageHeader::where(array('DailySummaryStatus'=>1,'CompanyID'=>$CompanyID))->select(["CompanyID","CompanyGatewayID","UsageHeaderID"])->get();
             foreach ($UsageHeaders as $UsageHeader) {
                 try {
@@ -108,7 +145,7 @@ class CreateDailySummary extends Command{
                     Log::error($e);
 
                 }
-            }
+            }*/
             if(!empty($errors)){
                 $joblogdata['Message'] = implode(',\n\r',$errors);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
