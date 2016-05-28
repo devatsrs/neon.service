@@ -79,6 +79,7 @@ class ImportAccount extends Command {
         $counter = 0;
         $importoptions = array();
         $joboptions = array();
+        $tempProcessID = '';
 
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
         try {
@@ -91,7 +92,8 @@ class ImportAccount extends Command {
                     $jobfile = JobFile::where(['JobID' => $JobID])->first();
                     $joboptions = json_decode($jobfile->Options);
                 }
-                $CompanyGatewayID ='';
+                $CompanyGatewayID =0;
+                $tempCompanyGatewayID =0;
                 $AccountType = 0;
                 $TempAccountIDs = '';
                 $importoption = 0;
@@ -104,15 +106,23 @@ class ImportAccount extends Command {
                         $AccountType = 1;
                         Log::info('Manually Accounts Import Start');
                         $CompanyGatewayID = $importoptions['companygatewayid'];
+
                         if(!empty($importoptions['criteria'])){
                             $importoption = 1;
+                            $tempCompanyGatewayID = $importoptions['companygatewayid'];
                         }else{
                             $TempAccountIDs = $importoptions['TempAccountIDs'];
-                            $importoption = 2;
+                            $importoption = 1;
+                        }
+                        if(!empty($importoptions['importprocessid'])){
+                            $tempProcessID = $importoptions['importprocessid'];
+                        }else{
+                            $tempProcessID = '';
                         }
 
                      //manual import end
                     }else {//csv import start
+                        $tempProcessID = $ProcessID;
                         if(!empty($joboptions->AccountType)) {
                             $AccountType=$joboptions->AccountType;
                         }
@@ -390,15 +400,16 @@ class ImportAccount extends Command {
                         }
 
                     }//csv import end
-                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
+                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
                     try {
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
-                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
-
+                        $updateaccountno = Account::updateAccountNo($CompanyID);
+                        Log::info('update account number - '.$updateaccountno);
                         Log::info(count($JobStatusMessage));
                         if(!empty($error || count($JobStatusMessage) > 1)){
                             $prc_error = array();
