@@ -2,12 +2,8 @@
 namespace App\Console\Commands;
 
 
-use App\Lib\CompanyGateway;
-use App\Lib\CompanySetting;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\TempUsageDetail;
-use App\Lib\TempUsageDownloadLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -83,7 +79,7 @@ class CreateDailySummary extends Command{
             Log::error('Start CALL  prc_setVendorAccountID(' . $CompanyID.")");
             DB::connection('sqlsrv2')->statement('CALL  prc_setVendorAccountID(' . $CompanyID.")");
             Log::error('End  CALL  prc_setVendorAccountID(' . $CompanyID.")");
-            $CustomerDate = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
+            /*$CustomerDate = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
             if($CustomerDate == date("Y-m-d")) {
                 $Live = 1;
                 if(getenv('APP_OS') == 'Linux') {
@@ -118,7 +114,7 @@ class CreateDailySummary extends Command{
                 }
 
             }
-            /*$UsageHeaders = TempUsageDownloadLog::where(array('DailySummaryStatus'=>0,'CompanyID'=>$CompanyID))->select(["TempUsageDownloadLogID","CompanyID","CompanyGatewayID","ProcessID"])->take(5)->get();
+            $UsageHeaders = TempUsageDownloadLog::where(array('DailySummaryStatus'=>0,'CompanyID'=>$CompanyID))->select(["TempUsageDownloadLogID","CompanyID","CompanyGatewayID","ProcessID"])->take(5)->get();
             //$UsageHeaders = UsageHeader::where(array('DailySummaryStatus'=>1,'CompanyID'=>$CompanyID))->select(["CompanyID","CompanyGatewayID","UsageHeaderID"])->get();
             foreach ($UsageHeaders as $UsageHeader) {
                 try {
