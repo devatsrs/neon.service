@@ -78,7 +78,7 @@ class VOSDownloadCDR extends Command {
             if (!file_exists(Config::get('app.vos_location') .$CompanyGatewayID)) {
                 mkdir(Config::get('app.vos_location') .$CompanyGatewayID, 0777, true);
             }
-            $filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
+            //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
             foreach($filenames as $filename) {
 
