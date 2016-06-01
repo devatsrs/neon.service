@@ -56,6 +56,7 @@ class CreateVendorSummaryLive extends Command{
         $CronJobID = $arguments["CronJobID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
+        CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/createvendorsummarylive-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
