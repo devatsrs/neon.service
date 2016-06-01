@@ -217,6 +217,9 @@ class ImportAccount extends Command {
                                 if (isset($attrselection->Country) && !empty($attrselection->Country)) {
                                     //$tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
                                     $checkCountry=strtoupper(trim($temp_row[$attrselection->Country]));
+                                    if($checkCountry=='UK'){
+                                        $checkCountry = 'UNITED KINGDOM';
+                                    }
                                     $count = Country::where(["Country" => $checkCountry])->count();
                                     if($count>0){
                                         $tempItemData['Country'] = $checkCountry;

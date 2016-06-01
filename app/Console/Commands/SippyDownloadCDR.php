@@ -75,7 +75,7 @@ class SippyDownloadCDR extends Command {
             if (!file_exists(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID)) {
                 mkdir(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID, 0777, true);
             }
-            $filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
+            //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
             foreach($filenames as $filename) {
 

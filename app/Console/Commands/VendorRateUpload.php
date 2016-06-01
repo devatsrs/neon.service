@@ -233,8 +233,8 @@ class VendorRateUpload extends Command
 
                             // if duplicate code exit job will fail
                             if($duplicatecode == 1){
-                                $prc_error1[] = array_pop($prc_error);
-                                $error = array_merge($prc_error1,$error);
+                                $error = array_merge($prc_error,$error);
+                                unset($error[0]);
                                 $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
                                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
                             }else{

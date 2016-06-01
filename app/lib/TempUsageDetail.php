@@ -207,10 +207,9 @@ class TempUsageDetail extends \Eloquent {
 
     }
 
-    public static function check_call_type($userfield){
+    public static function check_call_type($userfield,$cc_type,$pincode){
 
-        $is_inbound = $is_outbound = false;
-
+        $is_inbound = $is_outbound = $is_failed= false;
 
 
         if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
@@ -219,8 +218,22 @@ class TempUsageDetail extends \Eloquent {
         if(isset($userfield) && strpos($userfield,"outbound") !== false ) {
             $is_outbound = true;
         }
+        /** if user field is blocked call any reason make duration zero */
+        if(isset($userfield) && strpos($userfield,"blocked") !== false ) {
+            $is_failed = true;
+        }
+        /**
+        where cc_type outnocharge and pin code is not blank
+        and bill sec > 0  and userfiled contains OUTBOUND
 
-        if($is_inbound && $is_outbound ){
+        Failed Call or Ignore calls
+         */
+        if(isset($userfield) && strpos($userfield,"outbound") !== false && strpos($cc_type,"outnocharge") !== false && !empty($pincode) ) {
+            $is_failed = true;
+        }
+        if($is_failed){
+            return 'failed';
+        }else if($is_inbound && $is_outbound ){
             return 'both';
         }else if($is_inbound){
             return 'inbound';

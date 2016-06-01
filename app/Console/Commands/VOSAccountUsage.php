@@ -118,7 +118,14 @@ class VOSAccountUsage extends Command
             Log::info("Files Names Collected");
             Log::error('   vos File Count ' . count($filenames));
             $file_count = 1;
-
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             Log::error(' ========================== vos transaction start =============================');
             if (count($filenames)) {
                 CronJob::createLog($CronJobID);
@@ -165,7 +172,7 @@ class VOSAccountUsage extends Command
                                 $uddata['billed_duration'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = $excelrow['24'];
+                                $uddata['area_prefix'] = sippy_vos_areaprefix($excelrow['24'],$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -194,7 +201,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['cli'] = $excelrow['1'];
                                 $vendorcdrdata['cld'] = str_replace('2222', '', $excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = $excelrow['34'];
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix($excelrow['34'],$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
 
@@ -239,14 +246,7 @@ class VOSAccountUsage extends Command
 
             Log::error(' ========================== vos transaction end =============================');
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);

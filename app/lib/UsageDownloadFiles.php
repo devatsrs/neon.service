@@ -16,6 +16,7 @@ class UsageDownloadFiles extends Model {
 
     /**
      * Remove already downloaded files from array
+     * not in use
      */
     public static function remove_downloaded_files($CompanyGatewayID,$files){
         $response_files = $tmp_files = [];
