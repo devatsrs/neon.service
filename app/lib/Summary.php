@@ -8,7 +8,7 @@ class Summary extends \Eloquent {
 
         if($today == 1){
             DB::connection('neon_report')->beginTransaction();
-            $query = "call prc_generateSummary($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
+            $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
             DB::connection('neon_report')->statement($query);
             DB::connection('neon_report')->commit();
@@ -52,7 +52,7 @@ class Summary extends \Eloquent {
     public static function generateVendorSummary($CompanyID,$today){
         if($today == 1){
             DB::connection('neon_report')->beginTransaction();
-            $query = "call prc_generateVendorSummary($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
+            $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
             DB::connection('neon_report')->statement($query);
             DB::connection('neon_report')->commit();

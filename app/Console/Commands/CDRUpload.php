@@ -169,6 +169,7 @@ class CDRUpload extends Command
                         $cdrdata['CompanyID'] = $CompanyID;
                         $cdrdata['trunk'] = 'Other';
                         $cdrdata['area_prefix'] = 'Other';
+                        $call_type = '';
 
                         //check empty row
                         $checkemptyrow = array_filter(array_values($temp_row));
@@ -224,13 +225,45 @@ class CDRUpload extends Command
                                 $cdrdata['ID'] = $temp_row[$attrselection->ID];
                             }
                             if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
-                                $cdrdata['is_inbound'] = (TempUsageDetail::check_inbound($temp_row[$attrselection->is_inbound]))?1:0;
+                                $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]),'','');
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                             }
 
                             if(!empty($cdrdata['GatewayAccountID'])) {
+                                if ($call_type == 'inbound') {
+                                    $cdrdata['is_inbound'] = 1;
+                                } else if ($call_type == 'outbound') {
+                                    $cdrdata['is_inbound'] = 0;
+                                } else if ($call_type == 'none') {
+                                    /** if user field is blank */
+                                    $cdrdata['is_inbound'] = 0;
+                                } else if ($call_type == 'failed') {
+                                    /** if user field is failed or blocked call any reason make duration zero */
+                                    $cdrdata['billed_duration'] = 0;
+                                }
+                                if ($call_type == 'both' && $RateCDR == 1) {
+
+                                    /**
+                                     * Inbound Entry
+                                     */
+                                    $cdrdata['cost'] = 0;
+                                    $cdrdata['is_inbound'] = 1;
+
+                                    /**
+                                     * Outbound Entry
+                                     */
+                                    $data_outbound = $cdrdata;
+
+                                    $data_outbound['cli'] = !empty($cdrdata['cli']) ? $cdrdata['cli'] : '';
+                                    $data_outbound['cld'] = !empty($cdrdata['cld']) ? $cdrdata['cld'] : '';
+                                    $data_outbound['cost'] = !empty($cdrdata['cost']) ? $cdrdata['cost'] : 0;
+                                    $data_outbound['is_inbound'] = 0;
+                                    $batch_insert_array[] = $data_outbound;
+                                    $counter++;
+
+                                }
 
                                 $batch_insert_array[] = $cdrdata;
 
