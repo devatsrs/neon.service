@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\Helper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputOption;
@@ -80,7 +81,7 @@ class DBBackup extends Command {
 
 			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
-			exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . ' ' . $AWS_PATH , $aws_output) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
+			exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . $AWS_PATH , $aws_output) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
 
 			Log::info ( "Uploading Backup to AmazonS3 Completed "  );;
 			Log::info ( "Output " . print_r($aws_output,true) );
@@ -88,8 +89,8 @@ class DBBackup extends Command {
 			Log::info ( "Done! "  );
 
 			$message = "DB Backup Completed with following output.";
-			$message .= "<br> Output  " . print_r($bk_output,true);
-			$message .= "<br> Output  " . print_r($aws_output,true);
+			$message .= "<br> Output  " . implode("<br>", $bk_output);
+			$message .= "<br> Output  " . implode("<br>", $aws_output);
 
 			$this->send_update_email($CompanyID,$message);
 
@@ -101,7 +102,7 @@ class DBBackup extends Command {
 
 			$message = "DB Backup Failed";
 			$message .= "<br> <b>" . $ex->getMessage() ."</b>";
-			$message .= "<br> " . print_r($ex,true);
+			$message .= "<br> " . implode("<br>", $ex);
 
 			$this->send_update_email($CompanyID,$message);
 
@@ -121,12 +122,12 @@ class DBBackup extends Command {
 			$emaildata['CompanyID'] = $CompanyID;
 			$emaildata['data'] =array('message' => $message, 'CompanyName'=>getenv("BACKUP_EMAIL_NAME"));
 
-			$status = Helper::sendMail('emails.backup.backup_email',$emaildata);
+			$status = Helper::sendMail('emails.backup.dbbackup_email',$emaildata);
 
 		}catch (\Exception $ex) {
 
 			Log::info( "Error Sending Email Exception " . $ex->getMessage() );
-			Log::info( "Full Exception" . print_r($ex,true) );
+			Log::info( "Full Exception" . implode("<br>", $ex) );
 
 		}
 	}

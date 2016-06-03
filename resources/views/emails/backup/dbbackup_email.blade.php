@@ -9,14 +9,14 @@
     <div id="content">
         <p>
 
-                {{$data['message']}}
+                {{$data['data']['message']}}
 
 
         </p>
 
         <p>
             Regards<br>
-            {{$data['CompanyName']}}
+            {{$data['data']['CompanyName']}}
         </p>
     </div>
 
