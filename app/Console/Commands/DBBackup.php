@@ -88,9 +88,9 @@ class DBBackup extends Command {
 
 			Log::info ( "Done! "  );
 
-			$message = "DB Backup Completed with following output.";
-			$message .= "<br> Output  " . implode("<br>", $bk_output);
-			$message .= "<br> Output  " . implode("<br>", $aws_output);
+			$message = "<b>DB Backup Completed with following output.</b>";
+			$message .= "<br><br><br> <b>Backup Output</b>  " . implode("<br>", $bk_output);
+			$message .= "<br><br><br> AWS Output  " . implode("<br>", $aws_output);
 
 			$this->send_update_email($CompanyID,$message);
 
