@@ -90,7 +90,7 @@ class DBBackup extends Command {
 
 			$message = "<b>DB Backup Completed with following output.</b>";
 			$message .= "<br><br><br> <b>Backup Output</b>  " . implode("<br>", $bk_output);
-			$message .= "<br><br><br> AWS Output  " . implode("<br>", $aws_output);
+			$message .= "<br><br><br> <b>AWS Output</b>  " . implode("<br>", $aws_output);
 
 			$this->send_update_email($CompanyID,$message);
 
