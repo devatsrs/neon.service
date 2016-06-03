@@ -67,10 +67,11 @@ class DBBackup extends Command {
 
 			Log::info ( "Starting backup..." );
 
-			exec(getenv("BACKUP_COMMAND") . ' '  . $BackupConfigFile , $bk_output);//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
+			exec(getenv("BACKUP_COMMAND") . ' '  . $BackupConfigFile , $bk_output , $bk_return);//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
 
 			Log::info ( "Backup is Completed "   );
 			Log::info( " Output " . print_r($bk_output,true) );
+			Log::info( " Return " . print_r($bk_return,true) );
 
 			Log::info ( "Setting up Permissions" ); ;
 
@@ -81,16 +82,19 @@ class DBBackup extends Command {
 
 			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
-			exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . $AWS_PATH , $aws_output) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
+			exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . $AWS_PATH , $aws_output , $aws_return) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
 
 			Log::info ( "Uploading Backup to AmazonS3 Completed "  );;
 			Log::info ( "Output " . print_r($aws_output,true) );
+			Log::info ( "Return " . print_r($aws_return,true) );
 
 			Log::info ( "Done! "  );
 
 			$message = "<b>DB Backup Completed with following output.</b>";
 			$message .= "<br><br><br> <b>Backup Output</b>  " . implode("<br>", $bk_output);
+			$message .= "<br><br><br> <b>Backup Return</b>  " . implode("<br>", $bk_return);
 			$message .= "<br><br><br> <b>AWS Output</b>  " . implode("<br>", $aws_output);
+			$message .= "<br><br><br> <b>AWS Return</b>  " . implode("<br>", $aws_return);
 
 			$this->send_update_email($CompanyID,$message);
 
