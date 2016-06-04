@@ -201,6 +201,7 @@ class RateTableRateUpload extends Command
                         Log::info('insertion end');
                     }
                     $JobStatusMessage = array();
+                    $duplicatecode=0;
                     Log::info("start CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
                     try{
                         DB::beginTransaction();
@@ -212,12 +213,25 @@ class RateTableRateUpload extends Command
                         Log::info($JobStatusMessage);
                         Log::info(count($JobStatusMessage));
                         if(!empty($error) || count($JobStatusMessage) > 1){
-                            foreach ($JobStatusMessage as $JobStatusMessage) {
-                                $error[] = $JobStatusMessage['Message'];
+                            $prc_error = array();
+                            foreach ($JobStatusMessage as $JobStatusMessage1) {
+                                $prc_error[] = $JobStatusMessage1['Message'];
+                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false){
+                                    $duplicatecode = 1;
+                                }
                             }
                             $job = Job::find($JobID);
-                            $jobdata['JobStatusMessage'] = implode(',\n\r',$error);
-                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                            if($duplicatecode == 1){
+                                $error = array_merge($prc_error,$error);
+                                unset($error[0]);
+                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                            }else{
+                                $error = array_merge($prc_error,$error);
+                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                            }
+                            //$jobdata['JobStatusMessage'] = implode(',\n\r',$error);
                             $jobdata['updated_at'] = date('Y-m-d H:i:s');
                             $jobdata['ModifiedBy'] = 'RMScheduler';
                             Log::info($jobdata);
@@ -236,11 +250,11 @@ class RateTableRateUpload extends Command
                         Log::error($err);
 
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                        $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
+                        $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
-                        Log::error($e);
+                        Log::error($err);
                     }
 
                 }

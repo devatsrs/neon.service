@@ -60,6 +60,12 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\RateTableRateUpload',
 		'App\Console\Commands\VCDRUpload',
 		'App\Console\Commands\SippyMissingCDRFileFix',
+		'App\Console\Commands\CreateSummary',
+		'App\Console\Commands\CreateVendorSummary',
+		'App\Console\Commands\CreateSummaryLive',
+		'App\Console\Commands\CreateVendorSummaryLive',
+		'App\Console\Commands\ImportAccount',
+		'App\Console\Commands\DBBackup',
 
 	];
 

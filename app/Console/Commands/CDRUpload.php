@@ -131,25 +131,6 @@ class CDRUpload extends Command
                 $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                 $results = $NeonExcel->read();
 
-                /*
-                if (!empty($csvoption->Delimiter)) {
-                    Config::set('excel::csv.delimiter', $csvoption->Delimiter);
-                }
-                if (!empty($csvoption->Enclosure)) {
-                    Config::set('excel::csv.enclosure', $csvoption->Enclosure);
-                }
-                if (!empty($csvoption->Escape)) {
-                    Config::set('excel::csv.line_ending', $csvoption->Escape);
-                }
-                Config::set('excel.import.heading','original');
-                Config::set('excel.import.dates.enable',false);
-                $excel = Excel::load($jobfile->FilePath, function ($reader) use ($csvoption) {
-                    if ($csvoption->Firstrow == 'data') {
-                        $reader->noHeading();
-                    }
-                })->get();
-                $results = json_decode(json_encode($excel), true);*/
-
                 if (isset($joboptions->CheckFile) && $joboptions->CheckFile == 1 && isset($attrselection->Authentication) && $attrselection->Authentication == 'CLI') {
                     foreach ($results as $temp_row) {
                         if ($csvoption->Firstrow == 'data') {
@@ -158,7 +139,7 @@ class CDRUpload extends Command
                         }
                         if (isset($attrselection->cli) && !empty($attrselection->cli)) {
                             $CustomerCLI = $temp_row[$attrselection->cli];
-                            $checkCustomerCli = DB::select("CALL prc_checkCustomerCli('" . $CompanyID . "','" . $CustomerCLI . "')");
+                            $checkCustomerCli = DB::select("CALL prc_checkCustomerCli(?,?)",array($CompanyID,$CustomerCLI));
                             if (isset($checkCustomerCli[0]->AccountID) && $checkCustomerCli[0]->AccountID) {
                                 $active_cli[] = $CustomerCLI;
                             } else {
@@ -188,6 +169,7 @@ class CDRUpload extends Command
                         $cdrdata['CompanyID'] = $CompanyID;
                         $cdrdata['trunk'] = 'Other';
                         $cdrdata['area_prefix'] = 'Other';
+                        $call_type = '';
 
                         //check empty row
                         $checkemptyrow = array_filter(array_values($temp_row));
@@ -243,13 +225,45 @@ class CDRUpload extends Command
                                 $cdrdata['ID'] = $temp_row[$attrselection->ID];
                             }
                             if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
-                                $cdrdata['is_inbound'] = (TempUsageDetail::check_inbound($temp_row[$attrselection->is_inbound]))?1:0;
+                                $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]),'','');
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                             }
 
                             if(!empty($cdrdata['GatewayAccountID'])) {
+                                if ($call_type == 'inbound') {
+                                    $cdrdata['is_inbound'] = 1;
+                                } else if ($call_type == 'outbound') {
+                                    $cdrdata['is_inbound'] = 0;
+                                } else if ($call_type == 'none') {
+                                    /** if user field is blank */
+                                    $cdrdata['is_inbound'] = 0;
+                                } else if ($call_type == 'failed') {
+                                    /** if user field is failed or blocked call any reason make duration zero */
+                                    $cdrdata['billed_duration'] = 0;
+                                }
+                                if ($call_type == 'both' && $RateCDR == 1) {
+
+                                    /**
+                                     * Inbound Entry
+                                     */
+                                    $cdrdata['cost'] = 0;
+                                    $cdrdata['is_inbound'] = 1;
+
+                                    /**
+                                     * Outbound Entry
+                                     */
+                                    $data_outbound = $cdrdata;
+
+                                    $data_outbound['cli'] = !empty($cdrdata['cli']) ? $cdrdata['cli'] : '';
+                                    $data_outbound['cld'] = !empty($cdrdata['cld']) ? $cdrdata['cld'] : '';
+                                    $data_outbound['cost'] = !empty($cdrdata['cost']) ? $cdrdata['cost'] : 0;
+                                    $data_outbound['is_inbound'] = 0;
+                                    $batch_insert_array[] = $data_outbound;
+                                    $counter++;
+
+                                }
 
                                 $batch_insert_array[] = $cdrdata;
 
