@@ -24,6 +24,8 @@ class DBBackup extends Command {
 	protected $description = 'Command description.';
 
 
+	protected $dotenv ;
+
 	/**
 	 * Create a new command instance.
 	 *
@@ -105,7 +107,7 @@ class DBBackup extends Command {
 			$message .= "<br><br><br> <b>Backup Output</b>  " .   $bk_output;
  			$message .= "<br><br><br> <b>AWS Output</b>  " .  $aws_output;
 
-			$this->send_update_email($CompanyID,$message);
+			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 
 
 		}catch (\Exception $ex) {
@@ -117,16 +119,19 @@ class DBBackup extends Command {
 			$message .= "<br> <b>" . $ex->getMessage() ."</b>";
 			$message .= "<br> " . implode("<br>", $ex);
 
-			$this->send_update_email($CompanyID,$message);
+			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 
 
 		}
 
 	}
 
-	public function send_update_email($CompanyID,$message){
+	public function send_update_email($BackupConfigFile,$CompanyID,$message){
 
 		try{
+
+			$dotenv = new \Dotenv();
+			$dotenv->load(dirname($BackupConfigFile),basename($BackupConfigFile));
 
 			/// Email to
 			$emaildata['EmailTo'] = getenv("NEON_email");
