@@ -37,6 +37,9 @@ class DBBackup extends Command {
 	{
 		return [
 			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+			['Port1', InputArgument::REQUIRED, 'Port 1 for Backup command'],
+			['Port2', InputArgument::REQUIRED, 'Port 2 for AmazonS3 command'],
+			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
 			['BackupConfigFile', InputArgument::REQUIRED, 'automysqlbackup Config File Path'],
 			['AWS_PATH', InputArgument::REQUIRED, 'AWS Directory Path to upload Backup Files ie. neon.backup/ '],
 		];
@@ -61,13 +64,16 @@ class DBBackup extends Command {
 			$CompanyID = $arguments["CompanyID"];
 			$BackupConfigFile = $arguments["BackupConfigFile"];
 			$AWS_PATH = $arguments["AWS_PATH"];
+			$Port1 = $arguments["Port1"];
+			$Port2 = $arguments["Port2"];
 
 
 			Log::info ( "Start " );
 
 			Log::info ( "Starting backup..." );
 
-			$bk_output = shell_exec(getenv("BACKUP_COMMAND") . ' '  . $BackupConfigFile    );//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
+			$backup_cmd =  str_replace( "{PORT1}" , $Port1 , getenv("BACKUP_COMMAND") );
+			$bk_output = shell_exec( $backup_cmd . ' '  . $BackupConfigFile );//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
 
 			Log::info ( "Backup is Completed "   );
 			Log::info( " Output " . print_r($bk_output,true) );
@@ -81,7 +87,9 @@ class DBBackup extends Command {
 
 			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
-			$aws_output = shell_exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . $AWS_PATH  ) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
+			$aws_command = str_replace( "{PORT2}" , $Port2 , getenv("BACKUP_AWS_UPLOAD_COMMAND") );
+
+			$aws_output = shell_exec($aws_command  . $AWS_PATH  ) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
 
 			Log::info ( "Uploading Backup to AmazonS3 Completed "  );;
 			Log::info ( "Output " . print_r($aws_output,true) );
