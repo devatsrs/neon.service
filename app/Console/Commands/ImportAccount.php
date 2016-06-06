@@ -414,7 +414,7 @@ class ImportAccount extends Command {
                         $updateaccountno = Account::updateAccountNo($CompanyID);
                         Log::info('update account number - '.$updateaccountno);
                         Log::info(count($JobStatusMessage));
-                        if(!empty($error || count($JobStatusMessage) > 1)){
+                        if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();
                             foreach ($JobStatusMessage as $JobStatusMessage1) {
                                 $prc_error[] = $JobStatusMessage1['Message'];
