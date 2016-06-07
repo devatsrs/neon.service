@@ -2,14 +2,10 @@
 namespace App\Console\Commands;
 
 
-use App\Lib\CompanyGateway;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Summary;
-use App\Lib\TempUsageDetail;
-use App\Lib\TempUsageDownloadLog;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -59,23 +55,17 @@ class CreateSummary extends Command{
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
         $CronJob =  CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/createsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            //DB::connection('neon_report')->beginTransaction();
-            Summary::generateSummary($CompanyID,1);
-            //DB::connection('neon_report')->commit();
+            Summary::generateSummary($CompanyID,0);
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
         } catch (\Exception $e) {
-            try {
-                //DB::connection('neon_report')->rollback();
-            } catch (\Exception $err) {
-                Log::error($err);
-            }
             Log::error($e);
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;

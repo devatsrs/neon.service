@@ -145,4 +145,18 @@ class Account extends \Eloquent {
         return $LastAccountNo;
     }
 
+
+    public static function updateAccountNo($CompanyID){
+        $accounts = Account::select('AccountID')->where(["AccountType" => 1,"Number"=>null])->get()->toArray();
+        if(count($accounts)>0){
+            foreach($accounts as $account){
+                $accountid = $account['AccountID'];
+                $lastnumber = Account::getLastAccountNo($CompanyID);
+                Account::where('AccountID', $accountid)->update(['Number' => $lastnumber]);
+                CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$lastnumber);
+            }
+        }
+        return true;
+    }
+
 }

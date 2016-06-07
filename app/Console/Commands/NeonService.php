@@ -43,7 +43,7 @@ class NeonService extends Command {
 		$Company = Company::all();
 		foreach($Company as $CompanID){
 			if(getenv('APP_OS') == 'Linux') {
-				pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation').' rmservice '.$CompanID->CompanyID . " &","r"));
+				pclose(popen( env('PHPExePath')." ".env('RMArtisanFileLocation').' rmservice '.$CompanID->CompanyID . " &","r"));
 			}else{
 				pclose(popen("start /B " . env('PHPExePath')." ".env('RMArtisanFileLocation').' rmservice '.$CompanID->CompanyID. " ", "r"));
 			}
