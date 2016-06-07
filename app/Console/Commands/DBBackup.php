@@ -138,7 +138,7 @@ class DBBackup extends Command {
 			$emaildata['EmailToName'] = getenv("NEON_email_name");
 			$emaildata['Subject'] ="Backup Update ";
 			$emaildata['CompanyID'] = $CompanyID;
-			$emaildata['data'] =array('message' => $message, 'CompanyName'=>getenv("NEON_email_name"));
+			$emaildata['data'] =array('message' => nl2br($message), 'CompanyName'=>getenv("NEON_email_name"));
 
 			$status = Helper::sendMail('emails.backup.dbbackup_email',$emaildata);
 
