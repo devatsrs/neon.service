@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceDetail;
 use App\Lib\Job;
@@ -57,6 +58,12 @@ class RegenerateManualInvoice extends Command {
 	 */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
+
+
+
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $errors = array();
@@ -207,6 +214,11 @@ class RegenerateManualInvoice extends Command {
             }
 
         }
+
+
+        CronHelper::after_cronrun($this);
+
+
     }
 
 }

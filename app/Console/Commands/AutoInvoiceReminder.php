@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\EmailTemplate;
@@ -62,6 +63,9 @@ class AutoInvoiceReminder extends Command
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -134,5 +138,7 @@ class AutoInvoiceReminder extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
         Log::error("auto invoice reminder" . $CronJobID);
+        CronHelper::after_cronrun($this);
+
     }
 }

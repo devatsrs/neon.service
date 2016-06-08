@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\AmazonS3;
+use App\Lib\CronHelper;
 use App\Lib\GatewayAccount;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -66,6 +67,9 @@ class CustomerPortaSheet extends Command {
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this);
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -143,6 +147,8 @@ class CustomerPortaSheet extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this);
 
     }
 

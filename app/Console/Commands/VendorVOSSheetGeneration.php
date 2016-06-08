@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Symfony\Component\Console\Input\InputArgument;
@@ -37,6 +38,10 @@ class VendorVOSSheetGeneration extends Command {
 
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -171,6 +176,9 @@ class VendorVOSSheetGeneration extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+
+        CronHelper::after_cronrun($this);
 
 
     }

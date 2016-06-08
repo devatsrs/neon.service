@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
 use App\Lib\User;
 use Illuminate\Console\Command;
@@ -43,6 +44,8 @@ class RMService extends Command {
     public function handle()
     {
         try {
+
+            CronHelper::before_cronrun($this);
 
             $arguments = $this->argument();
             $CompanyID = $arguments["CompanyID"];
@@ -324,6 +327,10 @@ class RMService extends Command {
         }catch(\Exception $e){
             Log::error($e);
         }
+
+
+        CronHelper::after_cronrun($this);
+
     }
 
     /**

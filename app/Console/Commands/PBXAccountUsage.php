@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -58,6 +59,9 @@ class PBXAccountUsage extends Command
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
@@ -305,6 +309,9 @@ class PBXAccountUsage extends Command
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this);
+
     }
 
     public function getLastDate($startdate, $companyid, $CronJobID)

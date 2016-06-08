@@ -3,6 +3,7 @@
 use App\Lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\FileUploadTemplate;
 use App\Lib\Job;
 use App\Lib\JobFile;
@@ -64,6 +65,11 @@ class VCDRUpload extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this);
+
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -281,6 +287,11 @@ class VCDRUpload extends Command
             Log::error($e);
         }
         Job::send_job_status_email($job, $CompanyID);
+
+
+        CronHelper::after_cronrun($this);
+
+
     }
 }
 

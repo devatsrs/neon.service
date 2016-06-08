@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -49,6 +50,10 @@ class DBCleanUp extends Command {
 	 */
     public function handle()
 	{
+
+
+		CronHelper::before_cronrun($this);
+
 
 		$arguments = $this->argument();
 		$getmypid = getmypid(); // get proccess id
@@ -120,6 +125,9 @@ class DBCleanUp extends Command {
 			Log::error("**Email Sent message ".$result['message']);
 		}
 		Log::error(" CronJobId end " . $CronJobID);
+
+
+		CronHelper::after_cronrun($this);
 
     }
 

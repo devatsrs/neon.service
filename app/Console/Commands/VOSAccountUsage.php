@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -69,6 +70,10 @@ class VOSAccountUsage extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this);
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -361,6 +366,9 @@ class VOSAccountUsage extends Command
         DB::disconnect('sqlsrv');
         DB::disconnect('sqlsrv2');
         DB::disconnect('sqlsrvcdr');
+
+        CronHelper::after_cronrun($this);
+
     }
 
 }

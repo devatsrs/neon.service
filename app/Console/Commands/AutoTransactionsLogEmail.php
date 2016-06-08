@@ -2,6 +2,7 @@
 
 use App\Lib\Company;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\DataTableSql;
@@ -42,6 +43,18 @@ class AutoTransactionsLogEmail extends Command {
 		parent::__construct();
 	}
 
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+        ];
+    }
 	/**
 	 * Execute the console command.
 	 *
@@ -49,6 +62,8 @@ class AutoTransactionsLogEmail extends Command {
 	 */
 	public function fire()
 	{
+        CronHelper::before_cronrun($this);
+
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
@@ -143,31 +158,10 @@ class AutoTransactionsLogEmail extends Command {
         }
         Log::error(" CronJobId end" . $CronJobID);
 
+        CronHelper::after_cronrun($this);
     }
 
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
-        return [
-            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
-            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
-        ];
-	}
 
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-	 */
-	protected function getOptions()
-	{
-		return [
-			['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-		];
-	}
+
 
 }

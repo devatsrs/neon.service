@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\TempUsageDetail;
 use App\Porta;
@@ -52,6 +53,11 @@ class ReImportCDRbyAccount extends Command {
      */
     public function handle()
     {
+
+
+        CronHelper::before_cronrun($this);
+
+
 
         $arguments = $this->argument();
 
@@ -197,6 +203,11 @@ class ReImportCDRbyAccount extends Command {
             Log::error($e);
         }
         //}
+
+
+        CronHelper::after_cronrun($this);
+
+
 
     }
 

@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\UsageDownloadFiles;
 use App\VOS;
@@ -60,6 +61,10 @@ class VOSDownloadCDR extends Command {
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this);
+
+
         $arguments = $this->argument();
 
         $CronJobID = $arguments["CronJobID"];
@@ -101,6 +106,9 @@ class VOSDownloadCDR extends Command {
             $CronJob->update($dataactive);
         }
         Log::info("VOS end");
+
+        CronHelper::after_cronrun($this);
+
     }
 
 }

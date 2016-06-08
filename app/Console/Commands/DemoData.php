@@ -3,6 +3,7 @@
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\CSVImporter;
 use App\Lib\Currency;
 use App\Lib\DataTableSql;
@@ -66,6 +67,9 @@ class DemoData extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/demodata-'.date('Y-m-d').'.log');
@@ -92,6 +96,7 @@ class DemoData extends Command {
             Log::error($e->getMessage());
         }
 
+        CronHelper::after_cronrun($this);
 
     }
 

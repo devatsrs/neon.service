@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\Helper;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -52,6 +53,8 @@ class ActiveCronJobEmail extends Command {
 	 */
     public function fire()
 	{
+        CronHelper::before_cronrun($this);
+
         $getmypid = getmypid();
         $arguments = $this->argument();
         $CompanyID = $arguments['CompanyID'];
@@ -185,6 +188,8 @@ class ActiveCronJobEmail extends Command {
             Log::error("**Email Sent message ".$result['message']);
         }
         Log::error(' ========================== active cronjob end =============================');
+
+        CronHelper::after_cronrun($this);
 
     }
 

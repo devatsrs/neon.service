@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\Company;
+use App\Lib\CronHelper;
 use App\Lib\Helper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceLog;
@@ -63,6 +64,10 @@ class InvoiceReminder extends Command
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $JobID = $arguments["JobID"];
@@ -230,5 +235,8 @@ class InvoiceReminder extends Command
             Log::error($e);
             Job::send_job_status_email($job, $CompanyID);
         }
+
+        CronHelper::after_cronrun($this);
+
     }
 }

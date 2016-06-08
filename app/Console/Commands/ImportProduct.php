@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -42,6 +43,9 @@ class ImportProduct extends Command {
 	 */
 	public function fire()
 	{
+
+        CronHelper::before_cronrun($this);
+
 		$file = 'I:/bk/www/projects/aamir/rm/downloads/items.csv';
 
 
@@ -84,6 +88,8 @@ class ImportProduct extends Command {
         }
          Log::error(print_r($error,true));
 
+
+        CronHelper::after_cronrun($this);
 
     }
 

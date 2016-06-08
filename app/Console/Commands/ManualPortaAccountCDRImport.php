@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\TempUsageDetail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,11 @@ class ManualPortaAccountCDRImport extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
+
+
         $arguments = $this->argument();
 
         $CompanyID = $arguments["CompanyID"];
@@ -124,6 +130,11 @@ class ManualPortaAccountCDRImport extends Command {
         DB::connection('sqlsrvcdrazure')->commit();
         TempUsageDetail::where(["processId" => $ProcessID])->delete();
         Log::error(print_r($error,true));
+
+
+        CronHelper::after_cronrun($this);
+
+
     }
 
     /**

@@ -3,6 +3,7 @@
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\Currency;
 use App\Lib\DataTableSql;
 use App\Lib\Helper;
@@ -66,6 +67,10 @@ class BulkInvoiceSend extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this);
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -204,6 +209,10 @@ class BulkInvoiceSend extends Command {
             Job::where(["JobID" => $JobID])->update($jobdata);
             Log::error($e);
         }
+
+
+        CronHelper::after_cronrun($this);
+
     }
 
 
