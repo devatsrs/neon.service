@@ -2,6 +2,7 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use Illuminate\Console\Command;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class CreateDailySummary extends Command{
+class CreateDailySummary extends Command {
 
     /**
      * The console command name.
@@ -51,6 +52,10 @@ class CreateDailySummary extends Command{
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
@@ -180,6 +185,8 @@ class CreateDailySummary extends Command{
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 

@@ -18,9 +18,49 @@ class CronHelper {
 
     function __clone() {}
 
+    public static function get_command_file_name($command_name, $Cron) {
+
+        $arguments = $Cron->argument();
+        $lock_command_file =  $command_name;
+        if(isset($arguments["CompanyID"])) {
+            $lock_command_file .= '_CompanyID_' . $arguments["CompanyID"];
+        }
+        if(isset($arguments["CronJobID"])) {
+            $lock_command_file .= '_CronJobID_' .$arguments["CronJobID"];
+        }
+        if(isset($arguments["JobID"])) {
+            $lock_command_file .= '_JobID_' .$arguments["JobID"];
+        }
+
+        return $lock_command_file;
+    }
+
+    public static function before_cronrun($command_name,$Cron) {
+
+        $lock_command_file = self::get_command_file_name($command_name,$Cron);
+
+        if(($pid = CronHelper::lock($lock_command_file)) ==  FALSE) {
+            Log::info( $lock_command_file ." Already running....####");
+            exit;
+        }
+        Log::info( $lock_command_file ." #Starts# ");
+    }
+
+    public static function after_cronrun($command_name,$Cron) {
+
+        $lock_command_file = self::get_command_file_name($command_name,$Cron);
+
+        CronHelper::unlock($lock_command_file);
+        Log::info($lock_command_file . " #Stops# ");
+
+    }
+
     private static function isrunning() {
 
+        //@TODO: checkout for windows system
+        //http://lifehacker.com/362316/use-unix-commands-in-windows-built-in-command-prompt
         $pids = explode(PHP_EOL, `ps -e | grep php | awk '{print $1}'`);
+        
         if(in_array(self::$pid, $pids)) {
             return TRUE;
         }
@@ -29,7 +69,11 @@ class CronHelper {
 
     public static function lock($command) {
 
-        $lock_file = getenv("TEMP_PATH").$command.'.lock';
+        if (!file_exists(storage_path() . '/locks/')) {
+            mkdir(storage_path() . '/locks/');
+        }
+
+        $lock_file = storage_path() . '/locks/'.$command.'.lock';
 
         if(file_exists($lock_file)) {
             //return FALSE;
@@ -54,7 +98,7 @@ class CronHelper {
 
     public static function unlock($command) {
 
-         $lock_file = getenv("TEMP_PATH").$command.'.lock';
+         $lock_file = storage_path() . '/locks/'.$command.'.lock';
 
         if(file_exists($lock_file)){
 
