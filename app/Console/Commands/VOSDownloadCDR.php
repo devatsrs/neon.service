@@ -76,7 +76,17 @@ class VOSDownloadCDR extends Command {
         $CompanyGatewayID =  $cronsetting->CompanyGatewayID;
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
+
             Log::info("Start");
+
+            CronJob::createLog($CronJobID);
+
+            $joblogdata = array();
+            $joblogdata['CronJobID'] = $CronJobID;
+            $joblogdata['created_at'] = date('Y-m-d H:i:s');
+            $joblogdata['created_by'] = 'RMScheduler';
+            $joblogdata['Message'] = '';
+
             $vos = new VOS($CompanyGatewayID);
             Log::info("VOS Connected");
             $filenames = $vos->getCDRs();
@@ -100,10 +110,21 @@ class VOSDownloadCDR extends Command {
             }
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = "Files Downloaded " . count($filenames);
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+
+
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            CronJobLog::insert($joblogdata);
+
         }
         Log::info("VOS end");
 

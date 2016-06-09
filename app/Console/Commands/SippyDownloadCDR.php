@@ -74,6 +74,17 @@ class SippyDownloadCDR extends Command {
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
             Log::info("Start");
+
+
+            CronJob::createLog($CronJobID);
+
+            $joblogdata = array();
+            $joblogdata['CronJobID'] = $CronJobID;
+            $joblogdata['created_at'] = date('Y-m-d H:i:s');
+            $joblogdata['created_by'] = 'RMScheduler';
+            $joblogdata['Message'] = '';
+
+
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
@@ -97,10 +108,20 @@ class SippyDownloadCDR extends Command {
             }
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = "Files Downloaded " . count($filenames);
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            CronJobLog::insert($joblogdata);
+
 
             if(!empty($cronsetting['ErrorEmail'])) {
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
