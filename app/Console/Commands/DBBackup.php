@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\CronHelper;
 use App\Lib\Helper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +24,9 @@ class DBBackup extends Command {
 	 */
 	protected $description = 'Command description.';
 
+
+	protected $dotenv ;
+
 	/**
 	 * Create a new command instance.
 	 *
@@ -36,9 +40,7 @@ class DBBackup extends Command {
 	protected function getArguments()
 	{
 		return [
-			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
 			['BackupConfigFile', InputArgument::REQUIRED, 'automysqlbackup Config File Path'],
-			['AWS_PATH', InputArgument::REQUIRED, 'AWS Directory Path to upload Backup Files ie. neon.backup/ '],
 		];
 	}
 
@@ -49,25 +51,38 @@ class DBBackup extends Command {
 	 */
 	public function fire()
 	{
+
+		CronHelper::before_cronrun($this->name, $this );
+
 		Log::useFiles(storage_path() . '/logs/dbbackup-' . '-' . date('Y-m-d') . '.log');
-
-
-
 
 		try{
 
 			$arguments = $this->argument();
 			$getmypid = getmypid(); // get proccess id
-			$CompanyID = $arguments["CompanyID"];
-			$BackupConfigFile = $arguments["BackupConfigFile"];
-			$AWS_PATH = $arguments["AWS_PATH"];
 
+			$BackupConfigFile = $arguments["BackupConfigFile"];
+
+			/**
+			 * add extra NEON_ config variables in automysqlbackup config file
+			 *
+			 * NEON_backup_command=/usr/local/bin/solo -port=6000 /usr/local/bin/automysqlbackup
+			   NEON_backup_aws_command=/usr/local/bin/solo -port=6001 /usr/local/bin/aws s3 sync --delete /home/autobackup/db/daily/RateManagement4 s3://neon.backup/other/
+			   NEON_email=
+			   NEON_email_name=
+			   NEON_CompanyID=
+			 */
+			$dotenv = new \Dotenv();
+			$dotenv->load(dirname($BackupConfigFile),basename($BackupConfigFile));
+
+			$CompanyID = getenv("NEON_CompanyID");
 
 			Log::info ( "Start " );
 
 			Log::info ( "Starting backup..." );
 
-			$bk_output = shell_exec(getenv("BACKUP_COMMAND") . ' '  . $BackupConfigFile    );//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
+			$backup_cmd = getenv("NEON_backup_command") . ' '  . $BackupConfigFile; // fron config file.
+			$bk_output = shell_exec( $backup_cmd );//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
 
 			Log::info ( "Backup is Completed "   );
 			Log::info( " Output " . print_r($bk_output,true) );
@@ -75,13 +90,15 @@ class DBBackup extends Command {
 			Log::info ( "Setting up Permissions" ); ;
 
 			# Set permission to root user only.
-			exec('chown root.root ' . getenv("BACKUP_DIR") . '* -R');
-			exec('find ' . getenv("BACKUP_DIR"). '* -type f -exec chmod 400 {} \;');
-			exec('find ' . getenv("BACKUP_DIR"). '* -type d -exec chmod 700 {} \;');
+			exec('chown root.root ' . getenv("CONFIG_backup_dir") . '* -R');
+			exec('find ' . getenv("CONFIG_backup_dir"). '* -type f -exec chmod 400 {} \;');
+			exec('find ' . getenv("CONFIG_backup_dir"). '* -type d -exec chmod 700 {} \;');
 
 			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
-			$aws_output = shell_exec(getenv("BACKUP_AWS_UPLOAD_COMMAND") . $AWS_PATH  ) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
+			$aws_command = getenv("NEON_backup_aws_command") ;
+
+			$aws_output = shell_exec($aws_command ) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
 
 			Log::info ( "Uploading Backup to AmazonS3 Completed "  );;
 			Log::info ( "Output " . print_r($aws_output,true) );
@@ -92,7 +109,7 @@ class DBBackup extends Command {
 			$message .= "<br><br><br> <b>Backup Output</b>  " .   $bk_output;
  			$message .= "<br><br><br> <b>AWS Output</b>  " .  $aws_output;
 
-			$this->send_update_email($CompanyID,$message);
+			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 
 
 		}catch (\Exception $ex) {
@@ -104,23 +121,27 @@ class DBBackup extends Command {
 			$message .= "<br> <b>" . $ex->getMessage() ."</b>";
 			$message .= "<br> " . implode("<br>", $ex);
 
-			$this->send_update_email($CompanyID,$message);
-
+			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 
 		}
 
+		CronHelper::after_cronrun($this->name, $this);
+
 	}
 
-	public function send_update_email($CompanyID,$message){
+	public function send_update_email($BackupConfigFile,$CompanyID,$message){
 
 		try{
 
+			$dotenv = new \Dotenv();
+			$dotenv->load(dirname($BackupConfigFile),basename($BackupConfigFile));
+
 			/// Email to
-			$emaildata['EmailTo'] = getenv("BACKUP_EMAIL");
-			$emaildata['EmailToName'] = getenv("BACKUP_EMAIL_NAME");
+			$emaildata['EmailTo'] = getenv("NEON_email");
+			$emaildata['EmailToName'] = getenv("NEON_email_name");
 			$emaildata['Subject'] ="Backup Update ";
 			$emaildata['CompanyID'] = $CompanyID;
-			$emaildata['data'] =array('message' => $message, 'CompanyName'=>getenv("BACKUP_EMAIL_NAME"));
+			$emaildata['data'] =array('message' => nl2br($message), 'CompanyName'=>getenv("NEON_email_name"));
 
 			$status = Helper::sendMail('emails.backup.dbbackup_email',$emaildata);
 

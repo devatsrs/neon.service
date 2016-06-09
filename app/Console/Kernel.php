@@ -20,7 +20,6 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\RateGenerator',
         'App\Console\Commands\PortaAccountUsage',
         'App\Console\Commands\PendingDueSheet',
-        'App\Console\Commands\BulkInvoiceGenerator',
         'App\Console\Commands\CustomerPortaSheet',
         'App\Console\Commands\VOSAccountUsage',
         'App\Console\Commands\VOSDownloadCDR',

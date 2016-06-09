@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\GatewayAccount;
 use App\Lib\Helper;
 use App\Lib\TempUsageDetail;
@@ -62,6 +63,10 @@ class CDRRecalculate extends Command {
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
@@ -146,6 +151,8 @@ class CDRRecalculate extends Command {
             TempUsageDetail::where(["processId" => $ProcessID])->delete();
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 }

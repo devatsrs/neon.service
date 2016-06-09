@@ -1,0 +1,113 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: deven
+ * Date: 07/06/2016
+ * Time: 4:15 PM
+ */
+
+namespace App\Lib;
+
+use Illuminate\Support\Facades\Log;
+
+class CronHelper {
+
+    private static $pid;
+
+    function __construct() {}
+
+    function __clone() {}
+
+    public static function get_command_file_name($command_name, $Cron) {
+
+        $arguments = $Cron->argument();
+        $lock_command_file =  $command_name;
+        if(isset($arguments["CompanyID"])) {
+            $lock_command_file .= '_CompanyID_' . $arguments["CompanyID"];
+        }
+        if(isset($arguments["CronJobID"])) {
+            $lock_command_file .= '_CronJobID_' .$arguments["CronJobID"];
+        }
+        if(isset($arguments["JobID"])) {
+            $lock_command_file .= '_JobID_' .$arguments["JobID"];
+        }
+
+        return $lock_command_file;
+    }
+
+    public static function before_cronrun($command_name,$Cron) {
+
+        $lock_command_file = self::get_command_file_name($command_name,$Cron);
+
+        if(($pid = CronHelper::lock($lock_command_file)) ==  FALSE) {
+            Log::info( $lock_command_file ." Already running....####");
+            exit;
+        }
+        Log::info( $lock_command_file ." #Starts# ");
+    }
+
+    public static function after_cronrun($command_name,$Cron) {
+
+        $lock_command_file = self::get_command_file_name($command_name,$Cron);
+
+        CronHelper::unlock($lock_command_file);
+        Log::info($lock_command_file . " #Stops# ");
+
+    }
+
+    private static function isrunning() {
+
+        //@TODO: checkout for windows system
+        //http://lifehacker.com/362316/use-unix-commands-in-windows-built-in-command-prompt
+        $pids = explode(PHP_EOL, `ps -e | grep php | awk '{print $1}'`);
+        
+        if(in_array(self::$pid, $pids)) {
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    public static function lock($command) {
+
+        if (!file_exists(storage_path() . '/locks/')) {
+            mkdir(storage_path() . '/locks/');
+        }
+
+        $lock_file = storage_path() . '/locks/'.$command.'.lock';
+
+        if(file_exists($lock_file)) {
+            //return FALSE;
+
+            // Is running?
+            self::$pid = file_get_contents($lock_file);
+            if(self::isrunning()) {
+                Log::error("==".self::$pid."== Already in progress...");
+                return FALSE;
+            }
+            else {
+                Log::info("==".self::$pid."== Previous job died abruptly...");
+            }
+        }
+
+        self::$pid = getmypid();
+        file_put_contents($lock_file, self::$pid);
+        Log::info("==".self::$pid."== Lock acquired, processing the job...");
+
+        return self::$pid;
+    }
+
+    public static function unlock($command) {
+
+         $lock_file = storage_path() . '/locks/'.$command.'.lock';
+
+        if(file_exists($lock_file)){
+
+            unlink($lock_file);
+        }
+
+        Log::info("==".self::$pid."== Releasing lock...");
+
+        return TRUE;
+    }
+
+}

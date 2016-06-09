@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\GatewayAccount;
@@ -58,6 +59,10 @@ class PortaAccountUsage extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         ini_set('memory_limit', '-1');
 
         $start_time = date('Y-m-d H:i:s');
@@ -253,6 +258,12 @@ class PortaAccountUsage extends Command {
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
+
     }
 
     public function getLastDate($startdate, $companyid, $CronJobID)
