@@ -1,22 +1,20 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\FileUploadTemplate;
+use App\Lib\Job;
+use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use Illuminate\Console\Command;
-use App\Lib\Job;
-use App\Lib\JobFile;
-use App\Lib\AmazonS3;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Config;
 use Symfony\Component\Console\Input\InputArgument;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Lib\NeonExcelIO;
-use Webpatser\Uuid\Uuid;
 
 class CDRUpload extends Command
 {
@@ -73,7 +71,7 @@ class CDRUpload extends Command
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+        $ProcessID = CompanyGateway::getProcessID();
         $jobfile = JobFile::where(["JobID" => $JobID])->first();
         $temptableName  = 'tblTempUsageDetail';
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
@@ -219,6 +217,10 @@ class CDRUpload extends Command
                                 }
 
                             }
+                            if(!empty($joboptions->TrunkID)){
+                                $cdrdata['TrunkID'] = $joboptions->TrunkID;
+                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
+                            }
                             if (isset($attrselection->extension) && !empty($attrselection->extension)) {
                                 $cdrdata['extension'] = $temp_row[$attrselection->extension];
                             }
@@ -323,11 +325,11 @@ class CDRUpload extends Command
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
 
-                        foreach($delet_cdr_account as $delet_cdr_accountrow){
+                        /*foreach($delet_cdr_account as $delet_cdr_accountrow){
                             // Delete old records.
                             Log::info("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
                             DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
-                        }
+                        }*/
                     }
 
                     Log::error(' prc_insertCDR start');
