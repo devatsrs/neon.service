@@ -3,6 +3,7 @@ namespace App\Lib;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Webpatser\Uuid\Uuid;
 
 
 class CompanyGateway extends \Eloquent {
@@ -71,28 +72,31 @@ class CompanyGateway extends \Eloquent {
                                     `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
                                     `GatewayAccountID` VARCHAR(100) NULL DEFAULT NULL ,
                                     `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `TrunkID` INT(11) NULL DEFAULT NULL,
+                                    `UseInBilling` TINYINT(1) NULL DEFAULT NULL,
                                     `connect_time` DATETIME NULL DEFAULT NULL,
                                     `disconnect_time` DATETIME NULL DEFAULT NULL,
                                     `billed_duration` INT(11) NULL DEFAULT NULL,
                                     `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `TrunkPrefix` VARCHAR(50) NULL DEFAULT NULL ,
                                     `pincode` VARCHAR(50) NULL DEFAULT NULL ,
                                     `extension` VARCHAR(50) NULL DEFAULT NULL ,
                                     `cli` VARCHAR(500) NULL DEFAULT NULL ,
                                     `cld` VARCHAR(500) NULL DEFAULT NULL ,
                                     `cost` DOUBLE NULL DEFAULT NULL,
-                                    `ProcessID` VARCHAR(200) NULL DEFAULT NULL ,
+                                    `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                                     `ID` INT(11) NULL DEFAULT NULL,
                                     `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `is_inbound` TINYINT(1) DEFAULT 0,
+                                    `is_rerated` TINYINT(1) NULL DEFAULT 0,
                                     PRIMARY KEY (`TempUsageDetailID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`, `is_inbound`, `cld`)
+                                    INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
-            DB::connection('sqlsrvcdr')->statement(' TRUNCATE TABLE '.$tbltempusagedetail_name);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$tbltempusagedetail_name);
 
             Log::error(' done ');
 
@@ -128,6 +132,8 @@ class CompanyGateway extends \Eloquent {
                 `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
                 `GatewayAccountID` VARCHAR(100) NULL DEFAULT NULL,
                 `AccountID` INT(11) NULL DEFAULT NULL,
+                `TrunkID` INT(11) NULL DEFAULT NULL,
+                `UseInBilling` TINYINT(1) NULL DEFAULT NULL,
                 `billed_duration` INT(11) NULL DEFAULT NULL,
                 `duration` INT(11) NULL DEFAULT NULL,
                 `ID` INT(11) NULL DEFAULT NULL,
@@ -139,18 +145,25 @@ class CompanyGateway extends \Eloquent {
                 `cld` VARCHAR(500) NULL DEFAULT NULL ,
                 `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                 `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
+                `TrunkPrefix` VARCHAR(50) NULL DEFAULT NULL ,
                 `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
-                `ProcessID` VARCHAR(200) NULL DEFAULT NULL ,
+                `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
+                `is_rerated` TINYINT(1) NULL DEFAULT 0,
                  PRIMARY KEY (`TempVendorCDRID`),
-                 INDEX `IX_'.$tbltempusagedetail_name.'_CID_CGID_PID` (`CompanyID`, `CompanyGatewayID`, `ProcessID`),
-                 INDEX `IX_'.$tbltempusagedetail_name.'_PID_cld` (`AccountID`,`ProcessID`,`cld`)
+                 INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
+
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$tbltempusagedetail_name);
 
             Log::error('done ');
 
             return $tbltempusagedetail_name;
         }
+    }
+    public static function getProcessID(){
+        $processID = Uuid::generate();
+        return  DB::connection('sqlsrv2')->table('tblProcessID')->insertGetId(array('Process'=>$processID));
     }
 
 

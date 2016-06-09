@@ -85,7 +85,7 @@ class PortaAccountUsage extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $accounts = array();
         try {
             Log::error(' ========================== porta transaction start =============================');
@@ -104,7 +104,7 @@ class PortaAccountUsage extends Command {
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                     $gadata['AccountDetailInfo'] = json_encode($row_account);
                     if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
-                        //GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
+                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
                     } else {
                         GatewayAccount::insert($gadata);
                     }
@@ -129,7 +129,9 @@ class PortaAccountUsage extends Command {
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
             //CdrBehindDuration
-
+            $InserData = array();
+            $data_count = 0;
+            $insertLimit = 1000;
             foreach ($accounts as $GatewayAccountID) {
                 $param['ICustomer'] = $GatewayAccountID; //$rowdata->GatewayAccountID;
                 $response = array();
@@ -137,7 +139,7 @@ class PortaAccountUsage extends Command {
                 $response = $porta->getAccountCDRs($param);
                 if (!isset($response['faultCode'])) {
                     if (isset($response['DictPortaCustomerAccountCDRS']['Voice Calls'])) {
-                        Log::error(print_r(count($response['DictPortaCustomerAccountCDRS']['Voice Calls']), true));
+                        Log::error('call count ' .count($response['DictPortaCustomerAccountCDRS']['Voice Calls']).' GatewayAccountID = '.$GatewayAccountID);
                         foreach ((array)$response['DictPortaCustomerAccountCDRS']['Voice Calls'] as $row_account) {
                             $data = array();
                             $data['CompanyGatewayID'] = $CompanyGatewayID;
@@ -157,22 +159,29 @@ class PortaAccountUsage extends Command {
                             $data['ProcessID'] = $processID;
                             $data['ID'] = $row_account['ID'];
                             if (isset($row_account['CallType']) && is_numeric($row_account['CallType'])) {
-                                $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
-                                if (count($UniqueID) == 0) {
-
-                                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
-
-                                    //TempUsageDetail::insert($data);
-                                }
+                                $InserData[] = $data;
+                                $data_count++;
+                            }
+                            if ($data_count > $insertLimit && !empty($InserData)) {
+                                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                $InserData = array();
+                                $data_count = 0;
                             }
                         }
 
                     }
 
                 }
+            }// loop
+            if (!empty($InserData)) {
+                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+
             }
             date_default_timezone_set(Config::get('app.timezone'));
-
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
 
 
 

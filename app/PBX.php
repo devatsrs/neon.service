@@ -66,6 +66,7 @@ class PBX{
                             )
                         AND ( dst<>'h' or duration <> 0 )
                         and prevuniqueid=''
+                        group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,cc_country,cc_network,pincode
 
                         "; // and userfield like '%outbound%'  removed for inbound calls
                 }else{
