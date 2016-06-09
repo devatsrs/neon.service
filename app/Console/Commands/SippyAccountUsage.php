@@ -97,7 +97,7 @@ class SippyAccountUsage extends Command
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $dataactive['PID'] = $getmypid;
         $CronJob->update($dataactive);
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');

@@ -65,6 +65,7 @@ class InvoiceGenerator extends Command {
         $JobID = $arguments["JobID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
+        $today = date("Y-m-d");
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
@@ -81,7 +82,7 @@ class InvoiceGenerator extends Command {
 
 
         // Get Active Accounts which has  BillingCycleType set
-        $Accounts = Account::select(["AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->whereNotNull('BillingCycleType')->get();
+        $Accounts = Account::select(["AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<=',$today)->whereNotNull('BillingCycleType')->get();
 
        /* $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
@@ -127,10 +128,11 @@ class InvoiceGenerator extends Command {
 
 
         Log::error(' ========================== Invoice Send Loop Start =============================');
-
+        $skip_accounts = array();
         try {
             CronJob::createLog($CronJobID);
-
+            do{
+            $Accounts = Account::select(["AccountID","NextInvoiceDate","AccountName"])->whereNotIn('AccountID',$skip_accounts)->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<>','')->where('NextInvoiceDate','<=',$today)->whereNotNull('BillingCycleType')->orderby('AccountID')->get();
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
@@ -198,6 +200,7 @@ class InvoiceGenerator extends Command {
                                         $errors[] = $response["message"];
                                         DB::rollback();
                                         DB::connection('sqlsrv2')->rollback();
+                                        $skip_accounts[] = $AccountID;
                                         Log::info('Invoice rollback  AccountID = ' . $AccountID);
                                         Log::info(' ========================== Error  =============================');
                                         Log::info('Invoice with Error - ' . print_r($response, true));
@@ -206,6 +209,7 @@ class InvoiceGenerator extends Command {
                                 }
                             }else {
                                 $errors[] = $AccountName . " " . Invoice::$InvoiceGenrationErrorReasons["NoCDR"];
+                                $skip_accounts[] = $AccountID;
                                 continue;
                             }
                         }
@@ -235,6 +239,8 @@ class InvoiceGenerator extends Command {
                 }
 
             } // Loop over
+                //Log::info($skip_accounts);
+        }while(Account::select(["AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<>','')->where('NextInvoiceDate','<=',$today)->whereNotIn('AccountID',$skip_accounts)->whereNotNull('BillingCycleType')->count());
 
 
             Log::info(' ========================== Invoice Send Loop End =============================');

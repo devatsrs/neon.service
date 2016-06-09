@@ -369,7 +369,7 @@ class Invoice extends \Eloquent {
 
                 $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$Account->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
-                if ( empty($Account->InvoiceTemplateID) ) {
+                if ( empty($Account->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     return array("status" => "failure", "message" => $error);
                 }

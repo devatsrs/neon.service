@@ -26,51 +26,17 @@ class TempUsageDetail extends \Eloquent {
     }
     public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat=''){
         $skiped_account_data =array();
-        Log::error(' prc_insertGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID . ", '".$temptableName."'" );
-        DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayAccount('" . $ProcessID . "' , '".$temptableName."');" );
-        Log::error(' prc_insertGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID . ", '".$temptableName."'" );
-
-
-        // Update  tblGatewayAccount
-        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') start");
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."')"); // Procedure Updated - 05-10-2015
-        Log::error('CALL  prc_getActiveGatewayAccount( ' . $CompanyID . "," . $CompanyGatewayID .",'0','1','".$NameFormat."') end");
-
-
-        /*
-		place inside transaction
-		Log::error(' prc_setAccountID start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_setAccountID(' . $CompanyID . ")");
-        Log::error(' prc_setAccountID end CompanyGatewayID = '.$CompanyGatewayID);
-		*/
-
-        Log::error(' prc_setAccountIDCDR start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$temptableName."')");
-        Log::error(' prc_setAccountIDCDR end CompanyGatewayID = '.$CompanyGatewayID);
-
-        if($RateFormat == Company::PREFIX) {
-            Log::error(' prc_updatePrefixTrunk start CompanyGatewayID = '.$CompanyGatewayID);
-            DB::connection('sqlsrv2')->statement("CALL  prc_updatePrefixTrunk ('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "' , '".$temptableName."')");
-            Log::error(' prc_updatePrefixTrunk end CompanyGatewayID = '.$CompanyGatewayID);
+        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        foreach($skiped_account as $skiped_account_row){
+            $skiped_account_data[]  = $skiped_account_row->Message;
         }
-
-        if($RateCDR == 1){
-            $skiped_account_data = TempUsageDetail::RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID);
-        }
-
-        Log::error(' prc_insertTempCDR start');
-        //DB::connection('sqlsrv2')->statement("CALL  prc_insertTempCDR('" . $ProcessID . "')");
-        Log::error('prc_insertTempCDR end');
-        $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
-        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
-        foreach($FailedAccounts as $FailedAccount){
-            $skiped_account_data[] = "Account: ".$FailedAccount->GatewayAccountID." - Gateway: ".$CompanyGateway->Title." - Doesn't exist in NEON";
-        }
-        $skiped_account_data = array_unique($skiped_account_data);
         return $skiped_account_data;
 
     }
 
+    /**not in use*/
     public static function RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID){
         $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
@@ -193,6 +159,7 @@ class TempUsageDetail extends \Eloquent {
      * for is_inbound = 1 it will rerate based on Inbound RateTAble assign on Account.
      * Rerate Inbound CDRs
      */
+    /**not in use*/
     public static function inbound_rerate($CompanyID,$processID,$temptableName){
 
         $response = array();
