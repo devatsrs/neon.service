@@ -55,7 +55,7 @@ class RMService extends Command {
                 'PendingInvoiceGenerate',
                 'PendingPortaSheet',
                 'getActiveCronCommand',
-                'getVosDownloadCommand',
+                //'getVosDownloadCommand',
                 'PendingBulkMailSend',
                 'PortVendorSheet',
                 'CDRRecalculate',
@@ -74,11 +74,11 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand',
+                //'getSippyDownloadCommand',
 				'ImportAccount'
             ));
 
-            $cmdarray = $allpending['data']['getVosDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -88,7 +88,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
             foreach($allpending['data']['PendingUploadCDR'] as $pedingcdrrow){
                 if (isset($pedingcdrrow->JobID) && $pedingcdrrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -280,7 +280,7 @@ class RMService extends Command {
             }
 
             /* Sippy CDR File download */
-            $cmdarray = $allpending['data']['getSippyDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getSippyDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -290,7 +290,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
 			
 			//import account by csv or manually,import leads
             foreach($allpending['data']['ImportAccount'] as $allpendingrow){
