@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\CronHelper;
 use App\Lib\Helper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +52,7 @@ class DBBackup extends Command {
 	public function fire()
 	{
 
+		CronHelper::before_cronrun($this->name, $this );
 
 		Log::useFiles(storage_path() . '/logs/dbbackup-' . '-' . date('Y-m-d') . '.log');
 
@@ -121,8 +123,9 @@ class DBBackup extends Command {
 
 			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 
-
 		}
+
+		CronHelper::after_cronrun($this->name, $this);
 
 	}
 

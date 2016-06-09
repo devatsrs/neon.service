@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceDetail;
 use App\Lib\Job;
@@ -58,6 +59,12 @@ class RegenerateInvoice extends Command {
 	 */
     public function fire()
     {
+
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $CompanyID = $arguments["CompanyID"];
@@ -229,6 +236,10 @@ class RegenerateInvoice extends Command {
             }
 
         }
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
     }
 
 }

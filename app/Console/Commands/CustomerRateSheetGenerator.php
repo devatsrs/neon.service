@@ -12,6 +12,7 @@ namespace App\Console\Commands;
 use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CronHelper;
 use App\Lib\Currency;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -21,8 +22,6 @@ use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Queue;
-use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 use \Exception;
@@ -60,13 +59,6 @@ class CustomerRateSheetGenerator extends Command {
         ];
     }
 
-    public function handle__queue(){
-        $arguments = $this->argument();
-        $JobID = $arguments["JobID"];
-        $CompanyID = $arguments["CompanyID"];
-        //Queue::push(new CustomerRateSheetGenerator2($JobID,$CompanyID));
-
-    }
     /**
      * Execute the console command.
      *
@@ -74,13 +66,9 @@ class CustomerRateSheetGenerator extends Command {
      */
     public function handle()
     {
-        /* $id  = 0;
-          while($id < 10) {
-             Queue::push(new CustomerRateSheetGenerator2($id));
-             $id++;
-         }
 
-         exit;*/
+        CronHelper::before_cronrun($this->name, $this );
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -350,6 +338,9 @@ class CustomerRateSheetGenerator extends Command {
             Job::where(["JobID" => $JobID])->update(array('EmailSentStatus' => $emailstatus['status'], 'EmailSentStatusMessage' => $emailstatus['message']));
             Log::info('job end ' . $JobID);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
     protected function setSheetHeader($sheet,$data,$header_data){
         $count = 1;

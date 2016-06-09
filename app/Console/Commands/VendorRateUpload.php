@@ -9,6 +9,7 @@
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
+use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
@@ -65,6 +66,8 @@ class VendorRateUpload extends Command
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
@@ -302,5 +305,9 @@ class VendorRateUpload extends Command
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
     }
 }
