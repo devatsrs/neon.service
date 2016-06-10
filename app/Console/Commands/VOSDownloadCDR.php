@@ -98,9 +98,9 @@ class VOSDownloadCDR extends Command {
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
 
-            if(!empty($FilesDownloadLimit) && $FilesDownloadLimit > 0){
+            if($FilesDownloadLimit > 0){
 
-                $filenames = array_splice( $filenames, $FilesDownloadLimit );
+                array_splice( $filenames, $FilesDownloadLimit );
             }
 
             $downloaded = array();
