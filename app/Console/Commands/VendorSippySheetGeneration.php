@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\AmazonS3;
@@ -32,6 +33,9 @@ class VendorSippySheetGeneration extends Command {
 
 	public function fire()
 	{
+
+        CronHelper::before_cronrun($this->name, $this );
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -128,6 +132,8 @@ class VendorSippySheetGeneration extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
 
 
     }

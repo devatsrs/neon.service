@@ -2,6 +2,7 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Summary;
@@ -51,11 +52,16 @@ class CreateVendorSummaryLive extends Command{
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
+        CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/createvendorsummarylive-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
@@ -83,6 +89,8 @@ class CreateVendorSummaryLive extends Command{
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 

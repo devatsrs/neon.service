@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\SummeryData;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,10 @@ class ImportSummeryData extends Command {
 	 */
 	public function fire()
 	{
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
 		$dir = 'C:/temp/CDRS/';
         $filenames =  [
             '85.13.211.22'  => 'VOS-CDR-85.13.211.22.csv',
@@ -189,7 +194,7 @@ class ImportSummeryData extends Command {
         }
 
 
-
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 

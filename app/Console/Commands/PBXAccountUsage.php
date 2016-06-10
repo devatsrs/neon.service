@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -59,6 +60,9 @@ class PBXAccountUsage extends Command
     public function fire()
     {
 
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -82,7 +86,7 @@ class PBXAccountUsage extends Command
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
-        $processID = (string) Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $accounts = array();
         try {
 
@@ -187,8 +191,8 @@ class PBXAccountUsage extends Command
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             /** if user field is both */
                         }else if ($call_type == 'failed') {
-                            Log::info($row_account["userfield"]);
-                            Log::info($row_account["ID"]);
+                            //Log::info($row_account["userfield"]);
+                            //Log::info($row_account["ID"]);
                             /** if user field is failed or blocked call any reason make duration zero */
                             $data['billed_duration'] = 0;
                         }
@@ -305,6 +309,9 @@ class PBXAccountUsage extends Command
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
     public function getLastDate($startdate, $companyid, $CronJobID)

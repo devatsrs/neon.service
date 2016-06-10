@@ -1,5 +1,6 @@
 <?php
 namespace App\Console\Commands;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -55,6 +56,10 @@ class RateTableGenerator extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -128,6 +133,8 @@ class RateTableGenerator extends Command {
 
 
         Log::info('job end '.$JobID);
+
+        CronHelper::after_cronrun($this->name, $this);
 
 
     }

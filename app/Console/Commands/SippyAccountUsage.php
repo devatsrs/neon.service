@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Company;
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -68,6 +69,11 @@ class SippyAccountUsage extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -91,7 +97,7 @@ class SippyAccountUsage extends Command
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $dataactive['PID'] = $getmypid;
         $CronJob->update($dataactive);
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -446,6 +452,9 @@ class SippyAccountUsage extends Command
         DB::disconnect('sqlsrv');
         DB::disconnect('sqlsrv2');
         DB::disconnect('sqlsrvcdr');
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
 }

@@ -3,19 +3,18 @@
 use App\Lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\FileUploadTemplate;
 use App\Lib\Job;
 use App\Lib\JobFile;
+use App\Lib\NeonExcelIO;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Lib\NeonExcelIO;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
 
 class VCDRUpload extends Command
 {
@@ -64,12 +63,17 @@ class VCDRUpload extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+        $ProcessID = CompanyGateway::getProcessID();
         $jobfile = JobFile::where(["JobID" => $JobID])->first();
         $temptableName = 'tblTempVendorCDR';
         Job::JobStatusProcess($JobID, $ProcessID, $getmypid);//Change by abubakar
@@ -184,6 +188,10 @@ class VCDRUpload extends Command
                                 $cdrdata['selling_cost'] = $temp_row[$attrselection->sellcost];
                             }
                         }
+                        if(!empty($joboptions->TrunkID)){
+                            $cdrdata['TrunkID'] = $joboptions->TrunkID;
+                            $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
+                        }
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                         }
@@ -224,11 +232,11 @@ class VCDRUpload extends Command
                         $logdata['created_at'] = date('Y-m-d H:i:s');
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
-                        foreach($delet_cdr_account as $delet_cdr_accountrow){
+                        /*foreach($delet_cdr_account as $delet_cdr_accountrow){
                             // Delete old records.
                             Log::info("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
                             DB::connection('sqlsrv2')->statement("CALL prc_DeleteVCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."')");
-                        }
+                        }*/
 
 
                     }
@@ -281,6 +289,11 @@ class VCDRUpload extends Command
             Log::error($e);
         }
         Job::send_job_status_email($job, $CompanyID);
+
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
     }
 }
 

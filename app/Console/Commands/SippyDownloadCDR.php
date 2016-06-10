@@ -8,7 +8,9 @@
 
 namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
+use App\Lib\CronJobLog;
 use App\SippySSH;
 use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
@@ -57,6 +59,10 @@ class SippyDownloadCDR extends Command {
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
 
         $CronJobID = $arguments["CronJobID"];
@@ -69,6 +75,17 @@ class SippyDownloadCDR extends Command {
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
             Log::info("Start");
+
+
+            CronJob::createLog($CronJobID);
+
+            $joblogdata = array();
+            $joblogdata['CronJobID'] = $CronJobID;
+            $joblogdata['created_at'] = date('Y-m-d H:i:s');
+            $joblogdata['created_by'] = 'RMScheduler';
+            $joblogdata['Message'] = '';
+
+
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
@@ -92,10 +109,20 @@ class SippyDownloadCDR extends Command {
             }
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = "Files Downloaded " . count($filenames);
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            CronJobLog::insert($joblogdata);
+
 
             if(!empty($cronsetting['ErrorEmail'])) {
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
@@ -105,6 +132,9 @@ class SippyDownloadCDR extends Command {
 
         }
         Log::info("SippySSH end");
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
 }

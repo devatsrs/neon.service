@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\Gateway;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
@@ -66,6 +67,10 @@ class ImportAccount extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -414,7 +419,7 @@ class ImportAccount extends Command {
                         $updateaccountno = Account::updateAccountNo($CompanyID);
                         Log::info('update account number - '.$updateaccountno);
                         Log::info(count($JobStatusMessage));
-                        if(!empty($error || count($JobStatusMessage) > 1)){
+                        if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();
                             foreach ($JobStatusMessage as $JobStatusMessage1) {
                                 $prc_error[] = $JobStatusMessage1['Message'];
@@ -472,6 +477,8 @@ class ImportAccount extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
     }
 
 

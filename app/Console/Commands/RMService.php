@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
 use App\Lib\User;
 use Illuminate\Console\Command;
@@ -44,6 +45,8 @@ class RMService extends Command {
     {
         try {
 
+            CronHelper::before_cronrun($this->name, $this );
+
             $arguments = $this->argument();
             $CompanyID = $arguments["CompanyID"];
             $query = "CALL prc_CronJobAllPending ( $CompanyID )";
@@ -52,7 +55,7 @@ class RMService extends Command {
                 'PendingInvoiceGenerate',
                 'PendingPortaSheet',
                 'getActiveCronCommand',
-                'getVosDownloadCommand',
+                //'getVosDownloadCommand',
                 'PendingBulkMailSend',
                 'PortVendorSheet',
                 'CDRRecalculate',
@@ -71,11 +74,11 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand',
+                //'getSippyDownloadCommand',
 				'ImportAccount'
             ));
 
-            $cmdarray = $allpending['data']['getVosDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -85,7 +88,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
             foreach($allpending['data']['PendingUploadCDR'] as $pedingcdrrow){
                 if (isset($pedingcdrrow->JobID) && $pedingcdrrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -277,7 +280,7 @@ class RMService extends Command {
             }
 
             /* Sippy CDR File download */
-            $cmdarray = $allpending['data']['getSippyDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getSippyDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -287,7 +290,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
 			
 			//import account by csv or manually,import leads
             foreach($allpending['data']['ImportAccount'] as $allpendingrow){
@@ -324,6 +327,10 @@ class RMService extends Command {
         }catch(\Exception $e){
             Log::error($e);
         }
+
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
     /**
