@@ -96,6 +96,8 @@ class VOSDownloadCDR extends Command {
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
+            $downloaded = array();
+
             foreach($filenames as $filename) {
 
                 if(!file_exists(Config::get('app.vos_location').$CompanyGatewayID.'/' . basename($filename))) {
@@ -106,13 +108,22 @@ class VOSDownloadCDR extends Command {
                     $vos->downloadCDR($param);
                     UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("VOS download file".$filename);
+
+
+                    $downloaded[] = $filename;
                     //$vos->deleteCDR($param);
                 }
             }
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
 
-            $joblogdata['Message'] = "Files Downloaded " . count($filenames);
+            $downloaded_files = count($downloaded);
+            $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
+            if(count($downloaded) >0 ){
+
+                $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[0]) ;
+                $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[$downloaded_files-1]) ;
+            }
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
 
