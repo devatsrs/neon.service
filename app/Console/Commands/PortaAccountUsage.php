@@ -95,7 +95,14 @@ class PortaAccountUsage extends Command {
         try {
             Log::error(' ========================== porta transaction start =============================');
             CronJob::createLog($CronJobID);
-
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -155,9 +162,13 @@ class PortaAccountUsage extends Command {
                             $data['cost'] = (float)$row_account['Charged_Amount'];
                             $data['cld'] = $row_account['CLD'];
                             $data['cli'] = $row_account['CLI'];
-                            $seconds = strtotime(date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Disconnect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000))) - strtotime(date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Connect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000)));
-                            $data['billed_duration'] = $row_account['Charged_Quantity'];
-                            $data['duration'] = $seconds;
+                            if ($RateCDR == 1) {
+                                $data['billed_duration'] = $row_account['Charged_Quantity'];
+                                $data['duration'] = $row_account['Charged_Quantity'];
+                            }else{
+                                $data['billed_duration'] = $row_account['Charged_Quantity'];
+                                $data['duration'] = $row_account['Used_Quantity'];;
+                            }
                             //$data['AccountID'] = $rowdata->AccountID;
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';
@@ -194,14 +205,7 @@ class PortaAccountUsage extends Command {
             Log::error("Porta CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== porta transaction end =============================');
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
