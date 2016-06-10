@@ -69,7 +69,7 @@ class UsageDownloadFiles extends Model {
         if(!empty($UsageDownloadFiles)){
             $process_count = $UsageDownloadFiles->ProcessCount+1;
             $process_at = date('Y-m-d H:i:s');
-            $message = $UsageDownloadFiles->Message.' process_at = '.$process_at.' processid = '.$processID.'\r\n';
+            $message = $UsageDownloadFiles->Message.' process_at = '.$process_at.' processid = '.$processID."\r\n";
             $UsageDownloadFiles->update(array('Status'=>2,'ProcessCount'=>$process_count,'process_at'=>$process_at,'Message'=>$message));
         }
     }
@@ -83,7 +83,8 @@ class UsageDownloadFiles extends Model {
     /** update file process to completed */
     public static function UpdateProcessToComplete($delete_files = array()){
         if(!empty($delete_files)) {
-            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->where('Status',2)->update(array('Status' => 3));
+            $success_at = ' success_at = '.date('Y-m-d H:i:s');
+            UsageDownloadFiles::whereIn('UsageDownloadFilesID', $delete_files)->where('Status',2)->update(array('Status' => 3,'Message'=>DB::raw("CONCAT(Message ,'".$success_at."')")));
         }
     }
     /** update file process to completed */
