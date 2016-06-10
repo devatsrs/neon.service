@@ -71,10 +71,11 @@ class VOSDownloadCDR extends Command {
         $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
-        $cronsetting =   json_decode($CronJob->Settings);
+        $cronsetting =   json_decode($CronJob->Settings,true);
         $dataactive['DownloadActive'] = 1;
         $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting->CompanyGatewayID;
+        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+        $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
 
@@ -96,8 +97,13 @@ class VOSDownloadCDR extends Command {
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
-            $downloaded = array();
 
+            if(!empty($FilesDownloadLimit) && $FilesDownloadLimit > 0){
+
+                $filenames = array_splice( $filenames, $FilesDownloadLimit );
+            }
+
+            $downloaded = array();
             foreach($filenames as $filename) {
 
                 if(!file_exists(Config::get('app.vos_location').$CompanyGatewayID.'/' . basename($filename))) {

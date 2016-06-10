@@ -71,8 +71,11 @@ class SippyDownloadCDR extends Command {
         $cronsetting = json_decode($CronJob->Settings, true);
         $dataactive['DownloadActive'] = 1;
         $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+
+        $CompanyGatewayID   =  $cronsetting['CompanyGatewayID'];
+        $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+
         try {
             Log::info("Start");
 
@@ -94,6 +97,12 @@ class SippyDownloadCDR extends Command {
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
+
+            if(!empty($FilesDownloadLimit) && $FilesDownloadLimit > 0){
+
+                $filenames = array_splice( $filenames, $FilesDownloadLimit );
+            }
+
             $downloaded = array();
             foreach($filenames as $filename) {
 
