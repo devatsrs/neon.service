@@ -91,9 +91,12 @@ class DBBackup extends Command {
 
 			# Set permission to root user only.
 			exec('chown root.root ' . getenv("CONFIG_backup_dir") . '* -R');
+			exec('chown root.root ' . getenv("CONFIG_backup_dir") . '* -R');
 			exec('find ' . getenv("CONFIG_backup_dir"). '* -type f -exec chmod 400 {} \;');
 			exec('find ' . getenv("CONFIG_backup_dir"). '* -type d -exec chmod 700 {} \;');
-
+			# Remove files older than x days
+			exec('find '. getenv("CONFIG_backup_dir") .'* -mtime +'. getenv("CONFIG_rotation_daily") .' -exec rm {} \;');
+			
 			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
 			$aws_command = getenv("NEON_backup_aws_command") ;
