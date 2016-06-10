@@ -98,11 +98,6 @@ class VOSDownloadCDR extends Command {
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
 
-            if($FilesDownloadLimit > 0){
-
-                array_splice( $filenames, $FilesDownloadLimit );
-            }
-
             $downloaded = array();
             foreach($filenames as $filename) {
 
@@ -114,10 +109,13 @@ class VOSDownloadCDR extends Command {
                     $vos->downloadCDR($param);
                     UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("VOS download file".$filename);
-
-
                     $downloaded[] = $filename;
                     //$vos->deleteCDR($param);
+
+                    if(count($FilesDownloadLimit) == $FilesDownloadLimit){
+                        break;
+                    }
+
                 }
             }
             $dataactive['DownloadActive'] = 0;

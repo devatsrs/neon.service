@@ -98,11 +98,6 @@ class SippyDownloadCDR extends Command {
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
 
-            if($FilesDownloadLimit > 0){
-
-                array_splice( $filenames, $FilesDownloadLimit );
-            }
-
             $downloaded = array();
             foreach($filenames as $filename) {
 
@@ -116,6 +111,10 @@ class SippyDownloadCDR extends Command {
                     Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
                     $downloaded[] = $filename;
                     //$sippy->deleteCDR($param);
+
+                    if(count($FilesDownloadLimit) == $FilesDownloadLimit){
+                        break;
+                    }
                 }
             }
             $dataactive['DownloadActive'] = 0;
