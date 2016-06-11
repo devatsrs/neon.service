@@ -162,13 +162,10 @@ class PortaAccountUsage extends Command {
                             $data['cost'] = (float)$row_account['Charged_Amount'];
                             $data['cld'] = $row_account['CLD'];
                             $data['cli'] = $row_account['CLI'];
-                            if ($RateCDR == 1) {
-                                $data['billed_duration'] = $row_account['Charged_Quantity'];
-                                $data['duration'] = $row_account['Charged_Quantity'];
-                            }else{
-                                $data['billed_duration'] = $row_account['Charged_Quantity'];
-                                $data['duration'] = $row_account['Used_Quantity'];;
-                            }
+                            $data['billed_duration'] = $row_account['Charged_Quantity'];
+                            $data['billed_second'] = $row_account['Charged_Quantity'];
+                            $data['duration'] = $row_account['Used_Quantity'];
+
                             //$data['AccountID'] = $rowdata->AccountID;
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';

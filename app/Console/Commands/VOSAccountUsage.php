@@ -175,6 +175,7 @@ class VOSAccountUsage extends Command
                                 $uddata['cld'] = str_replace('2222', '', $excelrow['3']);
                                 $uddata['cli'] = $excelrow['1'];
                                 $uddata['billed_duration'] = $excelrow['23'];
+                                $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix($excelrow['24'],$RateCDR);
@@ -199,6 +200,7 @@ class VOSAccountUsage extends Command
                                 }
                                 $vendorcdrdata['billed_duration'] = $excelrow['23'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
+                                $vendorcdrdata['billed_second'] = $excelrow['33'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
