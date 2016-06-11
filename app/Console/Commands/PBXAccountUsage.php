@@ -157,13 +157,10 @@ class PBXAccountUsage extends Command
                         $data['GatewayAccountID'] = $row_account['accountcode'];
                         $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
                         $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                        if ($RateCDR == 1) {
-                            $data['billed_duration'] = $row_account['billsec'];
-                            $data['duration'] = $row_account['billsec'];
-                        }else{
-                            $data['billed_duration'] = $row_account['billsec'];
-                            $data['duration'] = $row_account['duration'];
-                        }
+                        $data['billed_second'] = $row_account['billsec'];
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+
 
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
