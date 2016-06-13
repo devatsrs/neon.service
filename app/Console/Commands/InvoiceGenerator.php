@@ -136,10 +136,11 @@ class InvoiceGenerator extends Command {
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
+                $AccountID = $Account['AccountID'];
                 try {
 
 
-                    $AccountID = $Account['AccountID'];
+
                     $NextInvoiceDate = Invoice::getNextInvoiceDate($CompanyID, $AccountID);
                     Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
 
@@ -222,7 +223,7 @@ class InvoiceGenerator extends Command {
                 } catch (\Exception $e) {
 
                     try {
-
+                        $skip_accounts[] = $AccountID;
                         Log::error('Invoice Rollback AccountID = ' . $AccountID);
                         DB::rollback();
                         DB::connection('sqlsrv2')->rollback();
