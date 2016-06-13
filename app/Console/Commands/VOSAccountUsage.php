@@ -200,7 +200,7 @@ class VOSAccountUsage extends Command
                                 }
                                 $vendorcdrdata['billed_duration'] = $excelrow['23'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
-                                $vendorcdrdata['billed_second'] = $excelrow['33'];
+                                $vendorcdrdata['billed_second'] = $excelrow['23'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
