@@ -213,6 +213,8 @@ class InvoiceGenerator extends Command {
                                 $skip_accounts[] = $AccountID;
                                 continue;
                             }
+                        }else{
+                            $skip_accounts[] = $AccountID;
                         }
 
                     }
