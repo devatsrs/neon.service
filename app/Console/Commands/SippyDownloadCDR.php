@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
+use App\Lib\CronJobLog;
 use App\SippySSH;
 use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
@@ -70,10 +71,24 @@ class SippyDownloadCDR extends Command {
         $cronsetting = json_decode($CronJob->Settings, true);
         $dataactive['DownloadActive'] = 1;
         $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+
+        $CompanyGatewayID   =  $cronsetting['CompanyGatewayID'];
+        $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+
         try {
             Log::info("Start");
+
+
+            CronJob::createLog($CronJobID);
+
+            $joblogdata = array();
+            $joblogdata['CronJobID'] = $CronJobID;
+            $joblogdata['created_at'] = date('Y-m-d H:i:s');
+            $joblogdata['created_by'] = 'RMScheduler';
+            $joblogdata['Message'] = '';
+
+
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
@@ -82,6 +97,8 @@ class SippyDownloadCDR extends Command {
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
+
+            $downloaded = array();
             foreach($filenames as $filename) {
 
                 if(!file_exists(getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/' . basename($filename))) {
@@ -92,15 +109,37 @@ class SippyDownloadCDR extends Command {
                     $sippy->downloadCDR($param);
                     UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
                     Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
+                    $downloaded[] = $filename;
                     //$sippy->deleteCDR($param);
+
+                    if(count($FilesDownloadLimit) == $FilesDownloadLimit){
+                        break;
+                    }
                 }
             }
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $downloaded_files = count($downloaded);
+            $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
+
+            if(count($downloaded) >0 ){
+                $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[$downloaded_files-1]) ;
+                $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[0]) ;
+            }
+
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['DownloadActive'] = 0;
             $CronJob->update($dataactive);
+
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            CronJobLog::insert($joblogdata);
+
 
             if(!empty($cronsetting['ErrorEmail'])) {
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
