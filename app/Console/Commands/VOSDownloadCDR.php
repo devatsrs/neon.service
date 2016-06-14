@@ -72,8 +72,8 @@ class VOSDownloadCDR extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings,true);
-        $dataactive['DownloadActive'] = 1;
-        $CronJob->update($dataactive);
+        //$dataactive['DownloadActive'] = 1;
+        //$CronJob->update($dataactive);
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
@@ -92,50 +92,63 @@ class VOSDownloadCDR extends Command {
             $vos = new VOS($CompanyGatewayID);
             Log::info("VOS Connected");
             $filenames = $vos->getCDRs();
-            if (!file_exists(Config::get('app.vos_location') .$CompanyGatewayID)) {
-                mkdir(Config::get('app.vos_location') .$CompanyGatewayID, 0777, true);
+            $destination = Config::get('app.vos_location') .$CompanyGatewayID;
+            if (!file_exists($destination)) {
+                mkdir($destination, 0777, true);
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
+            if(count($filenames) > 0) {
 
-            $downloaded = array();
-            foreach($filenames as $filename) {
+                /**
+                 * GET array of files that are not exist in db
+                 */
+                $new_files_ = UsageDownloadFiles::where(["CompanyGatewayID" => $CompanyGatewayID])->whereNotIn("FileName", $filenames)->select("FileName")->get()->toArray();
+                $new_files = array_column($new_files_, 'FileName');
 
-                if(!file_exists(Config::get('app.vos_location').$CompanyGatewayID.'/' . basename($filename))) {
-                    $param = array();
-                    $param['filename'] = $filename;
-                    $param['download_path'] = Config::get('app.vos_location').$CompanyGatewayID.'/';
-                    //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
-                    $vos->downloadCDR($param);
-                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
-                    Log::info("VOS download file".$filename);
-                    $downloaded[] = $filename;
-                    //$vos->deleteCDR($param);
+                $downloaded = array();
+                foreach ($new_files as $filename) {
 
-                    if(count($FilesDownloadLimit) == $FilesDownloadLimit){
-                        break;
+                    if (!file_exists($destination . '/' . basename($filename))) {
+                        $param = array();
+                        $param['filename'] = $filename;
+                        $param['download_path'] = $destination . '/';
+                        //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
+                        $vos->downloadCDR($param);
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                        Log::info("VOS download file" . $filename);
+                        $downloaded[] = $filename;
+                        //$vos->deleteCDR($param);
+
+                        if (count($FilesDownloadLimit) == $FilesDownloadLimit) {
+                            break;
+                        }
+
+                    } else {
+
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                        Log::info("VOS download file" . $filename);
+
                     }
-
                 }
+                //$dataactive['DownloadActive'] = 0;
+                //$CronJob->update($dataactive);
+
+                $downloaded_files = count($downloaded);
+                $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
+                if (count($downloaded) > 0) {
+
+                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
+                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[0]);
+                }
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                CronJobLog::insert($joblogdata);
             }
-            $dataactive['DownloadActive'] = 0;
-            $CronJob->update($dataactive);
-
-            $downloaded_files = count($downloaded);
-            $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
-            if(count($downloaded) >0 ){
-
-                $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[$downloaded_files-1]) ;
-                $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[0]) ;
-            }
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            CronJobLog::insert($joblogdata);
-
 
         }catch (Exception $e) {
             Log::error($e);
-            $dataactive['DownloadActive'] = 0;
-            $CronJob->update($dataactive);
+            //$dataactive['DownloadActive'] = 0;
+            //$CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
