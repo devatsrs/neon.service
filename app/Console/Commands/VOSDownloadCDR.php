@@ -107,7 +107,7 @@ class VOSDownloadCDR extends Command {
                 $downloaded = array();
 
                 foreach ($filenames as $filename) {
-                    $downloaded = false;
+                    $isdownloaded = false;
                     if (!file_exists($destination . '/' . basename($filename))) {
                         $param = array();
                         $param['filename'] = $filename;
@@ -117,7 +117,7 @@ class VOSDownloadCDR extends Command {
                         Log::info("VOS downloaded file" . $filename);
                         $downloaded[] = $filename;
                         //$vos->deleteCDR($param);
-                        $downloaded = true;
+                        $isdownloaded = true;
 
                     }else {
                         Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
@@ -125,7 +125,7 @@ class VOSDownloadCDR extends Command {
 
                     if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
                         UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
-                        if($downloaded == false){
+                        if($isdownloaded == false){
                             Log::info("Missing file inserted " . $filename . ' - ' . $vos->get_file_datetime($filename));
                         }
                     }

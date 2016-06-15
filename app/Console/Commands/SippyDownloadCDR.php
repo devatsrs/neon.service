@@ -106,7 +106,7 @@ class SippyDownloadCDR extends Command {
                  */
                 $downloaded = array();
                 foreach ($filenames as $filename) {
-                    $downloaded = false;
+                    $isdownloaded = false;
                     if (!file_exists($destination . '/' . basename($filename))) {
                         $param = array();
                         $param['filename'] = $filename;
@@ -116,7 +116,7 @@ class SippyDownloadCDR extends Command {
                         Log::info("SippySSH download file" . $filename . ' - ' . $sippy->get_file_datetime($filename));
                         $downloaded[] = $filename;
                         //$sippy->deleteCDR($param);
-                        $downloaded = true;
+                        $isdownloaded = true;
 
                     } else {
 
@@ -125,7 +125,7 @@ class SippyDownloadCDR extends Command {
 
                     if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
                         UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
-                        if($downloaded == false){
+                        if($isdownloaded == false){
                             Log::info("Missing file inserted " . $filename . ' - ' . $sippy->get_file_datetime($filename));
                         }
 
