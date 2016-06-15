@@ -218,13 +218,13 @@ class Helper{
         }
         return $status;
     }
-    public static function sendFileRenamed($CompanyID,$ErrorEmail,$JobTitle,$renamefilenames){
+    public static function EmailsendCDRFileReProcessed($CompanyID,$ErrorEmail,$JobTitle,$renamefilenames){
         $ComanyName = Company::getName($CompanyID);
         $emaildata['CompanyID'] = $CompanyID;
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob File Has ReProcess Files';
+        $emaildata['Subject'] = 'CronJob has ReProcessed CDR Files';
         $emaildata['JobTitle'] = $JobTitle;
         $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
         Log::info(' rename files');

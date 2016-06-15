@@ -17,6 +17,7 @@ use App\Lib\UsageDownloadFiles;
 use App\VOS;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
@@ -103,11 +104,8 @@ class VOSDownloadCDR extends Command {
                 /**
                  * GET array of files that are not exist in db
                  */
-                $new_files_ = UsageDownloadFiles::where(["CompanyGatewayID" => $CompanyGatewayID])->whereNotIn("FileName", $filenames)->select("FileName")->get()->toArray();
-                $new_files = array_column($new_files_, 'FileName');
-
                 $downloaded = array();
-                foreach ($new_files as $filename) {
+                foreach ($filenames as $filename) {
 
                     if (!file_exists($destination . '/' . basename($filename))) {
                         $param = array();
@@ -115,21 +113,23 @@ class VOSDownloadCDR extends Command {
                         $param['download_path'] = $destination . '/';
                         //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                         $vos->downloadCDR($param);
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         Log::info("VOS download file" . $filename);
                         $downloaded[] = $filename;
                         //$vos->deleteCDR($param);
 
-                        if (count($FilesDownloadLimit) == $FilesDownloadLimit) {
-                            break;
-                        }
 
-                    } else {
-
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
-                        Log::info("VOS download file" . $filename);
-
+                    }else {
+                        Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
                     }
+
+                    if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                    }
+
+                    if (count($downloaded) == $FilesDownloadLimit) {
+                        break;
+                    }
+
                 }
                 //$dataactive['DownloadActive'] = 0;
                 //$CronJob->update($dataactive);
@@ -144,6 +144,9 @@ class VOSDownloadCDR extends Command {
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 CronJobLog::insert($joblogdata);
             }
+
+            Log::info("VOS file Download Completed ");
+
 
         }catch (Exception $e) {
             Log::error($e);

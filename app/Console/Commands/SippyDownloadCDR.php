@@ -104,11 +104,10 @@ class SippyDownloadCDR extends Command {
                 /**
                  * GET array of files that are not exist in db
                  */
-                $new_files_ = UsageDownloadFiles::where(["CompanyGatewayID" => $CompanyGatewayID])->whereNotIn("FileName", $filenames)->select("FileName")->get()->toArray();
-                $new_files = array_column($new_files_, 'FileName');
-
                 $downloaded = array();
-                foreach ($new_files as $filename) {
+                foreach ($filenames as $filename) {
+
+
 
                     if (!file_exists($destination . '/' . basename($filename))) {
                         $param = array();
@@ -116,21 +115,23 @@ class SippyDownloadCDR extends Command {
                         $param['download_path'] = $destination . '/';
                         //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                         $sippy->downloadCDR($param);
-
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         Log::info("SippySSH download file" . $filename . ' - ' . $sippy->get_file_datetime($filename));
                         $downloaded[] = $filename;
                         //$sippy->deleteCDR($param);
 
-                        if (count($FilesDownloadLimit) == $FilesDownloadLimit) {
-                            break;
-                        }
                     } else {
 
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
-                        Log::info("SippySSH download file" . $filename . ' - ' . $sippy->get_file_datetime($filename));
-
+                        Log::info("SippySSH File was already exist  " . $filename . ' - ' . $sippy->get_file_datetime($filename));
                     }
+
+                    if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                    }
+
+                    if (count($downloaded) == $FilesDownloadLimit) {
+                        break;
+                    }
+
                 }
                 //$dataactive['DownloadActive'] = 0;
                 //$CronJob->update($dataactive);
@@ -146,6 +147,9 @@ class SippyDownloadCDR extends Command {
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 CronJobLog::insert($joblogdata);
             }
+
+            Log::info("SippySSH File Download Completed ");
+
 
         }catch (Exception $e) {
             Log::error($e);
