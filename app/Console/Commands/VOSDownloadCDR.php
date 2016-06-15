@@ -105,18 +105,19 @@ class VOSDownloadCDR extends Command {
                  * GET array of files that are not exist in db
                  */
                 $downloaded = array();
-                foreach ($filenames as $filename) {
 
+                foreach ($filenames as $filename) {
+                    $downloaded = false;
                     if (!file_exists($destination . '/' . basename($filename))) {
                         $param = array();
                         $param['filename'] = $filename;
                         $param['download_path'] = $destination . '/';
                         //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                         $vos->downloadCDR($param);
-                        Log::info("VOS download file" . $filename);
+                        Log::info("VOS downloaded file" . $filename);
                         $downloaded[] = $filename;
                         //$vos->deleteCDR($param);
-
+                        $downloaded = true;
 
                     }else {
                         Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
@@ -124,6 +125,9 @@ class VOSDownloadCDR extends Command {
 
                     if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
                         UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                        if($downloaded == false){
+                            Log::info("Missing file inserted " . $filename . ' - ' . $vos->get_file_datetime($filename));
+                        }
                     }
 
                     if (count($downloaded) == $FilesDownloadLimit) {
