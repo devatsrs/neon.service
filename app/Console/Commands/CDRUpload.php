@@ -360,7 +360,7 @@ class CDRUpload extends Command
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 }else if (count($skiped_account_data)) {
                     $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
-                    $jobdata['JobStatusMessage'] = 'Skipped Code:' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] =  implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else if(count($skipped_cli)){
                     $skipped_cli = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skipped_cli));
