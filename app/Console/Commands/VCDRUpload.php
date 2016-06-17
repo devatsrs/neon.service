@@ -199,13 +199,13 @@ class VCDRUpload extends Command
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                         }
 
-                        if(!empty($cdrdata['GatewayAccountID'])){
+                        if(empty($cdrdata['GatewayAccountID'])){
                             $error[] = 'Account is blank at line no:'.$lineno;
                         }
-                        if($RateCDR == 1 && !empty($cdrdata['cld'])){
+                        if($RateCDR == 1 && empty($cdrdata['cld'])){
                             $error[] = 'CLD is blank at line no:'.$lineno;
                         }
-                        if($RateCDR == 1 && !empty($cdrdata['billed_duration'])){
+                        if($RateCDR == 1 && empty($cdrdata['billed_duration'])){
                             $error[] = 'Billed duration is blank at line no:'.$lineno;
                         }
                         //print_r($cdrdata);exit;
