@@ -66,9 +66,9 @@ class PBX{
                             )
                         AND ( dst<>'h' or duration <> 0 )
                         and prevuniqueid=''
-                        group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,cc_country,cc_network,pincode
-
+                        group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode 
                         "; // and userfield like '%outbound%'  removed for inbound calls
+                        //group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,cc_country,cc_network,pincode
                 }else{
                     $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,cc_type
                         from asteriskcdrdb.cdr c
@@ -82,7 +82,7 @@ class PBX{
                             )
                         AND ( dst<>'h' or duration <> 0 )
                         and prevuniqueid=''
-                        group by ID,c.`start`,answer,c.`end`,clid,realsrc,firstdst,duration,billsec,disposition,dcontext,dstchannel,userfield,uniqueid,prevuniqueid,lastdst,wherelanded,dst,firstdst,srcCallID,linkedid,peeraccount,originateid,cc_country,cc_network,pincode
+                        group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode 
                         "; // and userfield like '%outbound%'  removed for inbound calls
                 }
                 Log::info($query);
