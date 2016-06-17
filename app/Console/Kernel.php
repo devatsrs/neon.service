@@ -65,6 +65,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\CreateVendorSummaryLive',
 		'App\Console\Commands\ImportAccount',
 		'App\Console\Commands\DBBackup',
+		'App\Console\Commands\DialPlanUpload',
 
 	];
 
