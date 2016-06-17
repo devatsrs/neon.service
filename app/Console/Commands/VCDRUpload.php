@@ -160,8 +160,6 @@ class VCDRUpload extends Command
                         if (!empty($attrselection->billed_duration)) {
                             $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
                             $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
-                        }else if($RateCDR == 1){
-                            $error[] = 'Billed duration is blank at line no:'.$lineno;
                         }
                         if (!empty($attrselection->duration)) {
                             $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
@@ -175,8 +173,6 @@ class VCDRUpload extends Command
                         }
                         if (!empty($attrselection->cld)) {
                             $cdrdata['cld'] = $temp_row[$attrselection->cld];
-                        }else if($RateCDR == 1){
-                            $error[] = 'CLD is blank at line no:'.$lineno;
                         }
                         if (!empty($attrselection->cli)) {
                             $cdrdata['cli'] = $temp_row[$attrselection->cli];
@@ -201,8 +197,16 @@ class VCDRUpload extends Command
                         }
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                        }else{
+                        }
+
+                        if(!empty($cdrdata['GatewayAccountID'])){
                             $error[] = 'Account is blank at line no:'.$lineno;
+                        }
+                        if($RateCDR == 1 && !empty($cdrdata['cld'])){
+                            $error[] = 'CLD is blank at line no:'.$lineno;
+                        }
+                        if($RateCDR == 1 && !empty($cdrdata['billed_duration'])){
+                            $error[] = 'Billed duration is blank at line no:'.$lineno;
                         }
                         //print_r($cdrdata);exit;
                         if (!empty($cdrdata['GatewayAccountID'])) {

@@ -184,8 +184,6 @@ class CDRUpload extends Command
                             if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
                                 $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
                                 $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
-                            }else if($RateCDR == 1){
-                                $error[] = 'Billed duration is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->duration) && !empty($attrselection->duration)) {
                                 $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
@@ -203,8 +201,6 @@ class CDRUpload extends Command
                                 }else{
                                     $cdrdata['cld'] = $temp_row[$attrselection->cld];
                                 }
-                            }else if($RateCDR == 1){
-                                $error[] = 'CLD is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->cli) && !empty($attrselection->cli)) {
                                 if(!empty($clipatternrules)){
@@ -245,9 +241,18 @@ class CDRUpload extends Command
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                            }else{
+                            }
+                            if(!empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;
                             }
+                            if($RateCDR == 1 && !empty($cdrdata['cld'])){
+                                $error[] = 'CLD is blank at line no:'.$lineno;
+                            }
+                            if($RateCDR == 1 && !empty($cdrdata['billed_duration'])){
+                                $error[] = 'Billed duration is blank at line no:'.$lineno;
+                            }
+
+
 
                             if(!empty($cdrdata['GatewayAccountID'])) {
                                 if ($call_type == 'inbound') {
