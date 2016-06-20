@@ -112,11 +112,16 @@ class DBBackup extends Command {
 				Log::info("Uploading Backup to AmazonS3 Completed ");;
 				Log::info("Output " . print_r($aws_output, true));
 
+				$aws_expiry_command = getenv("NEON_backup_aws_expiry_command");
+				$aws_expiry_output = shell_exec($aws_expiry_command);//s3cmd expire --expiry-days=11 "s3://neon.backup/"
+
+				Log::info("AWS Expiry " . $aws_expiry_output );
 				Log::info("Done! ");
 
 				$message = "<b>DB Backup Completed with following output.</b>";
 				$message .= "<br><br><br> <b>Backup Output</b>  " . $bk_output;
 				$message .= "<br><br><br> <b>AWS Output</b>  " . $aws_output;
+				$message .= "<br><br><br> <b>AWS Expiry </b>  " . $aws_expiry_output;
 
 				$this->send_update_email($BackupConfigFile,$CompanyID,$message);
 			}
