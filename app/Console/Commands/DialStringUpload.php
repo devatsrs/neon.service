@@ -13,7 +13,7 @@ use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
-use App\Lib\TempDialPlan;
+use App\Lib\TempDialString;
 use App\Lib\FileUploadTemplate;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,7 +24,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
-class DialPlanUpload extends Command
+class DialStringUpload extends Command
 {
 
     /**
@@ -32,14 +32,14 @@ class DialPlanUpload extends Command
      *
      * @var string
      */
-    protected $name = 'dialplanupload';
+    protected $name = 'dialstringupload';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Dial Plan upload.';
+    protected $description = 'Dial String upload.';
 
     /**
      * Create a new command instance.
@@ -80,9 +80,9 @@ class DialPlanUpload extends Command
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
         $JobStatusMessage =array();
-        $DialPlanID = '';
+        $DialStringID = '';
 
-        Log::useFiles(storage_path() . '/logs/dialplanupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/dialstringupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
 
             if (!empty($job)) {
@@ -96,7 +96,7 @@ class DialPlanUpload extends Command
                         $templateoptions = json_decode($joboptions->Options);
 
                     }
-                    $DialPlanID = $joboptions->DialPlanID;
+                    $DialStringID = $joboptions->DialStringID;
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
 
@@ -125,25 +125,25 @@ class DialPlanUpload extends Command
                             unset($temp_row[0]);
 
                         }
-                        $tempdialplandata = array();
-                        $tempdialplandata['DialPlanID'] = $joboptions->DialPlanID;
-                        $tempdialplandata['ProcessId'] = (string) $ProcessID;
+                        $tempdialstringdata = array();
+                        $tempdialstringdata['DialStringID'] = $joboptions->DialStringID;
+                        $tempdialstringdata['ProcessId'] = (string) $ProcessID;
 
                         //check empty row
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->DialString) && !empty($attrselection->DialString) && !empty($temp_row[$attrselection->DialString])) {
-                                $tempdialplandata['DialString'] = trim($temp_row[$attrselection->DialString]);
+                                $tempdialstringdata['DialString'] = trim($temp_row[$attrselection->DialString]);
                             }else{
                                 $error[] = 'DialString is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->ChargeCode) && !empty($attrselection->ChargeCode) && !empty($temp_row[$attrselection->ChargeCode])) {
-                                $tempdialplandata['ChargeCode'] = trim($temp_row[$attrselection->ChargeCode]);
+                                $tempdialstringdata['ChargeCode'] = trim($temp_row[$attrselection->ChargeCode]);
                             }else{
                                 $error[] = 'ChargeCode is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                                $tempdialplandata['Description'] = trim($temp_row[$attrselection->Description]);
+                                $tempdialstringdata['Description'] = trim($temp_row[$attrselection->Description]);
                             }else{
                                 $error[] = 'Description is blank at line no:'.$lineno;
                             }
@@ -151,37 +151,37 @@ class DialPlanUpload extends Command
                             if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
                                 $Forbidden = trim($temp_row[$attrselection->Forbidden]);
                                 if($Forbidden=='0'){
-                                    $tempdialplandata['Forbidden'] = '0';
+                                    $tempdialstringdata['Forbidden'] = '0';
                                 }elseif($Forbidden=='1'){
-                                    $tempdialplandata['Forbidden'] = '1';
+                                    $tempdialstringdata['Forbidden'] = '1';
                                 }else{
-                                    $tempdialplandata['Forbidden'] = '';
+                                    $tempdialstringdata['Forbidden'] = '';
                                 }
                             }
 
                             if (isset($attrselection->Action) && !empty($attrselection->Action)) {
                                 if(empty($temp_row[$attrselection->Action])){
-                                    $tempdialplandata['Action'] = 'I';
+                                    $tempdialstringdata['Action'] = 'I';
                                 }else{
                                     $action_value = $temp_row[$attrselection->Action];
                                     if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete)) ) {
-                                        $tempdialplandata['Action'] = 'D';
+                                        $tempdialstringdata['Action'] = 'D';
                                     }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
-                                        $tempdialplandata['Action'] = 'U';
+                                        $tempdialstringdata['Action'] = 'U';
                                     }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
-                                        $tempdialplandata['Action'] = 'I';
+                                        $tempdialstringdata['Action'] = 'I';
                                     }else{
-                                        $tempdialplandata['Action'] = 'I';
+                                        $tempdialstringdata['Action'] = 'I';
                                     }
                                 }
 
                             }else{
-                                $tempdialplandata['Action'] = 'I';
+                                $tempdialstringdata['Action'] = 'I';
                             }
 
 
-                            if(isset($tempdialplandata['DialString']) && isset($tempdialplandata['ChargeCode']) && isset($tempdialplandata['Description'])){
-                                $batch_insert_array[] = $tempdialplandata;
+                            if(isset($tempdialstringdata['DialString']) && isset($tempdialstringdata['ChargeCode']) && isset($tempdialstringdata['Description'])){
+                                $batch_insert_array[] = $tempdialstringdata;
                                 $counter++;
                             }
                         }
@@ -190,7 +190,7 @@ class DialPlanUpload extends Command
                             Log::info('Batch insert start');
                             Log::info('global counter'.$lineno);
                             Log::info('insertion start');
-                            TempDialPlan::insert($batch_insert_array);
+                            TempDialString::insert($batch_insert_array);
                             Log::info('insertion end');
                             $batch_insert_array = [];
                             $counter = 0;
@@ -203,14 +203,14 @@ class DialPlanUpload extends Command
                         Log::info('global counter'.$lineno);
                         Log::info('insertion start');
                         Log::info('last batch insert ' . count($batch_insert_array));
-                        TempDialPlan::insert($batch_insert_array);
+                        TempDialString::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
 
                     DB::beginTransaction();
-                    Log::info("start CALL  prc_WSProcessDialPlan ('" . $ProcessID . "','" . $DialPlanID . "')");
-                    $JobStatusMessage = DB::select("CALL  prc_WSProcessDialPlan ('" . $ProcessID . "','" . $DialPlanID . "')");
-                    Log::info("end CALL  prc_WSProcessDialPlan ('" . $ProcessID . "','" . $DialPlanID . "')");
+                    Log::info("start CALL  prc_WSProcessDialString ('" . $ProcessID . "','" . $DialStringID . "')");
+                    $JobStatusMessage = DB::select("CALL  prc_WSProcessDialString ('" . $ProcessID . "','" . $DialStringID . "')");
+                    Log::info("end CALL  prc_WSProcessDialString ('" . $ProcessID . "','" . $DialStringID . "')");
                     DB::commit();
                     $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
 

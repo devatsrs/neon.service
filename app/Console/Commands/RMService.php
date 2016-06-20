@@ -76,7 +76,7 @@ class RMService extends Command {
                 'VendorCDRUpload',
                 //'getSippyDownloadCommand',
 				'ImportAccount',
-                'DialPlanUpload'
+                'DialStringUpload'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -304,13 +304,13 @@ class RMService extends Command {
                 }
             }
 
-			//dialplan upload
-            foreach($allpending['data']['DialPlanUpload'] as $allpendingrow){
+			//dialstring upload
+            foreach($allpending['data']['DialStringUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialplanupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialplanupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
