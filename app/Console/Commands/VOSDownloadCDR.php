@@ -73,8 +73,8 @@ class VOSDownloadCDR extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings,true);
-        //$dataactive['DownloadActive'] = 1;
-        //$CronJob->update($dataactive);
+        $dataactive['Active'] = 1;
+        $CronJob->update($dataactive);
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
@@ -135,8 +135,8 @@ class VOSDownloadCDR extends Command {
                     }
 
                 }
-                //$dataactive['DownloadActive'] = 0;
-                //$CronJob->update($dataactive);
+                $dataactive['Active'] = 0;
+                $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
                 $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
@@ -154,8 +154,8 @@ class VOSDownloadCDR extends Command {
 
         }catch (Exception $e) {
             Log::error($e);
-            //$dataactive['DownloadActive'] = 0;
-            //$CronJob->update($dataactive);
+            $dataactive['Active'] = 0;
+            $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;

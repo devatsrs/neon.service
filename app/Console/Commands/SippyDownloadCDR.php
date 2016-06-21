@@ -69,8 +69,8 @@ class SippyDownloadCDR extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings, true);
-        //$dataactive['DownloadActive'] = 1;
-        //$CronJob->update($dataactive);
+        $dataactive['Active'] = 1;
+        $CronJob->update($dataactive);
 
         $CompanyGatewayID   =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
@@ -136,8 +136,8 @@ class SippyDownloadCDR extends Command {
                     }
 
                 }
-                //$dataactive['DownloadActive'] = 0;
-                //$CronJob->update($dataactive);
+                $dataactive['Active'] = 0;
+                $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
                 $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
@@ -157,8 +157,8 @@ class SippyDownloadCDR extends Command {
         }catch (Exception $e) {
             Log::error($e);
 
-            //$dataactive['DownloadActive'] = 0;
-            //$CronJob->update($dataactive);
+            $dataactive['Active'] = 0;
+            $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
