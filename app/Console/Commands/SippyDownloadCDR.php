@@ -69,10 +69,13 @@ class SippyDownloadCDR extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings, true);
-        $dataactive['DownloadActive'] = 1;
+        $dataactive['Active'] = 1;
         $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+
+        $CompanyGatewayID   =  $cronsetting['CompanyGatewayID'];
+        $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+
         try {
             Log::info("Start");
 
@@ -89,43 +92,72 @@ class SippyDownloadCDR extends Command {
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
-            if (!file_exists(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID)) {
-                mkdir(getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID, 0777, true);
+            $destination = getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID;
+            if (!file_exists($destination)) {
+                mkdir($destination, 0777, true);
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
-            $downloaded = array();
-            foreach($filenames as $filename) {
 
-                if(!file_exists(getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/' . basename($filename))) {
-                    $param = array();
-                    $param['filename'] = $filename;
-                    $param['download_path'] = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID.'/';
-                    //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
-                    $sippy->downloadCDR($param);
-                    UsageDownloadFiles::create(array("CompanyGatewayID"=> $CompanyGatewayID , "FileName" =>  basename($filename) ,"CreatedBy" => "NeonService" ));
-                    Log::info("SippySSH download file".$filename . ' - ' . $sippy->get_file_datetime($filename));
-                    $downloaded[] = $filename;
-                    //$sippy->deleteCDR($param);
+            if(count($filenames) > 0) {
+
+                /**
+                 * GET array of files that are not exist in db
+                 */
+                $downloaded = array();
+                foreach ($filenames as $filename) {
+                    $isdownloaded = false;
+                    if (!file_exists($destination . '/' . basename($filename))) {
+                        $param = array();
+                        $param['filename'] = $filename;
+                        $param['download_path'] = $destination . '/';
+                        //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
+                        $sippy->downloadCDR($param);
+                        Log::info("SippySSH download file" . $filename . ' - ' . $sippy->get_file_datetime($filename));
+                        $downloaded[] = $filename;
+                        //$sippy->deleteCDR($param);
+                        $isdownloaded = true;
+
+                    } else {
+
+                        Log::info("SippySSH File was already exist  " . $filename . ' - ' . $sippy->get_file_datetime($filename));
+                    }
+
+                    if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+                        if($isdownloaded == false){
+                            Log::info("Missing file inserted " . $filename . ' - ' . $sippy->get_file_datetime($filename));
+                        }
+
+                    }
+
+                    if (count($downloaded) == $FilesDownloadLimit) {
+                        break;
+                    }
+
                 }
+                $dataactive['Active'] = 0;
+                $CronJob->update($dataactive);
+
+                $downloaded_files = count($downloaded);
+                $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
+
+                if (count($downloaded) > 0) {
+                    $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[$downloaded_files - 1]);
+                    $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[0]);
+                }
+
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                CronJobLog::insert($joblogdata);
             }
-            $dataactive['DownloadActive'] = 0;
-            $CronJob->update($dataactive);
 
-            $downloaded_files = count($downloaded);
-            $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
+            Log::info("SippySSH File Download Completed ");
 
-            if(count($downloaded) >0 ){
-                $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[$downloaded_files-1]) ;
-                $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[0]) ;
-            }
-
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            CronJobLog::insert($joblogdata);
 
         }catch (Exception $e) {
             Log::error($e);
-            $dataactive['DownloadActive'] = 0;
+
+            $dataactive['Active'] = 0;
             $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();

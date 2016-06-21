@@ -82,10 +82,6 @@ class DBFixing extends Command
             $joblogdata['created_by'] = 'RMScheduler';
             CronJob::createLog($CronJobID);
             Log::useFiles(storage_path() . '/logs/dbfixing-' . $CompanyID . '-' . date('Y-m-d') . '.log');
-            Log::info('DBaccount fixiing rmbiliing Starts.');
-            DB::connection('sqlsrv2')->statement("CALL prc_setAccountID($CompanyID)");
-            Log::info('DBaccount fixiing rmbiliing End.');
-
             Log::info('fixiing delete old cdr Starts.');
             $DeleteCDRDateTime = '-3 month';
             $DeleteCDRTime = getenv('DELETE_CDR_TIME');

@@ -157,8 +157,11 @@ class PBXAccountUsage extends Command
                         $data['GatewayAccountID'] = $row_account['accountcode'];
                         $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
                         $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['billed_second'] = $row_account['billsec'];
                         $data['billed_duration'] = $row_account['billsec'];
                         $data['duration'] = $row_account['duration'];
+
+
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
