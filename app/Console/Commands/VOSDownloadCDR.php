@@ -73,9 +73,11 @@ class VOSDownloadCDR extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings,true);
+        $getmypid = getmypid(); // get proccess id
         $dataactive['Active'] = 1;
-        $CronJob->update($dataactive);
-        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+        $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
+        $CronJob->update($dataactive);        $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
         try {
