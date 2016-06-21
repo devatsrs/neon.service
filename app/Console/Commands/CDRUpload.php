@@ -209,19 +209,13 @@ class CDRUpload extends Command
                                     $cdrdata['cli'] = $temp_row[$attrselection->cli];
                                 }
                             }
-                            if (isset($attrselection->cost) && !empty($attrselection->cost)) {
-                                if (isset($joboptions->RateCDR) && !empty($joboptions->RateCDR) && isset($joboptions->TrunkID) && !empty($joboptions->TrunkID) && $joboptions->TrunkID >0 && $RateFormat == Company::CHARGECODE) {
-                                    $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
-                                    $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
-                                    if($RateCDR == 1){
-                                        $cdrdata['cost'] = 0;
-                                    }
-                                }else{
-                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
-                                }
-
+                            if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0 ) {
+                                $cdrdata['cost'] = $temp_row[$attrselection->cost];
                             }else if($RateCDR == 1){
                                 $cdrdata['cost'] = 0;
+                            }
+                            if ($RateCDR == 1 && $RateFormat == Company::CHARGECODE && isset($attrselection->ChargeCode) && !empty($attrselection->ChargeCode)) {
+                                $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
                             }
                             if(!empty($joboptions->TrunkID)){
                                 $cdrdata['TrunkID'] = $joboptions->TrunkID;
