@@ -78,11 +78,9 @@ class VCDRUpload extends Command
         $temptableName = 'tblTempVendorCDR';
         Job::JobStatusProcess($JobID, $ProcessID, $getmypid);//Change by abubakar
         Log::useFiles(storage_path() . '/logs/vcdrupload-' . $JobID . '-' . date('Y-m-d') . '.log');
-        $skiped_account = array();
+        $skiped_account = $error =  array();
         $skiped_account_data = array();
         try {
-            DB::beginTransaction();
-            DB::connection('sqlsrv2')->beginTransaction();
             $joboptions = json_decode($job->Options);
             $CompanyGatewayID = $joboptions->CompanyGatewayID;
             $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID, $CompanyGatewayID);
@@ -136,7 +134,9 @@ class VCDRUpload extends Command
                 if ($csvoption->Firstrow == 'data') {
                     $lineno = 1;
                 }
-
+                $counter = 0;
+                $bacth_insert_limit = 1000;
+                $batch_insert_array = array();
                 foreach ($results as $temp_row) {
                     if ($csvoption->Firstrow == 'data') {
                         array_unshift($temp_row, null);
@@ -159,6 +159,7 @@ class VCDRUpload extends Command
                         }
                         if (!empty($attrselection->billed_duration)) {
                             $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
+                            $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
                         }
                         if (!empty($attrselection->duration)) {
                             $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
@@ -178,6 +179,8 @@ class VCDRUpload extends Command
                         }
                         if (!empty($attrselection->buycost)) {
                             $cdrdata['buying_cost'] = $temp_row[$attrselection->buycost];
+                        }else if($RateCDR == 1){
+                            $cdrdata['buying_cost'] = 0;
                         }
                         if (!empty($attrselection->sellcost)) {
                             if (!empty($joboptions->RateCDR) && !empty($attrselection->area_prefix) && !empty($joboptions->TrunkID) && $joboptions->TrunkID > 0) {
@@ -195,19 +198,40 @@ class VCDRUpload extends Command
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                         }
+
+                        if(empty($cdrdata['GatewayAccountID'])){
+                            $error[] = 'Account is blank at line no:'.$lineno;
+                        }
+                        if($RateCDR == 1 && empty($cdrdata['cld'])){
+                            $error[] = 'CLD is blank at line no:'.$lineno;
+                        }
+                        if($RateCDR == 1 && empty($cdrdata['billed_duration'])){
+                            $error[] = 'Billed duration is blank at line no:'.$lineno;
+                        }
                         //print_r($cdrdata);exit;
                         if (!empty($cdrdata['GatewayAccountID'])) {
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($cdrdata);
+                            $batch_insert_array[] = $cdrdata;
+                            if($counter >= $bacth_insert_limit){
+                                Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                                Log::info('insertion end');
+                                $batch_insert_array = [];
+                                $counter = 0;
+                            }
+                            $counter++;
                         }
                     }
                     $lineno++;
-                }
-                if (count($skiped_account_data) == 0) {
-                    DB::commit();
-                    DB::connection('sqlsrv2')->commit();
-                } else {
-                    DB::rollback();
-                    DB::connection('sqlsrv2')->rollback();
+                }//loop
+
+                if(!empty($batch_insert_array)){
+                    Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                    Log::info('insertion end');
                 }
 
                 //ProcessCDR
@@ -251,6 +275,7 @@ class VCDRUpload extends Command
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
                 if (count($skiped_account_data)) {
+                    $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 } else {

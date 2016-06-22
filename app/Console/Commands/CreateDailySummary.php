@@ -49,6 +49,8 @@ class CreateDailySummary extends Command {
      * Execute the console command.
      *
      * @return mixed
+     *
+     * not used
      */
     public function handle()
     {
@@ -70,7 +72,7 @@ class CreateDailySummary extends Command {
 
         try {
 
-            $joblogdata = $errors = array();
+            /*$joblogdata = $errors = array();
             $joblogdata['CronJobID'] = $CronJobID;
             $joblogdata['created_at'] = date('Y-m-d H:i:s');
             $joblogdata['created_by'] = 'RMScheduler';
@@ -84,7 +86,7 @@ class CreateDailySummary extends Command {
             Log::error('Start CALL  prc_setVendorAccountID(' . $CompanyID.")");
             DB::connection('sqlsrv2')->statement('CALL  prc_setVendorAccountID(' . $CompanyID.")");
             Log::error('End  CALL  prc_setVendorAccountID(' . $CompanyID.")");
-            /*$CustomerDate = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
+            $CustomerDate = CompanySetting::getKeyVal($CompanyID,'LastCustomerSummaryDate');
             if($CustomerDate == date("Y-m-d")) {
                 $Live = 1;
                 if(getenv('APP_OS') == 'Linux') {

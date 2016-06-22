@@ -181,9 +181,25 @@ class VOS{
      * get date time from unix timestamp
      */
     public static function get_file_datetime($filename){
-        $timestamp = substr(strrchr($filename, "."), 1);
-        if($timestamp > 0 ){
-            return gmdate('Y-m-d H:i:s', $timestamp);
+
+        if(empty($filename)){
+            return '';
         }
+
+        //cdr_20160609_151311.csv
+
+        $filename = str_replace("cdr_","",$filename);
+        $filename = str_replace("_","",$filename);
+        $filename = str_replace(".csv","",$filename);
+
+        $year = substr($filename,0,4);
+        $month = substr($filename,4,2);
+        $day = substr($filename,6,2);
+        $hr = substr($filename,8,2);
+        $min = substr($filename,10,2);
+        $sec = substr($filename,12,2);
+
+        return $year . '-' . $month . '-' . $day . ' ' . $hr . ':' . $min . ':' . $sec;
+
     }
 }

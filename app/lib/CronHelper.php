@@ -61,7 +61,8 @@ class CronHelper {
         //http://lifehacker.com/362316/use-unix-commands-in-windows-built-in-command-prompt
         $pids = explode(PHP_EOL, `ps -e | grep php | awk '{print $1}'`);
         
-        if(in_array(self::$pid, $pids)) {
+        if( !empty(self::$pid) && self::$pid > 0 && in_array(self::$pid, $pids)) {
+            Log::info(" Running pids " . print_r($pids,true));
             return TRUE;
         }
         return FALSE;
