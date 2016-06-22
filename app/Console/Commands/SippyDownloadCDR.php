@@ -110,12 +110,26 @@ class SippyDownloadCDR extends Command {
                 $downloaded = array();
                 foreach ($filenames as $filename) {
                     $isdownloaded = false;
-                    if (!file_exists($destination . '/' . basename($filename))) {
+                    $file_path = $destination . '/' . basename($filename);
+                    if (!file_exists($file_path)) {
                         $param = array();
                         $param['filename'] = $filename;
                         $param['download_path'] = $destination . '/';
                         //$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
                         $sippy->downloadCDR($param);
+
+                        //if file not exist continue.
+                        if (!file_exists($file_path)) {
+                            continue;
+                        }
+                        // if file size zero, delete the file to download it again.
+                        else if(filesize($file_path) == 0 || filesize($file_path) == FALSE){
+                            unlink($file_path);
+                            Log::info("Zero size file deleted " . $file_path );
+                            continue;
+                        }
+
+
                         Log::info("SippySSH download file" . $filename . ' - ' . $sippy->get_file_datetime($filename));
                         $downloaded[] = $filename;
                         //$sippy->deleteCDR($param);
@@ -126,7 +140,7 @@ class SippyDownloadCDR extends Command {
                         Log::info("SippySSH File was already exist  " . $filename . ' - ' . $sippy->get_file_datetime($filename));
                     }
 
-                    if(UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
+                    if(filesize($file_path) > 0 && UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
                         UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         if($isdownloaded == false){
                             Log::info("Missing file inserted " . $filename . ' - ' . $sippy->get_file_datetime($filename));
