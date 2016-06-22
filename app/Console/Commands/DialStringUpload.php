@@ -150,12 +150,10 @@ class DialStringUpload extends Command
 
                             if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
                                 $Forbidden = trim($temp_row[$attrselection->Forbidden]);
-                                if($Forbidden=='0'){
-                                    $tempdialstringdata['Forbidden'] = '0';
-                                }elseif($Forbidden=='1'){
+                                if($Forbidden=='1'){
                                     $tempdialstringdata['Forbidden'] = '1';
                                 }else{
-                                    $tempdialstringdata['Forbidden'] = '';
+                                    $tempdialstringdata['Forbidden'] = '0';
                                 }
                             }
 
