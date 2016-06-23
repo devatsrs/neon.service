@@ -9,6 +9,7 @@
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
+use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
@@ -65,6 +66,9 @@ class RateTableRateUpload extends Command
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
@@ -222,8 +226,8 @@ class RateTableRateUpload extends Command
                             }
                             $job = Job::find($JobID);
                             if($duplicatecode == 1){
-                                $prc_error1[] = array_pop($prc_error);
-                                $error = array_merge($prc_error1,$error);
+                                $error = array_merge($prc_error,$error);
+                                unset($error[0]);
                                 $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
                                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
                             }else{
@@ -274,5 +278,9 @@ class RateTableRateUpload extends Command
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
     }
 }

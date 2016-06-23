@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -69,6 +70,10 @@ class VOSAccountUsage extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -92,7 +97,7 @@ class VOSAccountUsage extends Command
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $dataactive['PID'] = $getmypid;
         $CronJob->update($dataactive);
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -170,6 +175,7 @@ class VOSAccountUsage extends Command
                                 $uddata['cld'] = str_replace('2222', '', $excelrow['3']);
                                 $uddata['cli'] = $excelrow['1'];
                                 $uddata['billed_duration'] = $excelrow['23'];
+                                $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix($excelrow['24'],$RateCDR);
@@ -194,6 +200,7 @@ class VOSAccountUsage extends Command
                                 }
                                 $vendorcdrdata['billed_duration'] = $excelrow['23'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
+                                $vendorcdrdata['billed_second'] = $excelrow['23'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
@@ -361,6 +368,9 @@ class VOSAccountUsage extends Command
         DB::disconnect('sqlsrv');
         DB::disconnect('sqlsrv2');
         DB::disconnect('sqlsrvcdr');
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
 }

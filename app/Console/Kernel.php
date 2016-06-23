@@ -20,7 +20,6 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\RateGenerator',
         'App\Console\Commands\PortaAccountUsage',
         'App\Console\Commands\PendingDueSheet',
-        'App\Console\Commands\BulkInvoiceGenerator',
         'App\Console\Commands\CustomerPortaSheet',
         'App\Console\Commands\VOSAccountUsage',
         'App\Console\Commands\VOSDownloadCDR',
@@ -62,7 +61,11 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\SippyMissingCDRFileFix',
 		'App\Console\Commands\CreateSummary',
 		'App\Console\Commands\CreateVendorSummary',
+		'App\Console\Commands\CreateSummaryLive',
+		'App\Console\Commands\CreateVendorSummaryLive',
 		'App\Console\Commands\ImportAccount',
+		'App\Console\Commands\DBBackup',
+		'App\Console\Commands\DialStringUpload',
 
 	];
 

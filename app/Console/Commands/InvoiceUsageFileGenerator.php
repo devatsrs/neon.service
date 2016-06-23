@@ -3,6 +3,7 @@
 use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
 use App\Lib\Helper;
 use App\Lib\Invoice;
@@ -61,6 +62,11 @@ class InvoiceUsageFileGenerator extends Command {
 	 */
 	public function fire()
     {
+
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -110,6 +116,7 @@ class InvoiceUsageFileGenerator extends Command {
             $this->send_job_status_email($job,$CompanyID);
         }
 
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 

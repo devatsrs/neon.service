@@ -10,14 +10,14 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class CreateVendorSummary extends Command{
+class CreateSummaryLive extends Command{
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'createvendorsummary';
+    protected $name = 'createsummarylive';
 
     /**
      * The console command description.
@@ -40,7 +40,7 @@ class CreateVendorSummary extends Command{
     {
         return [
             ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
-            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID']
         ];
     }
 
@@ -63,10 +63,10 @@ class CreateVendorSummary extends Command{
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/createvednorsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/createsummarylive-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            Summary::generateVendorSummary($CompanyID,0);
+            Summary::generateSummary($CompanyID,1);
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 

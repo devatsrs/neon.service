@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\Gateway;
 use App\Lib\AmazonS3;
 use App\Lib\Job;
@@ -66,6 +67,10 @@ class ImportAccount extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -79,6 +84,7 @@ class ImportAccount extends Command {
         $counter = 0;
         $importoptions = array();
         $joboptions = array();
+        $tempProcessID = '';
 
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
         try {
@@ -91,7 +97,8 @@ class ImportAccount extends Command {
                     $jobfile = JobFile::where(['JobID' => $JobID])->first();
                     $joboptions = json_decode($jobfile->Options);
                 }
-                $CompanyGatewayID ='';
+                $CompanyGatewayID =0;
+                $tempCompanyGatewayID =0;
                 $AccountType = 0;
                 $TempAccountIDs = '';
                 $importoption = 0;
@@ -104,15 +111,23 @@ class ImportAccount extends Command {
                         $AccountType = 1;
                         Log::info('Manually Accounts Import Start');
                         $CompanyGatewayID = $importoptions['companygatewayid'];
+
                         if(!empty($importoptions['criteria'])){
                             $importoption = 1;
+                            $tempCompanyGatewayID = $importoptions['companygatewayid'];
                         }else{
                             $TempAccountIDs = $importoptions['TempAccountIDs'];
-                            $importoption = 2;
+                            $importoption = 1;
+                        }
+                        if(!empty($importoptions['importprocessid'])){
+                            $tempProcessID = $importoptions['importprocessid'];
+                        }else{
+                            $tempProcessID = '';
                         }
 
                      //manual import end
                     }else {//csv import start
+                        $tempProcessID = $ProcessID;
                         if(!empty($joboptions->AccountType)) {
                             $AccountType=$joboptions->AccountType;
                         }
@@ -207,6 +222,9 @@ class ImportAccount extends Command {
                                 if (isset($attrselection->Country) && !empty($attrselection->Country)) {
                                     //$tempItemData['Country'] = trim($temp_row[$attrselection->Country]);
                                     $checkCountry=strtoupper(trim($temp_row[$attrselection->Country]));
+                                    if($checkCountry=='UK'){
+                                        $checkCountry = 'UNITED KINGDOM';
+                                    }
                                     $count = Country::where(["Country" => $checkCountry])->count();
                                     if($count>0){
                                         $tempItemData['Country'] = $checkCountry;
@@ -390,17 +408,18 @@ class ImportAccount extends Command {
                         }
 
                     }//csv import end
-                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
+                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
                     try {
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
-                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
-
+                        $updateaccountno = Account::updateAccountNo($CompanyID);
+                        Log::info('update account number - '.$updateaccountno);
                         Log::info(count($JobStatusMessage));
-                        if(!empty($error || count($JobStatusMessage) > 1)){
+                        if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();
                             foreach ($JobStatusMessage as $JobStatusMessage1) {
                                 $prc_error[] = $JobStatusMessage1['Message'];
@@ -458,6 +477,8 @@ class ImportAccount extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
     }
 
 
