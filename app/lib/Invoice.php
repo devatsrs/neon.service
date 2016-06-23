@@ -1418,8 +1418,8 @@ class Invoice extends \Eloquent {
             $BillingCycleType = Account::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
             $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
             //Get Subscription Amount
-            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
-            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
+            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->AccountSubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
+            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->AccountSubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
             Log::info( 'SubscriptionCharge - ' . $SubscriptionCharge );
 
             /**
