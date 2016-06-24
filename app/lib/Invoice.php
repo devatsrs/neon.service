@@ -1439,8 +1439,7 @@ class Invoice extends \Eloquent {
             Log::info( ' TotalSubscriptionCharge - ' . $TotalSubscriptionCharge );
 
             $ProductDescription = $AccountSubscription->InvoiceDescription;
-            //$Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
-			 $Subscription = AccountSubscription::find($AccountSubscription->AccountSubscriptionID);
+            $Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
             if ($FirstTime && $Subscription->ActivationFee >0) {
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
                 if($AccountSubscription->ExemptTax){
