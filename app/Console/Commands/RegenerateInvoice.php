@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\CompanySetting;
+use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceDetail;
 use App\Lib\Job;
@@ -58,6 +59,12 @@ class RegenerateInvoice extends Command {
 	 */
     public function fire()
     {
+
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $CompanyID = $arguments["CompanyID"];
@@ -129,7 +136,10 @@ class RegenerateInvoice extends Command {
                                         if (isset($response["status"]) && $response["status"] == 'success') {
 
                                             Log::info('Invoice created - ' . print_r($response, true));
+                                            Log::info('Invoice Commited  AccountID = ' . $AccountID);
                                             $message[] = $response["message"];
+                                            DB::commit();
+                                            DB::connection('sqlsrv2')->commit();
 
                                         } else {
 
@@ -143,13 +153,6 @@ class RegenerateInvoice extends Command {
 
                                         }
 
-                                        if (count($errors) == 0) {
-
-                                            Log::info('Invoice Commited  AccountID = ' . $AccountID);
-
-                                            DB::commit();
-                                            DB::connection('sqlsrv2')->commit();
-                                        }
                                     }
                                 }
                             }
@@ -166,12 +169,12 @@ class RegenerateInvoice extends Command {
                                 DB::connection('sqlsrv2')->rollback();
                                 Log::error($e);
 
-                                $errors[] = $e->getTraceAsString();
+                                $errors[] = $e->getMessage();
 
 
                             } catch (\Exception $err) {
                                 Log::error($err);
-                                $errors[] = $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                                $errors[] = $e->getMessage() . ' ## ' . $err->getMessage();
                             }
 
                         }}else{
@@ -219,7 +222,7 @@ class RegenerateInvoice extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getTraceAsString();
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     Job::send_job_status_email($job, $CompanyID);
@@ -233,6 +236,10 @@ class RegenerateInvoice extends Command {
             }
 
         }
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
     }
 
 }

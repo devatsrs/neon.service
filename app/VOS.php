@@ -11,7 +11,7 @@ class VOS{
     private static $config = array();
 
     /**
-        VOS cSV columns
+    VOS cSV columns
 
 
     0	=	callere164
@@ -70,17 +70,17 @@ class VOS{
      */
 
     public function __construct($CompanyGatewayID){
-       $setting = GatewayAPI::getSetting($CompanyGatewayID,'VOS');
-       foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'password'){
-               self::$config[$configkey] = Crypt::decrypt($configval);
-           }else{
-               self::$config[$configkey] = $configval;
-           }
-       }
-       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-           Config::set('remote.connections.production',self::$config);
-       }
+        $setting = GatewayAPI::getSetting($CompanyGatewayID,'VOS');
+        foreach((array)$setting as $configkey => $configval){
+            if($configkey == 'password'){
+                self::$config[$configkey] = Crypt::decrypt($configval);
+            }else{
+                self::$config[$configkey] = $configval;
+            }
+        }
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            Config::set('remote.connections.production',self::$config);
+        }
     }
     public static function getCDRs($addparams=array()){
         $response = array();
@@ -98,8 +98,8 @@ class VOS{
             $response = $filename;
         }
         return $response;
-   }
-   public static function deleteCDR($addparams=array()){
+    }
+    public static function deleteCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status =  RemoteFacade::delete(self::$config['cdr_folder'].'/'.$addparams['filename']);
@@ -108,18 +108,19 @@ class VOS{
             }
         }
         return $status;
-   }
-   public static function downloadCDR($addparams=array()){
+    }
+    public static function downloadCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] .'pending_'. $addparams['filename']);
+            $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] . $addparams['filename']);
             if(isset($addparams['download_temppath'])){
-                RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_temppath'] .'pending_'. $addparams['filename']);
+                RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_temppath'] . $addparams['filename']);
             }
         }
         return $status;
-   }
+    }
 
+    //not in use
     public static function changeCDRFilesStatus($status,$delete_files,$CompanyGatewayID,$isSingle=false){
 
         if(empty($CompanyGatewayID) && !is_numeric($CompanyGatewayID)){
@@ -180,9 +181,25 @@ class VOS{
      * get date time from unix timestamp
      */
     public static function get_file_datetime($filename){
-        $timestamp = substr(strrchr($filename, "."), 1);
-        if($timestamp > 0 ){
-            return gmdate('Y-m-d H:i:s', $timestamp);
+
+        if(empty($filename)){
+            return '';
         }
+
+        //cdr_20160609_151311.csv
+
+        $filename = str_replace("cdr_","",$filename);
+        $filename = str_replace("_","",$filename);
+        $filename = str_replace(".csv","",$filename);
+
+        $year = substr($filename,0,4);
+        $month = substr($filename,4,2);
+        $day = substr($filename,6,2);
+        $hr = substr($filename,8,2);
+        $min = substr($filename,10,2);
+        $sec = substr($filename,12,2);
+
+        return $year . '-' . $month . '-' . $day . ' ' . $hr . ':' . $min . ':' . $sec;
+
     }
 }

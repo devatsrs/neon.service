@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Invoice;
@@ -49,6 +50,10 @@ class InvoiceManualGenerator extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $ProcessID = Uuid::generate();
@@ -194,12 +199,12 @@ class InvoiceManualGenerator extends Command {
                         DB::connection('sqlsrv2')->rollback();
                         Log::error($e);
 
-                        $errors[] = $AccountName . " " . $e->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage();
 
 
                     }catch (Exception $err) {
                         Log::error($err);
-                        $errors[] = $AccountName . " " . $e->getTraceAsString() . ' ## ' . $err->getTraceAsString();
+                        $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
                     }
 
                 }
@@ -244,7 +249,7 @@ class InvoiceManualGenerator extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage ;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getTraceAsString();
+                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r'. $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     if(!empty($InvoiceGenerationEmail)){
@@ -276,6 +281,9 @@ class InvoiceManualGenerator extends Command {
             Log::error("**Email Sent message ".$result['message']);
         }
         Log::error(" CronJobId end" . $CronJobID);
+
+
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 

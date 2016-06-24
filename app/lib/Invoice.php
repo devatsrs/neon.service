@@ -168,6 +168,8 @@ class Invoice extends \Eloquent {
                                     $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
                                     $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
                                     $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
+                                    $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                    $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
                                 }else{
                                     $usage_data[] = $result_row;
                                 }
@@ -229,6 +231,12 @@ class Invoice extends \Eloquent {
                         //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
                         foreach($result_data as $result_row){
                             if(isset($result_row['AreaPrefix'])){
+                                if(isset($result_row['DurationInSec'])){
+                                    unset($result_row['DurationInSec']);
+                                }
+                                if(isset($result_row['BillDurationInSec'])){
+                                    unset($result_row['BillDurationInSec']);
+                                }
                                 $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
                                 if(isset($usage_data[$key]['AreaPrefix'])){
                                     $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
@@ -361,7 +369,7 @@ class Invoice extends \Eloquent {
 
                 $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$Account->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
-                if ( empty($Account->InvoiceTemplateID) ) {
+                if ( empty($Account->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     return array("status" => "failure", "message" => $error);
                 }
@@ -645,6 +653,10 @@ class Invoice extends \Eloquent {
                             $GatewayAccountRow['CompanyGatewayID'];
                             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
                             $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
+                            $AccountBillingTimeZone = Account::getBillingTimeZone($Invoice->AccountID);
+                            if(!empty($AccountBillingTimeZone)){
+                                $BillingTimeZone = $AccountBillingTimeZone;
+                            }
                             $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
                             $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
                             Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
@@ -661,6 +673,8 @@ class Invoice extends \Eloquent {
                                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
                                         $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
                                         $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
+                                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
                                     }else{
                                         $usage_data[] = $result_row;
                                     }
@@ -1401,10 +1415,11 @@ class Invoice extends \Eloquent {
                 $FirstTime = false;
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
-
+            $BillingCycleType = Account::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
+            $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
             //Get Subscription Amount
-            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime);
-            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .')');
+            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
+            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
             Log::info( 'SubscriptionCharge - ' . $SubscriptionCharge );
 
             /**
@@ -1673,6 +1688,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
                                             $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
                                             $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
+                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
                                         }else{
                                             $usage_data[$countkey]['Trunk'] = 'Other';
                                             $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
@@ -1682,6 +1699,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
+                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
+                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
                                         }
                                         $countkey++;
                                     }
@@ -2048,6 +2067,8 @@ class Invoice extends \Eloquent {
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
                                             $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
                                             $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
+                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
                                         }else{
                                             $usage_data[$countkey]['Trunk'] = 'Other';
                                             $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
@@ -2057,6 +2078,9 @@ class Invoice extends \Eloquent {
                                             $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
                                             $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
+                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
+                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
+
                                         }
                                         $countkey++;
                                     }

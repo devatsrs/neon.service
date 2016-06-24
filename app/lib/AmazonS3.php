@@ -69,6 +69,7 @@ class AmazonS3 {
         $path .=  $dir . "/". date("Y")."/".date("m") ."/" .date("d") ."/";
         $dir = getenv('UPLOAD_PATH') . '/'. $path;
         if (!file_exists($dir)) {
+            exec("chmod -R 777 " . getenv('UPLOAD_PATH'));
             @mkdir($dir, 0777, TRUE);
         }
 

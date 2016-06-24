@@ -14,34 +14,20 @@ class TempVendorCDR extends \Eloquent {
 
     protected  $primaryKey = "TempVendorCDRID";
 
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,$NameFormat=''){
         $skiped_account_data =array();
-        Log::error("start $CompanyGatewayID CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
-        DB::connection('sqlsrv2')->statement("CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
-        Log::error("end $CompanyGatewayID CALL  prc_insertGatewayVendorAccount('" . $ProcessID . "','".$tempVendortable."')");
-
-
-        //Update tblGatewayAccount
-        Log::error('start  prc_getActiveGatewayAccount start CompanyGatewayID = '.$CompanyGatewayID);
-        DB::connection('sqlsrv2')->statement('CALL  prc_getActiveGatewayAccount(' . $CompanyID . "," . $CompanyGatewayID." ,'0','1')"); // Procedure Updated - 05-10-2015
-        Log::error('end prc_getActiveGatewayAccount end CompanyGatewayID = '.$CompanyGatewayID);
-
-        if($RateFormat == Company::PREFIX) {
-            Log::error("start CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "',,'".$tempVendortable."')");
-            DB::connection('sqlsrv2')->statement("CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "','".$tempVendortable."')");
-            Log::error("end CALL  prc_updateVendorPrefixTrunk('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $ProcessID . "',,'".$tempVendortable."')");
+        $skiped_account_data =array();
+        Log::error('start CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        Log::error('end CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        foreach($skiped_account as $skiped_account_row){
+            $skiped_account_data[]  = $skiped_account_row->Message;
         }
 
-        Log::error("start $CompanyGatewayID CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
-        DB::connection('sqlsrv2')->statement("CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
-        Log::error("end $CompanyGatewayID CALL  prc_setAccountIDCDR ('" . $CompanyID . "','" . $ProcessID . "', '".$tempVendortable."')");
-
-        if($RateCDR == 1){
-            $skiped_account_data = self::RateCDR($CompanyID,$ProcessID,$tempVendortable);
-        }
         return $skiped_account_data;
 
     }
+    /** not in use */
     public static function RateCDR($CompanyID,$ProcessID,$temptableName){
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();

@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\TempUsageDetail;
 use App\Porta;
@@ -13,19 +14,19 @@ use Webpatser\Uuid\Uuid;
 
 class ReImportCDRbyAccount extends Command {
 
-	/**
-	 * The console command name.
-	 *
-	 * @var string
-	 */
-	protected $name = 'reimportcdr';
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
+    protected $name = 'reimportcdr';
 
-	/**
-	 * The console command description.
-	 *
-	 * @var string
-	 */
-	protected $description = 'When local CDR doesnt match with Gateway cdr run this service to reCollect CDR from gateway.';
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'When local CDR doesnt match with Gateway cdr run this service to reCollect CDR from gateway.';
 
     /**
      * Create a new command instance.
@@ -52,6 +53,11 @@ class ReImportCDRbyAccount extends Command {
      */
     public function handle()
     {
+
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
 
         $arguments = $this->argument();
 
@@ -197,6 +203,11 @@ class ReImportCDRbyAccount extends Command {
             Log::error($e);
         }
         //}
+
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
 
     }
 

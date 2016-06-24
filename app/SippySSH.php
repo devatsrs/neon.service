@@ -66,19 +66,20 @@ class SippySSH{
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $source = rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'];
-            $destination = $addparams['download_path'] .'pending_'. $addparams['filename'];
+            $destination = $addparams['download_path'] . $addparams['filename'];
             $status = RemoteFacade::get($source, $destination );
 
             //Encode file
             //self::encode_file($destination);
 
             if(isset($addparams['download_temppath'])){
-                RemoteFacade::get(rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'], $addparams['download_temppath'] .'pending_'. $addparams['filename']);
+                RemoteFacade::get(rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'], $addparams['download_temppath'] . $addparams['filename']);
             }
         }
         return $status;
     }
 
+    //not in use
     public static function changeCDRFilesStatus($status,$delete_files,$CompanyGatewayID,$isSingle=false){
 
         if(empty($CompanyGatewayID) && !is_numeric($CompanyGatewayID)){
@@ -133,6 +134,16 @@ class SippySSH{
                 }
             }
         }
+        if($status== "complete-to-pending" ) {
+            if( is_array($delete_files) && count($delete_files)>0) {
+                foreach ($delete_files as $filename) {
+                    $inproress_name = getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename);
+                    $complete_name = str_replace('complete', 'pending', getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID . '/' . basename($filename));
+                    rename($inproress_name, $complete_name);
+                    Log::info('complete-to-pending ' . $complete_name);
+                }
+            }
+        }
     }
 
     //Encode file into csv
@@ -163,6 +174,7 @@ class SippySSH{
      */
     public static function get_customer_file_content($sippy_file) {
 
+        try{
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " customer " . $sippy_file ,$output,$return_var);
         Log::info($sippy_decoder . " customer " . $sippy_file );
@@ -263,6 +275,11 @@ class SippySSH{
         }
 
         return ["return_var"=>$return_var,"output" => $cdr_array ];
+        } catch (Exception $e) {
+            Log::error($e);
+            return ["return_var"=>$e->getMessage()];
+        }
+
     }
 
     /** Decode Vendor cdr file and return array
@@ -271,6 +288,7 @@ class SippySSH{
      */
     public static function get_vendor_file_content($sippy_file) {
 
+        try{
         $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         exec($sippy_decoder . " vendor " . $sippy_file ,$output,$return_var);
         Log::info($sippy_decoder . " vendor " . $sippy_file );
@@ -383,6 +401,11 @@ class SippySSH{
         }
 
         return ["return_var"=>$return_var,"output" => $cdr_array ];
+        } catch (Exception $e) {
+            Log::error($e);
+            return ["return_var"=>$e->getMessage()];
+        }
+
     }
 
     /**

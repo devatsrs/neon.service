@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\GatewayAccount;
@@ -58,6 +59,10 @@ class PortaAccountUsage extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         ini_set('memory_limit', '-1');
 
         $start_time = date('Y-m-d H:i:s');
@@ -85,12 +90,19 @@ class PortaAccountUsage extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $accounts = array();
         try {
             Log::error(' ========================== porta transaction start =============================');
             CronJob::createLog($CronJobID);
-
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -104,7 +116,7 @@ class PortaAccountUsage extends Command {
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                     $gadata['AccountDetailInfo'] = json_encode($row_account);
                     if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
-                        //GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
+                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
                     } else {
                         GatewayAccount::insert($gadata);
                     }
@@ -129,7 +141,9 @@ class PortaAccountUsage extends Command {
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
             //CdrBehindDuration
-
+            $InserData = array();
+            $data_count = 0;
+            $insertLimit = 1000;
             foreach ($accounts as $GatewayAccountID) {
                 $param['ICustomer'] = $GatewayAccountID; //$rowdata->GatewayAccountID;
                 $response = array();
@@ -137,7 +151,7 @@ class PortaAccountUsage extends Command {
                 $response = $porta->getAccountCDRs($param);
                 if (!isset($response['faultCode'])) {
                     if (isset($response['DictPortaCustomerAccountCDRS']['Voice Calls'])) {
-                        Log::error(print_r(count($response['DictPortaCustomerAccountCDRS']['Voice Calls']), true));
+                        Log::error('call count ' .count($response['DictPortaCustomerAccountCDRS']['Voice Calls']).' GatewayAccountID = '.$GatewayAccountID);
                         foreach ((array)$response['DictPortaCustomerAccountCDRS']['Voice Calls'] as $row_account) {
                             $data = array();
                             $data['CompanyGatewayID'] = $CompanyGatewayID;
@@ -148,31 +162,39 @@ class PortaAccountUsage extends Command {
                             $data['cost'] = (float)$row_account['Charged_Amount'];
                             $data['cld'] = $row_account['CLD'];
                             $data['cli'] = $row_account['CLI'];
-                            $seconds = strtotime(date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Disconnect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000))) - strtotime(date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Connect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000)));
                             $data['billed_duration'] = $row_account['Charged_Quantity'];
-                            $data['duration'] = $seconds;
+                            $data['billed_second'] = $row_account['Charged_Quantity'];
+                            $data['duration'] = $row_account['Used_Quantity'];
+
                             //$data['AccountID'] = $rowdata->AccountID;
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';
                             $data['ProcessID'] = $processID;
                             $data['ID'] = $row_account['ID'];
                             if (isset($row_account['CallType']) && is_numeric($row_account['CallType'])) {
-                                $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
-                                if (count($UniqueID) == 0) {
-
-                                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
-
-                                    //TempUsageDetail::insert($data);
-                                }
+                                $InserData[] = $data;
+                                $data_count++;
+                            }
+                            if ($data_count > $insertLimit && !empty($InserData)) {
+                                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                $InserData = array();
+                                $data_count = 0;
                             }
                         }
 
                     }
 
                 }
+            }// loop
+            if (!empty($InserData)) {
+                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+
             }
             date_default_timezone_set(Config::get('app.timezone'));
-
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
 
 
 
@@ -180,18 +202,11 @@ class PortaAccountUsage extends Command {
             Log::error("Porta CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== porta transaction end =============================');
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data) . '<br>';
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
             $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrvcdrazure')->beginTransaction();
@@ -253,6 +268,12 @@ class PortaAccountUsage extends Command {
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+
+        CronHelper::after_cronrun($this->name, $this);
+
+
+
     }
 
     public function getLastDate($startdate, $companyid, $CronJobID)

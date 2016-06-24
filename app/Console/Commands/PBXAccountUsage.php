@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\TempUsageDetail;
@@ -59,6 +60,9 @@ class PBXAccountUsage extends Command
     public function fire()
     {
 
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -82,13 +86,10 @@ class PBXAccountUsage extends Command
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $accounts = array();
         try {
-            DB::beginTransaction();
-            DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
-            Log::error(' ========================== pbx transaction start =============================');
+
             CronJob::createLog($CronJobID);
 
             $pbx = new PBX($CompanyGatewayID);
@@ -98,8 +99,17 @@ class PBXAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
+            $RateFormat = Company::PREFIX;
+            $RateCDR = 0;
+            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+                $RateCDR = $companysetting->RateCDR;
+            }
+            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+                $RateFormat = $companysetting->RateFormat;
+            }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
+            $param['RateCDR'] = $RateCDR;
 
             Log::error(print_r($param, true));
 
@@ -109,51 +119,129 @@ class PBXAccountUsage extends Command
                 $CdrBehindData['startdatetime'] =$param['start_date_ymd'];
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
-             //CdrBehindDuration
+            //CdrBehindDuration
 
             $today_current = date('Y-m-d H:i:s');
 
             $response = $pbx->getAccountCDRs($param);
             $response = json_decode(json_encode($response), true);
             Log::info('count ==' . count($response));
+            $InserData = array();
+            $data_count = 0;
+            $insertLimit = 1000;
             if (!isset($response['faultCode'])) {
+
                 foreach ((array)$response as $row_account) {
-                    $data = array();
-                    /**  User Field
-                     * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
-                     * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
-                     * */
-                    $is_inbound = (TempUsageDetail::check_inbound($row_account["userfield"]))?1:0;
-                    if($is_inbound){
-                        $cli =   $row_account['src'];
-                        $cld =   $row_account['firstdst'];
-                    }else{
-                        $cli =   $row_account['src'];
-                        $cld =   !empty($row_account['lastdst'])?$row_account['lastdst']:$row_account['firstdst'];
+
+                    $data = $data_outbound = array();
+                    if(!empty($row_account['accountcode'])) {
+
+
+                        /**  User Field
+                         * if it contains inbound. Src will be the Calling Party Number and First Destination will be the DID number
+                         * if it contains outbound. Src will be the DID number from where outbound call is made and use last destination as the number dialed, if blank then use First Destination
+                         * */
+                        /**
+                         * <InboundOutbound>
+                         *
+                         * split into two rows Inbound = Src,FirstDst
+                         *
+                         * Outbound = FirstDst,LstDst
+                         */
+                        $call_type = TempUsageDetail::check_call_type(strtolower($row_account["userfield"]),strtolower($row_account['cc_type']),strtolower($row_account['pincode']));
+
+                        //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
+
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        $data['GatewayAccountID'] = $row_account['accountcode'];
+                        $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                        $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['billed_second'] = $row_account['billsec'];
+                        $data['billed_duration'] = $row_account['billsec'];
+                        $data['duration'] = $row_account['duration'];
+
+
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['pincode'] = $row_account['pincode'];
+                        $data['extension'] = $row_account['extension'];
+                        $data['ProcessID'] = $processID;
+                        $data['ID'] = $row_account['ID'];
+                        $data['is_inbound'] = 0;
+                        $data['cost'] = (float)$row_account['cc_cost'];
+                        $data['cli'] = $row_account['src'];
+                        $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+
+
+                        if ($call_type == 'inbound') {
+
+                            $data['cld'] = $row_account['firstdst'];
+                            $data['is_inbound'] = 1;
+
+
+                        } else if ($call_type == 'outbound') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+
+                        } else if ($call_type == 'none') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            //$data['is_inbound'] = 0;
+                            /** if user field is blank */
+                        } else if ($call_type == 'both') {
+
+                            $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            /** if user field is both */
+                        }else if ($call_type == 'failed') {
+                            //Log::info($row_account["userfield"]);
+                            //Log::info($row_account["ID"]);
+                            /** if user field is failed or blocked call any reason make duration zero */
+                            $data['billed_duration'] = 0;
+                        }
+
+
+                        if ($call_type == 'both' && $RateCDR == 1) {
+
+                            /**
+                             * Inbound Entry
+                             */
+
+                            $data['cld'] = $row_account['firstdst'];
+                            $data['cost'] = 0;
+                            $data['is_inbound'] = 1;
+
+                            /**
+                             * Outbound Entry
+                             */
+                            $data_outbound = $data;
+
+                            $data_outbound['cli'] = $row_account['firstdst'];
+                            $data_outbound['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            $data_outbound['cost'] = (float)$row_account['cc_cost'];
+                            $data_outbound['is_inbound'] = 0;
+
+                        }
+
+                        $InserData[] = $data;
+                        $data_count++;
+
+                        if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
+                            $InserData[] = $data_outbound;
+                            $data_count++;
+
+                        }
+                        if ($data_count > $insertLimit && !empty($InserData)) {
+                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            $InserData = array();
+                            $data_count = 0;
+                        }
                     }
-                    $data['CompanyGatewayID'] = $CompanyGatewayID;
-                    $data['CompanyID'] = $CompanyID;
-                    $data['GatewayAccountID'] = $row_account['accountcode'];
-                    $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
-                    $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
-                    $data['cost'] = (float)$row_account['cc_cost'];
-                    $data['cli'] =  $cli;
-                    $data['cld'] =  $cld;
-                    $data['billed_duration'] = $row_account['billsec'];
-                    $data['duration'] = $row_account['duration'];
-                    //$data['AccountID'] = $rowdata->AccountID;
-                    $data['trunk'] = 'Other';
-                    $data['area_prefix'] = 'Other';
-                    $data['pincode'] = $row_account['pincode'];
-                    $data['extension'] = $row_account['extension'];
-                    $data['ProcessID'] = $processID;
-                    $data['ID'] = $row_account['ID'];
-                    $data['is_inbound'] = $is_inbound;
-                    $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
-                    if (count($UniqueID) == 0) {
-                        //TempUsageDetail::insert($data);
-                        DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($data);
-                    }
+
+                }//loop
+
+                if (!empty($InserData)) {
+                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
 
                 }
                 date_default_timezone_set(Config::get('app.timezone'));
@@ -161,26 +249,20 @@ class PBXAccountUsage extends Command
 
             $joblogdata['Message'] = "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'];
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            DB::commit();
-            DB::connection('sqlsrv2')->commit();
-            DB::connection('sqlsrvcdrazure')->commit();
             Log::error("pbx CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== pbx transaction end =============================');
 
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
+
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= ' <br>Skipped Rerate Code:' . implode('<br>', $skiped_account_data);
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
 
             DB::connection('sqlsrvcdrazure')->beginTransaction();
@@ -198,20 +280,13 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             CronJobLog::insert($joblogdata);
-            //DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
+
         } catch (\Exception $e) {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
                 DB::connection('sqlsrvcdrazure')->rollback();
-            } catch (\Exception $err) {
-                Log::error($err);
-            }
-            // delete temp table if process fail
-            try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
             } catch (\Exception $err) {
                 Log::error($err);
             }
@@ -237,6 +312,9 @@ class PBXAccountUsage extends Command
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
     public function getLastDate($startdate, $companyid, $CronJobID)
@@ -250,7 +328,7 @@ class PBXAccountUsage extends Command
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_INTERVAL') * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_PBX_INTERVAL') * 60);
         }
 
         return $endtimefinal;
@@ -262,8 +340,8 @@ class PBXAccountUsage extends Command
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
-        if ($minutes <= 70) {
-            $endtime = date('Y-m-d H:i:s', strtotime('-70 minute'));  //date('Y-m-d H:i:s');
+        if ($minutes <= env('USAGE_PBX_INTERVAL')) {
+            $endtime = date('Y-m-d H:i:s', strtotime('-'.env('USAGE_PBX_INTERVAL').' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-1 00:00:00');

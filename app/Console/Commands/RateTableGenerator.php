@@ -1,5 +1,6 @@
 <?php
 namespace App\Console\Commands;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -55,6 +56,10 @@ class RateTableGenerator extends Command {
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -66,8 +71,7 @@ class RateTableGenerator extends Command {
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/ratetablegenerator-'.$JobID.'-'.date('Y-m-d').'.log');
         Log::info('job start '.$JobID);
-        DB::beginTransaction();
-        Log::info('job transaction start '.$JobID);
+        Log::info('job start '.$JobID);
         $emailstatus = array('status'=>0,'message'=>'');
 
         try {
@@ -85,15 +89,22 @@ class RateTableGenerator extends Command {
 
             $data['CompanyID'] = $CompanyID;
 
+            $Policy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Policy");
 
-            DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+            if($Policy == \LCR::LCR_PREFIX){
+                
+                Log::info("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+                DB::statement("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
 
-            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-            $jobdata['updated_at'] = date('Y-m-d H:i:s');
-            $jobdata['ModifiedBy'] = 'RMScheduler';
-            $jobdata['JobStatusMessage'] = 'RateTable Created Successfully';
-            Job::where(["JobID" => $JobID])->update($jobdata);
-            DB::commit();
+            }else {
+                Log::info("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+                DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+
+            }
+
+
+
+
             if($CronJobID > 0) {
                 CronJob::sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$data['EffectiveDate']);
             }
@@ -115,10 +126,15 @@ class RateTableGenerator extends Command {
         }
 
         //Job::send_job_status_email($job,$CompanyID);
-        Job::send_job_status_email($job,$CompanyID);
+        if(isset($job->JobID) > 0) {
+
+            Job::send_job_status_email($job, $CompanyID);
+        }
 
 
         Log::info('job end '.$JobID);
+
+        CronHelper::after_cronrun($this->name, $this);
 
 
     }

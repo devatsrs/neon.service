@@ -1,4 +1,5 @@
 <?php namespace App\Console\Commands;
+use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -35,11 +36,29 @@ class RateGenerator extends Command {
 		parent::__construct();
 	}
 
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+        ];
+    }
+
 	/**
 	 * Cron Job for Rate Table Generate
 	 */
 	public function fire()
 	{
+
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
 
         $CronJobID = $arguments["CronJobID"];
@@ -101,31 +120,15 @@ class RateGenerator extends Command {
             Log::error("**Email Sent message ".$result['message']);
         }
         Log::error("Rate Generate end CronJobId" . $CronJobID);
-	}
 
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
-        return [
-            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
-            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
-        ];
-	}
 
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-	 */
-	protected function getOptions()
-	{
-		return [
-			['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-		];
-	}
+        CronHelper::after_cronrun($this->name, $this);
+
+
+    }
+
+
+
+
 
 }
