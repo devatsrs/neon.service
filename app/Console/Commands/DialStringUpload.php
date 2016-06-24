@@ -145,7 +145,7 @@ class DialStringUpload extends Command
                             if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
                                 $tempdialstringdata['Description'] = trim($temp_row[$attrselection->Description]);
                             }else{
-                                $error[] = 'Description is blank at line no:'.$lineno;
+                                $tempdialstringdata['Description'] = '';
                             }
 
                             if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
@@ -178,7 +178,7 @@ class DialStringUpload extends Command
                             }
 
 
-                            if(isset($tempdialstringdata['DialString']) && isset($tempdialstringdata['ChargeCode']) && isset($tempdialstringdata['Description'])){
+                            if(isset($tempdialstringdata['DialString']) && isset($tempdialstringdata['ChargeCode'])){
                                 $batch_insert_array[] = $tempdialstringdata;
                                 $counter++;
                             }
