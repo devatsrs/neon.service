@@ -134,7 +134,7 @@ class VOSDownloadCDR extends Command {
                         $isdownloaded = true;
 
                     }else {
-                        Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
+                        //Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
                     }
 
                     if(filesize($file_path) > 0 &&  UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0 ) {
