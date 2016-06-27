@@ -259,7 +259,7 @@ class VendorRateUpload extends Command
                             $prc_error = array();
                             foreach ($JobStatusMessage as $JobStatusMessage1) {
                                 $prc_error[] = $JobStatusMessage1['Message'];
-                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false || strpos($JobStatusMessage1['Message'], 'NO DIAL STRING FOUND') !==false){
+                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false || strpos($JobStatusMessage1['Message'], 'No PREFIX FOUND') !==false){
                                     $duplicatecode = 1;
                                 }
                             }

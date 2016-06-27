@@ -1418,8 +1418,8 @@ class Invoice extends \Eloquent {
             $BillingCycleType = Account::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
             $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
             //Get Subscription Amount
-            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->SubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
-            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->SubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
+            $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->AccountSubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
+            Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->AccountSubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
             Log::info( 'SubscriptionCharge - ' . $SubscriptionCharge );
 
             /**
@@ -1439,8 +1439,10 @@ class Invoice extends \Eloquent {
             Log::info( ' TotalSubscriptionCharge - ' . $TotalSubscriptionCharge );
 
             $ProductDescription = $AccountSubscription->InvoiceDescription;
-            $Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
-            if ($FirstTime && $Subscription->ActivationFee >0) {
+            //$Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
+            $Subscription = AccountSubscription::find($AccountSubscription->AccountSubscriptionID);
+
+        if ($FirstTime && $Subscription->ActivationFee >0) {
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
                 if($AccountSubscription->ExemptTax){
                     $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
