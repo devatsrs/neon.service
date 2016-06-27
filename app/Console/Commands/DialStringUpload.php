@@ -80,6 +80,7 @@ class DialStringUpload extends Command
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
         $JobStatusMessage =array();
+        $duplicatecode=0;
         $DialStringID = '';
 
         Log::useFiles(storage_path() . '/logs/dialstringupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
@@ -219,12 +220,25 @@ class DialStringUpload extends Command
                         $prc_error = array();
                         foreach ($JobStatusMessage as $JobStatusMessage1) {
                             $prc_error[] = $JobStatusMessage1['Message'];
+                            if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false){
+                                $duplicatecode = 1;
+                            }
                         }
 
                         $job = Job::find($JobID);
-                        $error = array_merge($prc_error,$error);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error)) ;
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+
+                        // if duplicate code exit job will fail
+                        if($duplicatecode == 1){
+                            $error = array_merge($prc_error,$error);
+                            unset($error[0]);
+                            $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                        }else{
+                            $error = array_merge($prc_error,$error);
+                            $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                        }
+
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
