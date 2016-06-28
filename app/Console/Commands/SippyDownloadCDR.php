@@ -137,7 +137,7 @@ class SippyDownloadCDR extends Command {
 
                     } else {
 
-                        Log::info("SippySSH File was already exist  " . $filename . ' - ' . $sippy->get_file_datetime($filename));
+                        //Log::info("SippySSH File was already exist  " . $filename . ' - ' . $sippy->get_file_datetime($filename));
                     }
 
                     if(filesize($file_path) > 0 && UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
