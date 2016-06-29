@@ -22,17 +22,13 @@ class CronHelper {
 
         $arguments = $Cron->argument();
         $lock_command_file =  $command_name;
-        if(isset($arguments["CompanyID"])) {
-            $lock_command_file .= '_CompanyID_' . $arguments["CompanyID"];
-        }
-        if(isset($arguments["CronJobID"])) {
-            $lock_command_file .= '_CronJobID_' .$arguments["CronJobID"];
-        }
-        if(isset($arguments["JobID"])) {
-            $lock_command_file .= '_JobID_' .$arguments["JobID"];
+        if(count($arguments) > 0) {
+            foreach($arguments as $argument_key => $argument_value) {
+                $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
+            }
         }
 
-        return $lock_command_file;
+        return str_slug($lock_command_file);
     }
 
     public static function before_cronrun($command_name,$Cron) {
@@ -61,7 +57,8 @@ class CronHelper {
         //http://lifehacker.com/362316/use-unix-commands-in-windows-built-in-command-prompt
         $pids = explode(PHP_EOL, `ps -e | grep php | awk '{print $1}'`);
         
-        if(in_array(self::$pid, $pids)) {
+        if( !empty(self::$pid) && self::$pid > 0 && in_array(self::$pid, $pids)) {
+            Log::info(" Running pids " . print_r($pids,true));
             return TRUE;
         }
         return FALSE;

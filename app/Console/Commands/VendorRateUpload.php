@@ -80,6 +80,7 @@ class VendorRateUpload extends Command
         $counter = 0;
         $p_forbidden = 0;
         $p_preference = 0;
+        $DialStringId = 0;
         Log::useFiles(storage_path() . '/logs/vendorfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
 
@@ -95,12 +96,21 @@ class VendorRateUpload extends Command
                     }
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
+
+                    // check dialstring mapping or not
+                    if(isset($attrselection->DialString) && !empty($attrselection->DialString))
+                    {
+                        $DialStringId = $attrselection->DialString;
+                    }else{
+                        $DialStringId = 0;
+                    }
                     if(isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)){
                         $p_forbidden = 1;
                     }
                     if(isset($attrselection->Preference) && !empty($attrselection->Preference)){
                         $p_preference = 1;
                     }
+
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath);
                         if (strpos($path, "https://") !== false) {
@@ -197,9 +207,9 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
                                 $Forbidden = trim($temp_row[$attrselection->Forbidden]);
-                                if($Forbidden==0){
+                                if($Forbidden=='0'){
                                     $tempvendordata['Forbidden'] = 'UB';
-                                }elseif($Forbidden==1){
+                                }elseif($Forbidden=='1'){
                                     $tempvendordata['Forbidden'] = 'B';
                                 }else{
                                     $tempvendordata['Forbidden'] = '';
@@ -233,11 +243,12 @@ class VendorRateUpload extends Command
                     }
                     $JobStatusMessage = array();
                     $duplicatecode=0;
-                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."')");
+
+                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
                     try{
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."')");
-                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
                         DB::commit();
 
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
@@ -248,7 +259,7 @@ class VendorRateUpload extends Command
                             $prc_error = array();
                             foreach ($JobStatusMessage as $JobStatusMessage1) {
                                 $prc_error[] = $JobStatusMessage1['Message'];
-                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false){
+                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false || strpos($JobStatusMessage1['Message'], 'No PREFIX FOUND') !==false){
                                     $duplicatecode = 1;
                                 }
                             }

@@ -86,7 +86,7 @@ class PBXAccountUsage extends Command
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
-        $processID = (string) Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $accounts = array();
         try {
 
@@ -157,8 +157,11 @@ class PBXAccountUsage extends Command
                         $data['GatewayAccountID'] = $row_account['accountcode'];
                         $data['connect_time'] = date("Y-m-d H:i:s", strtotime($row_account['start']));
                         $data['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                        $data['billed_second'] = $row_account['billsec'];
                         $data['billed_duration'] = $row_account['billsec'];
                         $data['duration'] = $row_account['duration'];
+
+
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
@@ -191,10 +194,11 @@ class PBXAccountUsage extends Command
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             /** if user field is both */
                         }else if ($call_type == 'failed') {
-                            Log::info($row_account["userfield"]);
-                            Log::info($row_account["ID"]);
+                            //Log::info($row_account["userfield"]);
+                            //Log::info($row_account["ID"]);
                             /** if user field is failed or blocked call any reason make duration zero */
                             $data['billed_duration'] = 0;
+                            $data['billed_second'] = 0;
                         }
 
 

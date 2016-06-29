@@ -55,7 +55,7 @@ class RMService extends Command {
                 'PendingInvoiceGenerate',
                 'PendingPortaSheet',
                 'getActiveCronCommand',
-                'getVosDownloadCommand',
+                //'getVosDownloadCommand',
                 'PendingBulkMailSend',
                 'PortVendorSheet',
                 'CDRRecalculate',
@@ -74,11 +74,12 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'VendorCDRUpload',
-                'getSippyDownloadCommand',
-				'ImportAccount'
+                //'getSippyDownloadCommand',
+				'ImportAccount',
+                'DialStringUpload'
             ));
 
-            $cmdarray = $allpending['data']['getVosDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -88,7 +89,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
             foreach($allpending['data']['PendingUploadCDR'] as $pedingcdrrow){
                 if (isset($pedingcdrrow->JobID) && $pedingcdrrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -280,7 +281,7 @@ class RMService extends Command {
             }
 
             /* Sippy CDR File download */
-            $cmdarray = $allpending['data']['getSippyDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getSippyDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -290,7 +291,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
 			
 			//import account by csv or manually,import leads
             foreach($allpending['data']['ImportAccount'] as $allpendingrow){
@@ -299,6 +300,17 @@ class RMService extends Command {
                         pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+			//dialstring upload
+            foreach($allpending['data']['DialStringUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

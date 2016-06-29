@@ -97,7 +97,7 @@ class SippyAccountUsage extends Command
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $dataactive['PID'] = $getmypid;
         $CronJob->update($dataactive);
-        $processID = Uuid::generate();
+        $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -184,6 +184,7 @@ class SippyAccountUsage extends Command
                                 $uddata['cli'] = $cdr_row['cli_in'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
+                                $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
@@ -273,6 +274,7 @@ class SippyAccountUsage extends Command
                                 $uddata['cli'] = $cdr_row['cli_out'];
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
+                                $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
