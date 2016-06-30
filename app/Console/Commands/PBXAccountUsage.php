@@ -198,6 +198,7 @@ class PBXAccountUsage extends Command
                             //Log::info($row_account["ID"]);
                             /** if user field is failed or blocked call any reason make duration zero */
                             $data['billed_duration'] = 0;
+                            $data['billed_second'] = 0;
                         }
 
 

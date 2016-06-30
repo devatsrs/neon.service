@@ -992,7 +992,7 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ');
 
                         $fullPath = "";
-                        $message['message'] = $Account->AccountName;
+                        $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
                         if ($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
