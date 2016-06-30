@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
 use App\Lib\User;
 use Illuminate\Console\Command;
@@ -44,6 +45,8 @@ class RMService extends Command {
     {
         try {
 
+            CronHelper::before_cronrun($this->name, $this );
+
             $arguments = $this->argument();
             $CompanyID = $arguments["CompanyID"];
             $query = "CALL prc_CronJobAllPending ( $CompanyID )";
@@ -52,7 +55,7 @@ class RMService extends Command {
                 'PendingInvoiceGenerate',
                 'PendingPortaSheet',
                 'getActiveCronCommand',
-                'getVosDownloadCommand',
+                //'getVosDownloadCommand',
                 'PendingBulkMailSend',
                 'PortVendorSheet',
                 'CDRRecalculate',
@@ -69,9 +72,14 @@ class RMService extends Command {
                 'CustomerVOSSheetDownload',
                 'VendorVOSSheetDownload',
                 'RateTableGeneration',
-                'RateTableFileUpload'));
+                'RateTableFileUpload',
+                'VendorCDRUpload',
+                //'getSippyDownloadCommand',
+				'ImportAccount',
+                'DialStringUpload'
+            ));
 
-            $cmdarray = $allpending['data']['getVosDownloadCommand'];
+            /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -81,7 +89,7 @@ class RMService extends Command {
                     }
 
                 }
-            }
+            }*/
             foreach($allpending['data']['PendingUploadCDR'] as $pedingcdrrow){
                 if (isset($pedingcdrrow->JobID) && $pedingcdrrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -262,7 +270,50 @@ class RMService extends Command {
                     }
                 }
             }
+            foreach($allpending['data']['VendorCDRUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
 
+            /* Sippy CDR File download */
+            /*$cmdarray = $allpending['data']['getSippyDownloadCommand'];
+            foreach ($cmdarray as $com) {
+                if (isset($com->CronJobID) && $com->CronJobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
+                    }else{
+                        pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
+                    }
+
+                }
+            }*/
+			
+			//import account by csv or manually,import leads
+            foreach($allpending['data']['ImportAccount'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+			//dialstring upload
+            foreach($allpending['data']['DialStringUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
 
             //------------------------ Cron job start here------------------------//
 
@@ -274,13 +325,6 @@ class RMService extends Command {
                     }else {
                         pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID, "r"));
                     }
-                }
-            }
-            if( date('H:i:00') == '00:01:00' && $CompanyID ==1){
-                if(getenv('APP_OS') == 'Linux') {
-                    pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dbcleanup ". " &","r"));
-                }else {
-                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . "  dbcleanup", "r"));
                 }
             }
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
@@ -295,30 +339,10 @@ class RMService extends Command {
         }catch(\Exception $e){
             Log::error($e);
         }
-        /*if( date('H:i:00') == '10:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  dbfixing ". $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '10:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  invoicegenerator ". $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '11:00:00' && $CompanyID ==1){
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  bulkautopaymentcapture ". $CompanyID, "r"));
-        }
-        if($CompanyID ==1) {
-            //pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . "  tempcommand " . $CompanyID, "r"));
-        }
-        if( date('H:i:00') == '09:00:00' && $CompanyID ==1 ) {
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  transactionlogemail ". $CompanyID, "r"));
-        }
-
-        if( date('H:i:00') == '06:00:00') {
-            pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')."  accountactivityreminder ". $CompanyID, "r"));
-        }
 
 
-        /*$query = "prc_WSGetCustomerRateSheetPendingRequest " . $CompanyID ;
-        $allpendingrs = DataTableSql::of($query)->getProcResult(array('PendingRateSheetRequset'));
-        */
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
     /**

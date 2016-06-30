@@ -12,14 +12,14 @@ class Kernel extends ConsoleKernel {
 	 */
 	protected $commands = [
 		'App\Console\Commands\Inspire',
-		'App\Console\Commands\DBCleanUpCommand',
+		'App\Console\Commands\DBCleanUp',
 		'App\Console\Commands\SippyAccountUsage',
+		'App\Console\Commands\SippyDownloadCDR',
         'App\Console\Commands\RMService',
         'App\Console\Commands\CDRUpload',
         'App\Console\Commands\RateGenerator',
         'App\Console\Commands\PortaAccountUsage',
         'App\Console\Commands\PendingDueSheet',
-        'App\Console\Commands\BulkInvoiceGenerator',
         'App\Console\Commands\CustomerPortaSheet',
         'App\Console\Commands\VOSAccountUsage',
         'App\Console\Commands\VOSDownloadCDR',
@@ -58,6 +58,15 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\MigrateMSSQLtoMYSQL',
         'App\Console\Commands\RateTableRateUpload',
         'App\Console\Commands\PaymentsUpload',
+		'App\Console\Commands\VCDRUpload',
+		'App\Console\Commands\SippyMissingCDRFileFix',
+		'App\Console\Commands\CreateSummary',
+		'App\Console\Commands\CreateVendorSummary',
+		'App\Console\Commands\CreateSummaryLive',
+		'App\Console\Commands\CreateVendorSummaryLive',
+		'App\Console\Commands\ImportAccount',
+		'App\Console\Commands\DBBackup',
+		'App\Console\Commands\DialStringUpload',
 
 	];
 

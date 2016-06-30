@@ -59,11 +59,11 @@ table{
                 <td class="col-md-6 text-right"  valign="top" >
                         <p><b>Invoice No: </b>{{$InvoiceTemplate->InvoiceNumberPrefix}}{{$Invoice->InvoiceNumber}}</p>
                         <p><b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</p>
-                        <p><b>Due Date: </b>{{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$Account->PaymentDueInDays.' days'))}}</p>
+                        <p><b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$Account->PaymentDueInDays.' days'))}}</p>                        
                 </td>
             </tr>
         </table>
-        <br /><br /><br /><br /><br /><br />
+
         <?php
         $InvoiceTo =$InvoiceFrom = '';
         $is_sub = $is_charge = false;
@@ -117,15 +117,15 @@ table{
                         <tbody>
                         <tr>
                             <td style="border-top: 1px solid black;text-align: left;">Previous Balance</td>
-                            <td style="border-top: 1px solid black; text-align: right;">{{number_format($Invoice->PreviousBalance,$Account->RoundChargesAmount)}}</td>
+                            <td style="border-top: 1px solid black; text-align: right;">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$Account->RoundChargesAmount)}}</td>
                         </tr>
                         <tr>
                             <td style="border-top: 1px solid black;text-align: left;">Charges for this period</td>
-                            <td style="border-top: 1px solid black; text-align: right;">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}}</td>
+                            <td style="border-top: 1px solid black; text-align: right;">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}}</td>
                         </tr>
                         <tr>
-                            <td style="border-top: 2px solid black;text-align: left;">Total Due ({{$CurrencyCode}})</td>
-                            <td style="border-top: 2px solid black; text-align: right;">{{number_format($Invoice->TotalDue,$Account->RoundChargesAmount)}}</td>
+                            <td style="border-top: 2px solid black;text-align: left;">Total Due</td>
+                            <td style="border-top: 2px solid black; text-align: right;">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$Account->RoundChargesAmount)}}</td>
                         </tr>
                         </tbody>
                     </table>
@@ -134,7 +134,7 @@ table{
             </tr>
             </tbody>
         </table>
-<br /><br /><br />
+
 <div class="row">
     <div class="col-md-12">
         <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
@@ -160,7 +160,7 @@ table{
         </table>
     </div>
 </div>
-<br /><br /><br />
+
     <div class="row">
             <div class="col-md-12">
                 <div class="panel panel-default">
@@ -176,25 +176,25 @@ table{
                                                     <tfoot>
                                                         <tr>
                                                             <td class="text-right"><strong>SubTotal</strong></td>
-                                                            <td class="text-right">{{number_format($Invoice->SubTotal,$Account->RoundChargesAmount)}}</td>
+                                                            <td class="text-right">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$Account->RoundChargesAmount)}}</td>
                                                         </tr>
                                                         @if(count($InvoiceTaxRates))
                                                         @foreach($InvoiceTaxRates as $InvoiceTaxRate)
                                                         <tr>
                                                                 <td class="text-right"><strong>{{$InvoiceTaxRate->Title}}</strong></td>
-                                                                <td class="text-right">{{number_format($InvoiceTaxRate->TaxAmount,$Account->RoundChargesAmount)}}</td>
+                                                                <td class="text-right">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$Account->RoundChargesAmount)}}</td>
                                                         </tr>
                                                         @endforeach
                                                         @endif
                                                         @if($Invoice->TotalDiscount > 0)
                                                         <tr>
                                                                 <td class="text-right"><strong>Discount</strong></td>
-                                                                <td class="text-right">{{number_format($Invoice->TotalDiscount,$Account->RoundChargesAmount)}}</td>
+                                                                <td class="text-right">{{$CurrencySymbol}}{{number_format($Invoice->TotalDiscount,$Account->RoundChargesAmount)}}</td>
                                                         </tr>
                                                         @endif
                                                         <tr>
-                                                                <td class="text-right"><strong>Invoice Total ({{$CurrencyCode}})</strong></td>
-                                                                <td class="text-right">{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}} </td>
+                                                                <td class="text-right"><strong>Invoice Total</strong></td>
+                                                                <td class="text-right">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$Account->RoundChargesAmount)}} </td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -209,7 +209,6 @@ table{
                 </div>
             </div>
         </div>
-    <br><br><br>
 <div class="page_break"> </div>
 <br/><br/><br/>
 <h5>Usage Charges</h5>
@@ -305,7 +304,7 @@ table{
         @endif
 
      @if(count($usage_data) > 0 && $Account->CDRType != \App\Lib\Account::NO_CDR)
-             <br><br><br>
+
               <div class="page_break"></div>
                <br />
                <br />
@@ -333,18 +332,8 @@ table{
                              @foreach($usage_data as $row)
                              <?php
                                  $totalCalls  += $row['NoOfCalls'];
-                                 if(strpos($row['Duration'],":")){
-                                     $_Duration = explode(":",$row['Duration']);
-                                     $totalDuration  += $_Duration[0]*60 + $_Duration[1];
-                                 }else{
-                                     $totalDuration  += $row['Duration'];
-                                 }
-                                 if(strpos($row['BillDuration'],":")){
-                                     $_BillDuration = explode(":",$row['BillDuration']);
-                                     $totalBillDuration  +=  $_BillDuration[0]*60 + $_BillDuration[1];
-                                 }else{
-                                     $totalBillDuration  += $row['BillDuration'];
-                                 }
+                                 $totalDuration  += $row['DurationInSec'];
+                                 $totalBillDuration  += $row['BillDurationInSec'];
                                  $totalTotalCharges  += $row['TotalCharges'];
                              ?>
                                  <tr>
@@ -355,7 +344,7 @@ table{
                                  <td>{{$row['NoOfCalls']}}</td>
                                  <td>{{$row['Duration']}}</td>
                                  <td class="text-center">{{$row['BillDuration']}}</td>
-                                 <td class="text-center">{{$row['TotalCharges']}}</td>
+                                 <td class="text-center">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$Account->RoundChargesAmount)}}</td>
                                 </tr>
                              @endforeach
                              <?php
@@ -367,7 +356,7 @@ table{
                                  <th>{{$totalCalls}}</th>
                                  <th>{{$totalDuration}}</th>
                                  <th class="text-center">{{$totalBillDuration}}</th>
-                                 <th class="text-center">{{$totalTotalCharges}}</th>
+                                  <th class="text-center">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$Account->RoundChargesAmount)}}</th>
                              </tr>
                       </table>
                      @endif
@@ -400,13 +389,13 @@ table{
                              <td>{{$row['connect_time']}}</td>
                              <td>{{$row['disconnect_time']}}</td>
                              <td class="text-center">{{$row['billed_duration']}}</td>
-                             <td class="text-center">{{ number_format($row['cost'],$Account->RoundChargesAmount)}}</td>
+                             <td class="text-center">{{$CurrencySymbol}}{{ number_format($row['cost'],$Account->RoundChargesAmount)}}</td>
                              </tr>
                              @endforeach
                               <tr>
                               <th class="text-right" colspan="5"><strong>Total</strong></th>
                               <th class="text-center">{{$totalBillDuration}}</th>
-                              <th class="text-center">{{number_format($totalTotalCharges,$Account->RoundChargesAmount)}}</th>
+                              <th class="text-center">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$Account->RoundChargesAmount)}}</th>
                               </tr>
                       </table>
                      @endif

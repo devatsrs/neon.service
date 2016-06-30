@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\UsageDetail;
@@ -9,10 +10,11 @@ use App\Lib\UsageHeader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use League\Flysystem\Exception;
+use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\Helper;
 use App\Lib\Company;
+
 
 class DBFixing extends Command
 {
@@ -57,6 +59,10 @@ class DBFixing extends Command
      */
     public function handle()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CompanyID = $arguments["CompanyID"];
@@ -65,6 +71,7 @@ class DBFixing extends Command
         $CronJob =  CronJob::find($CronJobID);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
         $cronsetting = json_decode($CronJob->Settings,true);
 
@@ -75,10 +82,6 @@ class DBFixing extends Command
             $joblogdata['created_by'] = 'RMScheduler';
             CronJob::createLog($CronJobID);
             Log::useFiles(storage_path() . '/logs/dbfixing-' . $CompanyID . '-' . date('Y-m-d') . '.log');
-            Log::info('DBaccount fixiing rmbiliing Starts.');
-            DB::connection('sqlsrv2')->statement("CALL prc_setAccountID($CompanyID)");
-            Log::info('DBaccount fixiing rmbiliing End.');
-
             Log::info('fixiing delete old cdr Starts.');
             $DeleteCDRDateTime = '-3 month';
             $DeleteCDRTime = getenv('DELETE_CDR_TIME');
@@ -102,7 +105,7 @@ class DBFixing extends Command
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] ='Error:'.$e->getMessage();
@@ -124,6 +127,9 @@ class DBFixing extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
         Log::error(" CronJobId end" . $CronJobID);
+
+        CronHelper::after_cronrun($this->name, $this);
+
     }
 
 }

@@ -9,19 +9,78 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 class VOS{
     private static $config = array();
-    
+
+    /**
+    VOS cSV columns
+
+
+    0	=	callere164
+    1	=	calleraccesse164
+    2	=	calleee164
+    3	=	calleeaccesse164
+    4	=	callerip
+    5	=	callercodec
+    6	=	callergatewayid
+    7	=	callerproductid
+    8	=	callertogatewaye164
+    9	=	callertype
+    10	=	calleeip
+    11	=	calleecodec
+    12	=	calleegatewayid
+    13	=	calleeproductid
+    14	=	calleetogatewaye164
+    15	=	calleetype
+    16	=	billingmode
+    17	=	calllevel
+    18	=	agentfeetime
+    19	=	starttime
+    20	=	stoptime
+    21	=	callerpdd
+    22	=	calleepdd
+    23	=	holdtime
+    24	=	callerareacode
+    25	=	feetime
+    26	=	fee
+    27	=	tax
+    28	=	suitefee
+    29	=	suitefeetime
+    30	=	incomefee
+    31	=	incometax
+    32	=	customeraccount
+    33	=	customername
+    34	=	calleeareacode
+    35	=	agentfee
+    36	=	agenttax
+    37	=	agentsuitefee
+    38	=	agentsuitefeetime
+    39	=	agentaccount
+    40	=	agentname
+    41	=	flowno
+    42	=	softswitchname
+    43	=	softswitchcallid
+    44	=	callercallid
+    45	=	calleecallid
+    46	=	rtpforward
+    47	=	enddirection
+    48	=	endreason
+    49	=	billingtype
+    50	=	cdrlevel
+    51	=	agentcdr_id
+
+     */
+
     public function __construct($CompanyGatewayID){
-       $setting = GatewayAPI::getSetting($CompanyGatewayID,'VOS');
-       foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'password'){
-               self::$config[$configkey] = Crypt::decrypt($configval);
-           }else{
-               self::$config[$configkey] = $configval;
-           }
-       }
-       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-           Config::set('remote.connections.production',self::$config);
-       }
+        $setting = GatewayAPI::getSetting($CompanyGatewayID,'VOS');
+        foreach((array)$setting as $configkey => $configval){
+            if($configkey == 'password'){
+                self::$config[$configkey] = Crypt::decrypt($configval);
+            }else{
+                self::$config[$configkey] = $configval;
+            }
+        }
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            Config::set('remote.connections.production',self::$config);
+        }
     }
     public static function getCDRs($addparams=array()){
         $response = array();
@@ -39,8 +98,8 @@ class VOS{
             $response = $filename;
         }
         return $response;
-   }
-   public static function deleteCDR($addparams=array()){
+    }
+    public static function deleteCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status =  RemoteFacade::delete(self::$config['cdr_folder'].'/'.$addparams['filename']);
@@ -49,18 +108,19 @@ class VOS{
             }
         }
         return $status;
-   }
-   public static function downloadCDR($addparams=array()){
+    }
+    public static function downloadCDR($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] .'pending_'. $addparams['filename']);
+            $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] . $addparams['filename']);
             if(isset($addparams['download_temppath'])){
-                RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_temppath'] .'pending_'. $addparams['filename']);
+                RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_temppath'] . $addparams['filename']);
             }
         }
         return $status;
-   }
+    }
 
+    //not in use
     public static function changeCDRFilesStatus($status,$delete_files,$CompanyGatewayID,$isSingle=false){
 
         if(empty($CompanyGatewayID) && !is_numeric($CompanyGatewayID)){
@@ -117,4 +177,29 @@ class VOS{
         }
     }
 
+    /**
+     * get date time from unix timestamp
+     */
+    public static function get_file_datetime($filename){
+
+        if(empty($filename)){
+            return '';
+        }
+
+        //cdr_20160609_151311.csv
+
+        $filename = str_replace("cdr_","",$filename);
+        $filename = str_replace("_","",$filename);
+        $filename = str_replace(".csv","",$filename);
+
+        $year = substr($filename,0,4);
+        $month = substr($filename,4,2);
+        $day = substr($filename,6,2);
+        $hr = substr($filename,8,2);
+        $min = substr($filename,10,2);
+        $sec = substr($filename,12,2);
+
+        return $year . '-' . $month . '-' . $day . ' ' . $hr . ':' . $min . ':' . $sec;
+
+    }
 }

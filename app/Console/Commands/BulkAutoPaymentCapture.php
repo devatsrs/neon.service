@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\AccountPaymentProfile;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Currency;
@@ -49,12 +50,27 @@ class BulkAutoPaymentCapture extends Command {
     }
 
     /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+        ];
+    }
+    /**
      * Execute the console command.
      *
      * @return mixed
      */
     public function fire()
     {
+
+        CronHelper::before_cronrun($this->name, $this );
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CompanyID = $arguments["CompanyID"];
@@ -65,6 +81,7 @@ class BulkAutoPaymentCapture extends Command {
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
@@ -212,32 +229,11 @@ class BulkAutoPaymentCapture extends Command {
         }
         Log::error(" CronJobId end" . $CronJobID);
 
+        CronHelper::after_cronrun($this->name, $this);
 
     }
 
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
-            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
-        ];
-    }
 
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-        ];
-    }
+
 
 }

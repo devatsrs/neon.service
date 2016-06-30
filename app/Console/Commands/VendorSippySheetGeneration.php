@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\AmazonS3;
@@ -8,6 +9,7 @@ use App\Lib\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\NeonExcelIO;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
@@ -31,6 +33,9 @@ class VendorSippySheetGeneration extends Command {
 
 	public function fire()
 	{
+
+        CronHelper::before_cronrun($this->name, $this );
+
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
@@ -46,16 +51,28 @@ class VendorSippySheetGeneration extends Command {
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $tunkids = '';
+            $file_path = '';
+            $amazonPath = '';
             if(isset($joboptions->Trunks) && is_array($joboptions->Trunks)){
                 $tunkids = implode(',',$joboptions->Trunks);
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            if(!empty($joboptions->downloadtype)){
+                $downloadtype = $joboptions->downloadtype;
+            }else{
+                $downloadtype = 'csv';
+            }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorsippydownload');
-            $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
-            $local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
+            //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
+            $Effective = 'Now';
+            if(!empty($joboptions->Effective)){
+                $Effective = $joboptions->Effective;
+            }
+            
 
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."')");
+            $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             //Fix .333 to 0.333 on following column
@@ -65,6 +82,23 @@ class VendorSippySheetGeneration extends Command {
                 }
             }
 
+            if($downloadtype == 'xlsx'){
+                $amazonPath = $amazonDir .  $file_name . '.xlsx';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_excel($excel_data);
+            }else if($downloadtype == 'csv'){
+                $amazonPath = $amazonDir .  $file_name . '.csv';
+                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_csv($excel_data);
+            }
+
+            if(!AmazonS3::upload($file_path,$amazonDir)){
+                throw new Exception('Error in Amazon upload');
+            }
+
+            /*
             Excel::create($file_name, function ($excel) use ($excel_data,$file_name) {
                 $excel->sheet('Sheet', function ($sheet) use ($excel_data) {
                     $sheet->fromArray($excel_data);
@@ -74,8 +108,8 @@ class VendorSippySheetGeneration extends Command {
 
             if(!AmazonS3::upload($local_dir.'/'.$file_name,$amazonPath)){
                 throw new Exception('Error in Amazon upload');
-            }
-            $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
+            }*/
+            $fullPath = $amazonPath; //$destinationPath . $file_name;
             $jobdata['OutputFilePath'] = $fullPath;
             $jobdata['JobStatusMessage'] = 'Vendor Sippy File Generated Successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
@@ -98,6 +132,8 @@ class VendorSippySheetGeneration extends Command {
             Log::error($e);
         }
         Job::send_job_status_email($job,$CompanyID);
+
+        CronHelper::after_cronrun($this->name, $this);
 
 
     }

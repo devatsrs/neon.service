@@ -40,6 +40,18 @@ class PendingDueSheet extends Command {
 		parent::__construct();
 	}
 
+    /**
+     * Get the console command arguments.
+     *
+     * @return array
+     */
+    protected function getArguments()
+    {
+        return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+        ];
+    }
 	/**
 	 * Execute the console command.
 	 *
@@ -47,6 +59,9 @@ class PendingDueSheet extends Command {
 	 */
 	public function fire()
 	{
+
+        App\Lib\CronHelper::before_cronrun($this->name, $this );
+
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
@@ -56,6 +71,7 @@ class PendingDueSheet extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
+        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
         Log::useFiles(storage_path().'/logs/pendingduesheet-'.$CronJobID.'-'.date('Y-m-d').'.log');
 
@@ -124,31 +140,12 @@ class PendingDueSheet extends Command {
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
-	}
 
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-	protected function getArguments()
-	{
-        return [
-            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
-            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
-        ];
-	}
+        App\Lib\CronHelper::after_cronrun($this->name, $this);
 
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-	 */
-	protected function getOptions()
-	{
-		return [
-			['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-		];
-	}
+    }
+
+
+
 
 }

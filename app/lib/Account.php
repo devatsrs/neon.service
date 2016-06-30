@@ -3,6 +3,7 @@ namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Lib\CompanySetting;
 
 class Account extends \Eloquent {
     protected $guarded = array("AccountID");
@@ -20,6 +21,7 @@ class Account extends \Eloquent {
     public static $req_cdr_summary_column_single = array('area_prefix','total_charges','total_duration','number_of_cdr');
 
 
+    // not in use
     public static function checkExcelFormat($cdr_type,$filepath,$single=0){
         $formatstaus=  'Column are missing:';
         if(isset($cdr_type) && $cdr_type>0) {
@@ -67,6 +69,8 @@ class Account extends \Eloquent {
         $cdr_type = Account::where(array('AccountID'=>$accountid))->pluck('CDRType');
         return $cdr_type;
     }
+
+    //not in use
     public static function getExcelFormat($filepath){
         $excel = Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()->toArray();
         $excel_array_key = array_keys($excel);
@@ -126,6 +130,33 @@ class Account extends \Eloquent {
         }
         $Outstanding= number_format($Outstanding,$decimal_places,'.', '');
         return $Outstanding;
+    }
+
+    public static function getLastAccountNo($CompanyID){
+        $LastAccountNo =  CompanySetting::getKeyVal($CompanyID,'LastAccountNo');
+        if($LastAccountNo == 'Invalid Key'){
+            $LastAccountNo = 1;
+            CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$LastAccountNo);
+        }
+
+        while(Account::where(["CompanyID"=> $CompanyID,'Number'=>$LastAccountNo])->count() >=1 ){
+            $LastAccountNo++;
+        }
+        return $LastAccountNo;
+    }
+
+
+    public static function updateAccountNo($CompanyID){
+        $accounts = Account::select('AccountID')->where(["AccountType" => 1,"Number"=>null])->get()->toArray();
+        if(count($accounts)>0){
+            foreach($accounts as $account){
+                $accountid = $account['AccountID'];
+                $lastnumber = Account::getLastAccountNo($CompanyID);
+                Account::where('AccountID', $accountid)->update(['Number' => $lastnumber]);
+                CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$lastnumber);
+            }
+        }
+        return true;
     }
 
 }

@@ -38,7 +38,7 @@ class AccountSubscription extends \Eloquent
         return TRUE;
     }
 
-    public static function getSubscriptionAmount($SubscriptionID, $StartDate, $EndDate, $FirstTime)
+    public static function getSubscriptionAmount($SubscriptionID, $StartDate, $EndDate, $FirstTime,$QuarterSubscription=0)
     {
 
         /** Assumtion : Date Different should not be more than one month.
@@ -56,10 +56,41 @@ class AccountSubscription extends \Eloquent
 
             Log::info( 'days diff - ' . $days.' subscription days '.print_r($Subscriptiondays,true));
 
-            $Subscription = BillingSubscription::find($SubscriptionID);
+//            $Subscription = BillingSubscription::find($SubscriptionID);
+		    $Subscription = AccountSubscription::find($SubscriptionID); 
 
 
-            if ($Subscriptiondays == $days) { // if monthly
+            if($QuarterSubscription == 1 && $days > 27){ // if quarterly
+                Log::info(' ========== quarterly start ============');
+                $QuarterStartDate = $StartDate;
+                for($startmonth = date('m',strtotime($StartDate));$startmonth < date('m',strtotime($EndDate)) ; $startmonth++){
+
+                    if($EndDate > date('Y-m-t',strtotime($QuarterStartDate))  ){
+                        $QuarterEndDate = date('Y-m-t',strtotime($QuarterStartDate));
+                        $QuarterEndDate = date('Y-m-d',strtotime($QuarterEndDate)+24*60*60); //add one day for monthly
+                    }else{
+                        $QuarterEndDate = $EndDate;
+                    }
+                    $Subscriptiondays = cal_days_in_month(CAL_GREGORIAN,$startmonth,date('Y',strtotime($QuarterStartDate)));
+                    $seconds =  strtotime($QuarterEndDate) - strtotime($QuarterStartDate);
+                    $days = round($seconds / 60 / 60  /24);
+                    Log::info('start day ' . $QuarterStartDate.' end day '.$QuarterEndDate);
+                    Log::info('days diff - ' . $days.' subscription days '.$Subscriptiondays);
+                    if ($Subscriptiondays == $days) { // if monthly
+                        $TotalAmount += $Subscription->MonthlyFee;
+                        Log::info('MonthlyFee = '.$Subscription->MonthlyFee);
+                    } else if ($days == 7) { // if weekly
+                        $TotalAmount += $Subscription->WeeklyFee;
+                        Log::info('WeeklyFee = '.$Subscription->WeeklyFee);
+                    } else { // if daily
+                        $TotalAmount += $days * $Subscription->DailyFee;
+                        Log::info('DailyFee = '.$Subscription->DailyFee.' days '.$days);
+                    }
+                    $QuarterStartDate = date("Y-m-d", strtotime("first day of next month ",strtotime($QuarterStartDate)));
+                }
+                Log::info(' ========== quarterly end ============');
+
+            } else if ($Subscriptiondays == $days) { // if monthly
                 $TotalAmount += $Subscription->MonthlyFee;
             } else if ($days == 7) { // if weekly
                 $TotalAmount += $Subscription->WeeklyFee;
