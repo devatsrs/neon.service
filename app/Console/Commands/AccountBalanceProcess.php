@@ -2,6 +2,7 @@
 
 use App\Lib\AccountBalance;
 use App\Lib\CompanyGateway;
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use Illuminate\Console\Command;
@@ -50,6 +51,7 @@ class AccountBalanceProcess extends Command
      */
     public function fire()
     {
+        CronHelper::before_cronrun($this->name, $this );
 
         $arguments = $this->argument();
         $CronJobID = $arguments["CronJobID"];
@@ -90,5 +92,7 @@ class AccountBalanceProcess extends Command
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
+
+        CronHelper::after_cronrun($this->name, $this);
     }
 }

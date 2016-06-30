@@ -19,9 +19,17 @@ class AccountBalance extends Model
     public static function SendBalanceThresoldEmail($CompanyID,$ProcessID,$cronsetting){
         $cronjobdata = array();
         $Company = Company::find($CompanyID);
+        $EmailTemplate = EmailTemplate::find($cronsetting['TemplateID']);
+        $EmailSubject = '';
+        $EmailMessage = '';
+        $replace_array = array();
+        if (!empty($EmailTemplate)) {
+            $EmailSubject =  $EmailTemplate->Subject;
+            $EmailMessage = $EmailTemplate->TemplateBody;
+        }
         $AccountBalanceWarnings = DB::select("CALL prc_GetAccountBalanceWarning('" . $CompanyID . "','0')");
         foreach($AccountBalanceWarnings as $AccountBalanceWarning){
-            if($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountWarningEmailCount($AccountBalanceWarning->AccountID,$cronsetting['EmailSubject']) == 0) {
+            if($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountWarningEmailCount($AccountBalanceWarning->AccountID,$EmailSubject) == 0) {
                 $Emails = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
                 $AccountManagerEmail = Account::getAccountOwnerEmail($AccountBalanceWarning);
                 if (empty($Emails) && !empty($AccountManagerEmail)) {
@@ -29,13 +37,16 @@ class AccountBalance extends Model
                 } else if (!empty($AccountManagerEmail)) {
                     $Emails .= ',' . $AccountManagerEmail;
                 }
+                $replace_array['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
+                $replace_array['BalanceThreshold'] = $AccountBalanceWarning->BalanceThreshold;
+
                 $emaildata = array(
                     'EmailTo' => explode(",", $Emails),
                     'EmailToName' => $Company->CompanyName,
-                    'Subject' => $cronsetting['EmailSubject'],
+                    'Subject' => $EmailSubject,
                     'CompanyID' => $CompanyID,
                     'CompanyName'=>$Company->CompanyName,
-                    'Message' =>$cronsetting['EmailMessage']
+                    'Message' =>template_var_replace($EmailMessage,$replace_array)
                 );
                 $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
 
@@ -82,7 +93,7 @@ class AccountBalance extends Model
         $AccountBalances = AccountBalance::join('tblAccount','tblAccount.AccountID','=','tblAccountBalance.AccountID')->where(array('CompanyID'=>$CompanyID))->get(array('tblAccount.AccountID'));
         foreach($AccountBalances as $AccountBalance){
             self::setAccountBalance($CompanyID,$AccountBalance->AccountID);
-            self::setAccountUsedCredits($CompanyID,$AccountBalance->AccountID);
+            //self::setAccountUsedCredits($CompanyID,$AccountBalance->AccountID);
         }
     }
 
@@ -126,6 +137,7 @@ class AccountBalance extends Model
         $OffsetBalance = self::getAccountBalance($CompanyID,$AccountID);
         $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
         AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance+$Amount)));
+        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('CreditUsed'=>$Amount));
     }
 
 
