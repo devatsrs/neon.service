@@ -209,6 +209,9 @@ class Helper{
                     'JobID'=>$data['JobID'],
                     'UserID'=>$user->UserID,
                     'CreatedBy'=>$user->FirstName.' '.$user->LastName];
+        if(!empty($data['EmailType'])){
+            $logData['EmailType'] = $data['EmailType'];
+        }
         try {
             if (AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;

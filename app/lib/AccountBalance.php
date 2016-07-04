@@ -75,6 +75,7 @@ class AccountBalance extends Model
                             'ProcessID'=>$ProcessID,
                             'JobID'=>0,
                             'User'=>$User,
+                            'EmailType'=>AccountEmailLog::LowBalance,
                             'EmailFrom'=>$User->EmailAddress,
                             'EmailTo'=>$emaildata['EmailTo'],
                             'Subject'=>$emaildata['Subject'],

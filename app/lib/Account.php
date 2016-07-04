@@ -142,7 +142,7 @@ class Account extends \Eloquent {
     }
     public static function getAccountWarningEmailCount($AccountID,$subject){
         $count =  AccountEmailLog::
-            where(array('AccountID'=>$AccountID,'Subject'=>$subject))
+            where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalance))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
