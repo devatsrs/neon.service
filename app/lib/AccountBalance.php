@@ -102,7 +102,7 @@ class AccountBalance extends Model
         $Amount = 0;
         $LastInvoiceDate = Invoice::getLastInvoiceDate($CompanyID, $AccountID);
         if(!empty($LastInvoiceDate)){
-            $UnbilledAmount = DB::connection('sqlsrv2')->select("CALL prc_getUnbilledAmount(?,?,?)",array($CompanyID,$AccountID,$LastInvoiceDate));
+            $UnbilledAmount = DB::connection('neon_report')->select("CALL prc_getUnbilledReport(?,?,?,?)",array($CompanyID,$AccountID,$LastInvoiceDate,3));
             $Amount = $UnbilledAmount[0]->FinalAmount;
         }
         return $Amount;
