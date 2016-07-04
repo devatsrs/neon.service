@@ -38,7 +38,7 @@ class AccountBalance extends Model
                     $Emails .= ',' . $AccountManagerEmail;
                 }
                 $replace_array['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
-                $replace_array['BalanceThreshold'] = $AccountBalanceWarning->BalanceThreshold;
+                $replace_array['BalanceThreshold'] = str_replace('p','%',$AccountBalanceWarning->BalanceThreshold);
 
                 $emaildata = array(
                     'EmailTo' => explode(",", $Emails),
