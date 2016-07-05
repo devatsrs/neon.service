@@ -137,7 +137,7 @@ class AccountBalance extends Model
     public static function setAccountBalance($CompanyID,$AccountID){
         $OffsetBalance = self::getAccountBalance($CompanyID,$AccountID);
         $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
-        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance+$Amount)));
+        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance)));
         AccountBalance::where(array('AccountID'=>$AccountID))->update(array('CreditUsed'=>$Amount));
     }
 
