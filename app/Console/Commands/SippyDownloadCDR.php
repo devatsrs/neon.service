@@ -154,6 +154,7 @@ class SippyDownloadCDR extends Command {
 
                 }
                 $dataactive['Active'] = 0;
+                $dataactive['PID'] = '';
                 $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
@@ -175,6 +176,7 @@ class SippyDownloadCDR extends Command {
             Log::error($e);
 
             $dataactive['Active'] = 0;
+            $dataactive['PID'] = '';
             $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();

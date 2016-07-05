@@ -150,6 +150,7 @@ class VOSDownloadCDR extends Command {
 
                 }
                 $dataactive['Active'] = 0;
+                $dataactive['PID'] = '';
                 $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
@@ -169,6 +170,7 @@ class VOSDownloadCDR extends Command {
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['Active'] = 0;
+            $dataactive['PID'] = '';
             $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();

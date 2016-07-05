@@ -93,7 +93,7 @@ class RegenerateInvoice extends Command {
 
                     foreach ($InvoiceIDs as $InvoiceID) {
                         $Invoice = Invoice::find($InvoiceID);
-                        if(!empty($Invoice)){
+                        if(!empty($Invoice) && $Invoice->InvoiceStatus != Invoice::CANCEL){
 
                         $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
                         $Account = Account::find((int)$Invoice->AccountID);
@@ -178,7 +178,11 @@ class RegenerateInvoice extends Command {
                             }
 
                         }}else{
-                            $errors[] = 'Invoice ID Not Found '.$InvoiceID;
+                            if(!empty($Invoice) && $Invoice->InvoiceStatus == Invoice::CANCEL){
+                                $errors[] = 'Invoice Status is Cancel ('.$Invoice->InvoiceNumber.')';
+                            }else{
+                                $errors[] = 'Invoice ID Not Found '.$InvoiceID;
+                            }
                         }
                     } //loop over
 
