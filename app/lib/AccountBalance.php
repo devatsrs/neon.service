@@ -43,7 +43,7 @@ class AccountBalance extends Model
                 $emaildata = array(
                     'EmailTo' => explode(",", $Emails),
                     'EmailToName' => $Company->CompanyName,
-                    'Subject' => $EmailSubject,
+                    'Subject' => $EmailSubject ." (".$AccountBalanceWarning->AccountName.")",
                     'CompanyID' => $CompanyID,
                     'CompanyName'=>$Company->CompanyName,
                     'Message' =>template_var_replace($EmailMessage,$replace_array)
