@@ -48,7 +48,22 @@ class AccountBalance extends Model
                     'CompanyName'=>$Company->CompanyName,
                     'Message' =>template_var_replace($EmailMessage,$replace_array)
                 );
+                $UserID = User::getMinUserID($CompanyID);
+                $User = User::getUserInfo($UserID);
                 $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
+                if ($status['status'] == 1 && $AccountBalanceWarning->EmailToCustomer == 0) {
+                    $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
+                        'ProcessID' => $ProcessID,
+                        'JobID' => 0,
+                        'User' => $User,
+                        'EmailType' => AccountEmailLog::LowBalance,
+                        'EmailFrom' => $User->EmailAddress,
+                        'EmailTo' => $emaildata['EmailTo'],
+                        'Subject' => $emaildata['Subject'],
+                        'Message' => $status['body']];
+                    $statuslog = Helper::email_log($logData);
+
+                }
 
                 if($AccountBalanceWarning->EmailToCustomer == 1) {
                     if (getenv('EmailToCustomer') == 1) {
@@ -60,8 +75,7 @@ class AccountBalance extends Model
                     $customeremail_status['status'] = 0;
                     $customeremail_status['message'] = '';
                     $customeremail_status['body'] = '';
-                    $UserID = User::getMinUserID($CompanyID);
-                    $User = User::getUserInfo($UserID);
+
                     foreach ($CustomerEmail as $singleemail) {
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
