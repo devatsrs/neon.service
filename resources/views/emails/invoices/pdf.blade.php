@@ -384,8 +384,8 @@ table{
                              ?>
                              <tr>
                              <td class="text-center">{{$row['area_prefix']}}</td>
-                             <td>{{$row['cli']}}</td>
-                             <td>{{$row['cld']}}</td>
+                             <td>{{substr($row['cli'],1)}}</td> 
+                             <td>{{substr($row['cld'],1)}}</td>
                              <td>{{$row['connect_time']}}</td>
                              <td>{{$row['disconnect_time']}}</td>
                              <td class="text-center">{{$row['billed_duration']}}</td>

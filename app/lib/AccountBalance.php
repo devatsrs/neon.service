@@ -43,45 +43,60 @@ class AccountBalance extends Model
                 $emaildata = array(
                     'EmailTo' => explode(",", $Emails),
                     'EmailToName' => $Company->CompanyName,
-                    'Subject' => $EmailSubject,
+                    'Subject' => $EmailSubject ." (".$AccountBalanceWarning->AccountName.")",
                     'CompanyID' => $CompanyID,
                     'CompanyName'=>$Company->CompanyName,
                     'Message' =>template_var_replace($EmailMessage,$replace_array)
                 );
-                $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
-
-
-                if(getenv('EmailToCustomer') == 1){
-                    $CustomerEmail = $AccountBalanceWarning->BillingEmail;
-                }else{
-                    $CustomerEmail = Company::getEmail($CompanyID);;
-                }
-                $CustomerEmail = explode(",",$CustomerEmail);
-                $customeremail_status['status'] = 0;
-                $customeremail_status['message'] = '';
-                $customeremail_status['body'] = '';
                 $UserID = User::getMinUserID($CompanyID);
                 $User = User::getUserInfo($UserID);
-                foreach($CustomerEmail as $singleemail){
-                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                        $emaildata['EmailTo'] = $singleemail;
-                        $customeremail_status = Helper::sendMail('emails.account_balance_threshold', $emaildata);
+                $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
+                if ($status['status'] == 1 && $AccountBalanceWarning->EmailToCustomer == 0) {
+                    $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
+                        'ProcessID' => $ProcessID,
+                        'JobID' => 0,
+                        'User' => $User,
+                        'EmailType' => AccountEmailLog::LowBalance,
+                        'EmailFrom' => $User->EmailAddress,
+                        'EmailTo' => $emaildata['EmailTo'],
+                        'Subject' => $emaildata['Subject'],
+                        'Message' => $status['body']];
+                    $statuslog = Helper::email_log($logData);
 
-                    }
-                    if ($customeremail_status['status'] == 0) {
-                        $cronjobdata['JobStatusMessage'] = 'Failed sending email to ' . $AccountBalanceWarning->AccountName .' ('.$singleemail.')';
+                }
+
+                if($AccountBalanceWarning->EmailToCustomer == 1) {
+                    if (getenv('EmailToCustomer') == 1) {
+                        $CustomerEmail = $AccountBalanceWarning->BillingEmail;
                     } else {
-                        $logData = ['AccountID'=>$AccountBalanceWarning->AccountID,
-                            'ProcessID'=>$ProcessID,
-                            'JobID'=>0,
-                            'User'=>$User,
-                            'EmailType'=>AccountEmailLog::LowBalance,
-                            'EmailFrom'=>$User->EmailAddress,
-                            'EmailTo'=>$emaildata['EmailTo'],
-                            'Subject'=>$emaildata['Subject'],
-                            'Message'=>$customeremail_status['body']];
-                        $statuslog = Helper::email_log($logData);
-                        $cronjobdata['JobStatusMessage'] = 'Email sent successfully to ' . $AccountBalanceWarning->AccountName.' ('.$singleemail.')';
+                        $CustomerEmail = Company::getEmail($CompanyID);;
+                    }
+                    $CustomerEmail = explode(",", $CustomerEmail);
+                    $customeremail_status['status'] = 0;
+                    $customeremail_status['message'] = '';
+                    $customeremail_status['body'] = '';
+
+                    foreach ($CustomerEmail as $singleemail) {
+                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                            $emaildata['EmailTo'] = $singleemail;
+                            $customeremail_status = Helper::sendMail('emails.account_balance_threshold', $emaildata);
+
+                        }
+                        if ($customeremail_status['status'] == 0) {
+                            $cronjobdata['JobStatusMessage'] = 'Failed sending email to ' . $AccountBalanceWarning->AccountName . ' (' . $singleemail . ')';
+                        } else {
+                            $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
+                                'ProcessID' => $ProcessID,
+                                'JobID' => 0,
+                                'User' => $User,
+                                'EmailType' => AccountEmailLog::LowBalance,
+                                'EmailFrom' => $User->EmailAddress,
+                                'EmailTo' => $emaildata['EmailTo'],
+                                'Subject' => $emaildata['Subject'],
+                                'Message' => $customeremail_status['body']];
+                            $statuslog = Helper::email_log($logData);
+                            $cronjobdata['JobStatusMessage'] = 'Email sent successfully to ' . $AccountBalanceWarning->AccountName . ' (' . $singleemail . ')';
+                        }
                     }
                 }
 
@@ -137,7 +152,7 @@ class AccountBalance extends Model
     public static function setAccountBalance($CompanyID,$AccountID){
         $OffsetBalance = self::getAccountBalance($CompanyID,$AccountID);
         $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
-        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance)));
+        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance+$Amount)));
         AccountBalance::where(array('AccountID'=>$AccountID))->update(array('CreditUsed'=>$Amount));
     }
 
