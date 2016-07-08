@@ -54,7 +54,6 @@ class DBBackup extends Command {
 
 		CronHelper::before_cronrun($this->name, $this );
 
-		Log::useFiles(storage_path() . '/logs/dbbackup-' . '-' . date('Y-m-d') . '.log');
 
 		try{
 
@@ -62,6 +61,8 @@ class DBBackup extends Command {
 			$getmypid = getmypid(); // get proccess id
 
 			$BackupConfigFile = $arguments["BackupConfigFile"];
+
+			Log::useFiles(storage_path() . '/logs/dbbackup-' . basename( str_replace(".conf","", $BackupConfigFile) ) . '-' . date('Y-m-d') . '.log');
 
 			/**
 			 * add extra NEON_ config variables in automysqlbackup config file

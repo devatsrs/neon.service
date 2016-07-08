@@ -56,7 +56,9 @@ class AccountSubscription extends \Eloquent
 
             Log::info( 'days diff - ' . $days.' subscription days '.print_r($Subscriptiondays,true));
 
-            $Subscription = BillingSubscription::find($SubscriptionID);
+//            $Subscription = BillingSubscription::find($SubscriptionID);
+		    $Subscription = AccountSubscription::find($SubscriptionID); 
+
 
             if($QuarterSubscription == 1 && $days > 27){ // if quarterly
                 Log::info(' ========== quarterly start ============');

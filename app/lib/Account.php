@@ -131,6 +131,22 @@ class Account extends \Eloquent {
         $Outstanding= number_format($Outstanding,$decimal_places,'.', '');
         return $Outstanding;
     }
+    public static function getAccountOwnerEmail($Account){
+        $AccountManagerEmail ='';
+        if(!empty($Account->Owner))
+        {
+            $AccountManager = User::find($Account->Owner);
+            $AccountManagerEmail = $AccountManager->EmailAddress;
+        }
+        return $AccountManagerEmail;
+    }
+    public static function getAccountWarningEmailCount($AccountID,$subject){
+        $count =  AccountEmailLog::
+            where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalance))
+            ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
+            ->count();
+        return $count;
+    }
 
     public static function getLastAccountNo($CompanyID){
         $LastAccountNo =  CompanySetting::getKeyVal($CompanyID,'LastAccountNo');
