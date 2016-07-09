@@ -106,10 +106,9 @@ class AccountBalance extends Model
     }
 
     public static function AccountBalanceUpdates($CompanyID){
-        $AccountBalances = AccountBalance::join('tblAccount','tblAccount.AccountID','=','tblAccountBalance.AccountID')->where(array('CompanyID'=>$CompanyID))->get(array('tblAccount.AccountID'));
-        foreach($AccountBalances as $AccountBalance){
-            self::setAccountBalance($CompanyID,$AccountBalance->AccountID);
-            //self::setAccountUsedCredits($CompanyID,$AccountBalance->AccountID);
+        $Accounts = Account::where(array('CompanyID'=>$CompanyID,'Status'=>1,'AccountType'=>1))->orderby('AccountID')->get(array('AccountID'));
+        foreach($Accounts as $Account){
+            self::setAccountBalance($CompanyID,$Account->AccountID);
         }
     }
 
@@ -152,8 +151,14 @@ class AccountBalance extends Model
     public static function setAccountBalance($CompanyID,$AccountID){
         $OffsetBalance = self::getAccountBalance($CompanyID,$AccountID);
         $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
-        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('BalanceAmount'=>($OffsetBalance+$Amount)));
-        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('CreditUsed'=>$Amount));
+        if(AccountBalance::where(array('AccountID'=>$AccountID))->count()>0) {
+            AccountBalance::where(array('AccountID' => $AccountID))->update(array('BalanceAmount' => ($OffsetBalance + $Amount),'CreditUsed' => $Amount));
+        }else{
+            $AccountBalanceDate['AccountID']= $AccountID;
+            $AccountBalanceDate['BalanceAmount']= $OffsetBalance + $Amount;
+            $AccountBalanceDate['CreditUsed']= $Amount;
+            AccountBalance::create($AccountBalanceDate);
+        }
     }
 
 
