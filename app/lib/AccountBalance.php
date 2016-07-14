@@ -105,61 +105,8 @@ class AccountBalance extends Model
         return $cronjobdata;
     }
 
-    public static function AccountBalanceUpdates($CompanyID){
-        $Accounts = Account::where(array('CompanyID'=>$CompanyID,'Status'=>1,'AccountType'=>1))->orderby('AccountID')->get(array('AccountID'));
-        foreach($Accounts as $Account){
-            self::setAccountBalance($CompanyID,$Account->AccountID);
-        }
+    public static function updateAccountUnbilledAmount($CompanyID){
+        DB::connection('neon_report')->select("CALL prc_updateUnbilledAmount(?)",array($CompanyID));
     }
-
-    public static function getUnbilledAmount($CompanyID,$AccountID){
-        $Amount = 0;
-        $LastInvoiceDate = Invoice::getLastInvoiceDate($CompanyID, $AccountID);
-        if(!empty($LastInvoiceDate)){
-            $UnbilledAmount = DB::connection('neon_report')->select("CALL prc_getUnbilledReport(?,?,?,?)",array($CompanyID,$AccountID,$LastInvoiceDate,3));
-            $Amount = $UnbilledAmount[0]->FinalAmount;
-        }
-        return $Amount;
-    }
-
-    public static function setAccountUsedCredits($CompanyID,$AccountID){
-        $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
-        AccountBalance::where(array('AccountID'=>$AccountID))->update(array('CreditUsed'=>$Amount));
-    }
-
-    public static function getAccountBalance($CompanyID,$AccountID){
-        $query = "call prc_getSOA (" . $CompanyID . "," . $AccountID . ",'','',0)";
-        $result = DataTableSql::of($query,'sqlsrv2')->getProcResult(array('InvoiceOut','PaymentIn','InvoiceIn','PaymentOut','InvoiceOutAmountTotal','InvoiceOutDisputeAmountTotal','PaymentInAmountTotal','InvoiceInAmountTotal','InvoiceInDisputeAmountTotal','PaymentOutAmountTotal'));
-
-        $InvoiceOutAmountTotal = $result['data']['InvoiceOutAmountTotal'];
-        $PaymentInAmountTotal = $result['data']['PaymentInAmountTotal'];
-        $InvoiceInAmountTotal = $result['data']['InvoiceInAmountTotal'];
-        $PaymentOutAmountTotal = $result['data']['PaymentOutAmountTotal'];
-
-        $InvoiceOutAmountTotal = ($InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal > 0) ? $InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal : 0;
-        $PaymentInAmountTotal = ($PaymentInAmountTotal[0]->PaymentInAmountTotal > 0) ? $PaymentInAmountTotal[0]->PaymentInAmountTotal : 0;
-        $InvoiceInAmountTotal = ($InvoiceInAmountTotal[0]->InvoiceInAmountTotal > 0) ? $InvoiceInAmountTotal[0]->InvoiceInAmountTotal : 0;
-        $PaymentOutAmountTotal = ($PaymentOutAmountTotal[0]->PaymentOutAmountTotal > 0) ? $PaymentOutAmountTotal[0]->PaymentOutAmountTotal : 0;
-
-        $OffsetBalance = ($InvoiceOutAmountTotal - $PaymentInAmountTotal) - ($InvoiceInAmountTotal - $PaymentOutAmountTotal);
-
-        return $OffsetBalance;
-
-
-    }
-
-    public static function setAccountBalance($CompanyID,$AccountID){
-        $OffsetBalance = self::getAccountBalance($CompanyID,$AccountID);
-        $Amount = self::getUnbilledAmount($CompanyID,$AccountID);
-        if(AccountBalance::where(array('AccountID'=>$AccountID))->count()>0) {
-            AccountBalance::where(array('AccountID' => $AccountID))->update(array('BalanceAmount' => ($OffsetBalance + $Amount),'CreditUsed' => $Amount));
-        }else{
-            $AccountBalanceDate['AccountID']= $AccountID;
-            $AccountBalanceDate['BalanceAmount']= $OffsetBalance + $Amount;
-            $AccountBalanceDate['CreditUsed']= $Amount;
-            AccountBalance::create($AccountBalanceDate);
-        }
-    }
-
 
 }
