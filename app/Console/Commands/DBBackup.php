@@ -103,7 +103,7 @@ class DBBackup extends Command {
 			if(!empty($aws_command)) {
 
 				# Remove files older than 1 days
-				exec('find '. getenv("CONFIG_backup_dir") .'* -mtime +1 -exec rm {} \;');
+				exec('find '. getenv("CONFIG_backup_dir") .'* -mtime +0 -exec rm {} \;');
 
 				Log::info("Uploading Backup to AmazonS3 ");;
 
