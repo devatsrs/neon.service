@@ -155,7 +155,9 @@ class BulkInvoiceSend extends Command {
                         $status['status'] = 'failure';
                     } else {
                         $status['status'] = "success";
-                        $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+                        if($Invoice->InvoiceStatus != Invoice::PAID && $Invoice->InvoiceStatus != Invoice::PARTIALLY_PAID && $Invoice->InvoiceStatus != Invoice::CANCEL){
+                            $Invoice->update(['InvoiceStatus' => Invoice::SEND ]);
+                        }
                         /**
                          * Insert Data in InvoiceLog
                          */
