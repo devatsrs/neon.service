@@ -7,11 +7,12 @@ class Summary extends \Eloquent {
     public static function generateSummary($CompanyID,$today){
 
         if($today == 1){
-            DB::connection('neon_report')->beginTransaction();
             $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
-            DB::connection('neon_report')->statement($query);
-            DB::connection('neon_report')->commit();
+            $error_message = DB::connection('neon_report')->select($query);
+            if(count($error_message)){
+                throw  new \Exception($error_message[0]->Message);
+            }
         }else {
             $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
@@ -25,17 +26,13 @@ class Summary extends \Eloquent {
                     $end_summary = $enddate;
                 }
                 try {
-                    DB::connection('neon_report')->beginTransaction();
                     $query = "call prc_generateSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "')";
                     Log::info($query);
-                    DB::connection('neon_report')->statement($query);
-                    DB::connection('neon_report')->commit();
-                } catch (\Exception $e) {
-                    try {
-                        DB::connection('neon_report')->rollback();
-                    } catch (\Exception $err) {
-                        Log::error($err);
+                    $error_message = DB::connection('neon_report')->select($query);
+                    if(count($error_message)){
+                        throw  new \Exception($error_message[0]->Message);
                     }
+                } catch (\Exception $e) {
                     Log::error($e);
                     Log::info($start_summary);
                 }
@@ -51,11 +48,12 @@ class Summary extends \Eloquent {
     }
     public static function generateVendorSummary($CompanyID,$today){
         if($today == 1){
-            DB::connection('neon_report')->beginTransaction();
             $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
-            DB::connection('neon_report')->statement($query);
-            DB::connection('neon_report')->commit();
+            $error_message = DB::connection('neon_report')->select($query);
+            if(count($error_message)){
+                throw  new \Exception($error_message[0]->Message);
+            }
         }else {
             $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
@@ -69,17 +67,13 @@ class Summary extends \Eloquent {
                     $end_summary = $enddate;
                 }
                 try {
-                    DB::connection('neon_report')->beginTransaction();
                     $query = "call prc_generateVendorSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "')";
                     Log::info($query);
-                    DB::connection('neon_report')->statement($query);
-                    DB::connection('neon_report')->commit();
-                } catch (\Exception $e) {
-                    try {
-                        DB::connection('neon_report')->rollback();
-                    } catch (\Exception $err) {
-                        Log::error($err);
+                    $error_message = DB::connection('neon_report')->select($query);
+                    if(count($error_message)){
+                        throw  new \Exception($error_message[0]->Message);
                     }
+                } catch (\Exception $e) {
                     Log::error($e);
                     Log::info($start_summary);
                 }
