@@ -8,4 +8,6 @@ class AccountEmailLog extends \Eloquent {
     protected $table = "AccountEmailLog";
     protected $primaryKey = "AccountEmailLogID";
 
+    const LowBalance = 1;
+
 }

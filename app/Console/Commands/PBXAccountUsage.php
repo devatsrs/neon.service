@@ -113,13 +113,17 @@ class PBXAccountUsage extends Command
 
             Log::error(print_r($param, true));
 
-            $CdrBehindData = array();
+            /**
+             * Not in use
+             * $CdrBehindData = array();
             //check CdrBehindDuration from cron job setting
             if(!empty($cronsetting['ErrorEmail'])){
                 $CdrBehindData['startdatetime'] =$param['start_date_ymd'];
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
             //CdrBehindDuration
+             * */
+
 
             $today_current = date('Y-m-d H:i:s');
 

@@ -220,6 +220,35 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     $area_prefix = preg_replace('/^2222/','',$area_prefix);
 return $area_prefix;
 }
+function template_var_replace($EmailMessage,$replace_array){
+    $extra = [
+        '{{FirstName}}',
+        '{{LastName}}',
+        '{{Email}}',
+        '{{Address1}}',
+        '{{Address2}}',
+        '{{Address3}}',
+        '{{City}}',
+        '{{State}}',
+        '{{PostCode}}',
+        '{{Country}}',
+        '{{InvoiceNumber}}',
+        '{{GrandTotal}}',
+        '{{OutStanding}}',
+        '{{TotalOutStanding}}',
+        '{{Signature}}',
+        '{{BalanceAmount}}',
+        '{{BalanceThreshold}}',
+    ];
+
+    foreach($extra as $item){
+        $item_name = str_replace(array('{','}'),array('',''),$item);
+        if(isset($replace_array[$item_name])) {
+            $EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
+        }
+    }
+    return $EmailMessage;
+}
 
 
 
