@@ -31,4 +31,15 @@ class Company extends \Eloquent {
             return  getenv("TEST_EMAIL");
         }
     }
+
+    /** Setup Default Company Timezone
+     * @param $CompanyID
+     */
+    public static function setup_timezone($CompanyID){
+        $TimeZone = Company::where("CompanyID",$CompanyID)->pluck("TimeZone");
+        if(!empty($TimeZone)){
+            date_default_timezone_set($TimeZone);
+        }
+
+    }
 }
