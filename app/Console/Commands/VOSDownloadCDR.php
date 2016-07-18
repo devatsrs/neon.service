@@ -157,8 +157,8 @@ class VOSDownloadCDR extends Command {
                 $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
                 if (count($downloaded) > 0) {
 
-                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
-                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
                 }
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 CronJobLog::insert($joblogdata);
