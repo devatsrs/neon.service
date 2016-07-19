@@ -134,9 +134,7 @@ class SippyAccountUsage extends Command
             }
 
             Log::error(' ========================== sippy transaction start =============================');
-            if (count($filenames)) {
-                CronJob::createLog($CronJobID);
-            }
+            CronJob::createLog($CronJobID);
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
