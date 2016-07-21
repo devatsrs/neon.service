@@ -161,8 +161,8 @@ class SippyDownloadCDR extends Command {
                 $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
 
                 if (count($downloaded) > 0) {
-                    $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[$downloaded_files - 1]);
-                    $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[$downloaded_files - 1]);
                 }
 
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;

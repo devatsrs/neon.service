@@ -132,9 +132,7 @@ class VOSAccountUsage extends Command
                 $RateFormat = $companysetting->RateFormat;
             }
             Log::error(' ========================== vos transaction start =============================');
-            if (count($filenames)) {
-                CronJob::createLog($CronJobID);
-            }
+            CronJob::createLog($CronJobID);
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {

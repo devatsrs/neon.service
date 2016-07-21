@@ -32,6 +32,11 @@ class CronHelper {
     }
 
     public static function before_cronrun($command_name,$Cron) {
+        $arguments = $Cron->argument();
+        if(isset($arguments["CompanyID"]) && !empty($arguments["CompanyID"])){
+
+            Company::setup_timezone($arguments["CompanyID"]);
+        }
 
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 
