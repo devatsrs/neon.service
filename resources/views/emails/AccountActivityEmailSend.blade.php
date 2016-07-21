@@ -4,8 +4,9 @@ Hi {{$data['data']['AccountTaskData'][0]['FirstName']}} {{$data['data']['Account
 </p>
 
 <p>
-Please see below your activities due soon.
+    Please find below your activities due soon :
 </p>
+
 
 <style>
     .alignleft { text-align: left; }
