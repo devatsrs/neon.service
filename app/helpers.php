@@ -250,5 +250,35 @@ function template_var_replace($EmailMessage,$replace_array){
     return $EmailMessage;
 }
 
+function combile_url_path($url, $path){
+
+    return add_trailing_slash($url). $path;
+}
+
+/** Add slash at the end
+ * @param string $str
+ * @return string
+ */
+function add_trailing_slash($str = ""){
+
+    if(!empty($str)){
+
+        return rtrim($str, '/') . '/';
+
+    }
+}
+
+/** Remove slash at the start
+ * @param string $str
+ * @return string
+ */
+function remove_front_slash($str = ""){
+
+    if(!empty($str)){
+
+        return ltrim($str, '/')  ;
+
+    }
+}
 
 

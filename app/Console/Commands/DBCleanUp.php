@@ -4,6 +4,7 @@ use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Retention;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use \Exception;
@@ -66,7 +67,7 @@ class DBCleanUp extends Command {
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
 		$CronJob->update($dataactive);
 		$cronsetting = json_decode($CronJob->Settings,true);
-
+		$error = '';
 
 
 		try{
@@ -78,24 +79,60 @@ class DBCleanUp extends Command {
 			CronJob::createLog($CronJobID);
 			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
-
-
-			DB::beginTransaction();
 			Log::info('DBcleanup Starts.');
-			DB::statement("CALL prc_WSCronJobDeleteOldVendorRate()");
-			Log::info('DBcleanup: prc_WSCronJobDeleteOldVendorRate Done.');
-			DB::statement("CALL prc_WSCronJobDeleteOldCustomerRate()");
-			Log::info('DBcleanup: prc_WSCronJobDeleteOldCustomerRate Done.');
-			DB::statement("CALL prc_WSCronJobDeleteOldRateTableRate()");
-			Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableRate Done.');
-			DB::statement("CALL prc_WSCronJobDeleteOldRateSheetDetails()");
-			Log::info('DBcleanup: prc_WSCronJobDeleteOldRateSheetDetails Done.');
-			DB::commit();
+
+			Log::info('Customer CDR Delete Start.');
+				$error .= Retention::deleteCustomerCDR($CompanyID);
+			Log::info('Customer CDR Delete End.');
+
+			Log::info('Vendor CDR Delete Start.');
+				$error .= Retention::deleteVendorCDR($CompanyID);
+			Log::info('Vendor CDR Delete End.');
+
+			Log::info('Usage Download Log Start.');
+				$error .= Retention::deleteUsageDownloadLog($CompanyID);
+			Log::info('Usage Download Log End.');
+
+			Log::info('Cronjob History Delete Start.');
+				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'Cronjob');
+			Log::info('Cronjob History Delete End.');
+
+			Log::info('Job Log Delete Start.');
+				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'Job');
+			Log::info('Job Log Delete End.');
+
+			Log::info('Customer RateSheet History Delete Starts.');
+				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'CustomerRateSheet');
+			Log::info('Customer RateSheet History Delete End.');
+
+			Log::info('Vendor RateSheet History Delete Start.');
+				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'VendorRateSheet');
+			Log::info('Vendor RateSheet History Delete End.');
+
+			Log::info('All Old Rate Delete Start');
+				$error .= Retention::deleteAllOldRate($CompanyID);
+			Log::info('All Old Rate Delete End');
+
+
 			Log::info('DBcleanup Done.');
 
-			$joblogdata['Message'] = 'Success';
-			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			if(isset($error) && $error != ''){
+				$joblogdata['Message'] = $error;
+				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+
+				if(!empty($cronsetting['ErrorEmail'])) {
+
+					$result = CronJob::CronJobErrorEmailSend($CronJobID,$error);
+					Log::error("**Email Sent Status " . $result['status']);
+					Log::error("**Email Sent message " . $result['message']);
+				}
+			}else{
+				$joblogdata['Message'] = 'Success';
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			}
+
 			CronJobLog::insert($joblogdata);
+
 
 		}catch (\Exception $e){
 			Log::info('DBcleanup Rollback Today.');
@@ -119,7 +156,7 @@ class DBCleanUp extends Command {
 		$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
 		$CronJob->update($dataactive);
-		if(!empty($cronsetting['SuccessEmail'])) {
+		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);
 			Log::error("**Email Sent message ".$result['message']);

@@ -67,7 +67,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ImportAccount',
 		'App\Console\Commands\DBBackup',
 		'App\Console\Commands\DialStringUpload',
-
+		'App\Console\Commands\ServerCleanUp',
 	];
 
 	/**
