@@ -134,6 +134,8 @@ class PortaAccountUsage extends Command {
 
             Log::error(print_r($param, true));
 
+            /**
+             * Not in Use
             $CdrBehindData = array();
             //check CdrBehindDuration from cron job setting
             if(!empty($cronsetting['ErrorEmail'])){
@@ -141,6 +143,8 @@ class PortaAccountUsage extends Command {
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
             //CdrBehindDuration
+            */
+
             $InserData = array();
             $data_count = 0;
             $insertLimit = 1000;

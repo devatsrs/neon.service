@@ -6,7 +6,7 @@ use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Helper;
 use App\Lib\User;
-use App\Lib\AccountActivity;
+use App\Lib\Task;
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\JobStatus;
@@ -93,17 +93,17 @@ class AccountActivityReminder extends Command
         $Company = Company::find($CompanyID);
         try {
             CronJob::createLog($CronJobID);
-            $select = ['tblAccount.AccountName', 'tblAccountActivity.Title', 'tblAccountActivity.Date', 'tblAccountActivity.ActivityType', 'tblUser.EmailAddress', 'tblUser.FirstName', 'tblUser.LastName'];
-            $accountactivity = Account::join('tblAccountActivity', 'tblAccountActivity.AccountID', '=', 'tblAccount.AccountID')
+            $select = ['tblAccount.AccountName', 'tblTask.Subject', 'tblTask.DueDate', 'tblTask.Task_type', 'tblTask.Priority','tblUser.EmailAddress', 'tblUser.FirstName', 'tblUser.LastName'];
+            $accounttask = Account::join('tblTask', 'tblTask.AccountIDs', '=', 'tblAccount.AccountID')
                 ->join('tblUser', 'tblUser.UserID', '=', 'tblAccount.Owner');//convert(date,errorDate,101)
-            $accountactivity->where('tblAccount.CompanyID', $CompanyID)->whereRaw("DATE_FORMAT(tblAccountActivity.Date,'%Y-%m-%d')='" . $today . "'")->orderBy('tblUser.UserID', 'ASC')->orderBy('tblAccount.AccountID', 'DESC');
+            $accounttask->where('tblAccount.CompanyID', $CompanyID)->whereRaw("DATE_FORMAT(tblTask.DueDate,'%Y-%m-%d')='" . $today . "'")->orderBy('tblUser.UserID', 'ASC')->orderBy('tblAccount.AccountID', 'DESC');
             //$accountactivity = AccountActivity::where('CompanyID', $CompanyID)->whereRaw('YEAR([Date])-MONTH([Date])-DAY([Date])=' . $today)->orderBy('AccountID','DESC');
             //$accountactivity->join('tblAccount','tblAccountActivity.AccountID','=','tblAccount.AccountID');
-            $accountactivity->select($select);
-            $activities = $accountactivity->get();
-            if (count($activities)>0) {
+            $accounttask->select($select);
+            $tasks = $accounttask->get();
+            if (count($tasks)>0) {
                 /**  Create a Job */
-                $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+                $UserID = User::where("CompanyID", $CompanyID)->where("AdminUser", "=", "1")->min("UserID");
                 $CreatedBy = User::get_user_full_name($UserID);
                 $jobType = JobType::where(["Code" => 'AAE'])->get(["JobTypeID", "Title"]); // Account Activity Reminder
                 $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
@@ -117,25 +117,25 @@ class AccountActivityReminder extends Command
                 $jobdata["updated_at"] = date('Y-m-d H:i:s');
                 $JobID = Job::insertGetId($jobdata);
                 $emaillist = array();
-                foreach ($activities as $activity) {
-                    $emaillist[$activity->EmailAddress][] = array('AccountName' => $activity->AccountName,
-                            'Title' => $activity->Title,
-                            'Date' => date('d-m-Y h:i:A',strtotime($activity->Date)),
-                            'ActivityType' => AccountActivity::$activity_type[$activity->ActivityType],
-                            'FirstName' => $activity->FirstName,
-                            'LastName' => $activity->LastName);
+                foreach ($tasks as $task) {
+                    $emaillist[$task->EmailAddress][] = array('AccountName' => $task->AccountName,
+                        'Title' => $task->Subject,
+                        'Date' => date('d-m-Y h:i:A',strtotime($task->DueDate)),
+                        'TaskType' => $task->Task_type>0?Task::$taskType[$task->Task_type]:'',
+                        'FirstName' => $task->FirstName,
+                        'LastName' => $task->LastName,
+                        'Priority' => $task->Priority);
                 }
-
-                foreach($emaillist as $email=>$activities){
+                foreach($emaillist as $email=>$tasks){
                     $status = Helper::sendMail('emails.AccountActivityEmailSend', array(
                         'EmailTo' => $email,
-                        'EmailToName' => $activities[0]['FirstName'] . ' ' . $activities[0]['FirstName'],
+                        'EmailToName' => $tasks[0]['FirstName'] . ' ' . $tasks[0]['FirstName'],
                         'Subject' => 'Account activity reminder',
                         'CompanyID' => $CompanyID,
-                        'data' => array("AccountActivityData" => $activities, 'CompanyName' => $Company->CompanyName)
+                        'data' => array("AccountTaskData" => $tasks, 'CompanyName' => $Company->CompanyName)
                     ));
                     if (isset($status["status"]) && $status["status"] == 0) {
-                        $errors[] = 'Mail not send to ' . $activities[0]['FirstName'] . ',\n\r Error Message:' . $status["message"];
+                        $errors[] = 'Mail not send to ' . $tasks[0]['FirstName'] . ',\n\r Error Message:' . $status["message"];
                         $jobdata['EmailSentStatus'] = $status['status'];
                         $jobdata['EmailSentStatusMessage'] = $status['message'];
                     } else {

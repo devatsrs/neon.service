@@ -132,9 +132,7 @@ class VOSAccountUsage extends Command
                 $RateFormat = $companysetting->RateFormat;
             }
             Log::error(' ========================== vos transaction start =============================');
-            if (count($filenames)) {
-                CronJob::createLog($CronJobID);
-            }
+            CronJob::createLog($CronJobID);
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
@@ -302,11 +300,17 @@ class VOSAccountUsage extends Command
 
 
                 date_default_timezone_set(Config::get('app.timezone'));
+
+
+                /**
+                 * Not in use
                 $CdrBehindData = array();
                 if (!empty($result[0]->min_date) && !empty($cronsetting['ErrorEmail'])) {
                     $CdrBehindData['startdatetime'] = $result[0]->min_date;
                     CronJob::CheckCdrBehindDuration($CronJob, $CdrBehindData);
                 }
+                */
+
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
