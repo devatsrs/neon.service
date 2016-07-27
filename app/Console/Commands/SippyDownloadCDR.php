@@ -154,14 +154,15 @@ class SippyDownloadCDR extends Command {
 
                 }
                 $dataactive['Active'] = 0;
+                $dataactive['PID'] = '';
                 $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
                 $joblogdata['Message'] = "Files Downloaded " . count($downloaded);
 
                 if (count($downloaded) > 0) {
-                    $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[$downloaded_files - 1]);
-                    $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= "<br>Date  : " . $sippy->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= " - " . $sippy->get_file_datetime($downloaded[$downloaded_files - 1]);
                 }
 
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -175,6 +176,7 @@ class SippyDownloadCDR extends Command {
             Log::error($e);
 
             $dataactive['Active'] = 0;
+            $dataactive['PID'] = '';
             $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
