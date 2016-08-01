@@ -71,7 +71,11 @@ function next_billing_date($BillingCycleType,$BillingCycleValue,$BillingStartDat
 
                 $newDate = strtotime($year . '-' . $month . '-' . $day);
 
-                $NextInvoiceDate = date("Y-m-d", strtotime("+1 month", $newDate ));
+                if($day<=date("d",  $BillingStartDate)) {
+                    $NextInvoiceDate = date("Y-m-d", strtotime("+1 month", $newDate));
+                }else{
+                    $NextInvoiceDate = date("Y-m-d",$newDate);
+                }
 
                 break;
             case 'fortnightly':
