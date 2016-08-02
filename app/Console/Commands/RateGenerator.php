@@ -82,7 +82,6 @@ class RateGenerator extends Command {
         try {
             CronJob::createLog($CronJobID);
             $CompanyID = $arguments["CompanyID"];
-            $data['UserID'] = $CronJob->UserID;
             $data['RateGeneratorId']=$cronsetting->rateGeneratorID;
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
             $data['RateTableId']= $cronsetting->rateTableID;
