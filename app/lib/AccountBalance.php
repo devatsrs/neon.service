@@ -48,8 +48,14 @@ class AccountBalance extends Model
                     'CompanyName'=>$Company->CompanyName,
                     'Message' =>template_var_replace($EmailMessage,$replace_array)
                 );
-                $UserID = User::getMinUserID($CompanyID);
-                $User = User::getUserInfo($UserID);
+                //$UserID = User::getMinUserID($CompanyID);
+                //$User = User::getUserInfo($UserID);
+                $User = new \stdClass();
+                $User->UserID = 0;
+                $User->CompanyID = $CompanyID;
+                $User->FirstName = 'RM';
+                $User->LastName = ' Scheduler';
+                $User->EmailAddress = $Company->EmailFrom;
                 $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
                 if ($status['status'] == 1 && $AccountBalanceWarning->EmailToCustomer == 0) {
                     $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
