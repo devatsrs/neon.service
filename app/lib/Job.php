@@ -33,7 +33,7 @@ class Job extends \Eloquent {
         $data["CompanyID"] = $CompanyID;
         $data["JobTypeID"] = 5;
         $data["JobStatusID"] = 1;
-        $data["JobLoggedUserID"] = User::getMinUserID($CompanyID);
+        $data["JobLoggedUserID"] = $options['UserID'];
         $data["CreatedBy"] = 'RMScheduler';
 
         $data["Title"] =   'Generate Rate Table';

@@ -58,6 +58,7 @@ class AccountBalanceProcess extends Command
         $CompanyID = $arguments["CompanyID"];
         $CronJob = CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
+        $cronsetting['UserID'] = $CronJob->UserID;
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/accountbalanceprocess-' . $CronJobID . '-' . date('Y-m-d') . '.log');

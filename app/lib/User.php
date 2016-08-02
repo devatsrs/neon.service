@@ -32,7 +32,4 @@ class User extends \Eloquent {
         }
 
     }
-    public static function getMinUserID($CompanyID){
-        return $UserID = User::where("CompanyID",$CompanyID)->where("Roles","like","%Admin%")->min("UserID");
-    }
 }
