@@ -75,7 +75,8 @@ class RegenerateInvoice extends Command {
 
         $job = Job::find($JobID);
         $joboptions = json_decode($job->Options);
-        $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+        //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+        $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceGeneration]);
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
         $ProcessID = Uuid::generate();

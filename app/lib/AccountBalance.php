@@ -31,17 +31,19 @@ class AccountBalance extends Model
         foreach($AccountBalanceWarnings as $AccountBalanceWarning){
             if($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountWarningEmailCount($AccountBalanceWarning->AccountID,$EmailSubject) == 0) {
                 $Emails = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
+                $LowBalanceReminderEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::LowBalanceReminder]);
+                $LowBalanceReminderEmail = empty($LowBalanceReminderEmail)?$Emails:$LowBalanceReminderEmail;
                 $AccountManagerEmail = Account::getAccountOwnerEmail($AccountBalanceWarning);
-                if (empty($Emails) && !empty($AccountManagerEmail)) {
-                    $Emails = $AccountManagerEmail;
+                if (empty($LowBalanceReminderEmail) && !empty($AccountManagerEmail)) {
+                    $LowBalanceReminderEmail = $AccountManagerEmail;
                 } else if (!empty($AccountManagerEmail)) {
-                    $Emails .= ',' . $AccountManagerEmail;
+                    $LowBalanceReminderEmail .= ',' . $AccountManagerEmail;
                 }
                 $replace_array['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
                 $replace_array['BalanceThreshold'] = str_replace('p','%',$AccountBalanceWarning->BalanceThreshold);
 
                 $emaildata = array(
-                    'EmailTo' => explode(",", $Emails),
+                    'EmailTo' => explode(",", $LowBalanceReminderEmail),
                     'EmailToName' => $Company->CompanyName,
                     'Subject' => $EmailSubject ." (".$AccountBalanceWarning->AccountName.")",
                     'CompanyID' => $CompanyID,

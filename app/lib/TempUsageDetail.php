@@ -137,9 +137,11 @@ class TempUsageDetail extends \Eloquent {
             $error_msg[] = $Messagesrow->Message;
 
         }
-        if (!empty($cronsetting['ErrorEmail']) && !empty($error_msg)) {
+        $ReRateEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::ReRate]);
+        $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
+        if (!empty($ReRateEmail) && !empty($error_msg)) {
             $emaildata['CompanyID'] = $CompanyID;
-            $emaildata['EmailTo'] = $cronsetting['ErrorEmail'];
+            $emaildata['EmailTo'] = explode(',',$ReRateEmail);
             $emaildata['EmailToName'] = '';
             $emaildata['Message'] = implode('<br>', $error_msg);
             $emaildata['Subject'] = $JobTitle . ' Usage Log file with Account and Trunk did not match ';

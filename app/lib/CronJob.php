@@ -460,10 +460,11 @@ class CronJob extends \Eloquent {
             $status = Helper::sendMail('emails.rategenerator',$emaildata);
         }
         //$rates_email = explode(',',CompanySetting::getKeyVal($CompanyID,'RateGenerationEmail'));
+        $rates_email = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::RateGeneration]);
+        $rates_email = empty($rates_email)?$cronsetting->SuccessEmail:$rates_email;
+        if(!empty($rates_email)) {
 
-        if(!empty($cronsetting->SuccessEmail)) {
-
-            $rates_email = explode(',', $cronsetting->SuccessEmail);
+            $rates_email = explode(',', $rates_email);
             $valid_emails = array();
 
             foreach ($rates_email as $row) {
