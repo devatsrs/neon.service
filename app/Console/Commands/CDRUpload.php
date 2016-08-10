@@ -342,6 +342,11 @@ class CDRUpload extends Command
                             DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
                         }*/
                     }
+                    if($RateCDR == 0) {
+                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
+                        DB::statement("CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' )");
+                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
+                    }
 
                     Log::error(' prc_insertCDR start');
                     DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $ProcessID . "', '".$temptableName."' )");
