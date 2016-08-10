@@ -64,7 +64,7 @@ class AccountBalanceProcess extends Command
         $ProcessID = CompanyGateway::getProcessID();
         try {
 
-            AccountBalance::AccountBalanceUpdates($CompanyID,$ProcessID);
+
             $cronjobdata = AccountBalance::SendBalanceThresoldEmail($CompanyID,$ProcessID,$cronsetting);
             if(count($cronjobdata)){
                 $joblogdata['Message'] ='Message : '.implode(',<br>',$cronjobdata);

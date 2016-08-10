@@ -357,7 +357,9 @@ class CronJob extends \Eloquent {
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
-    public static function CheckCdrBehindDuration($CronJob,$CdrBehindData){
+
+    // Not in use
+    public static function NOT_IN_USE______CheckCdrBehindDuration($CronJob,$CdrBehindData){
         //check CdrBehindDuration from cron job setting
         $cronsetting = json_decode($CronJob->Settings, true);
         $CdrBehindEmailSendTime = $CronJob->CdrBehindEmailSendTime;
