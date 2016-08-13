@@ -38,4 +38,16 @@ class UsageHeader extends \Eloquent {
         }
         return $StartDate;
     }
+
+    // use for customer cdr retention
+    public static function getMinDateUsageHeader($CompanyID){
+        $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->min('StartDate');
+        return $StartDate;
+    }
+
+    // use for vendor cdr retention
+    public static function getMinDateVendorCDRHeader($CompanyID){
+        $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->min('StartDate');
+        return $StartDate;
+    }
 }
