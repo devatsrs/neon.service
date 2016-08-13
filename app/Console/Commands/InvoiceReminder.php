@@ -160,8 +160,8 @@ class InvoiceReminder extends Command
                                     }
                                 }
                                 $emaildata['EmailToName'] = $Account->AccountName;
-                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,$Account->RoundChargesAmount);
-                                $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,$Account->RoundChargesAmount);
+                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
+                                $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
                                 $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{InvoiceNumber}}','{{GrandTotal}}','{{OutStanding}}','{{TotalOutStanding}}','{{Signature}}'];
                                 $replace = [$Account->FirstName, $Account->LastName, $Account->Email, $Account->Address1, $Account->Address2, $Account->Address3, $Account->City, $Account->State, $Account->PostCode, $Account->Country,$invoice->InvoiceNumber,$invoice->GrandTotal,$InvoiceOutStanding,$TotalOutStanding,$Signature];
                                 $emaildata['extra'] = $extra;

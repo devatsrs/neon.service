@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\AccountBilling;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -82,7 +83,7 @@ class InvoiceGenerator extends Command {
 
 
         // Get Active Accounts which has  BillingCycleType set
-        $Accounts = Account::select(["AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<=',$today)->whereNotNull('BillingCycleType')->get();
+        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
 
        /* $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
@@ -132,7 +133,14 @@ class InvoiceGenerator extends Command {
         try {
             CronJob::createLog($CronJobID);
             do{
-            $Accounts = Account::select(["AccountID","NextInvoiceDate","AccountName"])->whereNotIn('AccountID',$skip_accounts)->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<>','')->where('NextInvoiceDate','<=',$today)->whereNotNull('BillingCycleType')->orderby('AccountID')->get();
+            $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
+                ->select(["tblAccountBilling.AccountID","tblAccountBilling.NextInvoiceDate","AccountName"])
+                ->whereNotIn('tblAccount.AccountID',$skip_accounts)
+                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])
+                ->where('tblAccountBilling.NextInvoiceDate','<>','')
+                ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
+                ->whereNotNull('tblAccountBilling.BillingCycleType')
+                ->orderby('tblAccount.AccountID')->get();
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
@@ -189,10 +197,10 @@ class InvoiceGenerator extends Command {
                                         Log::info('Invoice Commited  AccountID = ' . $AccountID);
                                         DB::connection('sqlsrv2')->commit();
                                         Log::info('=========== Updating  InvoiceDate =========== ');
-                                        $Account = Account::find((int)$AccountID);
+                                        $AccountBilling = AccountBilling::getBilling($AccountID);
                                         $oldNextInvoiceDate = $NextInvoiceDate;
-                                        $NewNextInvoiceDate = next_billing_date($Account->BillingCycleType,$Account->BillingCycleValue,strtotime($oldNextInvoiceDate));
-                                        Account::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
+                                        $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($oldNextInvoiceDate));
+                                        AccountBilling::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
 
                                         Log::info('=========== Updated  InvoiceDate =========== ') ;
                                         DB::commit();
@@ -243,7 +251,12 @@ class InvoiceGenerator extends Command {
 
             } // Loop over
                 //Log::info($skip_accounts);
-        }while(Account::select(["AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('NextInvoiceDate','<>','')->where('NextInvoiceDate','<=',$today)->whereNotIn('AccountID',$skip_accounts)->whereNotNull('BillingCycleType')->count());
+        }while(Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
+                ->select(["tblAccount.AccountID","AccountName"])
+                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])
+                ->where('tblAccountBilling.NextInvoiceDate','<>','')->where('tblAccountBilling.NextInvoiceDate','<=',$today)
+                ->whereNotIn('tblAccount.AccountID',$skip_accounts)
+                ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
 
 
             Log::info(' ========================== Invoice Send Loop End =============================');

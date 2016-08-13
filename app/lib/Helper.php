@@ -248,4 +248,19 @@ class Helper{
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
+    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
+        $RoundChargesAmount = 2;
+        if($AccountID>0){
+            $RoundChargesAmount = AccountBilling::where(["AccountID"=>$AccountID])->pluck("RoundChargesAmount");
+        }
+        if ( empty($RoundChargesAmount) ) {
+            $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount')=='Invalid Key'?2:CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+        }
+        if ( empty($RoundChargesAmount) ) {
+            $RoundChargesAmount = 2;
+        }
+
+        return $RoundChargesAmount;
+    }
+
 }

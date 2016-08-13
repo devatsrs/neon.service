@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\AccountBilling;
 use App\Lib\Company;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
@@ -101,7 +102,7 @@ class BulkInvoiceSend extends Command {
                     $Account = Account::find($Invoice->AccountID);
                     $Currency = Currency::find($Account->CurrencyId);
                     $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
-                    $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
+                    $InvoiceTemplate = InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($Account->AccountID));
                     $_InvoiceNumber = $InvoiceTemplate->InvoiceNumberPrefix . $Invoice->InvoiceNumber;
                     $emaildata['data'] = array(
                         'InvoiceNumber' => $_InvoiceNumber,
