@@ -102,8 +102,7 @@ class BulkInvoiceSend extends Command {
                     $Account = Account::find($Invoice->AccountID);
                     $Currency = Currency::find($Account->CurrencyId);
                     $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
-                    $InvoiceTemplate = InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($Account->AccountID));
-                    $_InvoiceNumber = $InvoiceTemplate->InvoiceNumberPrefix . $Invoice->InvoiceNumber;
+                    $_InvoiceNumber = $Invoice->FullInvoiceNumber;
                     $emaildata['data'] = array(
                         'InvoiceNumber' => $_InvoiceNumber,
                         'CompanyName' => $Company->CompanyName,

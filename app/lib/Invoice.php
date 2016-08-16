@@ -1045,7 +1045,7 @@ class Invoice extends \Eloquent {
         $emaildata = array();
         $Currency = Currency::find($Account->CurrencyId);
         $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
-        $_InvoiceNumber = $InvoiceNumberPrefix . $Invoice->InvoiceNumber;
+        $_InvoiceNumber = $Invoice->FullInvoiceNumber;
         $emaildata['data'] = array(
             'InvoiceNumber' => $_InvoiceNumber,
             'CompanyName' => $CompanyName,
@@ -1354,6 +1354,7 @@ class Invoice extends \Eloquent {
             "AccountID" => $AccountID,
             "Address" => $Address,
             "InvoiceNumber" => $InvoiceNumber,
+            "FullInvoiceNumber" => $InvoiceTemplate->InvoiceNumberPrefix.$InvoiceNumber,
             "IssueDate" => date('Y-m-d'),
             "TotalDiscount" => 0,
             "CurrencyID" => $Account->CurrencyId,
@@ -1871,6 +1872,7 @@ class Invoice extends \Eloquent {
             "AccountID" => $AccountID,
             "Address" => $Address,
             "InvoiceNumber" => $InvoiceNumber,
+            "FullInvoiceNumber" => $InvoiceTemplate->InvoiceNumberPrefix.$InvoiceNumber,
             "IssueDate" => date('Y-m-d'),
             "TotalDiscount" => 0,
             "CurrencyID" => $Account->CurrencyId,

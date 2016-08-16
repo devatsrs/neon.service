@@ -138,7 +138,8 @@ class BulkAutoPaymentCapture extends Command {
                                 $paymentdata = array();
                                 $paymentdata['CompanyID'] = $Invoice->CompanyID;
                                 $paymentdata['AccountID'] = $Invoice->AccountID;
-                                $paymentdata['InvoiceNo'] = $Invoice->InvoiceNumber;
+                                $paymentdata['InvoiceNo'] = $Invoice->FullInvoiceNumber;
+                                $paymentdata['InvoiceID'] = $Invoice->InvoiceID;
                                 $paymentdata['PaymentDate'] = date('Y-m-d');
                                 $paymentdata['PaymentMethod'] = $transactionResponse['transaction_payment_method'];
                                 $paymentdata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
