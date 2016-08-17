@@ -31,25 +31,33 @@ class AccountBalance extends Model
         foreach($AccountBalanceWarnings as $AccountBalanceWarning){
             if($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountWarningEmailCount($AccountBalanceWarning->AccountID,$EmailSubject) == 0) {
                 $Emails = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
+                $LowBalanceReminderEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::LowBalanceReminder]);
+                $LowBalanceReminderEmail = empty($LowBalanceReminderEmail)?$Emails:$LowBalanceReminderEmail;
                 $AccountManagerEmail = Account::getAccountOwnerEmail($AccountBalanceWarning);
-                if (empty($Emails) && !empty($AccountManagerEmail)) {
-                    $Emails = $AccountManagerEmail;
+                if (empty($LowBalanceReminderEmail) && !empty($AccountManagerEmail)) {
+                    $LowBalanceReminderEmail = $AccountManagerEmail;
                 } else if (!empty($AccountManagerEmail)) {
-                    $Emails .= ',' . $AccountManagerEmail;
+                    $LowBalanceReminderEmail .= ',' . $AccountManagerEmail;
                 }
                 $replace_array['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
                 $replace_array['BalanceThreshold'] = str_replace('p','%',$AccountBalanceWarning->BalanceThreshold);
 
                 $emaildata = array(
-                    'EmailTo' => explode(",", $Emails),
+                    'EmailTo' => explode(",", $LowBalanceReminderEmail),
                     'EmailToName' => $Company->CompanyName,
                     'Subject' => $EmailSubject ." (".$AccountBalanceWarning->AccountName.")",
                     'CompanyID' => $CompanyID,
                     'CompanyName'=>$Company->CompanyName,
                     'Message' =>template_var_replace($EmailMessage,$replace_array)
                 );
-                $UserID = User::getMinUserID($CompanyID);
-                $User = User::getUserInfo($UserID);
+                //$UserID = User::getMinUserID($CompanyID);
+                //$User = User::getUserInfo($UserID);
+                $User = new \stdClass();
+                $User->UserID = 0;
+                $User->CompanyID = $CompanyID;
+                $User->FirstName = 'RM';
+                $User->LastName = ' Scheduler';
+                $User->EmailAddress = $Company->EmailFrom;
                 $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
                 if ($status['status'] == 1 && $AccountBalanceWarning->EmailToCustomer == 0) {
                     $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
