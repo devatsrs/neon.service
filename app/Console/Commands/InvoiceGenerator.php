@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\AccountBilling;
+use App\Lib\AccountNextBilling;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -198,6 +199,11 @@ class InvoiceGenerator extends Command {
                                         DB::connection('sqlsrv2')->commit();
                                         Log::info('=========== Updating  InvoiceDate =========== ');
                                         $AccountBilling = AccountBilling::getBilling($AccountID);
+                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
+                                        if(!empty($AccountNextBilling)){
+                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue]);
+                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
+                                        }
                                         $oldNextInvoiceDate = $NextInvoiceDate;
                                         $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($oldNextInvoiceDate));
                                         AccountBilling::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
