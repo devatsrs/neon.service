@@ -168,9 +168,9 @@ function get_timezone_offset($remote_tz, $origin_tz = null) {
     $offset = $origin_dtz->getOffset($origin_dt) - $remote_dtz->getOffset($remote_dt);
     return $offset;
 }
-function searcharray($value, $key, $array) {
+function searcharray($val1, $key1, $val2='',$key2='',$array) {
     foreach ($array as $k => $val) {
-        if ($val[$key] == $value) {
+        if(array_search($val1,$val)== $key1 && array_search($val2,$val)== $key2){
             return $k;
         }
     }
@@ -220,6 +220,65 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     $area_prefix = preg_replace('/^2222/','',$area_prefix);
 return $area_prefix;
 }
+function template_var_replace($EmailMessage,$replace_array){
+    $extra = [
+        '{{FirstName}}',
+        '{{LastName}}',
+        '{{Email}}',
+        '{{Address1}}',
+        '{{Address2}}',
+        '{{Address3}}',
+        '{{City}}',
+        '{{State}}',
+        '{{PostCode}}',
+        '{{Country}}',
+        '{{InvoiceNumber}}',
+        '{{GrandTotal}}',
+        '{{OutStanding}}',
+        '{{TotalOutStanding}}',
+        '{{Signature}}',
+        '{{BalanceAmount}}',
+        '{{BalanceThreshold}}',
+    ];
 
+    foreach($extra as $item){
+        $item_name = str_replace(array('{','}'),array('',''),$item);
+        if(isset($replace_array[$item_name])) {
+            $EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
+        }
+    }
+    return $EmailMessage;
+}
+
+function combile_url_path($url, $path){
+
+    return add_trailing_slash($url). $path;
+}
+
+/** Add slash at the end
+ * @param string $str
+ * @return string
+ */
+function add_trailing_slash($str = ""){
+
+    if(!empty($str)){
+
+        return rtrim($str, '/') . '/';
+
+    }
+}
+
+/** Remove slash at the start
+ * @param string $str
+ * @return string
+ */
+function remove_front_slash($str = ""){
+
+    if(!empty($str)){
+
+        return ltrim($str, '/')  ;
+
+    }
+}
 
 

@@ -84,7 +84,8 @@ class BulkInvoiceSend extends Command {
         try {
             $Company = Company::find($CompanyID);
             $UserEmail = '';
-            $InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+            //$InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+            $InvoiceGenerationEmail_main = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceGeneration]);
             $InvoiceGenerationEmail_main = ($InvoiceGenerationEmail_main =='Invalid Key')?$Company->Email:$InvoiceGenerationEmail_main;
             if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
                 $User = User::getUserInfo($job->JobLoggedUserID);
@@ -155,7 +156,9 @@ class BulkInvoiceSend extends Command {
                         $status['status'] = 'failure';
                     } else {
                         $status['status'] = "success";
-                        $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+                        if($Invoice->InvoiceStatus != Invoice::PAID && $Invoice->InvoiceStatus != Invoice::PARTIALLY_PAID && $Invoice->InvoiceStatus != Invoice::CANCEL){
+                            $Invoice->update(['InvoiceStatus' => Invoice::SEND ]);
+                        }
                         /**
                          * Insert Data in InvoiceLog
                          */

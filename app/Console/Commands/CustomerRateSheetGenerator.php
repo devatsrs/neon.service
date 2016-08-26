@@ -106,9 +106,9 @@ class CustomerRateSheetGenerator extends Command {
                 Log::useFiles(storage_path() . '/logs/customerratesheet-' . $JobID . '-' . date('Y-m-d') . '.log');
                 Log::info('job start ' . $JobID);
                 $Company = Company::find($CompanyID);
+                Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
                 DB::beginTransaction();
                 Log::info('job transaction start ' . $JobID);
-                Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
                 if (!empty($ids)) {
 
 

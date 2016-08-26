@@ -19,6 +19,7 @@ class Helper{
             $mail->isHTML(false);
         }
         $body = htmlspecialchars_decode(View::make($view,compact('data'))->render());
+
         if(!is_array($data['EmailTo']) && strpos($data['EmailTo'],',') !== false){
             $data['EmailTo']  = explode(',',$data['EmailTo']);
         }
@@ -209,6 +210,9 @@ class Helper{
                     'JobID'=>$data['JobID'],
                     'UserID'=>$user->UserID,
                     'CreatedBy'=>$user->FirstName.' '.$user->LastName];
+        if(!empty($data['EmailType'])){
+            $logData['EmailType'] = $data['EmailType'];
+        }
         try {
             if (AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;

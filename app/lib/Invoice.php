@@ -162,7 +162,7 @@ class Invoice extends \Eloquent {
                         //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
                         foreach($result_data as $result_row){
                             if(isset($result_row['AreaPrefix'])){
-                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
+                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
                                 if(isset($usage_data[$key]['AreaPrefix'])){
                                     $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                                     $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
@@ -237,7 +237,7 @@ class Invoice extends \Eloquent {
                                 if(isset($result_row['BillDurationInSec'])){
                                     unset($result_row['BillDurationInSec']);
                                 }
-                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
+                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
                                 if(isset($usage_data[$key]['AreaPrefix'])){
                                     $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                                     $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
@@ -667,7 +667,7 @@ class Invoice extends \Eloquent {
                             //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
                             foreach($result_data as $result_row){
                                 if(isset($result_row['AreaPrefix'])){
-                                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
+                                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
                                     if(isset($usage_data[$key]['AreaPrefix'])){
                                         $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
@@ -992,7 +992,7 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ');
 
                         $fullPath = "";
-                        $message['message'] = $Account->AccountName;
+                        $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
                         if ($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
@@ -1177,7 +1177,7 @@ class Invoice extends \Eloquent {
     public static function addSubscription($Invoice,$InvoiceTemplate,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
 
         // Get All Account Subscriptions
-        $AccountSubscriptions = AccountSubscription::join('tblBillingSubscription', 'tblAccountSubscription.SubscriptionID', '=', 'tblBillingSubscription.SubscriptionID')->where("tblAccountSubscription.AccountID", $Invoice->AccountID)->select("tblAccountSubscription.*")->get();
+        $AccountSubscriptions = AccountSubscription::join('tblBillingSubscription', 'tblAccountSubscription.SubscriptionID', '=', 'tblBillingSubscription.SubscriptionID')->where("tblAccountSubscription.AccountID", $Invoice->AccountID)->select("tblAccountSubscription.*")->orderBy('SequenceNo','asc')->get();
         $SubscriptionChargewithouttaxTotal = 0;
         Log::info('SUBSCRIPTION '.count($AccountSubscriptions)) ;
         $StartDate = date("Y-m-d",strtotime($StartDate));
@@ -1684,7 +1684,7 @@ class Invoice extends \Eloquent {
                                         if(empty($result_row['AreaPrefix'])){
                                             $result_row['AreaPrefix'] = 'Other';
                                         }
-                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
+                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
                                         if(isset($usage_data[$key]['AreaPrefix'])){
                                             $usage_data[$key]['NoOfCalls'] += $result_row['TotalCalls'];
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
@@ -2063,7 +2063,7 @@ class Invoice extends \Eloquent {
                                         if(empty($result_row['AreaPrefix'])){
                                             $result_row['AreaPrefix'] = 'Other';
                                         }
-                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$usage_data);
+                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
                                         if(isset($usage_data[$key]['AreaPrefix'])){
                                             $usage_data[$key]['NoOfCalls'] += $result_row['TotalCalls'];
                                             $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);

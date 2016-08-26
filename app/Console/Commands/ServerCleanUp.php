@@ -1,23 +1,25 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CronHelper;
+use App\Lib\RemoteSSH;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Retention;
+use App\Lib\CompanyConfiguration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
 
-class DBCleanUp extends Command {
+class ServerCleanUp extends Command {
 
 	/**
 	 * The console command name.
 	 *
 	 * @var string
 	 */
-	protected $name = 'dbcleanup';
+	protected $name = 'servercleanup';
 
 	/**
 	 * The console command description.
@@ -52,9 +54,7 @@ class DBCleanUp extends Command {
     public function handle()
 	{
 
-
 		CronHelper::before_cronrun($this->name, $this );
-
 
 		$arguments = $this->argument();
 		$getmypid = getmypid(); // get proccess id
@@ -67,7 +67,6 @@ class DBCleanUp extends Command {
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
 		$CronJob->update($dataactive);
 		$cronsetting = json_decode($CronJob->Settings,true);
-		$error = '';
 
 
 		try{
@@ -77,66 +76,35 @@ class DBCleanUp extends Command {
 			$joblogdata['created_at'] = date('Y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			CronJob::createLog($CronJobID);
-			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+			Log::useFiles(storage_path() . '/logs/servercleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
-			Log::info('DBcleanup Starts.');
+			$BeforeDiskSpaceOutput = Retention::getDiskSpaceOfServer($CompanyID);
 
-			Log::info('Customer CDR Delete Start.');
-				$error .= Retention::deleteCustomerCDR($CompanyID);
-			Log::info('Customer CDR Delete End.');
+			//delete storage log file
+			Retention::deleteStorageLog($CompanyID);
 
-			Log::info('Vendor CDR Delete Start.');
-				$error .= Retention::deleteVendorCDR($CompanyID);
-			Log::info('Vendor CDR Delete End.');
+			//delete temp file
+			Retention::deleteTempFiles($CompanyID);
 
-			Log::info('Usage Download Log Start.');
-				$error .= Retention::deleteUsageDownloadLog($CompanyID);
-			Log::info('Usage Download Log End.');
+			//delete cdr sippy and vos files
+			Retention::deleteCDRFiles($CompanyID);
 
-			Log::info('Cronjob History Delete Start.');
-				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'Cronjob');
-			Log::info('Cronjob History Delete End.');
-
-			Log::info('Job Log Delete Start.');
-				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'Job');
-			Log::info('Job Log Delete End.');
-
-			Log::info('Customer RateSheet History Delete Starts.');
-				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'CustomerRateSheet');
-			Log::info('Customer RateSheet History Delete End.');
-
-			Log::info('Vendor RateSheet History Delete Start.');
-				$error .= Retention::deleteJobOrCronJobLog($CompanyID,'VendorRateSheet');
-			Log::info('Vendor RateSheet History Delete End.');
-
-			Log::info('All Old Rate Delete Start');
-				$error .= Retention::deleteAllOldRate($CompanyID);
-			Log::info('All Old Rate Delete End');
-
-
-			Log::info('DBcleanup Done.');
-
-			if(isset($error) && $error != ''){
-				$joblogdata['Message'] = $error;
-				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-
-				if(!empty($cronsetting['ErrorEmail'])) {
-
-					$result = CronJob::CronJobErrorEmailSend($CronJobID,$error);
-					Log::error("**Email Sent Status " . $result['status']);
-					Log::error("**Email Sent message " . $result['message']);
+			$AfterDiskSpaceOutput = Retention::getDiskSpaceOfServer($CompanyID);
+			$FileRetentionEmail = CompanyConfiguration::get($CompanyID,'FILE_RETENTION_EMAIL');
+			if(!empty($FileRetentionEmail)){
+				if(isset($BeforeDiskSpaceOutput) && count($BeforeDiskSpaceOutput)>0 && isset($AfterDiskSpaceOutput) && count($AfterDiskSpaceOutput)>0){
+					$BeforeOutput = $BeforeDiskSpaceOutput[0];
+					$AfterOutput = $AfterDiskSpaceOutput[0];
+					$response = Retention::FileRetentionEmailSend($CompanyID,$BeforeOutput,$AfterOutput,$FileRetentionEmail);
+					Log::info('Disk Space of Server Response - '.$response['message']);
 				}
-			}else{
-				$joblogdata['Message'] = 'Success';
-				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			}
 
+			$joblogdata['Message'] = 'Success';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 
-
 		}catch (\Exception $e){
-			Log::info('DBcleanup Rollback Today.');
-			DB::rollback();
 
 			Log::error($e);
 			$this->info('Failed:' . $e->getMessage());
@@ -144,7 +112,6 @@ class DBCleanUp extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);
 			if(!empty($cronsetting['ErrorEmail'])) {
-
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
 				Log::error("**Email Sent Status " . $result['status']);
 				Log::error("**Email Sent message " . $result['message']);
@@ -156,7 +123,7 @@ class DBCleanUp extends Command {
 		$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
 		$CronJob->update($dataactive);
-		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
+		if(!empty($cronsetting['SuccessEmail'])) {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);
 			Log::error("**Email Sent message ".$result['message']);

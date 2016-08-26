@@ -134,7 +134,7 @@ class VOSDownloadCDR extends Command {
                         $isdownloaded = true;
 
                     }else {
-                        Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
+                        //Log::info("VOS File was already exist  " . $filename . ' - ' . $vos->get_file_datetime($filename));
                     }
 
                     if(filesize($file_path) > 0 &&  UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0 ) {
@@ -150,14 +150,15 @@ class VOSDownloadCDR extends Command {
 
                 }
                 $dataactive['Active'] = 0;
+                $dataactive['PID'] = '';
                 $CronJob->update($dataactive);
 
                 $downloaded_files = count($downloaded);
                 $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
                 if (count($downloaded) > 0) {
 
-                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
-                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[0]);
+                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
                 }
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 CronJobLog::insert($joblogdata);
@@ -169,6 +170,7 @@ class VOSDownloadCDR extends Command {
         }catch (Exception $e) {
             Log::error($e);
             $dataactive['Active'] = 0;
+            $dataactive['PID'] = '';
             $CronJob->update($dataactive);
 
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
