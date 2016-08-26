@@ -69,9 +69,9 @@ class RegenerateManualInvoice extends Command {
         $errors = array();
         $message = array();
         //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-        $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceGeneration]);
-        $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
-        $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
+        $InvoiceCopyEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+        $InvoiceCopyEmail = ($InvoiceCopyEmail != 'Invalid Key')?$InvoiceCopyEmail:'';
+        $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
         $ProcessID = Uuid::generate();
         $InvoiceIDs = '11975,9802';
         Log::useFiles(storage_path() . '/logs/remanualinvoice-' . $CompanyID . '-' . date('Y-m-d') . '.log');
@@ -124,7 +124,7 @@ class RegenerateManualInvoice extends Command {
 
                                         Log::info(' ========================== Invoice Send Start =============================');
 
-                                        $response = Invoice::resendManualInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceGenerationEmail,$ProcessID,'');
+                                        $response = Invoice::resendManualInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceCopyEmail,$ProcessID,'');
 
                                         if (isset($response["status"]) && $response["status"] == 'success') {
 
