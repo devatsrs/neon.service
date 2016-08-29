@@ -85,8 +85,9 @@ class BulkInvoiceSend extends Command {
         try {
             $Company = Company::find($CompanyID);
             $UserEmail = '';
-            $InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-            $InvoiceGenerationEmail_main = ($InvoiceGenerationEmail_main =='Invalid Key')?$Company->Email:$InvoiceGenerationEmail_main;
+            //$InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+            $InvoiceCopyEmail_main = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+            $InvoiceCopyEmail_main = ($InvoiceCopyEmail_main =='Invalid Key')?$Company->Email:$InvoiceCopyEmail_main;
             if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
                 $User = User::getUserInfo($job->JobLoggedUserID);
                 // $UserEmail= $User->EmailAddress;
@@ -97,7 +98,7 @@ class BulkInvoiceSend extends Command {
                 $email_sending_failed = array();
                 $InvoiceIDs =array_filter(explode(',',$joboptions->InvoiceIDs),'intval');
                 foreach($InvoiceIDs as $InvoiceID) {
-                    $InvoiceGenerationEmail = $InvoiceGenerationEmail_main;
+                    $InvoiceCopyEmail = $InvoiceCopyEmail_main;
                     $Invoice = Invoice::find($InvoiceID);
                     $Account = Account::find($Invoice->AccountID);
                     $Currency = Currency::find($Account->CurrencyId);
@@ -117,15 +118,15 @@ class BulkInvoiceSend extends Command {
                     if(!empty($Account->Owner))
                     {
                         $AccountManager = User::find($Account->Owner);
-                        if(is_array($InvoiceGenerationEmail)){
-                            $InvoiceGenerationEmail = implode(',',$InvoiceGenerationEmail);
+                        if(is_array($InvoiceCopyEmail)){
+                            $InvoiceCopyEmail = implode(',',$InvoiceCopyEmail);
                         }
-                        $InvoiceGenerationEmail .= ',' . $AccountManager->EmailAddress;
+                        $InvoiceCopyEmail .= ',' . $AccountManager->EmailAddress;
                     }
-                    $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
-                    Log::info($InvoiceGenerationEmail);
+                    $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
+                    Log::info($InvoiceCopyEmail);
 
-                    foreach($InvoiceGenerationEmail as $singleemail) {
+                    foreach($InvoiceCopyEmail as $singleemail) {
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);

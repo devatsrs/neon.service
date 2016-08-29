@@ -19,6 +19,7 @@ class Helper{
             $mail->isHTML(false);
         }
         $body = htmlspecialchars_decode(View::make($view,compact('data'))->render());
+
         if(!is_array($data['EmailTo']) && strpos($data['EmailTo'],',') !== false){
             $data['EmailTo']  = explode(',',$data['EmailTo']);
         }

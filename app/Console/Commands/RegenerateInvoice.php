@@ -75,9 +75,10 @@ class RegenerateInvoice extends Command {
 
         $job = Job::find($JobID);
         $joboptions = json_decode($job->Options);
-        $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-        $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
-        $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
+        //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
+        $InvoiceCopyEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+        $InvoiceCopyEmail = ($InvoiceCopyEmail != 'Invalid Key')?$InvoiceCopyEmail:'';
+        $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
         $ProcessID = Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
@@ -131,7 +132,7 @@ class RegenerateInvoice extends Command {
 
                                         Log::info(' ========================== Invoice Send Start =============================');
 
-                                        $response = Invoice::regenerateInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceGenerationEmail,$ProcessID,$JobID);
+                                        $response = Invoice::regenerateInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceCopyEmail,$ProcessID,$JobID);
 
                                         if (isset($response["status"]) && $response["status"] == 'success') {
 
