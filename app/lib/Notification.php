@@ -19,9 +19,8 @@ class Notification extends \Eloquent {
         Notification::LowBalanceReminder=>'Low Balance Reminder',
         Notification::PendingApprovalPayment=>'Pending Approval Payment'];
 
-    public static function getNotificationMail($type){
-        $CompanyID = User::get_companyID();
-        $Notification = Notification::where(['CompanyID'=>$CompanyID,'NotificationType'=>$type])->pluck('EmailAddresses');
+    public static function getNotificationMail($data){
+        $Notification = Notification::where(['CompanyID'=>$data['CompanyID'],'NotificationType'=>$data['NotificationType']])->pluck('EmailAddresses');
         return empty($Notification)?'':$Notification;
     }
 }

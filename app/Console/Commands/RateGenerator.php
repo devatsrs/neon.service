@@ -86,7 +86,8 @@ class RateGenerator extends Command {
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
             $data['RateTableId']= $cronsetting->rateTableID;
             $data['CompanyID'] = $CompanyID;
-            $JobID = Job::GenerateJob("GRT",$data);
+
+            $JobID = Job::GenerateRateTable("GRT",$data);
             if ($JobID > 0) {
                 if(getenv('APP_OS') == 'Linux') {
                     pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID." &", "r"));
