@@ -90,12 +90,8 @@ class InvoiceGenerator extends Command {
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);*/
 
-        $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-        $InvoiceGenerationEmailNotificaction = explode(",",$InvoiceGenerationEmail);
-
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
-        $InvoiceGenerationEmail = array_merge($InvoiceGenerationEmail,$InvoiceGenerationEmailNotificaction);
 
         $errors = array();
         $message = array();
