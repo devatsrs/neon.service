@@ -114,7 +114,7 @@ class BulkLeadMailSend extends Command {
                                         $emaildata['attach'] = $joboptions->attachment;
                                     }
 
-                                    $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,$account->RoundChargesAmount);
+                                    $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
                                     $Signature = '';
                                     if(!empty($JobLoggedUser)){
                                         $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;

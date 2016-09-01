@@ -106,17 +106,17 @@ class InvoiceReminder extends Command
                         $result = $invoicequery->get();
                     } else if (!empty($criteria)) {
                         $AccountID = $InvoiceNumber = $IssueDateStart = $IssueDateEnd = $InvoiceType = $InvoiceStatus = '';
+                        $Overdue =0;
                         if(isset($criteria->AccountID) && !empty($criteria->AccountID)) {
                             $AccountID = $criteria->AccountID;
                         }
                         if(isset($criteria->InvoiceNumber) && !empty($criteria->InvoiceNumber)) {
                             $InvoiceNumber = $criteria->InvoiceNumber;
                         }
-                        if(isset($criteria->IssueDateStart) && !empty($criteria->IssueDateStart)) {
-                            $IssueDateStart = $criteria->IssueDateStart;
-                        }
-                        if(isset($criteria->IssueDateEnd) && !empty($criteria->IssueDateEnd)) {
-                            $IssueDateEnd = $criteria->IssueDateEnd;
+                        if(isset($criteria->IssueDate) && !empty($criteria->IssueDate)) {
+                            $arr = explode(' - ',$criteria->IssueDate);
+                            $IssueDateStart = $arr[0];
+                            $IssueDateEnd = $arr[1];
                         }
                         if(isset($criteria->InvoiceType) && !empty($criteria->InvoiceType)) {
                             $InvoiceType = $criteria->InvoiceType;
@@ -124,7 +124,10 @@ class InvoiceReminder extends Command
                         if(isset($criteria->InvoiceStatus) && !empty($criteria->InvoiceStatus)) {
                             $InvoiceStatus = $criteria->InvoiceStatus;
                         }
-                        $query = $CompanyID.",'".$AccountID."','".$InvoiceNumber."','".$IssueDateStart."','".$IssueDateEnd."','".$InvoiceType."','".$InvoiceStatus."',' ',' ',' ',' ',2";
+                        if(isset($criteria->Overdue) && !empty($criteria->Overdue)) {
+                            $Overdue = $criteria['Overdue']== 'true'?1:0;
+                        }
+                        $query = $CompanyID.",'".$AccountID."','".$InvoiceNumber."','".$IssueDateStart."','".$IssueDateEnd."','".$InvoiceType."','".$InvoiceStatus."',".$Overdue.",' ',' ',' ',' ',2";
                         if(isset($criteria->zerovalueinvoice) && !empty($criteria->zerovalueinvoice) && $criteria->zerovalueinvoice=='true'){
                             $query = $query.',0,1';
                         }
@@ -160,8 +163,8 @@ class InvoiceReminder extends Command
                                     }
                                 }
                                 $emaildata['EmailToName'] = $Account->AccountName;
-                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,$Account->RoundChargesAmount);
-                                $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,$Account->RoundChargesAmount);
+                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
+                                $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
                                 $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{InvoiceNumber}}','{{GrandTotal}}','{{OutStanding}}','{{TotalOutStanding}}','{{Signature}}'];
                                 $replace = [$Account->FirstName, $Account->LastName, $Account->Email, $Account->Address1, $Account->Address2, $Account->Address3, $Account->City, $Account->State, $Account->PostCode, $Account->Country,$invoice->InvoiceNumber,$invoice->GrandTotal,$InvoiceOutStanding,$TotalOutStanding,$Signature];
                                 $emaildata['extra'] = $extra;

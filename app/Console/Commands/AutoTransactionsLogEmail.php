@@ -113,9 +113,10 @@ class AutoTransactionsLogEmail extends Command {
 
                 /*$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID, 'InvoiceGenerationEmail');
                 $InvoiceGenerationEmail = ($InvoiceGenerationEmail == 'Invalid Key') ? $Company->Email : $InvoiceGenerationEmail;*/
-                $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
+                $WeeklyPaymentTransactionLogEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::WeeklyPaymentTransactionLog]);
+                $WeeklyPaymentTransactionLogEmail = empty($WeeklyPaymentTransactionLogEmail) ? $cronsetting['SuccessEmail'] : $WeeklyPaymentTransactionLogEmail;
                 $status = Helper::sendMail('emails.invoices.transaction_log', array(
-                    'EmailTo' => explode(",", $InvoiceGenerationEmail),
+                    'EmailTo' => explode(",", $WeeklyPaymentTransactionLogEmail),
                     'EmailToName' => $Company->CompanyName,
                     'Subject' => 'Weekly Payment Transaction log',
                     'CompanyID' => $CompanyID,

@@ -4,11 +4,29 @@ namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+use App\Lib\SiteIntegration;
+use App\Lib\User;
+use App\Lib\Company;
+use App\Lib\PHPMAILERIntegtration;
 
 class Helper{
 
     public static function sendMail($view,$data){
-        $status = array('status' => 0, 'message' => 'Something wrong with sending mail.');
+		Log::info("data here");
+		Log::info($data);
+		$companyID = $data['CompanyID'];
+		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+	
+		if(SiteIntegration::is_EmailIntegration($companyID)){
+			Log::info("SiteIntegration");
+			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
+		}
+		else{ Log::info("Default");
+			$config = Company::select('SMTPServer','SMTPUsername','CompanyName','SMTPPassword','Port','IsSSL','EmailFrom')->where("CompanyID", '=', $companyID)->first();
+			$status = 	 PHPMAILERIntegtration::SendMail($view,$data,$config,$companyID,$body);
+		}
+		
+       /* $status = array('status' => 0, 'message' => 'Something wrong with sending mail.');
         $mandrill =0;
         if(isset($data['mandrill']) && $data['mandrill'] ==1){
             $mandrill = 1;
@@ -19,6 +37,7 @@ class Helper{
             $mail->isHTML(false);
         }
         $body = htmlspecialchars_decode(View::make($view,compact('data'))->render());
+
         if(!is_array($data['EmailTo']) && strpos($data['EmailTo'],',') !== false){
             $data['EmailTo']  = explode(',',$data['EmailTo']);
         }
@@ -53,7 +72,7 @@ class Helper{
             $status['message'] = 'Email has been sent';
             $status['body'] = $body;
             return $status;
-        }
+        }*/
     }
     public static function setMailConfig($CompanyID,$mandrill){
         $result = Company::select('SMTPServer','SMTPUsername','CompanyName','SMTPPassword','Port','IsSSL','EmailFrom')->where("CompanyID", '=', $CompanyID)->first();
@@ -246,6 +265,21 @@ class Helper{
         Log::info(' error files');
         Log::info($errorfilenames);
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
+    }
+
+    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
+        $RoundChargesAmount = 2;
+        if($AccountID>0){
+            $RoundChargesAmount = AccountBilling::where(["AccountID"=>$AccountID])->pluck("RoundChargesAmount");
+        }
+        if ( empty($RoundChargesAmount) ) {
+            $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount')=='Invalid Key'?2:CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+        }
+        if ( empty($RoundChargesAmount) ) {
+            $RoundChargesAmount = 2;
+        }
+
+        return $RoundChargesAmount;
     }
 
 }
