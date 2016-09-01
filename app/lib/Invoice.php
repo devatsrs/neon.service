@@ -47,7 +47,7 @@ class Invoice extends \Eloquent {
 
             $Invoice = Invoice::find($InvoiceID);
             $AccountID = $Invoice->AccountID;
-            $CDRType = Account::where("AccountID", $AccountID)->pluck("CDRType");
+            $CDRType = AccountBilling::where("AccountID", $AccountID)->pluck("CDRType");
             $CompanyID = $Invoice->CompanyID;
             $path = "";
             if ($CDRType == Account::SUMMARY_CDR) {
@@ -276,7 +276,7 @@ class Invoice extends \Eloquent {
         if(!empty($CompanyID) && !empty($AccountID) ) {
 
 
-            $LastInvoiceDate = Account::where("AccountID", $AccountID)->pluck("LastInvoiceDate");
+            $LastInvoiceDate = AccountBilling::where("AccountID", $AccountID)->pluck("LastInvoiceDate");
 
             if (!empty($LastInvoiceDate)) {
                 return $LastInvoiceDate;
@@ -284,11 +284,8 @@ class Invoice extends \Eloquent {
             // ignore item invoice
             $invocie_count =  Account::getInvoiceCount($AccountID);
             if($invocie_count == 0){
-                $account = Account::find($AccountID);
-                $BillingStartDate = $account->BillingStartDate;
-                if($account->BillingStartDate == ''){
-                    $BillingStartDate = date('Y-m-d',strtotime($account->created_at));
-                }
+                $AccountBilling = AccountBilling::getBilling($AccountID);
+                $BillingStartDate = $AccountBilling->BillingStartDate;
                 return $BillingStartDate;
             }
 
@@ -307,13 +304,13 @@ class Invoice extends \Eloquent {
          * */
         if(!empty($CompanyID) && !empty($AccountID) ) {
 
-            $Account = Account::select(["NextInvoiceDate","BillingStartDate","LastInvoiceDate"])->where("AccountID",$AccountID)->first()->toArray();
+            $Account = AccountBilling::select(["NextInvoiceDate","BillingStartDate","LastInvoiceDate"])->where("AccountID",$AccountID)->first()->toArray();
 
             /*if(!empty($Account['NextInvoiceDate'])) {
                 return $Account['NextInvoiceDate'];
             }*/
 
-            $BillingCycle = Account::select(["BillingCycleType","BillingCycleValue"])->where("AccountID",$AccountID)->first()->toArray();
+            $BillingCycle = AccountBilling::select(["BillingCycleType","BillingCycleValue"])->where("AccountID",$AccountID)->first()->toArray();
             //"weekly"=>"Weekly", "monthly"=>"Monthly" , "daily"=>"Daily", "in_specific_days"=>"In Specific days", "monthly_anniversary"=>"Monthly anniversary");
 
             $NextInvoiceDate = "";
@@ -338,7 +335,7 @@ class Invoice extends \Eloquent {
 
         if(!empty($CompanyID) && !empty($AccountID) && !empty($LastInvoiceDate) ){
 
-            $BillingCycle = Account::select(["BillingCycleType", "BillingCycleValue"])->where("AccountID", $AccountID)->first()->toArray();
+            $BillingCycle = AccountBilling::select(["BillingCycleType", "BillingCycleValue"])->where("AccountID", $AccountID)->first()->toArray();
             //"weekly"=>"Weekly", "monthly"=>"Monthly" , "daily"=>"Daily", "in_specific_days"=>"In Specific days", "monthly_anniversary"=>"Monthly anniversary");
 
             $NextInvoiceDate = "";
@@ -364,12 +361,13 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
+            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$Account->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
-                if ( empty($Account->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
+                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     return array("status" => "failure", "message" => $error);
                 }
@@ -381,8 +379,7 @@ class Invoice extends \Eloquent {
                 if(!empty($InvoiceTemplate)) {
 
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                    $decimal_places = 2;
-                    $decimal_places = ($Account->RoundChargesAmount > 0) ? $Account->RoundChargesAmount : $decimal_places;
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
 
                     /**
                      ***************************
@@ -479,7 +476,7 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ') ;
 
                         $fullPath = "";
-                        if($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $fullPath = Invoice::generate_usage_file($InvoiceID);
@@ -543,10 +540,9 @@ class Invoice extends \Eloquent {
     //Not in use
     public static function getTotalTax($Account){
 
-        $decimal_places = 2;
-        $RoundChargesAmount = ($Account->RoundChargesAmount > 0) ? $Account->RoundChargesAmount : $decimal_places;
-
-        $TaxRateId = $Account->TaxRateId;
+        $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
+        $AccountBilling = AccountBilling::getBilling($Account->AccountID);
+        $TaxRateId = $AccountBilling->TaxRateId;
         $TaxRate = TaxRate::find($TaxRateId);
         $TaxRateAmount = 0;
         if (isset($TaxRate->Amount))
@@ -621,10 +617,11 @@ class Invoice extends \Eloquent {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
+            $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-            $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
+            $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                 $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
             } else {
@@ -690,8 +687,8 @@ class Invoice extends \Eloquent {
                     }
                 }
             }
-
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo'))->render();
+            $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
+            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo','AccountBilling','RoundChargesAmount'))->render();
 
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -738,7 +735,7 @@ class Invoice extends \Eloquent {
     public static function calculateUsageTax($AccountID, $UsageSubTotal){
 
         //Get Account TaxIDs
-        $TaxRateIDs = Account::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
         $TotalTax = 0;
         if(!empty($TaxRateIDs)){
 
@@ -780,7 +777,7 @@ class Invoice extends \Eloquent {
         $InvoiceSubTotal = $Invoice->SubTotal;*/
 
         //Get Account TaxIDs
-        $TaxRateIDs = Account::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
@@ -866,23 +863,23 @@ class Invoice extends \Eloquent {
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $Account = Account::find((int)$Invoice->AccountID);
+        $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
 
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
             $CompanyName = Company::getName($CompanyID);
-            $Account = Account::find((int)$AccountID);
+
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $Account->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
-                if (empty($Account->InvoiceTemplateID)) {
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
                     return $error;
                 }
                 if (!empty($InvoiceTemplate)) {
-                    $decimal_places = 2;
-                    $decimal_places = ($Account->RoundChargesAmount > 0) ? $Account->RoundChargesAmount : $decimal_places;
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
 
                     Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $StartDate . ',' . $EndDate . ')');
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
@@ -993,7 +990,7 @@ class Invoice extends \Eloquent {
 
                         $fullPath = "";
                         $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
-                        if ($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if ($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $fullPath = Invoice::generate_usage_file($InvoiceID);
@@ -1048,7 +1045,7 @@ class Invoice extends \Eloquent {
         $emaildata = array();
         $Currency = Currency::find($Account->CurrencyId);
         $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
-        $_InvoiceNumber = $InvoiceNumberPrefix . $Invoice->InvoiceNumber;
+        $_InvoiceNumber = $Invoice->FullInvoiceNumber;
         $emaildata['data'] = array(
             'InvoiceNumber' => $_InvoiceNumber,
             'CompanyName' => $CompanyName,
@@ -1084,12 +1081,13 @@ class Invoice extends \Eloquent {
 
         /** Email to Customer * */
         // Send only When Auto Invoice is On and GrandTotal is set.
-        if( getenv('EmailToCustomer') == 1  && $Account->SendInvoiceSetting == 'automatically' && $GrandTotal > 0 ) {
+        if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
 
-
-            $CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
+            $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+            $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
+            //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
-            $emaildata['EmailTo'] = $CustomerEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
+            $emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
             $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
             if ($status['status'] == 0) {
                 $email_sending_failed[] = $Account->AccountName;
@@ -1351,12 +1349,13 @@ class Invoice extends \Eloquent {
         /**
          * Add Data in Invoice
          */
-        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber($Account->InvoiceTemplateID, $CompanyID);
+        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber(AccountBilling::getInvoiceTemplateID($AccountID), $CompanyID);
         $Invoice = Invoice::insertInvoice(array(
             "CompanyID" => $CompanyID,
             "AccountID" => $AccountID,
             "Address" => $Address,
             "InvoiceNumber" => $InvoiceNumber,
+            "FullInvoiceNumber" => $InvoiceTemplate->InvoiceNumberPrefix.$InvoiceNumber,
             "IssueDate" => date('Y-m-d'),
             "TotalDiscount" => 0,
             "CurrencyID" => $Account->CurrencyId,
@@ -1378,7 +1377,7 @@ class Invoice extends \Eloquent {
 
 
         //Store Last Invoice Number.
-        InvoiceTemplate::find($Account->InvoiceTemplateID)->update(array("LastInvoiceNumber" => $InvoiceNumber));
+        InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
 
         /**
          * Add Usage in InvoiceDetail
@@ -1415,7 +1414,7 @@ class Invoice extends \Eloquent {
                 $FirstTime = false;
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
-            $BillingCycleType = Account::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
+            $BillingCycleType = AccountBilling::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
             $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
             //Get Subscription Amount
             $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->AccountSubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
@@ -1547,12 +1546,13 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
+            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$Account->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
-                if ( empty($Account->InvoiceTemplateID) ) {
+                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     return array("status" => "failure", "message" => $error);
                 }
@@ -1564,8 +1564,7 @@ class Invoice extends \Eloquent {
                 if(!empty($InvoiceTemplate)) {
 
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                    $decimal_places = 2;
-                    $decimal_places = ($Account->RoundChargesAmount > 0) ? $Account->RoundChargesAmount : $decimal_places;
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
 
                     /**
                      ***************************
@@ -1655,7 +1654,7 @@ class Invoice extends \Eloquent {
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-                        $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
+                        $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
                         } else {
@@ -1763,7 +1762,7 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ') ;
 
                         $fullPath = "";
-                        if($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
@@ -1809,7 +1808,7 @@ class Invoice extends \Eloquent {
 
                     Log::info('=========== Email Sending over =========== ') ;
 
-                    if (isset($Invoice)) {
+                    /*if (isset($Invoice)) {
 
                         Log::info('=========== Updating  InvoiceDate =========== ') ;
 
@@ -1820,7 +1819,7 @@ class Invoice extends \Eloquent {
 
                         Log::info('=========== Updated  InvoiceDate =========== ') ;
 
-                    }
+                    }*/
 
                 }
                 if(!empty($error)){
@@ -1868,12 +1867,13 @@ class Invoice extends \Eloquent {
         /**
          * Add Data in Invoice
          */
-        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber($Account->InvoiceTemplateID, $CompanyID);
+        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber(AccountBilling::getInvoiceTemplateID($AccountID), $CompanyID);
         $Invoice = Invoice::insertInvoice(array(
             "CompanyID" => $CompanyID,
             "AccountID" => $AccountID,
             "Address" => $Address,
             "InvoiceNumber" => $InvoiceNumber,
+            "FullInvoiceNumber" => $InvoiceTemplate->InvoiceNumberPrefix.$InvoiceNumber,
             "IssueDate" => date('Y-m-d'),
             "TotalDiscount" => 0,
             "CurrencyID" => $Account->CurrencyId,
@@ -1895,7 +1895,7 @@ class Invoice extends \Eloquent {
 
 
         //Store Last Invoice Number.
-        InvoiceTemplate::find($Account->InvoiceTemplateID)->update(array("LastInvoiceNumber" => $InvoiceNumber));
+        InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
 
         /**
          * Add Usage in InvoiceDetail
@@ -1935,18 +1935,18 @@ class Invoice extends \Eloquent {
 
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
             $CompanyName = Company::getName($CompanyID);
-            $Account = Account::find((int)$AccountID);
+
+            $AccountBilling = AccountBilling::getBilling($AccountID);
             $InvoiceID = $Invoice->InvoiceID;
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $Account->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
-                if (empty($Account->InvoiceTemplateID)) {
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
                     return $error;
                 }
                 if (!empty($InvoiceTemplate)) {
-                    $decimal_places = 2;
-                    $decimal_places = ($Account->RoundChargesAmount > 0) ? $Account->RoundChargesAmount : $decimal_places;
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
 
                     Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $StartDate . ',' . $EndDate . ')');
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
@@ -2034,7 +2034,7 @@ class Invoice extends \Eloquent {
                         $Currency = Currency::find($Account->CurrencyId);
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-                        $InvoiceTemplate = InvoiceTemplate::find($Account->InvoiceTemplateID);
+                        $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
                         } else {
@@ -2145,7 +2145,7 @@ class Invoice extends \Eloquent {
 
                         $fullPath = "";
                         $message['message'] = $Account->AccountName;
-                        if($Account->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;

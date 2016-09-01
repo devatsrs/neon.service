@@ -23,11 +23,11 @@ class Job extends \Eloquent {
 
     protected  $primaryKey = "JobID";
 
-    public static function GenerateJob($JobType, $options = "") {
+    /*public static function GenerateJob($JobType, $options = "") {
         /*
          *  Generate Rate Table Log
          */
-        $CompanyID = $options['CompanyID'];
+      /*  $CompanyID = $options['CompanyID'];
         unset($options['CompanyID']);
 
         $data["CompanyID"] = $CompanyID;
@@ -49,12 +49,43 @@ class Job extends \Eloquent {
             return validator_response($validator);
         }
         */
+      /*  if ($JobID = Job::insertGetId($data)) {
+            return $JobID;
+        } else {
+            return 0;
+        }
+    }*/
+
+    public static function GenerateRateTable($JobType, $options = "") {
+        /*
+         *  Generate Rate Table Log
+         */
+
+        $jobType = JobType::where(["Code" => $JobType])->get(["JobTypeID", "Title"]);
+        $jobStatus = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
+        $CompanyID = $options['CompanyID'];
+        $data["JobTypeID"] = $CompanyID;
+        $data["JobTypeID"] = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+        $data["JobStatusID"] = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+        $data["JobLoggedUserID"] = 0;
+        $data["CreatedBy"] = 'RM Scheduler';
+        if(!empty($options['ratetablename'])){
+            $ratetablename = $options['ratetablename'];
+        }else{
+            $ratetablename = '';
+        }
+        $data["Title"] =   $ratetablename;
+        $data["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
+        $data["Options"] =  json_encode($options);
+        $data["updated_at"] = date('Y-m-d H:i:s');
+
         if ($JobID = Job::insertGetId($data)) {
             return $JobID;
         } else {
             return 0;
         }
     }
+
     public static function getfileName($AccountID,$trunks,$file_prefix){
         $trunkname = '';
         if(isset($trunks) && !is_array($trunks)){

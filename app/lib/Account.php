@@ -66,7 +66,7 @@ class Account extends \Eloquent {
     }
     public static function checkForCDR($GatewayAccountID){
         $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = Account::where(array('AccountID'=>$accountid))->pluck('CDRType');
+        $cdr_type = AccountBilling::where(array('AccountID'=>$accountid))->pluck('CDRType');
         return $cdr_type;
     }
 
@@ -105,7 +105,7 @@ class Account extends \Eloquent {
             })->count();
     }
     public static function getBillingTimeZone($AccountID){
-        return Account::where(array('AccountID'=>$AccountID))->pluck('BillingTimezone');
+        return AccountBilling::where(array('AccountID'=>$AccountID))->pluck('BillingTimezone');
     }
     public static function getOutstandingAmount($CompanyID,$AccountID,$decimal_places = 2){
 

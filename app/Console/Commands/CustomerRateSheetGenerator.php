@@ -183,7 +183,7 @@ class CustomerRateSheetGenerator extends Command {
                                 $currency = Currency::getCurrencyCode($account->CurrencyId);
                                 $symbol = Currency::getCurrencySymbol($account->CurrencyId);
                             }
-                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,$account->RoundChargesAmount);
+                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
                             $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
                             $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
                             $data['extra'] = $extra;
