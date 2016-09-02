@@ -81,8 +81,7 @@ class AmazonS3 {
         return $amazon;
     }
 	
-	 public static function getBucket(){
-
+    public static function getBucket(){
         $amazon = self::getAmazonSettings();
         if(isset($amazon['AWS_BUCKET'])){
 
