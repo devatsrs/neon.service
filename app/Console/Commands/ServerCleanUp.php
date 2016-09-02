@@ -90,7 +90,8 @@ class ServerCleanUp extends Command {
 			Retention::deleteCDRFiles($CompanyID);
 
 			$AfterDiskSpaceOutput = Retention::getDiskSpaceOfServer($CompanyID);
-			$FileRetentionEmail = CompanyConfiguration::get($CompanyID,'FILE_RETENTION_EMAIL');
+			$FileRetentionEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::RetentionDiskSpaceEmail]);
+			//$FileRetentionEmail = CompanyConfiguration::get($CompanyID,'FILE_RETENTION_EMAIL');
 			if(!empty($FileRetentionEmail)){
 				if(isset($BeforeDiskSpaceOutput) && count($BeforeDiskSpaceOutput)>0 && isset($AfterDiskSpaceOutput) && count($AfterDiskSpaceOutput)>0){
 					$BeforeOutput = $BeforeDiskSpaceOutput[0];

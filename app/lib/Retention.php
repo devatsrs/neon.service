@@ -324,7 +324,9 @@ class Retention {
 
                 if(is_amazon()){
                     //upload zip file from server to amazon s3
-                    $amazonpath = 's3://'.getenv('AWS_BUCKET').'/Backup/CDR/';
+                    //$bucket = getenv('AWS_BUCKET')
+                    $bucket = AmazonS3::getBucket();
+                    $amazonpath = 's3://'.$bucket.'/Backup/CDR/';
                     $UploadCommand = 'solo -port=6001 s3cmd sync '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
                     $Upload_Output = RemoteSSH::run($CompanyID,[$UploadCommand]);
                     Log::info('Upload Files to amazon - '.$UploadCommand);
