@@ -103,6 +103,9 @@ class PortaAccountUsage extends Command {
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {

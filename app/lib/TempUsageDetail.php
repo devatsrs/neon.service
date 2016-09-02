@@ -212,4 +212,34 @@ class TempUsageDetail extends \Eloquent {
             return 'none';
         }
     }
+    public static function applyDiscountPlan(){
+        $today = date('Y-m-d');
+        $Accounts = DB::table('tblAccountBilling')
+            ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
+            ->where('NextInvoiceDate',$today)
+            ->Where(function($query)use($today)
+            {
+                $query->whereRaw("DATE(tblAccountDiscountPlan.created_at) <> '".$today."'")
+                      ->orwhere('CreatedBy','<>','RMScheduler');
+            })
+            ->get(['tblAccountBilling.AccountID','DiscountPlanID','NextInvoiceDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+        foreach($Accounts as $Account){
+            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
+            if(!empty($AccountNextBilling)){
+                $BillingCycleType = $AccountNextBilling->BillingCycleType;
+                $BillingCycleValue =$AccountNextBilling->BillingCycleValue;
+            }else{
+                $BillingCycleType = $Account->BillingCycleType;
+                $BillingCycleValue =$Account->BillingCycleValue;
+            }
+            $days = getBillingDay(strtotime($Account->NextInvoiceDate), $BillingCycleType, $BillingCycleValue);
+            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->NextInvoiceDate));
+            $getdaysdiff = getdaysdiff($NextInvoiceDate,$today);
+            $DayDiff = $getdaysdiff >0?intval($getdaysdiff):0;
+            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler')");
+            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler'));
+
+        }
+
+    }
 }
