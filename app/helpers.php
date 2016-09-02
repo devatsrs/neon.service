@@ -6,9 +6,14 @@ function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
 function is_amazon(){
-    $AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
+	$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
+	
+	$AMAZONS3_KEY 		= 	isset($AmazonData->AmazonKey)?$AmazonData->AmazonKey:'';
+	$AMAZONS3_SECRET 	= 	isset($AmazonData->AmazonSecret)?$AmazonData->AmazonSecret:'';
+	$AWS_REGION 		= 	isset($AmazonData->AmazonAwsRegion)?$AmazonData->AmazonAwsRegion:'';
+    /*$AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
     $AMAZONS3_SECRET = getenv("AMAZONS3_SECRET");
-    $AWS_REGION = getenv("AWS_REGION");
+    $AWS_REGION = getenv("AWS_REGION");*/
 
     if(empty($AMAZONS3_KEY) || empty($AMAZONS3_SECRET) || empty($AWS_REGION) ){
         return false;
