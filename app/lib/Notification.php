@@ -12,12 +12,14 @@ class Notification extends \Eloquent {
     const WeeklyPaymentTransactionLog=3;
     const LowBalanceReminder=4;
     const PendingApprovalPayment=5;
+    const RetentionDiskSpaceEmail=6;
 
     public static $type = [ Notification::InvoiceCopy=>'Invoice Copy',
         Notification::ReRate=>'Re Rate Log',
         Notification::WeeklyPaymentTransactionLog=>'Weekly Payment Transaction Log',
         Notification::LowBalanceReminder=>'Low Balance Reminder',
-        Notification::PendingApprovalPayment=>'Pending Approval Payment'];
+        Notification::PendingApprovalPayment=>'Pending Approval Payment',
+        Notification::RetentionDiskSpaceEmail=>'Retention Disk Space Email'];
 
     public static function getNotificationMail($data){
         $Notification = Notification::where(['CompanyID'=>$data['CompanyID'],'NotificationType'=>$data['NotificationType']])->pluck('EmailAddresses');
