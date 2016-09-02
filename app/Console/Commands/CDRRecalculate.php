@@ -93,12 +93,14 @@ class CDRRecalculate extends Command {
                 if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                     $RateFormat = $companysetting->RateFormat;
                 }
-                if(!empty($joboptions->DateRange)) {
-                    $DateRange = explode(' - ',$joboptions->DateRange);
-                    $DateRange = array_map('trim',$DateRange);
-                    $startdate = $DateRange[0];
-                    $enddate = $DateRange[1];
+
+                if(!empty($joboptions->StartDate)) {
+                    $startdate = $joboptions->StartDate;
                 }
+                if(!empty($joboptions->EndDate)) {
+                    $enddate = $joboptions->EndDate;
+                }
+
                 if(isset($joboptions->CDRType)) {
                     $CDRType = $joboptions->CDRType;
                 }
