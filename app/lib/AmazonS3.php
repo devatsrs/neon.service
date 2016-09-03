@@ -29,8 +29,7 @@ class AmazonS3 {
     private static function getS3Client(){
 
 	$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
-		Log::info("amazons3aa");
-	if(empty($AmazonData)){
+	if(!$AmazonData){
 		return 'NoAmazon';
 	}else{
 		return $s3Client = S3Client::factory(array(
@@ -75,15 +74,14 @@ class AmazonS3 {
 		$amazon 		= 	array();
 		$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
 		
-		if(!empty($AmazonData)){
+		if($AmazonData){
 			$amazon 	=	 array("AWS_BUCKET"=>$AmazonData->AmazonAwsBucket,"AMAZONS3_KEY"=>$AmazonData->AmazonKey,"AMAZONS3_SECRET"=>$AmazonData->AmazonSecret,"AWS_REGION"=>$AmazonData->AmazonAwsRegion);	
 		}
 		
         return $amazon;
     }
-
+	
     public static function getBucket(){
-
         $amazon = self::getAmazonSettings();
         if(isset($amazon['AWS_BUCKET'])){
 
