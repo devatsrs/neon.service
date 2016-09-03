@@ -131,6 +131,9 @@ class VOSAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             Log::error(' ========================== vos transaction start =============================');
             CronJob::createLog($CronJobID);
 

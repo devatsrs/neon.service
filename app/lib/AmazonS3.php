@@ -9,6 +9,8 @@ namespace App\Lib;
 
 use Aws\S3\S3Client;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+
 class AmazonS3 {
 
     public static $dir = array(
@@ -26,7 +28,20 @@ class AmazonS3 {
     // Instantiate an S3 client
     private static function getS3Client(){
 
-        $AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
+	$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
+	if(!$AmazonData){
+		return 'NoAmazon';
+	}else{
+		return $s3Client = S3Client::factory(array(
+			'region' => $AmazonData->AmazonAwsRegion,
+			'credentials' => array(
+				'key' => $AmazonData->AmazonKey,
+				'secret' => $AmazonData->AmazonSecret
+			),
+		));
+	}
+		
+       /* $AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
         $AMAZONS3_SECRET = getenv("AMAZONS3_SECRET");
         $AWS_REGION = getenv("AWS_REGION");
 
@@ -41,7 +56,40 @@ class AmazonS3 {
                     'secret' => $AMAZONS3_SECRET
                 ),
             ));
+        }*/
+    }
+	
+	public static function getAmazonSettings(){
+
+      /*  $cache = CompanyConfiguration::getConfiguration();
+        $amazon = array();
+        if(isset($cache['Amazon'])) {
+
+            $amazoneJson = $cache['Amazon'];
+
+            if (!empty($amazoneJson)) {
+                $amazon = json_decode($amazoneJson, true);
+             }
+        }*/
+		$amazon 		= 	array();
+		$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
+		
+		if($AmazonData){
+			$amazon 	=	 array("AWS_BUCKET"=>$AmazonData->AmazonAwsBucket,"AMAZONS3_KEY"=>$AmazonData->AmazonKey,"AMAZONS3_SECRET"=>$AmazonData->AmazonSecret,"AWS_REGION"=>$AmazonData->AmazonAwsRegion);	
+		}
+		
+        return $amazon;
+    }
+	
+    public static function getBucket(){
+        $amazon = self::getAmazonSettings();
+        if(isset($amazon['AWS_BUCKET'])){
+
+            return $amazon['AWS_BUCKET'];
+        }else {
+            return "";
         }
+
     }
 
     /*
@@ -87,7 +135,7 @@ class AmazonS3 {
             return true;
         }
 
-        $bucket = getenv('AWS_BUCKET');
+        $bucket = self::getBucket();
         // Upload a publicly accessible file. The file size, file type, and MD5 hash
         // are automatically calculated by the SDK.
         try {
@@ -106,16 +154,16 @@ class AmazonS3 {
 
         //When no amazon ;
         if($s3 == 'NoAmazon'){
-            $Uploadpath = getenv('UPLOAD_PATH') . '/' .$key;
+            $Uploadpath = getenv('UPLOAD_PATH') . '/' .$key; Log::info("file path"); Log::info($Uploadpath);
             if ( file_exists($Uploadpath) ) {
-                return $Uploadpath;
+Log::info("found");                return $Uploadpath; ;
             } else {
-                return "";
+ Log::info("not found");               return "";
             }
         }
 
 
-        $bucket = getenv('AWS_BUCKET');
+        $bucket = self::getBucket();
 
         // Get a command object from the client and pass in any options
         // available in the GetObject command (e.g. ResponseContentDisposition)
@@ -141,7 +189,7 @@ class AmazonS3 {
             return  self::preSignedUrl($key);
         }
 
-        $bucket = getenv('AWS_BUCKET');
+        $bucket = self::getBucket();
         $unsignedUrl = $s3->getObjectUrl($bucket, $key);
         return $unsignedUrl;
 
@@ -163,7 +211,7 @@ class AmazonS3 {
                 }
             }
 
-            $bucket = getenv('AWS_BUCKET');
+            $bucket = self::getBucket();
             // Upload a publicly accessible file. The file size, file type, and MD5 hash
             // are automatically calculated by the SDK.
             try {

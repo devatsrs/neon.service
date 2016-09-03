@@ -90,12 +90,8 @@ class InvoiceGenerator extends Command {
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);*/
 
-        $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-        $InvoiceGenerationEmailNotificaction = explode(",",$InvoiceGenerationEmail);
-
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
-        $InvoiceGenerationEmail = array_merge($InvoiceGenerationEmail,$InvoiceGenerationEmailNotificaction);
 
         $errors = array();
         $message = array();
@@ -141,7 +137,7 @@ class InvoiceGenerator extends Command {
             $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
                 ->select(["tblAccountBilling.AccountID","tblAccountBilling.NextInvoiceDate","AccountName"])
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
-                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])
+                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
                 ->where('tblAccountBilling.NextInvoiceDate','<>','')
                 ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')
@@ -263,7 +259,7 @@ class InvoiceGenerator extends Command {
                 //Log::info($skip_accounts);
         }while(Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
                 ->select(["tblAccount.AccountID","AccountName"])
-                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])
+                ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
                 ->where('tblAccountBilling.NextInvoiceDate','<>','')->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')->count());

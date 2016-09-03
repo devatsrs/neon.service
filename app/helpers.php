@@ -6,9 +6,14 @@ function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
 function is_amazon(){
-    $AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
+	$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
+	
+	$AMAZONS3_KEY 		= 	isset($AmazonData->AmazonKey)?$AmazonData->AmazonKey:'';
+	$AMAZONS3_SECRET 	= 	isset($AmazonData->AmazonSecret)?$AmazonData->AmazonSecret:'';
+	$AWS_REGION 		= 	isset($AmazonData->AmazonAwsRegion)?$AmazonData->AmazonAwsRegion:'';
+    /*$AMAZONS3_KEY  = getenv("AMAZONS3_KEY");
     $AMAZONS3_SECRET = getenv("AMAZONS3_SECRET");
-    $AWS_REGION = getenv("AWS_REGION");
+    $AWS_REGION = getenv("AWS_REGION");*/
 
     if(empty($AMAZONS3_KEY) || empty($AMAZONS3_SECRET) || empty($AWS_REGION) ){
         return false;
@@ -283,6 +288,84 @@ function remove_front_slash($str = ""){
         return ltrim($str, '/')  ;
 
     }
+}
+function getBillingDay($BillingStartDate,$BillingCycleType,$BillingCycleValue){
+    $BillingDays = 0;
+    switch ($BillingCycleType) {
+        case 'weekly':
+            $BillingDays = 7;
+            break;
+        case 'monthly':
+            $BillingDays = date("t", $BillingStartDate);
+            break;
+        case 'daily':
+            $BillingDays = 1;
+            break;
+        case 'in_specific_days':
+            $BillingDays = intval($BillingCycleValue);
+            break;
+        case 'monthly_anniversary':
+
+            $day = date("d",  strtotime($BillingCycleValue)); // Date of Anivarsary
+            $month = date("m",  $BillingStartDate); // Month of Last Invoice date or Start Date
+            $year = date("Y",  $BillingStartDate); // Year of Last Invoice date or Start Date
+
+            $newDate = strtotime($year . '-' . $month . '-' . $day);
+
+            if($day<=date("d",  $BillingStartDate)) {
+                $NextInvoiceDate = date("Y-m-d", strtotime("+1 month", $newDate));
+                $LastInvoiceDate = date("Y-m-d",$newDate);
+            }else{
+                $NextInvoiceDate = date("Y-m-d",$newDate);
+                $LastInvoiceDate = date("Y-m-d", strtotime("-1 month", $newDate));
+            }
+            $date1 = new DateTime($LastInvoiceDate);
+            $date2 = new DateTime($NextInvoiceDate);
+            $interval = $date1->diff($date2);
+            $BillingDays =  $interval->days;
+
+            break;
+        case 'fortnightly':
+            $fortnightly_day = date("d", $BillingStartDate);
+            if($fortnightly_day > 15){
+                $NextInvoiceDate = date("Y-m-d", strtotime("first day of next month ",$BillingStartDate));
+                $LastInvoiceDate = date("Y-m-16", $BillingStartDate);
+            }else {
+                $NextInvoiceDate = date("Y-m-16", $BillingStartDate);
+                $LastInvoiceDate = date("Y-m-01", $BillingStartDate);
+            }
+            $date1 = new DateTime($LastInvoiceDate);
+            $date2 = new DateTime($NextInvoiceDate);
+            $interval = $date1->diff($date2);
+            $BillingDays =  $interval->days;
+            break;
+        case 'quarterly':
+            $quarterly_month = date("m", $BillingStartDate);
+            if($quarterly_month < 4){
+                $NextInvoiceDate = date("Y-m-d", strtotime("first day of april ",$BillingStartDate));
+                $LastInvoiceDate = date("Y-m-d", strtotime("first day of january ",$BillingStartDate));
+            }else if($quarterly_month > 3 && $quarterly_month < 7) {
+                $NextInvoiceDate = date("Y-m-d", strtotime("first day of july ",$BillingStartDate));
+                $LastInvoiceDate = date("Y-m-d", strtotime("first day of april ",$BillingStartDate));
+            }else if($quarterly_month > 6 && $quarterly_month < 10) {
+                $NextInvoiceDate = date("Y-m-d", strtotime("first day of october ",$BillingStartDate));
+                $LastInvoiceDate = date("Y-m-d", strtotime("first day of july ",$BillingStartDate));
+            }else if($quarterly_month > 9){
+                $NextInvoiceDate = date("Y-01-01", strtotime('+1 year ',$BillingStartDate));
+                $LastInvoiceDate = date("Y-m-d", strtotime("first day of october ",$BillingStartDate));
+            }
+            $date1 = new DateTime($LastInvoiceDate);
+            $date2 = new DateTime($NextInvoiceDate);
+            $interval = $date1->diff($date2);
+            $BillingDays =  $interval->days;
+            break;
+    }
+    return $BillingDays;
+}
+function getdaysdiff($date1,$date2){
+    $date1 = new DateTime($date1);
+    $date2 = new DateTime($date2);
+    return $date2->diff($date1)->format("%R%a");
 }
 
 
