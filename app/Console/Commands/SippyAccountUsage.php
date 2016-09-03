@@ -132,6 +132,9 @@ class SippyAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
 
             Log::error(' ========================== sippy transaction start =============================');
             CronJob::createLog($CronJobID);

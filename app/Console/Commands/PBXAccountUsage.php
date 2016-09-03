@@ -107,6 +107,9 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
             $param['RateCDR'] = $RateCDR;
