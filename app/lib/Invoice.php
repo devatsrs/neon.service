@@ -1086,9 +1086,20 @@ class Invoice extends \Eloquent {
             $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
             $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
-            $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
-            $emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
-            $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+            //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
+            //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
+            //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+
+            $CustomerEmails = explode(",",$InvoiceGenerationEmail);
+            foreach($CustomerEmails as $singleemail){
+                $singleemail = trim($singleemail);
+                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                    $emaildata['EmailTo'] = $singleemail;
+                    $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                    $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                }
+            }
+
             if ($status['status'] == 0) {
                 $email_sending_failed[] = $Account->AccountName;
                 $status['status'] = 'failure';
@@ -1097,6 +1108,14 @@ class Invoice extends \Eloquent {
             } else {
                 $status['status'] = "success";
                 $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+
+                $invoiceloddata = array();
+                $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
+                $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
+                $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                InvoiceLog::insert($invoiceloddata);
+
                 if(!@empty($Account->Owner)){
                     $User = User::find($Account->Owner);
                 }else{
