@@ -54,7 +54,6 @@ class DBBackup extends Command {
 
 		CronHelper::before_cronrun($this->name, $this );
 
-		Log::useFiles(storage_path() . '/logs/dbbackup-' . '-' . date('Y-m-d') . '.log');
 
 		try{
 
@@ -62,6 +61,8 @@ class DBBackup extends Command {
 			$getmypid = getmypid(); // get proccess id
 
 			$BackupConfigFile = $arguments["BackupConfigFile"];
+
+			Log::useFiles(storage_path() . '/logs/dbbackup-' . basename( str_replace(".conf","", $BackupConfigFile) ) . '-' . date('Y-m-d') . '.log');
 
 			/**
 			 * add extra NEON_ config variables in automysqlbackup config file
@@ -82,6 +83,7 @@ class DBBackup extends Command {
 			Log::info ( "Starting backup..." );
 
 			$backup_cmd = getenv("NEON_backup_command") . ' '  . $BackupConfigFile; // fron config file.
+
 			$bk_output = shell_exec( $backup_cmd );//solo -port=6000 /usr/local/bin/automysqlbackup /etc/automysqlbackup/uk-neonlicence.conf
 
 			Log::info ( "Backup is Completed "   );
@@ -96,23 +98,34 @@ class DBBackup extends Command {
 			exec('find ' . getenv("CONFIG_backup_dir"). '* -type d -exec chmod 700 {} \;');
 			# Remove files older than x days
 			exec('find '. getenv("CONFIG_backup_dir") .'* -mtime +'. getenv("CONFIG_rotation_daily") .' -exec rm {} \;');
-			
-			Log::info ( "Uploading Backup to AmazonS3 "  );;
 
-			$aws_command = getenv("NEON_backup_aws_command") ;
+			$aws_command = getenv("NEON_backup_aws_command");
+			if(!empty($aws_command)) {
 
-			$aws_output = shell_exec($aws_command ) ;//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
+				# Remove files older than 1 days
+				exec('find '. getenv("CONFIG_backup_dir") .'* -mtime +0 -exec rm {} \;');
 
-			Log::info ( "Uploading Backup to AmazonS3 Completed "  );;
-			Log::info ( "Output " . print_r($aws_output,true) );
+				Log::info("Uploading Backup to AmazonS3 ");;
 
-			Log::info ( "Done! "  );
 
-			$message = "<b>DB Backup Completed with following output.</b>";
-			$message .= "<br><br><br> <b>Backup Output</b>  " .   $bk_output;
- 			$message .= "<br><br><br> <b>AWS Output</b>  " .  $aws_output;
+				$aws_output = shell_exec($aws_command);//solo -port=6001 s3cmd sync /home/autobackup/db/daily/neonlicencing s3://neon.backup/
 
-			$this->send_update_email($BackupConfigFile,$CompanyID,$message);
+				Log::info("Uploading Backup to AmazonS3 Completed ");;
+				Log::info("Output " . print_r($aws_output, true));
+
+				$aws_expiry_command = getenv("NEON_backup_aws_expiry_command");
+				$aws_expiry_output = shell_exec($aws_expiry_command);//s3cmd expire --expiry-days=11 "s3://neon.backup/"
+
+				Log::info("AWS Expiry " . $aws_expiry_output );
+				Log::info("Done! ");
+
+				$message = "<b>DB Backup Completed with following output.</b>";
+				$message .= "<br><br><br> <b>Backup Output</b>  " . $bk_output;
+				$message .= "<br><br><br> <b>AWS Output</b>  " . $aws_output;
+				$message .= "<br><br><br> <b>AWS Expiry </b>  " . $aws_expiry_output;
+
+				$this->send_update_email($BackupConfigFile,$CompanyID,$message);
+			}
 
 
 		}catch (\Exception $ex) {

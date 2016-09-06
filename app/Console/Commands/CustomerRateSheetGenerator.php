@@ -106,9 +106,9 @@ class CustomerRateSheetGenerator extends Command {
                 Log::useFiles(storage_path() . '/logs/customerratesheet-' . $JobID . '-' . date('Y-m-d') . '.log');
                 Log::info('job start ' . $JobID);
                 $Company = Company::find($CompanyID);
+                Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
                 DB::beginTransaction();
                 Log::info('job transaction start ' . $JobID);
-                Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
                 if (!empty($ids)) {
 
 
@@ -183,7 +183,7 @@ class CustomerRateSheetGenerator extends Command {
                                 $currency = Currency::getCurrencyCode($account->CurrencyId);
                                 $symbol = Currency::getCurrencySymbol($account->CurrencyId);
                             }
-                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,$account->RoundChargesAmount);
+                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
                             $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
                             $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
                             $data['extra'] = $extra;

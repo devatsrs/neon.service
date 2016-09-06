@@ -22,20 +22,21 @@ class CronHelper {
 
         $arguments = $Cron->argument();
         $lock_command_file =  $command_name;
-        if(isset($arguments["CompanyID"])) {
-            $lock_command_file .= '_CompanyID_' . $arguments["CompanyID"];
-        }
-        if(isset($arguments["CronJobID"])) {
-            $lock_command_file .= '_CronJobID_' .$arguments["CronJobID"];
-        }
-        if(isset($arguments["JobID"])) {
-            $lock_command_file .= '_JobID_' .$arguments["JobID"];
+        if(count($arguments) > 0) {
+            foreach($arguments as $argument_key => $argument_value) {
+                $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
+            }
         }
 
-        return $lock_command_file;
+        return str_slug($lock_command_file);
     }
 
     public static function before_cronrun($command_name,$Cron) {
+        $arguments = $Cron->argument();
+        if(isset($arguments["CompanyID"]) && !empty($arguments["CompanyID"])){
+
+            Company::setup_timezone($arguments["CompanyID"]);
+        }
 
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 

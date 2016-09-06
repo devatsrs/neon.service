@@ -103,6 +103,9 @@ class PortaAccountUsage extends Command {
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -134,6 +137,8 @@ class PortaAccountUsage extends Command {
 
             Log::error(print_r($param, true));
 
+            /**
+             * Not in Use
             $CdrBehindData = array();
             //check CdrBehindDuration from cron job setting
             if(!empty($cronsetting['ErrorEmail'])){
@@ -141,6 +146,8 @@ class PortaAccountUsage extends Command {
                 CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
             }
             //CdrBehindDuration
+            */
+
             $InserData = array();
             $data_count = 0;
             $insertLimit = 1000;
@@ -211,6 +218,11 @@ class PortaAccountUsage extends Command {
             $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrvcdrazure')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
+            if($RateCDR == 0) {
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            }
             Log::error('Porta prc_insertCDR start');
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('Porta prc_insertCDR end');

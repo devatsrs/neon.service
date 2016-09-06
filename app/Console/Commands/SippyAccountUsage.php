@@ -132,11 +132,12 @@ class SippyAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
 
             Log::error(' ========================== sippy transaction start =============================');
-            if (count($filenames)) {
-                CronJob::createLog($CronJobID);
-            }
+            CronJob::createLog($CronJobID);
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
@@ -364,6 +365,11 @@ class SippyAccountUsage extends Command
                 $filedetail .= '<br> No CustomerCDR Data Found!!';
             }
 
+            if($RateCDR == 0) {
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            }
             Log::error('sippy prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
@@ -380,11 +386,16 @@ class SippyAccountUsage extends Command
 
 
                 date_default_timezone_set(Config::get('app.timezone'));
-                $CdrBehindData = array();
+
+                /**
+                 * Not in Use
+                 * $CdrBehindData = array();
                 if (!empty($result[0]->min_date) && !empty($cronsetting['ErrorEmail'])) {
                     $CdrBehindData['startdatetime'] = $result[0]->min_date;
                     CronJob::CheckCdrBehindDuration($CronJob, $CdrBehindData);
                 }
+                 */
+
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;

@@ -1,35 +1,48 @@
 
 <p>
-Hi {{$data['data']['AccountActivityData'][0]['FirstName']}} {{$data['data']['AccountActivityData'][0]['LastName']}} ,
+Hi {{$data['data']['AccountTaskData'][0]['FirstName']}} {{$data['data']['AccountTaskData'][0]['LastName']}} ,
 </p>
 
 <p>
-This is reminder for activity related to account.
+    Please find below your activities due soon :
 </p>
-<p>
-following the detail of activities.
-</p>
+
+
 <style>
-.aligncenter { text-align: center; }
-.headercolor {background-color: #E5E4F2}
-.rowscolor {background-color: #FCF7FC}
+    .alignleft { text-align: left; }
+    .headercolor {background-color: #E5E4F2}
+    .rowscolor {background-color: #FCF7FC}
+    .priority {
+        border-left: 3px solid #cc2424;
+    }
+    .normal {
+        border-left: 3px solid #00a651;
+    }
+    .inlinetable {
+        text-align: left;
+        display: inline;
+        line-height: 40px;
+    }
 </style>
-<table cellpadding="1" cellspacing="1" width="75%" class="aligncenter">
+<table cellpadding="1" cellspacing="1" width="75%" class="alignleft">
     <thead>
     <tr class="headercolor">
-        <th width="25%">Account Name</th>
-        <th width="25%">Title</th>
+        <th width="30%">Type</th>
+        <th width="30%">Title</th>
         <th width="25%">Date</th>
-        <th width="25%">Activity Type</th>
+        <th width="15%">Status</th>
+        <th width="15%">Related To</th>
+
     </tr>
     </thead>
     <tbody>
-@foreach($data['data']['AccountActivityData'] as $activity )
+@foreach($data['data']['AccountTaskData'] as $activity )
     <tr class="rowscolor">
-        <td>{{$activity['AccountName']}}</td>
-        <td>{{$activity['Title']}}</td>
+        <td><div class="{{$activity['Priority']==1?'priority':'normal'}} inlinetable">&nbsp;</div><div class="inlinetable">{{$activity['TaskType']}}</div></td>
+        <td>{{$activity['Subject']}}</td>
         <td>{{$activity['Date']}}</td>
-        <td>{{$activity['ActivityType']}}</td>
+        <td>{{$activity['BoardColumnName']}}</td>
+        <td>{{$activity['AccountName']}}</td>
     </tr>
 @endforeach
     </tbody>

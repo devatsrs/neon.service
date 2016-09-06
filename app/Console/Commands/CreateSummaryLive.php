@@ -2,6 +2,7 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\AccountBalance;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -67,6 +68,7 @@ class CreateSummaryLive extends Command{
         try {
 
             Summary::generateSummary($CompanyID,1);
+            AccountBalance::updateAccountUnbilledAmount($CompanyID);
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 

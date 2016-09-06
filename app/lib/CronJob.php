@@ -257,7 +257,7 @@ class CronJob extends \Eloquent {
         }
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
-		CronJob::find($CronJobID)->update(["Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
+		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
 
         $emaildata['KillCommand'] = $KillCommand;
         $emaildata['ReturnStatus'] = $ReturnStatus;
@@ -312,8 +312,13 @@ class CronJob extends \Eloquent {
         $cronsetting = json_decode($CronJob->Settings,true);
         $ErrorEmail = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
         $Message= '';
-        $Message.= $Exception->getMessage()."<br> ";
-        $Message.=  str_replace("\n", "<br>", $Exception->getTraceAsString())."<br> ";
+        if(is_object($Exception)){
+            $Message.= $Exception->getMessage()."<br> ";
+            $Message.=  str_replace("\n", "<br>", $Exception->getTraceAsString())."<br> ";
+        }else{
+            $Message.=  str_replace("\n", "<br>", $Exception)."<br> ";
+        }
+
 
         $emaildata['CompanyID'] = $CompanyID;
         $emaildata['CompanyName'] = $ComanyName;
@@ -352,7 +357,9 @@ class CronJob extends \Eloquent {
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
-    public static function CheckCdrBehindDuration($CronJob,$CdrBehindData){
+
+    // Not in use
+    public static function NOT_IN_USE______CheckCdrBehindDuration($CronJob,$CdrBehindData){
         //check CdrBehindDuration from cron job setting
         $cronsetting = json_decode($CronJob->Settings, true);
         $CdrBehindEmailSendTime = $CronJob->CdrBehindEmailSendTime;
@@ -458,8 +465,7 @@ class CronJob extends \Eloquent {
             $status = Helper::sendMail('emails.rategenerator',$emaildata);
         }
         //$rates_email = explode(',',CompanySetting::getKeyVal($CompanyID,'RateGenerationEmail'));
-
-        if(!empty($cronsetting->SuccessEmail)) {
+        if(isset($cronsetting->SuccessEmail) && !empty($cronsetting->SuccessEmail)) {
 
             $rates_email = explode(',', $cronsetting->SuccessEmail);
             $valid_emails = array();
@@ -496,4 +502,23 @@ class CronJob extends \Eloquent {
         $CronJob->update($dataactive);
     }
 
+    // check sippy and vos download cronjob is active or not
+    public static function checkCDRDownloadFiles($CompanyID){
+
+        $CronJonCommandsIds = array();
+        $rows = DB::table('tblCronJobCommand')->where(["Status"=> 1,'CompanyID'=>$CompanyID])->whereIn('Command',array('sippydownloadcdr','vosdownloadcdr'))->get();
+        if(count($rows)>0){
+            foreach($rows as $row){
+                if(!empty($row->CronJobCommandID)){
+                    $CronJonCommandsIds[]=$row->CronJobCommandID;
+                }
+            }
+
+            $count = CronJob::where(["Status"=> 1,'CompanyID'=>$CompanyID])->whereIn('CronJobCommandID',$CronJonCommandsIds)->count();
+            if($count>0){
+                return true;
+            }
+        }
+        return false;
+    }
 }

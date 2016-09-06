@@ -1,6 +1,8 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\Config;
+
 class Company extends \Eloquent {
 	protected $fillable = [];
     protected $guarded = array('CompanyID');
@@ -30,5 +32,17 @@ class Company extends \Eloquent {
         }else{
             return  getenv("TEST_EMAIL");
         }
+    }
+
+    /** Setup Default Company Timezone
+     * @param $CompanyID
+     */
+    public static function setup_timezone($CompanyID){
+        $TimeZone = Company::where("CompanyID",$CompanyID)->pluck("TimeZone");
+        if(!empty($TimeZone)){
+            date_default_timezone_set($TimeZone);
+            Config::set('app.timezone',$TimeZone);
+        }
+
     }
 }

@@ -1,23 +1,23 @@
-<?php
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
-
+use App\Lib\AccountBalance;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\Summary;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class CreateVendorSummary extends Command{
+class AccountBalanceProcess extends Command
+{
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'createvendorsummary';
+    protected $name = 'accountbalanceprocess';
 
     /**
      * The console command description.
@@ -44,46 +44,49 @@ class CreateVendorSummary extends Command{
         ];
     }
 
-
     /**
      * Execute the console command.
      *
      * @return mixed
      */
-    public function handle()
+    public function fire()
     {
-
         CronHelper::before_cronrun($this->name, $this );
 
-
         $arguments = $this->argument();
-        $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
-        $CronJob =  CronJob::find($CronJobID);
+        $CompanyID = $arguments["CompanyID"];
+        $CronJob = CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/createvednorsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/accountbalanceprocess-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        $ProcessID = CompanyGateway::getProcessID();
         try {
 
-            Summary::generateVendorSummary($CompanyID,0);
-            $joblogdata['Message'] = 'Success';
+
+            $cronjobdata = AccountBalance::SendBalanceThresoldEmail($CompanyID,$ProcessID,$cronsetting);
+            if(count($cronjobdata)){
+                $joblogdata['Message'] ='Message : '.implode(',<br>',$cronjobdata);
+            }else{
+                $joblogdata['Message'] = 'Success';
+            }
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-
         } catch (\Exception $e) {
-            Log::error($e);
-            $joblogdata['Message'] ='Error:'.$e->getMessage();
-            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-            if(!empty($cronsetting['ErrorEmail'])) {
 
+            $this->info('Failed:' . $e->getMessage());
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            Log::error($e);
+            if(!empty($cronsetting['ErrorEmail'])) {
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
                 Log::error("**Email Sent Status " . $result['status']);
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        CronJobLog::createLog($CronJobID,$joblogdata);
+
         CronJob::deactivateCronJob($CronJob);
-        Log::error(" CronJobId end" . $CronJobID);
+        CronJobLog::createLog($CronJobID,$joblogdata);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
@@ -91,7 +94,5 @@ class CreateVendorSummary extends Command{
         }
 
         CronHelper::after_cronrun($this->name, $this);
-
     }
-
 }
