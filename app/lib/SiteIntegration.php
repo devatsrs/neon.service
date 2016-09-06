@@ -37,8 +37,7 @@ class SiteIntegration{
 		
 		if(self::CheckIntegrationConfiguration(false,self::$freshdeskSlug,$CompanyID)){		
 			$configuration 		=   self::CheckIntegrationConfiguration(true,self::$freshdeskSlug,$CompanyID);
-			$data 				= 	array("domain"=>$configuration->FreshdeskDomain,"email"=>$configuration->FreshdeskEmail,"password"=>$configuration->FreshdeskPassword,"key"=>$configuration->Freshdeskkey);
-			
+			$data 				= 	array("domain"=>$configuration->FreshdeskDomain,"email"=>$configuration->FreshdeskEmail,"password"=>$configuration->FreshdeskPassword,"key"=>$configuration->Freshdeskkey);			
 			$this->support = new Freshdesk($data);
 		}		
 	}
@@ -82,7 +81,7 @@ class SiteIntegration{
 	 */
 	
 	public static function SendMail($view,$data,$companyID,$Body){
-		$config = self::CheckIntegrationConfiguration(true,self::$EmailSlug,$companyID);
+		$config = self::CheckCategoryConfiguration(true,self::$EmailSlug,$companyID);
 		switch ($config->Slug){
 			case SiteIntegration::$mandrillSlug:
        		return MandrilIntegration::SendMail($view,$data,$config,$companyID,$Body);
@@ -97,7 +96,7 @@ class SiteIntegration{
 	public static function  CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
 		
 		$Integration	 	 =	Integration::where(["CompanyID" => $CompanyID,"Slug"=>$slug])->first();	
-	
+		
 		if(count($Integration)>0)
 		{						
 			$IntegrationSubcategory = Integration::select("*");
@@ -105,10 +104,10 @@ class SiteIntegration{
 			{
 				$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
 	
-			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.ParentID"=>$Integration->ParentID])->where(["tblIntegrationConfiguration.Status"=>1]);
-			 $result = $IntegrationSubcategory->first();
+			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.IntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
+			 $result = $IntegrationSubcategory->first(); 
 			 if(count($result)>0)
-			 {
+			 { 
 				 $IntegrationData =  isset($result->Settings)?json_decode($result->Settings):array();
 				 if(count($IntegrationData)>0){
 					 if($data ==true){
@@ -121,5 +120,37 @@ class SiteIntegration{
 		}
 		return false;		
 	}
+	
+		/*
+	check main category have data or not
+	*/
+	public static function  CheckCategoryConfiguration($data=false,$slug,$companyID){	
+		
+		$Integration	 =	Integration::where(["CompanyID" => $companyID,"Slug"=>$slug])->first();	
+	
+		if(count($Integration)>0)
+		{						
+			$IntegrationSubcategory = Integration::select("*");
+			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join)
+			{
+				$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
+	
+			})->where(["tblIntegration.CompanyID"=>$companyID])->where(["tblIntegrationConfiguration.ParentIntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
+			 $result = $IntegrationSubcategory->first();
+			 if(count($result)>0)
+			 {	
+				 $IntegrationData =  isset($result->Settings)?json_decode($result->Settings):array();
+				 if(count($IntegrationData)>0){
+					 if($data ==true){
+						return $result;
+					 }else{
+						return true;
+					 }
+				 }
+			 }
+		}
+		return false;		
+	}
+
 }
 ?>
