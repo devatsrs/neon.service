@@ -1217,6 +1217,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountSubscriptions as $AccountSubscription) {
                 $isAdvanceSubscription =0;
                 /**check for advance subscription*/
+                Log::info( " ============================Subscription Start ================= \n\n");
                 Log::info( ' SubscriptionID - ' . $AccountSubscription->SubscriptionID );
                 if($AccountSubscription->EndDate == '0000-00-00'){
                     $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
@@ -1238,7 +1239,7 @@ class Invoice extends \Eloquent {
                          * charge for '1-3-2015' to '1-4-2015'
                          */
                         if( $StartDate >= $AccountSubscription->StartDate && $StartDate <= $AccountSubscription->EndDate && $EndDate >= $AccountSubscription->StartDate && $EndDate <= $AccountSubscription->EndDate) {
-                            Log::info( 'regular Advance Subscription ' );
+                            Log::info( 'regular Subscription if advance ' );
                             //Charge Current Subscription Date
                             $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$StartDate,$EndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                             $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
@@ -1276,6 +1277,7 @@ class Invoice extends \Eloquent {
                     $SubscriptionEndDate = $EndDate;
                 }
                 Log::info( ' SubscriptionID - ' . $SubscriptionStartDate.'====='.$SubscriptionEndDate);
+                Log::info( ' AccountSubscriptionID - '.$AccountSubscription->AccountSubscriptionID. ' === ' . $AccountSubscription->StartDate.'====='.$AccountSubscription->EndDate);
 
                 //if advance subscription + regular month ( 2 entry for same subscription )
                 //1. StartDate 15-7-2015 End Date 31-7-2015
@@ -1285,7 +1287,7 @@ class Invoice extends \Eloquent {
                  * regular Subscription '1-1-2015' to '1-1-2016'
                  * charge for '1-3-2015' to '1-4-2015'
                  */
-                if( $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                if( $isAdvanceSubscription == 0 && $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
                     Log::info( 'regular Subscription ' );
                     $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                     $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
@@ -1324,8 +1326,14 @@ class Invoice extends \Eloquent {
                     $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                     $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
                     $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                }else if( $isAdvanceSubscription ==1 && $SubscriptionStartDate > $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                    Log::info( 'regular Advance Subscription ' );
+                    //Charge Current Subscription Date
+                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
+                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
                 }
-
+                Log::info( " ============================Subscription End ================= \n\n");
 
             } // Subscription loop over
 
