@@ -112,7 +112,7 @@ class SiteIntegration{
 				 $IntegrationData =  isset($result->Settings)?json_decode($result->Settings):array();
 				 if(count($IntegrationData)>0){
 					 if($data ==true){
-						return $result;
+						return $IntegrationData;
 					 }else{
 						return true;
 					 }

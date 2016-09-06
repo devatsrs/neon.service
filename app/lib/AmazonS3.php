@@ -183,7 +183,7 @@ class AmazonS3 {
     static function unSignedUrl($key='',$CompanyID){
 
         $s3 = self::getS3Client($CompanyID);
-
+		
         //When no amazon ;
         if($s3 == 'NoAmazon'){
             return  self::preSignedUrl($key,$CompanyID);
