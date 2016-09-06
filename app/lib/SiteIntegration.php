@@ -94,7 +94,7 @@ class SiteIntegration{
 	 * check settings addded or not . return true,data or false
 	 */ 
 	
-	function CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
+	public static function  CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
 		
 		$Integration	 	 =	Integration::where(["CompanyID" => $CompanyID,"Slug"=>$slug])->first();	
 	
