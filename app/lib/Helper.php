@@ -15,7 +15,7 @@ class Helper{
 		$companyID = $data['CompanyID'];
 		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
 	
-		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
+		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
 		}
 		else
