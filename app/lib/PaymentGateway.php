@@ -15,11 +15,11 @@ class PaymentGateway extends \Eloquent {
         return PaymentGateway::where(array('PaymentGatewayID' => $PaymentGatewayID))->pluck('Title');
     }
 
-    public static function addTransaction($PaymentGateway,$amount,$options,$account,$AccountPaymentProfileID)
+    public static function addTransaction($PaymentGateway,$amount,$options,$account,$AccountPaymentProfileID,$CompanyID)
     {
         switch($PaymentGateway) {
             case 'AuthorizeNet':
-                $transaction = self::addAuthorizeNetTransaction($amount,$options);
+                $transaction = self::addAuthorizeNetTransaction($amount,$options,$CompanyID);
                 $Notes = '';
                 if($transaction->response_code == 1) {
                     $Notes = 'AuthorizeNet transaction_id ' . $transaction->transaction_id;
@@ -55,13 +55,12 @@ class PaymentGateway extends \Eloquent {
 
     }
 
-    public static function addAuthorizeNetTransaction($amount, $options)
+    public static function addAuthorizeNetTransaction($amount, $options,$CompanyID)
     {
-		$AuthorizeDbData 					= 	\App\Lib\SiteIntegration::is_authorize_configured(true);
-		$AuthorizeData						=	isset($AuthorizeDbData->Settings)?json_decode($AuthorizeDbData->Settings):array();	
-		$AUTHORIZENET_API_LOGIN_ID  		= 	isset($AuthorizeData->AuthorizeLoginID)?$AuthorizeData->AuthorizeLoginID:'';		
-		$AUTHORIZENET_TRANSACTION_KEY  		= 	isset($AuthorizeData->AuthorizeTransactionKey)?$AuthorizeData->AuthorizeTransactionKey:'';
-		$isSandbox							=	isset($AuthorizeDbData->AuthorizeTestAccount)?$AuthorizeDbData->AuthorizeTestAccount:'';
+		$AuthorizeData 					= 	\App\Lib\SiteIntegration::CheckIntegrationConfiguration(true,\App\Lib\SiteIntegration::$AuthorizeSlug,$CompanyID);
+		$AUTHORIZENET_API_LOGIN_ID  	= 	isset($AuthorizeData->AuthorizeLoginID)?$AuthorizeData->AuthorizeLoginID:'';		
+		$AUTHORIZENET_TRANSACTION_KEY  	= 	isset($AuthorizeData->AuthorizeTransactionKey)?$AuthorizeData->AuthorizeTransactionKey:'';
+		$isSandbox						=	isset($AuthorizeDbData->AuthorizeTestAccount)?$AuthorizeDbData->AuthorizeTestAccount:'';
 		
         define("AUTHORIZENET_API_LOGIN_ID", $AUTHORIZENET_API_LOGIN_ID);
         define("AUTHORIZENET_TRANSACTION_KEY", $AUTHORIZENET_TRANSACTION_KEY);

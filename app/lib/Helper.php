@@ -15,10 +15,11 @@ class Helper{
 		$companyID = $data['CompanyID'];
 		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
 	
-		if(SiteIntegration::is_EmailIntegration($companyID)){
+		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
 		}
-		else{ 
+		else
+		{ 
 			$config = Company::select('SMTPServer','SMTPUsername','CompanyName','SMTPPassword','Port','IsSSL','EmailFrom')->where("CompanyID", '=', $companyID)->first();
 			$status = 	 PHPMAILERIntegtration::SendMail($view,$data,$config,$companyID,$body);
 		}
@@ -72,7 +73,7 @@ class Helper{
         }*/
 		return $status;
     }
-/*    public static function setMailConfig($CompanyID,$mandrill){
+/*    public static function setMailConfig_old($CompanyID,$mandrill){
         $result = Company::select('SMTPServer','SMTPUsername','CompanyName','SMTPPassword','Port','IsSSL','EmailFrom')->where("CompanyID", '=', $CompanyID)->first();
         if($mandrill == 1) {
             Config::set('mail.host', getenv("MANDRILL_SMTP_SERVER"));

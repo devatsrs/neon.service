@@ -56,7 +56,7 @@ class Invoice extends \Eloquent {
                 $path = self::generate_usage_detail_file($CompanyID, $AccountID, $InvoiceID);
             }
             if (!empty($path)) {
-                AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                 $Invoice->update(["UsagePath" => $path]); // Update new one
             }
             return $path;
@@ -116,7 +116,7 @@ class Invoice extends \Eloquent {
                     $amazondir = AmazonS3::$dir['INVOICE_USAGE_FILE'];
                     $amazonPath = AmazonS3::generate_upload_path($amazondir, $AccountID, $CompanyID);
                     $fullPath = $amazonPath . basename($ZipFile); //$destinationPath . $file_name;
-                    if (!AmazonS3::upload($ZipFile, $amazonPath)) {
+                    if (!AmazonS3::upload($ZipFile, $amazonPath,$CompanyID)) {
                         throw new Exception('Error in Amazon upload');
                     }
                     return $fullPath;
@@ -182,7 +182,7 @@ class Invoice extends \Eloquent {
                     file_put_contents($local_file, $output);
                     if (file_exists($local_file)) {
                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
                         return $fullPath;
@@ -255,7 +255,7 @@ class Invoice extends \Eloquent {
                     file_put_contents($local_file, $output);
                     if (file_exists($local_file)) {
                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
                         return $fullPath;
@@ -622,10 +622,10 @@ class Invoice extends \Eloquent {
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
+            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
                 $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
             } else {
-                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
             $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
@@ -723,7 +723,7 @@ class Invoice extends \Eloquent {
             @unlink($footer_html);
             if (file_exists($local_file)) {
                 $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                if (AmazonS3::upload($local_file, $amazonPath)) {
+                if (AmazonS3::upload($local_file, $amazonPath,$companyID)) {
                     return $fullPath;
                 }
             }
@@ -1674,10 +1674,10 @@ class Invoice extends \Eloquent {
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
+                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
                         } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
                         $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
@@ -1763,7 +1763,7 @@ class Invoice extends \Eloquent {
                         @unlink($footer_html);
                         if (file_exists($local_file)) {
                             $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath)) {
+                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                 $pdf_path = $fullPath;
                             }
                         }
@@ -1797,11 +1797,11 @@ class Invoice extends \Eloquent {
                                     file_put_contents($local_file, $output);
                                     if (file_exists($local_file)) {
                                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                                             $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                                         }
                                     }
@@ -2054,10 +2054,10 @@ class Invoice extends \Eloquent {
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
+                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
                             $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
                         } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
                         $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
@@ -2145,7 +2145,7 @@ class Invoice extends \Eloquent {
                         @unlink($footer_html);
                         if (file_exists($local_file)) {
                             $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath)) {
+                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                 $pdf_path = $fullPath;
                             }
                         }
@@ -2180,11 +2180,11 @@ class Invoice extends \Eloquent {
                                     file_put_contents($local_file, $output);
                                     if (file_exists($local_file)) {
                                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                                             $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                                         }
                                     }
