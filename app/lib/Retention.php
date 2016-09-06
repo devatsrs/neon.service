@@ -327,7 +327,12 @@ class Retention {
                     //$bucket = getenv('AWS_BUCKET')
                     $bucket = AmazonS3::getBucket($CompanyID);
                     $amazonpath = 's3://'.$bucket.'/Backup/CDR/';
-                    $UploadCommand = 'solo -port=6001 s3cmd sync '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
+                    /**
+                     * example
+                     * /usr/bin/s3cmd put --recursive /home/autobackup/uk-others-backup s3://neon.backup/
+                     */
+                    //$UploadCommand = 'solo -port=6001 s3cmd sync '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
+                    $UploadCommand = '/usr/bin/s3cmd put '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
                     $Upload_Output = RemoteSSH::run($CompanyID,[$UploadCommand]);
                     Log::info('Upload Files to amazon - '.$UploadCommand);
                     Log::info($Upload_Output);
