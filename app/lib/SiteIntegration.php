@@ -96,7 +96,7 @@ class SiteIntegration{
 	public static function  CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
 		
 		$Integration	 	 =	Integration::where(["CompanyID" => $CompanyID,"Slug"=>$slug])->first();	
-	
+		
 		if(count($Integration)>0)
 		{						
 			$IntegrationSubcategory = Integration::select("*");
@@ -104,10 +104,10 @@ class SiteIntegration{
 			{
 				$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
 	
-			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.IntegrationID"=>$Integration->ParentID])->where(["tblIntegrationConfiguration.Status"=>1]);
-			 $result = $IntegrationSubcategory->first();
+			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.IntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
+			 $result = $IntegrationSubcategory->first(); 
 			 if(count($result)>0)
-			 {
+			 { 
 				 $IntegrationData =  isset($result->Settings)?json_decode($result->Settings):array();
 				 if(count($IntegrationData)>0){
 					 if($data ==true){
