@@ -135,7 +135,7 @@ class AmazonS3 {
             return true;
         }
 
-        $bucket = self::getBucket();
+        $bucket = self::getBucket($CompanyID);
         // Upload a publicly accessible file. The file size, file type, and MD5 hash
         // are automatically calculated by the SDK.
         try {
@@ -163,7 +163,7 @@ class AmazonS3 {
         }
 
 
-        $bucket = self::getBucket();
+        $bucket = self::getBucket($CompanyID);
 
         // Get a command object from the client and pass in any options
         // available in the GetObject command (e.g. ResponseContentDisposition)
@@ -189,7 +189,7 @@ class AmazonS3 {
             return  self::preSignedUrl($key,$CompanyID);
         }
 
-        $bucket = self::getBucket();
+        $bucket = self::getBucket($CompanyID);
         $unsignedUrl = $s3->getObjectUrl($bucket, $key);
         return $unsignedUrl;
 
@@ -211,7 +211,7 @@ class AmazonS3 {
                 }
             }
 
-            $bucket = self::getBucket();
+            $bucket = self::getBucket($CompanyID);
             // Upload a publicly accessible file. The file size, file type, and MD5 hash
             // are automatically calculated by the SDK.
             try {
