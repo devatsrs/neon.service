@@ -86,7 +86,7 @@ class BulkLeadMailSend extends Command {
                         $criteria = json_decode($joboptions->criteria);
                     }
                     if(!empty($joboptions->attachment)){
-                        $path = AmazonS3::unSignedUrl($joboptions->attachment);
+                        $path = AmazonS3::unSignedUrl($joboptions->attachment,$CompanyID);
                         if(strpos($path, "https://") !== false){
                             $file = Config::get('app.temp_location').basename($path);
                             file_put_contents($file,file_get_contents($path));
