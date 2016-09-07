@@ -95,7 +95,7 @@ class RateTableRateUpload extends Command
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
                     if ($jobfile->FilePath) {
-                        $path = AmazonS3::unSignedUrl($jobfile->FilePath);
+                        $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
                             $file = Config::get('app.temp_location') . basename($path);
                             file_put_contents($file, file_get_contents($path));
