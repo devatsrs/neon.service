@@ -120,7 +120,7 @@ class CustomerPortaSheet extends Command {
                 $NeonExcel->write_csv($excel_data);
             }
 
-            if(!AmazonS3::upload($file_path,$amazonDir)){
+            if(!AmazonS3::upload($file_path,$amazonDir,$CompanyID)){
                 throw new Exception('Error in Amazon upload');
             }
 

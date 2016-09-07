@@ -5,9 +5,8 @@ function custom_replace( &$item, $key ) {
 function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
-function is_amazon(){
-	$AmazonData		=	\App\Lib\SiteIntegration::is_amazon_configured(true);
-	
+function is_amazon($CompanyID){
+	$AmazonData			=	\App\Lib\SiteIntegration::CheckIntegrationConfiguration(true,\App\Lib\SiteIntegration::$AmazoneSlug,$CompanyID);	
 	$AMAZONS3_KEY 		= 	isset($AmazonData->AmazonKey)?$AmazonData->AmazonKey:'';
 	$AMAZONS3_SECRET 	= 	isset($AmazonData->AmazonSecret)?$AmazonData->AmazonSecret:'';
 	$AWS_REGION 		= 	isset($AmazonData->AmazonAwsRegion)?$AmazonData->AmazonAwsRegion:'';
@@ -227,6 +226,7 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
     $area_prefix = preg_replace('/^2222/','',$area_prefix);
+    $area_prefix = preg_replace('/^3333/','',$area_prefix);
 return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
