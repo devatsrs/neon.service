@@ -120,7 +120,7 @@ class CDRUpload extends Command
             Log::info($cldreplacement);
             if (!empty($job) && !empty($jobfile)) {
                 if ($jobfile->FilePath) {
-                    $path = AmazonS3::unSignedUrl($jobfile->FilePath);
+                    $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                     if (strpos($path, "https://") !== false) {
                         $file = Config::get('app.temp_location') . basename($path);
                         file_put_contents($file, file_get_contents($path));
@@ -341,6 +341,11 @@ class CDRUpload extends Command
                             Log::info("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
                             DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
                         }*/
+                    }
+                    if($RateCDR == 0) {
+                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
+                        DB::statement("CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' )");
+                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
                     }
 
                     Log::error(' prc_insertCDR start');

@@ -131,6 +131,9 @@ class VOSAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             Log::error(' ========================== vos transaction start =============================');
             CronJob::createLog($CronJobID);
 
@@ -281,6 +284,11 @@ class VOSAccountUsage extends Command
                 $filedetail = '<br> No Data Found!!';
             }
 
+            if($RateCDR == 0) {
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            }
             Log::error('vos prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");

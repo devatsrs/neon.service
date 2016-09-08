@@ -107,6 +107,9 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
             $param['RateCDR'] = $RateCDR;
@@ -272,6 +275,11 @@ class PBXAccountUsage extends Command
 
             DB::connection('sqlsrvcdrazure')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
+            if($RateCDR == 0) {
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            }
             Log::error('pbx prc_insertCDR start');
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('pbx prc_insertCDR end');

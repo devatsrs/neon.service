@@ -87,18 +87,20 @@ class CDRRecalculate extends Command {
                 $companysetting =   json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
                 $RateCDR = 1;
                 $RateFormat = Company::PREFIX;
-                $CLI = $CLD = '';
+                $CLI = $CLD =  $area_prefix = $Trunk = '';
                 $zerovaluecost = 0;
                 $CurrencyID = 0;
                 if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                     $RateFormat = $companysetting->RateFormat;
                 }
+
                 if(!empty($joboptions->StartDate)) {
                     $startdate = $joboptions->StartDate;
                 }
                 if(!empty($joboptions->EndDate)) {
                     $enddate = $joboptions->EndDate;
                 }
+
                 if(isset($joboptions->CDRType)) {
                     $CDRType = $joboptions->CDRType;
                 }
@@ -114,10 +116,16 @@ class CDRRecalculate extends Command {
                 if(!empty($joboptions->CurrencyID)) {
                     $CurrencyID = $joboptions->CurrencyID;
                 }
+                if(!empty($joboptions->area_prefix)) {
+                    $area_prefix = $joboptions->area_prefix;
+                }
+                if(!empty($joboptions->Trunk)) {
+                    $Trunk = $joboptions->Trunk;
+                }
                 if(!empty($startdate) && !empty($enddate)){
-                    Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."')");
-                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."')");
-                    Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."')");
+                    Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
+                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
+                    Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
                     $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
                 }
                 if (count($skiped_account_data)) {
@@ -129,7 +137,7 @@ class CDRRecalculate extends Command {
                 }
                 //if(count($skiped_account_data) == 0) {
                 DB::connection('sqlsrvcdrazure')->beginTransaction();
-                DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."')");
+                DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
                 DB::connection('sqlsrvcdrazure')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
                 DB::connection('sqlsrvcdrazure')->commit();
                 //}

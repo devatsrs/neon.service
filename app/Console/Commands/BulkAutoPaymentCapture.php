@@ -129,7 +129,7 @@ class BulkAutoPaymentCapture extends Command {
                         $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID.',' . $account->AccountID.",1)");
 
                         /**  Start Transaction */
-                        $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account,$AccountPaymentProfileID);
+                        $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account,$AccountPaymentProfileID,$CompanyID);
 
                         if (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1) {
                             foreach ($unPaidInvoices as $Invoiceid) {
@@ -138,7 +138,8 @@ class BulkAutoPaymentCapture extends Command {
                                 $paymentdata = array();
                                 $paymentdata['CompanyID'] = $Invoice->CompanyID;
                                 $paymentdata['AccountID'] = $Invoice->AccountID;
-                                $paymentdata['InvoiceNo'] = $Invoice->InvoiceNumber;
+                                $paymentdata['InvoiceNo'] = $Invoice->FullInvoiceNumber;
+                                $paymentdata['InvoiceID'] = (int)$Invoice->InvoiceID;
                                 $paymentdata['PaymentDate'] = date('Y-m-d');
                                 $paymentdata['PaymentMethod'] = $transactionResponse['transaction_payment_method'];
                                 $paymentdata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);

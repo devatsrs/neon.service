@@ -81,6 +81,7 @@ class VendorRateUpload extends Command
         $p_forbidden = 0;
         $p_preference = 0;
         $DialStringId = 0;
+        $dialcode_separator = 'null';
         Log::useFiles(storage_path() . '/logs/vendorfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         try {
 
@@ -111,8 +112,17 @@ class VendorRateUpload extends Command
                         $p_preference = 1;
                     }
 
+                    if(isset($attrselection->DialCodeSeparator)){
+                        if($attrselection->DialCodeSeparator == ''){
+                            $dialcode_separator = 'null';
+                        }else{
+                            $dialcode_separator = $attrselection->DialCodeSeparator;
+                        }
+                    }else{
+                        $dialcode_separator = 'null';
+                    }
                     if ($jobfile->FilePath) {
-                        $path = AmazonS3::unSignedUrl($jobfile->FilePath);
+                        $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
                             $file = Config::get('app.temp_location') . basename($path);
                             file_put_contents($file, file_get_contents($path));
@@ -244,11 +254,11 @@ class VendorRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
+                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
                     try{
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
-                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
                         DB::commit();
 
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));

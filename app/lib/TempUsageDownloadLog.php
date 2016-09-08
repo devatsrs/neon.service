@@ -39,4 +39,10 @@ class TempUsageDownloadLog extends \Eloquent {
         }
         return $endtimefinal;
     }
+
+    // use for temp usage download files retention
+    public static function getMinDateUsageDownloadFiles($CompanyID){
+        $StartDate =  TempUsageDownloadLog::where(['CompanyID'=>$CompanyID])->min('start_time');
+        return $StartDate;
+    }
 }

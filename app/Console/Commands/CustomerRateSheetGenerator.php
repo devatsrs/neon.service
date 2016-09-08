@@ -183,7 +183,7 @@ class CustomerRateSheetGenerator extends Command {
                                 $currency = Currency::getCurrencyCode($account->CurrencyId);
                                 $symbol = Currency::getCurrencySymbol($account->CurrencyId);
                             }
-                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,$account->RoundChargesAmount);
+                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
                             $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
                             $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
                             $data['extra'] = $extra;
@@ -213,7 +213,7 @@ class CustomerRateSheetGenerator extends Command {
                                 Log::info('job is merge 1 ' . $JobID);
                                 $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                 extract($sheetstatusupdate);
-                                if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                     throw new Exception('Error in Amazon upload');
                                 }
 
@@ -238,7 +238,7 @@ class CustomerRateSheetGenerator extends Command {
                                         Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                         $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                         extract($sheetstatusupdate);
-                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         Log::info('job is merge 0 ' . $JobID);
@@ -265,7 +265,7 @@ class CustomerRateSheetGenerator extends Command {
                                     Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                     $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                     extract($sheetstatusupdate);
-                                    if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                    if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                         throw new Exception('Error in Amazon upload');
                                     }
                                     Log::info('job is merge 0 old logic' . $JobID);

@@ -93,8 +93,9 @@ class AccountActivityReminder extends Command
         $Company = Company::find($CompanyID);
         try {
             CronJob::createLog($CronJobID);
-            $select = ['tblAccount.AccountName', 'tblTask.Subject', 'tblTask.DueDate', 'tblTask.Task_type', 'tblTask.Priority','tblUser.EmailAddress', 'tblUser.FirstName', 'tblUser.LastName'];
+            $select = ['tblAccount.AccountName', 'tblTask.Subject', 'tblTask.DueDate', 'tblCRMBoardColumn.BoardColumnName' ,'tblUser.EmailAddress', 'tblTask.Task_type', 'tblUser.FirstName', 'tblUser.LastName', 'tblAccount.AccountName'];
             $accounttask = Account::join('tblTask', 'tblTask.AccountIDs', '=', 'tblAccount.AccountID')
+                ->join('tblCRMBoardColumn','tblTask.BoardColumnID','=','tblCRMBoardColumn.BoardColumnID')
                 ->join('tblUser', 'tblUser.UserID', '=', 'tblAccount.Owner');//convert(date,errorDate,101)
             $accounttask->where('tblAccount.CompanyID', $CompanyID)->whereRaw("DATE_FORMAT(tblTask.DueDate,'%Y-%m-%d')='" . $today . "'")->orderBy('tblUser.UserID', 'ASC')->orderBy('tblAccount.AccountID', 'DESC');
             //$accountactivity = AccountActivity::where('CompanyID', $CompanyID)->whereRaw('YEAR([Date])-MONTH([Date])-DAY([Date])=' . $today)->orderBy('AccountID','DESC');
@@ -119,13 +120,16 @@ class AccountActivityReminder extends Command
                 $emaillist = array();
                 foreach ($tasks as $task) {
                     $emaillist[$task->EmailAddress][] = array('AccountName' => $task->AccountName,
-                        'Title' => $task->Subject,
+                        'Subject' => $task->Subject,
                         'Date' => date('d-m-Y h:i:A',strtotime($task->DueDate)),
-                        'TaskType' => $task->Task_type>0?Task::$taskType[$task->Task_type]:'',
+                        'TaskType' => 'Task',
                         'FirstName' => $task->FirstName,
                         'LastName' => $task->LastName,
-                        'Priority' => $task->Priority);
+                        'Priority' => $task->Priority,
+                        'BoardColumnName'=>$task->BoardColumnName,
+                        'AccountName'=>$task->AccountName);
                 }
+
                 foreach($emaillist as $email=>$tasks){
                     $status = Helper::sendMail('emails.AccountActivityEmailSend', array(
                         'EmailTo' => $email,
