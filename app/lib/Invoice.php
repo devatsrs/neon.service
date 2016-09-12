@@ -617,6 +617,7 @@ class Invoice extends \Eloquent {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
+            $companyID = $Account->CompanyId;
             $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
@@ -638,7 +639,7 @@ class Invoice extends \Eloquent {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
 
-                        $companyID = $Account->CompanyId;
+
                         $start_date = $Detail->StartDate;
                         $end_date = $Detail->EndDate;
                         $ShowZeroCall = 1;
