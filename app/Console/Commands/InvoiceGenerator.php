@@ -263,7 +263,9 @@ class InvoiceGenerator extends Command {
         }while(Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
                 ->select(["tblAccount.AccountID","AccountName"])
                 ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
-                ->where('tblAccountBilling.NextInvoiceDate','<>','')->where('tblAccountBilling.NextInvoiceDate','<=',$today)
+                ->where('tblAccountBilling.NextInvoiceDate','<>','')
+                ->where('tblAccountBilling.NextInvoiceDate','<>','0000-00-00')
+                ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
 
