@@ -139,6 +139,7 @@ class InvoiceGenerator extends Command {
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
                 ->where('tblAccountBilling.NextInvoiceDate','<>','')
+                ->where('tblAccountBilling.NextInvoiceDate','<>','0000-00-00')
                 ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')
                 ->orderby('tblAccount.AccountID')->get();
@@ -231,6 +232,8 @@ class InvoiceGenerator extends Command {
                             $skip_accounts[] = $AccountID;
                         }
 
+                    }else{
+                        $skip_accounts[] = $AccountID;
                     }
 
                     Log::info(' ========================== Invoice Send End =============================');
