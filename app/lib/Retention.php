@@ -207,7 +207,7 @@ class Retention {
 
         $StoragePath = storage_path();
         //$StoragePath = 'find /var/www/html/neon-service-branch/dev-mysql/bhavin/storage';
-        if(!empty($StoragePath && isset($LogDeleteDay) && $LogDeleteDay>0)){
+        if(!empty($StoragePath) && isset($LogDeleteDay) && $LogDeleteDay>0){
             Log::info('Back End(Service) Delete Storage Log Start');
             $command = 'find '.$StoragePath.'/logs -maxdepth 1  -name "*.log" -mtime +'.$LogDeleteDay.' -type f -exec rm {} \;';
             $output = RemoteSSH::run($CompanyID,[$command]);
