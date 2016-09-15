@@ -138,15 +138,9 @@ class BulkLeadMailSend extends Command {
                                     if (isset($status["status"]) && $status["status"] == 0) {
                                         $errors[] = $account->AccountName.', '.$status["message"];
                                     } else{
-                                        $logData = ['AccountID'=>$account->AccountID,
-                                            'ProcessID'=>$ProcessID,
-                                            'JobID'=>$JobID,
-                                            'User'=>$JobLoggedUser,
-                                            'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                            'EmailTo'=>$emaildata['EmailTo'],
-                                            'Subject'=>$emaildata['Subject'],
-                                            'Message'=>$status['body']];
-                                        $statuslog = Helper::email_log($logData);
+                                        /** log emails against account */
+                                        $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
+
                                         if($statuslog['status']==0) {
                                             $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                                         }
@@ -242,15 +236,9 @@ class BulkLeadMailSend extends Command {
                                             $jobdata['EmailSentStatus'] = $status['status'];
                                             $jobdata['EmailSentStatusMessage']= $status['message'];
                                         }else{
-                                            $logData = ['AccountID'=>$account->AccountID,
-                                                'ProcessID'=>$ProcessID,
-                                                'JobID'=>$JobID,
-                                                'User'=>$JobLoggedUser,
-                                                'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                                'EmailTo'=>$emaildata['EmailTo'],
-                                                'Subject'=>$emaildata['Subject'],
-                                                'Message'=>$status['body']];
-                                            $statuslog = Helper::email_log($logData);
+                                            /** log emails against account */
+                                            $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
+
                                             if($statuslog['status']==0) {
                                                 $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                                             }

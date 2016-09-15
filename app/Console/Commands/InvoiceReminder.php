@@ -181,15 +181,8 @@ class InvoiceReminder extends Command
                                     $jobdata['EmailSentStatusMessage'] = $status['message'];
                                 } else {
 
-                                    $logData = ['AccountID'=>$Account->AccountID,
-                                        'ProcessID'=>$ProcessID,
-                                        'JobID'=>$JobID,
-                                        'User'=>$JobLoggedUser,
-                                        'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                        'EmailTo'=>$emaildata['EmailTo'],
-                                        'Subject'=>$emaildata['Subject'],
-                                        'Message'=>$status['body']];
-                                    $statuslog = Helper::email_log($logData);
+                                    /** log emails against account */
+                                    $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
                                     if($statuslog['status']==0) {
                                         $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
                                     }

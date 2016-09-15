@@ -1,13 +1,8 @@
 <?php
 namespace App\Lib;
 
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
-use App\Lib\SiteIntegration;
-use App\Lib\User;
-use App\Lib\Company;
-use App\Lib\PHPMAILERIntegtration;
 
 class Helper{
 
@@ -279,6 +274,24 @@ class Helper{
         }
 
         return $RoundChargesAmount;
+    }
+
+    public static function account_email_log($CompanyID,$AccountID,$emaildata,$status,$User='',$ProcessID='',$JobID=0){
+        if(empty($User)) {
+            $Company = Company::find($CompanyID);
+            $User = User::getDummyUserInfo($CompanyID, $Company);
+        }
+        $logData = ['AccountID' => $AccountID,
+            'ProcessID' => $ProcessID,
+            'JobID' => $JobID,
+            'User' => $User,
+            'EmailType' => Notification::PaymentReminder,
+            'EmailFrom' => $User->EmailAddress,
+            'EmailTo' => $emaildata['EmailTo'],
+            'Subject' => $emaildata['Subject'],
+            'Message' => $status['body']];
+        $statuslog = Helper::email_log($logData);
+        return $statuslog;
     }
 
 }

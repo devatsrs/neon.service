@@ -1,15 +1,16 @@
 <?php namespace App\Console\Commands;
 
-use App\Lib\AccountBalance;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Helper;
+use App\Lib\NeonAlert;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class AccountBalanceProcess extends Command
+class NeonAlerts extends Command
 {
 
     /**
@@ -17,7 +18,7 @@ class AccountBalanceProcess extends Command
      *
      * @var string
      */
-    protected $name = 'accountbalanceprocess';
+    protected $name = 'neonalerts';
 
     /**
      * The console command description.
@@ -60,12 +61,12 @@ class AccountBalanceProcess extends Command
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/accountbalanceprocess-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/neonalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
         $ProcessID = CompanyGateway::getProcessID();
         try {
 
 
-            $cronjobdata = AccountBalance::SendBalanceThresoldEmail($CompanyID,$ProcessID,$cronsetting);
+            $cronjobdata = NeonAlert::neon_alerts($CompanyID,$ProcessID);
             if(count($cronjobdata)){
                 $joblogdata['Message'] ='Message : '.implode(',<br>',$cronjobdata);
             }else{

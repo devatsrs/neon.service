@@ -1084,7 +1084,7 @@ class Invoice extends \Eloquent {
         // Send only When Auto Invoice is On and GrandTotal is set.
         if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
 
-            $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
             $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
@@ -1116,22 +1116,13 @@ class Invoice extends \Eloquent {
                 $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
                 $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
                 InvoiceLog::insert($invoiceloddata);
-
+                $User = '';
                 if(!@empty($Account->Owner)){
                     $User = User::find($Account->Owner);
-                }else{
-                    $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
-                    $User = User::find($UserID);
                 }
-                $logData = ['AccountID'=>$Account->AccountID,
-                    'ProcessID'=>$ProcessID,
-                    'JobID'=>$JobID,
-                    'User'=>$User,
-                    'EmailFrom'=>$User->EmailAddress,
-                    'EmailTo'=>$emaildata['EmailTo'],
-                    'Subject'=>$emaildata['Subject'],
-                    'Message'=>$status['body']];
-                $statuslog = Helper::email_log($logData);
+                /** log emails against account */
+                $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$User,$ProcessID,$JobID);
+
                 if($statuslog['status']==0) {
                     $status['status'] = 'failure';
                     $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];

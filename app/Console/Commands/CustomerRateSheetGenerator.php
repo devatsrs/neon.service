@@ -492,15 +492,8 @@ class CustomerRateSheetGenerator extends Command {
                 $errorscustomer[] = $account->AccountName .' Email Exception'. $emailstatuscustomer["message"];
             } else {
                 $countcust++;
-                $logData = ['AccountID' => $account->AccountID,
-                    'ProcessID' => $ProcessID,
-                    'JobID' => $JobID,
-                    'User' => $userInfo,
-                    'EmailFrom' => $userInfo->EmailAddress,
-                    'EmailTo' => $emaildata['EmailTo'],
-                    'Subject' => $emaildata['Subject'],
-                    'Message' => $emailstatuscustomer['body']];
-                $statuslog = Helper::email_log($logData);
+                /** log emails against account */
+                $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$emailstatuscustomer,$userInfo,$ProcessID,$JobID);
                 if ($statuslog['status'] == 0) {
                     $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                 }
