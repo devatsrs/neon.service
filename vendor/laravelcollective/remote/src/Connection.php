@@ -289,15 +289,4 @@ class Connection implements ConnectionInterface {
 		return $this->getGateway()->delete( $path);
 	}
 
-	/**
-	 * List  Dir.
-	 *
-	 * @param  string $path
-	 *
-	 * @return \Collective\Remote\GatewayInterface
-	 */
-	public function size( $path) {
-		return $this->getGateway()->size( $path);
-	}
-
 }
