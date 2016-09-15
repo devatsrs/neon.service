@@ -226,6 +226,7 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
     $area_prefix = preg_replace('/^2222/','',$area_prefix);
+    $area_prefix = preg_replace('/^3333/','',$area_prefix);
 return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
