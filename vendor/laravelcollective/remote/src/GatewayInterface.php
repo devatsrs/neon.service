@@ -66,4 +66,6 @@ interface GatewayInterface {
 	public function rawlist($dir);
 
 	public function delete($path);
+
+	public function size($path);
 }

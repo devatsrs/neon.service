@@ -89,7 +89,18 @@ class VOS{
             $files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             foreach((array)$files as $file){
                 if(strpos($file,'cdr_') !== false){
-                    $filename[] =$file;
+
+                    /**
+                     * if file size is  > 0 then only .
+                     */
+                    if(RemoteFacade::size(self::$config['cdr_folder'].'/'.$file) > 0){
+
+                        $filename[] =$file;
+                        //Log::info($file . " has >0 size");
+
+                    }else {
+                        //Log::info($file . " has 0 size");
+                    }
                 }
             }
             asort($filename);

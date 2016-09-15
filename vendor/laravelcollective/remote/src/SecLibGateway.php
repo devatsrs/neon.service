@@ -337,4 +337,8 @@ class SecLibGateway implements GatewayInterface {
 	public function delete( $path) {
 		return $this->getConnection()->delete( $path);
 	}
+
+	public function size( $path) {
+		return $this->getConnection()->size( $path);
+	}
 }
