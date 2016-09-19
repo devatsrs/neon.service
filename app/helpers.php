@@ -367,5 +367,19 @@ function getdaysdiff($date1,$date2){
     $date2 = new DateTime($date2);
     return $date2->diff($date1)->format("%R%a");
 }
+function apply_translation_rule($TranslationRule,$call_string){
+    $replacement =$patternrules = array();
+    if(!empty($TranslationRule)){
+        $translation_rule = translation_rule($TranslationRule);
+        $replacement =  $translation_rule['replacement'];
+        $patternrules =  $translation_rule['patternrules'];
+    }
+    if(!empty($patternrules)){
+        return preg_replace($patternrules,$replacement,$call_string);
+    }else{
+        return $call_string;
+    }
+}
+
 
 
