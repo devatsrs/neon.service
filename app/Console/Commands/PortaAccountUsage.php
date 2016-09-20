@@ -103,6 +103,16 @@ class PortaAccountUsage extends Command {
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if($RateCDR == 0) {
+                TempUsageDetail::applyDiscountPlan();
+            }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -164,8 +174,8 @@ class PortaAccountUsage extends Command {
                             $data['connect_time'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Connect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                             $data['disconnect_time'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Disconnect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                             $data['cost'] = (float)$row_account['Charged_Amount'];
-                            $data['cld'] = $row_account['CLD'];
-                            $data['cli'] = $row_account['CLI'];
+                            $data['cld'] = apply_translation_rule($CLDTranslationRule,$row_account['CLD']);
+                            $data['cli'] = apply_translation_rule($CLITranslationRule,$row_account['CLI']);
                             $data['billed_duration'] = $row_account['Charged_Quantity'];
                             $data['billed_second'] = $row_account['Charged_Quantity'];
                             $data['duration'] = $row_account['Used_Quantity'];

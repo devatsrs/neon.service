@@ -143,7 +143,7 @@ class CustomerVOSSheetGeneration extends Command {
             file_put_contents($newfile_path.'/'.$file_name,$file_content);
             @unlink($newfile_path.'/'.$file_name.'.csv');
 
-            if(!AmazonS3::upload($newfile_path.'/'.$file_name,$amazonDir)){
+            if(!AmazonS3::upload($newfile_path.'/'.$file_name,$amazonDir,$CompanyID)){
                 throw new Exception('Error in Amazon upload');
             }
 

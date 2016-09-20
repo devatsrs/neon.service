@@ -56,7 +56,7 @@ class Invoice extends \Eloquent {
                 $path = self::generate_usage_detail_file($CompanyID, $AccountID, $InvoiceID);
             }
             if (!empty($path)) {
-                AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                 $Invoice->update(["UsagePath" => $path]); // Update new one
             }
             return $path;
@@ -116,7 +116,7 @@ class Invoice extends \Eloquent {
                     $amazondir = AmazonS3::$dir['INVOICE_USAGE_FILE'];
                     $amazonPath = AmazonS3::generate_upload_path($amazondir, $AccountID, $CompanyID);
                     $fullPath = $amazonPath . basename($ZipFile); //$destinationPath . $file_name;
-                    if (!AmazonS3::upload($ZipFile, $amazonPath)) {
+                    if (!AmazonS3::upload($ZipFile, $amazonPath,$CompanyID)) {
                         throw new Exception('Error in Amazon upload');
                     }
                     return $fullPath;
@@ -182,7 +182,7 @@ class Invoice extends \Eloquent {
                     file_put_contents($local_file, $output);
                     if (file_exists($local_file)) {
                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
                         return $fullPath;
@@ -255,7 +255,7 @@ class Invoice extends \Eloquent {
                     file_put_contents($local_file, $output);
                     if (file_exists($local_file)) {
                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
                         return $fullPath;
@@ -617,15 +617,16 @@ class Invoice extends \Eloquent {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
+            $companyID = $Account->CompanyId;
             $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
-                $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
+                $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
             } else {
-                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
             $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
@@ -638,7 +639,7 @@ class Invoice extends \Eloquent {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
 
-                        $companyID = $Account->CompanyId;
+
                         $start_date = $Detail->StartDate;
                         $end_date = $Detail->EndDate;
                         $ShowZeroCall = 1;
@@ -723,7 +724,7 @@ class Invoice extends \Eloquent {
             @unlink($footer_html);
             if (file_exists($local_file)) {
                 $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                if (AmazonS3::upload($local_file, $amazonPath)) {
+                if (AmazonS3::upload($local_file, $amazonPath,$companyID)) {
                     return $fullPath;
                 }
             }
@@ -1086,9 +1087,20 @@ class Invoice extends \Eloquent {
             $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
             $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
-            $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
-            $emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
-            $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+            //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
+            //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
+            //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+
+            $CustomerEmails = explode(",",$InvoiceGenerationEmail);
+            foreach($CustomerEmails as $singleemail){
+                $singleemail = trim($singleemail);
+                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                    $emaildata['EmailTo'] = $singleemail;
+                    $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                    $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                }
+            }
+
             if ($status['status'] == 0) {
                 $email_sending_failed[] = $Account->AccountName;
                 $status['status'] = 'failure';
@@ -1097,6 +1109,14 @@ class Invoice extends \Eloquent {
             } else {
                 $status['status'] = "success";
                 $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+
+                $invoiceloddata = array();
+                $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
+                $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
+                $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                InvoiceLog::insert($invoiceloddata);
+
                 if(!@empty($Account->Owner)){
                     $User = User::find($Account->Owner);
                 }else{
@@ -1198,6 +1218,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountSubscriptions as $AccountSubscription) {
                 $isAdvanceSubscription =0;
                 /**check for advance subscription*/
+                Log::info( " ============================Subscription Start ================= \n\n");
                 Log::info( ' SubscriptionID - ' . $AccountSubscription->SubscriptionID );
                 if($AccountSubscription->EndDate == '0000-00-00'){
                     $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
@@ -1219,7 +1240,7 @@ class Invoice extends \Eloquent {
                          * charge for '1-3-2015' to '1-4-2015'
                          */
                         if( $StartDate >= $AccountSubscription->StartDate && $StartDate <= $AccountSubscription->EndDate && $EndDate >= $AccountSubscription->StartDate && $EndDate <= $AccountSubscription->EndDate) {
-                            Log::info( 'regular Advance Subscription ' );
+                            Log::info( 'regular Subscription if advance ' );
                             //Charge Current Subscription Date
                             $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$StartDate,$EndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                             $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
@@ -1257,6 +1278,7 @@ class Invoice extends \Eloquent {
                     $SubscriptionEndDate = $EndDate;
                 }
                 Log::info( ' SubscriptionID - ' . $SubscriptionStartDate.'====='.$SubscriptionEndDate);
+                Log::info( ' AccountSubscriptionID - '.$AccountSubscription->AccountSubscriptionID. ' === ' . $AccountSubscription->StartDate.'====='.$AccountSubscription->EndDate);
 
                 //if advance subscription + regular month ( 2 entry for same subscription )
                 //1. StartDate 15-7-2015 End Date 31-7-2015
@@ -1266,7 +1288,7 @@ class Invoice extends \Eloquent {
                  * regular Subscription '1-1-2015' to '1-1-2016'
                  * charge for '1-3-2015' to '1-4-2015'
                  */
-                if( $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                if( $isAdvanceSubscription == 0 && $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
                     Log::info( 'regular Subscription ' );
                     $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                     $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
@@ -1305,8 +1327,14 @@ class Invoice extends \Eloquent {
                     $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
                     $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
                     $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                }else if( $isAdvanceSubscription ==1 && $SubscriptionStartDate > $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                    Log::info( 'regular Advance Subscription ' );
+                    //Charge Current Subscription Date
+                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
+                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
                 }
-
+                Log::info( " ============================Subscription End ================= \n\n");
 
             } // Subscription loop over
 
@@ -1655,10 +1683,10 @@ class Invoice extends \Eloquent {
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
                         $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
@@ -1744,7 +1772,7 @@ class Invoice extends \Eloquent {
                         @unlink($footer_html);
                         if (file_exists($local_file)) {
                             $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath)) {
+                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                 $pdf_path = $fullPath;
                             }
                         }
@@ -1778,11 +1806,11 @@ class Invoice extends \Eloquent {
                                     file_put_contents($local_file, $output);
                                     if (file_exists($local_file)) {
                                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                                             $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                                         }
                                     }
@@ -2035,10 +2063,10 @@ class Invoice extends \Eloquent {
                         $CurrencyCode = !empty($Currency)?$Currency->Code:'';
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key));
+                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
                         $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
@@ -2126,7 +2154,7 @@ class Invoice extends \Eloquent {
                         @unlink($footer_html);
                         if (file_exists($local_file)) {
                             $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath)) {
+                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                 $pdf_path = $fullPath;
                             }
                         }
@@ -2161,11 +2189,11 @@ class Invoice extends \Eloquent {
                                     file_put_contents($local_file, $output);
                                     if (file_exists($local_file)) {
                                         $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath); // Delete old usage file from amazon
+                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
                                             $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                                         }
                                     }

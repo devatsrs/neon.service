@@ -139,12 +139,13 @@ class TempUsageDetail extends \Eloquent {
         }
         $ReRateEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::ReRate]);
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
+        $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$ReRateEmail);
             $emaildata['EmailToName'] = '';
             $emaildata['Message'] = implode('<br>', $error_msg);
-            $emaildata['Subject'] = $JobTitle . ' Usage Log file with Account and Trunk did not match ';
+            $emaildata['Subject'] = $CompanyGatewayName . ' CDR Rate Log ';
             $result = Helper::sendMail('emails.usagelog', $emaildata);
             if ($result['status'] == 1) {
                 DB::table('tblTempRateLog')->where(array(
@@ -211,5 +212,35 @@ class TempUsageDetail extends \Eloquent {
         }else if(empty($userfield) ) {
             return 'none';
         }
+    }
+    public static function applyDiscountPlan(){
+        $today = date('Y-m-d');
+        $Accounts = DB::table('tblAccountBilling')
+            ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
+            ->where('NextInvoiceDate',$today)
+            ->Where(function($query)use($today)
+            {
+                $query->whereRaw("DATE(tblAccountDiscountPlan.created_at) <> '".$today."'")
+                      ->orwhere('CreatedBy','<>','RMScheduler');
+            })
+            ->get(['tblAccountBilling.AccountID','DiscountPlanID','NextInvoiceDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+        foreach($Accounts as $Account){
+            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
+            if(!empty($AccountNextBilling)){
+                $BillingCycleType = $AccountNextBilling->BillingCycleType;
+                $BillingCycleValue =$AccountNextBilling->BillingCycleValue;
+            }else{
+                $BillingCycleType = $Account->BillingCycleType;
+                $BillingCycleValue =$Account->BillingCycleValue;
+            }
+            $days = getBillingDay(strtotime($Account->NextInvoiceDate), $BillingCycleType, $BillingCycleValue);
+            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->NextInvoiceDate));
+            $getdaysdiff = getdaysdiff($NextInvoiceDate,$today);
+            $DayDiff = $getdaysdiff >0?intval($getdaysdiff):0;
+            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler')");
+            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler'));
+
+        }
+
     }
 }

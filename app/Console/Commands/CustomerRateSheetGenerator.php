@@ -213,7 +213,7 @@ class CustomerRateSheetGenerator extends Command {
                                 Log::info('job is merge 1 ' . $JobID);
                                 $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                 extract($sheetstatusupdate);
-                                if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                     throw new Exception('Error in Amazon upload');
                                 }
 
@@ -238,7 +238,7 @@ class CustomerRateSheetGenerator extends Command {
                                         Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                         $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                         extract($sheetstatusupdate);
-                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         Log::info('job is merge 0 ' . $JobID);
@@ -265,7 +265,7 @@ class CustomerRateSheetGenerator extends Command {
                                     Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                     $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                     extract($sheetstatusupdate);
-                                    if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath)) {
+                                    if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
                                         throw new Exception('Error in Amazon upload');
                                     }
                                     Log::info('job is merge 0 old logic' . $JobID);
