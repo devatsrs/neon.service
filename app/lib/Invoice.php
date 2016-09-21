@@ -624,7 +624,7 @@ class Invoice extends \Eloquent {
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
-                $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
             } else {
                 $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
@@ -1675,7 +1675,7 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
@@ -2055,7 +2055,7 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
