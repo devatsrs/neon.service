@@ -248,6 +248,9 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{Signature}}',
         '{{BalanceAmount}}',
         '{{BalanceThreshold}}',
+        '{{Currency}}',
+        '{{CurrencySymbol}}',
+        '{{CompanyName}}'
     ];
 
     foreach($extra as $item){

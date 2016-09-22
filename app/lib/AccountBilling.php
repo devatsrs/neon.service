@@ -22,4 +22,12 @@ class AccountBilling extends \Eloquent {
     public static function getSendInvoiceSetting($AccountID){
         return AccountBilling::where('AccountID',$AccountID)->pluck('SendInvoiceSetting');
     }
+
+    public static function getBillingClass($AccountID){
+        $BillingClassID = (int)AccountBilling::where(array('AccountID'=>$AccountID))->pluck('BillingClassID');
+        return BillingClass::getBillingClass($BillingClassID);
+    }
+    public static function getBillingClassKey($BillingClass,$key){
+        return !empty($BillingClass)?$BillingClass->$key:'';
+    }
 }

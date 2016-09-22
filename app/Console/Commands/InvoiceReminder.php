@@ -153,28 +153,23 @@ class InvoiceReminder extends Command
                                 if (!empty($joboptions->attachment)) {
                                     $emaildata['attach'] = $joboptions->attachment;
                                 }
-                                $Signature = '';
-                                if (!empty($JobLoggedUser)) {
-                                    $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
-                                    $emaildata['EmailFromName'] = $JobLoggedUser->FirstName . ' ' . $JobLoggedUser->LastName;
-                                    if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
-                                    {
-                                        $Signature = $JobLoggedUser->EmailFooter;
-                                    }
-                                }
+
                                 $emaildata['EmailToName'] = $Account->AccountName;
-                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
+
                                 $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
-                                $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{InvoiceNumber}}','{{GrandTotal}}','{{OutStanding}}','{{TotalOutStanding}}','{{Signature}}'];
-                                $replace = [$Account->FirstName, $Account->LastName, $Account->Email, $Account->Address1, $Account->Address2, $Account->Address3, $Account->City, $Account->State, $Account->PostCode, $Account->Country,$invoice->InvoiceNumber,$invoice->GrandTotal,$InvoiceOutStanding,$TotalOutStanding,$Signature];
-                                $emaildata['extra'] = $extra;
-                                $emaildata['replace'] = $replace;
+
+                                $replace_array['InvoiceNumber'] = $invoice->InvoiceNumber;
+                                $replace_array['GrandTotal'] = $invoice->GrandTotal;
+                                $replace_array['InvoiceOutStanding'] = $InvoiceOutStanding;
+                                $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
+                                $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+
                                 $emaildata['Subject'] = $joboptions->subject;
                                 $emaildata['Message'] = $joboptions->message;
                                 $emaildata['CompanyID'] = $CompanyID;
 
                                 $emaildata['mandrill'] = 1;
-                                $status = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+                                $status = Helper::sendMail('emails.template', $emaildata);
                                 if (isset($status["status"]) && $status["status"] == 0) {
                                     $errors[] = $Account->AccountName . ', ' . $status["message"];
                                     $jobdata['EmailSentStatus'] = $status['status'];

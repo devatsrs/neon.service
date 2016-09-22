@@ -13,7 +13,6 @@ use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CronHelper;
-use App\Lib\Currency;
 use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\NeonExcelIO;
@@ -175,19 +174,10 @@ class CustomerRateSheetGenerator extends Command {
                             $local_dir = getenv('UPLOAD_PATH') . '/' . $amazonPath;
                             $excel_data_all = array();
                             $data = array();
-                            $currency = '';
-                            $symbol = '';
                             $data['Company'] = $Company;
                             $data['Account'] = $account;
-                            if (!empty($account->CurrencyId)) {
-                                $currency = Currency::getCurrencyCode($account->CurrencyId);
-                                $symbol = Currency::getCurrencySymbol($account->CurrencyId);
-                            }
-                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
-                            $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
-                            $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
-                            $data['extra'] = $extra;
-                            $data['replace'] = $replace;
+
+
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
 
 
@@ -456,17 +446,7 @@ class CustomerRateSheetGenerator extends Command {
     public function sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser){
         if ($joboptions->sendMail == 1) {
             $emaildata['Subject'] = $joboptions->subject;
-            $emaildata['Message'] = $joboptions->message;
             $emaildata['attach'] = $local_dir . basename($file_name);
-            $Signature = '';
-            if (!empty($userInfo)) {
-                $emaildata['EmailFrom'] = $userInfo->EmailAddress;
-                $emaildata['EmailFromName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
-                if(isset($userInfo->EmailFooter) && trim($userInfo->EmailFooter) != '')
-                {
-                    $Signature = $userInfo->EmailFooter;
-                }
-            }
             if ($joboptions->test == 1) {
                 $emaildata['EmailTo'] = $joboptions->testEmail;
                 $emaildata['EmailToName'] = 'test name';
@@ -480,13 +460,12 @@ class CustomerRateSheetGenerator extends Command {
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
             $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
-            $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{Signature}}'];
-            $replace = [$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country, $Signature];
-            $emaildata['extra'] = $extra;
-            $emaildata['replace'] = $replace;
+            $replace_array = Helper::create_replace_array($account,array(),$userInfo);
+            $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+            $emaildata['Message'] = $joboptions->message;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
-            $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+            $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.template', $emaildata);
 
             if (isset($emailstatuscustomer["status"]) && $emailstatuscustomer["status"] == 0) {
                 $errorscustomer[] = $account->AccountName .' Email Exception'. $emailstatuscustomer["message"];
