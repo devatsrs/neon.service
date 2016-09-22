@@ -90,6 +90,7 @@ class RegenerateInvoice extends Command {
             if (isset($joboptions->InvoiceIDs)) {
 
                 $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
+                sort($InvoiceIDs);
 
                 if (count($InvoiceIDs) > 0) {
 
