@@ -213,6 +213,7 @@ class CDRUpload extends Command
                                 $cdrdata['ID'] = $temp_row[$attrselection->ID];
                             }
                             if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+								$cdrdata['is_inbound'] = 0;
                                 $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]),'','');
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
