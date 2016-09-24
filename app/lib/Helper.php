@@ -264,11 +264,9 @@ class Helper{
     public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::where(["AccountID"=>$AccountID])->pluck("RoundChargesAmount");
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
         }
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount')=='Invalid Key'?2:CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
-        }
+
         if ( empty($RoundChargesAmount) ) {
             $RoundChargesAmount = 2;
         }
@@ -276,7 +274,7 @@ class Helper{
         return $RoundChargesAmount;
     }
 
-    public static function account_email_log($CompanyID,$AccountID,$emaildata,$status,$User='',$ProcessID='',$JobID=0){
+    public static function account_email_log($CompanyID,$AccountID,$emaildata,$status,$User='',$ProcessID='',$JobID=0,$EmailType=0){
         if(empty($User)) {
             $Company = Company::find($CompanyID);
             $User = User::getDummyUserInfo($CompanyID, $Company);
@@ -285,7 +283,7 @@ class Helper{
             'ProcessID' => $ProcessID,
             'JobID' => $JobID,
             'User' => $User,
-            'EmailType' => Notification::PaymentReminder,
+            'EmailType' => $EmailType,
             'EmailFrom' => $User->EmailAddress,
             'EmailTo' => $emaildata['EmailTo'],
             'Subject' => $emaildata['Subject'],

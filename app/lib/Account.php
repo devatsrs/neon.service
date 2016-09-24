@@ -66,7 +66,7 @@ class Account extends \Eloquent {
     }
     public static function checkForCDR($GatewayAccountID){
         $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = AccountBilling::where(array('AccountID'=>$accountid))->pluck('CDRType');
+        $cdr_type = AccountBilling::getCDRType($accountid);
         return $cdr_type;
     }
 
