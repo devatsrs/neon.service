@@ -16,3 +16,4 @@ Thumbs.db
 /storage/framework/views/*
 /storage/logs/*
 /wkhtmltopdf
+/storage/locks/*

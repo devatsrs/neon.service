@@ -1,13 +1,8 @@
 <?php
 namespace App\Lib;
 
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
-use App\Lib\SiteIntegration;
-use App\Lib\User;
-use App\Lib\Company;
-use App\Lib\PHPMAILERIntegtration;
 
 class Helper{
 
@@ -269,16 +264,70 @@ class Helper{
     public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::where(["AccountID"=>$AccountID])->pluck("RoundChargesAmount");
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
         }
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount')=='Invalid Key'?2:CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
-        }
+
         if ( empty($RoundChargesAmount) ) {
             $RoundChargesAmount = 2;
         }
 
         return $RoundChargesAmount;
     }
+
+    public static function account_email_log($CompanyID,$AccountID,$emaildata,$status,$User='',$ProcessID='',$JobID=0,$EmailType=0){
+        if(empty($User)) {
+            $Company = Company::find($CompanyID);
+            $User = User::getDummyUserInfo($CompanyID, $Company);
+        }
+        $logData = ['AccountID' => $AccountID,
+            'ProcessID' => $ProcessID,
+            'JobID' => $JobID,
+            'User' => $User,
+            'EmailType' => $EmailType,
+            'EmailFrom' => $User->EmailAddress,
+            'EmailTo' => $emaildata['EmailTo'],
+            'Subject' => $emaildata['Subject'],
+            'Message' => $status['body']];
+        $statuslog = Helper::email_log($logData);
+        return $statuslog;
+    }
+
+   public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
+       $replace_array = array();
+       $replace_array['FirstName'] = $Account->FirstName;
+       $replace_array['LastName'] = $Account->LastName;
+       $replace_array['Email'] = $Account->Email;
+       $replace_array['Address1'] = $Account->Address1;
+       $replace_array['Address2'] = $Account->Address2;
+       $replace_array['Address3'] = $Account->Address3;
+       $replace_array['City'] = $Account->City;
+       $replace_array['State'] = $Account->State;
+       $replace_array['PostCode'] = $Account->PostCode;
+       $replace_array['Country'] = $Account->Country;
+       $replace_array['BalanceAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+       $replace_array['Currency'] = Currency::getCurrencyCode($Account->AccountID);
+       $replace_array['CurrencySymbol'] = Currency::getCurrencySymbol($Account->AccountID);
+       $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
+       $replace_array['TotalOutStanding'] = Account::getOutstandingAmount($Account->CompanyId,$Account->AccountID,Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID));
+       $Signature = '';
+       if(!empty($JobLoggedUser)){
+           $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
+           $emaildata['EmailFromName'] = $JobLoggedUser->FirstName.' '.$JobLoggedUser->LastName;
+           if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
+           {
+               $Signature = $JobLoggedUser->EmailFooter;
+           }
+       }
+       $replace_array['Signature']= $Signature;
+       $extra_var = array(
+           'InvoiceNumber' => '',
+           'GrandTotal' => '',
+           'InvoiceOutStanding' => '',
+       );
+       $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
+
+       return $replace_array;
+   }
 
 }

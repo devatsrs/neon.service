@@ -66,7 +66,7 @@ class Account extends \Eloquent {
     }
     public static function checkForCDR($GatewayAccountID){
         $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = AccountBilling::where(array('AccountID'=>$accountid))->pluck('CDRType');
+        $cdr_type = AccountBilling::getCDRType($accountid);
         return $cdr_type;
     }
 
@@ -140,9 +140,9 @@ class Account extends \Eloquent {
         }
         return $AccountManagerEmail;
     }
-    public static function getAccountWarningEmailCount($AccountID,$subject){
+    public static function getAccountEmailCount($AccountID,$EmailType){
         $count =  AccountEmailLog::
-            where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalance))
+            where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
