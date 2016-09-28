@@ -17,17 +17,20 @@ class AccountBalance extends Model
     public $timestamps = false; // no created_at and updated_at
 
     public static function LowBalanceReminder($CompanyID,$ProcessID){
-        $AccountBalanceWarnings = DB::select("CALL prc_LowBalanceReminder('" . $CompanyID . "','0')");
-        foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
-            $BillingClass = AccountBilling::getBillingClass($AccountBalanceWarning->AccountID);
-            if (isset($BillingClass->LowBalanceReminderStatus) && $BillingClass->LowBalanceReminderStatus == 1 && isset($BillingClass->LowBalanceReminderSettings)) {
-                if ($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountEmailCount($AccountBalanceWarning->AccountID, AccountEmailLog::LowBalanceReminder) == 0) {
-                    $settings = json_decode($BillingClass->LowBalanceReminderSettings, true);
-                    $settings['ProcessID'] = $ProcessID;
-                    $settings['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
-                    $settings['BalanceThreshold'] = str_replace('p', '%', $AccountBalanceWarning->BalanceThreshold);
-                    NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
+
+        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        foreach($BillingClass as $BillingClassSingle) {
+            if (isset($BillingClassSingle->LowBalanceReminderStatus) && $BillingClassSingle->LowBalanceReminderStatus == 1 && isset($BillingClassSingle->LowBalanceReminderSettings)) {
+                $query = "CALL prc_LowBalanceReminder(?,?,?)";
+                $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
+                foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
+                    $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
+                    if ($AccountBalanceWarning->BalanceWarning == 1 && cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
+                        $settings['ProcessID'] = $ProcessID;
+                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
+                    }
                 }
+                NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings');
             }
         }
     }

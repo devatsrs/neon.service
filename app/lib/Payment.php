@@ -14,20 +14,46 @@ class Payment extends \Eloquent{
     protected $primaryKey = "PaymentID";
 
 
-    public static function PaymentReminder($CompanyID,$ProcessID){
-        $query = "CALL prc_getDueInvoice(?,?)";
-        $Invoices = DB::connection('sqlsrv2')->select($query, array($CompanyID, 0));
+    public static function InvoicePaymentReminder($CompanyID,$ProcessID){
 
-        foreach ($Invoices as $Invoice) {
-            $BillingClass = AccountBilling::getBillingClass($Invoice->AccountID);
-            if (isset($BillingClass->PaymentReminderStatus) && $BillingClass->PaymentReminderStatus == 1 && isset($BillingClass->PaymentReminderSettings)) {
-                if (Account::getAccountEmailCount($Invoice->AccountID, AccountEmailLog::PaymentReminder) == 0) {
-                    $settings = json_decode($BillingClass->PaymentReminderSettings, true);
-                    $settings['ProcessID'] = $ProcessID;
-                    if ($foundkey = array_search($Invoice->DueDay, $settings['Day'])) {
-                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
+        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        foreach($BillingClass as $BillingClassSingle) {
+            if (isset($BillingClassSingle->InvoiceReminderStatus) && $BillingClassSingle->InvoiceReminderStatus == 1 && isset($BillingClassSingle->InvoiceReminderSettings)) {
+                $query = "CALL prc_getDueInvoice(?,?,?)";
+                $Invoices = DB::connection('sqlsrv2')->select($query, array($CompanyID, 0, $BillingClassSingle->BillingClassID));
+                foreach ($Invoices as $Invoice) {
+                    if (Account::getAccountEmailCount($Invoice->AccountID, AccountEmailLog::InvoicePaymentReminder) == 0) {
+                        $settings = json_decode($BillingClassSingle->InvoiceReminderSettings, true);
+                        $settings['EmailType'] = AccountEmailLog::InvoicePaymentReminder;
+                        $settings['ProcessID'] = $ProcessID;
+                        $today = date('Y-m-d');
+                        $getdaysdiff = getdaysdiff($Invoice->AccountCreationDate,$today);
+                        if ($foundkey = array_search($Invoice->DueDay, $settings['Day'])) {
+                            if(check_account_age($settings,$foundkey,$getdaysdiff)) {
+                                NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
+                            }
+
+                        }
                     }
                 }
+            }
+        }
+    }
+    public static function AccountPaymentReminder($CompanyID,$ProcessID){
+        $BillingClass = BillingClass::where('CompanyID', $CompanyID)->get();
+        foreach ($BillingClass as $BillingClassSingle) {
+            if (isset($BillingClassSingle->PaymentReminderStatus) && $BillingClassSingle->PaymentReminderStatus == 1 && isset($BillingClassSingle->PaymentReminderSettings)) {
+                $query = "CALL prc_AccountPaymentReminder(?,?,?)";
+                $Invoices = DB::select($query, array($CompanyID, 0, $BillingClassSingle->BillingClassID));
+                foreach ($Invoices as $Invoice) {
+                    $settings = json_decode($BillingClassSingle->PaymentReminderSettings, true);
+                    if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
+                        $settings['ProcessID'] = $ProcessID;
+                        Log::info('=============='.$Invoice->AccountID);
+                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $Invoice->AccountID);
+                    }
+                }
+                NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'PaymentReminderSettings');
             }
         }
     }

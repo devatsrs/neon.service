@@ -8,7 +8,7 @@ class AccountEmailLog extends \Eloquent {
     protected $table = "AccountEmailLog";
     protected $primaryKey = "AccountEmailLogID";
 
-    const PaymentReminder=1;
+    const InvoicePaymentReminder=1;
     const LowBalanceReminder=2;
 
 

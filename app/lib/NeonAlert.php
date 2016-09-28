@@ -7,19 +7,30 @@ class NeonAlert extends \Eloquent {
 
     public static function neon_alerts($CompanyID,$ProcessID){
         $cronjobdata = array();
+        Log::error('============== LowBalanceReminder START===========');
         try {
             $cronjobdata = AccountBalance::LowBalanceReminder($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Low Balance Reminder Failed';
         }
-
+        Log::error('============== LowBalanceReminder END ===========');
+        Log::error('============== InvoicePaymentReminder START===========');
         try {
-            $cronjobdata = Payment::PaymentReminder($CompanyID,$ProcessID);
+            $cronjobdata = Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Payment Reminder Failed';
         }
+        Log::error('============== InvoicePaymentReminder END ===========');
+        Log::error('============== AccountPaymentReminder START===========');
+        try {
+            $cronjobdata = Payment::AccountPaymentReminder($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Payment Reminder Failed';
+        }
+        Log::error('============== AccountPaymentReminder END===========');
 
         return $cronjobdata;
     }
@@ -32,23 +43,26 @@ class NeonAlert extends \Eloquent {
         if (isset($settings['AccountManager']) && $settings['AccountManager'] == 1 && !empty($AccountManagerEmail)) {
             $settings['ReminderEmail'] .= ',' . $AccountManagerEmail;
         }
+        $EmailType = 0;
+        if(isset($settings['EmailType']) && $settings['EmailType']>0){
+            $EmailType = $settings['EmailType'];
+        }
+
         $EmailTemplate = EmailTemplate::find($TemplateID);
         if (!empty($EmailTemplate)) {
             $EmailSubject = $EmailTemplate->Subject;
             $EmailMessage = $EmailTemplate->TemplateBody;
             $replace_array = Helper::create_replace_array($Account,$settings);
             $EmailMessage = template_var_replace($EmailMessage,$replace_array);
-
-            if(empty($settings['ReminderEmail'])) {
-                $emaildata = array(
-                    'EmailTo' => explode(",", $settings['ReminderEmail']),
-                    'EmailToName' => $Company->CompanyName,
-                    'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
-                    'CompanyID' => $CompanyID,
-                    'CompanyName' => $Company->CompanyName,
-                    'Message' => $EmailMessage
-                );
-
+            $emaildata = array(
+                'EmailToName' => $Company->CompanyName,
+                'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
+                'CompanyID' => $CompanyID,
+                'CompanyName' => $Company->CompanyName,
+                'Message' => $EmailMessage
+            );
+            if(!empty($settings['ReminderEmail'])) {
+                $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
                 $status = Helper::sendMail($email_view, $emaildata);
             }
 
@@ -61,12 +75,20 @@ class NeonAlert extends \Eloquent {
                     if ($customeremail_status['status'] == 0) {
                         $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
                     } else {
-                        $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID']);
+                        $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
                     }
                 }
             }
         }
 
+    }
+    public  static function UpdateNextRunTime($BillingClassID,$setting_name){
+        $BillingClass = BillingClass::find($BillingClassID);
+        $settings = json_decode($BillingClass->$setting_name, true);
+        $settings['LastRunTime'] = date('Y-m-d H:i:00');
+        $settings['NextRunTime'] = next_run_time($settings);
+        $BillingClass->$setting_name = json_encode($settings);
+        $BillingClass->update();
     }
 
 
