@@ -64,6 +64,7 @@ class NeonAlert extends \Eloquent {
             if(!empty($settings['ReminderEmail'])) {
                 $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
                 $status = Helper::sendMail($email_view, $emaildata);
+                Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'],0,$EmailType);
             }
 
             $CustomerEmail = $Account->BillingEmail;
