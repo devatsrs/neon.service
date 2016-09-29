@@ -26,6 +26,9 @@ class Payment extends \Eloquent{
                         $settings = json_decode($BillingClassSingle->InvoiceReminderSettings, true);
                         $settings['EmailType'] = AccountEmailLog::InvoicePaymentReminder;
                         $settings['ProcessID'] = $ProcessID;
+                        $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
+                        $settings['GrandTotal'] = $Invoice->GrandTotal;
+                        $settings['InvoiceOutStanding'] = $Invoice->InvoiceOutStanding;
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($Invoice->AccountCreationDate,$today);
                         if ($foundkey = array_search($Invoice->DueDay, $settings['Day'])) {
@@ -49,7 +52,6 @@ class Payment extends \Eloquent{
                     $settings = json_decode($BillingClassSingle->PaymentReminderSettings, true);
                     if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                         $settings['ProcessID'] = $ProcessID;
-                        Log::info('=============='.$Invoice->AccountID);
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $Invoice->AccountID);
                     }
                 }
