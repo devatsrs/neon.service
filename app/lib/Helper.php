@@ -309,7 +309,7 @@ class Helper{
        $replace_array['Currency'] = Currency::getCurrencyCode($Account->AccountID);
        $replace_array['CurrencySymbol'] = Currency::getCurrencySymbol($Account->AccountID);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
-       $replace_array['TotalOutStanding'] = Account::getOutstandingAmount($Account->CompanyId,$Account->AccountID,Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID));
+       $replace_array['TotalOutStanding'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
        if(!empty($JobLoggedUser)){
            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
