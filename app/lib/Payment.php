@@ -31,11 +31,9 @@ class Payment extends \Eloquent{
                         $settings['OutStanding'] = $Invoice->InvoiceOutStanding;
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
-                        if ($foundkey = array_search($Invoice->DueDay, $settings['Day'])) {
-                            if(check_account_age($settings,$foundkey,$getdaysdiff)) {
-                                NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
-                            }
-
+                        $foundkey = array_search($Invoice->DueDay, $settings['Day']);
+                        if ($foundkey !== false && check_account_age($settings,$foundkey,$getdaysdiff)) {
+                            NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
                         }
                     }
                 }
