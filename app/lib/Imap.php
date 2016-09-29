@@ -32,7 +32,7 @@ protected $server;
 		if($emails){
 			
 			/* begin output var */
-			$output = '';
+			$output = ''; 
 			
 			/* start from bottom */
 		 	$emails =  array_reverse($emails);
@@ -41,7 +41,7 @@ protected $server;
 			/* for every email... */
 			foreach($emails as $key => $email_number){
 				
-				$parent = 0; // no parent by default
+				$MatchType	 =   ''; $MatchID = '';
 				
 				/* get information specific to this email */
 				$overview 		= 		imap_fetch_overview($inbox,$email_number,0);   
@@ -53,38 +53,71 @@ protected $server;
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
 
-				if(!empty($msg_parent)){
+				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
-						$parent = $msg_parent->AccountEmailLogID;
+						$parent = $msg_parent->AccountEmailLogID;                        
 					}else{
 						$parent = $msg_parent->EmailParent;
 					}
-				}else{
-                    $Lead['CompanyID']      =   $CompanyID;
-                    $Lead['Email']          =   $this->GetEmailtxt($overview[0]->from);
-                    $Lead['AccountType']    =   0;
-                    $Lead['AccountName']    =   trim($this->GetNametxt($overview[0]->from));
-				    Lead::$rules['AccountName'] = 'required|unique:tblAccount,AccountName,NULL,CompanyID,CompanyID,'.$Lead['CompanyID'].'';
-			        $validator = Validator::make($Lead, Lead::$rules); 
-					if ($validator->fails()) {                    	
-						//Log::info(print_r($validator->messages()->all(),true));
-					}else{
-						Lead::create($Lead); 
-					} 
-					continue;
+					$parent_account =  $msg_parent->AccountID;
+					$parent_UserID  =  $msg_parent->UserID;
+				}else{ 							// if email is not a reply of an email then search email in account,leads,contacts
+					$parent_account = 0; $parent_UserID  = 0;  $parent = 0; // no parent by default
+					 	
+					//find in account(email,billing email), Email
+					$from  			 =  $this->GetEmailtxt($overview[0]->from); 
+                  	$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$from."',Email)")->get();
+					$AccountSearch2  =  DB::table('tblAccount')->whereRaw("find_in_set('".$from."',BillingEmail)")->get();
+					$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$from."',Email)")->get();		
+					
+					if(count($AccountSearch1)>0 || count($AccountSearch1)>0)													
+					{
+						if(count($AccountSearch1)>0)													
+						{
+							if($AccountSearch1[0]->AccountType==1)
+							{
+								$MatchType	 =   'Account';
+							}else{
+								$MatchType	 =   'Lead';
+							}
+							
+							$MatchID	 =	 $AccountSearch1[0]->AccountID;							
+						}
+						
+						if(count($AccountSearch2)>0)													
+						{
+							if($AccountSearch2[0]->AccountType==1)
+							{
+								$MatchType	 =   'Account';
+							}else{
+								$MatchType	 =   'Lead';
+							}
+							
+							$MatchID	 =	 $AccountSearch2[0]->AccountID;							
+						}						
+					}
+					
+					if(count($ContactSearch)>0 || count($ContactSearch)>0)													
+					{	
+							$MatchType	 =   'Contact';
+							$MatchID	 =	 $ContactSearch[0]->AccountID;								
+					}					
                 }
 								
 				$attachmentsDB 	=	$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments
 				
+				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
-					$AttachmentPaths = serialize($attachmentsDB);
-					$message		=		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //add comment
+					$AttachmentPaths  =		serialize($attachmentsDB);
+					$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
+					
 				}else{
-					$message		=		imap_fetchbody($inbox, $email_number, 1);
+					$message		=		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
 					$AttachmentPaths = serialize([]);
 				}
-					
-				$logData = ['EmailFrom'=> $this->GetEmailtxt($overview[0]->from),
+                $from = $this->GetEmailtxt($overview[0]->from);
+				
+				$logData = ['EmailFrom'=> $from,
 				'Subject'=>$overview[0]->subject,
 				'Message'=>$message,
 				'CompanyID'=>$CompanyID,
@@ -94,7 +127,23 @@ protected $server;
 				"EmailID"=>$email_number,
 				"EmailCall"=>"Received",
 				];			
-				$data   =  AccountEmailLog::Create($logData);								
+				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				if($parent){ 					
+          			AccountEmailLog::find($parent)->update(array("updated_at"=>date('Y-m-d H:i:s')));
+				}
+						  $data   = array(
+						"CompanyID"=>$CompanyID,
+						"MsgLoggedUserID"=>0,
+						"AccountID"=> $parent_account,
+						"Title"=>"You received an email from ".$from,
+						"MsgLoggedUserID"=>$parent_UserID,
+						"Description"=>$overview[0]->subject,
+						"MatchType"=>$MatchType,
+						"MatchID"=>$MatchID,
+						"EmailID"=>$EmailLog
+					); 
+                    Messages::logMsgRecord($data);
+				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
 			}			

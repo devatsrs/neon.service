@@ -367,4 +367,15 @@ function getdaysdiff($date1,$date2){
     return $date2->diff($date1)->format("%R%a");
 }
 
+function validator_response($validator){
 
+
+    if ($validator->fails()) {
+        $errors = "";
+        foreach ($validator->messages()->all() as $error){
+            $errors .= $error."<br>";
+        }
+        return  array("status" => "failed", "message" => $errors);
+    }
+
+}
