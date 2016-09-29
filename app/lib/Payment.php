@@ -28,9 +28,9 @@ class Payment extends \Eloquent{
                         $settings['ProcessID'] = $ProcessID;
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
                         $settings['GrandTotal'] = $Invoice->GrandTotal;
-                        $settings['InvoiceOutStanding'] = $Invoice->InvoiceOutStanding;
+                        $settings['OutStanding'] = $Invoice->InvoiceOutStanding;
                         $today = date('Y-m-d');
-                        $getdaysdiff = getdaysdiff($Invoice->AccountCreationDate,$today);
+                        $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         if ($foundkey = array_search($Invoice->DueDay, $settings['Day'])) {
                             if(check_account_age($settings,$foundkey,$getdaysdiff)) {
                                 NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
