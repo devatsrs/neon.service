@@ -323,7 +323,7 @@ class Helper{
        $extra_var = array(
            'InvoiceNumber' => '',
            'GrandTotal' => '',
-           'InvoiceOutStanding' => '',
+           'OutStanding' => '',
        );
        $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
 
