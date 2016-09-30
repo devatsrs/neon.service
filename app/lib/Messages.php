@@ -25,6 +25,7 @@ class Messages extends \Eloquent{
 		$data["Description"] 		= 	$options["Description"];
         $data["MatchType"] 		    = 	$options["MatchType"];
         $data["MatchID"] 		    = 	$options["MatchID"];
+		$data["EmailID"] 		    = 	$options["EmailID"];		
 		$data["updated_at"] 		= 	date('Y-m-d H:i:s');
 
 		$validator 					= 	Validator::make($data, $rules);
