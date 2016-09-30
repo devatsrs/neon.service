@@ -133,7 +133,6 @@ protected $server;
 				}
 						  $data   = array(
 						"CompanyID"=>$CompanyID,
-						"MsgLoggedUserID"=>0,
 						"AccountID"=> $parent_account,
 						"Title"=>"Email Received from ".$from,
 						"MsgLoggedUserID"=>$parent_UserID,
@@ -141,7 +140,7 @@ protected $server;
 						"MatchType"=>$MatchType,
 						"MatchID"=>$MatchID,
 						"EmailID"=>$EmailLog
-					); 
+					);  Log::info($data);
                     Messages::logMsgRecord($data);
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
