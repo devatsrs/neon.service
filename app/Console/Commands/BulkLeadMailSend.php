@@ -180,6 +180,10 @@ class BulkLeadMailSend extends Command {
                             if(isset($criteria->tag) && trim($criteria->tag) != '') {
                                 $account->where('tblAccount.tags', 'like','%'.trim($criteria->tag).'%');
                             }
+                            if (isset($criteria->low_balance) && $criteria->low_balance == 'true') {
+                                $account->leftjoin('tblAccountBalance', 'tblAccountBalance.AccountID', '=', 'tblAccount.AccountID');
+                                $account->whereRaw("(CASE WHEN tblAccountBalance.BalanceThreshold LIKE '%p' THEN REPLACE(tblAccountBalance.BalanceThreshold, 'p', '')/ 100 * tblAccountBalance.PermanentCredit ELSE tblAccountBalance.BalanceThreshold END) < tblAccountBalance.BalanceAmount");
+                            }
 
                             if(isset($criteria->account_owners)  && trim($criteria->account_owners) > 0) {
                                 $account->where('tblAccount.Owner', (int)$criteria->account_owners);
