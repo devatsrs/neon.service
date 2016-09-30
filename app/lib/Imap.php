@@ -60,10 +60,9 @@ protected $server;
 						$parent = $msg_parent->EmailParent;
 					}
 					$parent_account =  $msg_parent->AccountID;
-					$parent_UserID  =  $msg_parent->UserID;
+					$parent_UserID  =  $msg_parent->UserID; 
 				}else{ 							// if email is not a reply of an email then search email in account,leads,contacts
 					$parent_account = 0; $parent_UserID  = 0;  $parent = 0; // no parent by default
-					 	
 					//find in account(email,billing email), Email
 					$from  			 =  $this->GetEmailtxt($overview[0]->from); 
                   	$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$from."',Email)")->get();
