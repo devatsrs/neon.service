@@ -28,7 +28,7 @@ class Payment extends \Eloquent{
                         $settings['ProcessID'] = $ProcessID;
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
                         $settings['GrandTotal'] = $Invoice->GrandTotal;
-                        $settings['OutStanding'] = $Invoice->InvoiceOutStanding;
+                        $settings['InvoiceOutStanding'] = $Invoice->InvoiceOutStanding;
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);

@@ -160,7 +160,7 @@ class InvoiceReminder extends Command
 
                                 $replace_array['InvoiceNumber'] = $invoice->InvoiceNumber;
                                 $replace_array['GrandTotal'] = $invoice->GrandTotal;
-                                $replace_array['OutStanding'] = $InvoiceOutStanding;
+                                $replace_array['InvoiceOutStanding'] = $InvoiceOutStanding;
                                 $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
                                 $joboptions->message = template_var_replace($joboptions->message,$replace_array);
 
