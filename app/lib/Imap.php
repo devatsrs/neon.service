@@ -135,7 +135,7 @@ protected $server;
 						"CompanyID"=>$CompanyID,
 						"MsgLoggedUserID"=>0,
 						"AccountID"=> $parent_account,
-						"Title"=>"You received an email from ".$from,
+						"Title"=>"Email Received from ".$from,
 						"MsgLoggedUserID"=>$parent_UserID,
 						"Description"=>$overview[0]->subject,
 						"MatchType"=>$MatchType,
