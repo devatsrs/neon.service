@@ -2,6 +2,7 @@
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Lib\CompanySetting;
 
@@ -173,6 +174,17 @@ class Account extends \Eloquent {
             }
         }
         return true;
+    }
+    public static function FirstLowBalanceReminder($AccountID){
+
+        $LastPaymentDate = Payment::where(['AccountID'=>$AccountID,'Recall'=>0,'Status'=>'Approved'])->orderBy('PaymentDate','DESC')->pluck('PaymentDate');
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
+        if(!empty($LastPaymentDate)){
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".$LastPaymentDate."'");
+        }
+        $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
     }
 
 }
