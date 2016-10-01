@@ -52,6 +52,7 @@ protected $server;
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
+                Log::info($overview);
 
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
@@ -117,14 +118,18 @@ protected $server;
                 $from = $this->GetEmailtxt($overview[0]->from);
 				
 				$logData = ['EmailFrom'=> $from,
+				"EmailfromName"=>$this->GetNametxt($overview[0]->from),
 				'Subject'=>$overview[0]->subject,
 				'Message'=>$message,
 				'CompanyID'=>$CompanyID,
 				"MessageID"=>$message_id,
 				"EmailParent" => $parent,
+				"AccountID" => $parent_account,				
 				"AttachmentPaths"=>$AttachmentPaths,
 				"EmailID"=>$email_number,
 				"EmailCall"=>"Received",
+                "UserID" => $parent_UserID,
+                 "created_at"=>date('Y-m-d H:i:s')
 				];			
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
 				if($parent){ 					

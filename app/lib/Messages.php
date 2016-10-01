@@ -28,6 +28,7 @@ class Messages extends \Eloquent{
 		$data["EmailID"] 		    = 	$options["EmailID"];		
 		$data["updated_at"] 		= 	date('Y-m-d H:i:s');
 
+
 		$validator 					= 	Validator::make($data, $rules);
 		if ($validator->fails()) {
 			return validator_response($validator);
