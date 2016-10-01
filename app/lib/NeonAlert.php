@@ -14,7 +14,7 @@ class NeonAlert extends \Eloquent {
             Log::error($e);
             $cronjobdata[] = 'Low Balance Reminder Failed';
         }
-       /* Log::info('============== LowBalanceReminder END ===========');
+        Log::info('============== LowBalanceReminder END ===========');
         Log::info('============== InvoicePaymentReminder START===========');
         try {
             $cronjobdata = Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
@@ -30,7 +30,7 @@ class NeonAlert extends \Eloquent {
             Log::error($e);
             $cronjobdata[] = 'Payment Reminder Failed';
         }
-        Log::info('============== AccountPaymentReminder END===========');*/
+        Log::info('============== AccountPaymentReminder END===========');
 
         return $cronjobdata;
     }
