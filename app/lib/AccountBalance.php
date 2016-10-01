@@ -4,6 +4,7 @@ namespace App\Lib;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AccountBalance extends Model
 {
@@ -21,12 +22,14 @@ class AccountBalance extends Model
         $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
         foreach($BillingClass as $BillingClassSingle) {
             if (isset($BillingClassSingle->LowBalanceReminderStatus) && $BillingClassSingle->LowBalanceReminderStatus == 1 && isset($BillingClassSingle->LowBalanceReminderSettings)) {
+                $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
+                $settings['ProcessID'] = $ProcessID;
+                $settings['EmailType'] = AccountEmailLog::LowBalanceReminder;
                 $query = "CALL prc_LowBalanceReminder(?,?,?)";
                 $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
                 foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
-                    $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
-                    if ($AccountBalanceWarning->BalanceWarning == 1 && cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
-                        $settings['ProcessID'] = $ProcessID;
+                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                        Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
                 }
