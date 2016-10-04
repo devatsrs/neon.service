@@ -52,7 +52,6 @@ protected $server;
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-                Log::info($overview);
 
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
@@ -61,51 +60,23 @@ protected $server;
 						$parent = $msg_parent->EmailParent;
 					}
 					$parent_account =  $msg_parent->AccountID;
-					$parent_UserID  =  $msg_parent->UserID; 
-				}else{ 							// if email is not a reply of an email then search email in account,leads,contacts
-					$parent_account = 0; $parent_UserID  = 0;  $parent = 0; // no parent by default
-					//find in account(email,billing email), Email
-					$from  			 =  $this->GetEmailtxt($overview[0]->from); 
-                  	$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$from."',Email)")->get();
-					$AccountSearch2  =  DB::table('tblAccount')->whereRaw("find_in_set('".$from."',BillingEmail)")->get();
-					$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$from."',Email)")->get();		
-					
-					if(count($AccountSearch1)>0 || count($AccountSearch1)>0)													
-					{
-						if(count($AccountSearch1)>0)													
-						{
-							if($AccountSearch1[0]->AccountType==1)
-							{
-								$MatchType	 =   'Account';
-							}else{
-								$MatchType	 =   'Lead';
-							}
-							
-							$MatchID	 =	 $AccountSearch1[0]->AccountID;							
-						}
-						
-						if(count($AccountSearch2)>0)													
-						{
-							if($AccountSearch2[0]->AccountType==1)
-							{
-								$MatchType	 =   'Account';
-							}else{
-								$MatchType	 =   'Lead';
-							}
-							
-							$MatchID	 =	 $AccountSearch2[0]->AccountID;							
-						}						
-					}
-					
-					if(count($ContactSearch)>0 || count($ContactSearch)>0)													
-					{	
-							$MatchType	 =   'Contact';
-							$MatchID	 =	 $ContactSearch[0]->AccountID;								
-					}					
+					$parent_UserID  =  $msg_parent->UserID;
+					$AccountData 	=  $account = Account::find($parent_account);
+				}
+				else
+				{					
+					// if email is not a reply of an email then search email in account,leads,contacts
+					$parent_account 	= 	 0;
+					$parent_UserID  	= 	 0;
+					$parent 			= 	 0; // no parent by default		
                 }
-								
-				$attachmentsDB 	=	$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments
 				
+				$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
+				$MatchType	 		  =     $MatchArray['MatchType'];
+				$MatchID	 		  =	    $MatchArray['MatchID'];
+				$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);		
+				
+				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
 				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);
@@ -115,10 +86,11 @@ protected $server;
 					$message		=		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
 					$AttachmentPaths = serialize([]);
 				}
+				
                 $from = $this->GetEmailtxt($overview[0]->from);
 				
 				$logData = ['EmailFrom'=> $from,
-				"EmailfromName"=>$this->GetNametxt($overview[0]->from),
+				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
 				'Subject'=>$overview[0]->subject,
 				'Message'=>$message,
 				'CompanyID'=>$CompanyID,
@@ -127,7 +99,7 @@ protected $server;
 				"AccountID" => $parent_account,				
 				"AttachmentPaths"=>$AttachmentPaths,
 				"EmailID"=>$email_number,
-				"EmailCall"=>"Received",
+				"EmailCall"=>Messages::Received,
                 "UserID" => $parent_UserID,
                  "created_at"=>date('Y-m-d H:i:s')
 				];			
@@ -135,16 +107,19 @@ protected $server;
 				if($parent){ 					
           			AccountEmailLog::find($parent)->update(array("updated_at"=>date('Y-m-d H:i:s')));
 				}
-						  $data   = array(
+				
+				$title = "Received from ".$AccountTitle." (".$from." )";
+				
+					 $data   = array(
 						"CompanyID"=>$CompanyID,
 						"AccountID"=> $parent_account,
-						"Title"=>"Email Received from ".$from,
+						"Title"=>$title,
 						"MsgLoggedUserID"=>$parent_UserID,
 						"Description"=>$overview[0]->subject,
 						"MatchType"=>$MatchType,
 						"MatchID"=>$MatchID,
 						"EmailID"=>$EmailLog
-					);  Log::info($data);
+					);  
                     Messages::logMsgRecord($data);
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
@@ -301,5 +276,40 @@ protected $server;
 			return false;
 		}   		
 	}	
+	
+	function findEmailAddress($email)
+	{
+		$AccountTitle 	= 	'';
+		$MatchID		=	0;
+		$MatchType		=	'';
+		//find in account(email,billing email), Email
+		$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$email."',Email) OR find_in_set('".$email."',BillingEmail)")->get(array("AccountID","AccountName","AccountType"));
+		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("AccountID","FirstName","LastName"));		
+		
+		if(count($AccountSearch1)>0)													
+		{
+			if(count($AccountSearch1)>0)													
+			{
+				if($AccountSearch1[0]->AccountType==1)
+				{
+					$MatchType	 =   'Account';
+				}else{
+					$MatchType	 =   'Lead';
+				}
+				
+				$MatchID	  =	 $AccountSearch1[0]->AccountID;
+				$AccountTitle =  $AccountSearch1[0]->AccountName;							
+			}		
+		}
+		
+		if(count($ContactSearch)>0 || count($ContactSearch)>0)													
+		{	
+				$MatchType	  =   'Contact';
+				$MatchID	  =	 $ContactSearch[0]->AccountID;					
+				$AccountTitle =  $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName;			
+		}				
+        
+		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle);        
+	}
 }
 ?>
