@@ -200,14 +200,15 @@ class InvoiceGenerator extends Command {
                                         DB::connection('sqlsrv2')->commit();
                                         Log::info('=========== Updating  InvoiceDate =========== ');
                                         $AccountBilling = AccountBilling::getBilling($AccountID);
-                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
-                                        if(!empty($AccountNextBilling)){
-                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue]);
-                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
-                                        }
                                         $oldNextInvoiceDate = $NextInvoiceDate;
                                         $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($oldNextInvoiceDate));
                                         AccountBilling::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
+                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
+                                        if(!empty($AccountNextBilling)){
+                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue,'LastInvoiceDate'=>$AccountNextBilling->LastInvoiceDate,'NextInvoiceDate'=>$AccountNextBilling->NextInvoiceDate]);
+                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
+                                        }
+
 
                                         Log::info('=========== Updated  InvoiceDate =========== ') ;
                                         DB::commit();

@@ -22,6 +22,9 @@ class UsageHeader extends \Eloquent {
         if($StartDate < $deletedate && $usagecount > 0){
             $StartDate = $deletedate;
         }
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
     public static function getVendorStartHeaderDate($CompanyID){
@@ -36,18 +39,27 @@ class UsageHeader extends \Eloquent {
         if($StartDate < $deletedate && $usagecount > 0){
             $StartDate = $deletedate;
         }
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
 
     // use for customer cdr retention
     public static function getMinDateUsageHeader($CompanyID){
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->min('StartDate');
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
 
     // use for vendor cdr retention
     public static function getMinDateVendorCDRHeader($CompanyID){
         $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->min('StartDate');
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
 }
