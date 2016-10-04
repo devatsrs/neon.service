@@ -139,6 +139,7 @@ class InvoiceGenerator extends Command {
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
                 ->where('tblAccountBilling.NextInvoiceDate','<>','')
+                ->where('tblAccountBilling.NextInvoiceDate','<>','0000-00-00')
                 ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')
                 ->orderby('tblAccount.AccountID')->get();
@@ -199,14 +200,15 @@ class InvoiceGenerator extends Command {
                                         DB::connection('sqlsrv2')->commit();
                                         Log::info('=========== Updating  InvoiceDate =========== ');
                                         $AccountBilling = AccountBilling::getBilling($AccountID);
-                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
-                                        if(!empty($AccountNextBilling)){
-                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue]);
-                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
-                                        }
                                         $oldNextInvoiceDate = $NextInvoiceDate;
                                         $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($oldNextInvoiceDate));
                                         AccountBilling::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
+                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
+                                        if(!empty($AccountNextBilling)){
+                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue,'LastInvoiceDate'=>$AccountNextBilling->LastInvoiceDate,'NextInvoiceDate'=>$AccountNextBilling->NextInvoiceDate]);
+                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
+                                        }
+
 
                                         Log::info('=========== Updated  InvoiceDate =========== ') ;
                                         DB::commit();
@@ -231,6 +233,8 @@ class InvoiceGenerator extends Command {
                             $skip_accounts[] = $AccountID;
                         }
 
+                    }else{
+                        $skip_accounts[] = $AccountID;
                     }
 
                     Log::info(' ========================== Invoice Send End =============================');
@@ -260,7 +264,9 @@ class InvoiceGenerator extends Command {
         }while(Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
                 ->select(["tblAccount.AccountID","AccountName"])
                 ->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,"Billing"=>1 ])
-                ->where('tblAccountBilling.NextInvoiceDate','<>','')->where('tblAccountBilling.NextInvoiceDate','<=',$today)
+                ->where('tblAccountBilling.NextInvoiceDate','<>','')
+                ->where('tblAccountBilling.NextInvoiceDate','<>','0000-00-00')
+                ->where('tblAccountBilling.NextInvoiceDate','<=',$today)
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
 

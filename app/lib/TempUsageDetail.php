@@ -137,14 +137,15 @@ class TempUsageDetail extends \Eloquent {
             $error_msg[] = $Messagesrow->Message;
 
         }
-        $ReRateEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::ReRate]);
+        $ReRateEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
+        $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$ReRateEmail);
             $emaildata['EmailToName'] = '';
             $emaildata['Message'] = implode('<br>', $error_msg);
-            $emaildata['Subject'] = $JobTitle . ' Usage Log file with Account and Trunk did not match ';
+            $emaildata['Subject'] = $CompanyGatewayName . ' CDR Rate Log ';
             $result = Helper::sendMail('emails.usagelog', $emaildata);
             if ($result['status'] == 1) {
                 DB::table('tblTempRateLog')->where(array(

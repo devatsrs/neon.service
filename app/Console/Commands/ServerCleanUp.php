@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CronHelper;
+use App\Lib\Notification;
 use App\Lib\RemoteSSH;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
@@ -90,7 +91,7 @@ class ServerCleanUp extends Command {
 			Retention::deleteCDRFiles($CompanyID);
 
 			$AfterDiskSpaceOutput = Retention::getDiskSpaceOfServer($CompanyID);
-			$FileRetentionEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::RetentionDiskSpaceEmail]);
+			$FileRetentionEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::RetentionDiskSpaceEmail]);
 			//$FileRetentionEmail = CompanyConfiguration::get($CompanyID,'FILE_RETENTION_EMAIL');
 			if(!empty($FileRetentionEmail)){
 				if(isset($BeforeDiskSpaceOutput) && count($BeforeDiskSpaceOutput)>0 && isset($AfterDiskSpaceOutput) && count($AfterDiskSpaceOutput)>0){
