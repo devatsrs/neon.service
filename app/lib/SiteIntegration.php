@@ -18,11 +18,13 @@ class SiteIntegration{
  protected $PaymentSlug			=	'payment';
  static    $EmailSlug			=	'email';
  static    $StorageSlug			=	'storage';
+ static    $AccountingSlug		=	'accounting';
  static    $AmazoneSlug			=	'amazons3';
  static    $AuthorizeSlug		=	'authorizenet';
  static    $GatewaySlug			=	'billinggateway';
  static    $freshdeskSlug		=	'freshdesk';
  static    $mandrillSlug		=	'mandrill';
+ static    $QuickBookSlug		=	'quickbook';
  
  	public function __construct(){
 	
