@@ -2,19 +2,18 @@
 namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
-use App\Lib\User;
-use App\Lib\AccountEmailLog;
-use App\lib\AmazonS3;
-use Symfony\Component\Console\Input\InputArgument;
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Config;
 use App\Lib\Job;
 use App\Lib\JobType;
+use App\Lib\User;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 
 class BulkLeadMailSend extends Command {
@@ -114,39 +113,21 @@ class BulkLeadMailSend extends Command {
                                         $emaildata['attach'] = $joboptions->attachment;
                                     }
 
-                                    $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
-                                    $Signature = '';
-                                    if(!empty($JobLoggedUser)){
-                                        $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
-                                        $emaildata['EmailFromName'] = $JobLoggedUser->FirstName.' '.$JobLoggedUser->LastName;
-                                        if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
-                                        {
-                                            $Signature = $JobLoggedUser->EmailFooter;
-                                        }
-                                    }
                                     $emaildata['EmailToName'] = $account->AccountName;
-                                    $extra = ['{{FirstName}}','{{LastName}}','{{Email}}','{{Address1}}','{{Address2}}','{{Address3}}','{{City}}','{{State}}','{{PostCode}}','{{Country}}','{{TotalOutStanding}}','{{Signature}}'];
-                                    $replace = [$account->FirstName,$account->LastName,$account->Email,$account->Address1,$account->Address2,$account->Address3,$account->City,$account->State,$account->PostCode,$account->Country,$TotalOutStanding,$Signature];
-                                    $emaildata['extra'] = $extra;
-                                    $emaildata['replace'] = $replace;
+                                    $replace_array = Helper::create_replace_array($account,array(),$JobLoggedUser);
+                                    $joboptions->message = template_var_replace($joboptions->message,$replace_array);
                                     $emaildata['Subject'] = $joboptions->subject;
                                     $emaildata['Message'] = $joboptions->message;
                                     $emaildata['CompanyID'] = $CompanyID;
 
                                     $emaildata['mandrill'] = 1;
-                                    $status = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+                                    $status = Helper::sendMail('emails.template', $emaildata);
                                     if (isset($status["status"]) && $status["status"] == 0) {
                                         $errors[] = $account->AccountName.', '.$status["message"];
                                     } else{
-                                        $logData = ['AccountID'=>$account->AccountID,
-                                            'ProcessID'=>$ProcessID,
-                                            'JobID'=>$JobID,
-                                            'User'=>$JobLoggedUser,
-                                            'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                            'EmailTo'=>$emaildata['EmailTo'],
-                                            'Subject'=>$emaildata['Subject'],
-                                            'Message'=>$status['body']];
-                                        $statuslog = Helper::email_log($logData);
+                                        /** log emails against account */
+                                        $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
+
                                         if($statuslog['status']==0) {
                                             $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                                         }
@@ -199,6 +180,10 @@ class BulkLeadMailSend extends Command {
                             if(isset($criteria->tag) && trim($criteria->tag) != '') {
                                 $account->where('tblAccount.tags', 'like','%'.trim($criteria->tag).'%');
                             }
+                            if (isset($criteria->low_balance) && $criteria->low_balance == 'true') {
+                                $account->leftjoin('tblAccountBalance', 'tblAccountBalance.AccountID', '=', 'tblAccount.AccountID');
+                                $account->whereRaw("(CASE WHEN tblAccountBalance.BalanceThreshold LIKE '%p' THEN REPLACE(tblAccountBalance.BalanceThreshold, 'p', '')/ 100 * tblAccountBalance.PermanentCredit ELSE tblAccountBalance.BalanceThreshold END) < tblAccountBalance.BalanceAmount");
+                            }
 
                             if(isset($criteria->account_owners)  && trim($criteria->account_owners) > 0) {
                                 $account->where('tblAccount.Owner', (int)$criteria->account_owners);
@@ -217,40 +202,23 @@ class BulkLeadMailSend extends Command {
                                         if(!empty($joboptions->attachment)){
                                             $emaildata['attach'] = $joboptions->attachment;
                                         }
-                                        $Signature = '';
-                                        if(!empty($JobLoggedUser)){
-                                            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
-                                            $emaildata['EmailFromName'] = $JobLoggedUser->FirstName.' '.$JobLoggedUser->LastName;
-                                            if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
-                                            {
-                                                $Signature = $JobLoggedUser->EmailFooter;
-                                            }
-                                        }
                                         $emaildata['EmailToName'] = $account->AccountName;
-                                        $extra = ['{{FirstName}}','{{LastName}}','{{Email}}','{{Address1}}','{{Address2}}','{{Address3}}','{{City}}','{{State}}','{{PostCode}}','{{Country}}','{{Signature}}'];
-                                        $replace = [$account->FirstName,$account->LastName,$account->Email,$account->Address1,$account->Address2,$account->Address3,$account->City,$account->State,$account->PostCode,$account->Country,$Signature];
-                                        $emaildata['extra'] = $extra;
-                                        $emaildata['replace'] = $replace;
+                                        $replace_array = Helper::create_replace_array($account,array(),$JobLoggedUser);
+                                        $joboptions->message = template_var_replace($joboptions->message,$replace_array);
                                         $emaildata['Subject'] = $joboptions->subject;
                                         $emaildata['Message'] = $joboptions->message;
                                         $emaildata['CompanyID'] = $CompanyID;
 
                                         $emaildata['mandrill'] = 1;
-                                        $status = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+                                        $status = Helper::sendMail('emails.template', $emaildata);
                                         if (isset($status["status"]) && $status["status"] == 0) {
                                             $errors[] = $account->AccountName.', '.$status["message"];
                                             $jobdata['EmailSentStatus'] = $status['status'];
                                             $jobdata['EmailSentStatusMessage']= $status['message'];
                                         }else{
-                                            $logData = ['AccountID'=>$account->AccountID,
-                                                'ProcessID'=>$ProcessID,
-                                                'JobID'=>$JobID,
-                                                'User'=>$JobLoggedUser,
-                                                'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                                'EmailTo'=>$emaildata['EmailTo'],
-                                                'Subject'=>$emaildata['Subject'],
-                                                'Message'=>$status['body']];
-                                            $statuslog = Helper::email_log($logData);
+                                            /** log emails against account */
+                                            $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
+
                                             if($statuslog['status']==0) {
                                                 $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                                             }

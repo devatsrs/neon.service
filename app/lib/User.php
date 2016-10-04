@@ -35,4 +35,14 @@ class User extends \Eloquent {
     /*public static function getMinUserID($CompanyID){
         return $UserID = User::where("CompanyID",$CompanyID)->where("Roles","like","%Admin%")->min("UserID");
     }*/
+
+    public static function getDummyUserInfo($CompanyID,$Company){
+        $User = new \stdClass();
+        $User->UserID = 0;
+        $User->CompanyID = $CompanyID;
+        $User->FirstName = 'RM';
+        $User->LastName = ' Scheduler';
+        $User->EmailAddress = $Company->EmailFrom;
+        return $User;
+    }
 }
