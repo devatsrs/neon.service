@@ -14,7 +14,8 @@ class InvoiceLog extends \Eloquent {
     const SENT =4;
     const CANCEL =5;
     const REGENERATED  =6;
+    const POST  = 7;
 
-    public static $log_status = array(self::CREATED=>'Created',self::VIEWED=>'Viewed',self::CANCEL=>'Cancel',self::SENT=>'Sent',self::UPDATED=>'Updated',self::REGENERATED => 'Regenerated');
+    public static $log_status = array(self::CREATED=>'Created',self::VIEWED=>'Viewed',self::CANCEL=>'Cancel',self::SENT=>'Sent',self::UPDATED=>'Updated',self::REGENERATED => 'Regenerated',self::POST => 'Post');
 
 } 
