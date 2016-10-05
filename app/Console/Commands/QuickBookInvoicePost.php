@@ -72,7 +72,9 @@ class QuickBookInvoicePost extends Command {
         $CompanyID = $arguments["CompanyID"];
         $JobID = $arguments["JobID"];
         $errors = array();
-        $message = array();
+        $successmessage = array();
+        $errormessage = array();
+        $results = array();
         $jobdata = array();
 
         $job = Job::find($JobID);
@@ -109,6 +111,7 @@ class QuickBookInvoicePost extends Command {
                     //Log::error($AccountOptions);
 
                     $Customer = $QuickBooks->addCustomers($AccountOptions);
+                    //$Customer = array_filter($Customer);
 
                     //Log::info(print_r($Customer,true));
 
@@ -146,6 +149,12 @@ class QuickBookInvoicePost extends Command {
                     $ItemOptions['Products'] = $InvoiceItems;
 
                     $Items = $QuickBooks->addItems($ItemOptions);
+                    //$Items = array_filter($Items);
+                    /*
+                    if(!empty($Items) && count($Items)){
+                        log::info(print_r($Items,true));
+                    }*/
+
                     //Log::info(' -- items --');
                     //Log::info(print_r($Items,true));
 
@@ -154,18 +163,63 @@ class QuickBookInvoicePost extends Command {
                     $invoiceOptions['CompanyID'] = $CompanyID;
                     $invoiceOptions['Invoices'] = $InvoiceIDs;
                     $Invoices = $QuickBooks->addInvoices($invoiceOptions);
+
+                    $results = array_merge($Customer, $Items,$Invoices);
+                    $results = array_filter($results);
+
+
+                    foreach($results as $result){
+                        if(!empty($result['error'])){
+                            if(!empty($result['error_reason'])){
+                                $errormessage[] = $result['error'].'\n\r'.$result['error_reason'];
+                            }else{
+                                $errormessage[] = $result['error'];
+                            }
+                        }
+                        if(!empty($result['Success'])) {
+                            $successmessage[] = $result['Success'];
+                        }
+                    }
+
+                    log::info(print_r($successmessage,true));
+                    log::info(print_r($errormessage,true));
+
+                    //exit;
+
+                    //$Invoices = array_filter($Invoices);
                     //Log::info(' -- invoices --');
                     //Log::info(print_r($Invoices,true));
-
-                    $job = Job::find($JobID);
-                    $jobdata['JobStatusMessage'] = '';
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-                    $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                    $jobdata['ModifiedBy'] = 'RMScheduler';
-                    Job::where(["JobID" => $JobID])->update($jobdata);
-
+                    if(!empty($errormessage) && count($errormessage)>0 && !empty($successmessage) && count($successmessage)>0){
+                        $error = array_merge($successmessage,$errormessage);
+                        $job = Job::find($JobID);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }elseif(empty($successmessage) && !empty($errormessage) && count($errormessage)>0){
+                        $job = Job::find($JobID);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($errormessage));
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }elseif(empty($errormessage) && !empty($successmessage) && count($successmessage)>0){
+                        $job = Job::find($JobID);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($successmessage));
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }else{
+                        $job = Job::find($JobID);
+                        $jobdata['JobStatusMessage'] = 'Invoice Create Failed';
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }
                     Job::send_job_status_email($job, $CompanyID);
-
                 }else{
 
                     $job = Job::find($JobID);
@@ -177,36 +231,25 @@ class QuickBookInvoicePost extends Command {
 
                     Job::send_job_status_email($job, $CompanyID);
                 }
-
-
             }
 
         } catch (\Exception $e) {
 
-            try {
                 Log::info(' ========================== Exception occured =============================');
                 Log::error($e);
-                if ($JobID > 0) {
-                    $job = Job::find($JobID);
-                    $JobStatusMessage = $job->JobStatusMessage;
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getMessage();
-                    Job::where(["JobID" => $JobID])->update($jobdata);
-                    $job = Job::find($JobID);
-                    Job::send_job_status_email($job, $CompanyID);
-                    Log::info(' ========================== Exception updated in job and email sent =============================');
-                }
 
-                Log::info(' =======================================================');
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
+                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                $jobdata['ModifiedBy'] = 'RMScheduler';
+                Job::where(["JobID" => $JobID])->update($jobdata);
 
-            } catch (\Exception $err) {
-                Log::error($err);
-            }
+                Job::send_job_status_email($job, $CompanyID);
+                Log::info(' ========================== Exception updated in job and email sent =============================');
 
         }
 
         CronHelper::after_cronrun($this->name, $this);
-
 
     }
 

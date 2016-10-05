@@ -209,7 +209,7 @@ class QuickBook {
 				if(!empty($accounts) && count($accounts)>0){
 					foreach($accounts as $account){
 						if(!empty($account))
-							$response['accountresponse'] = $this->CreateCustomer($account);
+							$response[] = $this->CreateCustomer($account);
 					}
 				}
 
@@ -297,8 +297,8 @@ class QuickBook {
 				Log::info('-- Create Customer id first --'.print_r($resp,true));
 				$resp = str_replace('{-','',$resp);
 				$resp = str_replace('}','',$resp);
-				$response['Id'] = $resp;
-				$response['Name'] = $Customer->getDisplayName();
+				//$response['Id'] = $resp;
+				//$response['Name'] = $Customer->getDisplayName();
 
 				/**
 				 * Insert Data in QuickBookLog
@@ -309,18 +309,22 @@ class QuickBook {
 				$quickbooklogdata['Type'] = QuickBookLog::ACCOUNT;
 				QuickBookLog::insert($quickbooklogdata);
 
+				$response['Success'] = $Customer->getDisplayName(). '(Account) is created';
+
 				Log::info('-- Create Customer id --'.print_r($resp,true));
 				Log::info('-- Create Customer name --'.print_r($Customer->getDisplayName(),true));
 			}
 			else
 			{
-				$response['Error'] = $CustomerService->lastError($Context);
+				$response['error'] = $AccountName.'(Account) is failed To create';
+				$response['error_reason'] = $CustomerService->lastError($Context);
+
 				Log::info('-- Create Customer Error --'.print_r($CustomerService->lastError($Context),true));
 			}
 
 
 		}
-		Log::info('-- Create Customer Response --'.print_r($response,true));
+		//Log::info('-- Create Customer Response --'.print_r($response,true));
 		return $response;
 	}
 
@@ -373,13 +377,14 @@ class QuickBook {
 				if(!empty($Products) && count($Products)>0){
 					foreach($Products as $Product){
 						if(!empty($Product))
-							$response['productresponse'] = $this->CreateItem($Product);
+							$response[] = $this->CreateItem($Product);
 					}
 				}
 
 			}
 		}
 		Log::info('-- QuickBook End Item --');
+		//log::info(print_r($response,true));
 		return $response;
 	}
 
@@ -405,8 +410,10 @@ class QuickBook {
 			{
 				$resp = str_replace('{-','',$resp);
 				$resp = str_replace('}','',$resp);
-				$response['Id'] = $resp;
-				$response['Name'] = $Item->getName();
+				//$response['Id'] = $resp;
+				//$response['Name'] = $Item->getName();
+
+				$response['Success'] = $Item->getName(). '(Item) is created';
 
 				/**
 				 * Insert Data in QuickBookLog
@@ -422,11 +429,13 @@ class QuickBook {
 			}
 			else
 			{
-				$response['error'] = $ItemService->lastError($Context);
+				$response['error'] = $ProductName.'(Item) is failed To create';
+				$response['error_reason'] = $ItemService->lastError($Context);
+
 				Log::info('-- Create Item Error --'.print_r($ItemService->lastError($Context),true));
 			}
 		}
-		Log::info('-- Create Customer Response --'.print_r($response,true));
+		//Log::info('-- Create Customer Response --'.print_r($response,true));
 		return $response;
 	}
 
@@ -463,7 +472,7 @@ class QuickBook {
 
 	public function getItemId($ProductName){
 
-		Log::info('CheckProduct : '.$ProductName);
+		Log::info('CheckProduct Id : '.$ProductName);
 		$Context = $this->Context;
 		$realm = $this->realm;
 
@@ -471,13 +480,15 @@ class QuickBook {
 		$ItemService = new \QuickBooks_IPP_Service_Term();
 
 		$items = $ItemService->query($Context, $realm, "SELECT * FROM Item WHERE Name = '".$ProductName."' ");
-		foreach ($items as $Item)
-		{
-			//print_r($Item);
+		if(!empty($items) && count($items)>0){
+			foreach ($items as $Item)
+			{
+				//print_r($Item);
 
-			$itemid = $Item->getId();
-			$itemid = str_replace('{-','',$itemid);
-			$itemid = str_replace('}','',$itemid);
+				$itemid = $Item->getId();
+				$itemid = str_replace('{-','',$itemid);
+				$itemid = str_replace('}','',$itemid);
+			}
 		}
 
 		return $itemid;
@@ -493,11 +504,13 @@ class QuickBook {
 				if(!empty($Invoices) && count($Invoices)>0){
 					foreach($Invoices as $Invoice){
 						if(!empty($Invoice))
-							$response['invoiceresponse'] = $this->CreateInvoice($Invoice);
+							$response[] = $this->CreateInvoice($Invoice);
 					}
 				}
 			}
 		}
+		Log::info('-- QuickBook End Inovice --');
+		return $response;
 	}
 
 	public function CreateInvoice($InvoiceID){
@@ -534,7 +547,13 @@ class QuickBook {
 					if(!empty($ProductType)){
 						$ProductName = Product::getProductName($ProductID,$ProductType);
 						$ItemID = $this->getItemId($ProductName);
+						if(empty($ItemID)){
+							$response['error'] = $InvoiceFullNumber.'(Invoice) is failed To create';
+							$response['error_reason'] = $ProductName.'(Item Not created in quickbook)';
+							return $response;
+						}
 					}
+
 					$amount =  $InvoiceDetail->LineTotal;
 					$UnitePrise = $InvoiceDetail->Price;
 					$Qty = $InvoiceDetail->Qty;
@@ -562,6 +581,11 @@ class QuickBook {
 				foreach($InvoiceTaxRates as $InvoiceTaxRate){
 					$Title = $InvoiceTaxRate->Title;
 					$ItemID = $this->getItemId($Title);
+					if(empty($ItemID)){
+						$response['error'] = $InvoiceFullNumber.'(Invoice) is failed To create';
+						$response['error_reason'] = $Title.'(Item Not created in quickbook)';
+						return $response;
+					}
 					$amount =$InvoiceTaxRate->TaxAmount;
 					$UnitePrise =$InvoiceTaxRate->TaxAmount;
 					$Qty = 1;
@@ -582,6 +606,7 @@ class QuickBook {
 			}
 
 			/*
+			 example
 			$Line1 = new \QuickBooks_IPP_Object_Line();
 			$Line1->setDetailType('SalesItemLineDetail');
 			$Line1->setAmount(20.0000 * 1.0000 * 0.516129);
@@ -598,7 +623,7 @@ class QuickBook {
 
 			$Invoice->setCustomerRef($CustomerID);
 
-			Log::info('-- Invoice Object --'.print_r($Invoice,true));
+			//Log::info('-- Invoice Object --'.print_r($Invoice,true));
 
 			if ($resp = $InvoiceService->add($Context, $realm, $Invoice))
 			{
@@ -606,7 +631,6 @@ class QuickBook {
 					$resp = str_replace('{-','',$resp);
 					$resp = str_replace('}','',$resp);
 				}
-				$response['response'] = $resp;
 
 				/**
 				 * Insert Data in InvoiceLog
@@ -617,6 +641,8 @@ class QuickBook {
 				$invoiceloddata['created_at'] = date("Y-m-d H:i:s");
 				$invoiceloddata['InvoiceLogStatus'] = InvoiceLog::POST;
 				InvoiceLog::insert($invoiceloddata);
+
+				$Invoices->update(['InvoiceStatus' => Invoice::POST]);
 
 				/**
 				 * Insert Data in QuickBookLog
@@ -629,15 +655,20 @@ class QuickBook {
 
 				Log::info('-- Create Invoice id --'.print_r($resp,true));
 				Log::info('-- Create Invoice Number --'.print_r($Invoice->getDocNumber(),true));
+
+				$response['Success'] = $Invoice->getDocNumber(). '(Invoice) is created';
 			}
 			else
 			{
-				$response['error'] = $InvoiceService->lastError($Context);
+				$response['error'] = $InvoiceFullNumber.'(Invoice) is failed To create';
+				$response['error_reason'] = $InvoiceService->lastError($Context);
 				Log::info('-- Create Invoice Error --'.print_r($InvoiceService->lastError($Context),true));
 			}
+		}elseif(isset($count) && $count>0){
+			$response['Success'] =$InvoiceFullNumber. '(Invoice) is already created';
 		}
 		Log::info('-- Create Invoice Done --');
-		Log::info(print_r($response,true));
+		//Log::info(print_r($response,true));
 		return $response;
 	}
 
