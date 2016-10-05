@@ -69,6 +69,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\DBBackup',
 		'App\Console\Commands\DialStringUpload',
 		'App\Console\Commands\ServerCleanUp',
+		'App\Console\Commands\AccountReadEmails',
+		
 	];
 
 	/**
