@@ -2,6 +2,7 @@
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Lib\CompanySetting;
 
@@ -66,7 +67,7 @@ class Account extends \Eloquent {
     }
     public static function checkForCDR($GatewayAccountID){
         $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = AccountBilling::where(array('AccountID'=>$accountid))->pluck('CDRType');
+        $cdr_type = AccountBilling::getCDRType($accountid);
         return $cdr_type;
     }
 
@@ -140,9 +141,9 @@ class Account extends \Eloquent {
         }
         return $AccountManagerEmail;
     }
-    public static function getAccountWarningEmailCount($AccountID,$subject){
+    public static function getAccountEmailCount($AccountID,$EmailType){
         $count =  AccountEmailLog::
-            where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalance))
+            where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
@@ -173,6 +174,17 @@ class Account extends \Eloquent {
             }
         }
         return true;
+    }
+    public static function FirstLowBalanceReminder($AccountID){
+
+        $LastPaymentDate = Payment::where(['AccountID'=>$AccountID,'Recall'=>0,'Status'=>'Approved'])->orderBy('PaymentDate','DESC')->pluck('PaymentDate');
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
+        if(!empty($LastPaymentDate)){
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".$LastPaymentDate."'");
+        }
+        $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
     }
 
 }

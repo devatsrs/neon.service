@@ -137,7 +137,7 @@ class TempUsageDetail extends \Eloquent {
             $error_msg[] = $Messagesrow->Message;
 
         }
-        $ReRateEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::ReRate]);
+        $ReRateEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {

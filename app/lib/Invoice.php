@@ -48,7 +48,7 @@ class Invoice extends \Eloquent {
 
             $Invoice = Invoice::find($InvoiceID);
             $AccountID = $Invoice->AccountID;
-            $CDRType = AccountBilling::where("AccountID", $AccountID)->pluck("CDRType");
+            $CDRType = AccountBilling::getCDRType($AccountID);
             $CompanyID = $Invoice->CompanyID;
             $path = "";
             if ($CDRType == Account::SUMMARY_CDR) {
@@ -362,11 +362,11 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -619,13 +619,13 @@ class Invoice extends \Eloquent {
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $companyID = $Account->CompanyId;
-            $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
+            $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
-                $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
             } else {
                 $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
@@ -865,7 +865,7 @@ class Invoice extends \Eloquent {
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $Account = Account::find((int)$Invoice->AccountID);
-        $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
+        $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
@@ -874,7 +874,7 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -1085,7 +1085,7 @@ class Invoice extends \Eloquent {
         // Send only When Auto Invoice is On and GrandTotal is set.
         if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
 
-            $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
+            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
             $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
@@ -1117,22 +1117,13 @@ class Invoice extends \Eloquent {
                 $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
                 $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
                 InvoiceLog::insert($invoiceloddata);
-
+                $User = '';
                 if(!@empty($Account->Owner)){
                     $User = User::find($Account->Owner);
-                }else{
-                    $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
-                    $User = User::find($UserID);
                 }
-                $logData = ['AccountID'=>$Account->AccountID,
-                    'ProcessID'=>$ProcessID,
-                    'JobID'=>$JobID,
-                    'User'=>$User,
-                    'EmailFrom'=>$User->EmailAddress,
-                    'EmailTo'=>$emaildata['EmailTo'],
-                    'Subject'=>$emaildata['Subject'],
-                    'Message'=>$status['body']];
-                $statuslog = Helper::email_log($logData);
+                /** log emails against account */
+                $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$User,$ProcessID,$JobID);
+
                 if($statuslog['status']==0) {
                     $status['status'] = 'failure';
                     $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
@@ -1575,11 +1566,11 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -1685,7 +1676,7 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
@@ -1965,10 +1956,10 @@ class Invoice extends \Eloquent {
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
             $CompanyName = Company::getName($CompanyID);
 
-            $AccountBilling = AccountBilling::getBilling($AccountID);
+            $AccountBilling = AccountBilling::getBillingClass($AccountID);
             $InvoiceID = $Invoice->InvoiceID;
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -2065,7 +2056,7 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }

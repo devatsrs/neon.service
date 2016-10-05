@@ -68,7 +68,10 @@ class CreateSummaryLive extends Command{
         try {
 
             Summary::generateSummary($CompanyID,1);
+            /** update unbilled amount*/
             AccountBalance::updateAccountUnbilledAmount($CompanyID);
+            /** update SOA amount also*/
+            AccountBalance::getOutstandingAmount($CompanyID,0);
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 

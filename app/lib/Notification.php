@@ -1,4 +1,5 @@
 <?php
+namespace App\Lib;
 
 class Notification extends \Eloquent {
 
@@ -22,7 +23,7 @@ class Notification extends \Eloquent {
         Notification::RetentionDiskSpaceEmail=>'Retention Disk Space Email'];
 
     public static function getNotificationMail($data){
-        $Notification = Notification::where(['CompanyID'=>$data['CompanyID'],'NotificationType'=>$data['NotificationType']])->pluck('EmailAddresses');
+        $Notification = Notification::where(['CompanyID'=>$data['CompanyID'],'NotificationType'=>$data['NotificationType'],'Status'=>1])->pluck('EmailAddresses');
         return empty($Notification)?'':$Notification;
     }
 }
