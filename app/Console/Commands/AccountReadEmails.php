@@ -55,7 +55,8 @@ class AccountReadEmails extends Command
     protected function getArguments()
     {
         return [
-            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID']           
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+			['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],           
         ];
     }
 
@@ -66,14 +67,21 @@ class AccountReadEmails extends Command
      */
     public function fire()
     {
-       // CronHelper::before_cronrun($this->name, $this );
+		/////////////////////////////
+		
+        CronHelper::before_cronrun($this->name, $this );
 
-        $arguments  = 	$this->argument();
-        $getmypid   = 	getmypid(); // get proccess id
-        $CompanyID  = 	$arguments["CompanyID"];
-        $today 	    = 	date('Y-m-d');
-        $Company    = 	Company::find($CompanyID);
-		try {
+        $arguments 		= 	$this->argument();
+        $CronJobID 		= 	$arguments["CronJobID"];
+        $CompanyID 		= 	$arguments["CompanyID"];
+        $CronJob 		= 	CronJob::find($CronJobID);
+        $cronsetting 	= 	json_decode($CronJob->Settings,true);
+		$today 	    	= 	date('Y-m-d');
+        CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
+        Log::useFiles(storage_path() . '/logs/neonalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        try
+		{
 			if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$emailtrackingSlug,$CompanyID)){
 				$integration =  new SiteIntegration();
 				$integration->ConnectActiveEmail($CompanyID);
@@ -81,11 +89,31 @@ class AccountReadEmails extends Command
 			}else{
 				Log::error("No active Tracking email added");
 			}
-        } catch (\Exception $e) {
-			Log::error("Trackin email failed");
-			Log::error($e);			
-		}   
+        }
+		catch (\Exception $e)
+		{
 
-        //CronHelper::after_cronrun($this->name, $this);
+            $this->info('Failed:' . $e->getMessage());
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            Log::error($e);
+            if(!empty($cronsetting['ErrorEmail'])) {
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                Log::error("**Email Sent Status " . $result['status']);
+                Log::error("**Email Sent message " . $result['message']);
+            }
+        }
+
+        CronJob::deactivateCronJob($CronJob);
+        CronJobLog::createLog($CronJobID,$joblogdata);
+        if(!empty($cronsetting['SuccessEmail'])) {
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            Log::error("**Email Sent Status ".$result['status']);
+            Log::error("**Email Sent message ".$result['message']);
+        }
+
+        CronHelper::after_cronrun($this->name, $this);
+    
+		///////////////////////////////
     }
 }
