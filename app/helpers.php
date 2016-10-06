@@ -554,4 +554,15 @@ function check_account_age($settings,$Key,$getdaysdiff){
     return false;
 }
 
+function validator_response($validator){
 
+
+    if ($validator->fails()) {
+        $errors = "";
+        foreach ($validator->messages()->all() as $error){
+            $errors .= $error."<br>";
+        }
+        return  array("status" => "failed", "message" => $errors);
+    }
+
+}
