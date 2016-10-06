@@ -79,15 +79,19 @@ class AccountReadEmails extends Command
 		$today 	    	= 	date('Y-m-d');
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/neonalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/accountemailalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
         try
-		{
+		{	Log::info('============== Account read email Start===========');
 			if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$emailtrackingSlug,$CompanyID)){
+				Log::info('============== Integration find===========');
 				$integration =  new SiteIntegration();
 				$integration->ConnectActiveEmail($CompanyID);
 				$integration->ReadEmails($CompanyID);
+				$joblogdata['Message'] = 'Success';
+				Log::info('============== Account read email End===========');
 			}else{
 				Log::error("No active Tracking email added");
+				$joblogdata['Message'] = 'No active Tracking email added';
 			}
         }
 		catch (\Exception $e)
