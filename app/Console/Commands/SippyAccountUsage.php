@@ -118,8 +118,8 @@ class SippyAccountUsage extends Command
             $filenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$customer_cdr_file_name);
             $vfilenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$vendor_cdr_file_name);
 
-            $lastelse = array_pop($filenames);
-            $lastelse = array_pop($vfilenames);
+            //$lastelse = array_pop($filenames);
+            //$lastelse = array_pop($vfilenames);
 
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
