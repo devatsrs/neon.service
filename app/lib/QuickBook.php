@@ -288,7 +288,7 @@ class QuickBook {
 			if(isset($BillingEmail) && $BillingEmail !=''){
 				// Email
 				$PrimaryEmailAddr = new \QuickBooks_IPP_Object_PrimaryEmailAddr();
-				$PrimaryEmailAddr->setAddress('support@consolibyte.com');
+				$PrimaryEmailAddr->setAddress($BillingEmail);
 				$Customer->setPrimaryEmailAddr($PrimaryEmailAddr);
 			}
 
