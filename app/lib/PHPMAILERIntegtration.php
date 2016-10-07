@@ -55,6 +55,13 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'EmailTo');
 		$mail =  self::add_email_address($mail,$data,'cc');
 		$mail =  self::add_email_address($mail,$data,'bcc');
+		
+		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug))
+		{
+			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug);
+			
+			$mail->AddReplyTo($ImapData->EmailTrackingEmail, $config->CompanyName);
+		}
 			
 		 if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
@@ -113,6 +120,7 @@ class PHPMAILERIntegtration{
 					$status['status'] = 1;
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
+					$status['message_id']	=	$mail->getLastMessageID(); 
 				}
 			}
 		} 
