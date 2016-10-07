@@ -111,7 +111,12 @@ class ImportAccount extends Command {
                         $AccountType = 1;
                         Log::info('Manually Accounts Import Start');
 
-                        $QuickBookProcessID = $importoptions['quickbookimportprocessid'];
+                        if(!empty($importoptions['quickbookimportprocessid'])){
+                            $QuickBookProcessID = $importoptions['quickbookimportprocessid'];
+                        }else{
+                            $QuickBookProcessID = '';
+                        }
+
                         /* QuickBook Import */
                         if(!empty($QuickBookProcessID)){
                             Log::info('QuickBook Accounts Import');
