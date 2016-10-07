@@ -110,19 +110,35 @@ class ImportAccount extends Command {
                     if(count($importoptions)>0){
                         $AccountType = 1;
                         Log::info('Manually Accounts Import Start');
-                        $CompanyGatewayID = $importoptions['companygatewayid'];
 
-                        if(!empty($importoptions['criteria'])){
+                        $QuickBookProcessID = $importoptions['quickbookimportprocessid'];
+                        /* QuickBook Import */
+                        if(!empty($QuickBookProcessID)){
+                            Log::info('QuickBook Accounts Import');
                             $importoption = 1;
-                            $tempCompanyGatewayID = $importoptions['companygatewayid'];
+                            $tempProcessID = $QuickBookProcessID;
+                            if(!empty($importoptions['criteria'])){
+                                $tempCompanyGatewayID = 0;
+                            }else{
+                                $TempAccountIDs = $importoptions['TempAccountIDs'];
+                            }
+
                         }else{
-                            $TempAccountIDs = $importoptions['TempAccountIDs'];
-                            $importoption = 1;
-                        }
-                        if(!empty($importoptions['importprocessid'])){
-                            $tempProcessID = $importoptions['importprocessid'];
-                        }else{
-                            $tempProcessID = '';
+                            Log::info('Gateway Accounts Import');
+                            $CompanyGatewayID = $importoptions['companygatewayid'];
+
+                            if(!empty($importoptions['criteria'])){
+                                $importoption = 1;
+                                $tempCompanyGatewayID = $importoptions['companygatewayid'];
+                            }else{
+                                $TempAccountIDs = $importoptions['TempAccountIDs'];
+                                $importoption = 1;
+                            }
+                            if(!empty($importoptions['importprocessid'])){
+                                $tempProcessID = $importoptions['importprocessid'];
+                            }else{
+                                $tempProcessID = '';
+                            }
                         }
 
                      //manual import end
@@ -416,8 +432,8 @@ class ImportAccount extends Command {
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
-                        $updateaccountno = Account::updateAccountNo($CompanyID);
-                        Log::info('update account number - '.$updateaccountno);
+                        Account::updateAccountNo($CompanyID);
+                        Log::info('update account number - Done');
                         Log::info(count($JobStatusMessage));
                         if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();
