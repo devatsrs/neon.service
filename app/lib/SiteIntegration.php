@@ -14,6 +14,7 @@ class SiteIntegration{
 
  protected $support;
  protected $companyID;
+ protected $TrackingEmail;
  static    $SupportSlug			=	'support';
  protected $PaymentSlug			=	'payment';
  static    $EmailSlug			=	'email';
@@ -116,7 +117,7 @@ class SiteIntegration{
 	*/
 	
 	public function ReadEmails($CompanyID){
-		if($this->TrackingEmail){
+		if(isset($this->TrackingEmail)){
             return $this->TrackingEmail->ReadEmails($CompanyID);
         }
         return false;

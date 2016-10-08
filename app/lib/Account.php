@@ -164,7 +164,7 @@ class Account extends \Eloquent {
 
 
     public static function updateAccountNo($CompanyID){
-        $accounts = Account::select('AccountID')->where(["AccountType" => 1,"Number"=>null])->get()->toArray();
+        $accounts = Account::select('AccountID')->where(["CompanyId" => $CompanyID,"AccountType" => 1,"Number"=>null])->get()->toArray();
         if(count($accounts)>0){
             foreach($accounts as $account){
                 $accountid = $account['AccountID'];
@@ -173,7 +173,6 @@ class Account extends \Eloquent {
                 CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$lastnumber);
             }
         }
-        return true;
     }
     public static function FirstLowBalanceReminder($AccountID){
 
