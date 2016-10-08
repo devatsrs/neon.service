@@ -33,7 +33,9 @@ class AccountBalance extends Model
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
                 }
-                NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings');
+                if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings');
+                }
             }
         }
     }
