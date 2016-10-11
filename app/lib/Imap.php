@@ -44,7 +44,7 @@ protected $server;
 				$MatchType	 =   ''; $MatchID = '';
 				
 				/* get information specific to this email */
-				$overview 		= 		imap_fetch_overview($inbox,$email_number,0);   
+				$overview 		= 		imap_fetch_overview($inbox,$email_number,0);    
 				//$message		=		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1));
 				//$header   	=  		imap_fetchheader($inbox,$email_number);
 				$structure		= 		imap_fetchstructure($inbox, $email_number); 
@@ -83,11 +83,16 @@ protected $server;
 					$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
 					
 				}else{
-					$message		=		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
-					$AttachmentPaths = serialize([]);
+					$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
+					$AttachmentPaths  = 	serialize([]);
+					/*$message64		  = 	base64_decode($message);
+					if(strpos($message64,"<html")=== true){
+						$message 	  = 	$message64;
+					}	*/				
 				}
 				
-                $from = $this->GetEmailtxt($overview[0]->from);
+                $from   = $this->GetEmailtxt($overview[0]->from);
+				$to 	= $this->GetEmailtxt($overview[0]->to);
 				
 				$logData = ['EmailFrom'=> $from,
 				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
@@ -101,7 +106,8 @@ protected $server;
 				"EmailID"=>$email_number,
 				"EmailCall"=>Messages::Received,
                 "UserID" => $parent_UserID,
-                 "created_at"=>date('Y-m-d H:i:s')
+                 "created_at"=>date('Y-m-d H:i:s'),
+				 "EmailTo"=>$to
 				];			
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
 				if($parent){ 					
