@@ -59,9 +59,11 @@ protected $server;
 					}else{
 						$parent = $msg_parent->EmailParent;
 					}
-					//$parent_account =  $msg_parent->AccountID;
+					$parent_account =  $msg_parent->AccountID;
 					$parent_UserID  =  $msg_parent->UserID;
-					//$AccountData 	=  $account = Account::find($parent_account);
+					$AccountData    =   DB::table('tblAccount')->where(["AccountID" => $parent_account])->get(array("AccountName"));
+					$Accountname    =  ' ('.(isset($AccountData[0]->AccountName)?$AccountData[0]->AccountName:'').')';
+					$AccountTitle	=  $this->GetNametxt($overview[0]->from).$Accountname;
 				}
 				else
 				{					
@@ -69,15 +71,15 @@ protected $server;
 					$parent_account 	= 	 0;
 					$parent_UserID  	= 	 0;
 					$parent 			= 	 0; // no parent by default		
+					
+					$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
+					$MatchType	 		  =     $MatchArray['MatchType'];
+					$MatchID	 		  =	    $MatchArray['MatchID'];
+					if($MatchArray['AccountID']){
+						$parent_account = 	 $MatchArray['AccountID'];					
+					}
+					$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);	
                 }
-				
-				$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
-				$MatchType	 		  =     $MatchArray['MatchType'];
-				$MatchID	 		  =	    $MatchArray['MatchID'];
-				if($MatchArray['AccountID']){
-					$parent_account = 	 $MatchArray['AccountID'];
-				}
-				$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);		
 				
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
 				
@@ -295,7 +297,7 @@ protected $server;
 		
 		//find in account(email,billing email), Email
 		$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$email."',Email) OR find_in_set('".$email."',BillingEmail)")->get(array("AccountID","AccountName","AccountType"));
-		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("AccountID","FirstName","LastName"));		
+		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("Owner","ContactID","FirstName","LastName"));		
 		
 		if(count($AccountSearch1)>0)													
 		{
@@ -315,13 +317,14 @@ protected $server;
 		}
 		
 		if(count($ContactSearch)>0 || count($ContactSearch)>0)													
-		{	
+		{	 Log::info(print_r($ContactSearch,true));
 				$MatchType	  =   'Contact';
 				$MatchID	  =	 $ContactSearch[0]->ContactID;					
-				$AccountID	  =  $ContactSearch[0]->AccountID;
+				$AccountID	  =  $ContactSearch[0]->Owner;
 				//$Accountdata  =  
-				$Accountdata  =   DB::table('tblAccount')->where(["AccountID" => $AccountID])->get(array("AccountName"));
-				$AccountTitle =   $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName.' ('. $Accountdata[0]->AccountName .')';							
+				$Accountdata  =   DB::table('tblAccount')->where(["AccountID" => $AccountID])->get(array("AccountName")); Log::info(print_r($Accountdata,true));				$Accountname  =  ' ('.(isset($Accountdata[0]->AccountName)?$Accountdata[0]->AccountName:'').')';
+				
+				$AccountTitle =   $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName.$Accountname;							
 		}				
         
 		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle,"AccountID"=>$AccountID);        
