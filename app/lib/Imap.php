@@ -62,7 +62,7 @@ protected $server;
 					$parent_account =  $msg_parent->AccountID;
 					$parent_UserID  =  $msg_parent->UserID;
 					$AccountData    =   DB::table('tblAccount')->where(["AccountID" => $parent_account])->get(array("AccountName"));
-					$Accountname    =  ' ('.(isset($AccountData[0]->AccountName)?$AccountData[0]->AccountName:'').')';
+					$Accountname    =  isset($AccountData[0]->AccountName)?' ('.($AccountData[0]->AccountName).')':'';
 					$AccountTitle	=  $this->GetNametxt($overview[0]->from).$Accountname;
 				}
 				else
@@ -90,10 +90,10 @@ protected $server;
 				}else{
 					$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
 					$AttachmentPaths  = 	serialize([]);
-					/*$message64		  = 	base64_decode($message);
+					$message64		  = 	base64_decode($message);
 					if(strpos($message64,"<html")=== true){
 						$message 	  = 	$message64;
-					}	*/				
+					}				
 				}
 				
                 $from   = $this->GetEmailtxt($overview[0]->from);
@@ -317,13 +317,13 @@ protected $server;
 		}
 		
 		if(count($ContactSearch)>0 || count($ContactSearch)>0)													
-		{	 Log::info(print_r($ContactSearch,true));
+		{	 
 				$MatchType	  =   'Contact';
 				$MatchID	  =	 $ContactSearch[0]->ContactID;					
 				$AccountID	  =  $ContactSearch[0]->Owner;
 				//$Accountdata  =  
-				$Accountdata  =   DB::table('tblAccount')->where(["AccountID" => $AccountID])->get(array("AccountName")); Log::info(print_r($Accountdata,true));				$Accountname  =  ' ('.(isset($Accountdata[0]->AccountName)?$Accountdata[0]->AccountName:'').')';
-				
+				$Accountdata  =   DB::table('tblAccount')->where(["AccountID" => $AccountID])->get(array("AccountName")); 
+				$Accountname  =   isset($Accountdata[0]->AccountName)?' ('.($Accountdata[0]->AccountName).')':'';
 				$AccountTitle =   $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName.$Accountname;							
 		}				
         
