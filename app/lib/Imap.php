@@ -89,13 +89,14 @@ protected $server;
 					
 				}else{
 					$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
-					$AttachmentPaths  = 	serialize([]);
-					$message64		  = 	base64_decode($message);
-					if(strpos($message64,"<html")=== true){
-						$message 	  = 	$message64;
-					}				
+					$AttachmentPaths  = 	serialize([]);								
 				}
-				
+			
+				$message64		  = 	base64_decode($message);  //base 64 encoded msgs
+				if(strpos($message64,"<html")!== false){
+						$message 	  = 	$message64;
+				}
+			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
 				
