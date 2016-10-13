@@ -59,9 +59,9 @@ protected $server;
 					}else{
 						$parent = $msg_parent->EmailParent;
 					}
-					$parent_account =  $msg_parent->AccountID;
+					//$parent_account =  $msg_parent->AccountID;
 					$parent_UserID  =  $msg_parent->UserID;
-					$AccountData 	=  $account = Account::find($parent_account);
+					//$AccountData 	=  $account = Account::find($parent_account);
 				}
 				else
 				{					
