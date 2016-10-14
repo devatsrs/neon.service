@@ -93,93 +93,125 @@ class QuickBookInvoicePost extends Command {
 
                 if(!empty($connect)){
 
-                    $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
-                    $InvoiceAccounts = array();
-                    $InvoiceItems = array();
-                    if(count($InvoiceIDs) > 0){
-                        foreach ($InvoiceIDs as $InvoiceID) {
-                            $Invoice = Invoice::find($InvoiceID);
-                            $AccountID = $Invoice->AccountID;
-                            $InvoiceAccounts['AccountID'][] = $AccountID;
+
+                    if(isset($joboptions->type) && $joboptions->type == 'journal'){
+
+                        //invoice journal post start
+
+                        $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
+                        $journalOptions = array();
+                        $journalOptions['CompanyID'] = $CompanyID;
+                        $journalOptions['Invoices'] = $InvoiceIDs;
+                        $results = $QuickBooks->addJournals($journalOptions);
+
+                        if(!empty($results['error']) && count($results['error'])>0){
+                            foreach($results['error'] as $err){
+                                $errormessage[] = $err;
+                            }
                         }
-                    }
-                    $InvoiceAccounts = array_filter(array_unique($InvoiceAccounts['AccountID']));
-                    $AccountOptions = array();
-                    $AccountOptions['CompanyID'] = $CompanyID;
-                    $AccountOptions['Accounts'] = $InvoiceAccounts;
-                    Log::info('-- QuickBook Customer Options--');
-                    //Log::error($AccountOptions);
+                        if(!empty($results['Success'])) {
+                            foreach($results['Success'] as $Successmsg){
+                                $successmessage[] = $Successmsg;
+                            }
+                        }
 
-                    $Customer = $QuickBooks->addCustomers($AccountOptions);
-                    //$Customer = array_filter($Customer);
 
-                    //Log::info(print_r($Customer,true));
+                        //log::info(print_r($journals,true));
 
-                    if(count($InvoiceIDs) > 0){
-                        foreach ($InvoiceIDs as $InvoiceID) {
-                            $Invoice = Invoice::find($InvoiceID);
-                            $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-                            if(!empty($InvoiceDetails) && count($InvoiceDetails)>0){
-                                foreach($InvoiceDetails as $InvoiceDetail){
-                                    Log::info('Product id'.$InvoiceDetail->ProductID);
-                                    Log::info('Product Type'.$InvoiceDetail->ProductType);
-                                    $ProductID = $InvoiceDetail->ProductID;
-                                    $ProductType = $InvoiceDetail->ProductType;
-                                    if(!empty($ProductType)){
-                                        $ProductName = Product::getProductName($ProductID,$ProductType);
-                                        $InvoiceItems['ProductName'][] = $ProductName;
+                        //invoice journal post over
+
+
+                    }else{
+                        //invoice post over start
+                        $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
+                        $InvoiceAccounts = array();
+                        $InvoiceItems = array();
+                        if(count($InvoiceIDs) > 0){
+                            foreach ($InvoiceIDs as $InvoiceID) {
+                                $Invoice = Invoice::find($InvoiceID);
+                                $AccountID = $Invoice->AccountID;
+                                $InvoiceAccounts['AccountID'][] = $AccountID;
+                            }
+                        }
+                        $AccountOptions = array();
+                        $AccountOptions['CompanyID'] = $CompanyID;
+                        $AccountOptions['Accounts'] = $InvoiceAccounts;
+                        Log::info('-- QuickBook Customer Options--');
+                        //Log::error($AccountOptions);
+
+                        $Customer = $QuickBooks->addCustomers($AccountOptions);
+                        //$Customer = array_filter($Customer);
+
+                        //Log::info(print_r($Customer,true));
+
+                        if(count($InvoiceIDs) > 0){
+                            foreach ($InvoiceIDs as $InvoiceID) {
+                                $Invoice = Invoice::find($InvoiceID);
+                                $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
+                                if(!empty($InvoiceDetails) && count($InvoiceDetails)>0){
+                                    foreach($InvoiceDetails as $InvoiceDetail){
+                                        Log::info('Product id'.$InvoiceDetail->ProductID);
+                                        Log::info('Product Type'.$InvoiceDetail->ProductType);
+                                        $ProductID = $InvoiceDetail->ProductID;
+                                        $ProductType = $InvoiceDetail->ProductType;
+                                        if(!empty($ProductType)){
+                                            $ProductName = Product::getProductName($ProductID,$ProductType);
+                                            $InvoiceItems['ProductName'][] = $ProductName;
+                                        }
+                                    }
+                                }
+
+                                $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID])->get();
+                                if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0){
+                                    foreach($InvoiceTaxRates as $InvoiceTaxRate){
+                                        $TaxName = $InvoiceTaxRate->Title;
+                                        $InvoiceItems['ProductName'][] = $TaxName;
                                     }
                                 }
                             }
+                        }
 
-                            $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID])->get();
-                            if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0){
-                                foreach($InvoiceTaxRates as $InvoiceTaxRate){
-                                    $TaxName = $InvoiceTaxRate->Title;
-                                    $InvoiceItems['ProductName'][] = $TaxName;
+                        $InvoiceItems = array_filter(array_unique($InvoiceItems['ProductName']));
+
+                        $ItemOptions = array();
+                        $ItemOptions['CompanyID'] = $CompanyID;
+                        $ItemOptions['Products'] = $InvoiceItems;
+
+                        $Items = $QuickBooks->addItems($ItemOptions);
+                        //$Items = array_filter($Items);
+                        /*
+                        if(!empty($Items) && count($Items)){
+                            log::info(print_r($Items,true));
+                        }*/
+
+                        //Log::info(' -- items --');
+                        //Log::info(print_r($Items,true));
+
+
+                        $invoiceOptions = array();
+                        $invoiceOptions['CompanyID'] = $CompanyID;
+                        $invoiceOptions['Invoices'] = $InvoiceIDs;
+                        $Invoices = $QuickBooks->addInvoices($invoiceOptions);
+
+                        $results = array_merge($Customer, $Items,$Invoices);
+                        $results = array_filter($results);
+
+
+                        foreach($results as $result){
+                            if(!empty($result['error'])){
+                                if(!empty($result['error_reason'])){
+                                    $errormessage[] = $result['error'].'\n\r'.$result['error_reason'];
+                                }else{
+                                    $errormessage[] = $result['error'];
                                 }
                             }
-                        }
-                    }
-
-                    $InvoiceItems = array_filter(array_unique($InvoiceItems['ProductName']));
-
-                    $ItemOptions = array();
-                    $ItemOptions['CompanyID'] = $CompanyID;
-                    $ItemOptions['Products'] = $InvoiceItems;
-
-                    $Items = $QuickBooks->addItems($ItemOptions);
-                    //$Items = array_filter($Items);
-                    /*
-                    if(!empty($Items) && count($Items)){
-                        log::info(print_r($Items,true));
-                    }*/
-
-                    //Log::info(' -- items --');
-                    //Log::info(print_r($Items,true));
-
-
-                    $invoiceOptions = array();
-                    $invoiceOptions['CompanyID'] = $CompanyID;
-                    $invoiceOptions['Invoices'] = $InvoiceIDs;
-                    $Invoices = $QuickBooks->addInvoices($invoiceOptions);
-
-                    $results = array_merge($Customer, $Items,$Invoices);
-                    $results = array_filter($results);
-
-
-                    foreach($results as $result){
-                        if(!empty($result['error'])){
-                            if(!empty($result['error_reason'])){
-                                $errormessage[] = $result['error'].'\n\r'.$result['error_reason'];
-                            }else{
-                                $errormessage[] = $result['error'];
+                            if(!empty($result['Success'])) {
+                                $successmessage[] = $result['Success'];
                             }
                         }
-                        if(!empty($result['Success'])) {
-                            $successmessage[] = $result['Success'];
-                        }
+
                     }
+                    //invoice post over
 
                     log::info(print_r($successmessage,true));
                     log::info(print_r($errormessage,true));
@@ -190,7 +222,7 @@ class QuickBookInvoicePost extends Command {
                     //Log::info(' -- invoices --');
                     //Log::info(print_r($Invoices,true));
                     if(!empty($errormessage) && count($errormessage)>0 && !empty($successmessage) && count($successmessage)>0){
-                        $error = array_merge($successmessage,$errormessage);
+                        $error = array_merge($errormessage,$successmessage);
                         $job = Job::find($JobID);
                         $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
@@ -220,6 +252,7 @@ class QuickBookInvoicePost extends Command {
                         Job::where(["JobID" => $JobID])->update($jobdata);
                     }
                     Job::send_job_status_email($job, $CompanyID);
+
                 }else{
 
                     $job = Job::find($JobID);
