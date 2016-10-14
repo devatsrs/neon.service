@@ -85,17 +85,22 @@ protected $server;
 				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);
-					$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
+					//$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
 					
 				}else{
-					$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
-					$AttachmentPaths  = 	serialize([]);								
+					//$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2));					
+					$AttachmentPaths  = 	serialize([]);										
 				}
 			
-				$message64		  = 	base64_decode($message);  //base 64 encoded msgs
-				if(strpos($message64,"<html")!== false){
+				/*$message64		  = 	base64_decode($message);  //base 64 encoded msgs
+				if((strlen($message64)>0) &&  (strpos($message64,"<html")>-1)){
 						$message 	  = 	$message64;
-				}
+						Log::info("msg64");
+						Log::info($message64);	
+				}*/
+				
+			 	$message = 	$this->getBody($inbox,$email_number);
+				
 			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
@@ -330,5 +335,58 @@ protected $server;
         
 		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle,"AccountID"=>$AccountID);        
 	}
+	
+	function getBody($imap,$uid) {
+	$uid  =  imap_uid ($imap,$uid); //getting mail uid
+    $body = $this->get_part($imap, $uid, "TEXT/HTML");
+    // if HTML body is empty, try getting text body
+    if ($body == "") {
+        $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
+    }
+        return $body;
+    }
+
+    function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
+    if (!$structure) {
+           $structure = imap_fetchstructure($imap, $uid, FT_UID);
+    }
+    if ($structure) {
+        if ($mimetype == $this->get_mime_type($structure)) {
+            if (!$partNumber) {
+                $partNumber = 1;
+            }
+            $text = imap_fetchbody($imap, $uid, $partNumber, FT_UID);
+            switch ($structure->encoding) {
+                case 3: return imap_base64($text);
+                case 4: return imap_qprint($text);
+                default: return $text;
+           }
+       }
+
+        // multipart
+        if ($structure->type == 1) {
+            foreach ($structure->parts as $index => $subStruct) {
+                $prefix = "";
+                if ($partNumber) {
+                    $prefix = $partNumber . ".";
+                }
+                $data = $this->get_part($imap, $uid, $mimetype, $subStruct, $prefix.($index + 1));
+                if ($data) {
+                    return $data;
+                }
+            }
+        }
+    }
+    return false;
+    }
+
+    function get_mime_type($structure) {
+        $primaryMimetype = array("TEXT", "MULTIPART", "MESSAGE", "APPLICATION",    "AUDIO", "IMAGE", "VIDEO", "OTHER");
+
+        if ($structure->subtype) {
+           return $primaryMimetype[(int)$structure->type] . "/" . $structure->subtype;
+        }
+        return "TEXT/PLAIN";
+    }       
 }
 ?>
