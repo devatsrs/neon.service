@@ -909,12 +909,14 @@ class QuickBook {
 				if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
 					foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
 						$Title = $InvoiceTaxRate->Title;
+						$TaxRateID = $InvoiceTaxRate->TaxRateID;
 						$TaxAmount = $InvoiceTaxRate->TaxAmount;
-						$Title = str_replace(' ','',$Title);
+						//$Title = str_replace(' ','',$Title);
 						log::info($Title);
+						//$QuickBookData['Tax'][];
 
-						if(!empty($QuickBookData[$Title])){
-							$TaxId = $this->getQuickBookAccountantId($QuickBookData[$Title]);
+						if(!empty($QuickBookData['Tax'][$TaxRateID])){
+							$TaxId = $this->getQuickBookAccountantId($QuickBookData['Tax'][$TaxRateID]);
 						}
 
 						if(empty($TaxId)){
