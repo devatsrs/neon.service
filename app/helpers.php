@@ -221,7 +221,7 @@ function translation_rule($CLITranslationRule){
 
 }
 function sippy_vos_areaprefix($area_prefix,$RateCDR){
-    if($RateCDR == 1 || empty($area_prefix)){
+    if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
