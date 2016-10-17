@@ -174,12 +174,12 @@ class Account extends \Eloquent {
             }
         }
     }
-    public static function FirstLowBalanceReminder($AccountID){
+    public static function FirstLowBalanceReminder($AccountID,$LastRunTime){
 
-        $LastPaymentDate = Payment::where(['AccountID'=>$AccountID,'Recall'=>0,'Status'=>'Approved'])->orderBy('PaymentDate','DESC')->pluck('PaymentDate');
+
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
-        if(!empty($LastPaymentDate)){
-                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastPaymentDate))."'");
+        if(!empty($LastRunTime)){
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
