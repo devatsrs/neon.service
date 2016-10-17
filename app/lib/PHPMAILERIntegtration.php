@@ -55,6 +55,13 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'EmailTo');
 		$mail =  self::add_email_address($mail,$data,'cc');
 		$mail =  self::add_email_address($mail,$data,'bcc');
+		
+		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug,$companyID))
+		{
+			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$companyID);
+			
+			$mail->AddReplyTo($ImapData->EmailTrackingEmail, $config->CompanyName);
+		}
 			
 		 if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
@@ -88,17 +95,18 @@ class PHPMAILERIntegtration{
 			foreach((array)$data['EmailTo'] as $email_address){
 				if(!empty($email_address)) {
 					$email_address = trim($email_address);
-					$mail->clearAllRecipients();
-					$mail->addAddress($email_address); //trim Added by Abubakar
-					if (!$mail->send()) {
-						$status['status'] = 0;
-						$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $email_address . ')';
-					} else {
-						$status['status'] = 1;
-						$status['message'] = 'Email has been sent';
-						$status['body'] = $body;
-					}
+					//$mail->clearAllRecipients();
+					$mail->addAddress($email_address); //trim Added by Abubakar					
 				}
+			}
+			if (!$mail->send()) {
+					$status['status'] = 0;
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Addresses: ' . implode(",",$data['EmailTo']) . ')';
+			} else {
+					$status['status'] = 1;
+					$status['message'] = 'Email has been sent';
+					$status['body'] = $body;
+					$status['message_id']	=	$mail->getLastMessageID(); 
 			}
 		}else{
 			if(!empty($data['EmailTo'])) {
@@ -112,6 +120,7 @@ class PHPMAILERIntegtration{
 					$status['status'] = 1;
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
+					$status['message_id']	=	$mail->getLastMessageID(); 
 				}
 			}
 		} 

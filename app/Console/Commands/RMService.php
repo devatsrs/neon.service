@@ -76,7 +76,8 @@ class RMService extends Command {
                 'VendorCDRUpload',
                 //'getSippyDownloadCommand',
 				'ImportAccount',
-                'DialStringUpload'
+                'DialStringUpload',
+                'QuickBookInvoicePost'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -311,6 +312,17 @@ class RMService extends Command {
                         pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+            //Quickbook Invoice Post
+            foreach($allpending['data']['QuickBookInvoicePost'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

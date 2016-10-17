@@ -221,7 +221,7 @@ function translation_rule($CLITranslationRule){
 
 }
 function sippy_vos_areaprefix($area_prefix,$RateCDR){
-    if($RateCDR == 1 || empty($area_prefix)){
+    if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
@@ -242,14 +242,13 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{PostCode}}',
         '{{Country}}',
         '{{InvoiceNumber}}',
-        '{{GrandTotal}}',
-        '{{InvoiceOutStanding}}',
-        '{{OutStandingExcludeUnbilledAmount}}',
+        '{{InvoiceGrandTotal}}',
+        '{{InvoiceOutstanding}}',
+        '{{OutstandingExcludeUnbilledAmount}}',
         '{{Signature}}',
-        '{{OutStandingIncludeUnbilledAmount}}',
+        '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
         '{{Currency}}',
-        '{{CurrencySymbol}}',
         '{{CompanyName}}'
     ];
 
@@ -554,4 +553,15 @@ function check_account_age($settings,$Key,$getdaysdiff){
     return false;
 }
 
+function validator_response($validator){
 
+
+    if ($validator->fails()) {
+        $errors = "";
+        foreach ($validator->messages()->all() as $error){
+            $errors .= $error."<br>";
+        }
+        return  array("status" => "failed", "message" => $errors);
+    }
+
+}

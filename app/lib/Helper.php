@@ -212,6 +212,11 @@ class Helper{
         if(is_array($data['EmailTo'])){
             $data['EmailTo'] = implode(',',$data['EmailTo']);
         }
+		
+		if(!isset($data['message_id'])){
+			$data['message_id'] = '';
+		}
+		
         $logData = ['EmailFrom'=>$data['EmailFrom'],
                     'EmailTo'=>$data['EmailTo'],
                     'Subject'=>$data['Subject'],
@@ -221,6 +226,7 @@ class Helper{
                     'ProcessID'=>$data['ProcessID'],
                     'JobID'=>$data['JobID'],
                     'UserID'=>$user->UserID,
+					"MessageID"=>$data['message_id'],
                     'CreatedBy'=>$user->FirstName.' '.$user->LastName];
         if(!empty($data['EmailType'])){
             $logData['EmailType'] = $data['EmailType'];
@@ -279,6 +285,7 @@ class Helper{
             $Company = Company::find($CompanyID);
             $User = User::getDummyUserInfo($CompanyID, $Company);
         }
+		$status['message_id'] 	=  isset($status['message_id'])?$status['message_id']:"";
         $logData = ['AccountID' => $AccountID,
             'ProcessID' => $ProcessID,
             'JobID' => $JobID,
@@ -287,7 +294,9 @@ class Helper{
             'EmailFrom' => $User->EmailAddress,
             'EmailTo' => $emaildata['EmailTo'],
             'Subject' => $emaildata['Subject'],
-            'Message' => $status['body']];
+            'Message' => $status['body'],
+			"message_id"=>$status['message_id']
+			];
         $statuslog = Helper::email_log($logData);
         return $statuslog;
     }
@@ -304,12 +313,11 @@ class Helper{
        $replace_array['State'] = $Account->State;
        $replace_array['PostCode'] = $Account->PostCode;
        $replace_array['Country'] = $Account->Country;
-       $replace_array['OutStandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
-       $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
-       $replace_array['CurrencySymbol'] = Currency::getCurrencySymbol($Account->CurrencyId);
+       $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
-       $replace_array['OutStandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
        if(!empty($JobLoggedUser)){
            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
@@ -322,8 +330,8 @@ class Helper{
        $replace_array['Signature']= $Signature;
        $extra_var = array(
            'InvoiceNumber' => '',
-           'GrandTotal' => '',
-           'InvoiceOutStanding' => '',
+           'InvoiceGrandTotal' => '',
+           'InvoiceOutstanding' => '',
        );
        $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
 

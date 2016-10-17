@@ -24,8 +24,9 @@ class Invoice extends \Eloquent {
     const RECEIVED = 'received';
     const PAID = 'paid';
     const PARTIALLY_PAID = 'partially_paid';
+    const POST = 'post';
     public static $invoice_type = array(''=>'Select an Invoice Type' ,self::INVOICE_OUT => 'Invoice Sent',self::INVOICE_IN=>'Invoice Received','All'=>'Both');
-    public static $invoice_status = array(''=>'Select Invoice Status',self::DRAFT=>'Draft',self::SEND=>'Send',self::AWAITING=>'Awaiting Approval',self::CANCEL=>'Cancel');
+    public static $invoice_status = array(''=>'Select Invoice Status',self::DRAFT=>'Draft',self::SEND=>'Send',self::AWAITING=>'Awaiting Approval',self::CANCEL=>'Cancel',self::POST=>'Post');
 
     public static $InvoiceGenrationErrorReasons = [
         "Email" =>  "Failed to send Email.",
@@ -2215,6 +2216,28 @@ class Invoice extends \Eloquent {
                 }
             }
         }
+    }
+
+    public static function CheckInvoiceFullPaid($InvoiceID,$CompanyID){
+        $Response = false;
+        $InvoiceTotal = '';
+        $PaymentTotal = '';
+        if(!empty($InvoiceID)){
+            $Invoice = Invoice::find($InvoiceID);
+            $InvoiceTotal = $Invoice->GrandTotal;
+
+            $PaymentTotal = Payment::where(['CompanyID' =>$CompanyID, 'InvoiceID' => $InvoiceID, 'Recall' => '0', 'Status' =>'Approved'])->sum('Amount');
+
+            log::info('Invoice Total '.$InvoiceTotal);
+            log::info('Payment Total '.$PaymentTotal);
+
+            if(!empty($InvoiceTotal) && !empty($PaymentTotal) && $InvoiceTotal == $PaymentTotal){
+                log::info('Total Matching');
+                $Response = true;
+
+            }
+        }
+        return $Response;
     }
 
 }
