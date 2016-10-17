@@ -84,7 +84,9 @@ class UsageDownloadFiles extends Model {
         if(!empty($cronsetting['ErrorEmail'])) {
             UsageDownloadFiles::getInProcessfile($CompanyID,$CompanyGatewayID, $cronsetting['ErrorEmail'], $CronJob->JobTitle);
         }
-        UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>self::INPROGRESS))->update(array('Status'=>self::PENDING));
+        if(UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>self::INPROGRESS))->count()) {
+            UsageDownloadFiles::where(array('CompanyGatewayID' => $CompanyGatewayID, 'Status' => self::INPROGRESS))->update(array('Status' => self::PENDING));
+        }        
     }
     /** update file process to completed */
     public static function UpdateProcessToComplete($delete_files = array()){

@@ -61,7 +61,9 @@ protected $server;
 					}
 					$parent_account =  $msg_parent->AccountID;
 					$parent_UserID  =  $msg_parent->UserID;
-					$AccountData 	=  $account = Account::find($parent_account);
+					$AccountData    =   DB::table('tblAccount')->where(["AccountID" => $parent_account])->get(array("AccountName"));
+					$Accountname    =  isset($AccountData[0]->AccountName)?' ('.($AccountData[0]->AccountName).')':'';
+					$AccountTitle	=  $this->GetNametxt($overview[0]->from).$Accountname;
 				}
 				else
 				{					
@@ -69,28 +71,37 @@ protected $server;
 					$parent_account 	= 	 0;
 					$parent_UserID  	= 	 0;
 					$parent 			= 	 0; // no parent by default		
+					
+					$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
+					$MatchType	 		  =     $MatchArray['MatchType'];
+					$MatchID	 		  =	    $MatchArray['MatchID'];
+					if($MatchArray['AccountID']){
+						$parent_account = 	 $MatchArray['AccountID'];					
+					}
+					$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);	
                 }
-				
-				$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
-				$MatchType	 		  =     $MatchArray['MatchType'];
-				$MatchID	 		  =	    $MatchArray['MatchID'];
-				$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);		
 				
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
 				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);
-					$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
+					//$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
 					
 				}else{
-					$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 2));					
-					$AttachmentPaths  = 	serialize([]);
-					/*$message64		  = 	base64_decode($message);
-					if(strpos($message64,"<html")=== true){
-						$message 	  = 	$message64;
-					}	*/				
+					//$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2));					
+					$AttachmentPaths  = 	serialize([]);										
 				}
+			
+				/*$message64		  = 	base64_decode($message);  //base 64 encoded msgs
+				if((strlen($message64)>0) &&  (strpos($message64,"<html")>-1)){
+						$message 	  = 	$message64;
+						Log::info("msg64");
+						Log::info($message64);	
+				}*/
 				
+			 	$message = 	$this->getBody($inbox,$email_number);
+				
+			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
 				
@@ -288,9 +299,11 @@ protected $server;
 		$AccountTitle 	= 	'';
 		$MatchID		=	0;
 		$MatchType		=	'';
+		$AccountID		=	0;
+		
 		//find in account(email,billing email), Email
 		$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$email."',Email) OR find_in_set('".$email."',BillingEmail)")->get(array("AccountID","AccountName","AccountType"));
-		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("AccountID","FirstName","LastName"));		
+		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("Owner","ContactID","FirstName","LastName"));		
 		
 		if(count($AccountSearch1)>0)													
 		{
@@ -304,18 +317,76 @@ protected $server;
 				}
 				
 				$MatchID	  =	 $AccountSearch1[0]->AccountID;
-				$AccountTitle =  $AccountSearch1[0]->AccountName;							
+				$AccountTitle =  $AccountSearch1[0]->AccountName;
+				$AccountID	  =  $AccountSearch1[0]->AccountID;							
 			}		
 		}
 		
 		if(count($ContactSearch)>0 || count($ContactSearch)>0)													
-		{	
+		{	 
 				$MatchType	  =   'Contact';
-				$MatchID	  =	 $ContactSearch[0]->AccountID;					
-				$AccountTitle =  $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName;			
+				$MatchID	  =	 $ContactSearch[0]->ContactID;					
+				$AccountID	  =  $ContactSearch[0]->Owner;
+				//$Accountdata  =  
+				$Accountdata  =   DB::table('tblAccount')->where(["AccountID" => $AccountID])->get(array("AccountName")); 
+				$Accountname  =   isset($Accountdata[0]->AccountName)?' ('.($Accountdata[0]->AccountName).')':'';
+				$AccountTitle =   $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName.$Accountname;							
 		}				
         
-		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle);        
+		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle,"AccountID"=>$AccountID);        
 	}
+	
+	function getBody($imap,$uid) {
+	$uid  =  imap_uid ($imap,$uid); //getting mail uid
+    $body = $this->get_part($imap, $uid, "TEXT/HTML");
+    // if HTML body is empty, try getting text body
+    if ($body == "") {
+        $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
+    }
+        return $body;
+    }
+
+    function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
+    if (!$structure) {
+           $structure = imap_fetchstructure($imap, $uid, FT_UID);
+    }
+    if ($structure) {
+        if ($mimetype == $this->get_mime_type($structure)) {
+            if (!$partNumber) {
+                $partNumber = 1;
+            }
+            $text = imap_fetchbody($imap, $uid, $partNumber, FT_UID);
+            switch ($structure->encoding) {
+                case 3: return imap_base64($text);
+                case 4: return imap_qprint($text);
+                default: return $text;
+           }
+       }
+
+        // multipart
+        if ($structure->type == 1) {
+            foreach ($structure->parts as $index => $subStruct) {
+                $prefix = "";
+                if ($partNumber) {
+                    $prefix = $partNumber . ".";
+                }
+                $data = $this->get_part($imap, $uid, $mimetype, $subStruct, $prefix.($index + 1));
+                if ($data) {
+                    return $data;
+                }
+            }
+        }
+    }
+    return false;
+    }
+
+    function get_mime_type($structure) {
+        $primaryMimetype = array("TEXT", "MULTIPART", "MESSAGE", "APPLICATION",    "AUDIO", "IMAGE", "VIDEO", "OTHER");
+
+        if ($structure->subtype) {
+           return $primaryMimetype[(int)$structure->type] . "/" . $structure->subtype;
+        }
+        return "TEXT/PLAIN";
+    }       
 }
 ?>
