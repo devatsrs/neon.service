@@ -978,7 +978,7 @@ class QuickBook {
 						}
 
 
-						$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to  journal No:'.$JournalNumber.' '.$jernalmsg;
+						$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to journal '.$jernalmsg;
 						/**
 						 * Insert Data in InvoiceLog
 						 */
@@ -1085,7 +1085,7 @@ class QuickBook {
 		}
 		if(isset($ErrorNumbers) && $ErrorNumbers!=''){
 			$ErrorNumbers=rtrim($ErrorNumbers,',');
-			$response = '(Warning: already exits against Journal:'.$ErrorNumbers.')';
+			$response = '(Warning: Invoice already exits against Journal:'.$ErrorNumbers.')';
 		}
 		//log::info(print_r($list,true));
 		log::info(print_r($response,true));
