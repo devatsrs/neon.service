@@ -383,22 +383,19 @@ class NeonExcelIO
             $header_data = array_keys($excel_data_rr);
         }
         $header_data  = array_map('ucwords',$header_data);
-        array_walk($header_data , 'custom_replace');
         if(count($header_data) == 0){
             $header_data[] = 'Destination';
             $header_data[] = 'Codes';
             $header_data[] = 'Tech Prefix';
             $header_data[] = 'Interval';
-            $data['text'] = 'Rate Per Minute (USD)';
-            $header_data[] = generic_replace($data);
+            $header_data[] = 'Rate Per Minute (usd)';
             $header_data[] = 'Level';
             $header_data[] = 'Change';
             $header_data[] = 'Effective Date';
         }
-        for($i=0;$i<count($header_data);$i++){
-            $data['text'] = $header_data[$i];
-            $header_data[$i] = generic_replace($data);
-        }
+        array_walk($header_data , 'custom_replace');
+        $replace_array = Helper::create_replace_array($data['Account'],array());
+        $header_data = template_var_replace($header_data,$replace_array);
 
         if(isset($header_data)){
             $writer->addRow($header_data);
@@ -445,17 +442,19 @@ class NeonExcelIO
                     $header_data = array_keys($excel_data_rr);
                 }
                 $header_data  = array_map('ucwords',$header_data);
-                array_walk($header_data , 'custom_replace');
                 if(count($header_data) == 0){
                     $header_data[] = 'Destination';
                     $header_data[] = 'Codes';
                     $header_data[] = 'Tech Prefix';
                     $header_data[] = 'Interval';
-                    $header_data[] = 'Rate Per Minute (USD)';
+                    $header_data[] = 'Rate Per Minute (usd)';
                     $header_data[] = 'Level';
                     $header_data[] = 'Change';
                     $header_data[] = 'Effective Date';
                 }
+                array_walk($header_data , 'custom_replace');
+                $replace_array = Helper::create_replace_array($data['Account'],array());
+                $header_data = template_var_replace($header_data,$replace_array);
 
                 Log::info($trunk . " sheet index " . $sheet_index );
                 if($sheet_index == 1){
