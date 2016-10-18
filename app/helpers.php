@@ -1,7 +1,8 @@
 <?php
 function custom_replace( &$item, $key ) {
-    $item = str_replace('usd', '{{sign}}', $item);
+    $item = str_replace('usd', '{{Currency}}', $item);
 }
+//not in use
 function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
