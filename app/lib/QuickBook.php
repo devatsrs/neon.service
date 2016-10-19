@@ -802,6 +802,7 @@ class QuickBook {
 		$response = array();
 		$error = array();
 		$success = array();
+		$JournalError = array();
 		if(!empty($Invoices) && count($Invoices)>0){
 
 			$QuickBookData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$QuickBookSlug,$CompanyID);
@@ -828,11 +829,14 @@ class QuickBook {
 			$Context = $this->Context;
 			$realm = $this->realm;
 
+			$JournalNumber = 'Neon'.date('Y').date('m').date('d').date('H').date('i').date('s');
+			//log::info('Journal Number'.$JournalNumber);
+
 			$JournalEntryService = new \QuickBooks_IPP_Service_JournalEntry();
 
 			// Main journal entry object
 			$JournalEntry = new \QuickBooks_IPP_Object_JournalEntry();
-			$JournalEntry->setDocNumber('123456');
+			$JournalEntry->setDocNumber($JournalNumber);
 			$JournalEntry->setTxnDate(date('Y-m-d'));
 
 			foreach($Invoices as $Invoice){
@@ -840,6 +844,12 @@ class QuickBook {
 				$InvoiceData = array();
 
 				$InvoiceData = Invoice::find($Invoice);
+
+				$JournalErrormsg = $this->checkInvoiceInJournale($Invoice);
+				if(isset($JournalErrormsg) && $JournalErrormsg != ''){
+					$JournalError[$Invoice] = $JournalErrormsg;
+				}
+
 				$CustomerID = $this->getCustomerId($InvoiceData->AccountID);
 				if(empty($CustomerID)){
 					$response = $this->CreateCustomer($InvoiceData->AccountID);
@@ -909,12 +919,14 @@ class QuickBook {
 				if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
 					foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
 						$Title = $InvoiceTaxRate->Title;
+						$TaxRateID = $InvoiceTaxRate->TaxRateID;
 						$TaxAmount = $InvoiceTaxRate->TaxAmount;
-						$Title = str_replace(' ','',$Title);
+						//$Title = str_replace(' ','',$Title);
 						log::info($Title);
+						//$QuickBookData['Tax'][];
 
-						if(!empty($QuickBookData[$Title])){
-							$TaxId = $this->getQuickBookAccountantId($QuickBookData[$Title]);
+						if(!empty($QuickBookData['Tax'][$TaxRateID])){
+							$TaxId = $this->getQuickBookAccountantId($QuickBookData['Tax'][$TaxRateID]);
 						}
 
 						if(empty($TaxId)){
@@ -954,15 +966,25 @@ class QuickBook {
 					}
 
 					foreach($Invoices as $Invoice){
+						$jernalmsg = '';
 						$InvoiceLog = Invoice::find($Invoice);
 						$InvoiceFullNumber = $InvoiceLog->FullInvoiceNumber;
-						$success[] = $InvoiceFullNumber.'(Invoice) added in journal';
+
+						//$JournalError = $this->checkInvoiceInJournale($Invoice);
+						if(!empty($JournalError) && count($JournalError)>0){
+							if(!empty($JournalError[$Invoice])){
+								$jernalmsg = $JournalError[$Invoice];
+							}
+						}
+
+
+						$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to journal '.$jernalmsg;
 						/**
 						 * Insert Data in InvoiceLog
 						 */
 						$invoiceloddata = array();
 						$invoiceloddata['InvoiceID'] = $Invoice;
-						$invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::POST].' (Journal Id : '.$resp.') By RMScheduler';
+						$invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::POST].' (Journal Number : '.$JournalNumber.') By RMScheduler';
 						$invoiceloddata['created_at'] = date("Y-m-d H:i:s");
 						$invoiceloddata['InvoiceLogStatus'] = InvoiceLog::POST;
 						InvoiceLog::insert($invoiceloddata);
@@ -973,12 +995,12 @@ class QuickBook {
 						 * Insert Data in QuickBookLog
 						 */
 						$quickbooklogdata = array();
-						$quickbooklogdata['Note'] = $Invoice.' '.QuickBookLog::$log_status[QuickBookLog::INVOICE].' (Journal Id : '.$resp.') Created';
+						$quickbooklogdata['Note'] = $Invoice.' '.QuickBookLog::$log_status[QuickBookLog::INVOICE].' (Journal Number : '.$JournalNumber.' Journal Id : '.$resp.') Created';
 						$quickbooklogdata['created_at'] = date("Y-m-d H:i:s");
 						$quickbooklogdata['Type'] = QuickBookLog::INVOICE;
 						QuickBookLog::insert($quickbooklogdata);
 					}
-					$success[] = 'Journal created (Journal Id '.$resp.' )';
+					$success[] = 'Journal created (Journal Number '.$JournalNumber.' )';
 					//$response['response'] = $resp;
 				}
 				else
@@ -1021,6 +1043,54 @@ class QuickBook {
 		log::info('Accountant Id : '.$AccountID);
 
 		return $AccountID;
+	}
+
+	public function checkInvoiceInJournale($InvoiceID){
+		$response = '';
+		log::info('Check Invoice Alreday in Journal');
+		$Invoice = Invoice::find($InvoiceID);
+		$InvoiceFullNumber = $Invoice->FullInvoiceNumber;
+		$invoicedescription = $InvoiceFullNumber.' (Invoice)';
+		log::info(print_r($invoicedescription,true));
+		$Context = $this->Context;
+
+		$realm = $this->realm;
+		$JournalEntryService = new \QuickBooks_IPP_Service_JournalEntry();
+		$ErrorNumbers = '';
+
+		$lists = $JournalEntryService->query($Context, $realm, "SELECT * FROM JournalEntry");
+		if(!empty($lists) && count($lists)>0){
+			foreach((array)$lists as $list){
+				if(!empty($list->getId())){
+					$DocNumber = $list->getDocNumber();
+					$id = $list->getId();
+					$id = str_replace('{-','',$id);
+					$id = str_replace('}','',$id);
+					//log::info('Id'.$id);
+					$Line = $list->getLine();
+					if(!empty($Line) && count($Line)>0){
+						$description = $Line->getDescription();
+						if(!empty($description)){
+							if($description == $invoicedescription){
+								//$error = $InvoiceFullNumber.' already added in journal number '.$DocNumber;
+								//$response['journalerror'][] = $error;
+								//$test = $id.' '.$DocNumber.' '.$description;
+								//log::info(print_r($error,true));
+								$ErrorNumbers = $ErrorNumbers.$DocNumber.',';
+							}
+						}
+					}
+				}
+			}
+		}
+		if(isset($ErrorNumbers) && $ErrorNumbers!=''){
+			$ErrorNumbers=rtrim($ErrorNumbers,',');
+			$response = '(Warning: Invoice already exits against Journal:'.$ErrorNumbers.')';
+		}
+		//log::info(print_r($list,true));
+		log::info(print_r($response,true));
+		log::info('Check Invoice Alreday in Journal Over');
+		return $response;
 	}
 
 }
