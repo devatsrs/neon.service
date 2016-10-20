@@ -37,10 +37,10 @@ class Alert extends \Eloquent {
                 $CountryID = isset($settings['CountryID']) ? intval($settings['CountryID']) : '0';
 
 
-                $query = "CALL prc_getACD_ASR_Alert(?,?,?,?,?,?,?,?,?)";
-                $bind_param = array($CompanyID, $CompanyGatewayID, $AccountID, $CurrencyID, $StartDate, $EndDate, $AreaPrefix, $Trunk, $CountryID);
-                Log::info("CALL prc_getACD_ASR_Alert(" . implode(',',$bind_param) . ")");
-                $ACD_ASR_alerts = DB::connection('neon_report')->select($query, $bind_param);
+                $bind_param = array($CompanyID, $CompanyGatewayID, $AccountID, $CurrencyID,"'".$StartDate."'", "'".$EndDate."'", $AreaPrefix, $Trunk, $CountryID);
+                $query = "CALL prc_getACD_ASR_Alert(" . implode(',',$bind_param) . ")";
+                Log::info($query);
+                $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
                     if ($Alert->AlertType == 'ACD' &&  !empty($ACD_ASR_alert->ACD) &&  ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
                         $settings['email_view'] = 'emails.qos_acd_alert';
