@@ -22,10 +22,10 @@ class Alert extends \Eloquent {
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? intval($settings['CompanyGatewayID']) : 0;
                 $AccountID = isset($settings['AccountID']) ? intval($settings['AccountID']) : 0;
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
-                $StartDate = isset($settings['StartDate']) ? intval($settings['StartDate']) : date('Y-m-d H:i:s');
-                $EndDate = isset($settings['EndDate']) ? intval($settings['EndDate']) : date('Y-m-d H:i:s');
-                $AreaPrefix = isset($settings['AreaPrefix']) ? intval($settings['AreaPrefix']) : '""';
-                $Trunk = isset($settings['Trunk']) ? intval($settings['Trunk']) : '""';
+                $StartDate = isset($settings['LastRunTime']) ? $settings['LastRunTime'] : date('Y-m-d H:i:s');
+                $EndDate = isset($settings['NextRunTime']) ? date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1) : date('Y-m-d H:i:s');
+                $AreaPrefix = !empty($settings['AreaPrefix']) ? $settings['AreaPrefix'] : '""';
+                $Trunk = !empty($settings['Trunk']) ? $settings['Trunk'] : '""';
                 $CountryID = isset($settings['CountryID']) ? intval($settings['CountryID']) : '0';
 
 
