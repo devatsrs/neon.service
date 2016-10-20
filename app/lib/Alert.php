@@ -28,7 +28,7 @@ class Alert extends \Eloquent {
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
                 $StartDate = $settings['LastRunTime'];
-                $EndDate = $settings['NextRunTime'];
+                $EndDate = date("Y-m-d H:i:s",strtotime($settings['NextRunTime']) -1);
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? intval($settings['CompanyGatewayID']) : 0;
                 $AccountID = isset($settings['AccountID']) ? intval($settings['AccountID']) : 0;
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
