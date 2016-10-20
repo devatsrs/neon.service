@@ -19,11 +19,19 @@ class Alert extends \Eloquent {
             $settings = json_decode($Alert->Settings, true);
             $settings['ProcessID'] = $ProcessID;
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
+                if(!isset($settings['LastRunTime'])) {
+                    if($settings['Time'] == 'HOUR') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00",strtotime('-'.$settings['Interval'].' hour'));
+                    }else if($settings['Time'] == 'DAILY'){
+                        $settings['LastRunTime'] = date("Y-m-d 00:00:00",strtotime('-'.$settings['Interval'].' day'));
+                    }
+                    $settings['NextRunTime'] = next_run_time($settings);
+                }
+                $StartDate = $settings['LastRunTime'];
+                $EndDate = $settings['NextRunTime'];
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? intval($settings['CompanyGatewayID']) : 0;
                 $AccountID = isset($settings['AccountID']) ? intval($settings['AccountID']) : 0;
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
-                $StartDate = isset($settings['LastRunTime']) ? $settings['LastRunTime'] : date('Y-m-d H:i:s');
-                $EndDate = isset($settings['NextRunTime']) ? date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1) : date('Y-m-d H:i:s');
                 $AreaPrefix = !empty($settings['AreaPrefix']) ? $settings['AreaPrefix'] : '""';
                 $Trunk = !empty($settings['Trunk']) ? $settings['Trunk'] : '""';
                 $CountryID = isset($settings['CountryID']) ? intval($settings['CountryID']) : '0';
@@ -49,7 +57,7 @@ class Alert extends \Eloquent {
                         NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID,$settings,'');
                     }
                 }
-                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert');
+                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert',$EndDate);
             }
 
         }
