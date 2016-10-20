@@ -57,7 +57,7 @@ class Alert extends \Eloquent {
                         NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID,$settings,'');
                     }
                 }
-                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert',$EndDate);
+                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert',$settings['NextRunTime']);
             }
 
         }
