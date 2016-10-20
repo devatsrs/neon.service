@@ -52,7 +52,7 @@ class Payment extends \Eloquent{
                     foreach ($Invoices as $Invoice) {
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $Invoice->AccountID);
                     }
-                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings');
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');
                 }
             }
         }

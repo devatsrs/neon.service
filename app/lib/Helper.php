@@ -232,8 +232,9 @@ class Helper{
             $logData['EmailType'] = $data['EmailType'];
         }
         try {
-            if (AccountEmailLog::Create($logData)) {
+            if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
+                $status['AccountEmailLog'] = $AccountEmailLog;
             }
         } catch (\Exception $e) {
             $status['status'] = 0;
@@ -337,5 +338,15 @@ class Helper{
 
        return $replace_array;
    }
+    public static function alert_email_log($AlertID,$AccountEmailLogID){
+        $logData = [
+            'AlertID' => $AlertID,
+            'AccountEmailLogID' => $AccountEmailLogID,
+            'SendBy' => 'RMScheduler',
+            'send_at'=>date('Y-m-d H:i:s')
+        ];
+        $statuslog = AlertLog::create($logData);
+        return $statuslog;
+    }
 
 }
