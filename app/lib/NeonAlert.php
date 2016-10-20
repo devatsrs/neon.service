@@ -123,7 +123,7 @@ class NeonAlert extends \Eloquent {
     public  static function UpdateNextRunTime($ClassID,$setting_name,$ClassName){
         if($ClassName == 'Alert'){
             $Class = Alert::find($ClassID);
-        }else if($ClassName == 'Alert'){
+        }else if($ClassName == 'BillingClass'){
             $Class = BillingClass::find($ClassID);
         }
         $settings = json_decode($Class->$setting_name, true);
