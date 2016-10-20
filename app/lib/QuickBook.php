@@ -826,7 +826,7 @@ class QuickBook {
 			if(!empty($QuickBookData['PaymentAccount'])){
 				$PaymentAccountID = $this->getQuickBookAccountantId($QuickBookData['PaymentAccount']);
 				if(empty($PaymentAccountID)){
-					$error[]='Payment Account Not Setup';
+					$error[]='Payment Mapping not setup correctly';
 				}
 			}else{
 				$error[]='Payment Mapping not setup in integration section';
@@ -936,7 +936,7 @@ class QuickBook {
 						}
 
 						if(empty($TaxId)){
-							$error[] = $Title. '(Tax not) setup';
+							$error[] = $Title. '(Tax Mapping not) setup correctly';
 						}else{
 							$taxdescription = $InvoiceFullNumber.' '.$Title.' (Tax)';
 							$Line = new \QuickBooks_IPP_Object_Line();
