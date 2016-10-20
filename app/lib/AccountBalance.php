@@ -35,7 +35,7 @@ class AccountBalance extends Model
                     }
                 }
                 if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
-                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings');
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings','BillingClass');
                 }
             }
         }
