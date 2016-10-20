@@ -816,14 +816,20 @@ class QuickBook {
 
 			if(!empty($QuickBookData['InvoiceAccount'])){
 				$InvoiceAccountID = $this->getQuickBookAccountantId($QuickBookData['InvoiceAccount']);
+				if(empty($InvoiceAccountID)){
+					$error[]='Invoice Mapping not setup correctly';
+				}
 			}else{
-				$error[]='Invoice Account Not Setup';
+				$error[]='Invoice Mapping not setup in integration section';
 			}
 
 			if(!empty($QuickBookData['PaymentAccount'])){
 				$PaymentAccountID = $this->getQuickBookAccountantId($QuickBookData['PaymentAccount']);
+				if(empty($PaymentAccountID)){
+					$error[]='Payment Account Not Setup';
+				}
 			}else{
-				$error[]='Payment Account Not Setup';
+				$error[]='Payment Mapping not setup in integration section';
 			}
 
 			$Context = $this->Context;
