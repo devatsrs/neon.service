@@ -45,14 +45,30 @@ class Alert extends \Eloquent {
                     if ($Alert->AlertType == 'ACD' &&  !empty($ACD_ASR_alert->ACD) &&  ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
                         $settings['email_view'] = 'emails.qos_acd_alert';
                         $settings['Subject'] = 'Qos Alert ACD';
-                        $settings['EmailMessag'] = 'Qos Alert ACD';
                         $settings['EmailType'] = AccountEmailLog::QosACDAert;
                         NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID, $settings);
                     }
                     if ($Alert->AlertType == 'ASR' &&  !empty($ACD_ASR_alert->ASR) &&  ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
                         $settings['email_view'] = 'emails.qos_asr_alert';
                         $settings['Subject'] = 'Qos Alert ASR';
-                        $settings['EmailMessag'] = 'Qos Alert ASR';
+                        $settings['EmailType'] = AccountEmailLog::QosASRAert;
+                        NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID,$settings,'');
+                    }
+                }
+                $bind_param = array($CompanyID, $CompanyGatewayID, $AccountID, $CurrencyID,"'".$StartDate."'", "'".$EndDate."'", $AreaPrefix, $Trunk, $CountryID);
+                $query = "CALL prc_getVendorACD_ASR_Alert(" . implode(',',$bind_param) . ")";
+                Log::info($query);
+                $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
+                foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
+                    if ($Alert->AlertType == 'ACD' &&  !empty($ACD_ASR_alert->ACD) &&  ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
+                        $settings['email_view'] = 'emails.qos_acd_alert';
+                        $settings['Subject'] = 'Qos Vendor Alert ACD';
+                        $settings['EmailType'] = AccountEmailLog::QosACDAert;
+                        NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID, $settings);
+                    }
+                    if ($Alert->AlertType == 'ASR' &&  !empty($ACD_ASR_alert->ASR) &&  ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
+                        $settings['email_view'] = 'emails.qos_asr_alert';
+                        $settings['Subject'] = 'Qos Vendor Alert ASR';
                         $settings['EmailType'] = AccountEmailLog::QosASRAert;
                         NeonAlert::SendReminderToEmail($CompanyID,$Alert->AlertID,$settings,'');
                     }
