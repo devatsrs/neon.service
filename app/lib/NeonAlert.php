@@ -95,7 +95,7 @@ class NeonAlert extends \Eloquent {
     public static function SendReminderToEmail($CompanyID,$AlertID,$settings){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
-        if (isset($settings['email_view']) && $settings['email_view'] > 0) {
+        if (isset($settings['email_view'])) {
             $email_view = $settings['email_view'];
         }
         $EmailType = 0;
@@ -120,14 +120,18 @@ class NeonAlert extends \Eloquent {
         }
     }
 
-    public  static function UpdateNextRunTime($ClassID,$setting_name,$ClassName){
+    public  static function UpdateNextRunTime($ClassID,$setting_name,$ClassName,$LastRunTime=''){
         if($ClassName == 'Alert'){
             $Class = Alert::find($ClassID);
         }else if($ClassName == 'BillingClass'){
             $Class = BillingClass::find($ClassID);
         }
         $settings = json_decode($Class->$setting_name, true);
-        $settings['LastRunTime'] = date('Y-m-d H:i:00');
+        if(!empty($LastRunTime)) {
+            $settings['LastRunTime'] = $LastRunTime;
+        }else{
+            $settings['LastRunTime'] = date('Y-m-d H:i:00');
+        }
         $settings['NextRunTime'] = next_run_time($settings);
         $Class->$setting_name = json_encode($settings);
         $Class->update();
