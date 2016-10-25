@@ -41,6 +41,15 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== ACD/ASR alert END===========');
 
+        Log::info('============== CDR Post Process START===========');
+        try {
+            $cronjobdata = TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Call Monitor Failed';
+        }
+        Log::info('============== CDR Post Process END===========');
+
         return $cronjobdata;
     }
 
@@ -92,7 +101,7 @@ class NeonAlert extends \Eloquent {
         }
 
     }
-    public static function SendReminderToEmail($CompanyID,$AlertID,$settings){
+    public static function SendReminderToEmail($CompanyID,$AlertID,$AccountID,$settings){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         if (isset($settings['email_view'])) {
@@ -107,13 +116,13 @@ class NeonAlert extends \Eloquent {
             'Subject' => $settings['Subject'],
             'CompanyID' => $CompanyID,
             'CompanyName' => $Company->CompanyName,
-            'Message' => $settings['EmailMessag']
+            'Message' => $settings['EmailMessage']
         );
         if (!empty($settings['ReminderEmail'])) {
             Log::info('AccountID = '.$settings['ReminderEmail'].' SendReminder sent ');
             $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
             $status = Helper::sendMail($email_view, $emaildata);
-            $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
+            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
             if($statuslog['status'] == 1 && $status['status'] == 1) {
                 Helper::alert_email_log($AlertID, $statuslog['AccountEmailLog']->AccountEmailLogID);
             }
