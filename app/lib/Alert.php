@@ -30,17 +30,16 @@ class Alert extends \Eloquent{
                 }
                 $StartDate = $settings['LastRunTime'];
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
-                $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? intval($settings['CompanyGatewayID']) : 0;
-                $AccountID = isset($settings['AccountID']) ? intval($settings['AccountID']) : 0;
+                $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? implode(',',$settings['CompanyGatewayID']) : '';
+                $AccountID = isset($settings['AccountID']) ? implode(',',$settings['AccountID']) : '';
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
-                $AreaPrefix = !empty($settings['AreaPrefix']) ? $settings['AreaPrefix'] : '""';
-                $Trunk = !empty($settings['Trunk']) ? $settings['Trunk'] : '""';
-                $CountryID = isset($settings['CountryID']) ? intval($settings['CountryID']) : '0';
+                $AreaPrefix = !empty($settings['Prefix']) ? $settings['Prefix'] : '';
+                $Trunk = !empty($settings['Trunk']) ? implode(',',$settings['Trunk']) : '';
+                $CountryID = isset($settings['CountryID']) ? implode(',',$settings['CountryID']) : '';
 
 
-                $bind_param = array($CompanyID, $CompanyGatewayID, $AccountID, $CurrencyID, "'" . $StartDate . "'", "'" . $EndDate . "'", $AreaPrefix, $Trunk, $CountryID);
-                $query = "CALL prc_getACD_ASR_Alert(" . implode(',', $bind_param) . ")";
-                Log::info($query);
+
+                $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$AccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
                 $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
                     if ($Alert->AlertType == 'ACD' && !empty($ACD_ASR_alert->ACD) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
@@ -56,8 +55,7 @@ class Alert extends \Eloquent{
                         NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID,0, $settings);
                     }
                 }
-                $bind_param = array($CompanyID, $CompanyGatewayID, $AccountID, $CurrencyID, "'" . $StartDate . "'", "'" . $EndDate . "'", $AreaPrefix, $Trunk, $CountryID);
-                $query = "CALL prc_getVendorACD_ASR_Alert(" . implode(',', $bind_param) . ")";
+                $query = "CALL prc_getVendorACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$AccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
                 Log::info($query);
                 $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
