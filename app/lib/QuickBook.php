@@ -802,6 +802,7 @@ class QuickBook {
 		$response = array();
 		$error = array();
 		$success = array();
+		$JournalError = array();
 		if(!empty($Invoices) && count($Invoices)>0){
 
 			$QuickBookData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$QuickBookSlug,$CompanyID);
@@ -815,14 +816,20 @@ class QuickBook {
 
 			if(!empty($QuickBookData['InvoiceAccount'])){
 				$InvoiceAccountID = $this->getQuickBookAccountantId($QuickBookData['InvoiceAccount']);
+				if(empty($InvoiceAccountID)){
+					$error[]='Invoice Mapping not setup correctly';
+				}
 			}else{
-				$error[]='Invoice Account Not Setup';
+				$error[]='Invoice Mapping not setup in integration section';
 			}
 
 			if(!empty($QuickBookData['PaymentAccount'])){
 				$PaymentAccountID = $this->getQuickBookAccountantId($QuickBookData['PaymentAccount']);
+				if(empty($PaymentAccountID)){
+					$error[]='Payment Mapping not setup correctly';
+				}
 			}else{
-				$error[]='Payment Account Not Setup';
+				$error[]='Payment Mapping not setup in integration section';
 			}
 
 			$Context = $this->Context;
@@ -843,6 +850,11 @@ class QuickBook {
 				$InvoiceData = array();
 
 				$InvoiceData = Invoice::find($Invoice);
+
+				$JournalErrormsg = $this->checkInvoiceInJournale($Invoice);
+				if(isset($JournalErrormsg) && $JournalErrormsg != ''){
+					$JournalError[$Invoice] = $JournalErrormsg;
+				}
 
 				$CustomerID = $this->getCustomerId($InvoiceData->AccountID);
 				if(empty($CustomerID)){
@@ -924,7 +936,7 @@ class QuickBook {
 						}
 
 						if(empty($TaxId)){
-							$error[] = $Title. '(Tax not) setup';
+							$error[] = $Title. '(Tax Mapping not) setup correctly';
 						}else{
 							$taxdescription = $InvoiceFullNumber.' '.$Title.' (Tax)';
 							$Line = new \QuickBooks_IPP_Object_Line();
@@ -960,12 +972,19 @@ class QuickBook {
 					}
 
 					foreach($Invoices as $Invoice){
+						$jernalmsg = '';
 						$InvoiceLog = Invoice::find($Invoice);
 						$InvoiceFullNumber = $InvoiceLog->FullInvoiceNumber;
 
-						$JournalError = $this->checkInvoiceInJournale($Invoice);
+						//$JournalError = $this->checkInvoiceInJournale($Invoice);
+						if(!empty($JournalError) && count($JournalError)>0){
+							if(!empty($JournalError[$Invoice])){
+								$jernalmsg = $JournalError[$Invoice];
+							}
+						}
 
-						$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to  journal No:'.$JournalNumber.' '.$JournalError;
+
+						$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to journal '.$jernalmsg;
 						/**
 						 * Insert Data in InvoiceLog
 						 */
@@ -1072,7 +1091,7 @@ class QuickBook {
 		}
 		if(isset($ErrorNumbers) && $ErrorNumbers!=''){
 			$ErrorNumbers=rtrim($ErrorNumbers,',');
-			$response = '(Warning: already exits against Journal:'.$ErrorNumbers.')';
+			$response = '(Warning: Invoice already exits against Journal:'.$ErrorNumbers.')';
 		}
 		//log::info(print_r($list,true));
 		log::info(print_r($response,true));
