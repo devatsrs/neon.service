@@ -1,0 +1,175 @@
+<?php namespace App\Console\Commands;
+
+use App\Lib\CronHelper;
+use App\Lib\CronJob;
+use App\Lib\CronJobLog;
+use App\Lib\NeonExcelIO;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputArgument;
+
+/** This command will be run immediately when any rate is updated in Customer or Vendor.
+ * Class GenerateRateUpdateFile
+ * @package App\Console\Commands
+ */
+class GenerateRateUpdateFile extends Command {
+
+	/**
+	 * The console command name.
+	 *
+	 * @var string
+	 */
+	protected $name = 'generaterateupdatefile';
+
+	/**
+	 * The console command description.
+	 *
+	 * @var string
+	 */
+	protected $description = 'Command description.';
+
+	/**
+	 * Create a new command instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+		parent::__construct();
+	}
+
+	/**
+	 * Get the console command arguments.
+	 *
+	 * @return array
+	 */
+	protected function getArguments()
+	{
+		return [
+			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+			['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
+		];
+	}
+
+	/**
+	 * Execute the console command.
+	 *
+	 * @return mixed
+	 */
+	public function fire()
+	{
+		/////////////////////////////
+
+		CronHelper::before_cronrun($this->name, $this );
+
+		$arguments 		= 	$this->argument();
+
+		$CronJobID 		= 	$arguments["CronJobID"];
+		$CompanyID 		= 	$arguments["CompanyID"];
+
+		$CronJob =  CronJob::find($CronJobID);
+		$cronsetting = json_decode($CronJob->Settings, true);
+
+		CronJob::activateCronJob($CronJob);
+
+		try{
+
+			$future_rates = true; // update with cronjob settings
+
+			$cronsetting["csv_generate_location"] = '/home/neon_rates/1';
+
+			if(!isset($cronsetting["csv_generate_location"]) || empty($cronsetting["csv_generate_location"])){
+				throw new \Exception(" CSV File Generate Location not specified.");
+			}
+
+			$local_dir = $cronsetting["csv_generate_location"];
+
+			$this->generate_file($CompanyID,'customer','current',$local_dir);
+			$this->generate_file($CompanyID,'vendor','current',$local_dir);
+
+			if($future_rates) {
+
+				$this->generate_file($CompanyID,'customer','future',$local_dir);
+				$this->generate_file($CompanyID,'vendor','future',$local_dir);
+ 			}
+
+
+		}catch (Exception $e) {
+
+			Log::error($e);
+			CronJob::deactivateCronJob($CronJob);
+
+			$joblogdata['Message'] = 'Error:' . $e->getMessage();
+			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+			CronJobLog::insert($joblogdata);
+
+		}
+
+		CronHelper::after_cronrun($this->name, $this);
+
+	}
+
+	public function generate_file($CompanyID,$AccountType,$RateType,$local_dir ){
+
+		$current_date = date("Y-m-d");
+
+		$AccountType = strtolower($AccountType);
+		$RateType = strtolower($RateType);
+
+		$csv_data = DB::select("CALL prc_getRateUpdateHistory(" . $CompanyID . ",'".$AccountType."','".$RateType."','".$current_date."')");
+		$csv_data = collect($csv_data)->groupBy("AccountID");
+		/*
+                        [
+                            'account-x10' => [
+                                ['account_id' => 'account-x10', 'product' => 'Chair'],
+                                ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+                            ],
+                            'account-x11' => [
+                                ['account_id' => 'account-x11', 'product' => 'Desk'],
+                            ],
+                        ]
+                    */
+		$csv_data->each(function ($rows, $AccountID) use ($local_dir , $AccountType , $RateType) {
+
+			$file_name = $AccountID . '_' . date('ymdHmS');
+			$file_path = $local_dir. '/' . $AccountType .'/' . $RateType . '/'.  $file_name.'.csv';
+
+			$sort_column = $AccountType == 'customer'?"CustomerRateUpdateHistoryID":"VendorRateUpdateHistoryID";
+
+			$min_max_ids = $this->get_min_max_primary_key_id($sort_column,$rows);
+
+			$NeonExcel = new NeonExcelIO($file_path);
+			$NeonExcel->write_ratessheet_excel_generate($rows,'csv');
+
+			if(is_numeric($min_max_ids["min_id"])  &&  is_numeric($min_max_ids["max_id"]) ){
+
+				if($AccountType == 'customer'){
+
+					CustomerRateUpdateHistory::where([$sort_column,'>=',$min_max_ids["min_id"]])->where([$sort_column,'<=',$min_max_ids["max_id"]])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+				}else if($AccountType == 'vendor'){
+
+					VendorRateUpdateHistory::where([$sort_column,'>=',$min_max_ids["min_id"]])->where([$sort_column,'<=',$min_max_ids["max_id"]])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+				}
+			}
+
+		});
+
+	}
+
+	public function get_min_max_primary_key_id($primary_key,$rows){
+
+		$max_id = collect($rows)->sortByDesc($primary_key)->first(function ($value, $key) use ($primary_key) {
+			return $value->$primary_key;
+		});
+
+		$min_id = collect($rows)->sortBy($primary_key)->first(function ($value, $key) use ($primary_key) {
+			return $value->$primary_key;
+		});
+
+		return ["max_id" => $max_id , "min_id" => $min_id];
+
+	}
+
+}
