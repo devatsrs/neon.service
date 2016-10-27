@@ -1,9 +1,12 @@
-Please check following Potential Fraud Alert Call Blacklist
-<h2>Customer</h2>
+<p>
+    Call made in black listed destination.
+</p>
+<h4>Customer</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
         <th>Account</th>
+        <th>Destination</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -16,6 +19,7 @@ Please check following Potential Fraud Alert Call Blacklist
     @foreach($call_blacklist as $call)
         <tr>
             <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
+            <td>{{\App\Lib\Country::getCountryName($call['CountryID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>
@@ -27,11 +31,12 @@ Please check following Potential Fraud Alert Call Blacklist
     </tbody>
 </table>
 @if(count($vcall_blacklist))
-<h2>Vendor</h2>
+<h4>Vendor</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
         <th>Account</th>
+        <th>Destination</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -44,6 +49,7 @@ Please check following Potential Fraud Alert Call Blacklist
     @foreach($vcall_blacklist as $call)
         <tr>
             <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
+            <td>{{\App\Lib\Country::getCountryName($call['CountryID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>

@@ -104,9 +104,7 @@ class NeonAlert extends \Eloquent {
     public static function SendReminderToEmail($CompanyID,$AlertID,$AccountID,$settings){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
-        if (isset($settings['email_view'])) {
-            $email_view = $settings['email_view'];
-        }
+
         $EmailType = 0;
         if (isset($settings['EmailType']) && $settings['EmailType'] > 0) {
             $EmailType = $settings['EmailType'];

@@ -1,5 +1,7 @@
-Please check following Potential Fraud Alert Call Cost
-<h2>Customer</h2>
+<p>
+    Expensive Calls (Max. Duration {{$settings['Cost']}})
+</p>
+<h4>Customer</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
@@ -25,7 +27,7 @@ Please check following Potential Fraud Alert Call Cost
     </tbody>
 </table>
 @if(count($vcall_cost))
-<h2>Vendor</h2>
+<h4>Vendor</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
