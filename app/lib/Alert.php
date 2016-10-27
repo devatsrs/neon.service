@@ -32,6 +32,7 @@ class Alert extends \Eloquent{
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? implode(',',$settings['CompanyGatewayID']) : '';
                 $AccountID = isset($settings['AccountID']) ? implode(',',$settings['AccountID']) : '';
+                $VAccountID = isset($settings['VAccountID']) ? implode(',',$settings['VAccountID']) : '';
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
                 $AreaPrefix = !empty($settings['Prefix']) ? $settings['Prefix'] : '';
                 $Trunk = !empty($settings['TrunkID']) ? implode(',',$settings['TrunkID']) : '';
@@ -67,7 +68,7 @@ class Alert extends \Eloquent{
                         }
                     }
                 }
-                $query = "CALL prc_getVendorACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$AccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
+                $query = "CALL prc_getVendorACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$VAccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
                 Log::info($query);
                 $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
