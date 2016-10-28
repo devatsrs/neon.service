@@ -173,4 +173,13 @@ class BillingAPI {
 		}
 		return false;
 	}
+
+	public function addJournals($Options){
+		if($this->quickbooks_is_connected){
+			/* check Authantication and connect api */
+
+			return $this->request->addJournals($Options);
+		}
+		return false;
+	}
 }

@@ -1,7 +1,8 @@
 <?php
 function custom_replace( &$item, $key ) {
-    $item = str_replace('usd', '{{sign}}', $item);
+    $item = str_replace('usd', '{{Currency}}', $item);
 }
+//not in use
 function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
@@ -221,7 +222,7 @@ function translation_rule($CLITranslationRule){
 
 }
 function sippy_vos_areaprefix($area_prefix,$RateCDR){
-    if($RateCDR == 1 || empty($area_prefix)){
+    if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
@@ -242,14 +243,13 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{PostCode}}',
         '{{Country}}',
         '{{InvoiceNumber}}',
-        '{{GrandTotal}}',
-        '{{InvoiceOutStanding}}',
-        '{{OutStandingExcludeUnbilledAmount}}',
+        '{{InvoiceGrandTotal}}',
+        '{{InvoiceOutstanding}}',
+        '{{OutstandingExcludeUnbilledAmount}}',
         '{{Signature}}',
-        '{{OutStandingIncludeUnbilledAmount}}',
+        '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
         '{{Currency}}',
-        '{{CurrencySymbol}}',
         '{{CompanyName}}'
     ];
 
@@ -498,10 +498,15 @@ function cal_next_runtime($data){
 }
 
 function next_run_time($data){
-    $LastRunTime = date('Y-m-d H:i:00');
+
     $Interval = $data['Interval'];
     if(isset($data['StartTime'])) {
         $StartTime = $data['StartTime'];
+    }
+    if(isset($data['LastRunTime'])){
+        $LastRunTime = $data['LastRunTime'];
+    }else{
+        $LastRunTime = date('Y-m-d H:i:00');
     }
     switch($data['Time']) {
         case 'HOUR':

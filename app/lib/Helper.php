@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
@@ -232,8 +233,9 @@ class Helper{
             $logData['EmailType'] = $data['EmailType'];
         }
         try {
-            if (AccountEmailLog::Create($logData)) {
+            if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
+                $status['AccountEmailLog'] = $AccountEmailLog;
             }
         } catch (\Exception $e) {
             $status['status'] = 0;
@@ -313,12 +315,11 @@ class Helper{
        $replace_array['State'] = $Account->State;
        $replace_array['PostCode'] = $Account->PostCode;
        $replace_array['Country'] = $Account->Country;
-       $replace_array['OutStandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
-       $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
-       $replace_array['CurrencySymbol'] = Currency::getCurrencySymbol($Account->CurrencyId);
+       $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
-       $replace_array['OutStandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
        if(!empty($JobLoggedUser)){
            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
@@ -331,12 +332,42 @@ class Helper{
        $replace_array['Signature']= $Signature;
        $extra_var = array(
            'InvoiceNumber' => '',
-           'GrandTotal' => '',
-           'InvoiceOutStanding' => '',
+           'InvoiceGrandTotal' => '',
+           'InvoiceOutstanding' => '',
        );
        $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
 
        return $replace_array;
    }
+    public static function alert_email_log($AlertID,$AccountEmailLogID){
+        $logData = [
+            'AlertID' => $AlertID,
+            'AccountEmailLogID' => $AccountEmailLogID,
+            'SendBy' => 'RMScheduler',
+            'send_at'=>date('Y-m-d H:i:s')
+        ];
+        $statuslog = AlertLog::create($logData);
+        return $statuslog;
+    }
+
+    public static function ACD_ASR_CR($settings){
+
+        if(!empty($settings['CompanyGatewayID'])) {
+            foreach ($settings['CompanyGatewayID'] as $CompanyGatewayID) {
+                $settings['GatewayNames'][] = CompanyGateway::where('CompanyGatewayID', $CompanyGatewayID)->pluck('Title');
+            }
+        }
+        if(!empty($settings['CountryID'])) {
+            foreach ($settings['CountryID'] as $CountryID) {
+                $settings['CountryNames'][] = Country::getCountryName($CountryID);
+            }
+        }
+        if(!empty($settings['TrunkID'])) {
+            foreach ($settings['TrunkID'] as $TrunkID) {
+                $settings['TrunkNames'][] = DB::table('tblTrunk')->where('TrunkID', $TrunkID)->pluck('Trunk');
+            }
+        }
+        return $settings;
+    }
 
 }

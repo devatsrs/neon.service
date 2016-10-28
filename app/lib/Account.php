@@ -164,7 +164,7 @@ class Account extends \Eloquent {
 
 
     public static function updateAccountNo($CompanyID){
-        $accounts = Account::select('AccountID')->where(["AccountType" => 1,"Number"=>null])->get()->toArray();
+        $accounts = Account::select('AccountID')->where(["CompanyId" => $CompanyID,"AccountType" => 1,"Number"=>null])->get()->toArray();
         if(count($accounts)>0){
             foreach($accounts as $account){
                 $accountid = $account['AccountID'];
@@ -173,18 +173,21 @@ class Account extends \Eloquent {
                 CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$lastnumber);
             }
         }
-        return true;
     }
-    public static function FirstLowBalanceReminder($AccountID){
+    public static function FirstLowBalanceReminder($AccountID,$LastRunTime){
 
-        $LastPaymentDate = Payment::where(['AccountID'=>$AccountID,'Recall'=>0,'Status'=>'Approved'])->orderBy('PaymentDate','DESC')->pluck('PaymentDate');
+
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
-        if(!empty($LastPaymentDate)){
-                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".$LastPaymentDate."'");
+        if(!empty($LastRunTime)){
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
+    }
+
+    public static function getAccountName($AccountID){
+        return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
 
 }

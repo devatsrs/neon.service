@@ -2218,4 +2218,26 @@ class Invoice extends \Eloquent {
         }
     }
 
+    public static function CheckInvoiceFullPaid($InvoiceID,$CompanyID){
+        $Response = false;
+        $InvoiceTotal = '';
+        $PaymentTotal = '';
+        if(!empty($InvoiceID)){
+            $Invoice = Invoice::find($InvoiceID);
+            $InvoiceTotal = $Invoice->GrandTotal;
+
+            $PaymentTotal = Payment::where(['CompanyID' =>$CompanyID, 'InvoiceID' => $InvoiceID, 'Recall' => '0', 'Status' =>'Approved'])->sum('Amount');
+
+            log::info('Invoice Total '.$InvoiceTotal);
+            log::info('Payment Total '.$PaymentTotal);
+
+            if(!empty($InvoiceTotal) && !empty($PaymentTotal) && $InvoiceTotal == $PaymentTotal){
+                log::info('Total Matching');
+                $Response = true;
+
+            }
+        }
+        return $Response;
+    }
+
 }

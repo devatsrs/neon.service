@@ -25,15 +25,18 @@ class AccountBalance extends Model
                 $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
                 $settings['ProcessID'] = $ProcessID;
                 $settings['EmailType'] = AccountEmailLog::LowBalanceReminder;
+                $LastRunTime = isset($settings['LastRunTime'])?$settings['LastRunTime']:'';
                 $query = "CALL prc_LowBalanceReminder(?,?,?)";
                 $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
                 foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
-                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                         Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
                 }
-                NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings');
+                if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings','BillingClass');
+                }
             }
         }
     }

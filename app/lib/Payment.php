@@ -27,8 +27,8 @@ class Payment extends \Eloquent{
                 foreach ($Invoices as $Invoice) {
                     if (Account::getAccountEmailCount($Invoice->AccountID, AccountEmailLog::InvoicePaymentReminder) == 0) {
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
-                        $settings['GrandTotal'] = $Invoice->GrandTotal;
-                        $settings['InvoiceOutStanding'] = $Invoice->InvoiceOutStanding;
+                        $settings['InvoiceGrandTotal'] = $Invoice->GrandTotal;
+                        $settings['InvoiceOutstanding'] = $Invoice->InvoiceOutStanding;
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);
@@ -52,7 +52,7 @@ class Payment extends \Eloquent{
                     foreach ($Invoices as $Invoice) {
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $Invoice->AccountID);
                     }
-                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings');
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');
                 }
             }
         }

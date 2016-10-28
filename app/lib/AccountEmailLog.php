@@ -10,6 +10,12 @@ class AccountEmailLog extends \Eloquent {
 
     const InvoicePaymentReminder=1;
     const LowBalanceReminder=2;
+    const QosACDAlert =3;
+    const QosASRAlert =4;
+    const CallDurationAlert = 5;
+    const CallCostAlert = 6;
+    const CallOfficeAlert = 7;
+    const CallBlackListAlert = 8;
 
 
 }

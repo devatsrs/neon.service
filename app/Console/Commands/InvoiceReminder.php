@@ -159,8 +159,8 @@ class InvoiceReminder extends Command
                                 $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
 
                                 $replace_array['InvoiceNumber'] = $invoice->InvoiceNumber;
-                                $replace_array['GrandTotal'] = $invoice->GrandTotal;
-                                $replace_array['InvoiceOutStanding'] = $InvoiceOutStanding;
+                                $replace_array['InvoiceGrandTotal'] = $invoice->GrandTotal;
+                                $replace_array['InvoiceOutstanding'] = $InvoiceOutStanding;
                                 $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
                                 $joboptions->message = template_var_replace($joboptions->message,$replace_array);
 
