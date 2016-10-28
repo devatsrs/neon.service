@@ -483,4 +483,23 @@ class NeonExcelIO
         }
         $writer->close();
     }
+
+    /**
+     * Generare Rate Update CSV file
+     * @param $data
+     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
+     */
+    public function generate_rate_update_file($data){
+
+        $writer = WriterFactory::create(Type::CSV); // for CSV files
+
+        $writer->openToFile($this->file); // write data to a file or to a PHP stream
+
+        $header_data = array_keys($data[0]);
+        if(isset($header_data)){
+            $writer->addRow($header_data);
+        }
+        $writer->addRows($data); // add multiple rows at a time
+        $writer->close();
+    }
 }

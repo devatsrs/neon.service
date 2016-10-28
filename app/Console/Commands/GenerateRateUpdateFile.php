@@ -131,17 +131,24 @@ class GenerateRateUpdateFile extends Command {
                             ],
                         ]
                     */
-		$csv_data->each(function ($rows, $AccountID) use ($local_dir , $AccountType , $RateType) {
+        foreach($csv_data as $AccountID => $rows) 	{
 
-			$file_name = $AccountID . '_' . date('ymdHmS');
-			$file_path = $local_dir. '/' . $AccountType .'/' . $RateType . '/'.  $file_name.'.csv';
+            $rows = collect($rows)->toArray();
+            $rows = json_decode(json_encode($rows),true);
+
+            $file_name = $AccountID . '_' . date('ymdHmS');
+			$dir = $local_dir. '/' . $AccountType .'/' . $RateType ;
+            if (!file_exists($dir)) {
+                @mkdir($dir, 0777, TRUE);
+            }
+            $file_path = $dir  . '/' . $file_name.'.csv';
 
 			$sort_column = $AccountType == 'customer'?"CustomerRateUpdateHistoryID":"VendorRateUpdateHistoryID";
 
 			$min_max_ids = $this->get_min_max_primary_key_id($sort_column,$rows);
 
-			$NeonExcel = new NeonExcelIO($file_path);
-			$NeonExcel->write_ratessheet_excel_generate($rows,'csv');
+            $NeonExcel = new NeonExcelIO($file_path);
+			$NeonExcel->generate_rate_update_file($rows);
 
 			if(is_numeric($min_max_ids["min_id"])  &&  is_numeric($min_max_ids["max_id"]) ){
 
@@ -154,22 +161,16 @@ class GenerateRateUpdateFile extends Command {
 				}
 			}
 
-		});
+		};
 
 	}
 
 	public function get_min_max_primary_key_id($primary_key,$rows){
 
-		$max_id = collect($rows)->sortByDesc($primary_key)->first(function ($value, $key) use ($primary_key) {
-			return $value->$primary_key;
-		});
+        $max_id = collect($rows)->sortByDesc($primary_key)->first()[$primary_key];
+        $min_id = collect($rows)->sortBy($primary_key)->first()[$primary_key];
 
-		$min_id = collect($rows)->sortBy($primary_key)->first(function ($value, $key) use ($primary_key) {
-			return $value->$primary_key;
-		});
-
-		return ["max_id" => $max_id , "min_id" => $min_id];
-
+        return ["max_id" => $max_id , "min_id" => $min_id];
 	}
 
 }
