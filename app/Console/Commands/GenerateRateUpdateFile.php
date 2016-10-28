@@ -3,7 +3,9 @@
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\CustomerRateUpdateHistory;
 use App\Lib\NeonExcelIO;
+use App\Lib\VendorRateUpdateHistory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
