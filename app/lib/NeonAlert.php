@@ -117,7 +117,7 @@ class NeonAlert extends \Eloquent {
             'Message' => $settings['EmailMessage']
         );
         if (!empty($settings['ReminderEmail'])) {
-            Log::info('AccountID = '.$settings['ReminderEmail'].' SendReminder sent ');
+            Log::info('AccountID = '.$AccountID.' email '.$settings['ReminderEmail'].' SendReminder sent ');
             $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
             $status = Helper::sendMail($email_view, $emaildata);
             $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);

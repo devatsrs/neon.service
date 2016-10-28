@@ -1,11 +1,10 @@
 <p>
-    Call made in black listed destination.
+    Call made in Blacklisted Destination.
 </p>
-<h4>Customer</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
-        <th>Account</th>
+        <th>Customer Name</th>
         <th>Destination</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
@@ -31,11 +30,10 @@
     </tbody>
 </table>
 @if(count($vcall_blacklist))
-<h4>Vendor</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
-        <th>Account</th>
+        <th>Vendor Name</th>
         <th>Destination</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>

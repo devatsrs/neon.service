@@ -1,10 +1,10 @@
 <p>
-    Expensive Calls (Max. Duration {{$settings['Cost']}})
+    Expensive Calls (Max. Cost {{$settings['Cost']}})
 </p>
-<h4>Customer</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
+        <th>Customer Name</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -16,6 +16,7 @@
     <tbody>
     @foreach($call_cost as $call)
         <tr>
+            <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>
@@ -27,10 +28,10 @@
     </tbody>
 </table>
 @if(count($vcall_cost))
-<h4>Vendor</h4>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
+        <th>Vendor Name</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -42,6 +43,7 @@
     <tbody>
     @foreach($vcall_cost as $call)
         <tr>
+            <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>
