@@ -695,6 +695,9 @@ class Invoice extends \Eloquent {
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
+
+            $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+            $header = htmlspecialchars_decode($header);
             
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
             $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -709,14 +712,17 @@ class Invoice extends \Eloquent {
             $footer_name = 'footer-'. Uuid::generate() .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
+            $header_name = 'header-'. Uuid::generate() .'.html';
+            $header_html = $destination_dir.$header_name;
+            file_put_contents($header_html,$header);
             $output= "";
             if(getenv('APP_OS') == 'Linux'){
-                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
             }else{
-                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
 
             Log::info($output);
@@ -1736,6 +1742,8 @@ class Invoice extends \Eloquent {
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
                         $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -1750,13 +1758,16 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);
@@ -2117,6 +2128,8 @@ class Invoice extends \Eloquent {
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
                         $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -2131,14 +2144,17 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);
