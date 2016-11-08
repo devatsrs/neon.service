@@ -538,22 +538,7 @@ class Invoice extends \Eloquent {
 
     }
 
-    //Not in use
-    public static function getTotalTax($Account){
 
-        $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-        $AccountBilling = AccountBilling::getBilling($Account->AccountID);
-        $TaxRateId = $AccountBilling->TaxRateId;
-        $TaxRate = TaxRate::find($TaxRateId);
-        $TaxRateAmount = 0;
-        if (isset($TaxRate->Amount))
-            $TaxRateAmount = $TaxRate->Amount;
-
-        //$TotalTax = number_format((($TotalCharges * $TaxRateAmount) / 100), $RoundChargesAmount, '.', ''); Percentage Tax
-        $TotalTax = number_format($TaxRateAmount, $RoundChargesAmount, '.', '');  // Flat Tax
-
-        return $TotalTax;
-    }
 
     public static function checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID,$StartDate,$EndDate){
 
@@ -737,7 +722,7 @@ class Invoice extends \Eloquent {
     public static function calculateUsageTax($AccountID, $UsageSubTotal){
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
         $TotalTax = 0;
         if(!empty($TaxRateIDs)){
 
@@ -779,7 +764,7 @@ class Invoice extends \Eloquent {
         $InvoiceSubTotal = $Invoice->SubTotal;*/
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
