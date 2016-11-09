@@ -249,34 +249,38 @@ class CronJob extends \Eloquent {
         $cronsetting = json_decode($CronJob->Settings,true);
         $ActiveCronJobEmailTo = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
 
-
         if(getenv("APP_OS") == "Linux"){
             $KillCommand = 'kill -9 '.$PID;
         }else{
             $KillCommand = 'Taskkill /PID '.$PID.' /F';
         }
+
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
 		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
 
-        $emaildata['KillCommand'] = $KillCommand;
-        $emaildata['ReturnStatus'] = $ReturnStatus;
-		$emaildata['DetailOutput'] = $DetailOutput;
+        if(!empty($ActiveCronJobEmailTo)) {
 
-        $emaildata['CompanyID'] = $CompanyID;
-        $emaildata['Minute'] = $minute;
-        $emaildata['JobTitle'] = $CronJob->JobTitle;
-        $emaildata['PID'] = $CronJob->PID;
-        $emaildata['CompanyName'] = $ComanyName;
-        $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
-        $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = $JobTitle. ' is terminated, Was running since ' . $minute .' minutes.';
-        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
-		
-		
-									
-        $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
-        return $emailstatus;
+            $emaildata['KillCommand'] = $KillCommand;
+            $emaildata['ReturnStatus'] = $ReturnStatus;
+            $emaildata['DetailOutput'] = $DetailOutput;
+
+            $emaildata['CompanyID'] = $CompanyID;
+            $emaildata['Minute'] = $minute;
+            $emaildata['JobTitle'] = $CronJob->JobTitle;
+            $emaildata['PID'] = $CronJob->PID;
+            $emaildata['CompanyName'] = $ComanyName;
+            $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
+            $emaildata['EmailToName'] = '';
+            $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
+            $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+
+            $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
+            return $emailstatus;
+        }else{
+            // Error Email is not setup.
+            return -1;
+        }
     }
 
     public static function CronJobSuccessEmailSend($CronJobID){

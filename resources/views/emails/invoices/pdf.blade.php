@@ -32,6 +32,11 @@ table{
 tr {
     page-break-inside: avoid;
 }
+
+thead {
+    display: table-header-group
+}
+
 tfoot {
     display: table-row-group
 }

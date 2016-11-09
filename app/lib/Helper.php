@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
@@ -232,8 +233,9 @@ class Helper{
             $logData['EmailType'] = $data['EmailType'];
         }
         try {
-            if (AccountEmailLog::Create($logData)) {
+            if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
+                $status['AccountEmailLog'] = $AccountEmailLog;
             }
         } catch (\Exception $e) {
             $status['status'] = 0;
@@ -337,5 +339,35 @@ class Helper{
 
        return $replace_array;
    }
+    public static function alert_email_log($AlertID,$AccountEmailLogID){
+        $logData = [
+            'AlertID' => $AlertID,
+            'AccountEmailLogID' => $AccountEmailLogID,
+            'SendBy' => 'RMScheduler',
+            'send_at'=>date('Y-m-d H:i:s')
+        ];
+        $statuslog = AlertLog::create($logData);
+        return $statuslog;
+    }
+
+    public static function ACD_ASR_CR($settings){
+
+        if(!empty($settings['CompanyGatewayID'])) {
+            foreach ($settings['CompanyGatewayID'] as $CompanyGatewayID) {
+                $settings['GatewayNames'][] = CompanyGateway::where('CompanyGatewayID', $CompanyGatewayID)->pluck('Title');
+            }
+        }
+        if(!empty($settings['CountryID'])) {
+            foreach ($settings['CountryID'] as $CountryID) {
+                $settings['CountryNames'][] = Country::getCountryName($CountryID);
+            }
+        }
+        if(!empty($settings['TrunkID'])) {
+            foreach ($settings['TrunkID'] as $TrunkID) {
+                $settings['TrunkNames'][] = DB::table('tblTrunk')->where('TrunkID', $TrunkID)->pluck('Trunk');
+            }
+        }
+        return $settings;
+    }
 
 }
