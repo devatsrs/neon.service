@@ -186,4 +186,8 @@ class Account extends \Eloquent {
         return $count;
     }
 
+    public static function getAccountName($AccountID){
+        return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
+    }
+
 }

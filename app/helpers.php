@@ -498,10 +498,15 @@ function cal_next_runtime($data){
 }
 
 function next_run_time($data){
-    $LastRunTime = date('Y-m-d H:i:00');
+
     $Interval = $data['Interval'];
     if(isset($data['StartTime'])) {
         $StartTime = $data['StartTime'];
+    }
+    if(isset($data['LastRunTime'])){
+        $LastRunTime = $data['LastRunTime'];
+    }else{
+        $LastRunTime = date('Y-m-d H:i:00');
     }
     switch($data['Time']) {
         case 'HOUR':
