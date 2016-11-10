@@ -106,18 +106,20 @@ class Job extends \Eloquent {
         $CompanyName = Company::where("CompanyID",$CompanyID)->pluck("CompanyName");
 
         $User = User::getUserInfo($job->JobLoggedUserID);
-        $UserEmail= $User->EmailAddress;
-        $userName = $User->FirstName . ' ' . $User->LastName;
-        if($UserEmail != '') {
-            $status = Helper::sendMail('emails.invoices.bulk_invoice_email_status',
-                array(
-                    'EmailTo' => $UserEmail,
-                    'EmailToName' => $userName,
-                    'Subject' => $result['data']['JobData'][0]->JobTitle,
-                    'CompanyID' => $CompanyID,
-                    'data' => array("job_data" => $result, 'CompanyName' => $CompanyName)
-                ));
-            Job::find($job->JobID)->update(array('EmailSentStatus'=>$status['status'],'EmailSentStatusMessage'=>$status['message']));
+        if($User->JobNotification==1) {
+            $UserEmail = $User->EmailAddress;
+            $userName = $User->FirstName . ' ' . $User->LastName;
+            if ($UserEmail != '') {
+                $status = Helper::sendMail('emails.invoices.bulk_invoice_email_status',
+                    array(
+                        'EmailTo' => $UserEmail,
+                        'EmailToName' => $userName,
+                        'Subject' => $result['data']['JobData'][0]->JobTitle,
+                        'CompanyID' => $CompanyID,
+                        'data' => array("job_data" => $result, 'CompanyName' => $CompanyName)
+                    ));
+                Job::find($job->JobID)->update(array('EmailSentStatus' => $status['status'], 'EmailSentStatusMessage' => $status['message']));
+            }
         }
     }
     public static function send_job_status_email_list($job,$CompanyID,$EmailList){
