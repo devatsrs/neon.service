@@ -115,6 +115,7 @@ class AccountActivityReminder extends Command
                 $jobdata["Title"] = (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
                 $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
                 $jobdata["CreatedBy"] = $CreatedBy;
+                $jobdata["created_at"] = date('Y-m-d H:i:s');
                 $jobdata["updated_at"] = date('Y-m-d H:i:s');
                 $JobID = Job::insertGetId($jobdata);
                 $emaillist = array();
