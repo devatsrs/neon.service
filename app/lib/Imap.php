@@ -100,7 +100,9 @@ protected $server;
 				}*/
 				
 			 	$message = 	$this->getBody($inbox,$email_number);
-				$message =  $this->GetMessageBody($message);
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
 			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
