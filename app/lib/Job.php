@@ -39,6 +39,7 @@ class Job extends \Eloquent {
         $data["Title"] =   'Generate Rate Table';
         $data["Description"] = 'Generate Rate Table';
         $data["Options"] =  json_encode($options);
+        $data["created_at"] = date('Y-m-d H:i:s');
         $data["updated_at"] = date('Y-m-d H:i:s');
 
 
@@ -77,6 +78,7 @@ class Job extends \Eloquent {
         $data["Title"] =   $ratetablename;
         $data["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
         $data["Options"] =  json_encode($options);
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
         $data["updated_at"] = date('Y-m-d H:i:s');
 
         if ($JobID = Job::insertGetId($data)) {
@@ -161,6 +163,7 @@ class Job extends \Eloquent {
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
         $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
         $jobdata["Options"] = json_encode($Options);
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         return $JobID = Job::insertGetId($jobdata);
     }

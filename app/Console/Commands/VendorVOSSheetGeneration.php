@@ -136,6 +136,7 @@ class VendorVOSSheetGeneration extends Command {
             $file_content = str_replace(","," | ",$file_content);
             $file_content = str_replace("|"," | ",$file_content);
             $file_content = str_replace("\n","\r\n",$file_content);
+            $file_content = str_replace("  "," ",$file_content);
 
 
             $newfile_path = getenv('UPLOAD_PATH') . '/'.$amazonDir;
