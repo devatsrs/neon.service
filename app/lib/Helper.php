@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
@@ -347,6 +348,26 @@ class Helper{
         ];
         $statuslog = AlertLog::create($logData);
         return $statuslog;
+    }
+
+    public static function ACD_ASR_CR($settings){
+
+        if(!empty($settings['CompanyGatewayID'])) {
+            foreach ($settings['CompanyGatewayID'] as $CompanyGatewayID) {
+                $settings['GatewayNames'][] = CompanyGateway::where('CompanyGatewayID', $CompanyGatewayID)->pluck('Title');
+            }
+        }
+        if(!empty($settings['CountryID'])) {
+            foreach ($settings['CountryID'] as $CountryID) {
+                $settings['CountryNames'][] = Country::getCountryName($CountryID);
+            }
+        }
+        if(!empty($settings['TrunkID'])) {
+            foreach ($settings['TrunkID'] as $TrunkID) {
+                $settings['TrunkNames'][] = DB::table('tblTrunk')->where('TrunkID', $TrunkID)->pluck('Trunk');
+            }
+        }
+        return $settings;
     }
 
 }

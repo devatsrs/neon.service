@@ -39,6 +39,7 @@ class Job extends \Eloquent {
         $data["Title"] =   'Generate Rate Table';
         $data["Description"] = 'Generate Rate Table';
         $data["Options"] =  json_encode($options);
+        $data["created_at"] = date('Y-m-d H:i:s');
         $data["updated_at"] = date('Y-m-d H:i:s');
 
 
@@ -77,6 +78,7 @@ class Job extends \Eloquent {
         $data["Title"] =   $ratetablename;
         $data["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
         $data["Options"] =  json_encode($options);
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
         $data["updated_at"] = date('Y-m-d H:i:s');
 
         if ($JobID = Job::insertGetId($data)) {
@@ -104,18 +106,20 @@ class Job extends \Eloquent {
         $CompanyName = Company::where("CompanyID",$CompanyID)->pluck("CompanyName");
 
         $User = User::getUserInfo($job->JobLoggedUserID);
-        $UserEmail= $User->EmailAddress;
-        $userName = $User->FirstName . ' ' . $User->LastName;
-        if($UserEmail != '') {
-            $status = Helper::sendMail('emails.invoices.bulk_invoice_email_status',
-                array(
-                    'EmailTo' => $UserEmail,
-                    'EmailToName' => $userName,
-                    'Subject' => $result['data']['JobData'][0]->JobTitle,
-                    'CompanyID' => $CompanyID,
-                    'data' => array("job_data" => $result, 'CompanyName' => $CompanyName)
-                ));
-            Job::find($job->JobID)->update(array('EmailSentStatus'=>$status['status'],'EmailSentStatusMessage'=>$status['message']));
+        if($User->JobNotification==1) {
+            $UserEmail = $User->EmailAddress;
+            $userName = $User->FirstName . ' ' . $User->LastName;
+            if ($UserEmail != '') {
+                $status = Helper::sendMail('emails.invoices.bulk_invoice_email_status',
+                    array(
+                        'EmailTo' => $UserEmail,
+                        'EmailToName' => $userName,
+                        'Subject' => $result['data']['JobData'][0]->JobTitle,
+                        'CompanyID' => $CompanyID,
+                        'data' => array("job_data" => $result, 'CompanyName' => $CompanyName)
+                    ));
+                Job::find($job->JobID)->update(array('EmailSentStatus' => $status['status'], 'EmailSentStatusMessage' => $status['message']));
+            }
         }
     }
     public static function send_job_status_email_list($job,$CompanyID,$EmailList){
@@ -159,6 +163,7 @@ class Job extends \Eloquent {
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
         $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
         $jobdata["Options"] = json_encode($Options);
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         return $JobID = Job::insertGetId($jobdata);
     }

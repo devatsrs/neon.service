@@ -538,22 +538,7 @@ class Invoice extends \Eloquent {
 
     }
 
-    //Not in use
-    public static function getTotalTax($Account){
 
-        $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-        $AccountBilling = AccountBilling::getBilling($Account->AccountID);
-        $TaxRateId = $AccountBilling->TaxRateId;
-        $TaxRate = TaxRate::find($TaxRateId);
-        $TaxRateAmount = 0;
-        if (isset($TaxRate->Amount))
-            $TaxRateAmount = $TaxRate->Amount;
-
-        //$TotalTax = number_format((($TotalCharges * $TaxRateAmount) / 100), $RoundChargesAmount, '.', ''); Percentage Tax
-        $TotalTax = number_format($TaxRateAmount, $RoundChargesAmount, '.', '');  // Flat Tax
-
-        return $TotalTax;
-    }
 
     public static function checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID,$StartDate,$EndDate){
 
@@ -695,6 +680,9 @@ class Invoice extends \Eloquent {
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
+
+            $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+            $header = htmlspecialchars_decode($header);
             
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
             $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -709,14 +697,17 @@ class Invoice extends \Eloquent {
             $footer_name = 'footer-'. Uuid::generate() .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
+            $header_name = 'header-'. Uuid::generate() .'.html';
+            $header_html = $destination_dir.$header_name;
+            file_put_contents($header_html,$header);
             $output= "";
             if(getenv('APP_OS') == 'Linux'){
-                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
             }else{
-                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
 
             Log::info($output);
@@ -737,7 +728,7 @@ class Invoice extends \Eloquent {
     public static function calculateUsageTax($AccountID, $UsageSubTotal){
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
         $TotalTax = 0;
         if(!empty($TaxRateIDs)){
 
@@ -779,7 +770,7 @@ class Invoice extends \Eloquent {
         $InvoiceSubTotal = $Invoice->SubTotal;*/
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
@@ -820,11 +811,11 @@ class Invoice extends \Eloquent {
                         }
 
                         $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $SubTotal);
-                        if ($TaxRate->TaxType == TaxRate::TAX_ALL) {
+                        /*if ($TaxRate->TaxType == TaxRate::TAX_ALL) {
                              $TotalTax += $AdditionalChargeTax;
                             Log::info('AdditionalChargeTax - ' . $AdditionalChargeTax);
                              $AdditionalChargeTax = 0;
-                        }
+                        }*/
                         $TaxGrandTotal += $TotalTax;
                         InvoiceTaxRate::create(array(
                             "InvoiceID" => $InvoiceID,
@@ -836,6 +827,7 @@ class Invoice extends \Eloquent {
                 }
             }
         }
+        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID);
         return $TaxGrandTotal;
     }
 
@@ -1064,6 +1056,7 @@ class Invoice extends \Eloquent {
         foreach ($InvoiceGenerationEmail as $singleemail) {
             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                 $emaildata['EmailTo'] = $singleemail;
+                $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . '('.$Account->AccountName.') from ' . $CompanyName;
                 $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                 $Invoice->update(['InvoiceStatus' => Invoice::AWAITING]);
                 if ($status['status'] == 0) {
@@ -1502,6 +1495,63 @@ class Invoice extends \Eloquent {
 
         //}
     }
+    public static function addOneOffTaxCharge($InvoiceID,$AccountID){
+        $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
+        $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
+        $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
+
+        $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $AccountID)->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $AdditionalChargeTotalTax = 0;
+        Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
+        if (count($AccountOneOffCharges)) {
+            foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
+                Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
+                $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
+                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
+                    $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
+
+                    if($AccountOneOffCharge->TaxRateID){
+                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID)->first();
+                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->count() == 0) {
+                            InvoiceTaxRate::create(array(
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
+                        }else{
+                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->pluck('TaxAmount');
+                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+                        }
+                    }
+                    if($AccountOneOffCharge->TaxRateID2){
+                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID2)->first();
+                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->count() == 0) {
+                            InvoiceTaxRate::create(array(
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID2,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
+                        }else{
+                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->pluck('TaxAmount');
+                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+                        }
+                    }
+
+                    Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
+                }
+
+            }
+        } //Subscription over
+        Log::info('AccountOneOffCharge Tax Over');
+
+        return $AdditionalChargeTotalTax;
+
+
+    }
     public static function addOneOffCharge($Invoice,$InvoiceTemplate,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
         $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $Invoice->AccountID)
                 ->whereBetween('Date',array($StartDate,$EndDate))->get();
@@ -1521,7 +1571,7 @@ class Invoice extends \Eloquent {
                 $ProductDescription = $AccountOneOffCharge->Description;
                 $singlePrice = $AccountOneOffCharge->Price;
                 $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
-                if($AccountOneOffCharge->TaxRateID){
+                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
                     $SubscriptionChargewithouttaxTotal += $LineTotal;
                     $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
                     Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
@@ -1736,6 +1786,8 @@ class Invoice extends \Eloquent {
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
                         $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -1750,13 +1802,16 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);
@@ -2117,6 +2172,8 @@ class Invoice extends \Eloquent {
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
                         $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
@@ -2131,14 +2188,17 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);

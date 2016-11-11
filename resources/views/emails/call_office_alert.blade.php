@@ -1,8 +1,10 @@
-Please check following Potential Fraud Alert Call Office
-<h2>Customer</h2>
+<p>
+    Call made out of business hour (From {{$settings['OpenTime']}} To {{$settings['CloseTime']}})
+</p>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
+        <th>Customer Name</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -14,6 +16,7 @@ Please check following Potential Fraud Alert Call Office
     <tbody>
     @foreach($call_office as $call)
         <tr>
+            <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>
@@ -25,10 +28,10 @@ Please check following Potential Fraud Alert Call Office
     </tbody>
 </table>
 @if(count($vcall_office))
-<h2>Vendor</h2>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
+        <th>Customer Name</th>
         <th>Connect Time</th>
         <th>Disconnect Time</th>
         <th>CLI</th>
@@ -40,6 +43,7 @@ Please check following Potential Fraud Alert Call Office
     <tbody>
     @foreach($vcall_office as $call)
         <tr>
+            <td>{{\App\Lib\Account::getAccountName($call['AccountID'])}}</td>
             <td>{{$call['connect_time']}}</td>
             <td>{{$call['disconnect_time']}}</td>
             <td>{{$call['cli']}}</td>

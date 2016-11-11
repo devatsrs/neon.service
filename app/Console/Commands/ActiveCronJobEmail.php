@@ -104,56 +104,25 @@ class ActiveCronJobEmail extends Command {
 							Log::error("Minutes ". $minute . " >  " . (int)$limitTime);
                             Log::error("CronJob Active Need To Update");
 							
-                            $EmailSendTime = date('Y-m-d H:i:s');
+                            $emailstatus = CronJob::ActiveCronJobEmailSend($ac);
 
-                            //check cron job email is send before any time
+                            if($emailstatus == -1 ){
 
-							//if(empty($LastEmailSendTime))
-							if(true)	// always email as its terminating jobs in CronJob::ActiveCronJobEmailSend
-                            {
-                                //if not sent before
-                                if(!empty($cronsetting['ErrorEmail'])) {
-
-                                    $emailstatus = CronJob::ActiveCronJobEmailSend($ac);
-
-                                    if (isset($emailstatus['status']) && $emailstatus['status'] == 1) {
-
-                                        CronJob::find($CronJobID)->update(['EmailSendTime'=>$EmailSendTime]);
-
-                                        Log::error($JobTitle . "  - Threshold limit Email Sent  -  Time : " . $EmailSendTime);
-
-                                    } else {
-
-                                        Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailstatus, true));
-                                    }
-                                }
-                            }
-                            else{
-
-                                //check cron job email time of previous mail send
-                                $LastEmailSend = CronJob::calcTimeDiff($LastEmailSendTime);
-
-                                if(isset($LastEmailSend) && (int)$LastEmailSend > (int)$ActiveCronJobEmailMinute)
-                                {
-                                    if(!empty($cronsetting['ErrorEmail'])) {
-
-                                        $emailstatus = CronJob::ActiveCronJobEmailSend($CronJobID);
-
-                                        if (isset($emailstatus['status']) && $emailstatus['status'] == 1) {
-                                            CronJob::find($CronJobID)->update(['EmailSendTime'=>$EmailSendTime]);
-                                            Log::error($emailstatus['message']);
-                                            Log::error("Cron Job Email Send Time : " . $EmailSendTime);
-
-                                            Log::error($JobTitle . "  - Threshold limit Email Sent  -  Time : " . $EmailSendTime);
-
-                                        } else {
-
-                                            Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailstatus, true));
-                                        }
-                                    }
-                                }
+                                // Error Email is not setup.
+                                //Log::info($JobTitle . "  - Error Email not setup ");
 
                             }
+                            else if (isset($emailstatus['status']) && $emailstatus['status'] == 1) {
+
+                                CronJob::find($CronJobID)->update(['EmailSendTime'=>date('Y-m-d H:i:s')]);
+
+                                //Log::error($JobTitle . "  - Threshold limit Email Sent  -  Time : " . $EmailSendTime);
+
+                            } else {
+
+                                Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailstatus, true));
+                            }
+
 
                         }
 
@@ -171,7 +140,7 @@ class ActiveCronJobEmail extends Command {
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
-            if(!empty($Maincronsetting['ErrorEmail']))
+            if(!empty($Maincronsetting['ErrorEmail'])) 
             {
                 $result = CronJob::CronJobErrorEmailSend($MainCronJobID,$e);
                 Log::error("**Email Sent Status ".$result['status']);
