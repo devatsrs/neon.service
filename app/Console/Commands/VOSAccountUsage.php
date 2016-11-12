@@ -118,7 +118,7 @@ class VOSAccountUsage extends Command
             $filenames = UsageDownloadFiles::getVosPendingFile($CompanyGatewayID);
 
             /** remove last downloaded */
-            $lastelse = array_pop($filenames);
+            //$lastelse = array_pop($filenames);
 
             Log::info("Files Names Collected");
             Log::error('   vos File Count ' . count($filenames));
@@ -130,6 +130,13 @@ class VOSAccountUsage extends Command
             }
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
+            }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -173,13 +180,13 @@ class VOSAccountUsage extends Command
                                 $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
                                 $uddata['cost'] = (float)$excelrow['26'];
-                                $uddata['cld'] = str_replace('2222', '', $excelrow['3']);
-                                $uddata['cli'] = $excelrow['1'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
                                 $uddata['billed_duration'] = $excelrow['23'];
                                 $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($excelrow['24'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -206,10 +213,10 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
-                                $vendorcdrdata['cli'] = $excelrow['1'];
-                                $vendorcdrdata['cld'] = str_replace('2222', '', $excelrow['14']);
+                                $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
+                                $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix($excelrow['34'],$RateCDR);
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
 

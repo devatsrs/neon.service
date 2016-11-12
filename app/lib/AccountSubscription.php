@@ -63,7 +63,12 @@ class AccountSubscription extends \Eloquent
             if($QuarterSubscription == 1 && $days > 27){ // if quarterly
                 Log::info(' ========== quarterly start ============');
                 $QuarterStartDate = $StartDate;
-                for($startmonth = date('m',strtotime($StartDate));$startmonth < date('m',strtotime($EndDate)) ; $startmonth++){
+                if(date('m',strtotime($EndDate)) == 1){
+                    $endmonth  = 13;
+                }else{
+                    $endmonth = date('m',strtotime($EndDate));
+                }
+                for($startmonth = date('m',strtotime($StartDate));$startmonth < $endmonth ; $startmonth++){
 
                     if($EndDate > date('Y-m-t',strtotime($QuarterStartDate))  ){
                         $QuarterEndDate = date('Y-m-t',strtotime($QuarterStartDate));

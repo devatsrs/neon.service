@@ -2,6 +2,7 @@
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Lib\CompanySetting;
 
@@ -66,7 +67,7 @@ class Account extends \Eloquent {
     }
     public static function checkForCDR($GatewayAccountID){
         $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = AccountBilling::where(array('AccountID'=>$accountid))->pluck('CDRType');
+        $cdr_type = AccountBilling::getCDRType($accountid);
         return $cdr_type;
     }
 
@@ -140,9 +141,9 @@ class Account extends \Eloquent {
         }
         return $AccountManagerEmail;
     }
-    public static function getAccountWarningEmailCount($AccountID,$subject){
+    public static function getAccountEmailCount($AccountID,$EmailType){
         $count =  AccountEmailLog::
-            where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalance))
+            where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
@@ -163,7 +164,7 @@ class Account extends \Eloquent {
 
 
     public static function updateAccountNo($CompanyID){
-        $accounts = Account::select('AccountID')->where(["AccountType" => 1,"Number"=>null])->get()->toArray();
+        $accounts = Account::select('AccountID')->where(["CompanyId" => $CompanyID,"AccountType" => 1,"Number"=>null])->get()->toArray();
         if(count($accounts)>0){
             foreach($accounts as $account){
                 $accountid = $account['AccountID'];
@@ -172,7 +173,21 @@ class Account extends \Eloquent {
                 CompanySetting::setKeyVal($CompanyID,'LastAccountNo',$lastnumber);
             }
         }
-        return true;
+    }
+    public static function FirstLowBalanceReminder($AccountID,$LastRunTime){
+
+
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
+        if(!empty($LastRunTime)){
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+        }
+        $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
+    }
+
+    public static function getAccountName($AccountID){
+        return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
 
 }

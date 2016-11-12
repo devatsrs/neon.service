@@ -14,6 +14,7 @@ class TempUsageDetail extends \Eloquent {
 
     protected  $primaryKey = "TempUsageDetailID";
 
+    /* not in use*/
     public static function GenerateDailySummary($CompanyID,$ProcessID,$TimeZone){
         $BillingTimeZone = CompanySetting::getKeyVal($CompanyID,'SalesTimeZone');
         $BillingTimeZone = ($BillingTimeZone == 'Invalid Key') ? 'GMT' : $BillingTimeZone;
@@ -137,7 +138,7 @@ class TempUsageDetail extends \Eloquent {
             $error_msg[] = $Messagesrow->Message;
 
         }
-        $ReRateEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::ReRate]);
+        $ReRateEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {
@@ -242,5 +243,15 @@ class TempUsageDetail extends \Eloquent {
 
         }
 
+    }
+
+    public static function PostProcessCDR($CompanyID,$ProcessID){
+        $UsageHeaders = DB::connection('sqlsrvcdrazure')->select('call prc_PostProcessCDR('.intval($CompanyID).')');
+        $ProcessIDs = array();
+        Alert::CallMonitorAlert($CompanyID,$ProcessID);
+        foreach($UsageHeaders as $UsageHeader){
+            $ProcessIDs[] =  $UsageHeader->ProcessID;
+        }
+        TempUsageDownloadLog::whereIn('ProcessID',$ProcessIDs)->update(array('PostProcessStatus'=>1));
     }
 }

@@ -14,15 +14,20 @@ class SiteIntegration{
 
  protected $support;
  protected $companyID;
+ protected $TrackingEmail;
  static    $SupportSlug			=	'support';
  protected $PaymentSlug			=	'payment';
  static    $EmailSlug			=	'email';
  static    $StorageSlug			=	'storage';
+ static    $AccountingSlug		=	'accounting';
  static    $AmazoneSlug			=	'amazons3';
  static    $AuthorizeSlug		=	'authorizenet';
  static    $GatewaySlug			=	'billinggateway';
  static    $freshdeskSlug		=	'freshdesk';
  static    $mandrillSlug		=	'mandrill';
+ static    $emailtrackingSlug   =   'emailtracking';
+ static    $imapSlug      		=   'imap';
+ static    $QuickBookSlug		=	'quickbook';
  
  	public function __construct(){
 	
@@ -62,7 +67,6 @@ class SiteIntegration{
             return $this->support->GetTickets($options);
         }
         return false;
-
     }
 	
 	/*
@@ -90,11 +94,40 @@ class SiteIntegration{
 	}	
 	
 	/*
+	 * check the connection of tracking mail . return true false
+	 */
+	
+	public function ConnectActiveEmail($CompanyID){
+		$config = self::CheckCategoryConfiguration(true,SiteIntegration::$emailtrackingSlug,$CompanyID);
+		
+		switch ($config->Slug){
+			case  SiteIntegration::$imapSlug:
+			$config = SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$CompanyID);			
+       		 if(Imap::CheckConnection($config->EmailTrackingServer,$config->EmailTrackingEmail,$config->EmailTrackingPassword)){
+			 	$this->TrackingEmail = new Imap(array('email'=>$config->EmailTrackingEmail,"server"=>$config->EmailTrackingServer,"password"=>$config->EmailTrackingPassword)); return true;
+			 }else{
+			 	//log connection error
+			 }
+      	  break;
+		}	
+	}
+	
+	/*
+		connect to mail server and read its mails
+	*/
+	
+	public function ReadEmails($CompanyID){
+		if(isset($this->TrackingEmail)){
+            return $this->TrackingEmail->ReadEmails($CompanyID);
+        }
+        return false;
+	}
+	
+	/*
 	 * check settings addded or not . return true,data or false
 	 */ 
 	
 	public static function  CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
-		
 		$Integration	 	 =	Integration::where(["CompanyID" => $CompanyID,"Slug"=>$slug])->first();	
 		
 		if(count($Integration)>0)
@@ -106,6 +139,7 @@ class SiteIntegration{
 	
 			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.IntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
 			 $result = $IntegrationSubcategory->first(); 
+			
 			 if(count($result)>0)
 			 { 
 				 $IntegrationData =  isset($result->Settings)?json_decode($result->Settings):array();
@@ -124,12 +158,10 @@ class SiteIntegration{
 		/*
 	check main category have data or not
 	*/
-	public static function  CheckCategoryConfiguration($data=false,$slug,$companyID){	
-		
-		$Integration	 =	Integration::where(["CompanyID" => $companyID,"Slug"=>$slug])->first();	
-	
+	public static function  CheckCategoryConfiguration($data=false,$slug,$companyID){
+		$Integration	 =	Integration::where(["CompanyId" => $companyID,"Slug"=>$slug])->first();	
 		if(count($Integration)>0)
-		{						
+		{						 
 			$IntegrationSubcategory = Integration::select("*");
 			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join)
 			{
@@ -150,7 +182,6 @@ class SiteIntegration{
 			 }
 		}
 		return false;		
-	}
-
+	}	
 }
 ?>

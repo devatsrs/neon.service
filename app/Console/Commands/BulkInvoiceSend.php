@@ -12,6 +12,7 @@ use App\Lib\Invoice;
 use App\Lib\InvoiceLog;
 use App\Lib\InvoiceDetail;
 use App\Lib\InvoiceTemplate;
+use App\Lib\Notification;
 use App\Lib\Product;
 use App\Lib\TaxRate;
 use App\Lib\User;
@@ -86,14 +87,15 @@ class BulkInvoiceSend extends Command {
             $Company = Company::find($CompanyID);
             $UserEmail = '';
             //$InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-            $InvoiceCopyEmail_main = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-            $InvoiceCopyEmail_main = ($InvoiceCopyEmail_main =='Invalid Key')?$Company->Email:$InvoiceCopyEmail_main;
+            $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
+            $InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;
             if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
                 $User = User::getUserInfo($job->JobLoggedUserID);
                 // $UserEmail= $User->EmailAddress;
                 // $InvoiceGenerationEmail .= ',' . $UserEmail;
             }
             if(!empty($job)){
+                $JobLoggedUser = User::find($job->JobLoggedUserID);
                 $joboptions = json_decode($job->Options);
                 $email_sending_failed = array();
                 $InvoiceIDs =array_filter(explode(',',$joboptions->InvoiceIDs),'intval');
@@ -168,15 +170,8 @@ class BulkInvoiceSend extends Command {
                         $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
                         $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
                         InvoiceLog::insert($invoiceloddata);
-                        $logData = ['AccountID'=>$Account->AccountID,
-                            'ProcessID'=>$ProcessID,
-                            'JobID'=>$JobID,
-                            'User'=>$User,
-                            'EmailFrom'=>$User->EmailAddress,
-                            'EmailTo'=>$emaildata['EmailTo'],
-                            'Subject'=>$emaildata['Subject'],
-                            'Message'=>$customeremail_status['body']];
-                        $statuslog = Helper::email_log($logData);
+                        /** log emails against account */
+                        $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$customeremail_status,$JobLoggedUser,$ProcessID,$JobID);
                         if($statuslog['status']==0) {
                             $errorslog[] = $Account->AccountName.' email log exception:'.$statuslog['message'];
                         }

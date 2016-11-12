@@ -55,66 +55,32 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'EmailTo');
 		$mail =  self::add_email_address($mail,$data,'cc');
 		$mail =  self::add_email_address($mail,$data,'bcc');
+		
+		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug,$companyID))
+		{
+			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$companyID);
 			
-		 if(isset($data['attach'])){
+			$mail->AddReplyTo($ImapData->EmailTrackingEmail, $config->CompanyName);
+		}
+			
+		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
 		
-		$mail->Body = $body;
+		$mail->Body    = $body;
 		$mail->Subject = $data['Subject'];
-		if(!is_array($data['EmailTo']) && strpos($data['EmailTo'],',') !== false){
-			$data['EmailTo']  = explode(',',$data['EmailTo']);
-		}
-	
-		if(isset($data['cc'])) {
-			if (is_array($data['cc'])) {
-				foreach ($data['cc'] as $cc_address) {
-					$user_data = User::where(["EmailAddress" => $cc_address])->get();
-					$mail->AddCC($cc_address, $user_data[0]['FirstName'] . ' ' . $user_data[0]['LastName']);
-				}
-			}
-		}
-	
-		if(isset($data['cc'])) {
-			if (is_array($data['bcc'])) {
-				foreach ($data['bcc'] as $bcc_address) {
-					$user_data = User::where(["EmailAddress" => $bcc_address])->get();
-	
-					$mail->AddBCC($bcc_address, $user_data[0]['FirstName'] . ' ' . $user_data[0]['LastName']);
-				}
-			}
-		}
-		if(is_array($data['EmailTo'])){
-			foreach((array)$data['EmailTo'] as $email_address){
-				if(!empty($email_address)) {
-					$email_address = trim($email_address);
-					$mail->clearAllRecipients();
-					$mail->addAddress($email_address); //trim Added by Abubakar
-					if (!$mail->send()) {
-						$status['status'] = 0;
-						$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $email_address . ')';
-					} else {
-						$status['status'] = 1;
-						$status['message'] = 'Email has been sent';
-						$status['body'] = $body;
-					}
-				}
-			}
-		}else{
-			if(!empty($data['EmailTo'])) {
-				$email_address = trim($data['EmailTo']);
-				$mail->clearAllRecipients();
-				$mail->addAddress($email_address); //trim Added by Abubakar
-				if (!$mail->send()) {
+		
+		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];	
+		if (!$mail->send()) {
 					$status['status'] = 0;
-					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $data['EmailTo'] . ')';
-				} else {
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
+		} else {
+					$mail->clearAllRecipients();
 					$status['status'] = 1;
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
-				}
-			}
-		} 
+					$status['message_id']	=	$mail->getLastMessageID(); 
+		}
 		return $status;
 	}
 	

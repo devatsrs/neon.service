@@ -1,7 +1,8 @@
 <?php
 function custom_replace( &$item, $key ) {
-    $item = str_replace('usd', '{{sign}}', $item);
+    $item = str_replace('usd', '{{Currency}}', $item);
 }
+//not in use
 function generic_replace($data){
     return str_replace($data['extra'], $data['replace'], $data['text']);
 }
@@ -221,7 +222,7 @@ function translation_rule($CLITranslationRule){
 
 }
 function sippy_vos_areaprefix($area_prefix,$RateCDR){
-    if($RateCDR == 1 || empty($area_prefix)){
+    if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
     $area_prefix = preg_replace('/^00/','',$area_prefix);
@@ -242,17 +243,19 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{PostCode}}',
         '{{Country}}',
         '{{InvoiceNumber}}',
-        '{{GrandTotal}}',
-        '{{OutStanding}}',
-        '{{TotalOutStanding}}',
+        '{{InvoiceGrandTotal}}',
+        '{{InvoiceOutstanding}}',
+        '{{OutstandingExcludeUnbilledAmount}}',
         '{{Signature}}',
-        '{{BalanceAmount}}',
+        '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
+        '{{Currency}}',
+        '{{CompanyName}}'
     ];
 
     foreach($extra as $item){
         $item_name = str_replace(array('{','}'),array('',''),$item);
-        if(isset($replace_array[$item_name])) {
+        if(array_key_exists($item_name,$replace_array)) {
             $EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
         }
     }
@@ -367,5 +370,204 @@ function getdaysdiff($date1,$date2){
     $date2 = new DateTime($date2);
     return $date2->diff($date1)->format("%R%a");
 }
+function apply_translation_rule($TranslationRule,$call_string){
+    $replacement =$patternrules = array();
+    if(!empty($TranslationRule)){
+        $translation_rule = translation_rule($TranslationRule);
+        $replacement =  $translation_rule['replacement'];
+        $patternrules =  $translation_rule['patternrules'];
+    }
+    if(!empty($patternrules)){
+        return preg_replace($patternrules,$replacement,$call_string);
+    }else{
+        return $call_string;
+    }
+}
+
+function cal_next_runtime($data){
+    $strtotime_current = strtotime(date('Y-m-d H:i:00'));
+    $strtotime = strtotime(date('Y-m-d H:i:00'));
+
+    if(isset($data['Interval'])){
+        $Interval = $data['Interval'];
+    }
+    if(isset($data['LastRunTime'])){
+        $LastRunTime = $data['LastRunTime'];
+    }
+    if(isset($data['NextRunTime'])){
+        $NextRunTime = $data['NextRunTime'];
+    }
+    if(isset($data['Day'])){
+        $Day = $data['Day'];
+    }
+    if(isset($data['StartTime'])){
+        $StartTime = $data['StartTime'];
+    }
+    if(isset($data['StartDay'])){
+        $StartDay = $data['StartDay'];
+    }
+    switch($data['Time']) {
+        case 'HOUR':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime += $Interval*60*60;
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'MINUTE':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime += $Interval*60;
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'DAILY':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime += $Interval*60*60*24;
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'MONTHLY':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime = strtotime("+$Interval month", $strtotime);
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            if(isset($StartDay) && date('d',$strtotime) != $StartDay){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        default:
+            return '';
+    }
+}
+
+function next_run_time($data){
+
+    $Interval = $data['Interval'];
+    if(isset($data['StartTime'])) {
+        $StartTime = $data['StartTime'];
+    }
+    if(isset($data['LastRunTime'])){
+        $LastRunTime = $data['LastRunTime'];
+    }else{
+        $LastRunTime = date('Y-m-d H:i:00');
+    }
+    switch($data['Time']) {
+        case 'HOUR':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' hour');
+            }else{
+                $strtotime = strtotime($LastRunTime)+$Interval*60*60;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'MINUTE':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' minute');
+            }else{
+                $strtotime = strtotime($LastRunTime)+$Interval*60;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'DAILY':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' day');
+            }else{
+                $strtotime = strtotime($LastRunTime)+$Interval*60*60*24;
+            }
+            if(isset($StartTime)){
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'MONTHLY':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' month');
+            }else{
+                $strtotime = strtotime("+$Interval month", strtotime($LastRunTime));
+            }
+            if(isset($StartTime)){
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        default:
+            return '';
+
+    }
+}
+
+function check_account_age($settings,$Key,$getdaysdiff){
+
+    if(isset($settings['Age'][$Key]) && intval($settings['Age'][$Key]) > 0 && $getdaysdiff >= $settings['Age'][$Key]){
+        return true;
+    }else if(isset($settings['Age'][$Key]) && intval($settings['Age'][$Key]) == 0){
+        return true;
+    }
+    return false;
+}
+
+function validator_response($validator){
 
 
+    if ($validator->fails()) {
+        $errors = "";
+        foreach ($validator->messages()->all() as $error){
+            $errors .= $error."<br>";
+        }
+        return  array("status" => "failed", "message" => $errors);
+    }
+
+}

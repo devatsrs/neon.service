@@ -120,6 +120,7 @@ class InvoiceGenerator extends Command {
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
             $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
+            $jobdata["created_at"] = date('Y-m-d H:i:s');
             $jobdata["updated_at"] = date('Y-m-d H:i:s');
             $JobID = Job::insertGetId($jobdata);
             $jobdata = array();
@@ -200,14 +201,15 @@ class InvoiceGenerator extends Command {
                                         DB::connection('sqlsrv2')->commit();
                                         Log::info('=========== Updating  InvoiceDate =========== ');
                                         $AccountBilling = AccountBilling::getBilling($AccountID);
-                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
-                                        if(!empty($AccountNextBilling)){
-                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue]);
-                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
-                                        }
                                         $oldNextInvoiceDate = $NextInvoiceDate;
                                         $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($oldNextInvoiceDate));
                                         AccountBilling::where(['AccountID'=>$AccountID])->update(["LastInvoiceDate"=>$oldNextInvoiceDate,"NextInvoiceDate"=>$NewNextInvoiceDate]);
+                                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID);
+                                        if(!empty($AccountNextBilling)){
+                                            AccountBilling::where(['AccountID'=>$AccountID])->update(["BillingCycleType"=>$AccountNextBilling->BillingCycleType,"BillingCycleValue"=>$AccountNextBilling->BillingCycleValue,'LastInvoiceDate'=>$AccountNextBilling->LastInvoiceDate,'NextInvoiceDate'=>$AccountNextBilling->NextInvoiceDate]);
+                                            AccountNextBilling::where(['AccountID'=>$AccountID])->delete();
+                                        }
+
 
                                         Log::info('=========== Updated  InvoiceDate =========== ') ;
                                         DB::commit();

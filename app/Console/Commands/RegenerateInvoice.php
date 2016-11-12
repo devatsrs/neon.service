@@ -6,6 +6,7 @@ use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceDetail;
 use App\Lib\Job;
+use App\Lib\Notification;
 use App\Lib\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -76,8 +77,8 @@ class RegenerateInvoice extends Command {
         $job = Job::find($JobID);
         $joboptions = json_decode($job->Options);
         //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-        $InvoiceCopyEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-        $InvoiceCopyEmail = ($InvoiceCopyEmail != 'Invalid Key')?$InvoiceCopyEmail:'';
+        $InvoiceCopyEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
+        $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
         $ProcessID = Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
@@ -89,6 +90,7 @@ class RegenerateInvoice extends Command {
             if (isset($joboptions->InvoiceIDs)) {
 
                 $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
+                sort($InvoiceIDs);
 
                 if (count($InvoiceIDs) > 0) {
 

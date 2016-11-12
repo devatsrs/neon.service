@@ -107,6 +107,13 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
             }
@@ -230,11 +237,15 @@ class PBXAccountUsage extends Command
                             $data_outbound['is_inbound'] = 0;
 
                         }
+                        $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule,$data['cld']);
 
                         $InserData[] = $data;
                         $data_count++;
 
                         if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
+                            $data_outbound['cli'] = apply_translation_rule($CLITranslationRule,$data_outbound['cli']);
+                            $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule,$data_outbound['cld']);
                             $InserData[] = $data_outbound;
                             $data_count++;
 

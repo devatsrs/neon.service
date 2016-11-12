@@ -17,9 +17,37 @@ class AccountBilling extends \Eloquent {
         return !empty($AccountBilling)?$AccountBilling->$key:'';
     }
     public static function getInvoiceTemplateID($AccountID){
-        return AccountBilling::where('AccountID',$AccountID)->pluck('InvoiceTemplateID');
+        $BillingClassID = self::getBillingClassID($AccountID);
+        return BillingClass::getInvoiceTemplateID($BillingClassID);
     }
     public static function getSendInvoiceSetting($AccountID){
         return AccountBilling::where('AccountID',$AccountID)->pluck('SendInvoiceSetting');
+    }
+
+    public static function getBillingClass($AccountID){
+        $BillingClassID = (int)AccountBilling::where(array('AccountID'=>$AccountID))->pluck('BillingClassID');
+        return BillingClass::getBillingClass($BillingClassID);
+    }
+    public static function getBillingClassKey($BillingClass,$key){
+        return !empty($BillingClass)?$BillingClass->$key:'';
+    }
+    public static function getBillingClassID($AccountID){
+        return AccountBilling::where('AccountID',$AccountID)->pluck('BillingClassID');
+    }
+    public static function getPaymentDueInDays($AccountID){
+        $BillingClassID = self::getBillingClassID($AccountID);
+        return BillingClass::getPaymentDueInDays($BillingClassID);
+    }
+    public static function getCDRType($AccountID){
+        $BillingClassID = self::getBillingClassID($AccountID);
+        return BillingClass::getCDRType($BillingClassID);
+    }
+    public static function getRoundChargesAmount($AccountID){
+        $BillingClassID = self::getBillingClassID($AccountID);
+        return BillingClass::getRoundChargesAmount($BillingClassID);
+    }
+    public static function getTaxRate($AccountID){
+        $BillingClassID = self::getBillingClassID($AccountID);
+        return BillingClass::getTaxRate($BillingClassID);
     }
 }

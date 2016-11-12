@@ -118,8 +118,8 @@ class SippyAccountUsage extends Command
             $filenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$customer_cdr_file_name);
             $vfilenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$vendor_cdr_file_name);
 
-            $lastelse = array_pop($filenames);
-            $lastelse = array_pop($vfilenames);
+            //$lastelse = array_pop($filenames);
+            //$lastelse = array_pop($vfilenames);
 
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
@@ -131,6 +131,13 @@ class SippyAccountUsage extends Command
             }
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
+            }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -181,13 +188,13 @@ class SippyAccountUsage extends Command
                                 $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 $uddata['cost'] = (float)$cdr_row['cost'];
-                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_in']);
-                                $uddata['cli'] = $cdr_row['cli_in'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$cdr_row['cld_in']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_in']);
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -271,13 +278,13 @@ class SippyAccountUsage extends Command
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                 $uddata['buying_cost'] = (float)$cdr_row['cost'];
-                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
-                                $uddata['cli'] = $cdr_row['cli_out'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule, $cdr_row['cld_out']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_out']);
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
