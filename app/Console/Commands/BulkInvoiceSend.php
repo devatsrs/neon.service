@@ -88,7 +88,7 @@ class BulkInvoiceSend extends Command {
             $UserEmail = '';
             //$InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
             $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-            $InvoiceCopyEmail_main = ($InvoiceCopyEmail_main =='Invalid Key')?$Company->Email:$InvoiceCopyEmail_main;
+            $InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;
             if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
                 $User = User::getUserInfo($job->JobLoggedUserID);
                 // $UserEmail= $User->EmailAddress;
