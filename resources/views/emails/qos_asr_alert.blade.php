@@ -17,7 +17,7 @@
             <th><strong>Trunk</strong></th>
         @endif
         @if(!empty($settings['Prefix']))
-            <th><strong>Country</strong></th>
+            <th><strong>Prefix</strong></th>
         @endif
         @if(!empty($Alert->LowValue))
             <th><strong>Low Value</strong></th>
