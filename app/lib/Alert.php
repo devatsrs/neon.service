@@ -51,7 +51,7 @@ class Alert extends \Eloquent{
                 Log::info($query);
                 $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
-                    if($ACD_ASR_alert->NoOfCalls > $NoOfCall) {
+                    if($ACD_ASR_alert->Connected > $NoOfCall) {
                         $AccountID = 0;
                         $settings['AccountName'] = '';
                         $settings['Subject'] = $Alert->Name;
@@ -76,7 +76,7 @@ class Alert extends \Eloquent{
                 Log::info($query);
                 $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                 foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
-                    if($ACD_ASR_alert->NoOfCalls > $NoOfCall) {
+                    if($ACD_ASR_alert->Connected > $NoOfCall) {
                         $AccountID = 0;
                         $settings['AccountName'] = '';
                         $settings['Subject'] = $Alert->Name;
