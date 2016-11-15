@@ -1,0 +1,26 @@
+https://github.com/earlruby/extract_vos3000_data
+
+
+Log into your Linux-based switch as root and create a "webcdr" account that will run the script:
+
+
+useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
+mkdir ~webcdr/bin
+
+
+webcdr / xxxxxxx
+
+CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'xxxxxxxxxxx';
+MySQL> GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
+
+CREATE USER 'codedesk'@'117.247.87.156' IDENTIFIED BY 'xxxxxxxxxx';
+GRANT SELECT ON vos3000.* TO 'codedesk'@'117.247.87.156';
+
+
+
+Gateway Timezone
+GMT+2
+
+
+Crontab entry
+* * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
