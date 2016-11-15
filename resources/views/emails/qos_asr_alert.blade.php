@@ -4,6 +4,9 @@
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
     <tr role="row">
+        <th><strong>Hour</strong></th>
+        <th><strong>Attempts</strong></th>
+        <th><strong>Connected</strong></th>
         @if(!empty($settings['AccountName']))
             <th><strong>Account</strong></th>
         @endif
@@ -32,6 +35,9 @@
     </thead>
     <tbody>
     <tr>
+        <td>{{$ACD_ASR_alert->Hour}}</td>
+        <td>{{$ACD_ASR_alert->Attempts}}</td>
+        <td>{{$ACD_ASR_alert->Connected}}</td>
         @if(!empty($settings['AccountName']))
             <td> {{$settings['AccountName']}}</td>
         @endif
