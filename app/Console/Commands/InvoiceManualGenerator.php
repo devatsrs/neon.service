@@ -109,6 +109,7 @@ class InvoiceManualGenerator extends Command {
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
         $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
         $jobdata["Options"] = json_encode(array("accounts"=>$AccountIDs));
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         $JobID = Job::insertGetId($jobdata);
 

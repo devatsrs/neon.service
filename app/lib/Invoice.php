@@ -1056,6 +1056,7 @@ class Invoice extends \Eloquent {
         foreach ($InvoiceGenerationEmail as $singleemail) {
             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                 $emaildata['EmailTo'] = $singleemail;
+                $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . '('.$Account->AccountName.') from ' . $CompanyName;
                 $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                 $Invoice->update(['InvoiceStatus' => Invoice::AWAITING]);
                 if ($status['status'] == 0) {
