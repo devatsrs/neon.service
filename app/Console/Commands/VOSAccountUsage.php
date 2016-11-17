@@ -118,7 +118,7 @@ class VOSAccountUsage extends Command
             $filenames = UsageDownloadFiles::getVosPendingFile($CompanyGatewayID);
 
             /** remove last downloaded */
-            //$lastelse = array_pop($filenames);
+            $lastelse = array_pop($filenames);
 
             Log::info("Files Names Collected");
             Log::error('   vos File Count ' . count($filenames));
