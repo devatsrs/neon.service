@@ -150,8 +150,8 @@ class Alert extends \Eloquent{
             $settings['AccountID'] = $settings['AccountIDs'];
             self::CallCostAlert($CompanyID,$Alert,$settings);
         }else if($settings['AccountIDs'] == -1){
-            $call_costs = CDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
-            $vcall_costs = VCDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
+            $call_costs = CDRPostProcess::where('cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
+            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
             foreach($call_costs as $call_cost){
                 $settings['AccountID'] = $call_cost->AccountID;
                 self::CallCostAlert($CompanyID,$Alert,$settings);
