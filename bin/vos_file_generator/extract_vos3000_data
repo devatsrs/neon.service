@@ -112,7 +112,7 @@ sub main {
 	
 		$time = $time - 60 ; # 1 min minus to avoid mysql crash issue.
         #$start_time = last_quarter_hour(($time - 21600) + ($call_time_offset * 3600)); # every 6 hr
-		#$start_time = last_quarter_hour( $time + ($call_time_offset * 3600)); # every 1 min
+        $start_time = last_quarter_hour( ($time - 60) + ($call_time_offset * 3600)); # every 1 min
 		#$start_time = last_quarter_hour( ($time - 1800) + ($call_time_offset * 3600)); # every 30 min
 		$start_time = last_quarter_hour( ($time - 900) + ($call_time_offset * 3600)); # every 15 min
 		

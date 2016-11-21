@@ -94,7 +94,7 @@ class VOS{
             }
             asort($filename);
             $filename = array_values($filename);
-            //$lastele = array_pop($filename);
+            $lastele = array_pop($filename);
             $response = $filename;
         }
         return $response;
