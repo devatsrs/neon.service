@@ -62,7 +62,14 @@ class GenerateRateUpdateFile extends Command {
 	 */
 	public function fire()
 	{
-		/////////////////////////////
+		/**
+		 * @TODO: Need to sure Rate Table Generation cron job need to be generate in Same time zone of
+		 * Gateway - ie. If Company Timezone is GMT +01:00 and Gateway Timezone is GMT 00:00
+		 * Then Rate table should generate at GMT+1 11pm to match the Timezone of GMT
+		 *
+		 * Also there is no trigger when future effective date is current date.
+		 */
+
 
 		CronHelper::before_cronrun($this->name, $this );
 
@@ -78,9 +85,7 @@ class GenerateRateUpdateFile extends Command {
 
 		try{
 
-			$future_rates = true; // update with cronjob settings
-
-			$cronsetting["csv_generate_location"] = '/home/neon_rates/1';
+            $cronsetting["csv_generate_location"] = '/home/neon/dev_rate_update/'.$CompanyID;
 
 			if(!isset($cronsetting["csv_generate_location"]) || empty($cronsetting["csv_generate_location"])){
 				throw new \Exception(" CSV File Generate Location not specified.");
@@ -91,7 +96,12 @@ class GenerateRateUpdateFile extends Command {
 			$this->generate_file($CompanyID,'customer','current',$local_dir);
 			$this->generate_file($CompanyID,'vendor','current',$local_dir);
 
-			if($future_rates) {
+			if($future_rates = true) {
+				/**
+				 * Need to manage future date at Gateway Side.
+				 * So when current date = future date we done need to add in rate update history table.
+				 * This scenario will be managed from gateway side if we update future rates in gateway.
+				 */
 
 				$this->generate_file($CompanyID,'customer','future',$local_dir);
 				$this->generate_file($CompanyID,'vendor','future',$local_dir);
@@ -133,17 +143,19 @@ class GenerateRateUpdateFile extends Command {
                             ],
                         ]
                     */
+
+        $dir = $local_dir;
+        if (!file_exists($dir)) {
+            @mkdir($dir, 0777, TRUE);
+        }
+
         foreach($csv_data as $AccountID => $rows) 	{
 
             $rows = collect($rows)->toArray();
             $rows = json_decode(json_encode($rows),true);
 
-            $file_name = $AccountID . '_' . date('ymdHmS');
-			$dir = $local_dir. '/' . $AccountType .'/' . $RateType ;
-            if (!file_exists($dir)) {
-                @mkdir($dir, 0777, TRUE);
-            }
-            $file_path = $dir  . '/' . $file_name.'.csv';
+            $file_name = $AccountID . '_' . date('Y-m-d-H:i:s');
+            $file_path = $dir  . '/' . $AccountType . '_' . $RateType . '_' . $file_name.'.csv';
 
 			$sort_column = $AccountType == 'customer'?"CustomerRateUpdateHistoryID":"VendorRateUpdateHistoryID";
 
@@ -156,10 +168,11 @@ class GenerateRateUpdateFile extends Command {
 
 				if($AccountType == 'customer'){
 
-					CustomerRateUpdateHistory::where([$sort_column,'>=',$min_max_ids["min_id"]])->where([$sort_column,'<=',$min_max_ids["max_id"]])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+					CustomerRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+
 				}else if($AccountType == 'vendor'){
 
-					VendorRateUpdateHistory::where([$sort_column,'>=',$min_max_ids["min_id"]])->where([$sort_column,'<=',$min_max_ids["max_id"]])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+					VendorRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
 				}
 			}
 
