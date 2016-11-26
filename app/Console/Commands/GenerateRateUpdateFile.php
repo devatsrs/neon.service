@@ -85,6 +85,8 @@ class GenerateRateUpdateFile extends Command {
 
 		try{
 
+			$future_rates = $cronsetting["future_rate"]   = true;
+
             $cronsetting["csv_generate_location"] = '/home/neon/dev_rate_update/'.$CompanyID;
 
 			if(!isset($cronsetting["csv_generate_location"]) || empty($cronsetting["csv_generate_location"])){
@@ -96,7 +98,7 @@ class GenerateRateUpdateFile extends Command {
 			$this->generate_file($CompanyID,'customer','current',$local_dir);
 			$this->generate_file($CompanyID,'vendor','current',$local_dir);
 
-			if($future_rates = true) {
+			if($future_rates) {
 				/**
 				 * Need to manage future date at Gateway Side.
 				 * So when current date = future date we done need to add in rate update history table.
@@ -159,12 +161,12 @@ class GenerateRateUpdateFile extends Command {
 
 			$sort_column = $AccountType == 'customer'?"CustomerRateUpdateHistoryID":"VendorRateUpdateHistoryID";
 
-			$min_max_ids = $this->get_min_max_primary_key_id($sort_column,$rows);
+			$min_max_ids = $this->get_min_max_primary_key_id($sort_column,$rows); // take min and max primary key to update records.
 
             $NeonExcel = new NeonExcelIO($file_path);
 			$NeonExcel->generate_rate_update_file($rows);
 
-			if(is_numeric($min_max_ids["min_id"])  &&  is_numeric($min_max_ids["max_id"]) ){
+			if( file_exists($file_path) && is_numeric($min_max_ids["min_id"])  &&  is_numeric($min_max_ids["max_id"]) ){
 
 				if($AccountType == 'customer'){
 
