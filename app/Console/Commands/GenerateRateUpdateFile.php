@@ -32,6 +32,8 @@ class GenerateRateUpdateFile extends Command {
 	 */
 	protected $description = 'Command description.';
 
+	protected $error = array();
+
 	/**
 	 * Create a new command instance.
 	 *
@@ -72,7 +74,6 @@ class GenerateRateUpdateFile extends Command {
 
 
 		CronHelper::before_cronrun($this->name, $this );
-
 		$arguments 		= 	$this->argument();
 
 		$CronJobID 		= 	$arguments["CronJobID"];
@@ -80,6 +81,13 @@ class GenerateRateUpdateFile extends Command {
 
 		$CronJob =  CronJob::find($CronJobID);
 		$cronsetting = json_decode($CronJob->Settings, true);
+
+		$joblogdata = array();
+		$joblogdata['CronJobID'] = $CronJobID;
+		$joblogdata['created_at'] = date('Y-m-d H:i:s');
+		$joblogdata['created_by'] = 'RMScheduler';
+		$joblogdata['Message'] = '';
+
 
 		CronJob::activateCronJob($CronJob);
 
@@ -108,6 +116,20 @@ class GenerateRateUpdateFile extends Command {
 				$this->generate_file($CompanyID,'customer','future',$local_dir);
 				$this->generate_file($CompanyID,'vendor','future',$local_dir);
  			}
+
+
+			if (count($this->errors) > 0) {
+
+				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+				$joblogdata['Message'] = implode('\n\r', $this->errors);
+
+			} else {
+
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+				$joblogdata['Message'] = "Success";
+
+			}
+			CronJobLog::insert($joblogdata);
 
 
 		}catch (Exception $e) {
@@ -168,14 +190,30 @@ class GenerateRateUpdateFile extends Command {
 
 			if( file_exists($file_path) && is_numeric($min_max_ids["min_id"])  &&  is_numeric($min_max_ids["max_id"]) ){
 
-				if($AccountType == 'customer'){
+				try {
 
-					CustomerRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+					DB::beginTransaction();
 
-				}else if($AccountType == 'vendor'){
+					if($AccountType == 'customer'){
 
-					VendorRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+						CustomerRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+
+					}else if($AccountType == 'vendor'){
+
+						VendorRateUpdateHistory::where($sort_column,'>=',$min_max_ids["min_id"])->where($sort_column,'<=',$min_max_ids["max_id"])->where(["AccountID"=>$AccountID])->update(["FileCreated"=>1]);
+					}
+
+					DB::commit();
+
+				} catch (\Exception $ex) {
+
+					Log::error($ex);
+					DB::rollback();
+					@unlink($file_path);
+					$this->errors[] = $ex->getMessage();
+
 				}
+
 			}
 
 		};
