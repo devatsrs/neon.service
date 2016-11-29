@@ -32,7 +32,7 @@ class GenerateRateUpdateFile extends Command {
 	 */
 	protected $description = 'Command description.';
 
-	protected $error = array();
+	protected $errors = array();
 
 	/**
 	 * Create a new command instance.
@@ -92,8 +92,11 @@ class GenerateRateUpdateFile extends Command {
 		CronJob::activateCronJob($CronJob);
 
 		try{
+			$future_rates = false;
+			if(isset($cronsetting["FutureRate"])){
 
-			$future_rates = $cronsetting["FutureRate"];
+				$future_rates = $cronsetting["FutureRate"];
+			}
 
 			if(!isset($cronsetting["FileLocation"]) || empty($cronsetting["FileLocation"])){
 				throw new \Exception(" CSV File Generate Location not specified.");
