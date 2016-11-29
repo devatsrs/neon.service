@@ -93,15 +93,13 @@ class GenerateRateUpdateFile extends Command {
 
 		try{
 
-			$future_rates = $cronsetting["future_rate"]   = true;
+			$future_rates = $cronsetting["FutureRate"];
 
-            $cronsetting["csv_generate_location"] = '/home/neon/dev_rate_update/'.$CompanyID;
-
-			if(!isset($cronsetting["csv_generate_location"]) || empty($cronsetting["csv_generate_location"])){
+			if(!isset($cronsetting["FileLocation"]) || empty($cronsetting["FileLocation"])){
 				throw new \Exception(" CSV File Generate Location not specified.");
 			}
 
-			$local_dir = $cronsetting["csv_generate_location"];
+			$local_dir = $cronsetting["FileLocation"];
 
 			$this->generate_file($CompanyID,'customer','current',$local_dir);
 			$this->generate_file($CompanyID,'vendor','current',$local_dir);
