@@ -28,7 +28,7 @@ class PBX{
        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
            extract(self::$config);
            Config::set('database.connections.pbxmysql.host',$dbserver);
-           Config::set('database.connections.pbxmysql.database',self::$dbname1);
+           Config::set('database.connections.pbxmysql.database',self::$dbname2);
            Config::set('database.connections.pbxmysql.username',$username);
            Config::set('database.connections.pbxmysql.password',$password);
 
@@ -96,6 +96,43 @@ class PBX{
         }
         return $response;
 
+    }
+    public static function blockAccount($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $disabled = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->pluck('te_disabled');
+                if($disabled == '') {
+                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled', 'on'));
+                    $response = array('message'=>'account blocked');
+                }
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    public static function unBlockAccount($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $disabled = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->pluck('te_disabled');
+                if($disabled == 'on') {
+                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled', ''));
+                    $response = array('message'=>'account unblocked');
+                }
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
     }
 
 }
