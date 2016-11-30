@@ -76,16 +76,16 @@ class AccountBalance extends Model
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
                     }
-                    if($BlockingAccount->Status == 1) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Status' => 0));
+                    if($BlockingAccount->Blocked == 0) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
                     }
                 }else{
                     $response =  $pbx->unBlockAccount($param);
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
                     }
-                    if($BlockingAccount->Status == 0) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Status' => 1));
+                    if($BlockingAccount->Blocked == 1) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
                     }
                 }
 
