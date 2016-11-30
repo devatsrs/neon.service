@@ -103,7 +103,7 @@ class PBX{
             try{
                 $disabled = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->pluck('te_disabled');
                 if($disabled == '') {
-                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled', 'on'));
+                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled'=>'on'));
                     $response = array('message'=>'account blocked');
                 }
             }catch(Exception $e){
@@ -122,7 +122,7 @@ class PBX{
             try{
                 $disabled = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->pluck('te_disabled');
                 if($disabled == 'on') {
-                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled', ''));
+                    DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled'=> ''));
                     $response = array('message'=>'account unblocked');
                 }
             }catch(Exception $e){
