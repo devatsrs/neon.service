@@ -493,6 +493,12 @@ class NeonExcelIO
 
         $writer = WriterFactory::create(Type::CSV); // for CSV files
 
+        /**
+         * write into tmp file and rename to .csv file.
+         */
+        $new_file = $this->file;
+        $old_file = str_replace(".csv",".tmp",$this->file);
+        $this->file  = $old_file ;
         $writer->openToFile($this->file); // write data to a file or to a PHP stream
 
         $header_data = array_keys($data[0]);
@@ -501,5 +507,9 @@ class NeonExcelIO
         }
         $writer->addRows($data); // add multiple rows at a time
         $writer->close();
+        if(rename (  $old_file , $new_file )) {
+            return true;
+        }
+
     }
 }
