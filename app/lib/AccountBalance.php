@@ -70,7 +70,7 @@ class AccountBalance extends Model
 
                 if($BlockingAccount->Balance > 0) {
                     $response = $pbx->blockAccount($param);
-                    if($response['message'] == 'account blocked'){
+                    if(isset($response['message']) && $response['message'] == 'account blocked'){
                         $email_message[$BlockingAccount->AccountName] = 'blocked';
                     }
                     if(isset($response['faultCode'])){
@@ -81,7 +81,7 @@ class AccountBalance extends Model
                     }
                 }else{
                     $response =  $pbx->unBlockAccount($param);
-                    if($response['message'] == 'account unblocked'){
+                    if(isset($response['message']) && $response['message'] == 'account unblocked'){
                         $email_message[$BlockingAccount->AccountName] = 'unblocked';
                     }
                     if(isset($response['faultCode'])){
