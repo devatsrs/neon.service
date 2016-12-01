@@ -70,22 +70,25 @@ class AccountBalance extends Model
 
                 if($BlockingAccount->Balance > 0) {
                     $response = $pbx->blockAccount($param);
-                    if($response['message'] == 'account blocked'){
-                        $email_message[] = $BlockingAccount->AccountName;
+                    if(isset($response['message']) && $response['message'] == 'account blocked'){
+                        $email_message[$BlockingAccount->AccountName] = 'blocked';
                     }
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
                     }
-                    if($BlockingAccount->Status == 1) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Status' => 0));
+                    if($BlockingAccount->Blocked == 0) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
                     }
                 }else{
                     $response =  $pbx->unBlockAccount($param);
+                    if(isset($response['message']) && $response['message'] == 'account unblocked'){
+                        $email_message[$BlockingAccount->AccountName] = 'unblocked';
+                    }
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
                     }
-                    if($BlockingAccount->Status == 0) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Status' => 1));
+                    if($BlockingAccount->Blocked == 1) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
                     }
                 }
 
