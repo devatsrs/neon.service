@@ -71,7 +71,7 @@ class AccountBalance extends Model
                 if($BlockingAccount->Balance > 0) {
                     $response = $pbx->blockAccount($param);
                     if(isset($response['message']) && $response['message'] == 'account blocked'){
-                        $email_message[$BlockingAccount->AccountName] = 'blocked';
+                        $email_message[$BlockingAccount->AccountName] = 'Blocked';
                     }
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
@@ -82,7 +82,7 @@ class AccountBalance extends Model
                 }else{
                     $response =  $pbx->unBlockAccount($param);
                     if(isset($response['message']) && $response['message'] == 'account unblocked'){
-                        $email_message[$BlockingAccount->AccountName] = 'unblocked';
+                        $email_message[$BlockingAccount->AccountName] = 'Unblocked';
                     }
                     if(isset($response['faultCode'])){
                         $error_message =  $response;
@@ -102,7 +102,7 @@ class AccountBalance extends Model
             Log::info($notification_email . ' block email sent ');
             $emaildata = array(
                 'EmailToName' => $Company->CompanyName,
-                'Subject' => 'Mirta Account Blocked',
+                'Subject' => 'Account Status Changed',
                 'CompanyID' => $CompanyID,
                 'CompanyName' => $Company->CompanyName,
                 'Message' => $email_message
