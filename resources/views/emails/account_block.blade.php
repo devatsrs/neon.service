@@ -1,5 +1,5 @@
 <p>
-    Below Accounts are blocked/unblocked.
+    Following accounts status has been changed.
 </p>
 <table border="1" cellpadding="10" cellspacing="0" class="table table-bordered datatable">
     <thead>
