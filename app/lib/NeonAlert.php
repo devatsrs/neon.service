@@ -9,7 +9,7 @@ class NeonAlert extends \Eloquent {
         $cronjobdata = array();
         Log::info('============== LowBalanceReminder START===========');
         try {
-            $cronjobdata = AccountBalance::LowBalanceReminder($CompanyID,$ProcessID);
+            AccountBalance::LowBalanceReminder($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Low Balance Reminder Failed';
@@ -17,7 +17,7 @@ class NeonAlert extends \Eloquent {
         Log::info('============== LowBalanceReminder END ===========');
         Log::info('============== InvoicePaymentReminder START===========');
         try {
-            $cronjobdata = Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
+            Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Payment Reminder Failed';
@@ -25,7 +25,7 @@ class NeonAlert extends \Eloquent {
         Log::info('============== InvoicePaymentReminder END ===========');
         Log::info('============== AccountPaymentReminder START===========');
         try {
-            $cronjobdata = Payment::AccountPaymentReminder($CompanyID,$ProcessID);
+            Payment::AccountPaymentReminder($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Payment Reminder Failed';
@@ -43,7 +43,7 @@ class NeonAlert extends \Eloquent {
 
         Log::info('============== CDR Post Process START===========');
         try {
-            $cronjobdata = TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);
+            TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Call Monitor Failed';
