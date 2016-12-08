@@ -26,7 +26,9 @@ class Alert extends \Eloquent{
             $settings['ProcessID'] = $ProcessID;
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                 if (!isset($settings['LastRunTime'])) {
-                    if ($settings['Time'] == 'HOUR') {
+                    if ($settings['Time'] == 'MINUTE') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' minute'));
+                    }else if ($settings['Time'] == 'HOUR') {
                         $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' hour'));
                     } else if ($settings['Time'] == 'DAILY') {
                         $settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $settings['Interval'] . ' day'));
@@ -67,7 +69,7 @@ class Alert extends \Eloquent{
                         }
                         if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
                             $settings['EmailType'] = AccountEmailLog::QosASRAlert;
-                            $settings['EmailMessage'] = View::make('emails.qos_asr_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
                             NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
                         }
                     }
@@ -91,7 +93,7 @@ class Alert extends \Eloquent{
 
                         }
                         if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
-                            $settings['EmailMessage'] = View::make('emails.qos_asr_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
                             $settings['EmailType'] = AccountEmailLog::QosASRAlert;
                             NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
                         }
@@ -150,8 +152,8 @@ class Alert extends \Eloquent{
             $settings['AccountID'] = $settings['AccountIDs'];
             self::CallCostAlert($CompanyID,$Alert,$settings);
         }else if($settings['AccountIDs'] == -1){
-            $call_costs = CDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
-            $vcall_costs = VCDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
+            $call_costs = CDRPostProcess::where('cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
+            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
             foreach($call_costs as $call_cost){
                 $settings['AccountID'] = $call_cost->AccountID;
                 self::CallCostAlert($CompanyID,$Alert,$settings);
