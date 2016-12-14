@@ -1067,7 +1067,8 @@ class QuickBook {
 		$lists = $JournalEntryService->query($Context, $realm, "SELECT * FROM JournalEntry");
 		if(!empty($lists) && count($lists)>0){
 			foreach((array)$lists as $list){
-				if(!empty($list->getId())){
+				$lid = $list->getId();
+				if(!empty($lid)){
 					$DocNumber = $list->getDocNumber();
 					$id = $list->getId();
 					$id = str_replace('{-','',$id);
