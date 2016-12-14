@@ -2,7 +2,7 @@
 
 namespace App\Lib;
 
-class CustomerRateUpdateHistory extends \Eloquent {
+class  CustomerRateUpdateHistory extends \Eloquent {
 
     protected $fillable = [];
     protected $guarded = array('CustomerRateUpdateHistoryID');
