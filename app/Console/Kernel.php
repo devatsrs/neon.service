@@ -71,7 +71,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ServerCleanUp',
 		'App\Console\Commands\AccountReadEmails',
 		'App\Console\Commands\QuickBookInvoicePost',
-		'App\Console\Commands\GenerateRateUpdateFile',
+		'App\Console\Commands\GenerateCustomerRateUpdateFile',
+		'App\Console\Commands\GenerateVendorRateUpdateFile',
 		'App\Console\Commands\PBXAccountBlock',
 	];
 
