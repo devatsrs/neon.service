@@ -99,7 +99,7 @@ class GenerateRateUpdateFile extends Command
 		$joblogdata['created_by'] = 'RMScheduler';
 		$joblogdata['Message'] = '';
 
-
+		$updated_rates = array();
 		CronJob::activateCronJob($CronJob);
 
 		try {
@@ -117,6 +117,7 @@ class GenerateRateUpdateFile extends Command
 
 			Log::info("generate_file");
 			$this->generate_file($CompanyID, $AccountType, 'current', $local_dir);
+			$updated_rates = array_merge($updated_rates ,  $this->updated_rates );
 			Log::info("generate_file over");
 			/*$this->generate_file($CompanyID, 'customer', 'current', $local_dir);
 			$this->generate_file($CompanyID, 'vendor', 'current', $local_dir);*/
@@ -128,6 +129,7 @@ class GenerateRateUpdateFile extends Command
 				 * This scenario will be managed from gateway side if we update future rates in gateway.
 				 */
 				$this->generate_file($CompanyID, $AccountType, 'future', $local_dir);
+				$updated_rates = array_merge($updated_rates ,  $this->updated_rates );
 
 				/*$this->generate_file($CompanyID, 'customer', 'future', $local_dir);
 				$this->generate_file($CompanyID, 'vendor', 'future', $local_dir);*/
@@ -189,7 +191,7 @@ class GenerateRateUpdateFile extends Command
 				$this->process_single_row($row);
 			}
 
-			if (count($this->updated_rates)) {
+			if (count($this->updated_rates) > 0 ) {
 
 				$sort_column = $AccountType == 'customer' ? "CustomerRateUpdateHistoryID" : "VendorRateUpdateHistoryID";
 
@@ -213,6 +215,9 @@ class GenerateRateUpdateFile extends Command
 
 				Log::info($csv_data);
 				foreach ($csv_data as $AccountID => $rows) {
+
+					$rows = collect($rows)->toArray();
+					$rows = json_decode(json_encode($rows),true);
 
 					$file_name = $AccountID . '_' . date('Y-m-d-H:i:s');
 					$file_path = $dir . '/' . $AccountType . '_' . $RateType . '_' . $file_name . '.csv';
@@ -356,6 +361,7 @@ class GenerateRateUpdateFile extends Command
 			*/
 
 			$updated_rates[] = array(
+				"CompanyID" => $this->CompanyID,
 				"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 				"Code" => '*', // All
 				"EffectiveDate" => date("Y-m-d"),
@@ -365,7 +371,7 @@ class GenerateRateUpdateFile extends Command
 				"IsDelete" => 1,
 				"created_by" => $action,
 			);
-			array_merge($this->updated_rates, $updated_rates);
+			$this->updated_rates = array_merge($this->updated_rates, $updated_rates);
 
 		}
 		if( ( $action == 'Customer_Trunk_Rate_Table_Update_Trigger' && $IsDelete == 0 ) || $action == 'Customer_Trunk_Status_Update_Trigger'){
@@ -423,7 +429,26 @@ class GenerateRateUpdateFile extends Command
 
 		if ($action == 'Customer_Rate_Insert_Trigger' || $action == 'Customer_Rate_Update_Trigger' || $action == 'Customer_Rate_Delete_Trigger') {
 
-			$this->get_customer_rates_account($row);
+			//$this->get_customer_rates_account($row);
+
+			$Prefix = Trunk::where(["TrunkID"=>$row['TrunkID'] , "CompanyID" => $this->CompanyID ])->first()->pluck("RatePrefix");
+			$Code = CodeDeck::where(["RateID"=>$row['RateID'] , "CompanyID" => $this->CompanyID ])->first()->pluck("Code");
+
+			$updated_rates[] = array(
+				"CompanyID" => $this->CompanyID,
+				"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
+				"AccountID" => $row['AccountID'],
+				"Code" => trim($Prefix) . trim($Code),
+				"EffectiveDate" => $row["EffectiveDate"],
+				"Rate" => $row["Rate"],
+				"Interval1" => $row["Interval1"],
+				"IntervalN" => $row["IntervalN"],
+				"IsDelete" => $IsDelete,
+				"created_by" => $action,
+			);
+
+			$this->updated_rates = array_merge($this->updated_rates, $updated_rates);
+
 
 		}
 		if ($action == 'Vendor_Rate_Delete_Trigger' || $action == 'Vendor_Rate_Insert_Trigger' || $action == 'Vendor_Rate_Update_Trigger') {
@@ -432,7 +457,8 @@ class GenerateRateUpdateFile extends Command
 			$Code = CodeDeck::where(["RateID"=>$row['RateID'] , "CompanyID" => $this->CompanyID ])->first()->pluck("Code");
 
 			$updated_rates[] = array(
-				"CustomerRateUpdateHistoryID" => $row['VendorRateUpdateHistoryID'],
+				"CompanyID" => $this->CompanyID,
+				"VendorRateUpdateHistoryID" => $row['VendorRateUpdateHistoryID'],
 				"AccountID" => $row['AccountID'],
 				"Code" => $Prefix . $Code,
 				"EffectiveDate" => $row["EffectiveDate"],
@@ -443,7 +469,7 @@ class GenerateRateUpdateFile extends Command
 				"created_by" => $action,
 			);
 
-			array_merge($this->updated_rates, $updated_rates);
+			$this->updated_rates = array_merge($this->updated_rates, $updated_rates);
 
 		}
 
@@ -533,6 +559,8 @@ class GenerateRateUpdateFile extends Command
 	public function get_customer_rate_trunk($AccountID,$Trunk, $row)
 	{
 
+		$updated_rates = array();
+
 		$action = $row["created_by"];
 		$IsDelete = $row["IsDelete"];
 
@@ -574,6 +602,7 @@ class GenerateRateUpdateFile extends Command
 			$p_code = CodeDeck::where(["RateID"=>$row["RateID"]])->first()->pluck("Code");
 
 			$updated_rates[] = array(
+				"CompanyID" => $this->CompanyID,
 				"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 				"AccountID" => $p_AccountID,
 				"Code" => $Prefix . $p_code,
@@ -586,7 +615,6 @@ class GenerateRateUpdateFile extends Command
 			);
 
 		}
-		$updated_rates = array();
 		if( count($customer_rates) == 0 ) {
 
 			foreach ($customer_rates as $customer_rate) {
@@ -598,8 +626,8 @@ class GenerateRateUpdateFile extends Command
 				}
 
 				$updated_rates[] = array(
-					"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 					"CompanyID" => $p_companyid,
+					"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 					"AccountID" => $p_AccountID,
 					"Code" => $code,
 					"EffectiveDate" => $customer_rate["EffectiveDate"],
@@ -613,7 +641,7 @@ class GenerateRateUpdateFile extends Command
 		}
 
 		if (!empty($updated_rates)) {
-			array_merge($this->updated_rates, $updated_rates);
+			$this->updated_rates =  array_merge($this->updated_rates, $updated_rates);
 		}
 	}
 
@@ -644,28 +672,14 @@ class GenerateRateUpdateFile extends Command
 		$p_lSortCol = 0;
 		$p_SortOrder = '';
 		$p_isExport = 1;
-/*
-`prc_GetRateTableRate`(
-	IN `p_companyid` INT,
-	IN `p_RateTableId` INT,
-	IN `p_trunkID` INT,
-	IN `p_contryID` INT,
-	IN `p_code` VARCHAR(50),
-	IN `p_description` VARCHAR(50),
-	IN `p_effective` VARCHAR(50),
-	IN `p_PageNumber` INT,
-	IN `p_RowspPage` INT,
-	IN `p_lSortCol` VARCHAR(50),
-	IN `p_SortOrder` VARCHAR(5),
-	IN `p_isExport` INT
-)*/
+
 		$customer_rates = DB::select("call prc_GetRateTableRate (?,?,?,?,'?',?,?,?,?,?,?,?)", array($p_companyid, $p_RateTableId, $p_trunkID, $p_contryID, $p_code, $p_description, $p_Effective, $p_effectedRates, $p_RoutinePlan, $p_PageNumber, $p_RowspPage, $p_lSortCol, $p_SortOrder, $p_isExport));
 
 		$updated_rates = array();
 		foreach ($customer_rates as $customer_rate) {
 			$updated_rates[] = array(
-				"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 				"CompanyID" => $p_companyid,
+				"CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
 				"AccountID" => $AccountID,
 				"Code" => $Prefix . $customer_rate["Code"],
 				"EffectiveDate" => $customer_rate["EffectiveDate"],
@@ -678,7 +692,7 @@ class GenerateRateUpdateFile extends Command
 		}
 
 		if (!empty($updated_rates)) {
-			array_merge($this->updated_rates, $updated_rates);
+			$this->updated_rates = array_merge($this->updated_rates, $updated_rates);
 		}
 	}
 
@@ -696,9 +710,9 @@ class GenerateRateUpdateFile extends Command
 				$data_count++;
 				if ($data_count > $insertLimit && !empty($InserData)) {
 					if($type == 'customer'){
-						CustomerRateUpdateHistory::insert($InserData);
+						CustomerRateUpdateHistoryWithData::insert($InserData);
 					} else {
-						VendorRateUpdateHistory::insert($InserData);
+						VendorRateUpdateHistoryWithData::insert($InserData);
 					}
 					$InserData = array();
 					$data_count = 0;
@@ -707,9 +721,9 @@ class GenerateRateUpdateFile extends Command
 
 			if (!empty($InserData)) {
 				if($type == 'customer'){
-					CustomerRateUpdateHistory::insert($InserData);
+					CustomerRateUpdateHistoryWithData::insert($InserData);
 				} else {
-					VendorRateUpdateHistory::insert($InserData);
+					VendorRateUpdateHistoryWithData::insert($InserData);
 				}
 			}
 
