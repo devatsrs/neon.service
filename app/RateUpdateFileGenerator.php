@@ -98,7 +98,7 @@ class RateUpdateFileGenerator
 
                         try {
 
-                            $this->delete_history_table($AccountID,$sort_column,$min_max_ids,$AccountType = 'customer');
+                            $this->delete_history_table($AccountID,$sort_column,$min_max_ids,$AccountType);
 
                         } catch (\Exception $ex) {
                             Log::error($ex);
