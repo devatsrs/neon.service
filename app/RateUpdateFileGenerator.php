@@ -30,7 +30,7 @@ class RateUpdateFileGenerator
 
     public function generate_file($CompanyID, $AccountType, $RateType, $local_dir)
     {
-        $this->$CompanyID  = $CompanyID;
+        $this->CompanyID  = $CompanyID;
 
         $this->updated_rates = array(); // clear rates
         $current_date = date("Y-m-d");

@@ -75,7 +75,8 @@ class GenerateCustomerRateUpdateFile extends Command
 		$CronJobID = $arguments["CronJobID"];
 		$CompanyID = $arguments["CompanyID"];
 		$AccountType = 'customer';
-		$this->CompanyID = $CompanyID;
+
+		Log::useFiles(storage_path() . '/logs/generatecustomerrateupdatefile-' . $CompanyID . '-' . $CronJobID . '-' . $AccountType . '-'  . date('Y-m-d') . '.log');
 
 		$CronJob = CronJob::find($CronJobID);
 		$cronsetting = json_decode($CronJob->Settings, true);
@@ -124,10 +125,10 @@ class GenerateCustomerRateUpdateFile extends Command
 			}
 
 
-			if (count($this->errors) > 0) {
+			if (count($RateUpdateFileGenerator->errors) > 0) {
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-				$joblogdata['Message'] = implode('\n\r', $this->errors);
+				$joblogdata['Message'] = implode('\n\r', $RateUpdateFileGenerator->errors);
 
 			} else {
 
