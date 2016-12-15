@@ -98,7 +98,7 @@ class RateUpdateFileGenerator
 
                         try {
 
-                            $this->delete_history_table($AccountID,$sort_column,$min_max_ids,$AccountType = 'customer');
+                            $this->delete_history_table($AccountID,$sort_column,$min_max_ids,$AccountType);
 
                         } catch (\Exception $ex) {
                             Log::error($ex);
@@ -324,7 +324,7 @@ class RateUpdateFileGenerator
                 "CompanyID" => $this->CompanyID,
                 "VendorRateUpdateHistoryID" => $row['VendorRateUpdateHistoryID'],
                 "AccountID" => $row['AccountID'],
-                "Code" => $Prefix . $Code,
+                "Code" => trim($Prefix) . trim($Code),
                 "EffectiveDate" => $row["EffectiveDate"],
                 "Rate" => $row["Rate"],
                 "Interval1" => $row["Interval1"],
@@ -469,7 +469,7 @@ class RateUpdateFileGenerator
                 "CompanyID" => $this->CompanyID,
                 "CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
                 "AccountID" => $p_AccountID,
-                "Code" => $Prefix . $p_code,
+                "Code" => trim($Prefix) . trim($p_code),
                 "EffectiveDate" => $row["EffectiveDate"],
                 "Rate" => $row["Rate"],
                 "Interval1" => $row["Interval1"],
@@ -483,10 +483,10 @@ class RateUpdateFileGenerator
 
             foreach ($customer_rates as $customer_rate) {
 
-                $code = $Prefix . $customer_rate["Code"];
+                $code = trim($Prefix) . trim($customer_rate["Code"]);
                 if ($action == 'Codedeck_Code_Update_Delete_Trigger') {
                     // as code is changed we need old code with delete 1
-                    $code = $Prefix . $row["Code"];
+                    $code = trim($Prefix) . trim($row["Code"]);
                 }
 
                 $updated_rates[] = array(
@@ -545,7 +545,7 @@ class RateUpdateFileGenerator
                 "CompanyID" => $p_companyid,
                 "CustomerRateUpdateHistoryID" => $row['CustomerRateUpdateHistoryID'],
                 "AccountID" => $AccountID,
-                "Code" => $Prefix . $customer_rate["Code"],
+                "Code" => trim($Prefix) . trim($customer_rate["Code"]),
                 "EffectiveDate" => $customer_rate["EffectiveDate"],
                 "Rate" => $customer_rate["Rate"],
                 "Interval1" => $customer_rate["Interval1"],
