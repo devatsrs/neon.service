@@ -1,21 +1,11 @@
 <?php namespace App\Console\Commands;
 
-use App\Lib\CodeDeck;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\CustomerRateUpdateHistory;
-use App\Lib\CustomerRateUpdateHistoryWithData;
-use App\Lib\CustomerTrunk;
-use App\Lib\NeonExcelIO;
-use App\Lib\Trunk;
-use App\Lib\VendorRateUpdateHistory;
-use App\Lib\VendorRateUpdateHistoryWithData;
 use App\RateUpdateFileGenerator;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 /** This command will be run immediately when any rate is updated in Customer or Vendor.
