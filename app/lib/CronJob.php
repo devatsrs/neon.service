@@ -479,6 +479,7 @@ class CronJob extends \Eloquent {
             $valid_emails = array();
 
             foreach ($rates_email as $row) {
+                $row = trim($row);
                 if (filter_var($row, FILTER_VALIDATE_EMAIL)) {
                     $valid_emails[] = $row;
                     $emailto = $row;

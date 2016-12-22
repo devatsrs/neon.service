@@ -88,6 +88,7 @@ class NeonAlert extends \Eloquent {
             $CustomerEmail = $Account->BillingEmail;
             $CustomerEmail = explode(",", $CustomerEmail);
             foreach ($CustomerEmail as $singleemail) {
+                $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                     $emaildata['EmailTo'] = $singleemail;
                     $customeremail_status = Helper::sendMail($email_view, $emaildata);
