@@ -129,6 +129,7 @@ class Job extends \Eloquent {
             $result = DataTableSql::of($query)->getProcResult(array('JobData'));
             $CompanyName = Company::where("CompanyID",$CompanyID)->pluck("CompanyName");
             foreach ($EmailList as $singleemail) {
+                $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                     $emaildata['EmailTo'] = $singleemail;
                     $emaildata['EmailToName'] = $CompanyName;
