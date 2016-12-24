@@ -129,6 +129,7 @@ class BulkInvoiceSend extends Command {
                     Log::info($InvoiceCopyEmail);
 
                     foreach($InvoiceCopyEmail as $singleemail) {
+                        $singleemail = trim($singleemail);
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
@@ -145,6 +146,7 @@ class BulkInvoiceSend extends Command {
                     $customeremail_status['body'] = '';
                     Log::info($CustomerEmail);
                     foreach($CustomerEmail as $singleemail){
+                        $singleemail = trim($singleemail);
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email='.$singleemail;

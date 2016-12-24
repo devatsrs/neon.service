@@ -4,7 +4,7 @@ New invoice {{$data['data']['InvoiceNumber']}} from {{$data['data']['CompanyName
 
 
 To view your invoice from {{$data['data']['CompanyName']}} for {{$data['data']['InvoiceGrandTotal']}} {{$data['data']['CurrencyCode']}}, or to download
-a PDF copy for your records, click the link bellow<br><br>
+a PDF copy for your records, click the link below<br><br>
 
 
 <div><!--[if mso]>
