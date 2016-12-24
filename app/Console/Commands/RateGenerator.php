@@ -85,6 +85,11 @@ class RateGenerator extends Command {
             $data['RateGeneratorId']=$cronsetting->rateGeneratorID;
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
             $data['RateTableId']= $cronsetting->rateTableID;
+            if(!empty($data['RateTableId'])){
+                $data['ratetablename'] = DB::table('tblRateTable')->where(array('RateTableId'=>$data['RateTableId']))->pluck('RateTableName');
+            }else{
+                $data['ratetablename'] = '';
+            }
             $data['CompanyID'] = $CompanyID;
 
             $JobID = Job::GenerateRateTable("GRT",$data);

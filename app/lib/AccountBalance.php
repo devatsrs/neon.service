@@ -43,7 +43,8 @@ class AccountBalance extends Model
     }
 
     public static function updateAccountUnbilledAmount($CompanyID){
-        DB::connection('neon_report')->select("CALL prc_updateUnbilledAmount(?)",array($CompanyID));
+        $today = date('Y-m-d 23:59:59');
+        DB::connection('neon_report')->select("CALL prc_updateUnbilledAmount(?,?)",array($CompanyID,$today));
     }
 
     public static function getBalanceAmount($AccountID){
