@@ -36,7 +36,7 @@ class RateUpdateFileGenerator
             @mkdir($dir, 0777, TRUE);
         }
 
-        $sort_column = $AccountType == 'customer' ? "CustomerRateUpdateHistoryID" : "VendorRateUpdateHistoryID";
+        $sort_column = $AccountType == 'customer' ? "CustomerRateUpdateHistoryWithDataID" : "VendorRateUpdateHistoryWithDataID";
 
         //insert processed history records to history  data table
         try {
@@ -44,7 +44,7 @@ class RateUpdateFileGenerator
 
             $query = "CALL prc_ProcessRateUpdateHistory(" . $CompanyID . ",'" . $AccountType . "','" . $RateType . "','" . $current_date . "')";
             Log::info($query);
-            DB::query($query);
+            DB::select($query);
 
             $query = "CALL prc_getRateUpdateHistoryWithData(" . $CompanyID . ",'" . $AccountType . "','" . $RateType . "','" . $current_date . "')";
             Log::info($query);
@@ -89,9 +89,10 @@ class RateUpdateFileGenerator
 
     public function get_min_max_primary_key_id($primary_key, $rows)
     {
-        $min_id = collect($rows)->min($primary_key);
-        $max_id = collect($rows)->max($primary_key);
-        return ["max_id" => $max_id, "min_id" => $min_id];
+        $max_id = collect($rows)->sortBy($primary_key,SORT_DESC,1)->first(function($row) use ($primary_key) { return $row[$primary_key];});
+        $min_id = collect($rows)->sortBy($primary_key,SORT_ASC)->first(function($row) use ($primary_key) { return $row[$primary_key];});
+
+         return ["max_id" => $max_id, "min_id" => $min_id];
     }
 
     public function delete_history_table($AccountID,$sort_column,$min_max_ids,$AccountType = 'customer'){
