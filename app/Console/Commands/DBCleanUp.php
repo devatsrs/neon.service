@@ -81,14 +81,6 @@ class DBCleanUp extends Command {
 
 			Log::info('DBcleanup Starts.');
 
-			Log::info('Customer CDR Delete Start.');
-				$error .= Retention::deleteCustomerCDR($CompanyID);
-			Log::info('Customer CDR Delete End.');
-
-			Log::info('Vendor CDR Delete Start.');
-				$error .= Retention::deleteVendorCDR($CompanyID);
-			Log::info('Vendor CDR Delete End.');
-
 			Log::info('Usage Download Log Start.');
 				$error .= Retention::deleteUsageDownloadLog($CompanyID);
 			Log::info('Usage Download Log End.');
@@ -112,6 +104,14 @@ class DBCleanUp extends Command {
 			Log::info('All Old Rate Delete Start');
 				$error .= Retention::deleteAllOldRate($CompanyID);
 			Log::info('All Old Rate Delete End');
+
+			Log::info('Customer CDR Delete Start.');
+			$error .= Retention::deleteCustomerCDR($CompanyID);
+			Log::info('Customer CDR Delete End.');
+
+			Log::info('Vendor CDR Delete Start.');
+			$error .= Retention::deleteVendorCDR($CompanyID);
+			Log::info('Vendor CDR Delete End.');
 
 
 			Log::info('DBcleanup Done.');

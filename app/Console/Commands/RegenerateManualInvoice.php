@@ -71,7 +71,7 @@ class RegenerateManualInvoice extends Command {
         $message = array();
         //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
         $InvoiceCopyEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-        $InvoiceCopyEmail = ($InvoiceCopyEmail != 'Invalid Key')?$InvoiceCopyEmail:'';
+        $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
         $ProcessID = Uuid::generate();
         $InvoiceIDs = '11975,9802';

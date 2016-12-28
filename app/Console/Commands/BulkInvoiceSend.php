@@ -88,7 +88,7 @@ class BulkInvoiceSend extends Command {
             $UserEmail = '';
             //$InvoiceGenerationEmail_main = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
             $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-            $InvoiceCopyEmail_main = ($InvoiceCopyEmail_main =='Invalid Key')?$Company->Email:$InvoiceCopyEmail_main;
+            $InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;
             if(isset($job->JobLoggedUserID) && $job->JobLoggedUserID > 0){
                 $User = User::getUserInfo($job->JobLoggedUserID);
                 // $UserEmail= $User->EmailAddress;
@@ -129,6 +129,7 @@ class BulkInvoiceSend extends Command {
                     Log::info($InvoiceCopyEmail);
 
                     foreach($InvoiceCopyEmail as $singleemail) {
+                        $singleemail = trim($singleemail);
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
@@ -145,6 +146,7 @@ class BulkInvoiceSend extends Command {
                     $customeremail_status['body'] = '';
                     Log::info($CustomerEmail);
                     foreach($CustomerEmail as $singleemail){
+                        $singleemail = trim($singleemail);
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email='.$singleemail;

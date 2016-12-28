@@ -1,15 +1,16 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\AccountBalance;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\NeonAlert;
+use App\Lib\Gateway;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class NeonAlerts extends Command
+class PBXAccountBlock extends Command
 {
 
     /**
@@ -17,7 +18,7 @@ class NeonAlerts extends Command
      *
      * @var string
      */
-    protected $name = 'neonalerts';
+    protected $name = 'pbxaccountblock';
 
     /**
      * The console command description.
@@ -60,20 +61,15 @@ class NeonAlerts extends Command
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/neonalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/pbxaccountblock-' . $CronJobID . '-' . date('Y-m-d') . '.log');
         $ProcessID = CompanyGateway::getProcessID();
         try {
 
-
-            $cronjobdata = NeonAlert::neon_alerts($CompanyID,$ProcessID);
-            if(count($cronjobdata)){
-                $joblogdata['Message'] ='Message : '.implode(',<br>',$cronjobdata);
+            $GatewayID = Gateway::getGatewayID('PBX');
+            $error_message = AccountBalance::PBXBlockUnBlockAccount($CompanyID,$GatewayID,$ProcessID);
+            if(isset($error_message['faultString'])){
+                $joblogdata['Message'] = $error_message['faultString'];
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                if(!empty($cronsetting['ErrorEmail'])) {
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,implode(',\n\r',$cronjobdata));
-                    Log::error("**Email Sent Status " . $result['status']);
-                    Log::error("**Email Sent message " . $result['message']);
-                }
             }else{
                 $joblogdata['Message'] = 'Success';
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
