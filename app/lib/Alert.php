@@ -38,7 +38,7 @@ class Alert extends \Eloquent{
                 $StartDate = $settings['LastRunTime'];
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? implode(',',$settings['CompanyGatewayID']) : '';
-                $AccountID = isset($settings['AccountID']) ? implode(',',$settings['AccountID']) : '';
+                $AccountIDs = isset($settings['AccountID']) ? implode(',',$settings['AccountID']) : '';
                 $VAccountID = isset($settings['VAccountID']) ? implode(',',$settings['VAccountID']) : '';
                 $CurrencyID = isset($settings['CurrencyID']) ? intval($settings['CurrencyID']) : 0;
                 $NoOfCall = isset($settings['NoOfCall']) ? intval($settings['NoOfCall']) : 0;
@@ -47,55 +47,61 @@ class Alert extends \Eloquent{
                 $CountryID = isset($settings['CountryID']) ? implode(',',$settings['CountryID']) : '';
                 $settings = Helper::ACD_ASR_CR($settings);
 
-                //$StartDate = '2016-01-01';$EndDate = '2016-10-30';
+                //$StartDate = '2016-12-01';$EndDate = '2016-12-05';
+                /** send only if customer not empty or both empty */
+                if(!empty($AccountIDs) || (empty($AccountIDs) && empty($VAccountID))) {
+                    $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
+                    Log::info($query);
+                    $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
+                    foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
+                        if ($ACD_ASR_alert->Connected > $NoOfCall) {
+                            $AccountID = 0;
+                            $settings['AccountName'] = '';
+                            $settings['Subject'] = $Alert->Name;
+                            if (isset($ACD_ASR_alert->AccountID)) {
+                                $settings['AccountName'] = Account::getAccountName($ACD_ASR_alert->AccountID);
+                                $AccountID = $ACD_ASR_alert->AccountID;
+                            }
 
-                $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$AccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
-                Log::info($query);
-                $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
-                foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
-                    if($ACD_ASR_alert->Connected > $NoOfCall) {
-                        $AccountID = 0;
-                        $settings['AccountName'] = '';
-                        $settings['Subject'] = $Alert->Name;
-                        if (isset($ACD_ASR_alert->AccountID)) {
-                            $settings['AccountName'] = Account::getAccountName($ACD_ASR_alert->AccountID);
-                            $AccountID = $ACD_ASR_alert->AccountID;
-                        }
-
-                        if ($Alert->AlertType == 'ACD' && !empty($ACD_ASR_alert->ACD) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
-                            $settings['EmailType'] = AccountEmailLog::QosACDAlert;
-                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
-                            NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
-                        }
-                        if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
-                            $settings['EmailType'] = AccountEmailLog::QosASRAlert;
-                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
-                            NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+                            if ($Alert->AlertType == 'ACD' && !empty($ACD_ASR_alert->ACD) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
+                                $settings['EmailType'] = AccountEmailLog::QosACDAlert;
+                                $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                                NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+                            }
+                            if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
+                                $settings['EmailType'] = AccountEmailLog::QosASRAlert;
+                                $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                                NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+                            }
                         }
                     }
                 }
-                $query = "CALL prc_getVendorACD_ASR_Alert(" . $CompanyID.",'".$CompanyGatewayID."','".$VAccountID."','" .$CurrencyID."','" . $StartDate . "','" . $EndDate . "','".$AreaPrefix."','".$Trunk."','". $CountryID . "')";
-                Log::info($query);
-                $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
-                foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
-                    if($ACD_ASR_alert->Connected > $NoOfCall) {
-                        $AccountID = 0;
-                        $settings['AccountName'] = '';
-                        $settings['Subject'] = $Alert->Name;
-                        if (isset($ACD_ASR_alert->AccountID)) {
-                            $settings['AccountName'] = Account::getAccountName($ACD_ASR_alert->AccountID);
-                            $AccountID = $ACD_ASR_alert->AccountID;
-                        }
-                        if ($Alert->AlertType == 'ACD' && !empty($ACD_ASR_alert->ACD) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
-                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
-                            $settings['EmailType'] = AccountEmailLog::QosACDAlert;
-                            NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
 
-                        }
-                        if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
-                            $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
-                            $settings['EmailType'] = AccountEmailLog::QosASRAlert;
-                            NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+                /** send only if vendor not empty or both empty */
+                if(!empty($VAccountID) || (empty($AccountIDs) && empty($VAccountID))) {
+                    $query = "CALL prc_getVendorACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $VAccountID . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
+                    Log::info($query);
+                    $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
+                    foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
+                        if ($ACD_ASR_alert->Connected > $NoOfCall) {
+                            $AccountID = 0;
+                            $settings['AccountName'] = '';
+                            $settings['Subject'] = $Alert->Name;
+                            if (isset($ACD_ASR_alert->AccountID)) {
+                                $settings['AccountName'] = Account::getAccountName($ACD_ASR_alert->AccountID);
+                                $AccountID = $ACD_ASR_alert->AccountID;
+                            }
+                            if ($Alert->AlertType == 'ACD' && !empty($ACD_ASR_alert->ACD) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ACD) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ACD)) {
+                                $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                                $settings['EmailType'] = AccountEmailLog::QosACDAlert;
+                                NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+
+                            }
+                            if ($Alert->AlertType == 'ASR' && !empty($ACD_ASR_alert->ASR) && ((!empty($Alert->LowValue) && $Alert->LowValue > $ACD_ASR_alert->ASR) || !empty($Alert->HighValue) && $Alert->HighValue < $ACD_ASR_alert->ASR)) {
+                                $settings['EmailMessage'] = View::make('emails.qos_acd_alert', compact('ACD_ASR_alert', 'Alert', 'settings'))->render();
+                                $settings['EmailType'] = AccountEmailLog::QosASRAlert;
+                                NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $AccountID, $settings);
+                            }
                         }
                     }
                 }
@@ -288,6 +294,48 @@ class Alert extends \Eloquent{
         }
 
 
+    }
+    /** send vendor balance report to specified emails*/
+    public static function VendorBalanceReport($CompanyID, $ProcessID){
+        $Alerts = Alert::where(array('CompanyID' => $CompanyID, 'AlertGroup' => 'call','AlertType'=>'vendor_balance_report', 'Status' => 1))->orderby('AlertType', 'asc')->get();
+        foreach ($Alerts as $Alert) {
+
+            $settings = json_decode($Alert->Settings, true);
+            $settings['ProcessID'] = $ProcessID;
+            $settings['Subject'] = $Alert->Name;
+            if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
+                if (!isset($settings['LastRunTime'])) {
+                    if ($settings['Time'] == 'MINUTE') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' minute'));
+                    } else if ($settings['Time'] == 'HOUR') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' hour'));
+                    } else if ($settings['Time'] == 'DAILY') {
+                        $settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $settings['Interval'] . ' day'));
+                    }
+                    $settings['NextRunTime'] = next_run_time($settings);
+                }
+                $StartDate = $settings['LastRunTime'];
+                $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
+                $VAccountIDs = isset($settings['VAccountID']) ? implode(',', $settings['VAccountID']) : '';
+
+                //$StartDate = '2016-12-01';$EndDate = '2016-12-03';
+                $VAccountIDs = explode(',', $VAccountIDs);
+                /** send only if vendor not empty */
+                foreach ($VAccountIDs as $VAccountID) {
+                    if (!empty($VAccountID)) {
+                        $query = "CALL prc_getVendorBalanceReport(" . $CompanyID . ",'" . $VAccountID . "','" . $StartDate . "','" . $EndDate . "')";
+                        Log::info($query);
+                        $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
+                        if (!empty($ACD_ASR_alerts)) {
+                            $settings['EmailMessage'] = View::make('emails.vendor_report', compact('ACD_ASR_alerts', 'Alert', 'settings'))->render();
+                            $settings['EmailType'] = AccountEmailLog::VendorBalanceReport;
+                            NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID, $VAccountID, $settings);
+                        }
+                    }
+                }
+                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert', $settings['NextRunTime']);
+            }
+        }
     }
 
 
