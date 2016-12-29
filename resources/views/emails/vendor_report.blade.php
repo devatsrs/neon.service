@@ -5,6 +5,7 @@
     <thead>
     <tr role="row">
         <th><strong>Account</strong></th>
+        <th><strong>Date</strong></th>
         <th><strong>Hour</strong></th>
         <th><strong>Attempts</strong></th>
         <th><strong>Connected</strong></th>
@@ -19,6 +20,7 @@
     @foreach($ACD_ASR_alerts as $ACD_ASR_alert)
         <tr>
             <td>{{$ACD_ASR_alert->AccountName}}</td>
+            <td>{{$ACD_ASR_alert->Date}}</td>
             <td>{{$ACD_ASR_alert->Hour}}</td>
             <td>{{$ACD_ASR_alert->Attempts}}</td>
             <td>{{$ACD_ASR_alert->Connected}}</td>
