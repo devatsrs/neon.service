@@ -57,7 +57,7 @@ class RateUpdateFileGenerator
                 $rows = collect($rows)->toArray();
                 $rows = json_decode(json_encode($rows),true);
 
-                $file_name = $AccountID . '_' . date('Y-m-d-H:i:s');
+                $file_name = $AccountID . '_' . date('Y-m-d-H-i-s');
                 $file_path = $dir . '/' . $AccountType . '_' . $RateType . '_' . $file_name . '.csv';
 
                 $min_max_ids = $this->get_min_max_primary_key_id($sort_column,$rows); // take min and max primary key to update records.
