@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -344,6 +345,7 @@ class PBXAccountUsage extends Command
     public function getLastDate($startdate, $companyid, $CronJobID)
     {
         $Settings = CronJob::where(array('CompanyID' => $companyid, 'CronJobID' => $CronJobID))->pluck('Settings');
+        $pbxusageinterval = CompanyConfiguration::get($companyid,'USAGE_PBX_INTERVAL');
         $cronsetting = json_decode($Settings);
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
@@ -352,7 +354,7 @@ class PBXAccountUsage extends Command
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_PBX_INTERVAL') * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $pbxusageinterval * 60);
         }
 
         return $endtimefinal;
@@ -361,11 +363,12 @@ class PBXAccountUsage extends Command
     public static function getStartDate($companyid, $CompanyGatewayID, $CronJobID)
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+        $pbxusageinterval = CompanyConfiguration::get($companyid,'USAGE_PBX_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
-        if ($minutes <= env('USAGE_PBX_INTERVAL')) {
-            $endtime = date('Y-m-d H:i:s', strtotime('-'.env('USAGE_PBX_INTERVAL').' minute'));  //date('Y-m-d H:i:s');
+        if ($minutes <= $pbxusageinterval) {
+            $endtime = date('Y-m-d H:i:s', strtotime('-'.$pbxusageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-1 00:00:00');
