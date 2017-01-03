@@ -9,9 +9,19 @@ class Messages extends \Eloquent{
     protected $primaryKey 	= 	"MsgID";
     public 	  $timestamps 	= 	false; // no created_at and updated_at
 	
-	const  Sent 			= 	0;
-    const  Received			=   1;
-    const  Draft 			= 	2;
+	const  Sent 	= 	0;
+    const  Received	=   1;
+    const  Draft 	= 	2;	
+	const  URGENT	=	4;
+	const  LOW		=	1;
+	const  MEDIUM	=	2;
+	const  HIGH		=	3;
+	
+	
+	public static $EmailPriority = [	   	
+	   1 => Messages::URGENT,	    
+	   5 => Messages::LOW,
+   ];
 
     public static function logMsgRecord($options = "") {
 		              

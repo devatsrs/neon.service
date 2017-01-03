@@ -6,6 +6,7 @@ use App\Lib\User;
 use App\Lib\Lead;
 use Illuminate\Support\Facades\Log;
 use App\Lib\AccountEmailLog;
+use App\Lib\TicketsTable;
 use Validator;
 
 class Imap{
@@ -289,12 +290,14 @@ protected $server;
 	
 	static	function CheckConnection($server,$email,$password){
 		try{
-			$mbox=imap_open("{".$server."}", $email, $password);
-			return true;
+			imap_open("{".$server."}", $email, $password);
+			//return true;
+			return array("status"=>1,"error"=>0);
 		} catch (\Exception $e) {
 			Log::error("could not connect");
 			Log::error($e);			
-			return false;
+			return array("status"=>0,"error"=>$e);
+			//return false;
 		}   		
 	}	
 	
@@ -399,6 +402,133 @@ protected $server;
 		$node->parentNode->removeChild($node);
 	  }
 	}
+	
+	
+	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){
+		 
+		$email 		= 	$email;
+		$password 	= 	$password;		
+		$server		=	$server;		
+		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
+		$emails 	= 	imap_search($inbox,'UNSEEN');
+
+		if($emails){
+			
+			/* begin output var */
+			$output = ''; 
+			
+			/* start from bottom */
+		 	$emails =  array_reverse($emails);
+		
+			
+			/* for every email... */
+			foreach($emails as $key => $email_number){
+				
+				/* get information specific to this email */
+				$MatchType	 				= 		  ''; 
+				$MatchID 					= 		  '';
+				$priority					=		  0;				
+				$headers 					=		  array();
+				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
+				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
+				$header 					= 		  imap_fetchheader($inbox, $email_number);
+				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
+				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
+				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
+				$msg_parent   				=		  TicketsTable::where("MessageID",$in_reply_to)->first();
+				$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
+					
+				// Split on \n  for priority 
+				$h_array					=		  explode("\n",$header);
+			
+				foreach ( $h_array as $h ) {				
+					// Check if row start with a char
+						if ( preg_match("/^[A-Z]/i", $h )) {				
+						$tmp 					= 	explode(":",$h);
+						$header_name 		    = 	$tmp[0];
+						$header_value 			= 	$tmp[1];								
+						$headers[$header_name] 	= 	$header_value;						
+					} else {
+						// Append row to previous field
+						$headers[$header_name]  = 	$header_value . $h;
+					}				
+				}
+				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
+					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
+					$prioritytxt2 =  explode(" (",$prioritytxt[0]);						
+					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:0;
+				}
+				
+				if(!empty($msg_parent) || !empty($msg_parentconversation)){  // if email is reply of an ticket or conversation					
+					if(!empty($msg_parent)){
+						$parent = $msg_parent->TicketID;
+					}else if(!empty($msg_parentconversation)){
+						$parent = $msg_parent->TicketID;
+					}
+				}else{							    //new ticket						
+					$parent 			  = 	 0; // no parent by default		
+                }
+				
+				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments	
+				if(isset($attachmentsDB) && count($attachmentsDB)>0){
+					$AttachmentPaths  =		serialize($attachmentsDB);				
+				}else{
+					$AttachmentPaths  = 	serialize([]);										
+				}
+				
+			 	$message = 	$this->getBody($inbox,$email_number);
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
+			
+                $from   = $this->GetEmailtxt($overview[0]->from);
+				$to 	= $this->GetEmailtxt($overview[0]->to);
+				
+				
+				$update_id  =	''; $insert_id  =	'';
+						
+				if($parent){ 	
+					$logData = [
+					    'TicketID'=>$parent,
+						'Requester'=> $from,
+						"RequesterName"=>$this->GetNametxt($overview[0]->from),
+						'Subject'=>$overview[0]->subject,
+						'Description'=>$message,
+						'CompanyID'=>$CompanyID,
+						"MessageID"=>$message_id,
+						"AttachmentPaths"=>$AttachmentPaths,
+						"EmailID"=>$email_number,
+						"EmailCall"=>TicketsTable::Received,
+						"created_at"=>date('Y-m-d H:i:s'),
+					];	
+	          		 TicketsConversation::insertGetId($logData);
+				}else{
+					
+					$logData = [
+						'Requester'=> $from,
+						"RequesterName"=>$this->GetNametxt($overview[0]->from),
+						'Subject'=>$overview[0]->subject,
+						'Description'=>$message,
+						'CompanyID'=>$CompanyID,
+						"MessageID"=>$message_id,
+						"AttachmentPaths"=>$AttachmentPaths,
+						"EmailID"=>$email_number,
+						"EmailCall"=>TicketsTable::Received,
+						"Group"=>$GroupID,
+						"created_at"=>date('Y-m-d H:i:s'),
+						"Priority"=>$priority,
+						"Status"=>TicketsTable::getOpenTicketStatus()
+					];	
+				  	 TicketsTable::insertGetId($logData);
+				}
+				
+				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
+				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
+			}			
+		} 		
+		/* close the connection */
+		imap_close($inbox);
+	}	
 	     
 }
 ?>
