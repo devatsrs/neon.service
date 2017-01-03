@@ -334,6 +334,7 @@ tfoot {
                              <th width="10%">Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Billed Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Charged Amount</th>
+                             <th class="text-center" width="10%">Rate/Min</th>
                          </tr>
                               <?php
                                  $totalCalls=0;
@@ -357,6 +358,7 @@ tfoot {
                                  <td>{{$row['Duration']}}</td>
                                  <td class="text-center">{{$row['BillDuration']}}</td>
                                  <td class="text-center">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$RoundChargesAmount)}}</td>
+                                 <td class="text-center">{{$CurrencySymbol}}{{ number_format(($row['TotalCharges']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
                                 </tr>
                              @endforeach
                              <?php
@@ -369,6 +371,7 @@ tfoot {
                                  <th>{{$totalDuration}}</th>
                                  <th class="text-center">{{$totalBillDuration}}</th>
                                   <th class="text-center">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                                  <th></th>
                              </tr>
                       </table>
                      @endif

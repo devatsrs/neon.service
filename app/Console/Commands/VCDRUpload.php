@@ -83,7 +83,7 @@ class VCDRUpload extends Command
         try {
             $joboptions = json_decode($job->Options);
             $CompanyGatewayID = $joboptions->CompanyGatewayID;
-            $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID, $CompanyGatewayID);
+            $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID, $CompanyGatewayID,'cdr');
             $FileUploadTemplate = FileUploadTemplate::find($joboptions->FileUploadTemplateID);
             $TemplateOptions = json_decode($FileUploadTemplate->Options);
             $csvoption = $TemplateOptions->option;
