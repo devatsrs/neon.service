@@ -88,7 +88,8 @@ class CDRRecalculate extends Command {
                 $RateCDR = 1;
                 $RateFormat = Company::PREFIX;
                 $CLI = $CLD =  $area_prefix = $Trunk = '';
-                $zerovaluecost = 0;
+                $RateMethod = 'CurrentRate';
+                $zerovaluecost = $SpecifyRate =  0 ;
                 $CurrencyID = 0;
                 if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                     $RateFormat = $companysetting->RateFormat;
@@ -122,11 +123,17 @@ class CDRRecalculate extends Command {
                 if(!empty($joboptions->Trunk)) {
                     $Trunk = $joboptions->Trunk;
                 }
+                if(isset($joboptions->RateMethod)) {
+                    $RateMethod = $joboptions->RateMethod;
+                }
+                if(isset($joboptions->SpecifyRate)) {
+                    $SpecifyRate = $joboptions->SpecifyRate;
+                }
                 if(!empty($startdate) && !empty($enddate)){
                     Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
                     DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
                     Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
-                    $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+                    $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'',$RateMethod,$SpecifyRate);
                 }
                 if (count($skiped_account_data)) {
                     $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);

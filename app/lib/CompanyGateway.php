@@ -113,7 +113,7 @@ class CompanyGateway extends \Eloquent {
         return $tbltempusagedetail_name  = $tblPrefix. $UniqueID;
 
     }
-    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID){
+    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
 
         $UniqueID = self::getUniqueID($CompanyGatewayID);
 
@@ -125,6 +125,7 @@ class CompanyGateway extends \Eloquent {
         if(!empty($UniqueID)) {
             $tbltempusagedetail_name = self::getUsagedetailTablenameByUniqueID($UniqueID,1);
 
+            $tbltempusagedetail_name .=$extra_prefix;
             Log::error($tbltempusagedetail_name);
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
