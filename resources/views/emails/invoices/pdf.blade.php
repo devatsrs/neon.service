@@ -371,6 +371,7 @@ tfoot {
                                  <th>{{$totalDuration}}</th>
                                  <th class="text-center">{{$totalBillDuration}}</th>
                                   <th class="text-center">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                                  <th></th>
                              </tr>
                       </table>
                      @endif
