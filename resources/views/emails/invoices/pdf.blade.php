@@ -334,7 +334,7 @@ tfoot {
                              <th width="10%">Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Billed Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Charged Amount</th>
-                             <th class="text-center" width="10%">Rate/Min</th>
+                             <th class="text-center" width="10%">Avg. Rate/Min</th>
                          </tr>
                               <?php
                                  $totalCalls=0;
