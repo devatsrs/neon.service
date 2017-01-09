@@ -228,7 +228,7 @@ tfoot {
         <thead>
         <tr>
             <th style="text-align: center;">Title</th>
-            <th style="text-align: center;">Description</th>
+            <th style="text-align: left;">Description</th>
             <th style="text-align: center;">Price</th>
             <th style="text-align: center;">Quantity</th>
             <th style="text-align: center;">Date From</th>
@@ -241,7 +241,7 @@ tfoot {
         @if($ProductRow->ProductType == \App\Lib\Product::USAGE)
         <tr>
             <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-            <td class="text-center">{{$ProductRow->Description}}</td>
+            <td class="text-left">{{$ProductRow->Description}}</td>
             <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
             <td class="text-center">{{$ProductRow->Qty}}</td>
             <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
@@ -259,7 +259,7 @@ tfoot {
             <thead>
             <tr>
                 <th style="text-align: center;">Title</th>
-                <th style="text-align: center;">Description</th>
+                <th style="text-align: left;">Description</th>
                 <th style="text-align: center;">Price</th>
                 <th style="text-align: center;">Quantity</th>
                 <th style="text-align: center;">Date From</th>
@@ -272,7 +272,7 @@ tfoot {
             @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION)
             <tr>
                 <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-                <td class="text-center">{{$ProductRow->Description}}</td>
+                <td class="text-left">{{$ProductRow->Description}}</td>
                 <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                 <td class="text-center">{{$ProductRow->Qty}}</td>
                 <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
@@ -291,7 +291,7 @@ tfoot {
                 <thead>
                 <tr>
                     <th style="text-align: center;">Title</th>
-                    <th style="text-align: center;">Description</th>
+                    <th style="text-align: left;">Description</th>
                     <th style="text-align: center;">Price</th>
                     <th style="text-align: center;">Quantity</th>
                     <th style="text-align: center;">Date</th>
@@ -303,7 +303,7 @@ tfoot {
                 @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE)
                 <tr>
                     <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-                    <td class="text-center">{{$ProductRow->Description}}</td>
+                    <td class="text-left">{{$ProductRow->Description}}</td>
                     <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                     <td class="text-center">{{$ProductRow->Qty}}</td>
                     <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
