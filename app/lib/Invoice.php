@@ -389,7 +389,7 @@ class Invoice extends \Eloquent {
                      **************************
                      **************************
                      */
-                    //Check if Invoice Usage is alrady Created.
+                    //Check if Invoice Usage is already Created.
                     //TRUE=Already Billed
                     //FALSE = Not billed
                     Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
@@ -598,30 +598,46 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static  function generate_pdf($InvoiceID){
+    public static  function generate_pdf($InvoiceID,$data = []){
         if($InvoiceID>0) {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $companyID = $Account->CompanyId;
-            $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
+            if(!empty($Invoice->RecurringInvoiceID)){
+                $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+                $InvoiceTemplateID = $recurringInvoice->InvoiceTemplateID;
+                $PaymentDueInDays = $recurringInvoice->PaymentDueInDays;
+                $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->where("InvoiceID", $InvoiceID)
+                    ->orderBy("InvoiceTaxRateID", "asc")
+                    ->groupBy("TaxRateID")
+                    ->get();
+            }else{
+                $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
+                $InvoiceTemplateID = AccountBilling::getInvoiceTemplateID($Invoice->AccountID);
+                $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
+                $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+            }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-            $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
+            $InvoiceTemplate = InvoiceTemplate::find($InvoiceTemplateID);
+            //if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
                 $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
-            } else {
-                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
-            }
+            //} else {
+                //$as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
+            //}
             $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
-            $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+
             $usage_data = array();
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
             $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-            if($InvoiceTemplate->InvoicePages == 'single_with_detail') {
+            if($InvoiceTemplate->InvoicePages == 'single_with_detail' && empty($Invoice->RecurringInvoiceID)) {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
 
@@ -675,8 +691,11 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo','AccountBilling','RoundChargesAmount'))->render();
-
+            if(empty($Invoice->RecurringInvoiceID)) {
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount'))->render();
+            }else {
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data'))->render();
+            }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
@@ -709,7 +728,6 @@ class Invoice extends \Eloquent {
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
-
             Log::info($output);
             Log::info($local_htmlfile);
             @unlink($local_htmlfile);
