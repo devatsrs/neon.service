@@ -7,6 +7,7 @@ use App\Lib\Lead;
 use Illuminate\Support\Facades\Log;
 use App\Lib\AccountEmailLog;
 use App\Lib\TicketsTable;
+use App\Lib\Contact;
 use Validator;
 
 class Imap{
@@ -405,7 +406,7 @@ protected $server;
 	
 	
 	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){
-		 
+		$AllEmails  =   Messages::GetAllSystemEmails();
 		$email 		= 	$email;
 		$password 	= 	$password;		
 		$server		=	$server;		
@@ -481,9 +482,9 @@ protected $server;
 					$message =  $this->GetMessageBody($message);
 				}
 			
-                $from   = $this->GetEmailtxt($overview[0]->from);
-				$to 	= $this->GetEmailtxt($overview[0]->to);
-				
+                $from   	= 	$this->GetEmailtxt($overview[0]->from);
+				$to 		= 	$this->GetEmailtxt($overview[0]->to);
+				$FromName	=	$this->GetNametxt($overview[0]->from);
 				
 				$update_id  =	''; $insert_id  =	'';
 						
@@ -491,14 +492,13 @@ protected $server;
 					$logData = [
 					    'TicketID'=>$parent,
 						'Requester'=> $from,
-						"RequesterName"=>$this->GetNametxt($overview[0]->from),
+						"RequesterName"=>$FromName,
 						'Subject'=>$overview[0]->subject,
-						'Description'=>$message,
-						'CompanyID'=>$CompanyID,
+						'TicketMessage'=>$message,
 						"MessageID"=>$message_id,
 						"AttachmentPaths"=>$AttachmentPaths,
 						"EmailID"=>$email_number,
-						"EmailCall"=>TicketsTable::Received,
+						"EmailCall"=>Messages::Received,
 						"created_at"=>date('Y-m-d H:i:s'),
 					];	
 	          		 TicketsConversation::insertGetId($logData);
@@ -506,7 +506,7 @@ protected $server;
 					
 					$logData = [
 						'Requester'=> $from,
-						"RequesterName"=>$this->GetNametxt($overview[0]->from),
+						"RequesterName"=>$FromName,
 						'Subject'=>$overview[0]->subject,
 						'Description'=>$message,
 						'CompanyID'=>$CompanyID,
@@ -520,6 +520,12 @@ protected $server;
 						"Status"=>TicketsTable::getOpenTicketStatus()
 					];	
 				  	 TicketsTable::insertGetId($logData);
+				}
+				
+				if(!in_array($from,$AllEmails)){
+					$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
+					Contact::create($ContactData);
+					$AllEmails[] = $from;
 				}
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen

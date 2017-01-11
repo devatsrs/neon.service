@@ -6,9 +6,6 @@ use App\Lib\TicketsTable;
 
 class TicketsTable extends \Eloquent {
 
-	const  Sent 			= 	0;
-    const  Received			=   1;
-    const  Draft 			= 	2;
 
     protected $guarded = array("TicketID");
 
