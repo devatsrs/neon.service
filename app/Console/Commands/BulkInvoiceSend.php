@@ -172,7 +172,7 @@ class BulkInvoiceSend extends Command {
                             foreach ($InvoiceCopyEmail as $singleemail) {
                                 $singleemail = trim($singleemail);
                                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                                    $emaildata['EmailTo'] = 'abubakar@code-desk.com';//$singleemail;
+                                    $emaildata['EmailTo'] = $singleemail;
                                     $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                                 }
                             }
@@ -189,7 +189,7 @@ class BulkInvoiceSend extends Command {
                             foreach ($CustomerEmail as $singleemail) {
                                 $singleemail = trim($singleemail);
                                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                                    $emaildata['EmailTo'] = 'abubakar@code-desk.com';$singleemail;
+                                    $emaildata['EmailTo'] = $singleemail;
                                     $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                                     $customeremail_status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                                 }
