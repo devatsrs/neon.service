@@ -72,6 +72,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\AccountReadEmails',
 		'App\Console\Commands\QuickBookInvoicePost',
 		'App\Console\Commands\PBXAccountBlock',
+        'App\Console\Commands\AutoRecurringInvoiceGenerator',
 	];
 
 	/**

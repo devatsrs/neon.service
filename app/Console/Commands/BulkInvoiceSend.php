@@ -96,21 +96,18 @@ class BulkInvoiceSend extends Command {
                 $email_sending_failed = array();
                 $pdf_generation_error = [];
                 if(isset($joboptions->RecurringInvoice)){
-                    $where=['AccountID'=>'','CurrencyID'=>'','Status'=>'','selectedIDs'=>''];
+                    $where=['AccountID'=>'','Status'=>'2','selectedIDs'=>''];
                     if(isset($joboptions->criteria) && !empty($joboptions->criteria)){
                         $criteria= json_decode($joboptions->criteria,true);
                         if(!empty($criteria['AccountID'])){
                             $where['AccountID']= $criteria['AccountID'];
                         }
                         $where['Status'] = $criteria['Status']==''?2:$criteria['Status'];
-                        if(!empty($criteria['CurrencyID'])){
-                            $where['CurrencyID']= $criteria['CurrencyID'];
-                        }
                     }else{
                         $where['selectedIDs']= $joboptions->selectedIDs;
                     }
                     $UserFullName = $JobLoggedUser->FirstName.' '. $JobLoggedUser->LastName;
-                    $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".intval($where['CurrencyID']).",'".$where['Status']."','".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."')";
+                    $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".$where['Status'].",'".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."')";
                     $result = DB::connection('sqlsrv2')->select($sql);
                     if(!empty($result[0]->message)){
                         $dberrormsg = $result[0]->message;

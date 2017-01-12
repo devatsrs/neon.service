@@ -606,8 +606,10 @@ class Invoice extends \Eloquent {
             $companyID = $Account->CompanyId;
             if(!empty($Invoice->RecurringInvoiceID)){
                 $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
-                $InvoiceTemplateID = $recurringInvoice->InvoiceTemplateID;
-                $PaymentDueInDays = $recurringInvoice->PaymentDueInDays;
+                $billingClass = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->first();
+                $InvoiceTemplateID = $billingClass->InvoiceTemplateID;
+                $PaymentDueInDays = $billingClass->PaymentDueInDays;
+
                 $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
                     ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
                     ->where("InvoiceID", $InvoiceID)
@@ -615,8 +617,7 @@ class Invoice extends \Eloquent {
                     ->groupBy("TaxRateID")
                     ->get();
             }else{
-                $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
-                $InvoiceTemplateID = AccountBilling::getInvoiceTemplateID($Invoice->AccountID);
+                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
                 $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
                 $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
@@ -625,11 +626,11 @@ class Invoice extends \Eloquent {
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceTemplate = InvoiceTemplate::find($InvoiceTemplateID);
-            //if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
+            if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
                 $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
-            //} else {
-                //$as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
-            //}
+            } else {
+                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
+            }
             $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
 
