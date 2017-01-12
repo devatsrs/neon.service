@@ -90,35 +90,31 @@ class AutoRecurringInvoiceGenerator extends Command {
                                 ->where(['Status'=>RecurringInvoice::ACTIVE])
                                 ->whereRaw('Date(NextInvoiceDate)<=DATE(NOW())')
                                 ->lists('RecurringInvoiceID');
-        if(count($recurringInvoiceIDs)>0) {
-            $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
-            $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
-            $jobdata["CompanyID"] = $CompanyID;
-            $jobdata["JobTypeID"] = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
-            $jobdata["JobStatusID"] = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-            $jobdata["JobLoggedUserID"] = $UserID;
-            $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
-            $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-            $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-            $jobdata["Options"] = json_encode(["selectedIDs" => implode(',', $recurringInvoiceIDs), 'RecurringInvoice' => 1, 'CronJobID' => $CronJobID]);
-            $jobdata["created_at"] = date('Y-m-d H:i:s');
-            $jobdata["updated_at"] = date('Y-m-d H:i:s');
-            $JobID = Job::insertGetId($jobdata);
-        }
+        $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
+        $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
+        $jobdata["CompanyID"] = $CompanyID;
+        $jobdata["JobTypeID"] = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+        $jobdata["JobStatusID"] = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+        $jobdata["JobLoggedUserID"] = $UserID;
+        $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
+        $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
+        $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
+        $jobdata["Options"] = json_encode(["selectedIDs" => implode(',',$recurringInvoiceIDs),'RecurringInvoice'=>1,'CronJobID'=>$CronJobID]);
+        $jobdata["created_at"] = date('Y-m-d H:i:s');
+        $jobdata["updated_at"] = date('Y-m-d H:i:s');
+        $JobID = Job::insertGetId($jobdata);
 
         $jobdata = array();
         $errors = '';
 
         try {
             CronJob::createLog($CronJobID);
-            if(count($recurringInvoiceIDs)>0) {
-                $this->call('bulkinvoicesend', ['CompanyID' => $CompanyID, 'JobID' => $JobID]);
-                $job = Job::find($JobID);
-                if ($job->JobStatusID == DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID')) {
-                    $errors = $job->JobStatusMessage;
-                }
-            }else{
-                $errors = 'Record Not Found';
+            Log::info('before call job');
+            $this->call('bulkinvoicesend', ['CompanyID' => $CompanyID, 'JobID' => $JobID]);
+            Log::info('after call job');
+            $job = Job::find($JobID);
+            if($job->JobStatusID == DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID')){
+                $errors = $job->JobStatusMessage;
             }
             Log::info($errors);
             if(!empty($errors)){
@@ -179,7 +175,6 @@ class AutoRecurringInvoiceGenerator extends Command {
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-
         $dataactive['Active'] = 0;
         $dataactive['PID'] = '';
         $CronJob->update($dataactive);
