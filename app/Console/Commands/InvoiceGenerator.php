@@ -271,12 +271,16 @@ class InvoiceGenerator extends Command {
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
 
-
             Log::info(' ========================== Invoice Send Loop End =============================');
 
-            if(count($errors)>0){
+            Log::info(' ========================== Recurring invoice Start =============================');
+            /* recurring template*/
+            $error = Invoice::SendRecurringInvoice($CompanyID,$UserID,$CronJobID,$this);
+            Log::info(' Recurring invoice error '.$error);
+
+            if(count($errors)>0 || !empty($error)){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$errors);
+                $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$errors).!empty($error)?'\n\r Recurring Invoice Exceptions: '.$error:'';
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);

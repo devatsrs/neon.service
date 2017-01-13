@@ -92,28 +92,12 @@ class BulkInvoiceSend extends Command {
 
             if(!empty($job)){
                 $JobLoggedUser = User::find($job->JobLoggedUserID);
+                $UserFullName = $JobLoggedUser->FirstName.' '. $JobLoggedUser->LastName;
                 $joboptions = json_decode($job->Options);
                 $email_sending_failed = array();
                 $pdf_generation_error = [];
                 if(isset($joboptions->RecurringInvoice)){
-                    $where=['AccountID'=>'','Status'=>'2','selectedIDs'=>''];
-                    if(isset($joboptions->criteria) && !empty($joboptions->criteria)){
-                        $criteria= json_decode($joboptions->criteria,true);
-                        if(!empty($criteria['AccountID'])){
-                            $where['AccountID']= $criteria['AccountID'];
-                        }
-                        $where['Status'] = $criteria['Status']==''?2:$criteria['Status'];
-                    }else{
-                        $where['selectedIDs']= $joboptions->selectedIDs;
-                    }
-                    $UserFullName = $JobLoggedUser->FirstName.' '. $JobLoggedUser->LastName;
-                    $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".$where['Status'].",'".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."')";
-                    $result = DB::connection('sqlsrv2')->select($sql);
-                    if(!empty($result[0]->message)){
-                        $dberrormsg = $result[0]->message;
-                        Log::info($dberrormsg);
-                    }
-                    $InvoiceIDs = Invoice::where(['ProcessID' => $ProcessID])->select(['InvoiceID'])->lists('InvoiceID');
+                    $InvoiceIDs = RecurringInvoice::getRecurringInvoices($CompanyID,$UserFullName,$ProcessID,$joboptions);
                 }else {
                     $InvoiceIDs = array_filter(explode(',', $joboptions->InvoiceIDs), 'intval');
                 }
