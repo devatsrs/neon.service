@@ -2324,7 +2324,7 @@ class Invoice extends \Eloquent {
         $date = date('Y-m-d H:i:s');
         $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
             ->where(['Status'=>RecurringInvoice::ACTIVE])
-            ->whereRaw('Date(NextInvoiceDate)<=DATE('.$date.')')
+            ->whereRaw("Date(NextInvoiceDate)<=DATE('".$date."')")
             ->lists('RecurringInvoiceID');
         $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
