@@ -32,6 +32,7 @@ class RecurringInvoice extends \Eloquent {
         }
 
         $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".$where['Status'].",'".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
+        Log::info($sql);
         $result = DB::connection('sqlsrv2')->select($sql);
         if(!empty($result[0]->message)){
             $dberrormsg = $result[0]->message;

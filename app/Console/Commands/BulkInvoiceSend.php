@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\AccountBilling;
+use App\Lib\BillingClass;
 use App\Lib\RecurringInvoice;
 use App\Lib\RecurringInvoiceLog;
 use App\Lib\Company;
@@ -108,25 +109,14 @@ class BulkInvoiceSend extends Command {
                     $data['Products'] = $Products;
                     $data['Taxes'] = $Taxes;
                     foreach ($InvoiceIDs as $InvoiceID) {
-                        $isPdfgenerated = 1;
+                        $isSend = 1;
                         $InvoiceCopyEmail = $InvoiceCopyEmail_main;
                         $Invoice = Invoice::find($InvoiceID);
                         if(isset($joboptions->RecurringInvoice)){
-                            $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
-                            $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue , strtotime($recurringInvoice->NextInvoiceDate));
-                            $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
-                            $recurringInvoice->update($RecurringInvoiceData);
-                            $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,$data);
-                            if(empty($pdf_path)){
-                                $isPdfgenerated = 0;
-                                $pdf_generation_error[] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
-                            }else{
-                                $Invoice->update(["PDF" => $pdf_path]);
-
-                            }
+                            $isSend = $this->checkInvoiceStatus($Invoice,$data);
                         }
 
-                        if($isPdfgenerated==1) {
+                        if($isSend==1) {
                             $Account = Account::find($Invoice->AccountID);
                             $Currency = Currency::find($Account->CurrencyId);
                             $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
@@ -254,11 +244,28 @@ class BulkInvoiceSend extends Command {
             Log::error($e);
         }
 
-
         CronHelper::after_cronrun($this->name, $this);
 
     }
 
-
+    public function checkInvoiceStatus($Invoice,$data){
+        $isSend = 1;
+        $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+        $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue , strtotime($recurringInvoice->NextInvoiceDate));
+        $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
+        $recurringInvoice->update($RecurringInvoiceData);
+        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,$data);
+        if(empty($pdf_path)){
+            $isSend = 0;
+            $pdf_generation_error[] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
+        }else{
+            $Invoice->update(["PDF" => $pdf_path]);
+        }
+        $BillingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
+        if($BillingClass->SendInvoiceSetting == 'after_admin_review'){
+            $isSend = 0;
+        }
+        return $isSend;
+    }
 
 }
