@@ -12,6 +12,7 @@ use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
 use App\Lib\RecurringInvoice;
+use App\Lib\RecurringInvoiceLog;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
