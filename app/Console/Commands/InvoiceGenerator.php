@@ -314,7 +314,7 @@ class InvoiceGenerator extends Command {
             Log::info(' ========================== Recurring invoice End =============================');
             if(count($errors)>0 || count($skipped)>0 || count($joberror)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($skipped)>0?'\n\r Skipped Recurring Invoice: '.implode(',\n\r',array_unique($skipped)):'').(count($joberror)>0?'\n\r Recurring Invoice Send Exception:'.implode(',\n\r',$joberror):'');
+                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($skipped)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$skipped):'').(count($joberror)>0?'\n\r Recurring Invoice Send Exception:'.implode(',\n\r',$joberror):'');
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);
