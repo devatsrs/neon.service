@@ -1096,7 +1096,18 @@ class Invoice extends \Eloquent {
 
         /** Email to Customer * */
         // Send only When Auto Invoice is On and GrandTotal is set.
-        if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
+        //If Recurring invoice and Auto Invoice on from Recurring Section
+        $canSend = 0;
+        if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
+            $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+            $billingClass = BillingClass::getBillingClass($recurringInvoice->RecurringInvoiceID);
+            if($billingClass->SendInvoiceSetting == 'automatically'){
+                $canSend=1;
+            }
+        }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
+            $canSend=1;
+        }
+        if( getenv('EmailToCustomer') == 1 && $canSend == 1  && $GrandTotal > 0 ) {
 
             $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
             $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
@@ -1130,6 +1141,16 @@ class Invoice extends \Eloquent {
                 $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
                 $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
                 InvoiceLog::insert($invoiceloddata);
+
+                if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
+                    $RecurringInvoiceLogData = array();
+                    $RecurringInvoiceLogData['RecurringInvoiceID']= $Invoice->RecurringInvoiceID;
+                    $RecurringInvoiceLogData['Note']= 'Invoice '.RecurringInvoiceLog::SENT.' By RMScheduler';
+                    $RecurringInvoiceLogData['created_at']= date("Y-m-d H:i:s");
+                    $RecurringInvoiceLogData['RecurringInvoiceLogStatus']= RecurringInvoiceLog::SENT;
+                    RecurringInvoiceLog::insert($RecurringInvoiceLogData);
+                }
+
                 $User = '';
                 if(!@empty($Account->Owner)){
                     $User = User::find($Account->Owner);
@@ -2318,35 +2339,6 @@ class Invoice extends \Eloquent {
             }
         }
         return $Response;
-    }
-
-    public static function SendRecurringInvoice($CompanyID,$UserID,$CronJobID,$CurrentInstance){
-        $date = date('Y-m-d H:i:s');
-        $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
-            ->where(['Status'=>RecurringInvoice::ACTIVE])
-            ->whereRaw("Date(NextInvoiceDate)<=DATE('".$date."')")
-            ->lists('RecurringInvoiceID');
-        $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
-        $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
-        $jobdata["CompanyID"] = $CompanyID;
-        $jobdata["JobTypeID"] = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
-        $jobdata["JobStatusID"] = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-        $jobdata["JobLoggedUserID"] = $UserID;
-        $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
-        $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-        $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-        $jobdata["Options"] = json_encode(["selectedIDs" => implode(',',$recurringInvoiceIDs),'RecurringInvoice'=>1,'CronJobID'=>$CronJobID]);
-        $jobdata["created_at"] = $date;
-        $jobdata["updated_at"] = $date;
-        $JobID = Job::insertGetId($jobdata);
-
-        $errors = '';
-        $CurrentInstance->call('bulkinvoicesend', ['CompanyID' => $CompanyID, 'JobID' => $JobID]);
-        $job = Job::find($JobID);
-        if($job->JobStatusID == DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID')){
-            $errors = $job->JobStatusMessage;
-        }
-        return $errors;
     }
 
 }

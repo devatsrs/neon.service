@@ -18,18 +18,10 @@ class RecurringInvoice extends \Eloquent {
         return [''=>'All',self::ACTIVE=>'Active',self::INACTIVE=>'InActive'];
     }
 
-    public static function getRecurringInvoices($CompanyID,$UserFullName,$ProcessID,$joboptions){
+    public static function GenerateInvoices($CompanyID,$UserFullName,$ProcessID,$selectedIDs){
         $date = date('Y-m-d H:i:s');
-        $where=['AccountID'=>'','Status'=>'2','selectedIDs'=>''];
-        if(isset($joboptions->criteria) && !empty($joboptions->criteria)){
-            $criteria= json_decode($joboptions->criteria,true);
-            if(!empty($criteria['AccountID'])){
-                $where['AccountID']= $criteria['AccountID'];
-            }
-            $where['Status'] = $criteria['Status']==''?2:$criteria['Status'];
-        }else{
-            $where['selectedIDs']= $joboptions->selectedIDs;
-        }
+        $dberrormsg = '';
+        $where=['AccountID'=>'','Status'=>'2','selectedIDs'=>$selectedIDs];
 
         $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".$where['Status'].",'".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
         Log::info($sql);
@@ -38,8 +30,51 @@ class RecurringInvoice extends \Eloquent {
             $dberrormsg = $result[0]->message;
             Log::info($dberrormsg);
         }
+
+        return $dberrormsg;
+    }
+
+    public static function SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail){
         $InvoiceIDs = Invoice::where(['ProcessID' => $ProcessID])->select(['InvoiceID'])->lists('InvoiceID');
-        return $InvoiceIDs;
+        $CompanyName = Company::getName($CompanyID);
+        if(count($InvoiceIDs)>0) {
+            $pdf_generation_error = [];
+            $Products = Product::getAllProductName();
+            $Taxes = TaxRate::getAllTaxName();
+            $data['Products'] = $Products;
+            $data['Taxes'] = $Taxes;
+            foreach ($InvoiceIDs as $InvoiceID) {
+                $Invoice = Invoice::find($InvoiceID);
+                $status = RecurringInvoice::checkInvoiceStatus($Invoice, $data);
+                if(!empty($status['error'])){
+                    $pdf_generation_error[] = $status['error'];
+                }
+                if($status['status']==1) {
+                    $account = Account::find($Invoice->AccountID);
+                    Invoice::EmailToCustomer($account,$Invoice->GrandTotal,$Invoice,'',$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
+                }
+            }
+            return $pdf_generation_error;
+        }
+    }
+
+    public static function checkInvoiceStatus($Invoice,$data){
+        $isSend = 1;
+        $status = ['status'=>1,'error'=>''];
+        $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,$data);
+        if(empty($pdf_path)){
+            $isSend = 0;
+            $status['error'] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
+        }else{
+            $Invoice->update(["PDF" => $pdf_path]);
+        }
+        $BillingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
+        if($BillingClass->SendInvoiceSetting == 'after_admin_review'){
+            $isSend = 0;
+        }
+        $status['status'] = $isSend;
+        return $status;
     }
 
 }

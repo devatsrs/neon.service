@@ -11,6 +11,7 @@ use App\Lib\Invoice;
 use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
+use App\Lib\RecurringInvoice;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +69,7 @@ class InvoiceGenerator extends Command {
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
         $today = date("Y-m-d");
+        $date = date('Y-m-d H:i:s');
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
@@ -76,7 +78,7 @@ class InvoiceGenerator extends Command {
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
-        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_at'] = $date;
         $joblogdata['created_by'] = 'RMScheduler';
 
         Log::useFiles(storage_path().'/logs/invoicegenerator-'.$CompanyID.'-'.date('Y-m-d').'.log');
@@ -85,6 +87,10 @@ class InvoiceGenerator extends Command {
 
         // Get Active Accounts which has  BillingCycleType set
         $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
+        $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
+            ->where(['Status' => RecurringInvoice::ACTIVE])
+            ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+            ->lists('RecurringInvoiceID');
 
        /* $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
@@ -119,9 +125,9 @@ class InvoiceGenerator extends Command {
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
-            $jobdata["created_at"] = date('Y-m-d H:i:s');
-            $jobdata["updated_at"] = date('Y-m-d H:i:s');
+            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,"recurringInvoiceIDs"=>$recurringInvoiceIDs,'CronJobID'=>$CronJobID));
+            $jobdata["created_at"] = $date;
+            $jobdata["updated_at"] = $date;
             $JobID = Job::insertGetId($jobdata);
             $jobdata = array();
         }else{
@@ -275,12 +281,40 @@ class InvoiceGenerator extends Command {
 
             Log::info(' ========================== Recurring invoice Start =============================');
             /* recurring template*/
-            $error = Invoice::SendRecurringInvoice($CompanyID,$UserID,$CronJobID,$this);
-            Log::info(' Recurring invoice error '.$error);
+            $skipped = [];
+            do {
+                $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
+                    ->where(['Status' => RecurringInvoice::ACTIVE])
+                    ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+                    ->lists('RecurringInvoiceID');
+                Log::info('recurring invoices ID');
+                $selectedIDs = implode(',',$recurringInvoiceIDs);
+                Log::info($selectedIDs);
+                if(count($recurringInvoiceIDs)>0) {
+                    $dberrormsg = RecurringInvoice::GenerateInvoices($CompanyID, User::get_user_full_name($UserID), $ProcessID, $selectedIDs);
+                    if (!empty($dberrormsg)) {
+                        $skipped[] = $dberrormsg;
+                    }
+                    foreach ($recurringInvoiceIDs as $InvoiceID) {
+                        $recurringInvoice = RecurringInvoice::find($InvoiceID);
+                        $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
+                        $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
+                        $recurringInvoice->update($RecurringInvoiceData);
+                    }
+                }
 
-            if(count($errors)>0 || !empty($error)){
+            } while( RecurringInvoice::select(['RecurringInvoiceID'])
+                ->where(['Status' => RecurringInvoice::ACTIVE])
+                ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+                ->count());
+            $joberror = RecurringInvoice::SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail);
+            Log::info(' Job Error');
+            Log::info($joberror);
+            Log::info(' Recurring invoice skipped '.print_r($skipped,true));
+            Log::info(' ========================== Recurring invoice End =============================');
+            if(count($errors)>0 || count($skipped)>0 || count($joberror)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$errors).!empty($error)?'\n\r Recurring Invoice Exceptions: '.$error:'';
+                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($skipped)>0?'\n\r Skipped Recurring Invoice: '.implode(',\n\r',array_unique($skipped)):'').(count($joberror)>0?'\n\r Recurring Invoice Send Exception:'.implode(',\n\r',$joberror):'');
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);
