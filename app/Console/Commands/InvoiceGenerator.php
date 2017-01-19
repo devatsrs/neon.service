@@ -297,7 +297,7 @@ class InvoiceGenerator extends Command {
                 Log::info($selectedIDs);
                 if(count($recurringInvoiceIDs)>0) {
                     foreach($recurringInvoiceIDs as $InvoiceID) {
-                        $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".trim($selectedIDs)."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
+                        $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",'".trim($InvoiceID)."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
                         Log::info($sql);
                         $result = DB::connection('sqlsrv2')->select($sql);
 
