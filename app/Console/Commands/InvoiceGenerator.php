@@ -104,17 +104,18 @@ class InvoiceGenerator extends Command {
 
         $AccountIDs = array_pluck($Accounts, 'AccountID');
 
+        if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
+            $UserID = $arguments["UserID"];
+            Log::info('run by user ' . $UserID);
+        } else {
+            $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+        }
+
         if((int)$JobID == 0) {
 
             /**
              * Create a Job
              */
-            if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
-                $UserID = $arguments["UserID"];
-                Log::info('run by user ' . $UserID);
-            } else {
-                $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
-            }
 
             $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
             $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
@@ -282,30 +283,39 @@ class InvoiceGenerator extends Command {
             Log::info(' ========================== Recurring invoice Start =============================');
             /* recurring template*/
             $skipped = [];
+            $notIn = [];
+            $UserFullName = User::get_user_full_name($UserID);
             do {
                 $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
                     ->where(['Status' => RecurringInvoice::ACTIVE])
                     ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+                    ->whereNotIn('RecurringInvoiceID',$notIn)
                     ->lists('RecurringInvoiceID');
                 Log::info('recurring invoices ID');
                 $selectedIDs = implode(',',$recurringInvoiceIDs);
                 Log::info($selectedIDs);
                 if(count($recurringInvoiceIDs)>0) {
-                    $dberrormsg = RecurringInvoice::GenerateInvoices($CompanyID, User::get_user_full_name($UserID), $ProcessID, $selectedIDs);
-                    if (!empty($dberrormsg)) {
-                        $skipped[] = $dberrormsg;
-                    }
-                    foreach ($recurringInvoiceIDs as $InvoiceID) {
-                        $recurringInvoice = RecurringInvoice::find($InvoiceID);
-                        $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
-                        $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
-                        $recurringInvoice->update($RecurringInvoiceData);
+                    foreach($recurringInvoiceIDs as $InvoiceID) {
+                        $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".trim($selectedIDs)."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
+                        Log::info($sql);
+                        $result = DB::connection('sqlsrv2')->select($sql);
+
+                        if (!empty($result[0]->message)) {
+                            $skipped[] = $result[0]->message;
+                            $notIn[] = $InvoiceID;
+                        }elseif($result[0]->InvoiceID > 0){
+                            $recurringInvoice = RecurringInvoice::find($InvoiceID);
+                            $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
+                            $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
+                            $recurringInvoice->update($RecurringInvoiceData);
+                        }
                     }
                 }
 
             } while( RecurringInvoice::select(['RecurringInvoiceID'])
                 ->where(['Status' => RecurringInvoice::ACTIVE])
                 ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+                ->whereNotIn('RecurringInvoiceID',$notIn)
                 ->count());
             $joberror = RecurringInvoice::SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail);
             Log::info(' Job Error');

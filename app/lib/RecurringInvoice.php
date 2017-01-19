@@ -18,22 +18,6 @@ class RecurringInvoice extends \Eloquent {
         return [''=>'All',self::ACTIVE=>'Active',self::INACTIVE=>'InActive'];
     }
 
-    public static function GenerateInvoices($CompanyID,$UserFullName,$ProcessID,$selectedIDs){
-        $date = date('Y-m-d H:i:s');
-        $dberrormsg = '';
-        $where=['AccountID'=>'','Status'=>'2','selectedIDs'=>$selectedIDs];
-
-        $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",".intval($where['AccountID']).",".$where['Status'].",'".trim($where['selectedIDs'])."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
-        Log::info($sql);
-        $result = DB::connection('sqlsrv2')->select($sql);
-        if(!empty($result[0]->message)){
-            $dberrormsg = $result[0]->message;
-            Log::info($dberrormsg);
-        }
-
-        return $dberrormsg;
-    }
-
     public static function SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail){
         $InvoiceIDs = Invoice::where(['ProcessID' => $ProcessID])->select(['InvoiceID'])->lists('InvoiceID');
         $CompanyName = Company::getName($CompanyID);
