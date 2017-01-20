@@ -45,11 +45,11 @@ class RecurringInvoice extends \Eloquent {
                         Log::info($sql);
                         $result = DB::connection('sqlsrv2')->select($sql);
                         if ($result[0]->InvoiceID > 0) {
-                            DB::connection('sqlsrv2')->commit();
                             $pdf_path = Invoice::generate_pdf($result[0]->InvoiceID, $data);
                             if(!empty($pdf_path)) {
                                 $Invoice = Invoice::find($result[0]->InvoiceID);
                                 $Invoice->update(["PDF" => $pdf_path]);
+                                DB::connection('sqlsrv2')->commit();
                                 $recurringInvoice = RecurringInvoice::find($RInvoiceID);
                                 $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
                                 $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
@@ -62,7 +62,7 @@ class RecurringInvoice extends \Eloquent {
                             }else{
                                 DB::rollback();
                                 DB::connection('sqlsrv2')->rollback();
-                                $status['message'] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
+                                $status['message'] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice Number '.$Invoice->FullInvoiceNumber;
                                 Log::info('Invoice rollback  InvoiceID = ' . $result[0]->InvoiceID);
                                 Log::info(' ========================== Error  =============================');
                                 Log::info($status['message']);
