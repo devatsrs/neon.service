@@ -281,51 +281,12 @@ class InvoiceGenerator extends Command {
 
             Log::info(' ========================== Invoice Send Loop End =============================');
 
-            Log::info(' ========================== Recurring invoice Start =============================');
-            /* recurring template*/
-            $skipped = [];
-            $notIn = [];
-            $UserFullName = User::get_user_full_name($UserID);
-            do {
-                $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
-                    ->where(['Status' => RecurringInvoice::ACTIVE])
-                    ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
-                    ->whereNotIn('RecurringInvoiceID',$notIn)
-                    ->lists('RecurringInvoiceID');
-                Log::info('recurring invoices ID');
-                $selectedIDs = implode(',',$recurringInvoiceIDs);
-                Log::info($selectedIDs);
-                if(count($recurringInvoiceIDs)>0) {
-                    foreach($recurringInvoiceIDs as $InvoiceID) {
-                        $sql = "call prc_CreateInvoiceFromRecurringInvoice (".$CompanyID.",'".trim($InvoiceID)."','".$UserFullName."',".RecurringInvoiceLog::GENERATE.",'".$ProcessID."','".$date."')";
-                        Log::info($sql);
-                        $result = DB::connection('sqlsrv2')->select($sql);
+            /** recurring invoice generation start*/
+            $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail);
 
-                        if (!empty($result[0]->message)) {
-                            $skipped[] = $result[0]->message;
-                            $notIn[] = $InvoiceID;
-                        }elseif($result[0]->InvoiceID > 0){
-                            $recurringInvoice = RecurringInvoice::find($InvoiceID);
-                            $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
-                            $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
-                            $recurringInvoice->update($RecurringInvoiceData);
-                        }
-                    }
-                }
-
-            } while( RecurringInvoice::select(['RecurringInvoiceID'])
-                ->where(['Status' => RecurringInvoice::ACTIVE])
-                ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
-                ->whereNotIn('RecurringInvoiceID',$notIn)
-                ->count());
-            $joberror = RecurringInvoice::SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail);
-            Log::info(' Job Error');
-            Log::info($joberror);
-            Log::info(' Recurring invoice skipped '.print_r($skipped,true));
-            Log::info(' ========================== Recurring invoice End =============================');
-            if(count($errors)>0 || count($skipped)>0 || count($joberror)>0){
+            if(count($errors)>0 || count($recuringerrors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($skipped)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$skipped):'').(count($joberror)>0?'\n\r Recurring Invoice Send Exception:'.implode(',\n\r',$joberror):'');
+                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($recuringerrors)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$recuringerrors):'');
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);
