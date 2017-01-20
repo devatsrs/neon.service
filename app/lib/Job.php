@@ -65,7 +65,7 @@ class Job extends \Eloquent {
         $jobType = JobType::where(["Code" => $JobType])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
         $CompanyID = $options['CompanyID'];
-        $data["JobTypeID"] = $CompanyID;
+        $data["CompanyID"] = $CompanyID;
         $data["JobTypeID"] = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
         $data["JobStatusID"] = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
         $data["JobLoggedUserID"] = 0;
@@ -129,6 +129,7 @@ class Job extends \Eloquent {
             $result = DataTableSql::of($query)->getProcResult(array('JobData'));
             $CompanyName = Company::where("CompanyID",$CompanyID)->pluck("CompanyName");
             foreach ($EmailList as $singleemail) {
+                $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                     $emaildata['EmailTo'] = $singleemail;
                     $emaildata['EmailToName'] = $CompanyName;

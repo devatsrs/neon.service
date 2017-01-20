@@ -422,6 +422,10 @@ class CronJob extends \Eloquent {
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings);
         $CompanyName = DB::table('tblCompany')->where(['CompanyID'=>$CompanyID])->pluck('CompanyName');
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = 'Success';
         $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
         CronJobLog::insert($joblogdata);
@@ -475,6 +479,7 @@ class CronJob extends \Eloquent {
             $valid_emails = array();
 
             foreach ($rates_email as $row) {
+                $row = trim($row);
                 if (filter_var($row, FILTER_VALIDATE_EMAIL)) {
                     $valid_emails[] = $row;
                     $emailto = $row;
