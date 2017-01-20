@@ -240,7 +240,8 @@ class SippyAccountUsage extends Command
              * Insert Vendor CDRs to Temp table
              *
              */
-            $data_count = $file_count = 0;
+            $file_count = 1;
+            $data_count = 0;
             foreach ($vfilenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
