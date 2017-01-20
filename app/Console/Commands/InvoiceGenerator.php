@@ -11,8 +11,10 @@ use App\Lib\Invoice;
 use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
+use App\Lib\Product;
 use App\Lib\RecurringInvoice;
 use App\Lib\RecurringInvoiceLog;
+use App\Lib\TaxRate;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +86,10 @@ class InvoiceGenerator extends Command {
 
         Log::useFiles(storage_path().'/logs/invoicegenerator-'.$CompanyID.'-'.date('Y-m-d').'.log');
 
+        $Products = Product::getAllProductName();
+        $Taxes = TaxRate::getAllTaxName();
+        $data['Products'] = $Products;
+        $data['Taxes'] = $Taxes;
 
 
         // Get Active Accounts which has  BillingCycleType set
@@ -282,7 +288,7 @@ class InvoiceGenerator extends Command {
             Log::info(' ========================== Invoice Send Loop End =============================');
 
             /** recurring invoice generation start*/
-            $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail);
+            $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data);
 
             if(count($errors)>0 || count($recuringerrors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');

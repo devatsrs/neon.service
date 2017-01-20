@@ -18,50 +18,7 @@ class RecurringInvoice extends \Eloquent {
         return [''=>'All',self::ACTIVE=>'Active',self::INACTIVE=>'InActive'];
     }
 
-    public static function SendRecurringInvoice($CompanyID,$JobID,$ProcessID,$InvoiceGenerationEmail){
-        $InvoiceIDs = Invoice::where(['ProcessID' => $ProcessID])->select(['InvoiceID'])->lists('InvoiceID');
-        $CompanyName = Company::getName($CompanyID);
-        if(count($InvoiceIDs)>0) {
-            $pdf_generation_error = [];
-            $Products = Product::getAllProductName();
-            $Taxes = TaxRate::getAllTaxName();
-            $data['Products'] = $Products;
-            $data['Taxes'] = $Taxes;
-            foreach ($InvoiceIDs as $InvoiceID) {
-                $Invoice = Invoice::find($InvoiceID);
-                $status = RecurringInvoice::checkInvoiceStatus($Invoice, $data);
-                if(!empty($status['error'])){
-                    $pdf_generation_error[] = $status['error'];
-                }
-                if($status['status']==1) {
-                    $account = Account::find($Invoice->AccountID);
-                    Invoice::EmailToCustomer($account,$Invoice->GrandTotal,$Invoice,'',$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
-                }
-            }
-            return $pdf_generation_error;
-        }
-    }
-
-    public static function checkInvoiceStatus($Invoice,$data){
-        $isSend = 1;
-        $status = ['status'=>1,'error'=>''];
-        $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
-        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,$data);
-        if(empty($pdf_path)){
-            $isSend = 0;
-            $status['error'] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
-        }else{
-            $Invoice->update(["PDF" => $pdf_path]);
-        }
-        $BillingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
-        if($BillingClass->SendInvoiceSetting == 'after_admin_review'){
-            $isSend = 0;
-        }
-        $status['status'] = $isSend;
-        return $status;
-    }
-
-    public static function GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail)
+    public static function GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data)
     {
         Log::info(' ========================== Recurring invoice Start =============================');
         /* recurring template*/
@@ -89,14 +46,31 @@ class RecurringInvoice extends \Eloquent {
                         $result = DB::connection('sqlsrv2')->select($sql);
                         if ($result[0]->InvoiceID > 0) {
                             DB::connection('sqlsrv2')->commit();
-                            $recurringInvoice = RecurringInvoice::find($RInvoiceID);
-                            $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
-                            $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
-                            $recurringInvoice->update($RecurringInvoiceData);
-                            DB::commit();
+                            $pdf_path = Invoice::generate_pdf($result[0]->InvoiceID, $data);
+                            if(!empty($pdf_path)) {
+                                $Invoice = Invoice::find($result[0]->InvoiceID);
+                                $Invoice->update(["PDF" => $pdf_path]);
+                                $recurringInvoice = RecurringInvoice::find($RInvoiceID);
+                                $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));
+                                $RecurringInvoiceData['LastInvoicedDate'] = Date("Y-m-d H:i:s");
+                                $recurringInvoice->update($RecurringInvoiceData);
+                                $status = RecurringInvoice::SendRecurringInvoice($CompanyID, $JobID, $Invoice, $ProcessID, $InvoiceGenerationEmail, $data);
+                                if ($status['status'] == 0) {
+                                    $recuringerrors[] = $status['message'];
+                                }
+                                DB::commit();
+                            }else{
+                                DB::rollback();
+                                DB::connection('sqlsrv2')->rollback();
+                                $status['message'] = Invoice::$InvoiceGenrationErrorReasons["PDF"].' against invoice ID'.$Invoice->InvoiceID;
+                                Log::info('Invoice rollback  InvoiceID = ' . $result[0]->InvoiceID);
+                                Log::info(' ========================== Error  =============================');
+                                Log::info($status['message']);
+                                $recuringerrors[] = $status['message'];
+                            }
                         }else{
-                            if (!empty($result[0]->message)) {
-                                $recuringerrors[] = $result[0]->message;
+                            if (!empty($result[0]->Message)) {
+                                $recuringerrors[] = $result[0]->Message;
                             }
                             DB::rollback();
                             DB::connection('sqlsrv2')->rollback();
@@ -133,13 +107,23 @@ class RecurringInvoice extends \Eloquent {
             ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
             ->whereNotIn('RecurringInvoiceID', $notIn)
             ->count());
-        $joberror = RecurringInvoice::SendRecurringInvoice($CompanyID, $JobID, $ProcessID, $InvoiceGenerationEmail);
-        Log::info(' Job Error');
-        Log::info($joberror);
-        Log::info(' Recurring invoice skipped ' . print_r($recuringerrors, true));
+        Log::info('recurring errors'.print_r($recuringerrors,true));
         Log::info(' ========================== Recurring invoice End =============================');
 
         return $recuringerrors;
+    }
+
+    public static function SendRecurringInvoice($CompanyID,$JobID,$Invoice,$ProcessID,$InvoiceGenerationEmail,$data){
+        $CompanyName = Company::getName($CompanyID);
+        $status = ['status'=>1,'message'=>'invoice send successfully'];
+        if(!empty($Invoice)) {
+            $account = Account::find($Invoice->AccountID);
+            $emailStatus = Invoice::EmailToCustomer($account, $Invoice->GrandTotal, $Invoice, '', $CompanyName, $CompanyID, $InvoiceGenerationEmail, $ProcessID, $JobID);
+            if ($emailStatus['status'] == 'failure') {
+                $status['status'] = 0;
+                $status['message'] = $emailStatus['message'];
+            }
+        }
     }
 
 }

@@ -1100,9 +1100,15 @@ class Invoice extends \Eloquent {
         $canSend = 0;
         if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
             $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
-            $billingClass = BillingClass::getBillingClass($recurringInvoice->RecurringInvoiceID);
-            if($billingClass->SendInvoiceSetting == 'automatically'){
-                $canSend=1;
+            $billingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
+            if(!empty($billingClass)) {
+                if ($billingClass->SendInvoiceSetting == 'automatically') {
+                    $canSend = 1;
+                }
+            }else{
+                $status['status'] = 'failure';
+                $status['message'] = 'No recurring class found against '.$Invoice->InvoiceID;
+
             }
         }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
             $canSend=1;
