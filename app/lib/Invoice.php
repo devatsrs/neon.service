@@ -1115,15 +1115,13 @@ class Invoice extends \Eloquent {
         }
         if( getenv('EmailToCustomer') == 1 && $canSend == 1  && $GrandTotal > 0 ) {
 
-            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-            $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
+            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
             //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
             //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
 
-            $CustomerEmails = explode(",",$InvoiceGenerationEmail);
-            foreach($CustomerEmails as $singleemail){
+            foreach ($InvoiceGenerationEmail as $singleemail) {
                 $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                     $emaildata['EmailTo'] = $singleemail;
@@ -1132,51 +1130,64 @@ class Invoice extends \Eloquent {
                 }
             }
 
-            if ($status['status'] == 0) {
-                $email_sending_failed[] = $Account->AccountName;
-                $status['status'] = 'failure';
-                $status['message'] = $Account->AccountName .' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
-                $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
-            } else {
-                $status['status'] = "success";
-                $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
-
-                $invoiceloddata = array();
-                $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
-                $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
-                $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
-                $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
-                InvoiceLog::insert($invoiceloddata);
-
-                if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
-                    $RecurringInvoiceLogData = array();
-                    $RecurringInvoiceLogData['RecurringInvoiceID']= $Invoice->RecurringInvoiceID;
-                    $RecurringInvoiceLogData['Note']= 'Invoice '.RecurringInvoiceLog::SENT.' By RMScheduler';
-                    $RecurringInvoiceLogData['created_at']= date("Y-m-d H:i:s");
-                    $RecurringInvoiceLogData['RecurringInvoiceLogStatus']= RecurringInvoiceLog::SENT;
-                    RecurringInvoiceLog::insert($RecurringInvoiceLogData);
+            if (!empty($Account->BillingEmail)) {
+                $CustomerEmails = explode(',',$Account->BillingEmail);
+                foreach ($CustomerEmails as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    }
                 }
 
-                $User = '';
-                if(!@empty($Account->Owner)){
-                    $User = User::find($Account->Owner);
-                }
-                /** log emails against account */
-                $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$User,$ProcessID,$JobID);
-
-                if($statuslog['status']==0) {
+                if ($status['status'] == 0) {
+                    $email_sending_failed[] = $Account->AccountName;
                     $status['status'] = 'failure';
-                    $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
-                    $status['message'] = $statuslog['message'];
+                    $status['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
+                    $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
+                } else {
+                    $status['status'] = "success";
+                    $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+
+                    $invoiceloddata = array();
+                    $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
+                    $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT] . ' By RMScheduler';
+                    $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                    $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                    InvoiceLog::insert($invoiceloddata);
+
+                    if (!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                        $RecurringInvoiceLogData = array();
+                        $RecurringInvoiceLogData['RecurringInvoiceID'] = $Invoice->RecurringInvoiceID;
+                        $RecurringInvoiceLogData['Note'] = 'Invoice ' . RecurringInvoiceLog::SENT . ' By RMScheduler';
+                        $RecurringInvoiceLogData['created_at'] = date("Y-m-d H:i:s");
+                        $RecurringInvoiceLogData['RecurringInvoiceLogStatus'] = RecurringInvoiceLog::SENT;
+                        RecurringInvoiceLog::insert($RecurringInvoiceLogData);
+                    }
+
+                    $User = '';
+                    if (!@empty($Account->Owner)) {
+                        $User = User::find($Account->Owner);
+                    }
+                    /** log emails against account */
+                    $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $emaildata, $status, $User, $ProcessID, $JobID);
+
+                    if ($statuslog['status'] == 0) {
+                        $status['status'] = 'failure';
+                        $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
+                        $status['message'] = $statuslog['message'];
+                    }
+
                 }
 
+            }else{
+                if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                    $status['status'] = 'failure';
+                    $status['message'] = $Account->AccountName . ': Invoice ' . $Invoice->FullInvoiceNumber . ' is created but not sent ( Email not set up )';
+                }
             }
-
         }
-        Log::info('Sending Email to Customer over');
-        Log::info('Email Status  ' . print_r($status,true)) ;
-        Log::info('Email log Status  ' . print_r($errorslog,true)) ;
-
         return $status;
     }
 
