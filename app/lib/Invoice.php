@@ -1120,7 +1120,7 @@ class Invoice extends \Eloquent {
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
             //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
             //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
-
+            $InvoiceGenerationEmail = explode(',',$InvoiceGenerationEmail);
             foreach ($InvoiceGenerationEmail as $singleemail) {
                 $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
