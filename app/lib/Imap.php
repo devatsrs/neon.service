@@ -412,7 +412,7 @@ protected $server;
 		$server		=	$server;		
 		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
 		$emails 	= 	imap_search($inbox,'UNSEEN');
-
+		Log::info("connectiong:".$email);
 		if($emails){
 			
 			/* begin output var */
@@ -421,10 +421,10 @@ protected $server;
 			/* start from bottom */
 		 	$emails =  array_reverse($emails);
 		
-			
+			try {
 			/* for every email... */
 			foreach($emails as $key => $email_number){
-				
+				Log::info("reading emails");
 				/* get information specific to this email */
 				$MatchType	 				= 		  ''; 
 				$MatchID 					= 		  '';
@@ -436,8 +436,8 @@ protected $server;
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
-				$msg_parent   				=		  TicketsTable::where("MessageID",$in_reply_to)->first();
-				$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
+				$msg_parent   				=		  AccountEmailLog::where("MessageID",$in_reply_to)->first();
+				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 					
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -460,14 +460,21 @@ protected $server;
 					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:0;
 				}
 				
-				if(!empty($msg_parent) || !empty($msg_parentconversation)){  // if email is reply of an ticket or conversation					
+				//if(!empty($msg_parent) || !empty($msg_parentconversation)){  // if email is reply of an ticket or conversation					
+				if(!empty($msg_parent)){ 
 					if(!empty($msg_parent)){
+						if($msg_parent->EmailParent==0){
+							$parent = $msg_parent->AccountEmailLogID;                        
+						}else{
+							$parent = $msg_parent->EmailParent;
+						}
+						$parent_UserID  =  $msg_parent->UserID;
+					}/*else if(!empty($msg_parentconversation)){
 						$parent = $msg_parent->TicketID;
-					}else if(!empty($msg_parentconversation)){
-						$parent = $msg_parent->TicketID;
-					}
+					}*/
 				}else{							    //new ticket						
 					$parent 			  = 	 0; // no parent by default		
+					$parent_UserID  	  =      0;
                 }
 				
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments	
@@ -485,10 +492,11 @@ protected $server;
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
-				
+				Log::info("from name from function:".$FromName);
+				Log::info("from name:".$overview[0]->from);
 				$update_id  =	''; $insert_id  =	'';
 						
-				if($parent){ 	
+				/*if($parent){ 	
 					$logData = [
 					    'TicketID'=>$parent,
 						'Requester'=> $from,
@@ -520,20 +528,84 @@ protected $server;
 						"Status"=>TicketsTable::getOpenTicketStatus()
 					];	
 				  	 TicketsTable::insertGetId($logData);
-				}
+				}*/
 				
-				if(!in_array($from,$AllEmails)){
-					$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
-					Contact::create($ContactData);
-					$AllEmails[] = $from;
+				if(!$parent){
+				$logData = [
+						'Requester'=> $from,
+						"RequesterName"=>$FromName,
+						'Subject'=>$overview[0]->subject,
+						'Description'=>$message,
+						'CompanyID'=>$CompanyID,
+						"AttachmentPaths"=>$AttachmentPaths,
+						"Group"=>$GroupID,
+						"created_at"=>date('Y-m-d H:i:s'),
+						"Priority"=>$priority,
+						"Status"=>TicketsTable::getOpenTicketStatus(),
+						"created_by"=> 'RMScheduler'
+					];
+						
+				$ticketID =  TicketsTable::insertGetId($logData);
 				}
-				
+				$logData = ['EmailFrom'=> $from,
+					"EmailfromName"=>$FromName,
+					'Subject'=>$overview[0]->subject,
+					'Message'=>$message,
+					'CompanyID'=>$CompanyID,
+					"MessageID"=>$message_id,
+					"EmailParent" => $parent,
+					"AttachmentPaths"=>$AttachmentPaths,
+					"EmailID"=>$email_number,
+					"EmailCall"=>Messages::Received,
+					"UserID" => $parent_UserID,
+					 "created_at"=>date('Y-m-d H:i:s'),
+					 "EmailTo"=>$to,
+					 "CreatedBy"=> 'RMScheduler'
+				];	
+						
+				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				if(!$parent)
+				{
+					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
+					 
+					if(!in_array($from,$AllEmails)){
+						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
+						$contactID =  Contact::insertGetId($ContactData);
+						$EmailLogObj = AccountEmailLog::find($EmailLog);
+						$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$contactID));		
+						$AllEmails[] = $from;
+					}else{
+						$accountIDSave  =	0;
+						$accountID   	=  DB::table('tblAccount')->where(array("Email"=>$from))->pluck("AccountID");
+						$accountID2  	=  DB::table('tblAccount')->where(array("BillingEmail"=>$from))->pluck("AccountID");
+						if($accountID){
+							$accountIDSave = $accountID;
+						}
+						if($accountID2){
+							$accountIDSave = $accountID2;
+						}
+						$EmailLogObj = AccountEmailLog::find($EmailLog);
+						if($accountIDSave){
+							$EmailLogObj->update(array("AccountID"=>$accountIDSave));		
+						}else{
+							 $ContactID 	 =  DB::table('tblContact')->where(array("Email"=>$from))->pluck("ContactID");	
+							 if($ContactID){
+								$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$ContactID));					
+							  }
+						}
+					}
+				}
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
-			}			
+			}
+			} catch (Exception $e) {
+				Log::error("Tracking email imap failed");
+				Log::error($e);								
+			}   			
 		} 		
 		/* close the connection */
 		imap_close($inbox);
+		Log::info("reading emails completed");
 	}	
 	     
 }

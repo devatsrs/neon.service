@@ -18,6 +18,8 @@ class Messages extends \Eloquent{
 	const  MEDIUM	=	2;
 	const  HIGH		=	3;
 	
+	const  UserTypeAccount	= 	0;
+    const  UserTypeContact	=   1;
 	
 	public static $EmailPriority = [	   	
 	   1 => Messages::URGENT,	    

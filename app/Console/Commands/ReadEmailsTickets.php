@@ -78,7 +78,7 @@ class ReadEmailsTickets extends Command
         $Company    = 	Company::find($CompanyID);
 		Log::useFiles(storage_path() . '/logs/ticketsemailalerts-' . date('Y-m-d') . '.log'); 	
 	
-		$Ticketgroups 	=	TicketGroups::all(); 
+		$Ticketgroups 	=	TicketGroups::where(array("GroupEmailStatus"=>1))->get(); 
 		foreach ($Ticketgroups as $TicketgroupData) { 
 				if(!empty($TicketgroupData->GroupEmailAddress) && !empty($TicketgroupData->GroupEmailServer) && !empty($TicketgroupData->GroupEmailPassword) && $TicketgroupData->GroupEmailStatus==1 ){	
 							
