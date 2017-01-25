@@ -41,6 +41,15 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== ACD/ASR alert END===========');
 
+        Log::info('============== Vendor Balance alert START===========');
+        try {
+            Alert::VendorBalanceReport($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Vendor Balance alert failed';
+        }
+        Log::info('============== Vendor Balance alert END===========');
+        
         Log::info('============== CDR Post Process START===========');
         try {
             TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);

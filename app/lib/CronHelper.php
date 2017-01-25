@@ -22,7 +22,13 @@ class CronHelper {
 
         $arguments = $Cron->argument();
         $lock_command_file =  $command_name;
-        if(count($arguments) > 0) {
+        if($command_name == 'invoicegenerator' && count($arguments) > 0){
+            unset($arguments['UserID']);
+            unset($arguments['JobID']);
+            foreach($arguments as $argument_key => $argument_value) {
+                $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
+            }
+        }else if(count($arguments) > 0) {
             foreach($arguments as $argument_key => $argument_value) {
                 $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
             }

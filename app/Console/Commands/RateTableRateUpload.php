@@ -9,20 +9,19 @@
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempRateTableRate;
 use App\Lib\VendorFileUploadTemplate;
-use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
 
 class RateTableRateUpload extends Command
 {
@@ -74,7 +73,7 @@ class RateTableRateUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = (string) Uuid::generate();
+        $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;

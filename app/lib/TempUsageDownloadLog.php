@@ -24,6 +24,7 @@ class TempUsageDownloadLog extends \Eloquent {
     //@TODO: move this function in individual commands to make customization easy.
     public static function getLastDate($startdate,$companyid,$CronJobID){
         $Settings =   CronJob::where(array('CompanyID'=>$companyid,'CronJobID'=>$CronJobID))->pluck('Settings');
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $cronsetting = json_decode($Settings);
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
@@ -32,7 +33,7 @@ class TempUsageDownloadLog extends \Eloquent {
         if(isset($cronsetting->MaxInterval) && $hours > 24){
             $endtimefinal = date('Y-m-d H:i:s',strtotime($startdate)+$cronsetting->MaxInterval*60);
         }else {
-            $endtimefinal = date('Y-m-d H:i:s',strtotime($startdate)+env('USAGE_INTERVAL')*60);
+            $endtimefinal = date('Y-m-d H:i:s',strtotime($startdate) + $usageinterval*60);
         }
         if($endtimefinal > date('Y-m-d H:i:s')){
             $endtimefinal = date('Y-m-d H:i:s');
