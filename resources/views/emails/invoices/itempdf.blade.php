@@ -99,7 +99,7 @@ tfoot {
             @if($ProductRow->ProductType == \App\Lib\Product::ITEM)
             <tr>
                 <td class="text-center">{{$data['Products'][$ProductRow->ProductType][$ProductRow->ProductID]}}</td>
-                <td class="text-left">{{$ProductRow->Description}}</td>
+                <td class="text-center">{{$ProductRow->Description}}</td>
                 <td class="text-center">{{$ProductRow->Qty}}</td>
                 <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                 @if($Invoice->TotalDiscount >0)
