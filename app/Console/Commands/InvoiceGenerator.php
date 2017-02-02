@@ -11,6 +11,10 @@ use App\Lib\Invoice;
 use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
+use App\Lib\Product;
+use App\Lib\RecurringInvoice;
+use App\Lib\RecurringInvoiceLog;
+use App\Lib\TaxRate;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +72,7 @@ class InvoiceGenerator extends Command {
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
         $today = date("Y-m-d");
+        $date = date('Y-m-d H:i:s');
 
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
@@ -76,15 +81,23 @@ class InvoiceGenerator extends Command {
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
-        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_at'] = $date;
         $joblogdata['created_by'] = 'RMScheduler';
 
         Log::useFiles(storage_path().'/logs/invoicegenerator-'.$CompanyID.'-'.date('Y-m-d').'.log');
 
+        $Products = Product::getAllProductName();
+        $Taxes = TaxRate::getAllTaxName();
+        $data['Products'] = $Products;
+        $data['Taxes'] = $Taxes;
 
 
         // Get Active Accounts which has  BillingCycleType set
         $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1 ])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
+        $recurringInvoiceIDs = RecurringInvoice::select(['RecurringInvoiceID'])
+            ->where(['Status' => RecurringInvoice::ACTIVE])
+            ->whereRaw("Date(NextInvoiceDate)<=DATE('" . $date . "')")
+            ->lists('RecurringInvoiceID');
 
        /* $InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
         $InvoiceGenerationEmail = ($InvoiceGenerationEmail != 'Invalid Key')?$InvoiceGenerationEmail:'';
@@ -98,17 +111,18 @@ class InvoiceGenerator extends Command {
 
         $AccountIDs = array_pluck($Accounts, 'AccountID');
 
+        if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
+            $UserID = $arguments["UserID"];
+            Log::info('run by user ' . $UserID);
+        } else {
+            $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+        }
+
         if((int)$JobID == 0) {
 
             /**
              * Create a Job
              */
-            if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
-                $UserID = $arguments["UserID"];
-                Log::info('run by user ' . $UserID);
-            } else {
-                $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
-            }
 
             $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
             $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
@@ -119,9 +133,9 @@ class InvoiceGenerator extends Command {
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
-            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
-            $jobdata["created_at"] = date('Y-m-d H:i:s');
-            $jobdata["updated_at"] = date('Y-m-d H:i:s');
+            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,"recurringInvoiceIDs"=>$recurringInvoiceIDs,'CronJobID'=>$CronJobID));
+            $jobdata["created_at"] = $date;
+            $jobdata["updated_at"] = $date;
             $JobID = Job::insertGetId($jobdata);
             $jobdata = array();
         }else{
@@ -271,12 +285,14 @@ class InvoiceGenerator extends Command {
                 ->whereNotIn('tblAccount.AccountID',$skip_accounts)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
 
-
             Log::info(' ========================== Invoice Send Loop End =============================');
 
-            if(count($errors)>0){
+            /** recurring invoice generation start*/
+            $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data);
+
+            if(count($errors)>0 || count($recuringerrors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$errors);
+                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($recuringerrors)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$recuringerrors):'');
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);

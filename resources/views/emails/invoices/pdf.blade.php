@@ -71,7 +71,7 @@ tfoot {
                 <td class="col-md-6 text-right text-small"  valign="top" >
                         <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}<br>
                         <b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}<br>
-                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
+                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</p>
                 </td>
             </tr>
         </table>
@@ -254,7 +254,7 @@ tfoot {
         </tbody>
     </table>
     @if($is_sub == true)
-    <br /> 
+    <br />
     <h5>Subscription Charges</h5>
     <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
             <thead>
@@ -400,7 +400,7 @@ tfoot {
                              ?>
                              <tr>
                              <td class="text-center">{{$row['area_prefix']}}</td>
-                             <td>{{substr($row['cli'],1)}}</td> 
+                             <td>{{substr($row['cli'],1)}}</td>
                              <td>{{substr($row['cld'],1)}}</td>
                              <td>{{$row['connect_time']}}</td>
                              <td>{{$row['disconnect_time']}}</td>
