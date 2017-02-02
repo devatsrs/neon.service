@@ -289,7 +289,7 @@ class InvoiceGenerator extends Command {
 
             /** recurring invoice generation start*/
             $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data);
-
+            $recuringerrors = array_filter($recuringerrors);
             if(count($errors)>0 || count($recuringerrors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($recuringerrors)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$recuringerrors):'');
