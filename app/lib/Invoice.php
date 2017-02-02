@@ -1162,7 +1162,7 @@ class Invoice extends \Eloquent {
                     if (!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
                         $RecurringInvoiceLogData = array();
                         $RecurringInvoiceLogData['RecurringInvoiceID'] = $Invoice->RecurringInvoiceID;
-                        $RecurringInvoiceLogData['Note'] = 'Invoice ' . RecurringInvoiceLog::SENT . ' By RMScheduler';
+                        $RecurringInvoiceLogData['Note'] = 'Invoice ' . $Invoice->FullInvoiceNumber.' '.RecurringInvoiceLog::$log_status[RecurringInvoiceLog::SENT] .' By RMScheduler';
                         $RecurringInvoiceLogData['created_at'] = date("Y-m-d H:i:s");
                         $RecurringInvoiceLogData['RecurringInvoiceLogStatus'] = RecurringInvoiceLog::SENT;
                         RecurringInvoiceLog::insert($RecurringInvoiceLogData);

@@ -30,14 +30,4 @@ class RecurringInvoiceLog extends \Eloquent {
                                     self::COMMENT => 'Comment'
                                 );
 
-    public static function get_comments($EstimateID){
-        $EstimateComment 	= 	EstimateLog::where(["EstimateID" => $EstimateID,"EstimateLogStatus" =>EstimateLog::COMMENT])->orderBy("EstimateLogID", "asc")->get();
-        return $EstimateComment;
-    }
-
-    public static function get_comments_count($EstimateID){
-        $EstimateCommentCount 	= 	EstimateLog::where(["EstimateID" => $EstimateID,"EstimateLogStatus" =>EstimateLog::COMMENT])->count();
-        return $EstimateCommentCount;
-    }
-
 }
