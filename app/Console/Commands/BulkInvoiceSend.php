@@ -127,6 +127,11 @@ class BulkInvoiceSend extends Command {
                     }
                     $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
                     Log::info($InvoiceCopyEmail);
+					
+					if(isset($joboptions->email_from))
+					{
+						$emaildata['EmailFrom'] = $joboptions->email_from;
+					}
 
                     foreach($InvoiceCopyEmail as $singleemail) {
                         $singleemail = trim($singleemail);

@@ -438,7 +438,6 @@ protected $server;
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   				=		  AccountEmailLog::where("MessageID",$in_reply_to)->first();
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
-					
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
 			
