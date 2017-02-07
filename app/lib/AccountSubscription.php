@@ -38,7 +38,7 @@ class AccountSubscription extends \Eloquent
         return TRUE;
     }
 
-    public static function getSubscriptionAmount($SubscriptionID, $StartDate, $EndDate, $FirstTime,$QuarterSubscription=0)
+    public static function getSubscriptionAmount($SubscriptionID, $StartDate, $EndDate, $FirstTime,$SubscriptionType=0)
     {
 
         /** Assumtion : Date Different should not be more than one month.
@@ -57,10 +57,14 @@ class AccountSubscription extends \Eloquent
             Log::info( 'days diff - ' . $days.' subscription days '.print_r($Subscriptiondays,true));
 
 //            $Subscription = BillingSubscription::find($SubscriptionID);
-		    $Subscription = AccountSubscription::find($SubscriptionID); 
+		    $Subscription = AccountSubscription::find($SubscriptionID);
 
+            if ($SubscriptionType == 2 && $days >= 365 ) { // if yearly
+                Log::info(' ========== yearly start ============');
+                $TotalAmount += $Subscription->YearlyFee;
+                Log::info(' ========== yearly end ============');
 
-            if($QuarterSubscription == 1 && $days > 27){ // if quarterly
+            }else if($SubscriptionType == 1 && $days > 27){ // if quarterly
                 Log::info(' ========== quarterly start ============');
                 $QuarterStartDate = $StartDate;
                 if(date('m',strtotime($EndDate)) == 1){
