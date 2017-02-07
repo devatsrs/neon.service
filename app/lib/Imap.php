@@ -437,10 +437,13 @@ protected $server;
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   				=		  AccountEmailLog::where("MessageID",$in_reply_to)->first();
+				$headerdata					=		  imap_headerinfo($inbox, $email_number);
+				
+				Log::info(print_r($headerdata,true));
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
-			
+		
 				foreach ( $h_array as $h ) {				
 					// Check if row start with a char
 						if ( preg_match("/^[A-Z]/i", $h )) {				
@@ -491,6 +494,8 @@ protected $server;
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
+				$cc			=	isset($headerdata->ccaddress)?$this->GetEmailtxt($headerdata->ccaddress):'';
+				$bcc		=	isset($headerdata->bccaddress)?$this->GetEmailtxt($headerdata->bccaddress):'';
 				Log::info("from name from function:".$FromName);
 				Log::info("from name:".$overview[0]->from);
 				$update_id  =	''; $insert_id  =	'';
@@ -557,9 +562,11 @@ protected $server;
 					"EmailID"=>$email_number,
 					"EmailCall"=>Messages::Received,
 					"UserID" => $parent_UserID,
-					 "created_at"=>date('Y-m-d H:i:s'),
-					 "EmailTo"=>$to,
-					 "CreatedBy"=> 'RMScheduler'
+					"created_at"=>date('Y-m-d H:i:s'),
+					"EmailTo"=>$to,
+					"CreatedBy"=> 'RMScheduler',
+					"Cc"=>$cc,
+					"Bcc"=>$bcc,
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
