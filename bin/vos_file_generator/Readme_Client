@@ -1,4 +1,6 @@
 
+Execute following command to setup VOS CDR file generation with attached script.
+
 
 useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
 passwd webcdr
@@ -23,7 +25,8 @@ Crontab entry
 #CDR file Generation
 * * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
 
-
-
 Check at cdr file location , to see files are generating properly
 /home/webcdr/cdr_data
+
+chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
+

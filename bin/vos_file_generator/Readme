@@ -12,10 +12,11 @@ mkdir ~webcdr/cdr_data
 chown -R webcdr ~webcdr
 chmod -R 0755 ~webcdr/
 
+chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
 
 webcdr / xxxxxxx
 
-CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'BbKl0MZuWK2bzleOtM33lqidUScsM0Xk';
+CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'password';
 MySQL> GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
 
 
