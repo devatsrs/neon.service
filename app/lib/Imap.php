@@ -439,7 +439,6 @@ protected $server;
 				$msg_parent   				=		  AccountEmailLog::where("MessageID",$in_reply_to)->first();
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);
 				
-				Log::info(print_r($headerdata,true));
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -550,6 +549,14 @@ protected $server;
 					];
 						
 				$ticketID =  TicketsTable::insertGetId($logData);
+				}
+				else //reopen ticket if ticket status closed 
+				{
+					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
+					if($old_status==TicketsTable::getClosedTicketStatus()){
+						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);		
+					}
+				
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
