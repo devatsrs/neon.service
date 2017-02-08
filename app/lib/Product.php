@@ -29,4 +29,13 @@ class Product extends \Eloquent {
             return BillingSubscription::getSubscriptionNameByID($id);
         }
     }
+
+    public static function getAllProductName(){
+        $products = [];
+        $items = Product::select(['ProductID','Name'])->lists('Name','ProductID');
+        $products[Product::ITEM] = $items;
+        $products[Product::ONEOFFCHARGE] = $items;
+        $products[Product::SUBSCRIPTION] = BillingSubscription::getAllSubscriptionsNames();
+        return $products;
+    }
 }
