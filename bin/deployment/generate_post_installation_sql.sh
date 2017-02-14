@@ -31,8 +31,6 @@ INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, '
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'DELETE_TEMP_FILES_DAYS', '3');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'SIPPYFILE_LOCATION', '_SIPPYFILE_LOCATION_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'VOS_LOCATION', '_VOS_LOCATION_');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'FILE_RETENTION_EMAIL', 'deven@code-desk.com');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'ErrorEmail', 'support@neon-soft.com');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'LICENCE_KEY', '_LICENCE_KEY_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'PHPExePath', '/usr/bin/php');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'RMArtisanFileLocation', '_RMArtisanFileLocation_');
