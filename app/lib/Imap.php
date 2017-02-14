@@ -428,7 +428,7 @@ protected $server;
 				/* get information specific to this email */
 				$MatchType	 				= 		  ''; 
 				$MatchID 					= 		  '';
-				$priority					=		  0;				
+				$priority					=		  1;				
 				$headers 					=		  array();
 				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
 				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
@@ -458,7 +458,7 @@ protected $server;
 				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
 					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
 					$prioritytxt2 =  explode(" (",$prioritytxt[0]);						
-					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:0;
+					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:1;
 				}
 				
 				//if(!empty($msg_parent) || !empty($msg_parentconversation)){  // if email is reply of an ticket or conversation					
