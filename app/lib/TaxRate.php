@@ -13,4 +13,13 @@ class TaxRate extends \Eloquent {
     const TAX_USAGE =2;
     const TAX_RECURRING =3;
 
+    public static function getTaxName($TaxRateId){
+        return $TaxRate = TaxRate::where(["TaxRateId"=>$TaxRateId])->pluck('Title');
+    }
+
+    public static function getAllTaxName(){
+        $items = TaxRate::select(['TaxRateId','Title'])->lists('Title','TaxRateId');
+        return $items;
+    }
+
 }

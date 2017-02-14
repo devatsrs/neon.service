@@ -281,10 +281,10 @@ class Helper{
             $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
         }
 
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = 2;
+        if (empty($RoundChargesAmount)) {
+            $value = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+            $RoundChargesAmount = ($value !='Invalid Key')?$value:2;
         }
-
         return $RoundChargesAmount;
     }
 

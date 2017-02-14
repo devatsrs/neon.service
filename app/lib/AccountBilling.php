@@ -43,8 +43,12 @@ class AccountBilling extends \Eloquent {
         return BillingClass::getCDRType($BillingClassID);
     }
     public static function getRoundChargesAmount($AccountID){
+        $roundCharge = '';
         $BillingClassID = self::getBillingClassID($AccountID);
-        return BillingClass::getRoundChargesAmount($BillingClassID);
+        if(!empty($BillingClassID)){
+            $roundCharge = BillingClass::getRoundChargesAmount($BillingClassID);
+        }
+        return $roundCharge;
     }
     public static function getTaxRate($AccountID){
         $BillingClassID = self::getBillingClassID($AccountID);

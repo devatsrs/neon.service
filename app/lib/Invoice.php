@@ -390,7 +390,7 @@ class Invoice extends \Eloquent {
                      **************************
                      **************************
                      */
-                    //Check if Invoice Usage is alrady Created.
+                    //Check if Invoice Usage is already Created.
                     //TRUE=Already Billed
                     //FALSE = Not billed
                     Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
@@ -599,17 +599,34 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static  function generate_pdf($InvoiceID){
+    public static  function generate_pdf($InvoiceID,$data = []){
         if($InvoiceID>0) {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $companyID = $Account->CompanyId;
-            $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
+            if(!empty($Invoice->RecurringInvoiceID)){
+                $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+                $billingClass = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->first();
+                $InvoiceTemplateID = $billingClass->InvoiceTemplateID;
+                $PaymentDueInDays = $billingClass->PaymentDueInDays;
+
+                $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->where("InvoiceID", $InvoiceID)
+                    ->orderBy("InvoiceTaxRateID", "asc")
+                    ->groupBy("TaxRateID")
+                    ->get();
+            }else{
+                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
+                $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
+                $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+            }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-            $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
+            $InvoiceTemplate = InvoiceTemplate::find($InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
                 $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
             } else {
@@ -617,12 +634,12 @@ class Invoice extends \Eloquent {
             }
             $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
-            $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+
             $usage_data = array();
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
             $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-            if($InvoiceTemplate->InvoicePages == 'single_with_detail') {
+            if($InvoiceTemplate->InvoicePages == 'single_with_detail' && empty($Invoice->RecurringInvoiceID)) {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
 
@@ -676,8 +693,11 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo','AccountBilling','RoundChargesAmount'))->render();
-
+            if(empty($Invoice->RecurringInvoiceID)) {
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount'))->render();
+            }else {
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data'))->render();
+            }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
@@ -710,7 +730,6 @@ class Invoice extends \Eloquent {
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
-
             Log::info($output);
             Log::info($local_htmlfile);
             @unlink($local_htmlfile);
@@ -1078,60 +1097,100 @@ class Invoice extends \Eloquent {
 
         /** Email to Customer * */
         // Send only When Auto Invoice is On and GrandTotal is set.
-        if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
+        //If Recurring invoice and Auto Invoice on from Recurring Section
+        $canSend = 0;
+        if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
+            $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+            $billingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
+            if(!empty($billingClass)) {
+                if ($billingClass->SendInvoiceSetting == 'automatically') {
+                    $canSend = 1;
+                }
+            }else{
+                $status['status'] = 'failure';
+                $status['message'] = 'No recurring class found against '.$Invoice->InvoiceID;
 
-            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-            $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
+            }
+        }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
+            $canSend=1;
+        }
+        if( getenv('EmailToCustomer') == 1 && $canSend == 1  && $GrandTotal > 0 ) {
+
+            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
             //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
             //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
-
-            $CustomerEmails = explode(",",$InvoiceGenerationEmail);
-            foreach($CustomerEmails as $singleemail){
-                $singleemail = trim($singleemail);
-                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                    $emaildata['EmailTo'] = $singleemail;
-                    $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
-                    $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+            if(!empty($InvoiceGenerationEmail)) {
+                $InvoiceGenerationEmail = explode(',',$InvoiceGenerationEmail);
+                foreach ($InvoiceGenerationEmail as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    }
                 }
             }
 
-            if ($status['status'] == 0) {
-                $email_sending_failed[] = $Account->AccountName;
-                $status['status'] = 'failure';
-                $status['message'] = $Account->AccountName .' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
-                $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
-            } else {
-                $status['status'] = "success";
-                $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
-
-                $invoiceloddata = array();
-                $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
-                $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
-                $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
-                $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
-                InvoiceLog::insert($invoiceloddata);
-                $User = '';
-                if(!@empty($Account->Owner)){
-                    $User = User::find($Account->Owner);
+            if (!empty($Account->BillingEmail)) {
+                $CustomerEmails = explode(',',$Account->BillingEmail);
+                foreach ($CustomerEmails as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    }
                 }
-                /** log emails against account */
-                $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$User,$ProcessID,$JobID);
 
-                if($statuslog['status']==0) {
+                if ($status['status'] == 0) {
+                    $email_sending_failed[] = $Account->AccountName;
                     $status['status'] = 'failure';
-                    $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
-                    $status['message'] = $statuslog['message'];
+                    $status['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
+                    $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
+                } else {
+                    $status['status'] = "success";
+                    $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+
+                    $invoiceloddata = array();
+                    $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
+                    $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT] . ' By RMScheduler';
+                    $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                    $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                    InvoiceLog::insert($invoiceloddata);
+
+                    if (!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                        $RecurringInvoiceLogData = array();
+                        $RecurringInvoiceLogData['RecurringInvoiceID'] = $Invoice->RecurringInvoiceID;
+                        $RecurringInvoiceLogData['Note'] = 'Invoice ' . $Invoice->FullInvoiceNumber.' '.RecurringInvoiceLog::$log_status[RecurringInvoiceLog::SENT] .' By RMScheduler';
+                        $RecurringInvoiceLogData['created_at'] = date("Y-m-d H:i:s");
+                        $RecurringInvoiceLogData['RecurringInvoiceLogStatus'] = RecurringInvoiceLog::SENT;
+                        RecurringInvoiceLog::insert($RecurringInvoiceLogData);
+                    }
+
+                    $User = '';
+                    if (!@empty($Account->Owner)) {
+                        $User = User::find($Account->Owner);
+                    }
+                    /** log emails against account */
+                    $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $emaildata, $status, $User, $ProcessID, $JobID);
+
+                    if ($statuslog['status'] == 0) {
+                        $status['status'] = 'failure';
+                        $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
+                        $status['message'] = $statuslog['message'];
+                    }
+
                 }
 
+            }else{
+                if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                    $status['status'] = 'failure';
+                    $status['message'] = $Account->AccountName . ': Invoice ' . $Invoice->FullInvoiceNumber . ' is created but not sent ( Email not set up )';
+                }
             }
-
         }
-        Log::info('Sending Email to Customer over');
-        Log::info('Email Status  ' . print_r($status,true)) ;
-        Log::info('Email log Status  ' . print_r($errorslog,true)) ;
-
         return $status;
     }
 
@@ -1430,7 +1489,12 @@ class Invoice extends \Eloquent {
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
             $BillingCycleType = AccountBilling::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
-            $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
+            $QuarterSubscription =  0;
+            if($BillingCycleType == 'quarterly'){
+                $QuarterSubscription = 1;
+            }elseif($BillingCycleType == 'yearly'){
+                $QuarterSubscription = 2;
+            }
             //Get Subscription Amount
             $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->AccountSubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
             Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->AccountSubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
