@@ -21,8 +21,7 @@ COMPANY_EMAIL=dev@companyname.com
 
 LICENCE_KEY=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
 
-TEMP_FOLDER=/home/tmp1
-
+TEMP_PATH=/home/tmp1
 
 DB_HOST=localhost
 
@@ -38,11 +37,27 @@ DB_DATABASECDR=NeonCDRDev
 
 DB_DATABASEREPORT=NeonReportDev
 
-WEB_LOCATION=/var/www/html/devtest/${COMPANY}.neon
+HOST_DOMAIN=linux1.neon-soft.com
 
-SERVICE_LOCATION=/var/www/html/devtest/${COMPANY}.neon.service
+HOST_DOMAIN_URL=http://${HOST_DOMAIN}
 
-API_LOCATION=/var/www/html/devtest/${COMPANY}.neon/public/neon.api
+HOST_IP=${DB_HOST}
+
+WEB_FOLDER_NAME=${COMPANY}.neon
+
+SERVICE_FOLDER_NAME=${COMPANY}.neon.service
+
+API_FOLDER_NAME=neon.api
+
+WEB_LOCATION=/var/www/html/devtest/${WEB_FOLDER_NAME}
+
+SITE_URL=${HOST_DOMAIN_URL}/devtest/${WEB_FOLDER_NAME}/public
+
+SERVICE_LOCATION=/var/www/html/devtest/${SERVICE_FOLDER_NAME}
+
+API_LOCATION=/var/www/html/devtest/${WEB_FOLDER_NAME}/public/${API_FOLDER_NAME}
+
+NEON_API_URL=${SITE_URL}/${API_FOLDER_NAME}/public
 
 SCRIPT_BASEDIR=$(dirname "$0")
 
@@ -54,25 +69,26 @@ SSH_HOST_PASS=KatiteDo48
 
 FRONT_STORAGE_PATH=${WEB_LOCATION}/app/storage
 
-SIPPYFILE_LOCATION=${TEMP_FOLDER}/sippy_files
+SIPPYFILE_LOCATION=${TEMP_PATH}/sippy_files
 
-VOS_LOCATION=${TEMP_FOLDER}/vos_files
+VOS_LOCATION=${TEMP_PATH}/vos_files
 
 RMArtisanFileLocation=${SERVICE_LOCATION}/artisan
 
-CRM_DASHBOARD=
+CRM_DASHBOARD=CrmDashboardTasks,CrmDashboardRecentAccount,CrmDashboardSalesRevenue,CrmDashboardSalesOpportunity,CrmDashboardPipeline,CrmDashboardForecast,CrmDashboardOpportunities
 
-BILLING_DASHBOARD=
+#Wholesale
+#BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
+#Retail
+BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardPincodeWidget,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardTotalInvoiceReceived,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPaymentReceived,BillingDashboardPaymentSent,BillingDashboardPendingDispute,BillingDashboardPendingEstimate,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
 
-BILLING_DASHBOARD_CUSTOMER=
+BILLING_DASHBOARD_CUSTOMER=BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
 
-EMAIL_TO_CUSTOMER=
+EMAIL_TO_CUSTOMER=1
 
-Neon_API_URL=
+ACC_DOC_PATH=${TEMP_PATH}
 
-ACC_DOC_PATH=
-
-PAYMENT_PROOF_PATH=
+PAYMENT_PROOF_PATH=${TEMP_PATH}
 
 STAGING_RM_DB=Ratemanagement3
 

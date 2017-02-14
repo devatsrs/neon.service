@@ -24,9 +24,10 @@ cat <<EOT >> ${POST_INSTALLATION_SQL_SCRIPT}
 
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'SSH', '{"host":"_SSH_HOST_","username":"_SSH_HOST_USER_","password":"_SSH_HOST_PASS_"}');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'UPLOADPATH', '_UPLOAD_PATH_');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'SITE_URL', '_SITE_URL_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'FRONT_STORAGE_PATH', '_FRONT_STORAGE_PATH_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'DELETE_STORAGE_LOG_DAYS', '31');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'TEMP_PATH', '_TEMP_FOLDER_');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'TEMP_PATH', '_TEMP_PATH_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'DELETE_TEMP_FILES_DAYS', '3');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'SIPPYFILE_LOCATION', '_SIPPYFILE_LOCATION_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'VOS_LOCATION', '_VOS_LOCATION_');
@@ -55,7 +56,7 @@ INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, '
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'MONITOR_DASHBOARD', 'CallMonitor');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'BILLING_DASHBOARD_CUSTOMER', '_BILLING_DASHBOARD_CUSTOMER_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'EMAIL_TO_CUSTOMER', '_EMAIL_TO_CUSTOMER_');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'Neon_API_URL', '_Neon_API_URL_');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'NEON_API_URL', '_NEON_API_URL_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'ACC_DOC_PATH', '_ACC_DOC_PATH_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'PAYMENT_PROOF_PATH', '_PAYMENT_PROOF_PATH_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'CRM_ALLOWED_FILE_UPLOAD_EXTENSIONS', 'bmp,csv,doc,docx,gif,ini,jpg,msg,odt,pdf,png,ppt,pptx,rar,rtf,txt,xls,xlsx,zip,7z');
@@ -99,14 +100,9 @@ INSERT INTO tblCRMBoardColumn ( BoardID, CompanyID, BoardColumnName, Height, Wid
 INSERT INTO tblCodeDeck (CodeDeckId, CompanyId, CodeDeckName, created_at, CreatedBy, updated_at, ModifiedBy, Type, DefaultCodedeck) VALUES (1, 1, 'Default Codedeck', '2016-11-18 09:17:21', 'Dev', '2016-11-18 09:36:18', NULL, NULL, 1);
 
 -- # One time set up for dim tables
-
-
-
-
-
 USE ${DB_DATABASEREPORT};
 
-call prc_datedimbuild('2016-01-01','2026-01-01');
+call prc_datedimbuild('2017-01-01','2027-01-01');
 call prc_timedimbuild();
 EOT
 
@@ -127,7 +123,7 @@ sed -i 's/_CRM_DASHBOARD_/='${CRM_DASHBOARD}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/_BILLING_DASHBOARD_/='${BILLING_DASHBOARD}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/_BILLING_DASHBOARD_CUSTOMER_/='${BILLING_DASHBOARD_CUSTOMER}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/_EMAIL_TO_CUSTOMER_/='${EMAIL_TO_CUSTOMER}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
-sed -i 's/_Neon_API_URL_/='${Neon_API_URL}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
+sed -i 's/_NEON_API_URL_/='${NEON_API_URL}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/_ACC_DOC_PATH_/='${ACC_DOC_PATH}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/_PAYMENT_PROOF_PATH_/='${PAYMENT_PROOF_PATH}'/g' ${POST_INSTALLATION_SQL_SCRIPT}
 
