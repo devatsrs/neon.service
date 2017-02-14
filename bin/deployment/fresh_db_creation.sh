@@ -13,8 +13,6 @@ mysqldump  --no-data --routines  RMBilling3 > /home/RMBilling3.sql
 mysqldump  --no-data --routines  RMCDR3 > /home/RMCDR3.sql
 mysqldump  --no-data --routines  StagingReport > /home/StagingReport.sql
 
-mysqldump --no-create-info Ratemanagement3 tblCompanyConfiguration > /home/tblCompanyConfiguration.sql
-
 Replace old character set if any.
 
 sed -i 's/utf8mb4_general_ci/utf8_unicode_ci/g' /home/Ratemanagement3.sql
