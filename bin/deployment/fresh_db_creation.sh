@@ -68,4 +68,3 @@ mysql   ${DB_DATABASEREPORT} < /home/StagingReport.sql
 
 source ${SCRIPT_BASEDIR}/generate_post_installation_sql
 
-mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT}

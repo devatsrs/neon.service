@@ -19,7 +19,7 @@ LAST_NAME=Company
 
 COMPANY_EMAIL=dev@companyname.com
 
-LICENCE=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
+LICENCE_KEY=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
 
 TEMP_FOLDER=/home/tmp1
 
