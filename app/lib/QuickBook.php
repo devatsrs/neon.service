@@ -91,6 +91,7 @@ class QuickBook {
 
 	public function check_quickbook($CompanyID){
 		$QuickBookData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$QuickBookSlug,$CompanyID);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
 
 		if(!$QuickBookData){
 			$this->quickbooks_is_connected = false;
@@ -110,9 +111,9 @@ class QuickBook {
 				$this->token = $AppToken;
 				$this->sandbox = $QuickBookSandbox;
 
-				$oauth_url = getenv("WEBURL") . '/quickbook/oauth';
-				$success_url = getenv("WEBURL") . '/quickbook/success';
-				$menu_url = getenv("WEBURL") . '/quickbook';
+				$oauth_url = $WEBURL . '/quickbook/oauth';
+				$success_url = $WEBURL . '/quickbook/success';
+				$menu_url = $WEBURL . '/quickbook';
 
 				$dbconnection = Config::get('database.connections.sqlsrv');
 				$dsn = 'mysqli://'.$dbconnection['username'].':'.$dbconnection['password'].'@'.$dbconnection['host'].'/'.$dbconnection['database'];

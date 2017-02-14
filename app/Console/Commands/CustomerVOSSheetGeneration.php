@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -52,6 +53,7 @@ class CustomerVOSSheetGeneration extends Command {
         $joboptions = json_decode($job->Options);
 
         Log::useFiles(storage_path().'/logs/customervossheet-'.$JobID.'-'.date('Y-m-d').'.log');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
         DB::beginTransaction();
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
@@ -92,12 +94,12 @@ class CustomerVOSSheetGeneration extends Command {
 
             if($downloadtype == 'xlsx'){
                 $amazonPath = $amazonDir .  $file_name . '.xlsx';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_excel($excel_data);
             }else if($downloadtype == 'csv'){
                 $amazonPath = $amazonDir .  $file_name . '.csv';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $csvoption['delimiter'] = '|';
                 $csvoption['enclosure'] = ' ';
                 $NeonExcel = new NeonExcelIO($file_path);
@@ -138,7 +140,7 @@ class CustomerVOSSheetGeneration extends Command {
             $file_content = str_replace("\n","\r\n",$file_content);
             $file_content = str_replace("  "," ",$file_content);
 
-            $newfile_path = getenv('UPLOAD_PATH') . '/'.$amazonDir;
+            $newfile_path = $UPLOADPATH . '/'.$amazonDir;
             $file_name .='.txt';
 
             file_put_contents($newfile_path.'/'.$file_name,$file_content);

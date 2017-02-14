@@ -245,6 +245,7 @@ class CronJob extends \Eloquent {
         $PID = $CronJob->PID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
 
         $cronsetting = json_decode($CronJob->Settings,true);
         $ActiveCronJobEmailTo = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
@@ -273,7 +274,7 @@ class CronJob extends \Eloquent {
             $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
             $emaildata['EmailToName'] = '';
             $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
-            $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+            $emaildata['Url'] = $WEBURL . '/activejob';
 
             $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
             return $emailstatus;
@@ -343,6 +344,7 @@ class CronJob extends \Eloquent {
         $LastCdrBehindEmailSendTime = isset($CronJob->CdrBehindEmailSendTime) ? $CronJob->CdrBehindEmailSendTime : '';
         $LastCdrBehindDuration = isset($CronJob->CdrBehindDuration) ? $CronJob->CdrBehindDuration : '';
 
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
         $ComanyName = Company::getName($CompanyID);
 
         $cronsetting = json_decode($CronJob->Settings,true);
@@ -357,7 +359,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+        $emaildata['Url'] = $WEBURL . '/activejob';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
@@ -419,6 +421,7 @@ class CronJob extends \Eloquent {
     public static function sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$EffectiveDate){
         $status['status']='';
         $status['message']='';
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings);
         $CompanyName = DB::table('tblCompany')->where(['CompanyID'=>$CompanyID])->pluck('CompanyName');
@@ -430,12 +433,11 @@ class CronJob extends \Eloquent {
         $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
         CronJobLog::insert($joblogdata);
 
-        Config::get('app.temp_location');
         $rates =  DB::select("CALL prc_GetLastRateTableRate(".$CompanyID.",'".$cronsetting->rateTableID."','".$EffectiveDate."')");
         $excel_data = json_decode(json_encode($rates),true);
         $filename = 'rate_table_'.date('Y-m-d His');
 
-        $file_path = Config::get('app.temp_location').$filename.'.xlsx';
+        $file_path = $TEMP_PATH.$filename.'.xlsx';
 
         $NeonExcel = new NeonExcelIO($file_path);
         $NeonExcel->write_excel($excel_data);
@@ -447,7 +449,7 @@ class CronJob extends \Eloquent {
         })->store('xls',Config::get('app.temp_location'));*/
 
 
-        $emaildata['attach'] = Config::get('app.temp_location').$filename.'.xlsx';
+        $emaildata['attach'] = $TEMP_PATH.$filename.'.xlsx';
         $rgname = DB::table('tblRateGenerator')->where(array('RateGeneratorId'=>$cronsetting->rateGeneratorID))->pluck('RateGeneratorName');
         $rtname = DB::table('tblRateTable')->where(array('RateTableId'=>$cronsetting->rateTableID))->pluck('RateTableName');
         $emaildata['data'] = array(

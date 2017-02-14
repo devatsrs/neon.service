@@ -48,17 +48,17 @@ class SippyMissingCDRFileFix extends Command {
 		try {
 
 			$GatewayIDs = [11,12];
-
+            $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
 			Log::info("Start");
 
 			foreach($GatewayIDs as $CompanyGatewayID){
 
 				Log::useFiles(storage_path() . '/logs/sippy_missing_cdrfile_fix-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
-				Log::info("SIPPYFILE_LOCATION  " . getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID );
+				Log::info("SIPPYFILE_LOCATION  " . $SIPPYFILE_LOCATION.'/'. $CompanyGatewayID );
 
 
-				$all_sippy_filenames = scandir(getenv("SIPPYFILE_LOCATION") . $CompanyGatewayID);
+				$all_sippy_filenames = scandir($SIPPYFILE_LOCATION.'/'. $CompanyGatewayID);
 
 				foreach ((array)$all_sippy_filenames as $file) {
 

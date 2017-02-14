@@ -78,7 +78,7 @@ class SippyDownloadCDR extends Command {
         $CompanyGatewayID   =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/sippydownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
-
+        $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
             Log::info("Start");
 
@@ -95,7 +95,7 @@ class SippyDownloadCDR extends Command {
             $sippy = new SippySSH($CompanyGatewayID);
             Log::info("SippySSH Connected");
             $filenames = $sippy->getCDRs();
-            $destination = getenv("SIPPYFILE_LOCATION") .$CompanyGatewayID;
+            $destination = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
                 mkdir($destination, 0777, true);
             }

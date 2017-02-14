@@ -153,6 +153,7 @@ protected $server;
 	{
 		$attachments   = array();
 		$attachmentsDB = array();
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
 		
 		/* if any attachments found code start... */
 		if(isset($structure->parts) && count($structure->parts)) 
@@ -220,11 +221,11 @@ protected $server;
 				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
 				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
 				
-				if(!is_dir(getenv("UPLOAD_PATH").'/'.$amazonPath)){
-					 mkdir(getenv("UPLOAD_PATH").'/'.$amazonPath, 0777, true);
+				if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
+					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
 				}
 				
-				$filepath   =  getenv("UPLOAD_PATH").'/'.$amazonPath . $email_number . "-" . $file_name;
+				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $email_number . "-" . $file_name;
 				$filepath2  =  $amazonPath . $email_number . "-" . $file_name; 
 				$fp = fopen($filepath, "w+");
 				fwrite($fp, $attachment['attachment']);

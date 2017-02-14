@@ -87,6 +87,7 @@ class ImportAccount extends Command {
         $tempProcessID = '';
 
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
 
             if (!empty($job)) {
@@ -173,7 +174,7 @@ class ImportAccount extends Command {
                         if (!empty($jobfile->FilePath)) {
                             $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                             if (strpos($path, "https://") !== false) {
-                                $file = Config::get('app.temp_location') . basename($path);
+                                $file = $TEMP_PATH . basename($path);
                                 file_put_contents($file, file_get_contents($path));
                                 $jobfile->FilePath = $file;
                             } else {

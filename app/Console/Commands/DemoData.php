@@ -2,6 +2,7 @@
 
 use App\Lib\Account;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
 use App\Lib\CSVImporter;
@@ -74,11 +75,12 @@ class DemoData extends Command {
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/demodata-'.date('Y-m-d').'.log');
         try {
+            $DEMO_DATA_PATH = CompanyConfiguration::get($CompanyID,'DEMO_DATA_PATH');
             $this->deleteOld($CompanyID);
             $CSVImporter = new CSVImporter();
             $CSVImporter->companyid = $CompanyID;
             $CSVImporter->relations=$this->getRelations();
-            $path = getenv('DEMO_DATA_PATH');
+            $path = $DEMO_DATA_PATH;
 
             $currentpath = $path.'\ratemanagement';
             $CSVImporter->getDirectory($currentpath,'sqlsrv');

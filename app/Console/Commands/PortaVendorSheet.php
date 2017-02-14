@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\AmazonS3;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\GatewayAccount;
 use App\Lib\Helper;
@@ -87,6 +88,7 @@ class PortaVendorSheet extends Command {
         $start_time = date('Y-m-d H:i:s');
 
         Log::useFiles(storage_path().'/logs/portavendorsheet-'.$JobID.'-'.date('Y-m-d').'.log');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
         DB::beginTransaction();
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
@@ -116,12 +118,12 @@ class PortaVendorSheet extends Command {
 
             if($downloadtype == 'xlsx'){
                 $amazonPath = $amazonDir .  $file_name . '.xlsx';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_excel($excel_data);
             }else if($downloadtype == 'csv'){
                 $amazonPath = $amazonDir .  $file_name . '.csv';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_csv($excel_data);
             }

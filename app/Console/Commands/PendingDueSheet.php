@@ -75,6 +75,7 @@ class PendingDueSheet extends Command {
         $CronJob->update($dataactive);
         Log::useFiles(storage_path().'/logs/pendingduesheet-'.$CronJobID.'-'.date('Y-m-d').'.log');
 
+        $WEBURL = App\Lib\CompanyConfiguration::get($CompanyID,'WEBURL');
 
         DB::beginTransaction();
         $joblogdata = array();
@@ -91,7 +92,7 @@ class PendingDueSheet extends Command {
 
             $result = DataTableSql::of($query)->getProcResult(array('VendorCustomerPending'));
             $dueSheetVendorCustomer = $result['data']['VendorCustomerPending'];
-            $temp = array();
+            $temp = array('WEBURL'=>$WEBURL);
             if(count($dueSheetVendorCustomer)>0){
                 foreach($dueSheetVendorCustomer as $key=>$row){
                     $temp[] = array('AccountID'=>$row->AccountID,'AccountName'=>$row->AccountName,'Trunk'=>$row->Trunk,'EffectiveDate'=>$row->EffectiveDate,'DAYSDIFF'=>$row->DAYSDIFF,'type'=>$row->type);
