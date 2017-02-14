@@ -16,6 +16,7 @@ use App\Lib\Notification;
 use App\Lib\Product;
 use App\Lib\TaxRate;
 use App\Lib\User;
+use App\Lib\EmailsTemplates;
 use Symfony\Component\Console\Input\InputArgument;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,7 @@ class BulkInvoiceSend extends Command {
     public function fire()
     {
 
-        CronHelper::before_cronrun($this->name, $this );
+        //CronHelper::before_cronrun($this->name, $this );
 
 
         $arguments = $this->argument();
@@ -136,8 +137,13 @@ class BulkInvoiceSend extends Command {
                     foreach($InvoiceCopyEmail as $singleemail) {
                         $singleemail = trim($singleemail);
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                            $emaildata['EmailTo'] = $singleemail;
-                            $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                            $emaildata['EmailTo']	=   $singleemail;
+							$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail);
+							$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail);
+							if(!isset($emaildata['EmailFrom'])){
+								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
+							}
+                            $status = Helper::sendMail($body, $emaildata,0);
                         }
                     }
                     if(getenv('EmailToCustomer') == 1){
@@ -155,7 +161,12 @@ class BulkInvoiceSend extends Command {
                         if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                             $emaildata['EmailTo'] = $singleemail;
                             $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email='.$singleemail;
-                            $customeremail_status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+							$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail);
+							$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail);
+							if(!isset($emaildata['EmailFrom'])){
+								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
+							}
+                            $customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
                         }
                     }
                     Log::info($customeremail_status);

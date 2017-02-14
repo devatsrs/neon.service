@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\View;
 
 class Helper{
 
-    public static function sendMail($view,$data){
+    public static function sendMail($view,$data,$ViewType=1){
 		$companyID = $data['CompanyID'];
-		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		if($ViewType){
+			$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		}
+		else{
+			$body  = $view;
+		}
+
 	
 		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		

@@ -11,7 +11,7 @@ class PHPMAILERIntegtration{
 	 } 
 
 
-	public static function SetEmailConfiguration($config,$companyID)
+	public static function SetEmailConfiguration($config,$companyID,$data)
 	{
 		Config::set('mail.host',$config->SMTPServer);
 		Config::set('mail.port',$config->Port);
@@ -57,7 +57,7 @@ class PHPMAILERIntegtration{
 			 $companyID = User::get_companyID();
 		}
 		
-		 $mail 		=   self::SetEmailConfiguration($config,$companyID);
+		 $mail 		=   self::SetEmailConfiguration($config,$companyID,$data);
 		 $status 	= 	array('status' => 0, 'message' => 'Something wrong with sending mail.');
 	
 		if(getenv('APP_ENV') != 'Production'){
