@@ -86,7 +86,7 @@ class BulkInvoiceSend extends Command {
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/bulkinvoicesend-'.$JobID.'-'.date('Y-m-d').'.log');
-
+	try {
         $Company = Company::find($CompanyID);
         $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
@@ -205,7 +205,7 @@ class BulkInvoiceSend extends Command {
             $jobdata['ModifiedBy'] = 'RMScheduler';
             Job::where(["JobID" => $JobID])->update($jobdata);
             Job::send_job_status_email($job,$CompanyID);
-        try {
+        
         } catch (\Exception $e) {
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'Exception: '.$e->getMessage();

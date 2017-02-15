@@ -36,8 +36,8 @@ class CronJob extends \Eloquent {
         return $cmd;
     }
 
-    public static function calcTimeRun($CronJobID,$Command){
-        $CronJob =  CronJob::find($CronJobID);
+    public static function calcTimeRun($CronJob,$Command){
+
         $cronsetting = json_decode($CronJob->Settings);
         $strtotime_current = strtotime(date('Y-m-d H:i:00'));
         $strtotime = strtotime(date('Y-m-d H:i:00'));
@@ -128,6 +128,28 @@ class CronJob extends \Eloquent {
                         $strtotime = 0;
                     }
                     return date('Y-m-d H:i:00',$strtotime);
+                case 'SECONDS':
+                    $strtotime_current = strtotime(date('Y-m-d H:i:s'));
+                    $strtotime = strtotime(date('Y-m-d H:i:s'));
+                    if(isset($CronJob->LastRunTime) && isset($CronJob->NextRunTime) &&  $CronJob->NextRunTime >= date('Y-m-d H:i:s') && $CronJob->LastRunTime != ''){
+                        $strtotime = strtotime($CronJob->LastRunTime);
+                        if(isset($cronsetting->JobInterval)){
+                            $strtotime += $cronsetting->JobInterval;
+                        }
+                        if($strtotime_current > $strtotime){
+                            $strtotime = $strtotime_current;
+                        }
+                    }
+                    $dayname = strtoupper(date('D'));
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay)){
+                        $strtotime = 0;
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname){
+                        $strtotime = 0;
+                    }
+                    If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:s',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:s')){
+                        $strtotime = 0;
+                    }
+                    return date('Y-m-d H:i:s',$strtotime);
                 default:
                     return '';
             }
@@ -176,7 +198,7 @@ class CronJob extends \Eloquent {
                         $strtotime = strtotime($CronJob->LastRunTime)+$cronsetting->JobInterval*60*60*24;
                     }
                     if(isset($cronsetting->JobStartTime)){
-                        return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));;
+                        return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
                     }
                     return date('Y-m-d H:i:00',$strtotime);
                 case 'MONTHLY':
@@ -189,6 +211,13 @@ class CronJob extends \Eloquent {
                         return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
                     }
                     return date('Y-m-d H:i:00',$strtotime);
+                case 'SECONDS':
+                    if($CronJob->LastRunTime == ''){
+                        $strtotime = strtotime('+'.$cronsetting->JobInterval.' seconds');
+                    }else{
+                        $strtotime = strtotime($CronJob->LastRunTime)+$cronsetting->JobInterval;
+                    }
+                    return date('Y-m-d H:i:s',$strtotime);
                 default:
                     return '';
 
@@ -200,7 +229,7 @@ class CronJob extends \Eloquent {
                 $strtotime = strtotime($CronJob->LastRunTime)+ 7*60*60*24;
             }
             if(isset($cronsetting->JobStartTime)){
-                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));;
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
             }
             return date('Y-m-d H:i:00',$strtotime);
         }
@@ -208,16 +237,33 @@ class CronJob extends \Eloquent {
 
     public static function createLog($CronJobID){
         $CronJob =  CronJob::find($CronJobID);
-        $data['LastRunTime'] = date('Y-m-d H:i:00');
+        $cronsetting = json_decode($CronJob->Settings);
+        if(!empty($CronJob) && isset($cronsetting->JobTime) && $cronsetting->JobTime == 'SECONDS') {
+            $time = strtotime(date('H:i:s'));
+            $time = $cronsetting->JobInterval*round($time/$cronsetting->JobInterval);
+            $data['LastRunTime'] = date('Y-m-d').' '.date('H:i:s',$time);
+        }else{
+            $data['LastRunTime'] = date('Y-m-d H:i:00');
+        }
+
         $CronJob->update($data);
         $data['NextRunTime'] = CronJob::calcNextTimeRun($CronJob->CronJobID);
         $CronJob->update($data);
     }
 
     public static function checkStatus($CronJobID,$Command){
-        if (CronJob::calcTimeRun($CronJobID,$Command) == date('Y-m-d H:i:00')) {
-            return  true;
+        $CronJob =  CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings);
+        if(!empty($CronJob) && isset($cronsetting->JobTime) && $cronsetting->JobTime == 'SECONDS') {
+            if (CronJob::calcTimeRun($CronJob,$Command) == date('Y-m-d H:i:s')) {
+                return  true;
+            }
+        }else{
+            if (CronJob::calcTimeRun($CronJob,$Command) == date('Y-m-d H:i:00')) {
+                return  true;
+            }
         }
+
         return false;
     }
 
