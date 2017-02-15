@@ -78,7 +78,7 @@ return [
 	|
 	*/
 
-	'key' => env('APP_KEY', 'SomeRandomString'),
+	'key' => env('APP_KEY', 'P2bs9zeJGFfAOitXauVjio0G3Q12xQet'),
 
 	'cipher' => MCRYPT_RIJNDAEL_128,
 
@@ -204,14 +204,5 @@ return [
 
 
 	],
-    'temp_location'=>getenv('TEMP_PATH'),
-    'vos_location'=>getenv('VOS_LOCATION'),
     'log_max_files' => 30,
-
-    'amazon_s3' =>
-        array(
-            'bucket' => getenv('AWS_BUCKET'),
-            'aws_url' => getenv('AWS_URL'),
-            'region'   => getenv('AWS_REGION'),
-        ),
 ];

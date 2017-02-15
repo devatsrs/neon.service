@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
 use App\Lib\User;
@@ -49,6 +50,8 @@ class RMService extends Command {
 
             $arguments = $this->argument();
             $CompanyID = $arguments["CompanyID"];
+            $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
+            $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RMArtisanFileLocation');
             $query = "CALL prc_CronJobAllPending ( $CompanyID )";
             $allpending = DataTableSql::of($query)->getProcResult(array(
                 'PendingUploadCDR',
@@ -84,9 +87,9 @@ class RMService extends Command {
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
+                        pclose(popen($PHPExePath." ".$RMArtisanFileLocation." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
                     }else{
-                        pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
+                        pclose(popen("start /B ". $PHPExePath." ".$RMArtisanFileLocation." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
                     }
 
                 }
@@ -94,9 +97,9 @@ class RMService extends Command {
             foreach($allpending['data']['PendingUploadCDR'] as $pedingcdrrow){
                 if (isset($pedingcdrrow->JobID) && $pedingcdrrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." cdrupload " . $CompanyID . " " . $pedingcdrrow->JobID . " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." cdrupload " . $CompanyID . " " . $pedingcdrrow->JobID . " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " cdrupload " . $CompanyID . " " . $pedingcdrrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " cdrupload " . $CompanyID . " " . $pedingcdrrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -105,72 +108,72 @@ class RMService extends Command {
                     $Options = json_decode($pedinginvoicerow->Options);
                     $CronJobID = $Options->CronJobID;
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." invoicegenerator " . $CompanyID . " $CronJobID " . $pedinginvoicerow->JobLoggedUserID . " $pedinginvoicerow->JobID &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." invoicegenerator " . $CompanyID . " $CronJobID " . $pedinginvoicerow->JobLoggedUserID . " $pedinginvoicerow->JobID &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " invoicegenerator " . $CompanyID . " $CronJobID " . $pedinginvoicerow->JobLoggedUserID . " $pedinginvoicerow->JobID ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " invoicegenerator " . $CompanyID . " $CronJobID " . $pedinginvoicerow->JobLoggedUserID . " $pedinginvoicerow->JobID ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingPortaSheet'] as $pedingportarow){
                 if (isset($pedingportarow->JobID) && $pedingportarow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." customerportasheet " . $CompanyID . " " . $pedingportarow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." customerportasheet " . $CompanyID . " " . $pedingportarow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " customerportasheet " . $CompanyID . " " . $pedingportarow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " customerportasheet " . $CompanyID . " " . $pedingportarow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingBulkMailSend'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." bulkinvoicesend " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." bulkinvoicesend " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " bulkinvoicesend " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " bulkinvoicesend " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PortVendorSheet'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." portavendorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." portavendorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " portavendorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " portavendorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['CDRRecalculate'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['InvoiceRegenerate'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." regenerateinvoice " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." regenerateinvoice " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " regenerateinvoice " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " regenerateinvoice " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingVendorUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vendorfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendorfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vendorfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendorfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingCodeDeckUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -178,36 +181,36 @@ class RMService extends Command {
             foreach($allpending['data']['InvoiceReminder'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." invoicereminder " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." invoicereminder " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " invoicereminder " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " invoicereminder " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingInvoiceUsageFileGeneration'] as $pendinginvoiceusagefilerow){
                 if (isset($pendinginvoiceusagefilerow->JobID) && $pendinginvoiceusagefilerow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." invoiceusagefilegenerator " . $CompanyID . " " . $pendinginvoiceusagefilerow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." invoiceusagefilegenerator " . $CompanyID . " " . $pendinginvoiceusagefilerow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " invoiceusagefilegenerator " . $CompanyID . " " . $pendinginvoiceusagefilerow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " invoiceusagefilegenerator " . $CompanyID . " " . $pendinginvoiceusagefilerow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['BulkLeadEmail'] as $bulkleademail){
                 if (isset($bulkleademail->JobID) && $bulkleademail->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." bulkleademailsend " . $CompanyID . " " . $bulkleademail->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." bulkleademailsend " . $CompanyID . " " . $bulkleademail->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " bulkleademailsend " . $CompanyID . " " . $bulkleademail->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " bulkleademailsend " . $CompanyID . " " . $bulkleademail->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['BulkAccountEmail'] as $bulkaccountemail){
                 if (isset($bulkaccountemail->JobID) && $bulkaccountemail->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." bulkleademailsend " . $CompanyID . " " . $bulkaccountemail->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." bulkleademailsend " . $CompanyID . " " . $bulkaccountemail->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " bulkleademailsend " . $CompanyID . " " . $bulkaccountemail->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " bulkleademailsend " . $CompanyID . " " . $bulkaccountemail->JobID . " ", "r"));
                     }
                 }
             }
@@ -215,9 +218,9 @@ class RMService extends Command {
             foreach($allpending['data']['CustomerSippySheetDownload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." customersippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." customersippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " customersippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " customersippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -225,9 +228,9 @@ class RMService extends Command {
             foreach($allpending['data']['VendorSippySheetDownload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vendorsippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendorsippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vendorsippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendorsippysheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -235,9 +238,9 @@ class RMService extends Command {
             foreach($allpending['data']['CustomerVOSSheetDownload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." customervossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." customervossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " customervossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " customervossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -245,9 +248,9 @@ class RMService extends Command {
             foreach($allpending['data']['VendorVOSSheetDownload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vendorvossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendorvossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vendorvossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendorvossheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -255,9 +258,9 @@ class RMService extends Command {
             foreach($allpending['data']['RateTableGeneration'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ratetablegenerator " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." ratetablegenerator " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablegenerator " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -265,18 +268,18 @@ class RMService extends Command {
             foreach($allpending['data']['RateTableFileUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablefileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
             foreach($allpending['data']['VendorCDRUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vcdrupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -286,9 +289,9 @@ class RMService extends Command {
             foreach ($cmdarray as $com) {
                 if (isset($com->CronJobID) && $com->CronJobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
+                        pclose(popen($PHPExePath." ".$RMArtisanFileLocation." ".$com->Command." ". $CompanyID." ".$com->CronJobID . " &","r"));
                     }else{
-                        pclose(popen("start /B ". env('PHPExePath')." ".env('RMArtisanFileLocation')." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
+                        pclose(popen("start /B ". $PHPExePath." ".$RMArtisanFileLocation." ".$com->Command." ". $CompanyID." ".$com->CronJobID, "r"));
                     }
 
                 }
@@ -298,9 +301,9 @@ class RMService extends Command {
             foreach($allpending['data']['ImportAccount'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " importaccount " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -309,9 +312,9 @@ class RMService extends Command {
             foreach($allpending['data']['DialStringUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " dialstringupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -320,9 +323,9 @@ class RMService extends Command {
             foreach($allpending['data']['QuickBookInvoicePost'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
@@ -333,18 +336,18 @@ class RMService extends Command {
             foreach ($cmdarray as $com) {
                 if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation'). " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID, "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID, "r"));
                     }
                 }
             }
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
                 if (isset($allpendingrs->JobID) && $allpendingrs->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
-                        pclose(popen(env('PHPExePath')." ".env('RMArtisanFileLocation')." customerratesheet " . $CompanyID . " " . $allpendingrs->JobID . " ". " &","r"));
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." customerratesheet " . $CompanyID . " " . $allpendingrs->JobID . " ". " &","r"));
                     }else {
-                        pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " customerratesheet " . $CompanyID . " " . $allpendingrs->JobID . " ", "r"));
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " customerratesheet " . $CompanyID . " " . $allpendingrs->JobID . " ", "r"));
                     }
                 }
             }

@@ -108,6 +108,7 @@ class VOSAccountUsage extends Command
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -163,7 +164,7 @@ class VOSAccountUsage extends Command
                     /** update file status to progress */
                     UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                     $delete_files[] = $UsageDownloadFilesID;
-                    $fullpath = getenv("VOS_LOCATION").$CompanyGatewayID. '/' ;
+                    $fullpath = $VOS_LOCATION.'/'.$CompanyGatewayID. '/' ;
                     try{
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();

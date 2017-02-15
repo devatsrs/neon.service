@@ -1,4 +1,5 @@
 <?php namespace App\Console\Commands;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\CronJob;
@@ -94,10 +95,12 @@ class RateGenerator extends Command {
 
             $JobID = Job::GenerateRateTable("GRT",$data);
             if ($JobID > 0) {
+                $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
+                $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RMArtisanFileLocation');
                 if(getenv('APP_OS') == 'Linux') {
-                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID." &", "r"));
+                    pclose(popen($PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID." &", "r"));
                 }else {
-                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID, "r"));
+                    pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID, "r"));
                 }
             }
 
