@@ -1,6 +1,7 @@
 <?php
 namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -111,7 +112,9 @@ class AutoInvoiceReminder extends Command
             CronJobLog::insert($joblogdata);
             DB::commit();
             if ($JobID > 0) {
-                pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " invoicereminder " . $CompanyID . " " . $JobID . " ", "r"));
+                $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
+                $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RMArtisanFileLocation');
+                pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " invoicereminder " . $CompanyID . " " . $JobID . " ", "r"));
             }
             Log::error(' ========================== auto invoice reminder end =============================');
 

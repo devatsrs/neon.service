@@ -11,6 +11,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\AmazonS3;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\GatewayAccount;
 use App\Lib\Helper;
@@ -79,6 +80,7 @@ class CustomerPortaSheet extends Command {
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/portasheet-'.$JobID.'-'.date('Y-m-d').'.log');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
         if((int)$job->AccountID > 0 ) {
             $GatewayAccount = GatewayAccount::where(array('AccountID'=>$job->AccountID))->first();
         }
@@ -110,12 +112,12 @@ class CustomerPortaSheet extends Command {
 
             if($downloadtype == 'xlsx'){
                 $amazonPath = $amazonDir .  $file_name . '.xlsx';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_excel($excel_data);
             }else if($downloadtype == 'csv'){
                 $amazonPath = $amazonDir .  $file_name . '.csv';
-                $file_path = getenv('UPLOAD_PATH') . '/'. $amazonPath ;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_csv($excel_data);
             }
