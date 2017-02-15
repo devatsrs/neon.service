@@ -91,7 +91,7 @@ class QuickBook {
 
 	public function check_quickbook($CompanyID){
 		$QuickBookData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$QuickBookSlug,$CompanyID);
-        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
 
 		if(!$QuickBookData){
 			$this->quickbooks_is_connected = false;

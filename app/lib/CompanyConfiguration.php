@@ -23,8 +23,8 @@ class CompanyConfiguration extends \Eloquent {
 
 
     public static function getConfiguration($CompanyID=0){
-        $LicenceKey = getenv('LicenceKey');
-        $CompanyName = getenv('CompanyName');
+        $LicenceKey = getenv('LICENCE_KEY');
+        $CompanyName = getenv('COMPANY_NAME');
         $CompanyConfiguration = 'CompanyConfiguration' . $LicenceKey.$CompanyName;
 
         if (self::$enable_cache && Cache::has($CompanyConfiguration)) {

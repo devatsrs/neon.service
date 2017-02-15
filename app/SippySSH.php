@@ -151,9 +151,9 @@ class SippySSH{
     // Not in use
     public static function encode_file($encoded_file){
 
-        $sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
+        //$sippy_decoder = getenv("SIPPY_CSVDECODER"); // Sippy decoder command
         $destination = $encoded_file . '.csv';
-
+        $sippy_decoder = self::get_sippy_cdr_decoder();
         /**
          *  Following command will generante new csv file from sippy encoded file
          *  and delete encoded file after csv created.
@@ -176,8 +176,8 @@ class SippySSH{
     public static function get_customer_file_content($sippy_file,$CompanyID) {
 
         try{
-            $SIPPY_CSVDECODER = CompanyConfiguration::get($CompanyID,'SIPPY_CSVDECODER');
-            $sippy_decoder = $SIPPY_CSVDECODER; // Sippy decoder command
+            //$SIPPY_CSVDECODER = CompanyConfiguration::get($CompanyID,'SIPPY_CSVDECODER');
+            $sippy_decoder = self::get_sippy_cdr_decoder(); // Sippy decoder command
             exec($sippy_decoder . " customer " . $sippy_file ,$output,$return_var);
             Log::info($sippy_decoder . " customer " . $sippy_file );
 
@@ -289,8 +289,8 @@ class SippySSH{
     public static function get_vendor_file_content($sippy_file,$CompanyID) {
 
         try{
-            $SIPPY_CSVDECODER = CompanyConfiguration::get($CompanyID,'SIPPY_CSVDECODER');
-            $sippy_decoder = $SIPPY_CSVDECODER; // Sippy decoder command
+            //$SIPPY_CSVDECODER = CompanyConfiguration::get($CompanyID,'SIPPY_CSVDECODER');
+            $sippy_decoder = self::get_sippy_cdr_decoder(); // Sippy decoder command
             exec($sippy_decoder . " vendor " . $sippy_file ,$output,$return_var);
             Log::info($sippy_decoder . " vendor " . $sippy_file );
 
@@ -416,5 +416,9 @@ class SippySSH{
         if($timestamp > 0 ){
             return gmdate('Y-m-d H:i:s', $timestamp);
         }
+    }
+
+    public static function get_sippy_cdr_decoder() {
+        return 'python ' . base_path() . '/sippy/read_cdr.py';
     }
 }

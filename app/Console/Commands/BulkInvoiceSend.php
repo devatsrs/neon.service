@@ -88,7 +88,7 @@ class BulkInvoiceSend extends Command {
         Log::useFiles(storage_path().'/logs/bulkinvoicesend-'.$JobID.'-'.date('Y-m-d').'.log');
 
         $Company = Company::find($CompanyID);
-        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
         $InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;

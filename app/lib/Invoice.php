@@ -1060,7 +1060,7 @@ class Invoice extends \Eloquent {
          */
         $emaildata = array();
         $Currency = Currency::find($Account->CurrencyId);
-        $WEBURL = CompanyConfiguration::get($CompanyID,'WEBURL');
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
         $_InvoiceNumber = $Invoice->FullInvoiceNumber;
