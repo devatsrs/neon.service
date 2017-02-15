@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\Helper;
 use App\Lib\Company;
 
-
+//-- not in use
 class DBFixing extends Command
 {
 
