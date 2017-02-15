@@ -4,6 +4,7 @@
 
 #source $(dirname "$0")/config.sh
 
+echo "Add default tables into POST INSTALLATION SQL file."
 
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCronJobCommand >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCountry > ${POST_INSTALLATION_SQL_SCRIPT}
@@ -104,8 +105,8 @@ call prc_datedimbuild('2017-01-01','2027-01-01');
 call prc_timedimbuild();
 EOT
 
-#Replace config values
-SITE_URL
+echo "Preparing POST INSTALLATION SQL file for new DB."
+
 sed -i "s/_SITE_URL_/$(echo "$SITE_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_SSH_HOST_USER_/$(echo "$SSH_HOST_USER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_SSH_HOST_PASS_/$(echo "$SSH_HOST_PASS" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
@@ -125,6 +126,8 @@ sed -i "s/_EMAIL_TO_CUSTOMER_/$(echo "$EMAIL_TO_CUSTOMER" | sed 's/\//\\\//g')/g
 sed -i "s/_NEON_API_URL_/$(echo "$NEON_API_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_ACC_DOC_PATH_/$(echo "$ACC_DOC_PATH" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_PAYMENT_PROOF_PATH_/$(echo "$PAYMENT_PROOF_PATH" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
+
+echo "Execute POST INSTALLATION SQL file on new DB."
 
 mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT}
 
