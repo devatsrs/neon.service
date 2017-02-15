@@ -96,6 +96,35 @@ class EmailsTemplates{
 		return $this->Error;
 	}
 	
+	static function SendRateSheetEmail($slug,$Ratesheet,$type="body",$data,$CompanyID){
+		
+			$replace_array					=	 $data;				
+			$message						=	 "";		
+			$EmailTemplate 					= 	 EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->first();
+			if($type=="subject"){
+				$EmailMessage				=	 $EmailTemplate->Subject;
+			}else{
+				$EmailMessage				=	 $EmailTemplate->TemplateBody;
+			}
+			
+			$extra = [
+				'{{FirstName}}',
+				'{{LastName}}',
+				'{{RateTableName}}',
+				'{{EffectiveDate}}',
+				'{{RateGeneratorName}}',					
+				'{{CompanyName}}',
+			];
+		
+		foreach($extra as $item){
+			$item_name = str_replace(array('{','}'),array('',''),$item);
+			if(array_key_exists($item_name,$replace_array)) {					
+				$EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);					
+			}
+		} 
+		return $EmailMessage; 	
+	}
+	
 	static function GetEmailTemplateFrom($slug,$CompanyID){
 		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("EmailFrom");
 	}

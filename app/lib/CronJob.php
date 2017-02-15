@@ -25,7 +25,7 @@ class CronJob extends \Eloquent {
 
     const  CRON_SUCCESS = 1;
     const  CRON_FAIL = 2;
-
+	const  RATEEMAILTEMPLATE = 'CronRateSheetEmail';
 
     public static function checkForeignKeyById($id){
         return 0;
@@ -508,15 +508,24 @@ class CronJob extends \Eloquent {
         $users = User::where(["CompanyID" => $CompanyID])->where('Roles', 'like', '%Account Manager%')->get(['EmailAddress','FirstName','LastName']);
 
         foreach($users as $user){
-            $emailto = $user->EmailAddress;
-            $FirstName = $user->FirstName;
-            $LastName = $user->LastName;
-            $emaildata['EmailTo'] = $emailto;
-            $emaildata['EmailToName'] = $FirstName.' '.$LastName;
-            $emaildata['FirstName'] = $FirstName;
-            $emaildata['LastName'] = $LastName;
-            $emaildata['CompanyName'] = $CompanyName;
-            $status = Helper::sendMail('emails.rategenerator',$emaildata);
+			
+            $emailto 						= 	$user->EmailAddress;
+            $FirstName 						= 	$user->FirstName;
+            $LastName 						= 	$user->LastName;
+            $emaildata['EmailTo'] 			= 	$emailto;
+            $emaildata['EmailToName'] 		= 	$FirstName.' '.$LastName;
+            $emaildata['FirstName'] 		= 	$FirstName;
+            $emaildata['LastName'] 			= 	$LastName;
+            $emaildata['CompanyName'] 		= 	$CompanyName;
+			$emaildata['RateGeneratorName']	=	$rgname;
+			$emaildata['RateTableName']		=	$rtname;
+			$emaildata['EffectiveDate']		=	$EffectiveDate;
+			
+			$body							=	EmailsTemplates::SendActiveCronJobEmail(CronJob::RATEEMAILTEMPLATE,array(),'body',$emaildata,$CompanyID);
+			$emaildata['Subject']			=	EmailsTemplates::SendActiveCronJobEmail(CronJob::RATEEMAILTEMPLATE,array(),"subject",$emaildata,$CompanyID);
+			$emaildata['EmailFrom']			=	EmailsTemplates::GetEmailTemplateFrom(CronJob::RATEEMAILTEMPLATE,$CompanyID);
+			
+            $status 						= 	Helper::sendMail($body,$emaildata,0);
         }
         //$rates_email = explode(',',CompanySetting::getKeyVal($CompanyID,'RateGenerationEmail'));
         if(isset($cronsetting->SuccessEmail) && !empty($cronsetting->SuccessEmail)) {
@@ -536,7 +545,12 @@ class CronJob extends \Eloquent {
                     $emaildata['FirstName'] = $FirstName;
                     $emaildata['LastName'] = $LastName;
                     $emaildata['CompanyName'] = $CompanyName;
-                    $status = Helper::sendMail('emails.rategenerator', $emaildata);
+					
+					$body			=   EmailsTemplates::SendRateSheetEmail(CronJob::RATEEMAILTEMPLATE,$cronsetting,'body',$emailData,$CompanyID);
+					$emailData['Subject']	=   EmailsTemplates::SendRateSheetEmail(CronJob::RATEEMAILTEMPLATE,$cronsetting,"subject",$emailData,$CompanyID);
+					$emailData['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(CronJob::RATEEMAILTEMPLATE,$CompanyID);
+					
+                    $status = Helper::sendMail($body, $emaildata,0);
                 }
             }
 
