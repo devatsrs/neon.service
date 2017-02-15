@@ -19,7 +19,7 @@ COMPANY_EMAIL=dev@companyname.com
 
 LICENCE_KEY=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
 
-TEMP_PATH=/home/tmp1
+TEMP_PATH=/var/www/html/devtest/deptmp
 
 DB_HOST=localhost
 
@@ -27,13 +27,17 @@ DB_USERNAME=neon-user-dev
 
 DB_PASSWORD=B!I27U03Yx68
 
-DB_DATABASE=NeonRMDev
+#DB_DATABASE=NeonRMDev
+DB_DATABASE=${COMPANY}RM
 
-DB_DATABASE2=NeonBillingDev
+#DB_DATABASE2=NeonBillingDev
+DB_DATABASE2=${COMPANY}Billing
 
-DB_DATABASECDR=NeonCDRDev
+#DB_DATABASECDR=NeonCDRDev
+DB_DATABASECDR=${COMPANY}CDR
 
-DB_DATABASEREPORT=NeonReportDev
+#DB_DATABASEREPORT=NeonReportDev
+DB_DATABASEREPORT=${COMPANY}Report
 
 HOST_DOMAIN=linux1.neon-soft.com
 
@@ -78,9 +82,12 @@ CRM_DASHBOARD=CrmDashboardTasks,CrmDashboardRecentAccount,CrmDashboardSalesReven
 if [ "$IS_WHOLESALE" = "1" ]; then
     #Wholesale
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
+   	echo "This is Wholesale setup";
+
 else
     #Retail
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardPincodeWidget,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardTotalInvoiceReceived,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPaymentReceived,BillingDashboardPaymentSent,BillingDashboardPendingDispute,BillingDashboardPendingEstimate,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
+    echo "This is Retail setup";
 fi
 
 BILLING_DASHBOARD_CUSTOMER=BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
