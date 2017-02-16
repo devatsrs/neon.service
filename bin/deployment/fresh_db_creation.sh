@@ -65,5 +65,5 @@ mysql   ${DB_DATABASEREPORT} < /home/StagingReport.sql
 
 echo "Generating Post Installation sql file."
 
-source ${SCRIPT_BASEDIR}/generate_post_installation_sql.sh
+source ${SCRIPT_BASEDIR}/fresh_post_installation_sql.sh
 

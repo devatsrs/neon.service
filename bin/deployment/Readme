@@ -1,0 +1,19 @@
+Steps for Installation
+--------------------------
+HOSTED
+1. set .my.cnf with correct user name and password
+2. set config.sh file env settings
+
+DEDICATED SERVER
+1. copy deployment script of latest version / particular version.
+2. set config.sh file env settings
+
+Steps for Updating
+--------------------------
+FIRST TIME UPDATING
+1. stop cron job - comment out cron job entry.
+2. rename existing folders for web , service and api.
+3. update config.sh file for proper
+2. Rename Existing DB with Licence "CompanyNameRM" , "CompanyNameBilling" , "CompanyNameCDR" , "CompanyNameReport" etc.
+check in config.sh file for db names.
+

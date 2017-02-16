@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# This file will generate a sql file which will be used to insert data after db setup for new company.
+# This code will generate a sql file which will be used to insert data after db setup for new company.
 
 #source $(dirname "$0")/config.sh
 
-echo "Add default tables into POST INSTALLATION SQL file."
+echo "Adding default tables into POST INSTALLATION SQL file."
 
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCronJobCommand >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCountry > ${POST_INSTALLATION_SQL_SCRIPT}
@@ -24,8 +24,8 @@ mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblR
 cat <<EOT >> ${POST_INSTALLATION_SQL_SCRIPT}
 
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SSH', '{"host":"_SSH_HOST_","username":"_SSH_HOST_USER_","password":"_SSH_HOST_PASS_"}');
-INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'UPLOADPATH', '_UPLOAD_PATH_');
-INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SITE_URL', '_SITE_URL_');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'UPLOAD_PATH', '_UPLOAD_PATH_');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'WEB_URL', '_WEB_URL_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FRONT_STORAGE_PATH', '_FRONT_STORAGE_PATH_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DELETE_STORAGE_LOG_DAYS', '31');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'TEMP_PATH', '_TEMP_PATH_');
@@ -33,8 +33,8 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DELE
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SIPPYFILE_LOCATION', '_SIPPYFILE_LOCATION_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VOS_LOCATION', '_VOS_LOCATION_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'LICENCE_KEY', '_LICENCE_KEY_');
-INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'PHPExePath', '/usr/bin/php');
-INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'RMArtisanFileLocation', '_RMArtisanFileLocation_');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'PHP_EXE_PATH', '/usr/bin/php');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'RM_ARTISAN_FILE_LOCATION', '_RM_ARTISAN_FILE_LOCATION_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'PBX_CRONJOB', '{"MaxInterval":"1440","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"sumera@code-desk.com,bhavin@code-desk.com,girish.vadher@code-desk.com,deven@code-desk.com","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'PORTA_CRONJOB', '{"MaxInterval":"1440","CdrBehindDuration":"120","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"sumera@code-desk.com,bhavin@code-desk.com,girish.vadher@code-desk.com,deven@code-desk.com","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SIPPYSFTP_DOWNLOAD_CRONJOB', '{"FilesDownloadLimit":"50","ThresholdTime":"120","SuccessEmail":"","ErrorEmail":"bhavin@code-desk.com,sumera@code-desk.com,girish.vadher@code-desk.com,deven@code-desk.com","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
@@ -64,6 +64,13 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CACH
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'MAX_UPLOAD_FILE_SIZE', '50M');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'PAGE_SIZE', '50');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DEFAULT_PREFERENCE', '5');
+
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DEMO_DATA_PATH', '');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'TRANSACTION_LOG_EMAIL_FREQUENCY', 'Daily');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DEFAULT_TIMEZONE', 'GMT');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DEFAULT_BILLING_TIMEZONE', 'Europe/London');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DELETE_CDR_TIME', '3 month');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'DELETE_SUMMARY_TIME', '4 days');
 
 
 INSERT INTO tblCompany (CompanyID, CompanyName,  CustomerAccountPrefix, FirstName, LastName, Email, Phone,  Status, TimeZone, created_at, created_by)
@@ -107,7 +114,7 @@ EOT
 
 echo "Preparing POST INSTALLATION SQL file for new DB."
 
-sed -i "s/_SITE_URL_/$(echo "$SITE_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
+sed -i "s/_WEB_URL_/$(echo "$WEB_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_SSH_HOST_USER_/$(echo "$SSH_HOST_USER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_SSH_HOST_PASS_/$(echo "$SSH_HOST_PASS" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_SSH_HOST_/$(echo "$SSH_HOST" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
@@ -118,7 +125,7 @@ sed -i "s/_FRONT_STORAGE_PATH_/$(echo "$FRONT_STORAGE_PATH" | sed 's/\//\\\//g')
 sed -i "s/_SIPPYFILE_LOCATION_/$(echo "$SIPPYFILE_LOCATION" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_VOS_LOCATION_/$(echo "$VOS_LOCATION" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_LICENCE_KEY_/$(echo "$LICENCE_KEY" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
-sed -i "s/_RMArtisanFileLocation_/$(echo "$RMArtisanFileLocation" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
+sed -i "s/_RM_ARTISAN_FILE_LOCATION_/$(echo "$RM_ARTISAN_FILE_LOCATION" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_CRM_DASHBOARD_/$(echo "$CRM_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_BILLING_DASHBOARD_/$(echo "$BILLING_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_BILLING_DASHBOARD_CUSTOMER_/$(echo "$BILLING_DASHBOARD_CUSTOMER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
@@ -127,7 +134,7 @@ sed -i "s/_NEON_API_URL_/$(echo "$NEON_API_URL" | sed 's/\//\\\//g')/g" ${POST_I
 sed -i "s/_ACC_DOC_PATH_/$(echo "$ACC_DOC_PATH" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i "s/_PAYMENT_PROOF_PATH_/$(echo "$PAYMENT_PROOF_PATH" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT}
 
-echo "Execute POST INSTALLATION SQL file on new DB."
+echo "Executing POST INSTALLATION SQL file on new DB."
 
 mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT}
 

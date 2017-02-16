@@ -21,11 +21,14 @@ LICENCE_KEY=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
 
 TEMP_PATH=/var/www/html/devtest/deptmp
 
+#Generate new Database or not ?
+DB_GENERATE=0
 DB_HOST=localhost
 
 DB_USERNAME=neon-user-dev
 
-DB_PASSWORD=B!I27U03Yx68
+DB_PASSWORD_SALT=U03Y!
+DB_PASSWORD=${DB_PASSWORD_SALT}B!I27U03Yx68
 
 #DB_DATABASE=NeonRMDev
 DB_DATABASE=${COMPANY}RM
@@ -53,13 +56,13 @@ API_FOLDER_NAME=neon.api
 
 WEB_LOCATION=/var/www/html/devtest/${WEB_FOLDER_NAME}
 
-SITE_URL=${HOST_DOMAIN_URL}/devtest/${WEB_FOLDER_NAME}/public
+WEB_URL=${HOST_DOMAIN_URL}/devtest/${WEB_FOLDER_NAME}/public
 
 SERVICE_LOCATION=/var/www/html/devtest/${SERVICE_FOLDER_NAME}
 
 API_LOCATION=/var/www/html/devtest/${WEB_FOLDER_NAME}/public/${API_FOLDER_NAME}
 
-NEON_API_URL=${SITE_URL}/${API_FOLDER_NAME}/public
+NEON_API_URL=${WEB_URL}/${API_FOLDER_NAME}/public
 
 SCRIPT_BASEDIR=$(dirname "$0")
 
@@ -75,7 +78,7 @@ SIPPYFILE_LOCATION=${TEMP_PATH}/sippy_files
 
 VOS_LOCATION=${TEMP_PATH}/vos_files
 
-RMArtisanFileLocation=${SERVICE_LOCATION}/artisan
+RM_ARTISAN_FILE_LOCATION=${SERVICE_LOCATION}/artisan
 
 CRM_DASHBOARD=CrmDashboardTasks,CrmDashboardRecentAccount,CrmDashboardSalesRevenue,CrmDashboardSalesOpportunity,CrmDashboardPipeline,CrmDashboardForecast,CrmDashboardOpportunities
 
@@ -105,3 +108,7 @@ STAGING_RM_DB=Ratemanagement3
 WHOLESALE_RM_DB=RateManagement4
 
 POST_INSTALLATION_SQL_SCRIPT=${SCRIPT_BASEDIR}"/post_installation_data.sql"
+
+POST_UPDATE_SQL_SCRIPT=${SCRIPT_BASEDIR}"/"${VERSION}"/update.sql"
+
+POST_ROLLBACK_UPDATE_SQL_SCRIPT=${SCRIPT_BASEDIR}"/"${VERSION}"/rollback.sql"
