@@ -29,7 +29,7 @@ class EmailsTemplates{
 				}else{
 					$EmailMessage							=	 $EmailTemplate->TemplateBody;
 				}
-				$replace_array['CompanyName']			=	 Company::getName($CompanyID);
+				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);				
 				$replace_array['InvoiceLink'] 			= 	 getenv("WEBURL") . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
 				$replace_array['LastName']				=	 $AccoutData->LastName;
@@ -70,6 +70,8 @@ class EmailsTemplates{
 				'{{BalanceThreshold}}',
 				'{{Currency}}',
 				'{{CompanyName}}',
+				"{{CompanyVAT}}",
+				"{{CompanyAddress}}",
 				"{{AccountName}}",
 				"{{InvoiceLink}}"
 			];
@@ -127,6 +129,13 @@ class EmailsTemplates{
 	
 	static function GetEmailTemplateFrom($slug,$CompanyID){
 		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("EmailFrom");
+	}
+	
+		static function setCompanyFields($array,$CompanyID){
+			$array['CompanyName']					=   Company::getName($CompanyID);
+			$array['CompanyVAT']					=   Company::getCompanyField($CompanyID,"VAT");
+			$array['CompanyAddress']				=   Company::getCompanyFullAddress($CompanyID);
+			return $array;
 	}
 }
 ?>
