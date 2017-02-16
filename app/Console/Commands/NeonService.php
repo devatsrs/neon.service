@@ -51,7 +51,7 @@ class NeonService extends Command {
 		$Company = Company::all();
 		foreach($Company as $CompanID){
             $PHP_EXE_PATH = CompanyConfiguration::get($CompanID->CompanyID,'PHP_EXE_PATH');
-            $RMArtisanFileLocation = CompanyConfiguration::get($CompanID->CompanyID,'RMArtisanFileLocation');
+            $RMArtisanFileLocation = CompanyConfiguration::get($CompanID->CompanyID,'RM_ARTISAN_FILE_LOCATION');
 			if(getenv('APP_OS') == 'Linux') {
 				pclose(popen( $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID->CompanyID . " &","r"));
 			}else{

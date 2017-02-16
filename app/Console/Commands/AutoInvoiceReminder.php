@@ -113,7 +113,7 @@ class AutoInvoiceReminder extends Command
             DB::commit();
             if ($JobID > 0) {
                 $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
-                $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RMArtisanFileLocation');
+                $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RM_ARTISAN_FILE_LOCATION');
                 pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " invoicereminder " . $CompanyID . " " . $JobID . " ", "r"));
             }
             Log::error(' ========================== auto invoice reminder end =============================');

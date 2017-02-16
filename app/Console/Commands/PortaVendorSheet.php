@@ -88,7 +88,7 @@ class PortaVendorSheet extends Command {
         $start_time = date('Y-m-d H:i:s');
 
         Log::useFiles(storage_path().'/logs/portavendorsheet-'.$JobID.'-'.date('Y-m-d').'.log');
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         DB::beginTransaction();
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
