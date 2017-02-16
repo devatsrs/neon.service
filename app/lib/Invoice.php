@@ -130,7 +130,7 @@ class Invoice extends \Eloquent {
     public static function generate_usage_detail_file($CompanyID,$AccountID,$InvoiceID){
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
             $ProcessID = Uuid::generate();
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
 
@@ -200,7 +200,7 @@ class Invoice extends \Eloquent {
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
 
             $ProcessID = Uuid::generate();
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
 
@@ -606,7 +606,7 @@ class Invoice extends \Eloquent {
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $companyID = $Account->CompanyId;
-            $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOADPATH');
+            $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOAD_PATH');
             if(!empty($Invoice->RecurringInvoiceID)){
                 $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
                 $billingClass = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->first();
@@ -1684,7 +1684,7 @@ class Invoice extends \Eloquent {
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
 
             $CompanyName  = Company::getName($CompanyID);
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
             $Account = Account::find((int)$AccountID);
             $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
@@ -2072,7 +2072,7 @@ class Invoice extends \Eloquent {
         $SubTotal = 0;
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $Account = Account::find((int)$Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));

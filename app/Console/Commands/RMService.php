@@ -51,7 +51,7 @@ class RMService extends Command {
             $arguments = $this->argument();
             $CompanyID = $arguments["CompanyID"];
             $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
-            $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RMArtisanFileLocation');
+            $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RM_ARTISAN_FILE_LOCATION');
             $query = "CALL prc_CronJobAllPending ( $CompanyID )";
             $allpending = DataTableSql::of($query)->getProcResult(array(
                 'PendingUploadCDR',

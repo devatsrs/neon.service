@@ -80,7 +80,7 @@ class PaymentsUpload extends Command
         }
         $Accounts = Account::where($where)->select(['AccountName','AccountID'])->lists('AccountID','AccountName');
         Log::useFiles(storage_path() . '/logs/paymentsfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $TEMP_PATH =  CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
             if (!empty($job)) {

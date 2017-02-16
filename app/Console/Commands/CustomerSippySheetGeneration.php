@@ -55,7 +55,7 @@ class CustomerSippySheetGeneration extends Command {
         $joboptions = json_decode($job->Options);
 
         Log::useFiles(storage_path().'/logs/customersippysheet-'.$JobID.'-'.date('Y-m-d').'.log');
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         DB::beginTransaction();
         try{
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
