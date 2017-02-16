@@ -71,7 +71,7 @@ class BulkInvoiceSend extends Command {
     public function fire()
     {
 
-        CronHelper::before_cronrun($this->name, $this );
+       // CronHelper::before_cronrun($this->name, $this );
 
 
         $arguments = $this->argument();
@@ -97,7 +97,7 @@ class BulkInvoiceSend extends Command {
             }
             if(!empty($job)){
                 $JobLoggedUser = User::find($job->JobLoggedUserID);
-                $joboptions = json_decode($job->Options);
+                $joboptions = json_decode($job->Options); Log::info(print_r($joboptions,true));
                 $email_sending_failed = [];
                 $InvoiceIDs = array_filter(explode(',', $joboptions->InvoiceIDs), 'intval');
                 if(count($InvoiceIDs)>0) {
@@ -138,8 +138,8 @@ class BulkInvoiceSend extends Command {
                             $singleemail = trim($singleemail);
                             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                 $emaildata['EmailTo'] = $singleemail;
-								$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail);
-								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail);
+								$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
+								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
 								if(!isset($emaildata['EmailFrom'])){
 										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
 								}

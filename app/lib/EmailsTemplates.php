@@ -18,8 +18,9 @@ class EmailsTemplates{
 		 }		 		 
 	}
 	
-	static function SendinvoiceSingle($InvoiceID,$type="body",$CompanyID,$singleemail){ 
+	static function SendinvoiceSingle($InvoiceID,$type="body",$CompanyID,$singleemail,$data = array()){ 
 		$message										=	 "";
+		$replace_array									=	$data;
 		/*try{*/
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
