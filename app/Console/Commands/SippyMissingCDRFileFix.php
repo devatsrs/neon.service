@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\Product;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
@@ -46,7 +47,8 @@ class SippyMissingCDRFileFix extends Command {
 
 
 		try {
-
+        //@TODO:Pass company id to find the SIPPYFILE_LOCATION from DB for that company.
+            $CompanyID = 1;
 			$GatewayIDs = [11,12];
             $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
 			Log::info("Start");
