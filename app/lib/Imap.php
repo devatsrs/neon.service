@@ -153,7 +153,7 @@ protected $server;
 	{
 		$attachments   = array();
 		$attachmentsDB = array();
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 		
 		/* if any attachments found code start... */
 		if(isset($structure->parts) && count($structure->parts)) 

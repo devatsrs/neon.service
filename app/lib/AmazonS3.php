@@ -108,7 +108,7 @@ class AmazonS3 {
     }
 
     static function generate_path($dir ='',$companyId , $accountId = '' ) {
-        $UPLOADPATH = CompanyConfiguration::get($companyId,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($companyId,'UPLOAD_PATH');
         $path = $companyId  ."/";
 
         if($accountId > 0){
@@ -152,7 +152,7 @@ class AmazonS3 {
     static function preSignedUrl($key='',$CompanyID){
 
         $s3 = self::getS3Client($CompanyID);
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         //When no amazon ;
         if($s3 == 'NoAmazon'){
             $Uploadpath = $UPLOADPATH . '/' .$key;

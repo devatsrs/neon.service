@@ -80,7 +80,7 @@ class CustomerPortaSheet extends Command {
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/portasheet-'.$JobID.'-'.date('Y-m-d').'.log');
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         if((int)$job->AccountID > 0 ) {
             $GatewayAccount = GatewayAccount::where(array('AccountID'=>$job->AccountID))->first();
         }

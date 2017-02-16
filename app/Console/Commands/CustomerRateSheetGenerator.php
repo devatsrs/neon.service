@@ -83,7 +83,7 @@ class CustomerRateSheetGenerator extends Command {
         $emailstatus = array('status' => 0, 'message' => '');
         $sheetstatusupdate = array();
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOADPATH');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
