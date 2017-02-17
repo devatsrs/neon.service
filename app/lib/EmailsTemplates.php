@@ -11,6 +11,29 @@ class EmailsTemplates{
 	protected $EmailTemplate;
 	protected $Error;
 	protected $CompanyName;
+	static $fields = array(
+				"{{AccountName}}",
+				'{{FirstName}}',
+				'{{LastName}}',
+				'{{Email}}',
+				'{{Address1}}',
+				'{{Address2}}',
+				'{{Address3}}',
+				'{{City}}',
+				'{{State}}',
+				'{{PostCode}}',
+				'{{Country}}',
+				'{{Signature}}',
+				'{{Currency}}',
+				'{{CompanyName}}',
+				"{{CompanyVAT}}",
+				"{{CompanyAddress1}}",
+				"{{CompanyAddress2}}",
+				"{{CompanyAddress3}}",
+				"{{CompanyCity}}",
+				"{{CompanyPostCode}}",
+				"{{CompanyCountry}}",								
+				);
 	
 	 public function __construct($data = array()){
 		 foreach($data as $key => $value){
@@ -30,7 +53,8 @@ class EmailsTemplates{
 				}else{
 					$EmailMessage							=	 $EmailTemplate->TemplateBody;
 				}
-				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);				
+				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);
+				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID);				
 				$replace_array['InvoiceLink'] 			= 	 getenv("WEBURL") . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
 				$replace_array['LastName']				=	 $AccoutData->LastName;
@@ -51,31 +75,19 @@ class EmailsTemplates{
 				
 				
 				 
-			$extra = [
-				'{{FirstName}}',
-				'{{LastName}}',
-				'{{Email}}',
-				'{{Address1}}',
-				'{{Address2}}',
-				'{{Address3}}',
-				'{{City}}',
-				'{{State}}',
-				'{{PostCode}}',
-				'{{Country}}',
+			$extraSpecific = [
 				'{{InvoiceNumber}}',
 				'{{InvoiceGrandTotal}}',
 				'{{InvoiceOutstanding}}',
 				'{{OutstandingExcludeUnbilledAmount}}',
 				'{{Signature}}',
 				'{{OutstandingIncludeUnbilledAmount}}',
-				'{{BalanceThreshold}}',
-				'{{Currency}}',
-				'{{CompanyName}}',
-				"{{CompanyVAT}}",
-				"{{CompanyAddress}}",
-				"{{AccountName}}",
+				'{{BalanceThreshold}}',				
 				"{{InvoiceLink}}"
 			];
+			
+			$extraDefault	=	EmailsTemplates::$fields;
+			$extra 			= 	array_merge($extraDefault,$extraSpecific);
 			
 			foreach($extra as $item){
 				$item_name = str_replace(array('{','}'),array('',''),$item);
@@ -148,5 +160,23 @@ class EmailsTemplates{
 	static function CheckEmailTemplateStatus($slug,$CompanyID){
 		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("Status");
 	}
+	
+	static function setAccountFields($array,$AccountID){
+			$AccoutData 					= 	 Account::find($AccountID);			
+			$array['AccountName']			=	 $AccoutData->AccountName;
+			$array['FirstName']				=	 $AccoutData->FirstName;
+			$array['LastName']				=	 $AccoutData->LastName;
+			$array['Email']					=	 $AccoutData->Email;
+			$array['Address1']				=	 $AccoutData->Address1;
+			$array['Address2']				=	 $AccoutData->Address2;
+			$array['Address3']				=	 $AccoutData->Address3;		
+			$array['City']					=	 $AccoutData->City;
+			$array['State']					=	 $AccoutData->State;
+			$array['PostCode']				=	 $AccoutData->PostCode;
+			$array['Country']				=	 $AccoutData->Country;
+			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");			
+			return $array;
+	}
+	
 }
 ?>
