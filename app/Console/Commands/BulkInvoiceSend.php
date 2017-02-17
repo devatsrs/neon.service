@@ -137,6 +137,7 @@ class BulkInvoiceSend extends Command {
                         foreach ($InvoiceCopyEmail as $singleemail) {
                             $singleemail = trim($singleemail);
                             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+								if(EmailsTemplates::CheckEmailTemplateStatus(Invoice::EMAILTEMPLATE,$CompanyID)){							
                                 $emaildata['EmailTo'] = $singleemail;
 								$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
 								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
@@ -144,6 +145,8 @@ class BulkInvoiceSend extends Command {
 										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
 								}
                         	    $status = Helper::sendMail($body, $emaildata,0);
+								}else{$status  = array();}
+								
                             }
                         }
                         if (getenv('EmailToCustomer') == 1) {

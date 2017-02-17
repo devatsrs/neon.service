@@ -144,5 +144,9 @@ class EmailsTemplates{
 			$array['CompanyCountry']				=   $CompanyData->Country;			
 			return $array;
 	}
+	
+	static function CheckEmailTemplateStatus($slug,$CompanyID){
+		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("Status");
+	}
 }
 ?>
