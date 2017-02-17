@@ -133,9 +133,15 @@ class EmailsTemplates{
 	}
 	
 		static function setCompanyFields($array,$CompanyID){
-			$array['CompanyName']					=   Company::getName($CompanyID);
-			$array['CompanyVAT']					=   Company::getCompanyField($CompanyID,"VAT");
-			$array['CompanyAddress']				=   Company::getCompanyFullAddress($CompanyID);
+			$CompanyData							=	Company::find($CompanyID);
+			$array['CompanyName']					=   Company::getName();
+			$array['CompanyVAT']					=   $CompanyData->VAT;			
+			$array['CompanyAddress1']				=   $CompanyData->Address1;
+			$array['CompanyAddress2']				=   $CompanyData->Address1;
+			$array['CompanyAddress3']				=   $CompanyData->Address1;
+			$array['CompanyCity']					=   $CompanyData->City;
+			$array['CompanyPostCode']				=   $CompanyData->PostCode;
+			$array['CompanyCountry']				=   $CompanyData->Country;			
 			return $array;
 	}
 }
