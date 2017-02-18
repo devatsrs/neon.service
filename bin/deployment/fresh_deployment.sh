@@ -56,7 +56,7 @@ cp ${SCRIPT_BASEDIR}/env_new ${WEB_LOCATION}/.env
 
 cp ${SCRIPT_BASEDIR}/env_new  ${SERVICE_LOCATION}/.env
 
-cp api_env_new ${API_LOCATION}/.env
+cp ${SCRIPT_BASEDIR}/api_env_new ${API_LOCATION}/.env
 
 
 
