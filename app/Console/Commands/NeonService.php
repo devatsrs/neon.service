@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -49,10 +50,12 @@ class NeonService extends Command {
 
 		$Company = Company::all();
 		foreach($Company as $CompanID){
+            $PHP_EXE_PATH = CompanyConfiguration::get($CompanID->CompanyID,'PHP_EXE_PATH');
+            $RMArtisanFileLocation = CompanyConfiguration::get($CompanID->CompanyID,'RM_ARTISAN_FILE_LOCATION');
 			if(getenv('APP_OS') == 'Linux') {
-				pclose(popen( env('PHPExePath')." ".env('RMArtisanFileLocation').' rmservice '.$CompanID->CompanyID . " &","r"));
+				pclose(popen( $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID->CompanyID . " &","r"));
 			}else{
-				pclose(popen("start /B " . env('PHPExePath')." ".env('RMArtisanFileLocation').' rmservice '.$CompanID->CompanyID. " ", "r"));
+				pclose(popen("start /B " . $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID->CompanyID. " ", "r"));
 			}
 			Log::info('neon service started');
 		}

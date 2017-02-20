@@ -12,6 +12,7 @@ namespace App\Console\Commands;
 use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -81,11 +82,14 @@ class CustomerRateSheetGenerator extends Command {
         $errorslog = array();
         $emailstatus = array('status' => 0, 'message' => '');
         $sheetstatusupdate = array();
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
+                $joboptions->$EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
@@ -175,7 +179,7 @@ class CustomerRateSheetGenerator extends Command {
                         try {
                             $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
                             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
-                            $local_dir = getenv('UPLOAD_PATH') . '/' . $amazonPath;
+                            $local_dir = $UPLOADPATH . '/' . $amazonPath;
                             $excel_data_all = array();
                             $data = array();
                             $data['Company'] = $Company;
@@ -454,7 +458,7 @@ class CustomerRateSheetGenerator extends Command {
             if ($joboptions->test == 1) {
                 $emaildata['EmailTo'] = $joboptions->testEmail;
                 $emaildata['EmailToName'] = 'test name';
-            } else if(getenv('EmailToCustomer') == 1){
+            } else if($joboptions->$EMAIL_TO_CUSTOMER == 1){
                 $emaildata['EmailTo'] = $account->Email;
                 $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
             }else{

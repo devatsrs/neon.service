@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -81,11 +82,11 @@ class AutoTransactionsLogEmail extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
 
-
+        $TRANSACTION_LOG_EMAIL_FREQUENCY = CompanyConfiguration::get($CompanyID,'TRANSACTION_LOG_EMAIL_FREQUENCY');
         //AccountName,InvoiceNumber,[Transaction], Notes,created_at,Amount,Status
         try {
             $Company = Company::find($CompanyID);
-            $frequency = getenv("TRANSACTION_LOG_EMAIL_FREQUENCY");
+            $frequency = $TRANSACTION_LOG_EMAIL_FREQUENCY;
             $frequency = (empty($frequency)) ? 'Daily' : $frequency;
 
             $query = "CALL prc_GetTransactionsLogbyInterval(  '" . $CompanyID . "' , '" . $frequency . "') "; // Default Weekly

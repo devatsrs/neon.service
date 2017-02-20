@@ -291,6 +291,7 @@ class CronJob extends \Eloquent {
         $PID = $CronJob->PID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
 
         $cronsetting = json_decode($CronJob->Settings,true);
         $ActiveCronJobEmailTo = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
@@ -319,7 +320,7 @@ class CronJob extends \Eloquent {
             $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
             $emaildata['EmailToName'] = '';
             $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
-            $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+            $emaildata['Url'] = $WEBURL . '/activejob';
 
             $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
             return $emailstatus;
@@ -389,6 +390,7 @@ class CronJob extends \Eloquent {
         $LastCdrBehindEmailSendTime = isset($CronJob->CdrBehindEmailSendTime) ? $CronJob->CdrBehindEmailSendTime : '';
         $LastCdrBehindDuration = isset($CronJob->CdrBehindDuration) ? $CronJob->CdrBehindDuration : '';
 
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $ComanyName = Company::getName($CompanyID);
 
         $cronsetting = json_decode($CronJob->Settings,true);
@@ -403,7 +405,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+        $emaildata['Url'] = $WEBURL . '/activejob';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
