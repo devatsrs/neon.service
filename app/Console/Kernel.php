@@ -70,10 +70,11 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\DialStringUpload',
 		'App\Console\Commands\ServerCleanUp',
 		'App\Console\Commands\AccountReadEmails',
-		'App\Console\Commands\QuickBookInvoicePost',
 		'App\Console\Commands\GenerateCustomerRateUpdateFile',
 		'App\Console\Commands\GenerateVendorRateUpdateFile',
+		'App\Console\Commands\QuickBookInvoicePost',		
 		'App\Console\Commands\PBXAccountBlock',
+		'App\Console\Commands\ReadEmailsTickets',
 	];
 
 	/**
