@@ -28,7 +28,7 @@
 #
 # I originally tried to work around this by adding settings for the rollover hour and call time offset, but finally decided that
 # the simplest and most foolproof way to may sure that you get all of the data is just to run each query 3 times: on the previous
-# day's table, the current day's table, and the next day's table, then merge the results into a single CDR file. That way it will 
+# day's table, the current day's table, and the next day's table, then merge the results into a single CDR file. That way it will
 # work regardless of whether the server is in a +UTC time zone, a -UTC timezone, or if the server is slow to switch-over to a new
 # CDR table.
 
@@ -111,30 +111,30 @@ sub main {
         $end_time   = substr(last_quarter_hour($time), 0, 8) . '000000';
     }
     elsif ((not defined $start_time) or (not defined $end_time)) {
-	
-		$time = $time - 60 ; # 1 min minus to avoid mysql crash issue.
-        $start_time = last_quarter_hour( ($time - 60) + ($call_time_offset * 3600)); # every 1 min
-        #$start_time = last_quarter_hour( ($time - 900) + ($call_time_offset * 3600)); # every 15 min
-        #$start_time = last_quarter_hour( ($time - 1800) + ($call_time_offset * 3600)); # every 30 min
-        #$start_time = last_quarter_hour(($time - 21600) + ($call_time_offset * 3600)); # every 6 hr
 
-        $end_time   = last_quarter_hour($time + ($call_time_offset * 3600));
-		   
+		$time = $time - 60 ; # 1 min minus to avoid mysql crash issue.
+    $start_time = last_quarter_hour( ($time - 60) + ($call_time_offset * 3600)); # every 1 min
+    #$start_time = last_quarter_hour( ($time - 900) + ($call_time_offset * 3600)); # every 15 min
+    #$start_time = last_quarter_hour( ($time - 1800) + ($call_time_offset * 3600)); # every 30 min
+    #$start_time = last_quarter_hour(($time - 21600) + ($call_time_offset * 3600)); # every 6 hr
+
+    $end_time   = last_quarter_hour($time + ($call_time_offset * 3600));
+
 	   debug("start_time=$start_time, end_time=$end_time");
 
 	}
-	
-    
+
+
 
     my $where = "where $stop_time_field >= " . packed_to_vos3000_date($start_time, $stop_time_format) . " and $stop_time_field < " . packed_to_vos3000_date($end_time, $stop_time_format);
     #my $cdr_file_name = "$tmp_dir/cdr_${start_time}_${end_time}.tsv"; OLD
-	my $cdr_file_name = "$tmp_dir/cdr_${end_time}.csv"; 
+	my $cdr_file_name = "$tmp_dir/cdr_${end_time}.csv";
 
     # Get the names of the data tables from 24 hours before $start_time to 24 hours after $end_time
     my @mysqlfiles;
     my $first_file_time = modify_packed_date($start_time, -86400);
     #my $last_file_time  = modify_packed_date($end_time,   +86400); OLD
-	my $last_file_time  = modify_packed_date($end_time,   +0); 
+	my $last_file_time  = modify_packed_date($end_time,   +0);
     my $mysqlfiletime = $first_file_time;
     while ($mysqlfiletime <= $last_file_time) {
         push(@mysqlfiles, 'e_cdr_' . substr($mysqlfiletime, 0, 8));
@@ -172,21 +172,21 @@ sub main {
         $pass++;
     }
 
-	# Check if file size is > 0 
+	# Check if file size is > 0
     my $cdr_file_name_filesize = -s $cdr_file_name;
 
     if( $cdr_file_name_filesize > 0 ) {
 
 		# Success! Compress and move the file
 		#my $command = "gzip --force $cdr_file_name; mv $cdr_file_name.gz $output_dir/."; OLD
-		my $command = "mv $cdr_file_name $output_dir/."; 
+		my $command = "mv $cdr_file_name $output_dir/.";
 		my $errno = system($command);
 		if ($errno > 0) {
 			print "Error #$errno while executing '$command'\n";
 			exit($errno);
 		}
 	}else{
-	
+
         unlink $cdr_file_name if -e $cdr_file_name;
 	}
 }
@@ -267,7 +267,7 @@ sub usage(;$$) {
     $exit_code ||= 0;
 
     my $output_dir = OUTPUT_DIR;
-    my $mysql_db = MYSQL_DB; 
+    my $mysql_db = MYSQL_DB;
     my $stop_time_field = STOP_TIME_FIELD;
     my $stop_time_format = STOP_TIME_FORMAT;
 
@@ -288,21 +288,21 @@ Usage: $0 options files
 --yesterday
     Extract all of the data from yesterday's file. When you first set this script
     up on a server it's a good idea to run the script once a day in the middle of
-    the day with the --yesterday flag set, that way you're guaranteed to get all 
-    of the CDRs even if you messed up the --rollover-hour or --call-time-offset 
+    the day with the --yesterday flag set, that way you're guaranteed to get all
+    of the CDRs even if you messed up the --rollover-hour or --call-time-offset
     settings.
 
 --mysql-db dbname
-    Name of the MySQL database. Defaults to "$mysql_db". If you're not sure of the 
+    Name of the MySQL database. Defaults to "$mysql_db". If you're not sure of the
     name used by your installation, look in the directory /var/lib/mysql/ for a
     directory with a name similar to "$mysql_db". That's the name of your database.
 
 --mysql-user username
-    Name of the MySQL user. Not required, since password-less access to MySQL 
+    Name of the MySQL user. Not required, since password-less access to MySQL
     can be configured, or you can use a ~/.my.cnf file.
 
 --mysql-password password
-    Password of the MySQL user. Not required, since password-less access can be 
+    Password of the MySQL user. Not required, since password-less access can be
     configured, or you can use a ~/.my.cnf file.
 
 --stop-time-field stoptime | stop
@@ -330,12 +330,12 @@ Usage: $0 options files
     using "epoch", if If it's a 13 digit long number then you're using "epoch1000".
 
 --call-time-offset n
-    The call end times recorded in the database are usually in UTC, but they may be 
-    some other time zone -- not necessarily the server's time zone either. If you 
-    always want the latest 15 minutes of data, you need to tell the script the number 
-    of hours offset from UTC the data in the database is. So If it's currently 
-    00:00:01 UTC, and the latest call in the database is time-stamped with a 
-    "stoptime" of 17:00:01, then the call time offset is -7 hours. The 
+    The call end times recorded in the database are usually in UTC, but they may be
+    some other time zone -- not necessarily the server's time zone either. If you
+    always want the latest 15 minutes of data, you need to tell the script the number
+    of hours offset from UTC the data in the database is. So If it's currently
+    00:00:01 UTC, and the latest call in the database is time-stamped with a
+    "stoptime" of 17:00:01, then the call time offset is -7 hours. The
     --call-time-offset defaults to 0.
 
 --field-list list,of,comma,separated,field,names
