@@ -13,6 +13,17 @@ Mysql
 Netdata
 S3cmd - for backup only
 
+HOSTED FIRST TIME
+--------------------------
+1. EXECUTE generate_fresh_db_setup_script.sh
+2. Execute first_time_update.sh
+
+DEDICATED FIRST TIME
+--------------------------
+1. Execute first_time_update.sh
+
+
+
 HOSTED
 1. set .my.cnf with correct user name and password
 2. set config.sh file env settings
