@@ -27,7 +27,7 @@ USE \`Ratemanagement3\`;
 EOT
 
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCronJobCommand >> ${POST_INSTALLATION_SQL_SCRIPT}
-mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCountry > ${POST_INSTALLATION_SQL_SCRIPT}
+mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblCountry >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblGateway >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblGatewayConfig >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblGlobalAdmin >> ${POST_INSTALLATION_SQL_SCRIPT}
