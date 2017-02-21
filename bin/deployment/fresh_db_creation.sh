@@ -110,6 +110,13 @@ source  ${SCRIPT_BASEDIR}/prepare_sql_file.sh
 
 echo "Executing POST INSTALLATION SQL file on new DB."
 
+echo "Creating Databases..."
+
+echo 'CREATE DATABASE `'${DB_DATABASE}'` /*!40100 COLLATE utf8_unicode_ci */ ' | mysql
+echo 'CREATE DATABASE `'${DB_DATABASE2}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
+echo 'CREATE DATABASE `'${DB_DATABASECDR}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
+echo 'CREATE DATABASE `'${DB_DATABASEREPORT}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
+
 mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 
