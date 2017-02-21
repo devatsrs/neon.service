@@ -62,7 +62,7 @@ class PBX{
                         AND (
                                userfield like '%outbound%'
                             or userfield like '%inbound%'
-                            or ( userfield = '' AND cc_type <> 'OUTNOCHARGE')
+                            or ( userfield = '' AND cc_type <> 'OUTNOCHARGE' AND c.realsrc <> c.lastdst)
                             )
                         AND ( dst<>'h' or duration <> 0 )
                         and prevuniqueid=''
@@ -78,7 +78,7 @@ class PBX{
                         AND (
                                userfield like '%outbound%'
                             or userfield like '%inbound%'
-                            or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' )
+                            or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' AND c.realsrc <> c.lastdst )
                             )
                         AND ( dst<>'h' or duration <> 0 )
                         and prevuniqueid=''
