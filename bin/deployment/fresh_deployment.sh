@@ -16,7 +16,7 @@ echo "copying api..."
 git clone -b ${VERSION} https://devsrsgirish:Welcome100@bitbucket.org/devatsrs/api.neon-crm.git ${API_LOCATION}
 
 echo "Executing env_file_folder_permission..."
-source ${SCRIPT_BASEDIR}/env_file_folder_permission.sh
+source ${SCRIPT_BASEDIR}/env_file_and_folder_permission.sh
 
 
 #Stop Crontab
