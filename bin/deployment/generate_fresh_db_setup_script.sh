@@ -6,6 +6,7 @@
 #After Ready to deploy we will first run this script.
 # Before deploying to anybody we will generate this sql script to be deploy after fresh installation.
 # And commit this POST_INSTALLATION_SQL_SCRIPT to master.
+source $(dirname "$0")/config.sh
 
 echo "Exporting Staging DBs Schema to sql file..."
 
