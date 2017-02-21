@@ -5,7 +5,7 @@
 #Run this script before update on existing env.
 
 echo "Generating Post Installation sql file."
-POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/first_time_post_installation.sql"
+POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/first_time_post_installation_new.sql"
 
 echo "copy Pre generated post installation data file to new"
 cp -f ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
