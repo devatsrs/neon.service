@@ -102,12 +102,17 @@ class SiteIntegration{
 		
 		switch ($config->Slug){
 			case  SiteIntegration::$imapSlug:
-			$config = SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$CompanyID);			
-       		 if(Imap::CheckConnection($config->EmailTrackingServer,$config->EmailTrackingEmail,$config->EmailTrackingPassword)){
-			 	$this->TrackingEmail = new Imap(array('email'=>$config->EmailTrackingEmail,"server"=>$config->EmailTrackingServer,"password"=>$config->EmailTrackingPassword)); return true;
-			 }else{
-			 	//log connection error
-			 }
+			 $config = SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$CompanyID);			
+       		 $status = Imap::CheckConnection($config->EmailTrackingServer,$config->EmailTrackingEmail,$config->EmailTrackingPassword);
+			 
+			 if($status['status']==1){
+			 		$this->TrackingEmail = new Imap(array('email'=>$config->EmailTrackingEmail,"server"=>$config->EmailTrackingServer,"password"=>$config->EmailTrackingPassword)); 
+					return true;
+			}else{			
+					Log::error("could not connect");
+					Log::error($status['error']);	
+			}
+			 
       	  break;
 		}	
 	}

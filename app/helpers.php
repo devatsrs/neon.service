@@ -260,7 +260,9 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
         '{{Currency}}',
-        '{{CompanyName}}'
+        '{{CompanyName}}',
+		"{{CompanyVAT}}",
+		"{{CompanyAddress}}",
     ];
 
     foreach($extra as $item){

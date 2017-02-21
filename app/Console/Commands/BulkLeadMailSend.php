@@ -124,6 +124,11 @@ class BulkLeadMailSend extends Command {
                                     $emaildata['CompanyID'] = $CompanyID;
 
                                     $emaildata['mandrill'] = 1;
+									if(isset($joboptions->email_from))
+									{
+										$emaildata['EmailFrom'] = $joboptions->email_from;
+									}
+									
                                     $status = Helper::sendMail('emails.template', $emaildata);
                                     if (isset($status["status"]) && $status["status"] == 0) {
                                         $errors[] = $account->AccountName.', '.$status["message"];

@@ -25,7 +25,7 @@ class CronJob extends \Eloquent {
 
     const  CRON_SUCCESS = 1;
     const  CRON_FAIL = 2;
-
+	const  RATEEMAILTEMPLATE = 'CronRateSheetEmail';
 
     public static function checkForeignKeyById($id){
         return 0;
