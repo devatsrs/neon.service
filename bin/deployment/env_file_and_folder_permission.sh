@@ -34,11 +34,11 @@ sed -i 's/=DB_DATABASE/='${DB_DATABASE}'/g' ${SCRIPT_BASEDIR}/env_new
 
 echo "Place .env files in web service and api"
 
-cp ${SCRIPT_BASEDIR}/env_new ${WEB_LOCATION}/.env
+cp -f ${SCRIPT_BASEDIR}/env_new ${WEB_LOCATION}/.env
 
-cp ${SCRIPT_BASEDIR}/env_new  ${SERVICE_LOCATION}/.env
+cp -f ${SCRIPT_BASEDIR}/env_new  ${SERVICE_LOCATION}/.env
 
-cp ${SCRIPT_BASEDIR}/api_env_new ${API_LOCATION}/.env
+cp -f ${SCRIPT_BASEDIR}/api_env_new ${API_LOCATION}/.env
 
 
 

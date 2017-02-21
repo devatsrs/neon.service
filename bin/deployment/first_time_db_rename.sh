@@ -8,14 +8,14 @@ echo "Generating Post Installation sql file."
 POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/first_time_post_installation.sql"
 
 echo "copy Pre generated post installation data file to new"
-cp ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+cp -f ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 
 source ${SCRIPT_BASEDIR}/prepare_sql_file.sh
 
 echo "Creating New DBs for first time ."
 
-mysql   ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 echo "Renaming tables.";
 echo "###########################################################";
