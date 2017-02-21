@@ -75,35 +75,33 @@ SSH_HOST_USER=root
 #SSH password
 SSH_HOST_PASS=KatiteDo48
 #Web Storage locations
-FRONT_STORAGE_PATH=${WEB_LOCATION}/app/storage
+FRONT_STORAGE_PATH=${WEB_LOCATION}"/app/storage"
 #Sippy cdr file location
-SIPPYFILE_LOCATION=${TEMP_PATH}/sippy_files
+SIPPYFILE_LOCATION=${TEMP_PATH}"/sippy_files"
 #Vos cdr file Location
-VOS_LOCATION=${TEMP_PATH}/vos_files
+VOS_LOCATION=${TEMP_PATH}"/vos_files"
 #CRM Dashboards widgets
 CRM_DASHBOARD=CrmDashboardTasks,CrmDashboardRecentAccount,CrmDashboardSalesRevenue,CrmDashboardSalesOpportunity,CrmDashboardPipeline,CrmDashboardForecast,CrmDashboardOpportunities
 #Billing Dashboard customer widgets
 BILLING_DASHBOARD_CUSTOMER=BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
 #Billing Dashboard widgets
 if [ "$IS_WHOLESALE" = "1" ]; then
-#IS Wholesale
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
-    echo "This is Wholesale setup";
+    echo "This is Wholesale setup"
 else
-#IS Retail
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardPincodeWidget,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardTotalInvoiceReceived,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPaymentReceived,BillingDashboardPaymentSent,BillingDashboardPendingDispute,BillingDashboardPendingEstimate,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
-    echo "This is Retail setup";
+    echo "This is Retail setup"
 fi
 
 #Email to customer?
 EMAIL_TO_CUSTOMER=1
 #Upload path
-UPLOAD_PATH=${TEMP_PATH}/uploads
+UPLOAD_PATH=${TEMP_PATH}"/uploads"
 #Account document path
-ACC_DOC_PATH=${TEMP_PATH}/account_documents
+ACC_DOC_PATH=${TEMP_PATH}"/account_documents"
 #Payment proof path
-PAYMENT_PROOF_PATH=${TEMP_PATH}/payment_proof
+PAYMENT_PROOF_PATH=${TEMP_PATH}"/payment_proof"
 #profile_pictures
-PROFILE_PICTURE_PATH=${TEMP_PATH}/profile_pictures
+PROFILE_PICTURE_PATH=${TEMP_PATH}"/profile_pictures"
 #First time sql
-FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT=${SCRIPT_BASEDIR}/first_time_post_installation.sql
+FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT=${SCRIPT_BASEDIR}"/first_time_post_installation.sql"
