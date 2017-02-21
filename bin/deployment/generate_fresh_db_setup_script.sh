@@ -12,10 +12,16 @@ echo "Exporting Staging DBs Schema to sql file..."
 
 POST_INSTALLATION_SQL_SCRIPT=$(dirname "$0")"/post_installation_data.sql"
 
+
 #source http://www.computerhope.com/unix/mysqldum.htm
 mysqldump  --no-data --routines --databases Ratemanagement3 RMBilling3 RMCDR3 StagingReport > ${POST_INSTALLATION_SQL_SCRIPT}
+#permission
+chmod -R 777 ${POST_INSTALLATION_SQL_SCRIPT}
 #Do not write CREATE TABLE statements for first time update
 mysqldump  --no-data --routines --no-create-info --databases Ratemanagement3 RMBilling3 RMCDR3 StagingReport > ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
+#permission
+chmod -R 777 ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
+
 #Staging RM DB for schema export
 STAGING_RM_DB=Ratemanagement3
 #Wholesale RM Db for tblRate export

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-POST_INSTALLATION_SQL_SCRIPT= ${SCRIPT_BASEDIR}"/post_installation_data.sql"
+POST_INSTALLATION_SQL_SCRIPT=${SCRIPT_BASEDIR}"/post_installation_data.sql"
 
 echo "Generating Post Installation sql file."
 POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/post_installation_data_new.sql"
