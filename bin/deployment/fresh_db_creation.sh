@@ -6,7 +6,7 @@ echo "Generating Post Installation sql file."
 POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/post_installation_data_new.sql"
 
 echo "copy Pre generated post installation data file to new"
-cp POST_INSTALLATION_SQL_SCRIPT POST_INSTALLATION_SQL_SCRIPT_NEW
+cp ${POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 
 echo "Importing Prepared sql files for new DBs."
