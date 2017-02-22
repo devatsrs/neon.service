@@ -9,6 +9,7 @@
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
+use App\Lib\CompanyConfiguration;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\Payment;
@@ -79,6 +80,8 @@ class PaymentsUpload extends Command
         }
         $Accounts = Account::where($where)->select(['AccountName','AccountID'])->lists('AccountID','AccountName');
         Log::useFiles(storage_path() . '/logs/paymentsfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+        $TEMP_PATH =  CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
@@ -86,11 +89,11 @@ class PaymentsUpload extends Command
                 if ($jobfile->FilePath) {
                     $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                     if (strpos($path, "https://") !== false) {
-                        $file = Config::get('app.temp_location') . basename($path);
+                        $file = $TEMP_PATH . basename($path);
                         file_put_contents($file, file_get_contents($path));
                         $jobfile->FilePath = $file;
                     } else {
-                        $path = env('UPLOAD_PATH').'/'.$jobfile->FilePath;
+                        $path = $UPLOADPATH.'/'.$jobfile->FilePath;
                         $jobfile->FilePath = $path;
                     }
                 }

@@ -71,7 +71,7 @@ tfoot {
                 <td class="col-md-6 text-right text-small"  valign="top" >
                         <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}<br>
                         <b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}<br>
-                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</p>
+                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
                 </td>
             </tr>
         </table>

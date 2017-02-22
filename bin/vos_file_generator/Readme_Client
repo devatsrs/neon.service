@@ -1,0 +1,32 @@
+
+Execute following command to setup VOS CDR file generation with attached script.
+
+
+useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
+passwd webcdr
+>enter new password:
+su webcdr
+mkdir ~webcdr/bin
+mkdir ~webcdr/cdr_data
+chown -R webcdr ~webcdr
+chmod -R 0755 ~webcdr/
+
+copy extract_vos3000_data file to /home/webcdr/bin/
+
+mysql -u root -p
+CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'password';
+GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
+
+
+Generally server timezone and db timezones are same but
+we need to make sure they are same or not , otherwise we need to set offset
+
+Crontab entry
+#CDR file Generation
+* * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
+
+Check at cdr file location , to see files are generating properly
+/home/webcdr/cdr_data
+
+chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
+

@@ -32,12 +32,14 @@ function invoice_date_fomat($DateFormat){
     }
     return $DateFormat;
 }
-function change_timezone($billing_timezone,$timezone,$date){
+function change_timezone($billing_timezone,$timezone,$date,$CompanyID){
+    $DEFAULT_TIMEZONE = \App\Lib\CompanyConfiguration::get($CompanyID,'DEFAULT_TIMEZONE');
+    $DEFAULT_BILLING_TIMEZONE = \App\Lib\CompanyConfiguration::get($CompanyID,'DEFAULT_BILLING_TIMEZONE');
     if(empty($timezone)){
-        $timezone = getenv("DEFAULT_TIMEZONE");
+        $timezone = $DEFAULT_TIMEZONE;
     }
     if(empty($billing_timezone)){
-        $billing_timezone = getenv("DEFAULT_BILLING_TIMEZONE");
+        $billing_timezone = $DEFAULT_BILLING_TIMEZONE;
     }
     date_default_timezone_set($billing_timezone);
     $strtotime = strtotime($date);
@@ -258,7 +260,9 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
         '{{Currency}}',
-        '{{CompanyName}}'
+        '{{CompanyName}}',
+		"{{CompanyVAT}}",
+		"{{CompanyAddress}}",
     ];
 
     foreach($extra as $item){

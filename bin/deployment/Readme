@@ -1,0 +1,34 @@
+
+Pending
+---------
+commit
+wkhtmltox in web and service both
+
+-------------
+Steps for Installation
+--------------------------
+Manual Installation
+PHP
+Mysql
+Netdata
+S3cmd - for backup only
+
+HOSTED
+1. set .my.cnf with correct user name and password
+2. set config.sh file env settings
+
+DEDICATED SERVER
+1. copy deployment script of latest version / particular version.
+2. set config.sh file env settings
+
+Steps for Updating
+--------------------------
+FIRST TIME UPDATING
+1. stop cron job - comment out cron job entry.
+2. Rename existing folders for web , service and api.
+3. update config.sh file for current env
+4. Rename Existing DB with Licence "CompanyNameRM" , "CompanyNameBilling" , "CompanyNameCDR" , "CompanyNameReport" etc.
+
+
+
+check in config.sh file for db names.
