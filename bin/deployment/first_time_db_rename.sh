@@ -45,7 +45,7 @@ mysql --show-warnings $DB_DATABASE < $SCRIPT
 [ $? -ne 0 ] && echo "We had some error, please verify"
 
 [ $(mysql $OLD_DB_DATABASE -e "show tables" | wc -l) -ne 0 ] && \
-  echo "WARNING! we still have some objects inside $OLD_DB_DATABASE" && exit 5
+  echo "WARNING! we still have some objects inside $OLD_DB_DATABASE"
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASE and drop the old DB"
 
@@ -63,7 +63,7 @@ mysql --show-warnings $DB_DATABASE2 < $SCRIPT
 [ $? -ne 0 ] && echo "We had some error, please verify"
 
 [ $(mysql $OLD_DB_DATABASE2 -e "show tables" | wc -l) -ne 0 ] && \
-  echo "WARNING! we still have some objects inside $OLD_DB_DATABASE2" && exit 5
+  echo "WARNING! we still have some objects inside $OLD_DB_DATABASE2"
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASE2 and drop the old DB"
 
@@ -82,7 +82,7 @@ mysql --show-warnings $DB_DATABASECDR < $SCRIPT
 [ $? -ne 0 ] && echo "We had some error, please verify"
 
 [ $(mysql $OLD_DB_DATABASECDR -e "show tables" | wc -l) -ne 0 ] && \
-  echo "WARNING! we still have some objects inside $OLD_DB_DATABASECDR" && exit 5
+  echo "WARNING! we still have some objects inside $OLD_DB_DATABASECDR"
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASECDR and drop the old DB"
 
@@ -101,7 +101,7 @@ mysql --show-warnings $DB_DATABASEREPORT < $SCRIPT
 [ $? -ne 0 ] && echo "We had some error, please verify"
 
 [ $(mysql $OLD_DB_DATABASEREPORT -e "show tables" | wc -l) -ne 0 ] && \
-  echo "WARNING! we still have some objects inside $OLD_DB_DATABASEREPORT" && exit 5
+  echo "WARNING! we still have some objects inside $OLD_DB_DATABASEREPORT"
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASEREPORT and drop the old DB"
 
