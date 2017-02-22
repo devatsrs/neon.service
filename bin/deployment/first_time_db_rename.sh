@@ -28,8 +28,8 @@ echo "Renaming tables.";
 echo "###########################################################";
 #source https://gist.github.com/pmoranga/2006012
 
-TNAMES=${OLD_DB_DATABASE}"_tables.txt"
-SCRIPT=${OLD_DB_DATABASE}"_rename_tables.sql"
+TNAMES="/tmp/"${OLD_DB_DATABASE}"_tables.txt"
+SCRIPT="/tmp/"${OLD_DB_DATABASE}"_rename_tables.sql"
 
 ##########################DB_DATABASE####################################
 
