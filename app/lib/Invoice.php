@@ -25,6 +25,7 @@ class Invoice extends \Eloquent {
     const PAID = 'paid';
     const PARTIALLY_PAID = 'partially_paid';
     const POST = 'post';
+	const EMAILTEMPLATE = "InvoiceSingleSend";
     public static $invoice_type = array(''=>'Select an Invoice Type' ,self::INVOICE_OUT => 'Invoice Sent',self::INVOICE_IN=>'Invoice Received','All'=>'Both');
     public static $invoice_status = array(''=>'Select Invoice Status',self::DRAFT=>'Draft',self::SEND=>'Send',self::AWAITING=>'Awaiting Approval',self::CANCEL=>'Cancel',self::POST=>'Post');
 
@@ -69,6 +70,7 @@ class Invoice extends \Eloquent {
     public static function generate_usage_detail_file($CompanyID,$AccountID,$InvoiceID){
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
             $ProcessID = Uuid::generate();
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             $Invoice = Invoice::find($InvoiceID);
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
@@ -76,7 +78,7 @@ class Invoice extends \Eloquent {
                 $start_date = $InvoiceDetail['StartDate'];
                 $end_date = $InvoiceDetail['EndDate'];
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                $dir = $UPLOADPATH . '/'. $amazonPath;
                 if (!file_exists($dir)) {
                     mkdir($dir, 0777, TRUE);
                 }
@@ -98,8 +100,8 @@ class Invoice extends \Eloquent {
                         if(!empty($AccountBillingTimeZone)){
                             $BillingTimeZone = $AccountBillingTimeZone;
                         }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
+                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
                         Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                         $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',1)";
                         Log::info($query);
@@ -144,6 +146,7 @@ class Invoice extends \Eloquent {
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
 
             $ProcessID = Uuid::generate();
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             $Invoice = Invoice::find($InvoiceID);
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
@@ -151,7 +154,7 @@ class Invoice extends \Eloquent {
                 $start_date = $InvoiceDetail['StartDate'];
                 $end_date = $InvoiceDetail['EndDate'];
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                $dir = $UPLOADPATH . '/'. $amazonPath;
                 if (!file_exists($dir)) {
                     mkdir($dir, 0777, TRUE);
                 }
@@ -173,8 +176,8 @@ class Invoice extends \Eloquent {
                         if(!empty($AccountBillingTimeZone)){
                             $BillingTimeZone = $AccountBillingTimeZone;
                         }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
+                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
                         Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                         $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','". $BillingStartDate . "','" . $BillingEndDate . "',1)";
                         Log::info($query);
@@ -515,8 +518,8 @@ class Invoice extends \Eloquent {
                 if(!empty($AccountBillingTimeZone)){
                     $BillingTimeZone = $AccountBillingTimeZone;
                 }
-                $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$StartDate);
-                $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$EndDate);
+                $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$StartDate,$CompanyID);
+                $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$EndDate,$CompanyID);
                 Log::info('original start date ==>'.$StartDate.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$EndDate.' changed end date ==>'.$BillingEndDate);
                 $query = "CALL prc_getAccountInvoiceTotal(" . (int)$AccountID . ",$CompanyID,".$GatewayAccountRow['CompanyGatewayID'].",'$BillingStartDate','$BillingEndDate',0,0)";
                 $result = DB::connection('sqlsrv2')->select($query);
@@ -552,6 +555,7 @@ class Invoice extends \Eloquent {
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $companyID = $Account->CompanyId;
+            $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOAD_PATH');
             if(!empty($Invoice->RecurringInvoiceID)){
                 $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
                 $billingClass = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->first();
@@ -579,7 +583,7 @@ class Invoice extends \Eloquent {
             } else {
                 $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
-            $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+            $logo = $UPLOADPATH . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
 
             $usage_data = array();
@@ -607,8 +611,8 @@ class Invoice extends \Eloquent {
                             if(!empty($AccountBillingTimeZone)){
                                 $BillingTimeZone = $AccountBillingTimeZone;
                             }
-                            $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                            $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                            $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$companyID);
+                            $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$companyID);
                             Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                             $query = "CALL prc_getInvoiceUsage(" . $companyID . ",'" . $Invoice->AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',".intval($InvoiceTemplate->ShowZeroCall).")";
                             Log::info($query);
@@ -654,7 +658,7 @@ class Invoice extends \Eloquent {
             $header = htmlspecialchars_decode($header);
             
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-            $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+            $destination_dir = $UPLOADPATH . '/'. $amazonPath;
             if (!file_exists($destination_dir)) {
                 mkdir($destination_dir, 0777, true);
             }
@@ -1007,6 +1011,8 @@ class Invoice extends \Eloquent {
          */
         $emaildata = array();
         $Currency = Currency::find($Account->CurrencyId);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
         $_InvoiceNumber = $Invoice->FullInvoiceNumber;
         $emaildata['data'] = array(
@@ -1014,7 +1020,7 @@ class Invoice extends \Eloquent {
             'CompanyName' => $CompanyName,
             'InvoiceGrandTotal' => $GrandTotal,
             'CurrencyCode' => $CurrencyCode,
-            'InvoiceLink' => getenv("WEBURL") . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
+            'InvoiceLink' => $WEBURL . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
         );
         $emaildata['EmailToName'] = $CompanyName;
         $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $CompanyName;
@@ -1063,7 +1069,7 @@ class Invoice extends \Eloquent {
         }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
             $canSend=1;
         }
-        if( getenv('EmailToCustomer') == 1 && $canSend == 1  && $GrandTotal > 0 ) {
+        if( $EMAIL_TO_CUSTOMER == 1 && $canSend == 1  && $GrandTotal > 0 ) {
 
             $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
@@ -1076,7 +1082,7 @@ class Invoice extends \Eloquent {
                     $singleemail = trim($singleemail);
                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                         $emaildata['EmailTo'] = $singleemail;
-                        $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                         $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                     }
                 }
@@ -1088,7 +1094,7 @@ class Invoice extends \Eloquent {
                     $singleemail = trim($singleemail);
                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                         $emaildata['EmailTo'] = $singleemail;
-                        $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                         $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                     }
                 }
@@ -1630,6 +1636,7 @@ class Invoice extends \Eloquent {
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
 
             $CompanyName  = Company::getName($CompanyID);
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
             $Account = Account::find((int)$AccountID);
             $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
@@ -1746,7 +1753,7 @@ class Invoice extends \Eloquent {
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
-                        $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+                        $logo = $UPLOADPATH . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
                         $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
                         $usage_data = array();
@@ -1806,7 +1813,7 @@ class Invoice extends \Eloquent {
                         $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
                         if (!file_exists($destination_dir)) {
                             mkdir($destination_dir, 0777, true);
                         }
@@ -1857,7 +1864,7 @@ class Invoice extends \Eloquent {
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                                $dir = $UPLOADPATH . '/'. $amazonPath;
                                 if (!file_exists($dir)) {
                                     mkdir($dir, 0777, TRUE);
                                 }
@@ -2017,6 +2024,7 @@ class Invoice extends \Eloquent {
         $SubTotal = 0;
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $Account = Account::find((int)$Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
@@ -2131,7 +2139,7 @@ class Invoice extends \Eloquent {
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
-                        $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+                        $logo = $UPLOADPATH . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
                         $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
                         $usage_data = array();
@@ -2192,7 +2200,7 @@ class Invoice extends \Eloquent {
                         $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
                         if (!file_exists($destination_dir)) {
                             mkdir($destination_dir, 0777, true);
                         }
@@ -2245,7 +2253,7 @@ class Invoice extends \Eloquent {
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                                $dir = $UPLOADPATH . '/'. $amazonPath;
                                 if (!file_exists($dir)) {
                                     mkdir($dir, 0777, TRUE);
                                 }

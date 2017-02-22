@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -108,6 +109,7 @@ class SippyAccountUsage extends Command
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/sippyaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -169,8 +171,8 @@ class SippyAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
-                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename);
+                    $fullpath = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename,$CompanyID);
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
                         $delete_files[] = $UsageDownloadFilesID;
                         /** update file status to progress */
@@ -258,8 +260,8 @@ class SippyAccountUsage extends Command
                     Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
 
 
-                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
-                    $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename);
+                    $fullpath = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename,$CompanyID);
 
 
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {

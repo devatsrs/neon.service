@@ -5,12 +5,13 @@
 
 
 use strict;
-use warnings FATAL => 'all';
+#use warnings FATAL => 'all';
 
 use constant BACKUP_CMD => '/usr/local/bin/automysqlbackup /etc/automysqlbackup/vos3000-85.13.211.22.conf > /var/log/dbbackup';
 use constant AMAZON_BUCKET => 'wholesale.gateway.backups/85.13.211.22-VOS';
-use constant AWS_CMD  => '/usr/bin/s3cmd sync --recursive /var/backups/db s3://' . AMAZON_BUCKET . '/';
+use constant AWS_CMD  => '/usr/bin/s3cmd sync --recursive /backup/db s3://' . AMAZON_BUCKET . '/';
 
+system('find /backup/db -type f -exec rm {} \;');
 system(BACKUP_CMD);
 system(AWS_CMD);
 

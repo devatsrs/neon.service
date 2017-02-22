@@ -183,6 +183,7 @@ class PBXAccountUsage extends Command
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
+                        $data['disposition'] = $row_account['disposition'];
                         $data['extension'] = $row_account['extension'];
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;

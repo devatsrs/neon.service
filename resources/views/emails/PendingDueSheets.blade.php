@@ -20,10 +20,10 @@
                 @endif
                 @if ($row['type'] == 'customer')
                     Customer
-                    <?php $url = env('WEBURL').'/customers_rates/' ?>
+                    <?php $url = $WEBURL.'/customers_rates/' ?>
                 @else
                     Vendor
-                    <?php $url = env('WEBURL').'/vendor_rates/' ?>
+                    <?php $url = $WEBURL.'/vendor_rates/' ?>
                 @endif
                     <table>
                         <thead>

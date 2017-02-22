@@ -93,6 +93,7 @@ class CompanyGateway extends \Eloquent {
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `is_inbound` TINYINT(1) DEFAULT 0,
                                     `is_rerated` TINYINT(1) NULL DEFAULT 0,
+                                    `disposition` VARCHAR(50) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`)
                                 )
