@@ -68,6 +68,11 @@ cp -f ${SCRIPT_BASEDIR}/licence ${WEB_LOCATION}
 
 cp -f ${SCRIPT_BASEDIR}/licence ${SERVICE_LOCATION}
 
+echo "Clearing Web API and Service Cache"
+
+php ${WEB_LOCATION}/artisan cache:clear
+php ${SERVICE_LOCATION}/artisan cache:clear
+php ${API_LOCATION}/artisan cache:clear
 
 
 echo "Creating folders and Adding Permissions to folders"
