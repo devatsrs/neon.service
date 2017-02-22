@@ -15,6 +15,9 @@ echo "Importing Prepared sql files for new DBs."
 
 cat <<EOT >> ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 USE \`${DB_DATABASE}\`;
+
+INSERT INTO tblServerInfo (CompanyID, ServerInfoTitle, ServerInfoUrl, created_at, CreatedBy, updated_at) VALUES (1, '_DB_COMPANY_NAME_', '_HOST_DOMAIN_URL_:19999', '2017-02-22 00:00:00', 'Setup Script', '2017-02-22 00:00:00');
+
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SSH', '{"host":"_SSH_HOST_","username":"_SSH_HOST_USER_","password":"_SSH_HOST_PASS_"}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'UPLOAD_PATH', '_UPLOAD_PATH_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'WEB_URL', '_WEB_URL_');

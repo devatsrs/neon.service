@@ -10,6 +10,8 @@ sed -i 's/RMCDR3/'${DB_DATABASECDR}'/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/StagingReport/'${DB_DATABASEREPORT}'/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/ AUTO_INCREMENT=[0-9]*//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
+sed -i "s/_HOST_DOMAIN_URL_/$(echo "$HOST_DOMAIN_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i "s/_DB_COMPANY_NAME_/$(echo "$DB_COMPANY_NAME" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_WEB_URL_/$(echo "$WEB_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_SSH_HOST_USER_/$(echo "$SSH_HOST_USER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_SSH_HOST_PASS_/$(echo "$SSH_HOST_PASS" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
