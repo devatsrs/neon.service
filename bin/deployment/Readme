@@ -1,10 +1,4 @@
-
-Pending
----------
-commit
-wkhtmltox in web and service both
-
--------------
+--------------------------
 Steps for Installation
 --------------------------
 Manual Installation
@@ -13,22 +7,30 @@ Mysql
 Netdata
 S3cmd - for backup only
 
-HOSTED
-1. set .my.cnf with correct user name and password
-2. set config.sh file env settings
-
-DEDICATED SERVER
-1. copy deployment script of latest version / particular version.
-2. set config.sh file env settings
-
-Steps for Updating
+PRE SETUP
 --------------------------
-FIRST TIME UPDATING
-1. stop cron job - comment out cron job entry.
-2. Rename existing folders for web , service and api.
-3. update config.sh file for current env
-4. Rename Existing DB with Licence "CompanyNameRM" , "CompanyNameBilling" , "CompanyNameCDR" , "CompanyNameReport" etc.
+- stop cron job - comment out cron job entry.
+- set .my.cnf with correct user name and password
+- set config.sh file env settings
+- EXECUTE generate_fresh_db_setup_script.sh - load the sql file for new and existing setup from staging db.
+- Prepare update.sql/rollback.sql file for later update/rollback.
 
+HOSTED FIRST TIME
+--------------------------
+** EXECUTE generate_fresh_db_setup_script.sh [Optional] - no need to run on RMLinux Server if .sql file is already generated
+** Execute first_time_update.sh  - for first time update existing env
 
+DEDICATED FIRST TIME
+--------------------------
+** EXECUTE generate_fresh_db_setup_script.sh [Optional] - no need to run on RMLinux Server if .sql file is already generated
+** Execute first_time_update.sh   - for first time update existing env
 
-check in config.sh file for db names.
+HOSTED NEW ENV
+--------------------------
+** EXECUTE generate_fresh_db_setup_script.sh [Optional] - no need to run on RMLinux Server if .sql file is already generated
+** Execute fresh_deployment.sh  - for first time update existing env
+
+DEDICATED NEW ENV
+--------------------------
+** EXECUTE generate_fresh_db_setup_script.sh [Optional] - no need to run on RMLinux Server if .sql file is already generated
+** Execute fresh_deployment.sh   - for first time update existing env
