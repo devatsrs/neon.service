@@ -105,3 +105,8 @@ PAYMENT_PROOF_PATH=${TEMP_PATH}"/payment_proof"
 PROFILE_PICTURE_PATH=${TEMP_PATH}"/profile_pictures"
 #First time sql
 FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT=${SCRIPT_BASEDIR}"/first_time_post_installation.sql"
+
+#Repository urls
+WEB_REPO_URL="https://devsrsgirish:Welcome100@bitbucket.org/devatsrs/neon.web.encrypt.git"
+SERVICE_REPO_URL="https://devsrsgirish:Welcome100@bitbucket.org/devatsrs/neon.service.encrypt.git"
+API_REPO_URL="https://devsrsgirish:Welcome100@bitbucket.org/devatsrs/api.neon-crm.git"
