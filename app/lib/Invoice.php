@@ -1,8 +1,6 @@
 <?php
 namespace App\Lib;
 
-use Chumper\Zipper\Facades\Zipper;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -1196,8 +1194,9 @@ class Invoice extends \Eloquent {
     public static function addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
 
         // Get All Account Subscriptions
-        $query = "CALL prc_getAccountInvoiceTotal(?,?)";
+        $query = "CALL prc_getAccountSubscription(?,?)";
         $AccountSubscriptions = DB::connection('sqlsrv2')->select($query,array($Invoice->AccountID,$ServiceID));
+        Log::info("Call prc_getAccountSubscription($Invoice->AccountID,$ServiceID)") ;
         $SubscriptionChargewithouttaxTotal = 0;
         Log::info('SUBSCRIPTION '.count($AccountSubscriptions)) ;
         $StartDate = date("Y-m-d",strtotime($StartDate));
@@ -1579,6 +1578,7 @@ class Invoice extends \Eloquent {
 
         $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
         $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($Invoice->AccountID,$ServiceID,$StartDate,$EndDate));
+        Log::info("Call prc_getAccountOneOffCharge($Invoice->AccountID,$ServiceID,$StartDate,$EndDate)") ;
         $SubscriptionChargewithouttaxTotal = 0;
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge '.count($AccountOneOffCharges)) ;
