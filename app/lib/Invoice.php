@@ -2335,6 +2335,7 @@ class Invoice extends \Eloquent {
             $query = "CALL prc_getBillingAccounts(?,?,?)";
             $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
             Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            $Accounts = json_decode(json_encode($Accounts),true);
             /*$Accounts = Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
                 ->select(["tblAccountBilling.AccountID", "tblAccountBilling.NextInvoiceDate", "AccountName","ServiceID"])
                 ->whereNotIn('tblAccount.AccountID', $skip_accounts)
