@@ -337,7 +337,7 @@ class Invoice extends \Eloquent {
                     //FALSE = Not billed
                     Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
 
-                    $AlreadyBilled = Invoice::checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate);
+                    $AlreadyBilled = Invoice::checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate,$ServiceID);
 
                     //If Already Billed
 
@@ -483,12 +483,12 @@ class Invoice extends \Eloquent {
 
 
 
-    public static function checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID,$StartDate,$EndDate){
+    public static function checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID,$StartDate,$EndDate,$ServiceID){
 
         if(!empty($CompanyID) && !empty($AccountID) && !empty($StartDate) && !empty($EndDate) ){
 
             //Check if Invoice Usage is alrady Created.
-            $isAccountUsageBilled = DB::connection('sqlsrv2')->select("SELECT COUNT(inv.InvoiceID) as count  FROM tblInvoice inv LEFT JOIN tblInvoiceDetail invd  ON invd.InvoiceID = inv.InvoiceID WHERE inv.CompanyID = " . $CompanyID . " AND inv.AccountID = " . $AccountID . " AND (('" . $StartDate . "' BETWEEN invd.StartDate AND invd.EndDate) OR('" . $EndDate . "' BETWEEN invd.StartDate AND invd.EndDate) OR (invd.StartDate BETWEEN '" . $StartDate . "' AND '" . $EndDate . "') ) and invd.ProductType = " . Product::USAGE . " and inv.InvoiceType = " . Invoice::INVOICE_OUT . " and inv.InvoiceStatus != '" . Invoice::CANCEL."'");
+            $isAccountUsageBilled = DB::connection('sqlsrv2')->select("SELECT COUNT(inv.InvoiceID) as count  FROM tblInvoice inv LEFT JOIN tblInvoiceDetail invd  ON invd.InvoiceID = inv.InvoiceID WHERE inv.CompanyID = " . $CompanyID . " AND inv.AccountID = " . $AccountID . " AND (('" . $StartDate . "' BETWEEN invd.StartDate AND invd.EndDate) OR('" . $EndDate . "' BETWEEN invd.StartDate AND invd.EndDate) OR (invd.StartDate BETWEEN '" . $StartDate . "' AND '" . $EndDate . "') ) and invd.ProductType = " . Product::USAGE . " and inv.InvoiceType = " . Invoice::INVOICE_OUT . " and inv.InvoiceStatus != '" . Invoice::CANCEL."' AND inv.ServiceID = $ServiceID");
 
             if (isset($isAccountUsageBilled[0]->count) && $isAccountUsageBilled[0]->count == 0) {
                 return false;
@@ -2332,7 +2332,10 @@ class Invoice extends \Eloquent {
 
 
         do {
-            $Accounts = Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
+            $query = "CALL prc_getBillingAccounts(?,?,?)";
+            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
+            Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            /*$Accounts = Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
                 ->select(["tblAccountBilling.AccountID", "tblAccountBilling.NextInvoiceDate", "AccountName","ServiceID"])
                 ->whereNotIn('tblAccount.AccountID', $skip_accounts)
                 ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
@@ -2340,7 +2343,7 @@ class Invoice extends \Eloquent {
                 ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
                 ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
                 ->whereNotNull('tblAccountBilling.BillingCycleType')
-                ->orderby('tblAccount.AccountID')->get();
+                ->orderby('tblAccount.AccountID')->get();*/
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
@@ -2458,17 +2461,20 @@ class Invoice extends \Eloquent {
 
             } // Loop over
             //Log::info($skip_accounts);
-            $response['errors'] = $errors;
-            $response['message'] = $message;
-            return $response;
-        } while (Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
+        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
+
+  /*      Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
             ->select(["tblAccount.AccountID", "AccountName"])
             ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
             ->where('tblAccountBilling.NextInvoiceDate', '<>', '')
             ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
             ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
+            ->where('tblAccountBilling.AccountID', '=', 5020)
             ->whereNotIn('tblAccount.AccountID', $skip_accounts)
-            ->whereNotNull('tblAccountBilling.BillingCycleType')->count());
+            ->whereNotNull('tblAccountBilling.BillingCycleType')->count();*/
+		$response['errors'] = $errors;
+		$response['message'] = $message;
+		return $response;
     }
 
 }
