@@ -124,13 +124,14 @@ class PortaAccountUsage extends Command {
                     $gadata = array();
                     $gadata['CompanyID'] = $CompanyID;
                     $gadata['CompanyGatewayID'] = $CompanyGatewayID;
+                    $gadata['ServiceID'] = $ServiceID;
                     $gadata['GatewayAccountID'] = $accounts[] = $row_account['ICustomer'];
 
                     $gadata['AccountName'] = $row_account['Name'];
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                     $gadata['AccountDetailInfo'] = json_encode($row_account);
-                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
-                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
+                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
+                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
                     } else {
                         GatewayAccount::insert($gadata);
                     }
