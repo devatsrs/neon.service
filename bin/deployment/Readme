@@ -15,6 +15,11 @@ commit to encrypt repository with version number branch.
 
 We will use this version number branch to be clone or pull to setup or update any env.
 
+Each version will have its own update.sql and rollback.sql file inside service code /bin/deployment.
+Which we will need to generate based on respected release.
+We will have a rollback.sql for each version to rollback db to its previous version.
+so we can rollback to previous version by checkout code with previous version and execute rollback.sql.
+
 Config.sh - File
 --------------------------
 Common file for configuration for new setup / update existing env.
@@ -56,3 +61,7 @@ HOSTED UPDATE
 DEDICATED UPDATE
 --------------------------
 ** Execute update_env.sh   - for later updates only*
+
+ROLLBACK ENV
+--------------------------
+** Execute rollback_env.sh   - for previous version only*
