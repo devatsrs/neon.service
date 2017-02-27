@@ -86,19 +86,25 @@ class RateTableGenerator extends Command {
             }elseif(isset($joboptions->RateTableId)){
                 $data['RateTableID'] = $joboptions->RateTableId;
             }
+            $data['replace_rate']= $joboptions->replace_rate;
+            $data['EffectiveRate']= $joboptions->EffectiveRate;
+
+            if(empty($data['EffectiveRate'])){
+                $data['EffectiveRate']='now';
+            }
 
             $data['CompanyID'] = $CompanyID;
 
             $Policy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Policy");
 
             if($Policy == \LCR::LCR_PREFIX){
-                
-                Log::info("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
-                DB::statement("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+
+                Log::info("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
+                DB::statement("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
 
             }else {
-                Log::info("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
-                DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."')");
+                Log::info("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
+                DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
 
             }
 
