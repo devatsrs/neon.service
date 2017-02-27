@@ -14,7 +14,8 @@ class Invoice extends \Eloquent {
     protected $fillable = [];
     protected $guarded = array('InvoiceID');
     protected $table = 'tblInvoice';
-    protected  $primaryKey = "InvoiceID";
+    protected $primaryKey = "InvoiceID";
+	const 	PRINTTYPE = 'Invoice';
     const  INVOICE_OUT = 1;
     const  INVOICE_IN= 2;
     const DRAFT = 'draft';
@@ -603,6 +604,7 @@ class Invoice extends \Eloquent {
 
     public static  function generate_pdf($InvoiceID,$data = []){
         if($InvoiceID>0) {
+			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
@@ -696,10 +698,11 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
+			
             if(empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type'))->render();
             }else {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data'))->render();
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -1677,9 +1680,9 @@ class Invoice extends \Eloquent {
     public static function sendManualInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
         $error = "";
-        $StartDate = $LastInvoiceDate;
+        $StartDate = $LastInvoiceDate;		
         $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
-
+		$print_type = Invoice::PRINTTYPE;
         Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
 
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
@@ -1854,7 +1857,8 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
+						
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
@@ -2071,6 +2075,7 @@ class Invoice extends \Eloquent {
 
         $error = "";
         $SubTotal = 0;
+		$print_type = Invoice::PRINTTYPE;
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
@@ -2241,7 +2246,7 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
