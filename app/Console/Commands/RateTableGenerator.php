@@ -86,12 +86,18 @@ class RateTableGenerator extends Command {
             }elseif(isset($joboptions->RateTableId)){
                 $data['RateTableID'] = $joboptions->RateTableId;
             }
-            $data['replace_rate']= $joboptions->replace_rate;
-            $data['EffectiveRate']= $joboptions->EffectiveRate;
-
-            if(empty($data['EffectiveRate'])){
-                $data['EffectiveRate']='now';
-            }
+			
+			if(isset($joboptions->replace_rate)){
+					$data['replace_rate']= $joboptions->replace_rate;	
+			}else{
+				$data['replace_rate']= 0;
+			}
+			
+			if(isset($joboptions->EffectiveRate)){
+					$data['EffectiveRate']= $joboptions->EffectiveRate;	
+			}else{
+				$data['EffectiveRate']= 'now';
+			}			
 
             $data['CompanyID'] = $CompanyID;
 
