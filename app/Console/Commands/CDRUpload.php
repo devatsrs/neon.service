@@ -92,15 +92,15 @@ class CDRUpload extends Command
             $attrselection = $TemplateOptions->selection;
             $RateCDR = 0;
             $NameFormat = '';
-            $ServiceID = $OutboundTableID = $InboundTableID = 0;
+            $ServiceID = $OutboundRateTableID = $InboundRateTableID = 0;
             if(isset($joboptions->ServiceID) && $joboptions->ServiceID){
                 $ServiceID = $joboptions->ServiceID;
             }
-            if(isset($joboptions->OutboundTableID) && $joboptions->OutboundTableID){
-                $OutboundTableID = $joboptions->OutboundTableID;
+            if(isset($joboptions->OutboundRateTableID) && $joboptions->OutboundRateTableID){
+                $OutboundRateTableID = $joboptions->OutboundRateTableID;
             }
-            if(isset($joboptions->InboundTableID) && $joboptions->InboundTableID){
-                $InboundTableID = $joboptions->InboundTableID;
+            if(isset($joboptions->InboundRateTableID) && $joboptions->InboundRateTableID){
+                $InboundRateTableID = $joboptions->InboundRateTableID;
             }
 
             if(isset($joboptions->RateCDR) && $joboptions->RateCDR){
@@ -309,7 +309,7 @@ class CDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundTableID,$InboundTableID);
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
