@@ -2,6 +2,8 @@
 
 #Version number to be deploy
 VERSION=4.08
+#Rollback Version number to be deploy
+PREVIOUS_VERSION=4.07
 # is wholesale setup or retail
 IS_WHOLESALE=0
 #Company name in Licence
