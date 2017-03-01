@@ -25,6 +25,9 @@ class EmailsTemplates{
 				'{{Country}}',
 				'{{Signature}}',
 				'{{Currency}}',
+				'{{OutstandingExcludeUnbilledAmount}}',
+				'{{OutstandingIncludeUnbilledAmount}}',
+				'{{BalanceThreshold}}',
 				'{{CompanyName}}',
 				"{{CompanyVAT}}",
 				"{{CompanyAddress1}}",
@@ -32,7 +35,7 @@ class EmailsTemplates{
 				"{{CompanyAddress3}}",
 				"{{CompanyCity}}",
 				"{{CompanyPostCode}}",
-				"{{CompanyCountry}}",								
+				"{{CompanyCountry}}",
 				);
 	
 	 public function __construct($data = array()){
@@ -44,6 +47,7 @@ class EmailsTemplates{
 	static function SendinvoiceSingle($InvoiceID,$type="body",$CompanyID,$singleemail,$data = array()){ 
 		$message										=	 "";
 		$replace_array									=	$data;
+		$userID											=	isset($data['UserID'])?$data['UserID']:0;
 		/*try{*/
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
@@ -73,6 +77,7 @@ class EmailsTemplates{
 				$RoundChargesAmount 					= 	 Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID);
 				$replace_array['InvoiceGrandTotal']		=	 number_format($InvoiceData->GrandTotal,$RoundChargesAmount);
 				$replace_array['AccountName']			=	 $AccoutData->AccountName;
+				$replace_array['InvoiceOutstanding'] 	=	Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID,Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID));
 				
 				
 				 
@@ -147,7 +152,7 @@ class EmailsTemplates{
 	
 		static function setCompanyFields($array,$CompanyID){
 			$CompanyData							=	Company::find($CompanyID);
-			$array['CompanyName']					=   Company::getName();
+			$array['CompanyName']					=   $CompanyData->CompanyName;
 			$array['CompanyVAT']					=   $CompanyData->VAT;			
 			$array['CompanyAddress1']				=   $CompanyData->Address1;
 			$array['CompanyAddress2']				=   $CompanyData->Address1;
@@ -162,7 +167,7 @@ class EmailsTemplates{
 		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("Status");
 	}
 	
-	static function setAccountFields($array,$AccountID){
+	static function setAccountFields($array,$AccountID,$CompanyID,$UserID=0){
 			$AccoutData 					= 	 Account::find($AccountID);			
 			$array['AccountName']			=	 $AccoutData->AccountName;
 			$array['FirstName']				=	 $AccoutData->FirstName;
@@ -175,7 +180,17 @@ class EmailsTemplates{
 			$array['State']					=	 $AccoutData->State;
 			$array['PostCode']				=	 $AccoutData->PostCode;
 			$array['Country']				=	 $AccoutData->Country;
-			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");			
+			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");		
+			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  Helper::get_round_decimal_places($CompanyID,$AccountID));
+			$array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($AccountID);
+			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);	
+			  if(!empty($UserID)){
+				   $UserData = user::find($UserID);
+				  if(isset($UserData->EmailFooter) && trim($UserData->EmailFooter) != '')
+					{
+						$array['Signature']= $UserData->EmailFooter;	
+					}
+	        	}
 			return $array;
 	}
 	
