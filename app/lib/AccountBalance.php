@@ -2,8 +2,10 @@
 
 namespace App\Lib;
 
+use App\PBX;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AccountBalance extends Model
 {
@@ -16,105 +18,102 @@ class AccountBalance extends Model
 
     public $timestamps = false; // no created_at and updated_at
 
-    public static function SendBalanceThresoldEmail($CompanyID,$ProcessID,$cronsetting){
-        $cronjobdata = array();
-        $Company = Company::find($CompanyID);
-        $EmailTemplate = EmailTemplate::find($cronsetting['TemplateID']);
-        $EmailSubject = '';
-        $EmailMessage = '';
-        $replace_array = array();
-        if (!empty($EmailTemplate)) {
-            $EmailSubject =  $EmailTemplate->Subject;
-            $EmailMessage = $EmailTemplate->TemplateBody;
-        }
-        $AccountBalanceWarnings = DB::select("CALL prc_GetAccountBalanceWarning('" . $CompanyID . "','0')");
-        foreach($AccountBalanceWarnings as $AccountBalanceWarning){
-            if($AccountBalanceWarning->BalanceWarning == 1 && Account::getAccountWarningEmailCount($AccountBalanceWarning->AccountID,$EmailSubject) == 0) {
-                $Emails = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
-                $LowBalanceReminderEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::LowBalanceReminder]);
-                $LowBalanceReminderEmail = empty($LowBalanceReminderEmail)?$Emails:$LowBalanceReminderEmail;
-                $AccountManagerEmail = Account::getAccountOwnerEmail($AccountBalanceWarning);
-                if (empty($LowBalanceReminderEmail) && !empty($AccountManagerEmail)) {
-                    $LowBalanceReminderEmail = $AccountManagerEmail;
-                } else if (!empty($AccountManagerEmail)) {
-                    $LowBalanceReminderEmail .= ',' . $AccountManagerEmail;
-                }
-                $replace_array['BalanceAmount'] = $AccountBalanceWarning->BalanceAmount;
-                $replace_array['BalanceThreshold'] = str_replace('p','%',$AccountBalanceWarning->BalanceThreshold);
+    public static function LowBalanceReminder($CompanyID,$ProcessID){
 
-                $emaildata = array(
-                    'EmailTo' => explode(",", $LowBalanceReminderEmail),
-                    'EmailToName' => $Company->CompanyName,
-                    'Subject' => $EmailSubject ." (".$AccountBalanceWarning->AccountName.")",
-                    'CompanyID' => $CompanyID,
-                    'CompanyName'=>$Company->CompanyName,
-                    'Message' =>template_var_replace($EmailMessage,$replace_array)
-                );
-                //$UserID = User::getMinUserID($CompanyID);
-                //$User = User::getUserInfo($UserID);
-                $User = new \stdClass();
-                $User->UserID = 0;
-                $User->CompanyID = $CompanyID;
-                $User->FirstName = 'RM';
-                $User->LastName = ' Scheduler';
-                $User->EmailAddress = $Company->EmailFrom;
-                $status = Helper::sendMail('emails.account_balance_threshold',$emaildata);
-                if ($status['status'] == 1 && $AccountBalanceWarning->EmailToCustomer == 0) {
-                    $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
-                        'ProcessID' => $ProcessID,
-                        'JobID' => 0,
-                        'User' => $User,
-                        'EmailType' => AccountEmailLog::LowBalance,
-                        'EmailFrom' => $User->EmailAddress,
-                        'EmailTo' => $emaildata['EmailTo'],
-                        'Subject' => $emaildata['Subject'],
-                        'Message' => $status['body']];
-                    $statuslog = Helper::email_log($logData);
-
-                }
-
-                if($AccountBalanceWarning->EmailToCustomer == 1) {
-                    if (getenv('EmailToCustomer') == 1) {
-                        $CustomerEmail = $AccountBalanceWarning->BillingEmail;
-                    } else {
-                        $CustomerEmail = Company::getEmail($CompanyID);;
+        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        foreach($BillingClass as $BillingClassSingle) {
+            if (isset($BillingClassSingle->LowBalanceReminderStatus) && $BillingClassSingle->LowBalanceReminderStatus == 1 && isset($BillingClassSingle->LowBalanceReminderSettings)) {
+                $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
+                $settings['ProcessID'] = $ProcessID;
+                $settings['EmailType'] = AccountEmailLog::LowBalanceReminder;
+                $LastRunTime = isset($settings['LastRunTime'])?$settings['LastRunTime']:'';
+                $query = "CALL prc_LowBalanceReminder(?,?,?)";
+                $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
+                foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
+                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                        Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
+                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
-                    $CustomerEmail = explode(",", $CustomerEmail);
-                    $customeremail_status['status'] = 0;
-                    $customeremail_status['message'] = '';
-                    $customeremail_status['body'] = '';
+                }
+                if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings','BillingClass');
+                }
+            }
+        }
+    }
 
-                    foreach ($CustomerEmail as $singleemail) {
-                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                            $emaildata['EmailTo'] = $singleemail;
-                            $customeremail_status = Helper::sendMail('emails.account_balance_threshold', $emaildata);
+    public static function updateAccountUnbilledAmount($CompanyID){
+        $today = date('Y-m-d 23:59:59');
+        DB::connection('neon_report')->select("CALL prc_updateUnbilledAmount(?,?)",array($CompanyID,$today));
+    }
 
-                        }
-                        if ($customeremail_status['status'] == 0) {
-                            $cronjobdata['JobStatusMessage'] = 'Failed sending email to ' . $AccountBalanceWarning->AccountName . ' (' . $singleemail . ')';
-                        } else {
-                            $logData = ['AccountID' => $AccountBalanceWarning->AccountID,
-                                'ProcessID' => $ProcessID,
-                                'JobID' => 0,
-                                'User' => $User,
-                                'EmailType' => AccountEmailLog::LowBalance,
-                                'EmailFrom' => $User->EmailAddress,
-                                'EmailTo' => $emaildata['EmailTo'],
-                                'Subject' => $emaildata['Subject'],
-                                'Message' => $customeremail_status['body']];
-                            $statuslog = Helper::email_log($logData);
-                            $cronjobdata['JobStatusMessage'] = 'Email sent successfully to ' . $AccountBalanceWarning->AccountName . ' (' . $singleemail . ')';
-                        }
+    public static function getBalanceAmount($AccountID){
+        return AccountBalance::where(['AccountID'=>$AccountID])->pluck('BalanceAmount');
+    }
+    public static function getBalanceThreshold($AccountID){
+        return str_replace('p', '%',AccountBalance::where(['AccountID'=>$AccountID])->pluck('BalanceThreshold'));
+    }
+    public static function getOutstandingAmount($CompanyID,$AccountID){
+        DB::connection('sqlsrv2')->statement('CALL prc_updateSOAOffSet(?,?)',array($CompanyID,$AccountID));
+        return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');
+    }
+
+    /** blocking account by gateway */
+    public static function PBXBlockUnBlockAccount($CompanyID,$GatewayID,$ProcessID){
+        $email_message  = array();
+        $error_message  = array();
+        $BlockingGateways = CompanyGateway::where(array('CompanyID'=>$CompanyID,'GatewayID'=>$GatewayID,'Status'=>1))->get();
+        foreach ($BlockingGateways as $BlockingGateway) {
+            $pbx = new PBX($BlockingGateway->CompanyGatewayID);
+            $BlockingAccounts = DB::select('CALL prc_GetBlockUnblockAccount(?,?)', array($CompanyID, $BlockingGateway->CompanyGatewayID));
+            foreach ($BlockingAccounts as $BlockingAccount) {
+                $param['te_code'] = $BlockingAccount->Number;
+
+                if($BlockingAccount->Balance > 0) {
+                    $response = $pbx->blockAccount($param);
+                    if(isset($response['message']) && $response['message'] == 'account blocked'){
+                        $email_message[$BlockingAccount->AccountName] = 'Blocked';
+                    }
+                    if(isset($response['faultCode'])){
+                        $error_message =  $response;
+                    }
+                    if($BlockingAccount->Blocked == 0) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
+                    }
+                }else{
+                    $response =  $pbx->unBlockAccount($param);
+                    if(isset($response['message']) && $response['message'] == 'account unblocked'){
+                        $email_message[$BlockingAccount->AccountName] = 'Unblocked';
+                    }
+                    if(isset($response['faultCode'])){
+                        $error_message =  $response;
+                    }
+                    if($BlockingAccount->Blocked == 1) {
+                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
                     }
                 }
 
             }
-        }
-        return $cronjobdata;
-    }
 
-    public static function updateAccountUnbilledAmount($CompanyID){
-        DB::connection('neon_report')->select("CALL prc_updateUnbilledAmount(?)",array($CompanyID));
+        }
+
+        $notification_email = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::BlockAccount]);
+        $Company = Company::find($CompanyID);
+        if (!empty($notification_email) && !empty($email_message)) {
+            Log::info($notification_email . ' block email sent ');
+            $emaildata = array(
+                'EmailToName' => $Company->CompanyName,
+                'Subject' => 'Account Status Changed',
+                'CompanyID' => $CompanyID,
+                'CompanyName' => $Company->CompanyName,
+                'Message' => $email_message
+            );
+            $emaildata['EmailTo'] = $notification_email;
+
+            $status = Helper::sendMail('emails.account_block', $emaildata);
+            $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', $ProcessID, 0, Notification::BlockAccount);
+        }
+        return $error_message;
     }
 
 }

@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -103,6 +104,13 @@ class PortaAccountUsage extends Command {
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
             }
@@ -167,8 +175,8 @@ class PortaAccountUsage extends Command {
                             $data['connect_time'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Connect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                             $data['disconnect_time'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['Disconnect_time'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                             $data['cost'] = (float)$row_account['Charged_Amount'];
-                            $data['cld'] = $row_account['CLD'];
-                            $data['cli'] = $row_account['CLI'];
+                            $data['cld'] = apply_translation_rule($CLDTranslationRule,$row_account['CLD']);
+                            $data['cli'] = apply_translation_rule($CLITranslationRule,$row_account['CLI']);
                             $data['billed_duration'] = $row_account['Charged_Quantity'];
                             $data['billed_second'] = $row_account['Charged_Quantity'];
                             $data['duration'] = $row_account['Used_Quantity'];
@@ -291,6 +299,7 @@ class PortaAccountUsage extends Command {
     public function getLastDate($startdate, $companyid, $CronJobID)
     {
         $Settings = CronJob::where(array('CompanyID' => $companyid, 'CronJobID' => $CronJobID))->pluck('Settings');
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $cronsetting = json_decode($Settings);
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
@@ -299,7 +308,7 @@ class PortaAccountUsage extends Command {
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_INTERVAL') * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $usageinterval * 60);
         }
 
         return $endtimefinal;
@@ -308,11 +317,12 @@ class PortaAccountUsage extends Command {
     public static function getStartDate($companyid, $CompanyGatewayID, $CronJobID)
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
-        if ($minutes <= 100) {
-            $endtime = date('Y-m-d H:i:s', strtotime('-100 minute'));  //date('Y-m-d H:i:s');
+        if ($minutes <= $usageinterval) {
+            $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-1 00:00:00');

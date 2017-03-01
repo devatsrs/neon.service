@@ -1,0 +1,37 @@
+https://github.com/earlruby/extract_vos3000_data
+
+Log into your Linux-based switch as root and create a "webcdr" account that will run the script:
+
+useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
+#echo "21Yk76v1#Jsd" | passwd "webcdr" --stdin;
+
+passwd webcdr
+>enter new password:
+su webcdr
+mkdir ~webcdr/bin
+mkdir ~webcdr/cdr_data
+chown -R webcdr ~webcdr
+chmod -R 0755 ~webcdr/
+
+chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
+
+#webcdr / xxxxxxx
+mysql -u root -p
+
+SET PASSWORD FOR 'webcdr'@'localhost' = PASSWORD('11026Xf9D');
+
+CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'password';
+MySQL> GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
+
+Generally server timezone and db timezones are same but
+we need to make sure they are same or not , otherwise we need to set offset
+
+Crontab entry
+-------------
+#CDR file Generation
+* * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
+
+#EveryDay - Delete cdr files over 90 days - mid night
+0 0 * * * find /home/webcdr/cdr_data -maxdepth 1 -mtime +90 -exec rm {} \;
+
+-------------------------------------

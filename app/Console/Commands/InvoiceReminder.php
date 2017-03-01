@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
 use App\Lib\Invoice;
@@ -75,6 +76,8 @@ class InvoiceReminder extends Command
         $ProcessID = Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $errors = array();
         $errorslog = array();
         try {
@@ -90,7 +93,7 @@ class InvoiceReminder extends Command
                     if (!empty($joboptions->attachment)) {
                         $path = AmazonS3::unSignedUrl($joboptions->attachment,$CompanyID);
                         if (strpos($path, "https://") !== false) {
-                            $file = Config::get('app.temp_location') . basename($path);
+                            $file = $TEMP_PATH . basename($path);
                             file_put_contents($file, file_get_contents($path));
                             $joboptions->attachment = $file;
                         } else {
@@ -144,7 +147,7 @@ class InvoiceReminder extends Command
                             if (!empty($Account->Email)) {
                                 if($joboptions->test==1){
                                     $emaildata['EmailTo'] = $joboptions->testEmail;
-                                }else if (getenv('EmailToCustomer') == 1) {
+                                }else if ($EMAIL_TO_CUSTOMER == 1) {
                                     $emaildata['EmailTo'] = $Account->Email;//$invoice->Email;
                                 } else {
                                     $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$invoice->Email;
@@ -153,43 +156,31 @@ class InvoiceReminder extends Command
                                 if (!empty($joboptions->attachment)) {
                                     $emaildata['attach'] = $joboptions->attachment;
                                 }
-                                $Signature = '';
-                                if (!empty($JobLoggedUser)) {
-                                    $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
-                                    $emaildata['EmailFromName'] = $JobLoggedUser->FirstName . ' ' . $JobLoggedUser->LastName;
-                                    if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
-                                    {
-                                        $Signature = $JobLoggedUser->EmailFooter;
-                                    }
-                                }
+
                                 $emaildata['EmailToName'] = $Account->AccountName;
-                                $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$Account->AccountID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
+
                                 $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
-                                $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{InvoiceNumber}}','{{GrandTotal}}','{{OutStanding}}','{{TotalOutStanding}}','{{Signature}}'];
-                                $replace = [$Account->FirstName, $Account->LastName, $Account->Email, $Account->Address1, $Account->Address2, $Account->Address3, $Account->City, $Account->State, $Account->PostCode, $Account->Country,$invoice->InvoiceNumber,$invoice->GrandTotal,$InvoiceOutStanding,$TotalOutStanding,$Signature];
-                                $emaildata['extra'] = $extra;
-                                $emaildata['replace'] = $replace;
+
+                                $replace_array['InvoiceNumber'] = $invoice->InvoiceNumber;
+                                $replace_array['InvoiceGrandTotal'] = $invoice->GrandTotal;
+                                $replace_array['InvoiceOutstanding'] = $InvoiceOutStanding;
+                                $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
+                                $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+
                                 $emaildata['Subject'] = $joboptions->subject;
                                 $emaildata['Message'] = $joboptions->message;
                                 $emaildata['CompanyID'] = $CompanyID;
 
                                 $emaildata['mandrill'] = 1;
-                                $status = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+                                $status = Helper::sendMail('emails.template', $emaildata);
                                 if (isset($status["status"]) && $status["status"] == 0) {
                                     $errors[] = $Account->AccountName . ', ' . $status["message"];
                                     $jobdata['EmailSentStatus'] = $status['status'];
                                     $jobdata['EmailSentStatusMessage'] = $status['message'];
                                 } else {
 
-                                    $logData = ['AccountID'=>$Account->AccountID,
-                                        'ProcessID'=>$ProcessID,
-                                        'JobID'=>$JobID,
-                                        'User'=>$JobLoggedUser,
-                                        'EmailFrom'=>$JobLoggedUser->EmailAddress,
-                                        'EmailTo'=>$emaildata['EmailTo'],
-                                        'Subject'=>$emaildata['Subject'],
-                                        'Message'=>$status['body']];
-                                    $statuslog = Helper::email_log($logData);
+                                    /** log emails against account */
+                                    $statuslog = Helper::account_email_log($CompanyID,$Account->AccountID,$emaildata,$status,$JobLoggedUser,$ProcessID,$JobID);
                                     if($statuslog['status']==0) {
                                         $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
                                     }

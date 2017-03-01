@@ -2,6 +2,7 @@
 
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\FileUploadTemplate;
@@ -76,6 +77,7 @@ class CDRUpload extends Command
         $temptableName  = 'tblTempUsageDetail';
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         Log::useFiles(storage_path() . '/logs/cdrupload-' . $JobID . '-' . date('Y-m-d') . '.log');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $skiped_account = $error = array();
         $skiped_account_data = array();
         $skipped_cli = array();
@@ -101,28 +103,18 @@ class CDRUpload extends Command
             if(isset($attrselection->Authentication) && $attrselection->Authentication){
                 $NameFormat = $attrselection->Authentication;
             }
-            $clireplacement =$clipatternrules = $cldpatternrules = $cldreplacement = array();
+            $CLITranslationRule = $CLDTranslationRule =  '';
             if(!empty($attrselection->CLITranslationRule)){
-                $translation_rule = translation_rule($attrselection->CLITranslationRule);
-                $clireplacement =  $translation_rule['replacement'];
-                $clipatternrules =  $translation_rule['patternrules'];
+                $CLITranslationRule = $attrselection->CLITranslationRule;
             }
             if(!empty($attrselection->CLDTranslationRule)){
-                $translation_rule = translation_rule($attrselection->CLDTranslationRule);
-                $cldreplacement =  $translation_rule['replacement'];
-                $cldpatternrules =  $translation_rule['patternrules'];
+                $CLDTranslationRule = $attrselection->CLDTranslationRule;
             }
-            Log::info('=======cli rules=======');
-            Log::info($clipatternrules);
-            Log::info($clireplacement);
-            Log::info('=======cld rules=======');
-            Log::info($cldpatternrules);
-            Log::info($cldreplacement);
             if (!empty($job) && !empty($jobfile)) {
                 if ($jobfile->FilePath) {
                     $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                     if (strpos($path, "https://") !== false) {
-                        $file = Config::get('app.temp_location') . basename($path);
+                        $file = $TEMP_PATH . basename($path);
                         file_put_contents($file, file_get_contents($path));
                         $jobfile->FilePath = $file;
                     } else {
@@ -196,18 +188,10 @@ class CDRUpload extends Command
                                 $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
                             }
                             if (isset($attrselection->cld) && !empty($attrselection->cld)) {
-                                if(!empty($cldpatternrules)){
-                                    $cdrdata['cld'] = preg_replace($cldpatternrules,$cldreplacement,$temp_row[$attrselection->cld]);
-                                }else{
-                                    $cdrdata['cld'] = $temp_row[$attrselection->cld];
-                                }
+                                $cdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$temp_row[$attrselection->cld]);
                             }
                             if (isset($attrselection->cli) && !empty($attrselection->cli)) {
-                                if(!empty($clipatternrules)){
-                                    $cdrdata['cli'] = preg_replace($clipatternrules,$clireplacement,$temp_row[$attrselection->cli]);
-                                }else{
-                                    $cdrdata['cli'] = $temp_row[$attrselection->cli];
-                                }
+                                $cdrdata['cli'] = apply_translation_rule($CLITranslationRule,$temp_row[$attrselection->cli]);
                             }
                             if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0 ) {
                                 $cdrdata['cost'] = $temp_row[$attrselection->cost];
@@ -231,6 +215,7 @@ class CDRUpload extends Command
                                 $cdrdata['ID'] = $temp_row[$attrselection->ID];
                             }
                             if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+								$cdrdata['is_inbound'] = 0;
                                 $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]),'','');
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
@@ -377,7 +362,7 @@ class CDRUpload extends Command
 
                 Job::where(["JobID" => $JobID])->update($jobdata);
 
-                @unlink(Config::get('app.temp_location') . basename($jobfile->FilePath));
+                @unlink($TEMP_PATH . basename($jobfile->FilePath));
             } else {
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Related Job not found';

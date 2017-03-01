@@ -14,7 +14,8 @@ class Invoice extends \Eloquent {
     protected $fillable = [];
     protected $guarded = array('InvoiceID');
     protected $table = 'tblInvoice';
-    protected  $primaryKey = "InvoiceID";
+    protected $primaryKey = "InvoiceID";
+	const 	PRINTTYPE = 'Invoice';
     const  INVOICE_OUT = 1;
     const  INVOICE_IN= 2;
     const DRAFT = 'draft';
@@ -24,8 +25,10 @@ class Invoice extends \Eloquent {
     const RECEIVED = 'received';
     const PAID = 'paid';
     const PARTIALLY_PAID = 'partially_paid';
+    const POST = 'post';
+	const EMAILTEMPLATE = "InvoiceSingleSend";
     public static $invoice_type = array(''=>'Select an Invoice Type' ,self::INVOICE_OUT => 'Invoice Sent',self::INVOICE_IN=>'Invoice Received','All'=>'Both');
-    public static $invoice_status = array(''=>'Select Invoice Status',self::DRAFT=>'Draft',self::SEND=>'Send',self::AWAITING=>'Awaiting Approval',self::CANCEL=>'Cancel');
+    public static $invoice_status = array(''=>'Select Invoice Status',self::DRAFT=>'Draft',self::SEND=>'Send',self::AWAITING=>'Awaiting Approval',self::CANCEL=>'Cancel',self::POST=>'Post');
 
     public static $InvoiceGenrationErrorReasons = [
         "Email" =>  "Failed to send Email.",
@@ -47,7 +50,7 @@ class Invoice extends \Eloquent {
 
             $Invoice = Invoice::find($InvoiceID);
             $AccountID = $Invoice->AccountID;
-            $CDRType = AccountBilling::where("AccountID", $AccountID)->pluck("CDRType");
+            $CDRType = AccountBilling::getCDRType($AccountID);
             $CompanyID = $Invoice->CompanyID;
             $path = "";
             if ($CDRType == Account::SUMMARY_CDR) {
@@ -129,13 +132,14 @@ class Invoice extends \Eloquent {
     public static function generate_usage_detail_file($CompanyID,$AccountID,$InvoiceID){
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
             $ProcessID = Uuid::generate();
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
 
                 $start_date = $InvoiceDetail['StartDate'];
                 $end_date = $InvoiceDetail['EndDate'];
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                $dir = $UPLOADPATH . '/'. $amazonPath;
                 if (!file_exists($dir)) {
                     mkdir($dir, 0777, TRUE);
                 }
@@ -152,8 +156,8 @@ class Invoice extends \Eloquent {
                         if(!empty($AccountBillingTimeZone)){
                             $BillingTimeZone = $AccountBillingTimeZone;
                         }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
+                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
                         Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                         $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',1)";
                         Log::info($query);
@@ -198,13 +202,14 @@ class Invoice extends \Eloquent {
         if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
 
             $ProcessID = Uuid::generate();
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
             if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
 
                 $start_date = $InvoiceDetail['StartDate'];
                 $end_date = $InvoiceDetail['EndDate'];
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                $dir = $UPLOADPATH . '/'. $amazonPath;
                 if (!file_exists($dir)) {
                     mkdir($dir, 0777, TRUE);
                 }
@@ -221,8 +226,8 @@ class Invoice extends \Eloquent {
                         if(!empty($AccountBillingTimeZone)){
                             $BillingTimeZone = $AccountBillingTimeZone;
                         }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
+                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
                         Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                         $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','". $BillingStartDate . "','" . $BillingEndDate . "',1)";
                         Log::info($query);
@@ -361,11 +366,11 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -388,7 +393,7 @@ class Invoice extends \Eloquent {
                      **************************
                      **************************
                      */
-                    //Check if Invoice Usage is alrady Created.
+                    //Check if Invoice Usage is already Created.
                     //TRUE=Already Billed
                     //FALSE = Not billed
                     Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
@@ -537,22 +542,7 @@ class Invoice extends \Eloquent {
 
     }
 
-    //Not in use
-    public static function getTotalTax($Account){
 
-        $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-        $AccountBilling = AccountBilling::getBilling($Account->AccountID);
-        $TaxRateId = $AccountBilling->TaxRateId;
-        $TaxRate = TaxRate::find($TaxRateId);
-        $TaxRateAmount = 0;
-        if (isset($TaxRate->Amount))
-            $TaxRateAmount = $TaxRate->Amount;
-
-        //$TotalTax = number_format((($TotalCharges * $TaxRateAmount) / 100), $RoundChargesAmount, '.', ''); Percentage Tax
-        $TotalTax = number_format($TaxRateAmount, $RoundChargesAmount, '.', '');  // Flat Tax
-
-        return $TotalTax;
-    }
 
     public static function checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID,$StartDate,$EndDate){
 
@@ -581,8 +571,8 @@ class Invoice extends \Eloquent {
                 if(!empty($AccountBillingTimeZone)){
                     $BillingTimeZone = $AccountBillingTimeZone;
                 }
-                $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$StartDate);
-                $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$EndDate);
+                $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$StartDate,$CompanyID);
+                $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$EndDate,$CompanyID);
                 Log::info('original start date ==>'.$StartDate.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$EndDate.' changed end date ==>'.$BillingEndDate);
                 $query = "CALL prc_getAccountInvoiceTotal(" . (int)$AccountID . ",$CompanyID,".$GatewayAccountRow['CompanyGatewayID'].",'$BillingStartDate','$BillingEndDate',0,0)";
                 $result = DB::connection('sqlsrv2')->select($query);
@@ -612,33 +602,53 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static  function generate_pdf($InvoiceID){
+    public static  function generate_pdf($InvoiceID,$data = []){
         if($InvoiceID>0) {
+			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
-            $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
+            $companyID = $Account->CompanyId;
+            $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOAD_PATH');
+            if(!empty($Invoice->RecurringInvoiceID)){
+                $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+                $billingClass = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->first();
+                $InvoiceTemplateID = $billingClass->InvoiceTemplateID;
+                $PaymentDueInDays = $billingClass->PaymentDueInDays;
+
+                $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->where("InvoiceID", $InvoiceID)
+                    ->orderBy("InvoiceTaxRateID", "asc")
+                    ->groupBy("TaxRateID")
+                    ->get();
+            }else{
+                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
+                $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
+                $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+            }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
             $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-            $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
+            $InvoiceTemplate = InvoiceTemplate::find($InvoiceTemplateID);
             if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID) == '') {
-                $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
             } else {
                 $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$companyID));
             }
-            $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+            $logo = $UPLOADPATH . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
-            $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+
             $usage_data = array();
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
             $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-            if($InvoiceTemplate->InvoicePages == 'single_with_detail') {
+            if($InvoiceTemplate->InvoicePages == 'single_with_detail' && empty($Invoice->RecurringInvoiceID)) {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
 
-                        $companyID = $Account->CompanyId;
+
                         $start_date = $Detail->StartDate;
                         $end_date = $Detail->EndDate;
                         $ShowZeroCall = 1;
@@ -654,8 +664,8 @@ class Invoice extends \Eloquent {
                             if(!empty($AccountBillingTimeZone)){
                                 $BillingTimeZone = $AccountBillingTimeZone;
                             }
-                            $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date);
-                            $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date);
+                            $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$companyID);
+                            $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$companyID);
                             Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
                             $query = "CALL prc_getInvoiceUsage(" . $companyID . ",'" . $Invoice->AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',".intval($InvoiceTemplate->ShowZeroCall).")";
                             Log::info($query);
@@ -688,14 +698,21 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
-            $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo','AccountBilling','RoundChargesAmount'))->render();
-
+			
+            if(empty($Invoice->RecurringInvoiceID)) {
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type'))->render();
+            }else {
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+            }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
             $footer = htmlspecialchars_decode($footer);
+
+            $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+            $header = htmlspecialchars_decode($header);
             
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-            $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+            $destination_dir = $UPLOADPATH . '/'. $amazonPath;
             if (!file_exists($destination_dir)) {
                 mkdir($destination_dir, 0777, true);
             }
@@ -707,16 +724,18 @@ class Invoice extends \Eloquent {
             $footer_name = 'footer-'. Uuid::generate() .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
+            $header_name = 'header-'. Uuid::generate() .'.html';
+            $header_html = $destination_dir.$header_name;
+            file_put_contents($header_html,$header);
             $output= "";
             if(getenv('APP_OS') == 'Linux'){
-                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
             }else{
-                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
-
             Log::info($output);
             Log::info($local_htmlfile);
             @unlink($local_htmlfile);
@@ -735,7 +754,7 @@ class Invoice extends \Eloquent {
     public static function calculateUsageTax($AccountID, $UsageSubTotal){
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
         $TotalTax = 0;
         if(!empty($TaxRateIDs)){
 
@@ -777,7 +796,7 @@ class Invoice extends \Eloquent {
         $InvoiceSubTotal = $Invoice->SubTotal;*/
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::where("AccountID",$AccountID)->pluck("TaxRateId");
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
@@ -818,11 +837,11 @@ class Invoice extends \Eloquent {
                         }
 
                         $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $SubTotal);
-                        if ($TaxRate->TaxType == TaxRate::TAX_ALL) {
+                        /*if ($TaxRate->TaxType == TaxRate::TAX_ALL) {
                              $TotalTax += $AdditionalChargeTax;
                             Log::info('AdditionalChargeTax - ' . $AdditionalChargeTax);
                              $AdditionalChargeTax = 0;
-                        }
+                        }*/
                         $TaxGrandTotal += $TotalTax;
                         InvoiceTaxRate::create(array(
                             "InvoiceID" => $InvoiceID,
@@ -834,6 +853,7 @@ class Invoice extends \Eloquent {
                 }
             }
         }
+        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID);
         return $TaxGrandTotal;
     }
 
@@ -863,7 +883,7 @@ class Invoice extends \Eloquent {
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $Account = Account::find((int)$Invoice->AccountID);
-        $AccountBilling = AccountBilling::getBilling($Invoice->AccountID);
+        $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
@@ -872,7 +892,7 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -1044,6 +1064,8 @@ class Invoice extends \Eloquent {
          */
         $emaildata = array();
         $Currency = Currency::find($Account->CurrencyId);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
         $_InvoiceNumber = $Invoice->FullInvoiceNumber;
         $emaildata['data'] = array(
@@ -1051,7 +1073,7 @@ class Invoice extends \Eloquent {
             'CompanyName' => $CompanyName,
             'InvoiceGrandTotal' => $GrandTotal,
             'CurrencyCode' => $CurrencyCode,
-            'InvoiceLink' => getenv("WEBURL") . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
+            'InvoiceLink' => $WEBURL . '/invoice/' . $Invoice->InvoiceID . '/invoice_preview'
         );
         $emaildata['EmailToName'] = $CompanyName;
         $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $CompanyName;
@@ -1060,8 +1082,10 @@ class Invoice extends \Eloquent {
         $status['status'] = "success"; // Default Status
 
         foreach ($InvoiceGenerationEmail as $singleemail) {
+            $singleemail = trim($singleemail);
             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                 $emaildata['EmailTo'] = $singleemail;
+                $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . '('.$Account->AccountName.') from ' . $CompanyName;
                 $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                 $Invoice->update(['InvoiceStatus' => Invoice::AWAITING]);
                 if ($status['status'] == 0) {
@@ -1081,69 +1105,100 @@ class Invoice extends \Eloquent {
 
         /** Email to Customer * */
         // Send only When Auto Invoice is On and GrandTotal is set.
-        if( getenv('EmailToCustomer') == 1  && AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically' && $GrandTotal > 0 ) {
+        //If Recurring invoice and Auto Invoice on from Recurring Section
+        $canSend = 0;
+        if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID>0){
+            $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
+            $billingClass = BillingClass::getBillingClass($recurringInvoice->BillingClassID);
+            if(!empty($billingClass)) {
+                if ($billingClass->SendInvoiceSetting == 'automatically') {
+                    $canSend = 1;
+                }
+            }else{
+                $status['status'] = 'failure';
+                $status['message'] = 'No recurring class found against '.$Invoice->InvoiceID;
 
-            $InvoiceGenerationEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-            $InvoiceGenerationEmail = $InvoiceGenerationEmail.','.$Account->BillingEmail;
+            }
+        }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
+            $canSend=1;
+        }
+        if( $EMAIL_TO_CUSTOMER == 1 && $canSend == 1  && $GrandTotal > 0 ) {
+
+            $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
             //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
             //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
             //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
             //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
-
-            $CustomerEmails = explode(",",$InvoiceGenerationEmail);
-            foreach($CustomerEmails as $singleemail){
-                $singleemail = trim($singleemail);
-                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                    $emaildata['EmailTo'] = $singleemail;
-                    $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
-                    $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+            if(!empty($InvoiceGenerationEmail)) {
+                $InvoiceGenerationEmail = explode(',',$InvoiceGenerationEmail);
+                foreach ($InvoiceGenerationEmail as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    }
                 }
             }
 
-            if ($status['status'] == 0) {
-                $email_sending_failed[] = $Account->AccountName;
-                $status['status'] = 'failure';
-                $status['message'] = $Account->AccountName .' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
-                $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
-            } else {
-                $status['status'] = "success";
-                $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
-
-                $invoiceloddata = array();
-                $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
-                $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT].' By RMScheduler';
-                $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
-                $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
-                InvoiceLog::insert($invoiceloddata);
-
-                if(!@empty($Account->Owner)){
-                    $User = User::find($Account->Owner);
-                }else{
-                    $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
-                    $User = User::find($UserID);
+            if (!empty($Account->BillingEmail)) {
+                $CustomerEmails = explode(',',$Account->BillingEmail);
+                foreach ($CustomerEmails as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+                    }
                 }
-                $logData = ['AccountID'=>$Account->AccountID,
-                    'ProcessID'=>$ProcessID,
-                    'JobID'=>$JobID,
-                    'User'=>$User,
-                    'EmailFrom'=>$User->EmailAddress,
-                    'EmailTo'=>$emaildata['EmailTo'],
-                    'Subject'=>$emaildata['Subject'],
-                    'Message'=>$status['body']];
-                $statuslog = Helper::email_log($logData);
-                if($statuslog['status']==0) {
+
+                if ($status['status'] == 0) {
+                    $email_sending_failed[] = $Account->AccountName;
                     $status['status'] = 'failure';
-                    $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
-                    $status['message'] = $statuslog['message'];
+                    $status['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['Email'];
+                    $Invoice->update(['InvoiceStatus' => Invoice::AWAITING, "Note" => $Invoice->Note . " \n Failed to send Email at " . date("Y-m-d H:i:s")]);
+                } else {
+                    $status['status'] = "success";
+                    $Invoice->update(['InvoiceStatus' => Invoice::SEND]);
+
+                    $invoiceloddata = array();
+                    $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
+                    $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::SENT] . ' By RMScheduler';
+                    $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+                    $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::SENT;
+                    InvoiceLog::insert($invoiceloddata);
+
+                    if (!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                        $RecurringInvoiceLogData = array();
+                        $RecurringInvoiceLogData['RecurringInvoiceID'] = $Invoice->RecurringInvoiceID;
+                        $RecurringInvoiceLogData['Note'] = 'Invoice ' . $Invoice->FullInvoiceNumber.' '.RecurringInvoiceLog::$log_status[RecurringInvoiceLog::SENT] .' By RMScheduler';
+                        $RecurringInvoiceLogData['created_at'] = date("Y-m-d H:i:s");
+                        $RecurringInvoiceLogData['RecurringInvoiceLogStatus'] = RecurringInvoiceLog::SENT;
+                        RecurringInvoiceLog::insert($RecurringInvoiceLogData);
+                    }
+
+                    $User = '';
+                    if (!@empty($Account->Owner)) {
+                        $User = User::find($Account->Owner);
+                    }
+                    /** log emails against account */
+                    $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $emaildata, $status, $User, $ProcessID, $JobID);
+
+                    if ($statuslog['status'] == 0) {
+                        $status['status'] = 'failure';
+                        $errorslog[] = $Account->AccountName . ' email log exception:' . $statuslog['message'];
+                        $status['message'] = $statuslog['message'];
+                    }
+
                 }
 
+            }else{
+                if(!empty($Invoice->RecurringInvoiceID) && $Invoice->RecurringInvoiceID > 0) {
+                    $status['status'] = 'failure';
+                    $status['message'] = $Account->AccountName . ': Invoice ' . $Invoice->FullInvoiceNumber . ' is created but not sent ( Email not set up )';
+                }
             }
-
         }
-        Log::info('Sending Email to Customer over');
-        Log::info('Email Status  ' . print_r($status,true)) ;
-        Log::info('Email log Status  ' . print_r($errorslog,true)) ;
-
         return $status;
     }
 
@@ -1442,7 +1497,12 @@ class Invoice extends \Eloquent {
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
             $BillingCycleType = AccountBilling::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
-            $QuarterSubscription =  ($BillingCycleType == 'quarterly')?1:0;
+            $QuarterSubscription =  0;
+            if($BillingCycleType == 'quarterly'){
+                $QuarterSubscription = 1;
+            }elseif($BillingCycleType == 'yearly'){
+                $QuarterSubscription = 2;
+            }
             //Get Subscription Amount
             $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscription->AccountSubscriptionID, $SubscriptionStartDate, $SubscriptionEndDate, $FirstTime,$QuarterSubscription);
             Log::info('AccountSubscription::getSubscriptionAmount('.$AccountSubscription->AccountSubscriptionID.','. $SubscriptionStartDate .','. $SubscriptionEndDate .','. $FirstTime .','.$QuarterSubscription.')');
@@ -1509,6 +1569,63 @@ class Invoice extends \Eloquent {
 
         //}
     }
+    public static function addOneOffTaxCharge($InvoiceID,$AccountID){
+        $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
+        $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
+        $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
+
+        $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $AccountID)->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $AdditionalChargeTotalTax = 0;
+        Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
+        if (count($AccountOneOffCharges)) {
+            foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
+                Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
+                $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
+                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
+                    $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
+
+                    if($AccountOneOffCharge->TaxRateID){
+                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID)->first();
+                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->count() == 0) {
+                            InvoiceTaxRate::create(array(
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
+                        }else{
+                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->pluck('TaxAmount');
+                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+                        }
+                    }
+                    if($AccountOneOffCharge->TaxRateID2){
+                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID2)->first();
+                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->count() == 0) {
+                            InvoiceTaxRate::create(array(
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID2,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
+                        }else{
+                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->pluck('TaxAmount');
+                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+                        }
+                    }
+
+                    Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
+                }
+
+            }
+        } //Subscription over
+        Log::info('AccountOneOffCharge Tax Over');
+
+        return $AdditionalChargeTotalTax;
+
+
+    }
     public static function addOneOffCharge($Invoice,$InvoiceTemplate,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
         $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $Invoice->AccountID)
                 ->whereBetween('Date',array($StartDate,$EndDate))->get();
@@ -1528,7 +1645,7 @@ class Invoice extends \Eloquent {
                 $ProductDescription = $AccountOneOffCharge->Description;
                 $singlePrice = $AccountOneOffCharge->Price;
                 $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
-                if($AccountOneOffCharge->TaxRateID){
+                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
                     $SubscriptionChargewithouttaxTotal += $LineTotal;
                     $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
                     Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
@@ -1563,21 +1680,22 @@ class Invoice extends \Eloquent {
     public static function sendManualInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
         $error = "";
-        $StartDate = $LastInvoiceDate;
+        $StartDate = $LastInvoiceDate;		
         $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
-
+		$print_type = Invoice::PRINTTYPE;
         Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
 
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
 
             $CompanyName  = Company::getName($CompanyID);
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBilling((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -1683,11 +1801,11 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
-                        $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+                        $logo = $UPLOADPATH . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
                         $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
                         $usage_data = array();
@@ -1739,13 +1857,16 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
+						
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
                         if (!file_exists($destination_dir)) {
                             mkdir($destination_dir, 0777, true);
                         }
@@ -1757,13 +1878,16 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);
@@ -1793,7 +1917,7 @@ class Invoice extends \Eloquent {
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                                $dir = $UPLOADPATH . '/'. $amazonPath;
                                 if (!file_exists($dir)) {
                                     mkdir($dir, 0777, TRUE);
                                 }
@@ -1951,8 +2075,10 @@ class Invoice extends \Eloquent {
 
         $error = "";
         $SubTotal = 0;
+		$print_type = Invoice::PRINTTYPE;
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $Account = Account::find((int)$Invoice->AccountID);
         $AccountID = $Account->AccountID;
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
@@ -1963,10 +2089,10 @@ class Invoice extends \Eloquent {
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
             $CompanyName = Company::getName($CompanyID);
 
-            $AccountBilling = AccountBilling::getBilling($AccountID);
+            $AccountBilling = AccountBilling::getBillingClass($AccountID);
             $InvoiceID = $Invoice->InvoiceID;
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", AccountBilling::getBillingKey($AccountBilling,'InvoiceTemplateID'))->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -2063,11 +2189,11 @@ class Invoice extends \Eloquent {
                         $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
                         $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
                         if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'\resources\assets\images\250x100.png'; //'http://placehold.it/250x100';
+                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
                         } else {
                             $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
                         }
-                        $logo = getenv('UPLOAD_PATH') . '/' . basename($as3url);
+                        $logo = $UPLOADPATH . '/' . basename($as3url);
                         file_put_contents($logo, file_get_contents($as3url));
                         $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
                         $usage_data = array();
@@ -2120,13 +2246,15 @@ class Invoice extends \Eloquent {
                                 }
                             }
                         }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo'))->render();
+                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
                         $body = htmlspecialchars_decode($body);
                         $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
                         $footer = htmlspecialchars_decode($footer);
+                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
+                        $header = htmlspecialchars_decode($header);
 
                         $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
                         if (!file_exists($destination_dir)) {
                             mkdir($destination_dir, 0777, true);
                         }
@@ -2138,14 +2266,17 @@ class Invoice extends \Eloquent {
                         $footer_name = 'footer-'. Uuid::generate() .'.html';
                         $footer_html = $destination_dir.$footer_name;
                         file_put_contents($footer_html,$footer);
+                        $header_name = 'header-'. Uuid::generate() .'.html';
+                        $header_html = $destination_dir.$header_name;
+                        file_put_contents($header_html,$header);
                         $output= "";
                         if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
                         }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                         }
                         Log::info($output);
                         Log::info($local_htmlfile);
@@ -2176,7 +2307,7 @@ class Invoice extends \Eloquent {
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = getenv('UPLOAD_PATH') . '/'. $amazonPath;
+                                $dir = $UPLOADPATH . '/'. $amazonPath;
                                 if (!file_exists($dir)) {
                                     mkdir($dir, 0777, TRUE);
                                 }
@@ -2223,6 +2354,28 @@ class Invoice extends \Eloquent {
                 }
             }
         }
+    }
+
+    public static function CheckInvoiceFullPaid($InvoiceID,$CompanyID){
+        $Response = false;
+        $InvoiceTotal = '';
+        $PaymentTotal = '';
+        if(!empty($InvoiceID)){
+            $Invoice = Invoice::find($InvoiceID);
+            $InvoiceTotal = $Invoice->GrandTotal;
+
+            $PaymentTotal = Payment::where(['CompanyID' =>$CompanyID, 'InvoiceID' => $InvoiceID, 'Recall' => '0', 'Status' =>'Approved'])->sum('Amount');
+
+            log::info('Invoice Total '.$InvoiceTotal);
+            log::info('Payment Total '.$PaymentTotal);
+
+            if(!empty($InvoiceTotal) && !empty($PaymentTotal) && $InvoiceTotal == $PaymentTotal){
+                log::info('Total Matching');
+                $Response = true;
+
+            }
+        }
+        return $Response;
     }
 
 }

@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -107,6 +108,13 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
             }
@@ -172,6 +180,7 @@ class PBXAccountUsage extends Command
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
+                        $data['disposition'] = $row_account['disposition'];
                         $data['extension'] = $row_account['extension'];
                         $data['ProcessID'] = $processID;
                         $data['ID'] = $row_account['ID'];
@@ -230,11 +239,15 @@ class PBXAccountUsage extends Command
                             $data_outbound['is_inbound'] = 0;
 
                         }
+                        $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule,$data['cld']);
 
                         $InserData[] = $data;
                         $data_count++;
 
                         if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
+                            $data_outbound['cli'] = apply_translation_rule($CLITranslationRule,$data_outbound['cli']);
+                            $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule,$data_outbound['cld']);
                             $InserData[] = $data_outbound;
                             $data_count++;
 
@@ -333,6 +346,7 @@ class PBXAccountUsage extends Command
     public function getLastDate($startdate, $companyid, $CronJobID)
     {
         $Settings = CronJob::where(array('CompanyID' => $companyid, 'CronJobID' => $CronJobID))->pluck('Settings');
+        $pbxusageinterval = CompanyConfiguration::get($companyid,'USAGE_PBX_INTERVAL');
         $cronsetting = json_decode($Settings);
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
@@ -341,7 +355,7 @@ class PBXAccountUsage extends Command
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + env('USAGE_PBX_INTERVAL') * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $pbxusageinterval * 60);
         }
 
         return $endtimefinal;
@@ -350,11 +364,12 @@ class PBXAccountUsage extends Command
     public static function getStartDate($companyid, $CompanyGatewayID, $CronJobID)
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+        $pbxusageinterval = CompanyConfiguration::get($companyid,'USAGE_PBX_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
-        if ($minutes <= env('USAGE_PBX_INTERVAL')) {
-            $endtime = date('Y-m-d H:i:s', strtotime('-'.env('USAGE_PBX_INTERVAL').' minute'));  //date('Y-m-d H:i:s');
+        if ($minutes <= $pbxusageinterval) {
+            $endtime = date('Y-m-d H:i:s', strtotime('-'.$pbxusageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-1 00:00:00');

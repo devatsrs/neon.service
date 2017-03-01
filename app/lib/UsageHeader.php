@@ -13,28 +13,36 @@ class UsageHeader extends \Eloquent {
     public static function getStartHeaderDate($CompanyID){
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblSummaryHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
-        $DeleteTime = getenv('DELETE_SUMMARY_TIME');
+        $DeleteTime = $DELETE_SUMMARY_TIME;
         if(!empty($DeleteTime)){
             $delete_strtotime = '- '.$DeleteTime;
         }
         $deletedate = date('Y-m-d',strtotime($delete_strtotime));
         if($StartDate < $deletedate && $usagecount > 0){
             $StartDate = $deletedate;
+        }
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
         }
         return $StartDate;
     }
     public static function getVendorStartHeaderDate($CompanyID){
         $StartDate =  DB::connection('sqlsrvcdrazure')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
-        $DeleteTime = getenv('DELETE_SUMMARY_TIME');
+        $DeleteTime = $DELETE_SUMMARY_TIME;
         if(!empty($DeleteTime)){
             $delete_strtotime = '- '.$DeleteTime;
         }
         $deletedate = date('Y-m-d',strtotime($delete_strtotime));
         if($StartDate < $deletedate && $usagecount > 0){
             $StartDate = $deletedate;
+        }
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
         }
         return $StartDate;
     }
@@ -42,12 +50,18 @@ class UsageHeader extends \Eloquent {
     // use for customer cdr retention
     public static function getMinDateUsageHeader($CompanyID){
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->min('StartDate');
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
 
     // use for vendor cdr retention
     public static function getMinDateVendorCDRHeader($CompanyID){
         $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->min('StartDate');
+        if(empty($StartDate)){
+            $StartDate = date('Y-m-d');
+        }
         return $StartDate;
     }
 }

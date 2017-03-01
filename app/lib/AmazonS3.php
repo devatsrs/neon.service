@@ -23,6 +23,7 @@ class AmazonS3 {
         'INVOICE_COMPANY_LOGO' =>  'InvoiceCompanyLogos',
         'INVOICE_USAGE_FILE' =>  'InvoiceUsageFile',
         'INVOICE_UPLOAD' =>  'Invoices',
+		'EMAIL_ATTACHMENT'=>'EmailAttachment'
     );
 
     // Instantiate an S3 client
@@ -107,7 +108,7 @@ class AmazonS3 {
     }
 
     static function generate_path($dir ='',$companyId , $accountId = '' ) {
-
+        $UPLOADPATH = CompanyConfiguration::get($companyId,'UPLOAD_PATH');
         $path = $companyId  ."/";
 
         if($accountId > 0){
@@ -115,7 +116,7 @@ class AmazonS3 {
         }
 
         $path .=  $dir . "/". date("Y")."/".date("m") ."/" .date("d") ."/";
-        $dir = getenv('UPLOAD_PATH') . '/'. $path;
+        $dir = $UPLOADPATH . '/'. $path;
         if (!file_exists($dir)) {
             //exec("chmod -R 777 " . getenv('UPLOAD_PATH'));
             @mkdir($dir, 0777, TRUE);
@@ -151,10 +152,10 @@ class AmazonS3 {
     static function preSignedUrl($key='',$CompanyID){
 
         $s3 = self::getS3Client($CompanyID);
-
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         //When no amazon ;
         if($s3 == 'NoAmazon'){
-            $Uploadpath = getenv('UPLOAD_PATH') . '/' .$key; 
+            $Uploadpath = $UPLOADPATH . '/' .$key;
             if ( file_exists($Uploadpath) ) {
                return $Uploadpath; ;
             } else {

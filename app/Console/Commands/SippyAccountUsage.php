@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -108,6 +109,7 @@ class SippyAccountUsage extends Command
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/sippyaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -131,6 +133,13 @@ class SippyAccountUsage extends Command
             }
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
+            }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -158,8 +167,8 @@ class SippyAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
-                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename);
+                    $fullpath = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename,$CompanyID);
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
                         $delete_files[] = $UsageDownloadFilesID;
                         /** update file status to progress */
@@ -181,13 +190,13 @@ class SippyAccountUsage extends Command
                                 $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 $uddata['cost'] = (float)$cdr_row['cost'];
-                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_in']);
-                                $uddata['cli'] = $cdr_row['cli_in'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$cdr_row['cld_in']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_in']);
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -233,7 +242,8 @@ class SippyAccountUsage extends Command
              * Insert Vendor CDRs to Temp table
              *
              */
-            $data_count = $file_count = 0;
+            $file_count = 1;
+            $data_count = 0;
             foreach ($vfilenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
@@ -245,8 +255,8 @@ class SippyAccountUsage extends Command
                     Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
 
 
-                    $fullpath = getenv("SIPPYFILE_LOCATION").$CompanyGatewayID. '/' ;
-                    $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename);
+                    $fullpath = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    $csv_response = SippySSH::get_vendor_file_content($fullpath.$filename,$CompanyID);
 
 
                     if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
@@ -271,13 +281,13 @@ class SippyAccountUsage extends Command
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                 $uddata['buying_cost'] = (float)$cdr_row['cost'];
-                                $uddata['cld'] = str_replace('2222', '', $cdr_row['cld_out']);
-                                $uddata['cli'] = $cdr_row['cli_out'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule, $cdr_row['cld_out']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_out']);
                                 $uddata['billed_duration'] = $cdr_row['billed_duration'];
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($cdr_row['prefix'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 

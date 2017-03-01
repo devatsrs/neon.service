@@ -59,7 +59,7 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\RateTableRateUpload',
         'App\Console\Commands\PaymentsUpload',
 		'App\Console\Commands\VCDRUpload',
-		'App\Console\Commands\AccountBalanceProcess',
+		'App\Console\Commands\NeonAlerts',
 		'App\Console\Commands\SippyMissingCDRFileFix',
 		'App\Console\Commands\CreateSummary',
 		'App\Console\Commands\CreateVendorSummary',
@@ -69,6 +69,12 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\DBBackup',
 		'App\Console\Commands\DialStringUpload',
 		'App\Console\Commands\ServerCleanUp',
+		'App\Console\Commands\AccountReadEmails',
+		'App\Console\Commands\GenerateCustomerRateUpdateFile',
+		'App\Console\Commands\GenerateVendorRateUpdateFile',
+		'App\Console\Commands\QuickBookInvoicePost',		
+		'App\Console\Commands\PBXAccountBlock',
+		'App\Console\Commands\ReadEmailsTickets',
 	];
 
 	/**

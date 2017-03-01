@@ -25,7 +25,7 @@ class CronJob extends \Eloquent {
 
     const  CRON_SUCCESS = 1;
     const  CRON_FAIL = 2;
-
+	const  RATEEMAILTEMPLATE = 'CronRateSheetEmail';
 
     public static function checkForeignKeyById($id){
         return 0;
@@ -36,8 +36,8 @@ class CronJob extends \Eloquent {
         return $cmd;
     }
 
-    public static function calcTimeRun($CronJobID,$Command){
-        $CronJob =  CronJob::find($CronJobID);
+    public static function calcTimeRun($CronJob,$Command){
+
         $cronsetting = json_decode($CronJob->Settings);
         $strtotime_current = strtotime(date('Y-m-d H:i:00'));
         $strtotime = strtotime(date('Y-m-d H:i:00'));
@@ -128,6 +128,28 @@ class CronJob extends \Eloquent {
                         $strtotime = 0;
                     }
                     return date('Y-m-d H:i:00',$strtotime);
+                case 'SECONDS':
+                    $strtotime_current = strtotime(date('Y-m-d H:i:s'));
+                    $strtotime = strtotime(date('Y-m-d H:i:s'));
+                    if(isset($CronJob->LastRunTime) && isset($CronJob->NextRunTime) &&  $CronJob->NextRunTime >= date('Y-m-d H:i:s') && $CronJob->LastRunTime != ''){
+                        $strtotime = strtotime($CronJob->LastRunTime);
+                        if(isset($cronsetting->JobInterval)){
+                            $strtotime += $cronsetting->JobInterval;
+                        }
+                        if($strtotime_current > $strtotime){
+                            $strtotime = $strtotime_current;
+                        }
+                    }
+                    $dayname = strtoupper(date('D'));
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay)){
+                        $strtotime = 0;
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname){
+                        $strtotime = 0;
+                    }
+                    If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:s',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:s')){
+                        $strtotime = 0;
+                    }
+                    return date('Y-m-d H:i:s',$strtotime);
                 default:
                     return '';
             }
@@ -176,7 +198,7 @@ class CronJob extends \Eloquent {
                         $strtotime = strtotime($CronJob->LastRunTime)+$cronsetting->JobInterval*60*60*24;
                     }
                     if(isset($cronsetting->JobStartTime)){
-                        return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));;
+                        return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
                     }
                     return date('Y-m-d H:i:00',$strtotime);
                 case 'MONTHLY':
@@ -189,6 +211,13 @@ class CronJob extends \Eloquent {
                         return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
                     }
                     return date('Y-m-d H:i:00',$strtotime);
+                case 'SECONDS':
+                    if($CronJob->LastRunTime == ''){
+                        $strtotime = strtotime('+'.$cronsetting->JobInterval.' seconds');
+                    }else{
+                        $strtotime = strtotime($CronJob->LastRunTime)+$cronsetting->JobInterval;
+                    }
+                    return date('Y-m-d H:i:s',$strtotime);
                 default:
                     return '';
 
@@ -200,7 +229,7 @@ class CronJob extends \Eloquent {
                 $strtotime = strtotime($CronJob->LastRunTime)+ 7*60*60*24;
             }
             if(isset($cronsetting->JobStartTime)){
-                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));;
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$cronsetting->JobStartTime"));
             }
             return date('Y-m-d H:i:00',$strtotime);
         }
@@ -208,16 +237,33 @@ class CronJob extends \Eloquent {
 
     public static function createLog($CronJobID){
         $CronJob =  CronJob::find($CronJobID);
-        $data['LastRunTime'] = date('Y-m-d H:i:00');
+        $cronsetting = json_decode($CronJob->Settings);
+        if(!empty($CronJob) && isset($cronsetting->JobTime) && $cronsetting->JobTime == 'SECONDS') {
+            $time = strtotime(date('H:i:s'));
+            $time = $cronsetting->JobInterval*round($time/$cronsetting->JobInterval);
+            $data['LastRunTime'] = date('Y-m-d').' '.date('H:i:s',$time);
+        }else{
+            $data['LastRunTime'] = date('Y-m-d H:i:00');
+        }
+
         $CronJob->update($data);
         $data['NextRunTime'] = CronJob::calcNextTimeRun($CronJob->CronJobID);
         $CronJob->update($data);
     }
 
     public static function checkStatus($CronJobID,$Command){
-        if (CronJob::calcTimeRun($CronJobID,$Command) == date('Y-m-d H:i:00')) {
-            return  true;
+        $CronJob =  CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings);
+        if(!empty($CronJob) && isset($cronsetting->JobTime) && $cronsetting->JobTime == 'SECONDS') {
+            if (CronJob::calcTimeRun($CronJob,$Command) == date('Y-m-d H:i:s')) {
+                return  true;
+            }
+        }else{
+            if (CronJob::calcTimeRun($CronJob,$Command) == date('Y-m-d H:i:00')) {
+                return  true;
+            }
         }
+
         return false;
     }
 
@@ -245,38 +291,43 @@ class CronJob extends \Eloquent {
         $PID = $CronJob->PID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
 
         $cronsetting = json_decode($CronJob->Settings,true);
         $ActiveCronJobEmailTo = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
-
 
         if(getenv("APP_OS") == "Linux"){
             $KillCommand = 'kill -9 '.$PID;
         }else{
             $KillCommand = 'Taskkill /PID '.$PID.' /F';
         }
+
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
 		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
 
-        $emaildata['KillCommand'] = $KillCommand;
-        $emaildata['ReturnStatus'] = $ReturnStatus;
-		$emaildata['DetailOutput'] = $DetailOutput;
+        if(!empty($ActiveCronJobEmailTo)) {
 
-        $emaildata['CompanyID'] = $CompanyID;
-        $emaildata['Minute'] = $minute;
-        $emaildata['JobTitle'] = $CronJob->JobTitle;
-        $emaildata['PID'] = $CronJob->PID;
-        $emaildata['CompanyName'] = $ComanyName;
-        $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
-        $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = $JobTitle. ' is terminated, Was running since ' . $minute .' minutes.';
-        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
-		
-		
-									
-        $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
-        return $emailstatus;
+            $emaildata['KillCommand'] = $KillCommand;
+            $emaildata['ReturnStatus'] = $ReturnStatus;
+            $emaildata['DetailOutput'] = $DetailOutput;
+
+            $emaildata['CompanyID'] = $CompanyID;
+            $emaildata['Minute'] = $minute;
+            $emaildata['JobTitle'] = $CronJob->JobTitle;
+            $emaildata['PID'] = $CronJob->PID;
+            $emaildata['CompanyName'] = $ComanyName;
+            $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
+            $emaildata['EmailToName'] = '';
+            $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
+            $emaildata['Url'] = $WEBURL . '/activejob';
+
+            $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
+            return $emailstatus;
+        }else{
+            // Error Email is not setup.
+            return -1;
+        }
     }
 
     public static function CronJobSuccessEmailSend($CronJobID){
@@ -339,6 +390,7 @@ class CronJob extends \Eloquent {
         $LastCdrBehindEmailSendTime = isset($CronJob->CdrBehindEmailSendTime) ? $CronJob->CdrBehindEmailSendTime : '';
         $LastCdrBehindDuration = isset($CronJob->CdrBehindDuration) ? $CronJob->CdrBehindDuration : '';
 
+        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $ComanyName = Company::getName($CompanyID);
 
         $cronsetting = json_decode($CronJob->Settings,true);
@@ -353,7 +405,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = getenv("WEBURL") . '/activejob';
+        $emaildata['Url'] = $WEBURL . '/activejob';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
@@ -415,19 +467,23 @@ class CronJob extends \Eloquent {
     public static function sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$EffectiveDate){
         $status['status']='';
         $status['message']='';
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting =   json_decode($CronJob->Settings);
         $CompanyName = DB::table('tblCompany')->where(['CompanyID'=>$CompanyID])->pluck('CompanyName');
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = 'Success';
         $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
         CronJobLog::insert($joblogdata);
 
-        Config::get('app.temp_location');
         $rates =  DB::select("CALL prc_GetLastRateTableRate(".$CompanyID.",'".$cronsetting->rateTableID."','".$EffectiveDate."')");
         $excel_data = json_decode(json_encode($rates),true);
         $filename = 'rate_table_'.date('Y-m-d His');
 
-        $file_path = Config::get('app.temp_location').$filename.'.xlsx';
+        $file_path = $TEMP_PATH.$filename.'.xlsx';
 
         $NeonExcel = new NeonExcelIO($file_path);
         $NeonExcel->write_excel($excel_data);
@@ -439,7 +495,7 @@ class CronJob extends \Eloquent {
         })->store('xls',Config::get('app.temp_location'));*/
 
 
-        $emaildata['attach'] = Config::get('app.temp_location').$filename.'.xlsx';
+        $emaildata['attach'] = $TEMP_PATH.$filename.'.xlsx';
         $rgname = DB::table('tblRateGenerator')->where(array('RateGeneratorId'=>$cronsetting->rateGeneratorID))->pluck('RateGeneratorName');
         $rtname = DB::table('tblRateTable')->where(array('RateTableId'=>$cronsetting->rateTableID))->pluck('RateTableName');
         $emaildata['data'] = array(
@@ -471,6 +527,7 @@ class CronJob extends \Eloquent {
             $valid_emails = array();
 
             foreach ($rates_email as $row) {
+                $row = trim($row);
                 if (filter_var($row, FILTER_VALIDATE_EMAIL)) {
                     $valid_emails[] = $row;
                     $emailto = $row;

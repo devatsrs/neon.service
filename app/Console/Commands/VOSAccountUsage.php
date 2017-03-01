@@ -9,6 +9,7 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -108,6 +109,7 @@ class VOSAccountUsage extends Command
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -130,6 +132,13 @@ class VOSAccountUsage extends Command
             }
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
+            }
+            $CLITranslationRule = $CLDTranslationRule =  '';
+            if(!empty($companysetting->CLITranslationRule)){
+                $CLITranslationRule = $companysetting->CLITranslationRule;
+            }
+            if(!empty($companysetting->CLDTranslationRule)){
+                $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -156,7 +165,7 @@ class VOSAccountUsage extends Command
                     /** update file status to progress */
                     UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                     $delete_files[] = $UsageDownloadFilesID;
-                    $fullpath = getenv("VOS_LOCATION").$CompanyGatewayID. '/' ;
+                    $fullpath = $VOS_LOCATION.'/'.$CompanyGatewayID. '/' ;
                     try{
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
@@ -173,13 +182,13 @@ class VOSAccountUsage extends Command
                                 $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
                                 $uddata['cost'] = (float)$excelrow['26'];
-                                $uddata['cld'] = str_replace('2222', '', $excelrow['3']);
-                                $uddata['cli'] = $excelrow['1'];
+                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
+                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
                                 $uddata['billed_duration'] = $excelrow['23'];
                                 $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix($excelrow['24'],$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -206,10 +215,10 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
-                                $vendorcdrdata['cli'] = $excelrow['1'];
-                                $vendorcdrdata['cld'] = str_replace('2222', '', $excelrow['14']);
+                                $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
+                                $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix($excelrow['34'],$RateCDR);
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
 

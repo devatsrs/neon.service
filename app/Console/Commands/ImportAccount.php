@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Gateway;
@@ -87,6 +88,7 @@ class ImportAccount extends Command {
         $tempProcessID = '';
 
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
 
             if (!empty($job)) {
@@ -110,19 +112,40 @@ class ImportAccount extends Command {
                     if(count($importoptions)>0){
                         $AccountType = 1;
                         Log::info('Manually Accounts Import Start');
-                        $CompanyGatewayID = $importoptions['companygatewayid'];
 
-                        if(!empty($importoptions['criteria'])){
-                            $importoption = 1;
-                            $tempCompanyGatewayID = $importoptions['companygatewayid'];
+                        if(!empty($importoptions['quickbookimportprocessid'])){
+                            $QuickBookProcessID = $importoptions['quickbookimportprocessid'];
                         }else{
-                            $TempAccountIDs = $importoptions['TempAccountIDs'];
-                            $importoption = 1;
+                            $QuickBookProcessID = '';
                         }
-                        if(!empty($importoptions['importprocessid'])){
-                            $tempProcessID = $importoptions['importprocessid'];
+
+                        /* QuickBook Import */
+                        if(!empty($QuickBookProcessID)){
+                            Log::info('QuickBook Accounts Import');
+                            $importoption = 1;
+                            $tempProcessID = $QuickBookProcessID;
+                            if(!empty($importoptions['criteria'])){
+                                $tempCompanyGatewayID = 0;
+                            }else{
+                                $TempAccountIDs = $importoptions['TempAccountIDs'];
+                            }
+
                         }else{
-                            $tempProcessID = '';
+                            Log::info('Gateway Accounts Import');
+                            $CompanyGatewayID = $importoptions['companygatewayid'];
+
+                            if(!empty($importoptions['criteria'])){
+                                $importoption = 1;
+                                $tempCompanyGatewayID = $importoptions['companygatewayid'];
+                            }else{
+                                $TempAccountIDs = $importoptions['TempAccountIDs'];
+                                $importoption = 1;
+                            }
+                            if(!empty($importoptions['importprocessid'])){
+                                $tempProcessID = $importoptions['importprocessid'];
+                            }else{
+                                $tempProcessID = '';
+                            }
                         }
 
                      //manual import end
@@ -152,7 +175,7 @@ class ImportAccount extends Command {
                         if (!empty($jobfile->FilePath)) {
                             $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                             if (strpos($path, "https://") !== false) {
-                                $file = Config::get('app.temp_location') . basename($path);
+                                $file = $TEMP_PATH . basename($path);
                                 file_put_contents($file, file_get_contents($path));
                                 $jobfile->FilePath = $file;
                             } else {
@@ -416,8 +439,8 @@ class ImportAccount extends Command {
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
-                        $updateaccountno = Account::updateAccountNo($CompanyID);
-                        Log::info('update account number - '.$updateaccountno);
+                        Account::updateAccountNo($CompanyID);
+                        Log::info('update account number - Done');
                         Log::info(count($JobStatusMessage));
                         if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();

@@ -9,20 +9,20 @@
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
+use App\Lib\CompanyConfiguration;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempRateTableRate;
 use App\Lib\VendorFileUploadTemplate;
-use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
 
 class RateTableRateUpload extends Command
 {
@@ -74,12 +74,13 @@ class RateTableRateUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = (string) Uuid::generate();
+        $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
         Log::useFiles(storage_path() . '/logs/ratetablefileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
 
             if (!empty($job)) {
@@ -97,7 +98,7 @@ class RateTableRateUpload extends Command
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
-                            $file = Config::get('app.temp_location') . basename($path);
+                            $file = $TEMP_PATH . basename($path);
                             file_put_contents($file, file_get_contents($path));
                             $jobfile->FilePath = $file;
                         } else {

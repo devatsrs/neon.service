@@ -383,22 +383,19 @@ class NeonExcelIO
             $header_data = array_keys($excel_data_rr);
         }
         $header_data  = array_map('ucwords',$header_data);
-        array_walk($header_data , 'custom_replace');
         if(count($header_data) == 0){
             $header_data[] = 'Destination';
             $header_data[] = 'Codes';
             $header_data[] = 'Tech Prefix';
             $header_data[] = 'Interval';
-            $data['text'] = 'Rate Per Minute (USD)';
-            $header_data[] = generic_replace($data);
+            $header_data[] = 'Rate Per Minute (usd)';
             $header_data[] = 'Level';
             $header_data[] = 'Change';
             $header_data[] = 'Effective Date';
         }
-        for($i=0;$i<count($header_data);$i++){
-            $data['text'] = $header_data[$i];
-            $header_data[$i] = generic_replace($data);
-        }
+        array_walk($header_data , 'custom_replace');
+        $replace_array = Helper::create_replace_array($data['Account'],array());
+        $header_data = template_var_replace($header_data,$replace_array);
 
         if(isset($header_data)){
             $writer->addRow($header_data);
@@ -445,17 +442,19 @@ class NeonExcelIO
                     $header_data = array_keys($excel_data_rr);
                 }
                 $header_data  = array_map('ucwords',$header_data);
-                array_walk($header_data , 'custom_replace');
                 if(count($header_data) == 0){
                     $header_data[] = 'Destination';
                     $header_data[] = 'Codes';
                     $header_data[] = 'Tech Prefix';
                     $header_data[] = 'Interval';
-                    $header_data[] = 'Rate Per Minute (USD)';
+                    $header_data[] = 'Rate Per Minute (usd)';
                     $header_data[] = 'Level';
                     $header_data[] = 'Change';
                     $header_data[] = 'Effective Date';
                 }
+                array_walk($header_data , 'custom_replace');
+                $replace_array = Helper::create_replace_array($data['Account'],array());
+                $header_data = template_var_replace($header_data,$replace_array);
 
                 Log::info($trunk . " sheet index " . $sheet_index );
                 if($sheet_index == 1){
@@ -483,5 +482,34 @@ class NeonExcelIO
 
         }
         $writer->close();
+    }
+
+    /**
+     * Generare Rate Update CSV file
+     * @param $data
+     * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
+     */
+    public function generate_rate_update_file($data){
+
+        $writer = WriterFactory::create(Type::CSV); // for CSV files
+
+        /**
+         * write into tmp file and rename to .csv file.
+         */
+        $new_file = $this->file;
+        $old_file = str_replace(".csv",".tmp",$this->file);
+        $this->file  = $old_file ;
+        $writer->openToFile($this->file); // write data to a file or to a PHP stream
+
+        $header_data = array_keys($data[0]);
+        if(isset($header_data)){
+            $writer->addRow($header_data);
+        }
+        $writer->addRows($data); // add multiple rows at a time
+        $writer->close();
+        if(rename (  $old_file , $new_file )) {
+            return true;
+        }
+
     }
 }

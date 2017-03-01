@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanySetting;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -10,6 +11,7 @@ use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
+use App\Lib\Notification;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -80,11 +82,11 @@ class AutoTransactionsLogEmail extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
 
-
+        $TRANSACTION_LOG_EMAIL_FREQUENCY = CompanyConfiguration::get($CompanyID,'TRANSACTION_LOG_EMAIL_FREQUENCY');
         //AccountName,InvoiceNumber,[Transaction], Notes,created_at,Amount,Status
         try {
             $Company = Company::find($CompanyID);
-            $frequency = getenv("TRANSACTION_LOG_EMAIL_FREQUENCY");
+            $frequency = $TRANSACTION_LOG_EMAIL_FREQUENCY;
             $frequency = (empty($frequency)) ? 'Daily' : $frequency;
 
             $query = "CALL prc_GetTransactionsLogbyInterval(  '" . $CompanyID . "' , '" . $frequency . "') "; // Default Weekly
@@ -107,13 +109,14 @@ class AutoTransactionsLogEmail extends Command {
                 $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
                 $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
                 $jobdata["CreatedBy"] = $CreatedBy;
+                $jobdata["created_at"] = date('Y-m-d H:i:s');
                 $jobdata["updated_at"] = date('Y-m-d H:i:s');
                 $JobID = Job::insertGetId($jobdata);
 
 
                 /*$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID, 'InvoiceGenerationEmail');
                 $InvoiceGenerationEmail = ($InvoiceGenerationEmail == 'Invalid Key') ? $Company->Email : $InvoiceGenerationEmail;*/
-                $WeeklyPaymentTransactionLogEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::WeeklyPaymentTransactionLog]);
+                $WeeklyPaymentTransactionLogEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::WeeklyPaymentTransactionLog]);
                 $WeeklyPaymentTransactionLogEmail = empty($WeeklyPaymentTransactionLogEmail) ? $cronsetting['SuccessEmail'] : $WeeklyPaymentTransactionLogEmail;
                 $status = Helper::sendMail('emails.invoices.transaction_log', array(
                     'EmailTo' => explode(",", $WeeklyPaymentTransactionLogEmail),

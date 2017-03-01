@@ -11,18 +11,29 @@ class PHPMAILERIntegtration{
 	 } 
 
 
-	public static function SetEmailConfiguration($config,$companyID)
+	public static function SetEmailConfiguration($config,$companyID,$data)
 	{
 		Config::set('mail.host',$config->SMTPServer);
 		Config::set('mail.port',$config->Port);
-		Config::set('mail.from.address',$config->EmailFrom);
-		Config::set('mail.from.name',$config->CompanyName);
-		Config::set('mail.encryption',($config->IsSSL==1?'SSL':'TLS'));
+		
+		if(isset($data['EmailFrom'])){ 
+			Config::set('mail.from.address',$data['EmailFrom']);
+		}else{ 
+			Config::set('mail.from.address',$config->EmailFrom);
+		}
+		
+		if(isset($data['CompanyName'])){
+			Config::set('mail.from.name',$data['CompanyName']);
+		}else{
+			Config::set('mail.from.name',$config->CompanyName);
+		}
+		Config::set('mail.encryption',($config->IsSSL==1?'ssl':'tls'));
 		Config::set('mail.username',$config->SMTPUsername);
 		Config::set('mail.password',$config->SMTPPassword);
 		extract(Config::get('mail'));
 	
 		$mail = new \PHPMailer;
+		//$mail->SMTPDebug = 1;
 		//$mail->SMTPDebug = 3;                               // Enable verbose debug output
 		$mail->isSMTP();                                      // Set mailer to use SMTP
 		$mail->Host = $host;  // Specify main and backup SMTP servers
@@ -46,7 +57,7 @@ class PHPMAILERIntegtration{
 			 $companyID = User::get_companyID();
 		}
 		
-		 $mail 		=   self::SetEmailConfiguration($config,$companyID);
+		 $mail 		=   self::SetEmailConfiguration($config,$companyID,$data);
 		 $status 	= 	array('status' => 0, 'message' => 'Something wrong with sending mail.');
 	
 		if(getenv('APP_ENV') != 'Production'){
@@ -55,66 +66,32 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'EmailTo');
 		$mail =  self::add_email_address($mail,$data,'cc');
 		$mail =  self::add_email_address($mail,$data,'bcc');
+		
+		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug,$companyID))
+		{
+			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$companyID);
 			
-		 if(isset($data['attach'])){
+			$mail->AddReplyTo($ImapData->EmailTrackingEmail, $config->CompanyName);
+		}
+			
+		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
 		
-		$mail->Body = $body;
+		$mail->Body    = $body;
 		$mail->Subject = $data['Subject'];
-		if(!is_array($data['EmailTo']) && strpos($data['EmailTo'],',') !== false){
-			$data['EmailTo']  = explode(',',$data['EmailTo']);
-		}
-	
-		if(isset($data['cc'])) {
-			if (is_array($data['cc'])) {
-				foreach ($data['cc'] as $cc_address) {
-					$user_data = User::where(["EmailAddress" => $cc_address])->get();
-					$mail->AddCC($cc_address, $user_data[0]['FirstName'] . ' ' . $user_data[0]['LastName']);
-				}
-			}
-		}
-	
-		if(isset($data['cc'])) {
-			if (is_array($data['bcc'])) {
-				foreach ($data['bcc'] as $bcc_address) {
-					$user_data = User::where(["EmailAddress" => $bcc_address])->get();
-	
-					$mail->AddBCC($bcc_address, $user_data[0]['FirstName'] . ' ' . $user_data[0]['LastName']);
-				}
-			}
-		}
-		if(is_array($data['EmailTo'])){
-			foreach((array)$data['EmailTo'] as $email_address){
-				if(!empty($email_address)) {
-					$email_address = trim($email_address);
-					$mail->clearAllRecipients();
-					$mail->addAddress($email_address); //trim Added by Abubakar
-					if (!$mail->send()) {
-						$status['status'] = 0;
-						$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $email_address . ')';
-					} else {
-						$status['status'] = 1;
-						$status['message'] = 'Email has been sent';
-						$status['body'] = $body;
-					}
-				}
-			}
-		}else{
-			if(!empty($data['EmailTo'])) {
-				$email_address = trim($data['EmailTo']);
-				$mail->clearAllRecipients();
-				$mail->addAddress($email_address); //trim Added by Abubakar
-				if (!$mail->send()) {
+		
+		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];	
+		if (!$mail->send()) {
 					$status['status'] = 0;
-					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $data['EmailTo'] . ')';
-				} else {
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
+		} else {
+					$mail->clearAllRecipients();
 					$status['status'] = 1;
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
-				}
-			}
-		} 
+					$status['message_id']	=	$mail->getLastMessageID(); 
+		} Log::info(print_r($mail,true));
 		return $status;
 	}
 	

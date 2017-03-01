@@ -6,6 +6,7 @@ use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceDetail;
 use App\Lib\Job;
+use App\Lib\Notification;
 use App\Lib\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -69,8 +70,8 @@ class RegenerateManualInvoice extends Command {
         $errors = array();
         $message = array();
         //$InvoiceGenerationEmail = CompanySetting::getKeyVal($CompanyID,'InvoiceGenerationEmail');
-        $InvoiceCopyEmail = \Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>\Notification::InvoiceCopy]);
-        $InvoiceCopyEmail = ($InvoiceCopyEmail != 'Invalid Key')?$InvoiceCopyEmail:'';
+        $InvoiceCopyEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
+        $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
         $ProcessID = Uuid::generate();
         $InvoiceIDs = '11975,9802';

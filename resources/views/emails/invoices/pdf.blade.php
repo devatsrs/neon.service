@@ -8,6 +8,7 @@
     line-height: normal;
 }
 p{ line-height: 20px;}
+.text-small p{line-height: 10px;}
 .text-left{ text-align: left}
 .text-right{ text-align: right}
 .text-center{ text-align: center}
@@ -26,11 +27,23 @@ table.invoice td , table.invoice_total td{ padding:3px;}
 table{
   width: 100%;
   border-spacing: 0;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+}
+
+tr {
+    page-break-inside: avoid;
+}
+
+thead {
+    display: table-header-group
+}
+
+tfoot {
+    display: table-row-group
 }
 
 </style>
-<br/><br/><br/>
+<br/>
         <table border="0" width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td class="col-md-6" valign="top">
@@ -50,16 +63,15 @@ table{
 
         <table border="0" width="100%" cellpadding="0" cellspacing="0">
             <tr>
-                <td class="col-md-6"  valign="top" >
-                        <br>
+                <td class="col-md-6 text-small"  valign="top" >
                         <strong>Invoice To</strong>
-                        <p>{{$Account->AccountName}}</p>
-                        <p>{{nl2br($Invoice->Address)}}</p>
+                        <p>{{$Account->AccountName}}<br>
+                        {{nl2br($Invoice->Address)}}</p>
                 </td>
-                <td class="col-md-6 text-right"  valign="top" >
-                        <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}</p>
-                        <p><b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</p>
-                        <p><b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
+                <td class="col-md-6 text-right text-small"  valign="top" >
+                        <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}<br>
+                        <b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}<br>
+                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
                 </td>
             </tr>
         </table>
@@ -86,6 +98,7 @@ table{
             }
 
         ?>
+        @if(($InvoiceTemplate->ShowBillingPeriod == 1) || ($InvoiceTemplate->ShowPrevBal))
         <table width="100%" border="0">
             <tbody>
             <tr>
@@ -94,7 +107,7 @@ table{
                     <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice table table-bordered">
                         <thead>
                         <tr>
-                            <th style="text-align: right;border-right: 0px solid black !important;"><br>&nbsp;Invoice</th><th style="text-align: left;border-left: 0px solid black !important;"><br>&nbsp;Period</th>
+                            <th colspan="2" style="text-align: center;">Invoice Period</th>
                         </tr>
                         <tr>
                             <th style="text-align: center;">From</th>
@@ -134,7 +147,7 @@ table{
             </tr>
             </tbody>
         </table>
-
+		@endif
 <div class="row">
     <div class="col-md-12">
         <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
@@ -216,7 +229,7 @@ table{
         <thead>
         <tr>
             <th style="text-align: center;">Title</th>
-            <th style="text-align: center;">Description</th>
+            <th style="text-align: left;">Description</th>
             <th style="text-align: center;">Price</th>
             <th style="text-align: center;">Quantity</th>
             <th style="text-align: center;">Date From</th>
@@ -229,7 +242,7 @@ table{
         @if($ProductRow->ProductType == \App\Lib\Product::USAGE)
         <tr>
             <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-            <td class="text-center">{{$ProductRow->Description}}</td>
+            <td class="text-left">{{$ProductRow->Description}}</td>
             <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
             <td class="text-center">{{$ProductRow->Qty}}</td>
             <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
@@ -241,13 +254,13 @@ table{
         </tbody>
     </table>
     @if($is_sub == true)
-    <br /> 
+    <br />
     <h5>Subscription Charges</h5>
     <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
             <thead>
             <tr>
                 <th style="text-align: center;">Title</th>
-                <th style="text-align: center;">Description</th>
+                <th style="text-align: left;">Description</th>
                 <th style="text-align: center;">Price</th>
                 <th style="text-align: center;">Quantity</th>
                 <th style="text-align: center;">Date From</th>
@@ -260,7 +273,7 @@ table{
             @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION)
             <tr>
                 <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-                <td class="text-center">{{$ProductRow->Description}}</td>
+                <td class="text-left">{{$ProductRow->Description}}</td>
                 <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                 <td class="text-center">{{$ProductRow->Qty}}</td>
                 <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
@@ -279,7 +292,7 @@ table{
                 <thead>
                 <tr>
                     <th style="text-align: center;">Title</th>
-                    <th style="text-align: center;">Description</th>
+                    <th style="text-align: left;">Description</th>
                     <th style="text-align: center;">Price</th>
                     <th style="text-align: center;">Quantity</th>
                     <th style="text-align: center;">Date</th>
@@ -291,7 +304,7 @@ table{
                 @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE)
                 <tr>
                     <td class="text-center">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
-                    <td class="text-center">{{$ProductRow->Description}}</td>
+                    <td class="text-left">{{$ProductRow->Description}}</td>
                     <td class="text-center">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                     <td class="text-center">{{$ProductRow->Qty}}</td>
                     <td class="text-center">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
@@ -322,6 +335,7 @@ table{
                              <th width="10%">Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Billed Duration<br>mm:ss</th>
                              <th class="text-center" width="10%">Charged Amount</th>
+                             <th class="text-center" width="10%">Avg. Rate/Min</th>
                          </tr>
                               <?php
                                  $totalCalls=0;
@@ -345,6 +359,7 @@ table{
                                  <td>{{$row['Duration']}}</td>
                                  <td class="text-center">{{$row['BillDuration']}}</td>
                                  <td class="text-center">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$RoundChargesAmount)}}</td>
+                                 <td class="text-center">{{$CurrencySymbol}}{{ number_format(($row['TotalCharges']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
                                 </tr>
                              @endforeach
                              <?php
@@ -357,6 +372,7 @@ table{
                                  <th>{{$totalDuration}}</th>
                                  <th class="text-center">{{$totalBillDuration}}</th>
                                   <th class="text-center">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                                  <th></th>
                              </tr>
                       </table>
                      @endif
@@ -384,7 +400,7 @@ table{
                              ?>
                              <tr>
                              <td class="text-center">{{$row['area_prefix']}}</td>
-                             <td>{{substr($row['cli'],1)}}</td> 
+                             <td>{{substr($row['cli'],1)}}</td>
                              <td>{{substr($row['cld'],1)}}</td>
                              <td>{{$row['connect_time']}}</td>
                              <td>{{$row['disconnect_time']}}</td>

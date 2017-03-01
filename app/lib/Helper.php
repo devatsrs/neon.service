@@ -1,19 +1,21 @@
 <?php
 namespace App\Lib;
 
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
-use App\Lib\SiteIntegration;
-use App\Lib\User;
-use App\Lib\Company;
-use App\Lib\PHPMAILERIntegtration;
 
 class Helper{
 
-    public static function sendMail($view,$data){
+    public static function sendMail($view,$data,$ViewType=1){
 		$companyID = $data['CompanyID'];
-		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		if($ViewType){
+			$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		}
+		else{
+			$body  = $view;
+		}
+
 	
 		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
@@ -217,6 +219,11 @@ class Helper{
         if(is_array($data['EmailTo'])){
             $data['EmailTo'] = implode(',',$data['EmailTo']);
         }
+		
+		if(!isset($data['message_id'])){
+			$data['message_id'] = '';
+		}
+		
         $logData = ['EmailFrom'=>$data['EmailFrom'],
                     'EmailTo'=>$data['EmailTo'],
                     'Subject'=>$data['Subject'],
@@ -226,13 +233,15 @@ class Helper{
                     'ProcessID'=>$data['ProcessID'],
                     'JobID'=>$data['JobID'],
                     'UserID'=>$user->UserID,
+					"MessageID"=>$data['message_id'],
                     'CreatedBy'=>$user->FirstName.' '.$user->LastName];
         if(!empty($data['EmailType'])){
             $logData['EmailType'] = $data['EmailType'];
         }
         try {
-            if (AccountEmailLog::Create($logData)) {
+            if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
+                $status['AccountEmailLog'] = $AccountEmailLog;
             }
         } catch (\Exception $e) {
             $status['status'] = 0;
@@ -269,16 +278,105 @@ class Helper{
     public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::where(["AccountID"=>$AccountID])->pluck("RoundChargesAmount");
-        }
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount')=='Invalid Key'?2:CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
-        }
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = 2;
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
         }
 
+        if (empty($RoundChargesAmount)) {
+            $value = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+            $RoundChargesAmount = ($value !='Invalid Key')?$value:2;
+        }
         return $RoundChargesAmount;
+    }
+
+    public static function account_email_log($CompanyID,$AccountID,$emaildata,$status,$User='',$ProcessID='',$JobID=0,$EmailType=0){
+        if(empty($User)) {
+            $Company = Company::find($CompanyID);
+            $User = User::getDummyUserInfo($CompanyID, $Company);
+        }
+		$status['message_id'] 	=  isset($status['message_id'])?$status['message_id']:"";
+        $logData = ['AccountID' => $AccountID,
+            'ProcessID' => $ProcessID,
+            'JobID' => $JobID,
+            'User' => $User,
+            'EmailType' => $EmailType,
+            'EmailFrom' => $User->EmailAddress,
+            'EmailTo' => $emaildata['EmailTo'],
+            'Subject' => $emaildata['Subject'],
+            'Message' => $status['body'],
+			"message_id"=>$status['message_id']
+			];
+        $statuslog = Helper::email_log($logData);
+        return $statuslog;
+    }
+
+   public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
+       $replace_array = array();
+       $replace_array['FirstName'] = $Account->FirstName;
+       $replace_array['LastName'] = $Account->LastName;
+       $replace_array['Email'] = $Account->Email;
+       $replace_array['Address1'] = $Account->Address1;
+       $replace_array['Address2'] = $Account->Address2;
+       $replace_array['Address3'] = $Account->Address3;
+       $replace_array['City'] = $Account->City;
+       $replace_array['State'] = $Account->State;
+       $replace_array['PostCode'] = $Account->PostCode;
+       $replace_array['Country'] = $Account->Country;
+       $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+       $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+       $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
+	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
+	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+	   
+       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $Signature = '';
+       if(!empty($JobLoggedUser)){
+           $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;
+           $emaildata['EmailFromName'] = $JobLoggedUser->FirstName.' '.$JobLoggedUser->LastName;
+           if(isset($JobLoggedUser->EmailFooter) && trim($JobLoggedUser->EmailFooter) != '')
+           {
+               $Signature = $JobLoggedUser->EmailFooter;
+           }
+       }
+       $replace_array['Signature']= $Signature;
+       $extra_var = array(
+           'InvoiceNumber' => '',
+           'InvoiceGrandTotal' => '',
+           'InvoiceOutstanding' => '',
+       );
+       $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
+
+       return $replace_array;
+   }
+    public static function alert_email_log($AlertID,$AccountEmailLogID){
+        $logData = [
+            'AlertID' => $AlertID,
+            'AccountEmailLogID' => $AccountEmailLogID,
+            'SendBy' => 'RMScheduler',
+            'send_at'=>date('Y-m-d H:i:s')
+        ];
+        $statuslog = AlertLog::create($logData);
+        return $statuslog;
+    }
+
+    public static function ACD_ASR_CR($settings){
+
+        if(!empty($settings['CompanyGatewayID'])) {
+            foreach ($settings['CompanyGatewayID'] as $CompanyGatewayID) {
+                $settings['GatewayNames'][] = CompanyGateway::where('CompanyGatewayID', $CompanyGatewayID)->pluck('Title');
+            }
+        }
+        if(!empty($settings['CountryID'])) {
+            foreach ($settings['CountryID'] as $CountryID) {
+                $settings['CountryNames'][] = Country::getCountryName($CountryID);
+            }
+        }
+        if(!empty($settings['TrunkID'])) {
+            foreach ($settings['TrunkID'] as $TrunkID) {
+                $settings['TrunkNames'][] = DB::table('tblTrunk')->where('TrunkID', $TrunkID)->pluck('Trunk');
+            }
+        }
+        return $settings;
     }
 
 }

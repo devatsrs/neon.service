@@ -2,6 +2,7 @@
 
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\FileUploadTemplate;
@@ -78,12 +79,13 @@ class VCDRUpload extends Command
         $temptableName = 'tblTempVendorCDR';
         Job::JobStatusProcess($JobID, $ProcessID, $getmypid);//Change by abubakar
         Log::useFiles(storage_path() . '/logs/vcdrupload-' . $JobID . '-' . date('Y-m-d') . '.log');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
         $skiped_account = $error =  array();
         $skiped_account_data = array();
         try {
             $joboptions = json_decode($job->Options);
             $CompanyGatewayID = $joboptions->CompanyGatewayID;
-            $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID, $CompanyGatewayID);
+            $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID, $CompanyGatewayID,'cdr');
             $FileUploadTemplate = FileUploadTemplate::find($joboptions->FileUploadTemplateID);
             $TemplateOptions = json_decode($FileUploadTemplate->Options);
             $csvoption = $TemplateOptions->option;
@@ -101,7 +103,7 @@ class VCDRUpload extends Command
                 if ($jobfile->FilePath) {
                     $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                     if (strpos($path, "https://") !== false) {
-                        $file = Config::get('app.temp_location') . basename($path);
+                        $file = $TEMP_PATH . basename($path);
                         file_put_contents($file, file_get_contents($path));
                         $jobfile->FilePath = $file;
                     } else {
@@ -287,7 +289,7 @@ class VCDRUpload extends Command
 
                 Job::where(["JobID" => $JobID])->update($jobdata);
 
-                @unlink(Config::get('app.temp_location') . basename($jobfile->FilePath));
+                @unlink($TEMP_PATH . basename($jobfile->FilePath));
             } else {
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = 'Related Job not found';

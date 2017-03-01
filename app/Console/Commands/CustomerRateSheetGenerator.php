@@ -12,8 +12,8 @@ namespace App\Console\Commands;
 use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
-use App\Lib\Currency;
 use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\NeonExcelIO;
@@ -82,11 +82,14 @@ class CustomerRateSheetGenerator extends Command {
         $errorslog = array();
         $emailstatus = array('status' => 0, 'message' => '');
         $sheetstatusupdate = array();
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
-            $joboptions = json_decode($job->Options);
+            $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
+                $joboptions->$EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
@@ -156,6 +159,10 @@ class CustomerRateSheetGenerator extends Command {
                         if (isset($criteria->tag) && trim($criteria->tag) != '') {
                             $account->where('tblAccount.tags', 'like', '%' . trim($criteria->tag) . '%');
                         }
+                        if (isset($criteria->low_balance) && $criteria->low_balance == 'true') {
+                            $account->leftjoin('tblAccountBalance', 'tblAccountBalance.AccountID', '=', 'tblAccount.AccountID');
+                            $account->whereRaw("(CASE WHEN tblAccountBalance.BalanceThreshold LIKE '%p' THEN REPLACE(tblAccountBalance.BalanceThreshold, 'p', '')/ 100 * tblAccountBalance.PermanentCredit ELSE tblAccountBalance.BalanceThreshold END) < tblAccountBalance.BalanceAmount");
+                        }
 
                         if (isset($criteria->account_owners) && trim($criteria->account_owners) > 0) {
                             $account->where('tblAccount.Owner', (int)$criteria->account_owners);
@@ -172,22 +179,13 @@ class CustomerRateSheetGenerator extends Command {
                         try {
                             $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
                             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
-                            $local_dir = getenv('UPLOAD_PATH') . '/' . $amazonPath;
+                            $local_dir = $UPLOADPATH . '/' . $amazonPath;
                             $excel_data_all = array();
                             $data = array();
-                            $currency = '';
-                            $symbol = '';
                             $data['Company'] = $Company;
                             $data['Account'] = $account;
-                            if (!empty($account->CurrencyId)) {
-                                $currency = Currency::getCurrencyCode($account->CurrencyId);
-                                $symbol = Currency::getCurrencySymbol($account->CurrencyId);
-                            }
-                            $TotalOutStanding =Account::getOutstandingAmount($CompanyID,$account->AccountID,Helper::get_round_decimal_places($CompanyID,$account->AccountID));
-                            $extra = ['{{currency}}', '{{sign}}', '{{company}}','{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{TotalOutStanding}}'];
-                            $replace = [$currency, $symbol, $Company->CompanyName,$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country,$TotalOutStanding];
-                            $data['extra'] = $extra;
-                            $data['replace'] = $replace;
+
+
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
 
 
@@ -456,21 +454,11 @@ class CustomerRateSheetGenerator extends Command {
     public function sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser){
         if ($joboptions->sendMail == 1) {
             $emaildata['Subject'] = $joboptions->subject;
-            $emaildata['Message'] = $joboptions->message;
             $emaildata['attach'] = $local_dir . basename($file_name);
-            $Signature = '';
-            if (!empty($userInfo)) {
-                $emaildata['EmailFrom'] = $userInfo->EmailAddress;
-                $emaildata['EmailFromName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
-                if(isset($userInfo->EmailFooter) && trim($userInfo->EmailFooter) != '')
-                {
-                    $Signature = $userInfo->EmailFooter;
-                }
-            }
             if ($joboptions->test == 1) {
                 $emaildata['EmailTo'] = $joboptions->testEmail;
                 $emaildata['EmailToName'] = 'test name';
-            } else if(getenv('EmailToCustomer') == 1){
+            } else if($joboptions->$EMAIL_TO_CUSTOMER == 1){
                 $emaildata['EmailTo'] = $account->Email;
                 $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
             }else{
@@ -480,27 +468,23 @@ class CustomerRateSheetGenerator extends Command {
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
             $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
-            $extra = ['{{FirstName}}', '{{LastName}}', '{{Email}}', '{{Address1}}', '{{Address2}}', '{{Address3}}', '{{City}}', '{{State}}', '{{PostCode}}', '{{Country}}','{{Signature}}'];
-            $replace = [$account->FirstName, $account->LastName, $account->Email, $account->Address1, $account->Address2, $account->Address3, $account->City, $account->State, $account->PostCode, $account->Country, $Signature];
-            $emaildata['extra'] = $extra;
-            $emaildata['replace'] = $replace;
+            $replace_array = Helper::create_replace_array($account,array(),$userInfo);
+            $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+            $emaildata['Message'] = $joboptions->message;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
-            $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.BulkLeadEmailSend', $emaildata);
+			if(isset($joboptions->email_from))
+			{
+				$emaildata['EmailFrom'] = $joboptions->email_from;
+			}
+            $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.template', $emaildata);
 
             if (isset($emailstatuscustomer["status"]) && $emailstatuscustomer["status"] == 0) {
                 $errorscustomer[] = $account->AccountName .' Email Exception'. $emailstatuscustomer["message"];
             } else {
                 $countcust++;
-                $logData = ['AccountID' => $account->AccountID,
-                    'ProcessID' => $ProcessID,
-                    'JobID' => $JobID,
-                    'User' => $userInfo,
-                    'EmailFrom' => $userInfo->EmailAddress,
-                    'EmailTo' => $emaildata['EmailTo'],
-                    'Subject' => $emaildata['Subject'],
-                    'Message' => $emailstatuscustomer['body']];
-                $statuslog = Helper::email_log($logData);
+                /** log emails against account */
+                $statuslog = Helper::account_email_log($CompanyID,$account->AccountID,$emaildata,$emailstatuscustomer,$userInfo,$ProcessID,$JobID);
                 if ($statuslog['status'] == 0) {
                     $errorslog[] = $account->AccountName . ' email log exception:' . $statuslog['message'];
                 }
@@ -512,6 +496,11 @@ class CustomerRateSheetGenerator extends Command {
             $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
+			if(isset($joboptions->email_from))
+			{
+				$emaildata['EmailFrom'] = $joboptions->email_from;
+			}
+			
             $emailstatus = Helper::sendMail('emails.ratesheetgenerator', $emaildata);
 
             if($emailstatus['status']==0){
