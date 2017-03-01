@@ -116,6 +116,7 @@ class BulkInvoiceSend extends Command {
                     $emaildata['EmailToName'] = $Company->CompanyName;
                     $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $Company->CompanyName . ' to (' . $Account->AccountName . ')';
                     $emaildata['CompanyID'] = $CompanyID;
+					$emaildata['UserID'] = $job->JobLoggedUserID;
                     //Log::info($InvoiceGenerationEmail);
                     if (!empty($Account->Owner)) {
                         $AccountManager = User::find($Account->Owner);
