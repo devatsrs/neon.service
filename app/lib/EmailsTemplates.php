@@ -58,8 +58,9 @@ class EmailsTemplates{
 					$EmailMessage							=	 $EmailTemplate->TemplateBody;
 				}
 				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);
-				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$CompanyID,$userID);				
-				$replace_array['InvoiceLink'] 			= 	 getenv("WEBURL") . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
+				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$userID);
+                $WEBURL                                 =    CompanyConfiguration::get($CompanyID,'WEB_URL');
+                $replace_array['InvoiceLink'] 			= 	 $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
 				$replace_array['LastName']				=	 $AccoutData->LastName;
 				$replace_array['Email']					=	 $AccoutData->Email;
