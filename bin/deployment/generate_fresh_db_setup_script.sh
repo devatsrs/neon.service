@@ -49,7 +49,8 @@ mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblR
 
 #Backup for rollback  --------
 echo "Backup Tables data and old procedures for rollback."
-mysqldump --compact --no-create-info --databases ${OLD_DB_DATABASE} tblresourcecategories tblResource tblCompanyConfiguration  > /home/auto_backup/${COMPANY}/tblresourcecategories_tblResource_tblCompanyConfiguration.sql
+mkdir -p /home/auto_backup/${COMPANY}
+mysqldump --compact --no-create-info  ${OLD_DB_DATABASE} tblResourceCategories tblResource tblCompanyConfiguration  > /home/auto_backup/${COMPANY}/tblresourcecategories_tblResource_tblCompanyConfiguration.sql
 mysqldump --compact --no-data  --routines --no-create-info --databases ReleaseRM > /home/auto_backup/${COMPANY}/ReleaseRM.sql
 mysqldump --compact --no-data --routines --no-create-info --databases ReleaseBilling > /home/auto_backup/${COMPANY}/ReleaseBilling.sql
 mysqldump --compact --no-data --routines --no-create-info --databases ReleaseCDR > /home/auto_backup/${COMPANY}/ReleaseCDR.sql
