@@ -10,6 +10,8 @@ POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/first_time_post_installation
 echo "copy Pre generated post installation data file to new"
 cp -f ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
+POST_UPDATE_SQL_SCRIPT=${SCRIPT_BASEDIR}"/update.sql"
+cat ${POST_UPDATE_SQL_SCRIPT} >> ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 source ${SCRIPT_BASEDIR}/prepare_sql_file.sh
 
@@ -22,7 +24,7 @@ echo 'CREATE DATABASE `'${DB_DATABASE2}'` /*!40100 COLLATE utf8_unicode_ci */' |
 echo 'CREATE DATABASE `'${DB_DATABASECDR}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 echo 'CREATE DATABASE `'${DB_DATABASEREPORT}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 
-mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+mysql --force ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 echo "Renaming tables.";
 echo "###########################################################";

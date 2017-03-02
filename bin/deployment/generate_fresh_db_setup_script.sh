@@ -47,6 +47,16 @@ mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategories >> 
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblRate >> ${POST_INSTALLATION_SQL_SCRIPT}
 
+#Backup for rollback  --------
+echo "Backup Tables data and old procedures for rollback."
+mysqldump --compact --no-create-info --databases ${OLD_DB_DATABASE} tblresourcecategories tblResource tblCompanyConfiguration  > /home/auto_backup/${COMPANY}/tblresourcecategories_tblResource_tblCompanyConfiguration.sql
+mysqldump --compact --no-data  --routines --no-create-info --databases ReleaseRM > /home/auto_backup/${COMPANY}/ReleaseRM.sql
+mysqldump --compact --no-data --routines --no-create-info --databases ReleaseBilling > /home/auto_backup/${COMPANY}/ReleaseBilling.sql
+mysqldump --compact --no-data --routines --no-create-info --databases ReleaseCDR > /home/auto_backup/${COMPANY}/ReleaseCDR.sql
+mysqldump --compact --no-data --routines --no-create-info --databases ReleaseReport > /home/auto_backup/${COMPANY}/ReleaseReport.sql
+
+# ----------------------------
+
 echo "Cleanup sql file for new DBs."
 
 sed -i 's/utf8mb4_general_ci/utf8_unicode_ci/g' ${POST_INSTALLATION_SQL_SCRIPT}
