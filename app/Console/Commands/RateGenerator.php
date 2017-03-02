@@ -1,4 +1,5 @@
 <?php namespace App\Console\Commands;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\CronJob;
@@ -85,6 +86,19 @@ class RateGenerator extends Command {
             $data['RateGeneratorId']=$cronsetting->rateGeneratorID;
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
             $data['RateTableId']= $cronsetting->rateTableID;
+			
+			if(isset($cronsetting->replace_rate)){
+					$data['replace_rate']= $cronsetting->replace_rate;	
+			}else{
+				$data['replace_rate']= 0;
+			}
+			
+			if(isset($cronsetting->EffectiveRate)){
+					$data['EffectiveRate']= $cronsetting->EffectiveRate;	
+			}else{
+				$data['EffectiveRate']= 'now';
+			}
+						
             if(!empty($data['RateTableId'])){
                 $data['ratetablename'] = DB::table('tblRateTable')->where(array('RateTableId'=>$data['RateTableId']))->pluck('RateTableName');
             }else{
@@ -94,10 +108,12 @@ class RateGenerator extends Command {
 
             $JobID = Job::GenerateRateTable("GRT",$data);
             if ($JobID > 0) {
+                $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
+                $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RM_ARTISAN_FILE_LOCATION');
                 if(getenv('APP_OS') == 'Linux') {
-                    pclose(popen(env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID." &", "r"));
+                    pclose(popen($PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID." &", "r"));
                 }else {
-                    pclose(popen("start /B " . env('PHPExePath') . " " . env('RMArtisanFileLocation') . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID, "r"));
+                    pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablegenerator " . $CompanyID . " " . $JobID . " ".$CronJobID, "r"));
                 }
             }
 

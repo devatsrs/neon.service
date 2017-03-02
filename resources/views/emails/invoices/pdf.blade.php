@@ -8,6 +8,7 @@
     line-height: normal;
 }
 p{ line-height: 20px;}
+.text-small p{line-height: 10px;}
 .text-left{ text-align: left}
 .text-right{ text-align: right}
 .text-center{ text-align: center}
@@ -26,7 +27,7 @@ table.invoice td , table.invoice_total td{ padding:3px;}
 table{
   width: 100%;
   border-spacing: 0;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 tr {
@@ -42,7 +43,7 @@ tfoot {
 }
 
 </style>
-<br/><br/><br/>
+<br/>
         <table border="0" width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td class="col-md-6" valign="top">
@@ -62,16 +63,15 @@ tfoot {
 
         <table border="0" width="100%" cellpadding="0" cellspacing="0">
             <tr>
-                <td class="col-md-6"  valign="top" >
-                        <br>
+                <td class="col-md-6 text-small"  valign="top" >
                         <strong>Invoice To</strong>
-                        <p>{{$Account->AccountName}}</p>
-                        <p>{{nl2br($Invoice->Address)}}</p>
+                        <p>{{$Account->AccountName}}<br>
+                        {{nl2br($Invoice->Address)}}</p>
                 </td>
-                <td class="col-md-6 text-right"  valign="top" >
-                        <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}</p>
-                        <p><b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</p>
-                        <p><b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
+                <td class="col-md-6 text-right text-small"  valign="top" >
+                        <p><b>Invoice No: </b>{{$Invoice->FullInvoiceNumber}}<br>
+                        <b>Invoice Date: </b>{{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}<br>
+                        <b>Due Date: </b>{{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$AccountBilling->PaymentDueInDays.' days'))}}</p>
                 </td>
             </tr>
         </table>
@@ -98,6 +98,7 @@ tfoot {
             }
 
         ?>
+        @if(($InvoiceTemplate->ShowBillingPeriod == 1) || ($InvoiceTemplate->ShowPrevBal))
         <table width="100%" border="0">
             <tbody>
             <tr>
@@ -106,7 +107,7 @@ tfoot {
                     <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice table table-bordered">
                         <thead>
                         <tr>
-                            <th style="text-align: right;border-right: 0px solid black !important;"><br>&nbsp;Invoice</th><th style="text-align: left;border-left: 0px solid black !important;"><br>&nbsp;Period</th>
+                            <th colspan="2" style="text-align: center;">Invoice Period</th>
                         </tr>
                         <tr>
                             <th style="text-align: center;">From</th>
@@ -146,7 +147,7 @@ tfoot {
             </tr>
             </tbody>
         </table>
-
+		@endif
 <div class="row">
     <div class="col-md-12">
         <table  border="1"  width="100%" cellpadding="0" cellspacing="0" class="bg_graycolor invoice_total col-md-12 table table-bordered">
@@ -253,7 +254,7 @@ tfoot {
         </tbody>
     </table>
     @if($is_sub == true)
-    <br /> 
+    <br />
     <h5>Subscription Charges</h5>
     <table border="1"  width="100%" cellpadding="0" cellspacing="0" class="invoice col-md-12 table table-bordered">
             <thead>
@@ -399,7 +400,7 @@ tfoot {
                              ?>
                              <tr>
                              <td class="text-center">{{$row['area_prefix']}}</td>
-                             <td>{{substr($row['cli'],1)}}</td> 
+                             <td>{{substr($row['cli'],1)}}</td>
                              <td>{{substr($row['cld'],1)}}</td>
                              <td>{{$row['connect_time']}}</td>
                              <td>{{$row['disconnect_time']}}</td>

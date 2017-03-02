@@ -13,8 +13,9 @@ class UsageHeader extends \Eloquent {
     public static function getStartHeaderDate($CompanyID){
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblSummaryHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
-        $DeleteTime = getenv('DELETE_SUMMARY_TIME');
+        $DeleteTime = $DELETE_SUMMARY_TIME;
         if(!empty($DeleteTime)){
             $delete_strtotime = '- '.$DeleteTime;
         }
@@ -30,8 +31,9 @@ class UsageHeader extends \Eloquent {
     public static function getVendorStartHeaderDate($CompanyID){
         $StartDate =  DB::connection('sqlsrvcdrazure')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
-        $DeleteTime = getenv('DELETE_SUMMARY_TIME');
+        $DeleteTime = $DELETE_SUMMARY_TIME;
         if(!empty($DeleteTime)){
             $delete_strtotime = '- '.$DeleteTime;
         }

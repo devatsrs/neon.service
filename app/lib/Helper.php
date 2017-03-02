@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\View;
 
 class Helper{
 
-    public static function sendMail($view,$data){
+    public static function sendMail($view,$data,$ViewType=1){
 		$companyID = $data['CompanyID'];
-		$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		if($ViewType){
+			$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+		}
+		else{
+			$body  = $view;
+		}
+
 	
 		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
@@ -275,10 +281,10 @@ class Helper{
             $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
         }
 
-        if ( empty($RoundChargesAmount) ) {
-            $RoundChargesAmount = 2;
+        if (empty($RoundChargesAmount)) {
+            $value = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+            $RoundChargesAmount = ($value !='Invalid Key')?$value:2;
         }
-
         return $RoundChargesAmount;
     }
 
@@ -319,6 +325,9 @@ class Helper{
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
        $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
+	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
+	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
        if(!empty($JobLoggedUser)){

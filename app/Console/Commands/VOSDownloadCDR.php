@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -78,6 +79,7 @@ class VOSDownloadCDR extends Command {
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
 
             Log::info("Start");
@@ -93,18 +95,18 @@ class VOSDownloadCDR extends Command {
             $vos = new VOS($CompanyGatewayID);
             Log::info("VOS Connected");
             $filenames = $vos->getCDRs();
-            $destination = Config::get('app.vos_location') .$CompanyGatewayID;
+            $destination = $VOS_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
                 mkdir($destination, 0777, true);
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));
+            $downloaded = array();
             if(count($filenames) > 0) {
 
                 /**
                  * GET array of files that are not exist in db
                  */
-                $downloaded = array();
 
                 foreach ($filenames as $filename) {
                     $isdownloaded = false;
@@ -148,16 +150,18 @@ class VOSDownloadCDR extends Command {
 
                 }
 
-                $downloaded_files = count($downloaded);
-                $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
-                if (count($downloaded) > 0) {
-
-                    $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[0]);
-                    $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
-                }
-                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-                CronJobLog::insert($joblogdata);
             }
+
+            $downloaded_files = count($downloaded);
+            $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
+            if (count($downloaded) > 0) {
+
+                $joblogdata['Message'] .= "<br> Date  : " . $vos->get_file_datetime($downloaded[0]);
+                $joblogdata['Message'] .= " - " . $vos->get_file_datetime($downloaded[$downloaded_files - 1]);
+            }
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+
             CronJob::deactivateCronJob($CronJob);
 
             Log::info("VOS file Download Completed ");
