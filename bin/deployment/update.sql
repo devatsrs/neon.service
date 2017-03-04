@@ -2,8 +2,8 @@
 -- Abubakar
 USE `Ratemanagement3`;
 
-INSERT INTO `tblresourcecategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardSummaryWidgets.View', '1');
-INSERT INTO `tblresourcecategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardMissingGatewayWidget.View', '1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardSummaryWidgets.View', '1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardMissingGatewayWidget.View', '1');
 INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardInvoiceExpenseWidgets.View', '1');
 INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('BillingDashboardPincodeWidget.View', '1');
 
@@ -27,15 +27,14 @@ DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='EXTRA_SMTP';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='Amazon';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='ErrorEmail';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='FILE_RETENTION_EMAIL';
-DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='SITE_URL';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='SIPPY_CSVDECODER';
 
-UPDATE `tblcompanyconfiguration` SET `Value`='UPLOAD_PATH' WHERE  `Key`='UPLOADPATH';
-UPDATE `tblcompanyconfiguration` SET `Value`='WEB_PATH' WHERE  `Key`='SITE_URL';
-UPDATE `tblcompanyconfiguration` SET `Value`='NEON_API_URL' WHERE  `Key`='Neon_API_URL';
-UPDATE `tblcompanyconfiguration` SET `Value`='PHP_EXE_PATH' WHERE  `Key`='PHPExePath';
-UPDATE `tblcompanyconfiguration` SET `Value`='RM_ARTISAN_FILE_LOCATION' WHERE  `Key`='RMArtisanFileLocation';
-UPDATE `tblcompanyconfiguration` SET `Value`='Quickbook' WHERE  `Key`='QUICKBOOK';
+UPDATE `tblCompanyConfiguration` SET `Key`='UPLOAD_PATH' WHERE  `Key`='UPLOADPATH';
+UPDATE `tblCompanyConfiguration` SET `Key`='WEB_URL' WHERE  `Key`='SITE_URL';
+UPDATE `tblCompanyConfiguration` SET `Key`='NEON_API_URL' WHERE  `Key`='Neon_API_URL';
+UPDATE `tblCompanyConfiguration` SET `Key`='PHP_EXE_PATH' WHERE  `Key`='PHPExePath';
+UPDATE `tblCompanyConfiguration` SET `Key`='RM_ARTISAN_FILE_LOCATION' WHERE  `Key`='RMArtisanFileLocation';
+UPDATE `tblCompanyConfiguration` SET `Key`='QUICKBOOK' WHERE  `Key`='Quickbook';
 
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'BILLING_DASHBOARD_CUSTOMER', '_BILLING_DASHBOARD_CUSTOMER_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'EMAIL_TO_CUSTOMER', '1');
@@ -54,6 +53,7 @@ INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1',
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'DEFAULT_BILLING_TIMEZONE', 'Europe/London');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'DELETE_CDR_TIME', '3 month');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'DELETE_SUMMARY_TIME', '4 days');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'NEON_API_URL', '_NEON_API_URL_');
 
 -- Dev
 
