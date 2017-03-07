@@ -24,7 +24,6 @@ echo 'CREATE DATABASE `'${DB_DATABASE2}'` /*!40100 COLLATE utf8_unicode_ci */' |
 echo 'CREATE DATABASE `'${DB_DATABASECDR}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 echo 'CREATE DATABASE `'${DB_DATABASEREPORT}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 
-mysql --force ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 echo "Renaming tables.";
 echo "###########################################################";
@@ -107,4 +106,5 @@ mysql --show-warnings $DB_DATABASEREPORT < $SCRIPT
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASEREPORT and drop the old DB"
 
-
+echo "Executing POST_INSTALLATION_SQL_SCRIPT_NEW"
+mysql --force ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
