@@ -28,13 +28,13 @@ DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='Amazon';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='ErrorEmail';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='FILE_RETENTION_EMAIL';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='SIPPY_CSVDECODER';
+DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='SITE_URL';
+DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='Neon_API_URL';
 
 UPDATE `tblCompanyConfiguration` SET `Key`='UPLOAD_PATH' WHERE  `Key`='UPLOADPATH';
-UPDATE `tblCompanyConfiguration` SET `Key`='WEB_URL' WHERE  `Key`='SITE_URL';
-UPDATE `tblCompanyConfiguration` SET `Key`='NEON_API_URL' WHERE  `Key`='Neon_API_URL';
 UPDATE `tblCompanyConfiguration` SET `Key`='PHP_EXE_PATH' WHERE  `Key`='PHPExePath';
-UPDATE `tblCompanyConfiguration` SET `Key`='RM_ARTISAN_FILE_LOCATION' WHERE  `Key`='RMArtisanFileLocation';
 UPDATE `tblCompanyConfiguration` SET `Key`='QUICKBOOK' WHERE  `Key`='Quickbook';
+UPDATE `tblCompanyConfiguration` SET `Key`='RM_ARTISAN_FILE_LOCATION' WHERE  `Key`='RMArtisanFileLocation';
 
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'BILLING_DASHBOARD_CUSTOMER', '_BILLING_DASHBOARD_CUSTOMER_');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ('1', 'EMAIL_TO_CUSTOMER', '1');
