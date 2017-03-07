@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS `tbl_Account_Contacts_Activity` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 -- ##############################################################
 
---Abubakar
+-- Abubakar
 USE `RMBilling3`;
 
 ALTER TABLE `tblInvoice`
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoice` (
   `created_at` datetime NULL,
   `updated_at` datetime NULL,
   PRIMARY KEY (`RecurringInvoiceID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceDetail` (
   `RecurringInvoiceDetailID` int(11) NOT NULL auto_increment,
@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceDetail` (
   `updated_at` datetime NULL,
   `ProductType` int(11) NULL,
   PRIMARY KEY (`RecurringInvoiceDetailID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceLog` (
   `RecurringInvoicesLogID` int(11) NOT NULL auto_increment,
@@ -246,24 +246,24 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceLog` (
   `created_at` datetime NULL,
   `updated_at` datetime NULL,
   PRIMARY KEY (`RecurringInvoicesLogID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceTaxRate` (
-  `RecurringInvoiceTaxRateID` int(11) NOT NULL auto_increment,
-  `RecurringInvoiceID` int(11) NOT NULL,
-  `TaxRateID` int(11) NOT NULL,
-  `TaxAmount` decimal(18,6) NOT NULL,
-  `Title` varchar(500) NOT NULL,
-  `RecurringInvoiceTaxType` tinyint(4) NOT NULL DEFAULT 0,
-  `CreatedBy` varchar(50) NULL,
-  `ModifiedBy` varchar(50) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
-  `updated_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP' on update CURRENT_TIMESTAMP,
-  PRIMARY KEY (`RecurringInvoiceTaxRateID`),
-  UNIQUE KEY `RecurringInvoiceTaxRateUnique`(`RecurringInvoiceID`,`TaxRateID`,`RecurringInvoiceTaxType`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+	`RecurringInvoiceTaxRateID` INT(11) NOT NULL AUTO_INCREMENT,
+	`RecurringInvoiceID` INT(11) NOT NULL,
+	`TaxRateID` INT(11) NOT NULL,
+	`TaxAmount` DECIMAL(18,6) NOT NULL,
+	`Title` VARCHAR(500) NOT NULL COLLATE 'utf8_unicode_ci',
+	`RecurringInvoiceTaxType` TINYINT(4) NOT NULL DEFAULT '0',
+	`CreatedBy` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	`ModifiedBy` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (`RecurringInvoiceTaxRateID`),
+	UNIQUE INDEX `RecurringInvoiceTaxRateUnique` (`RecurringInvoiceID`, `TaxRateID`, `RecurringInvoiceTaxType`)
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
---Girish
+-- Girish
 USE `RMCDR3`;
 
 ALTER TABLE `tblUsageDetailFailedCall`
