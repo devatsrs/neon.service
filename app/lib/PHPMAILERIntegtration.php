@@ -44,9 +44,9 @@ class PHPMAILERIntegtration{
 		$mail->SMTPSecure = $encryption;                            // Enable TLS encryption, `ssl` also accepted
 	
 		$mail->Port = $port;                                    // TCP port to connect to
-	
-		$mail->From = $from['address'];
-		$mail->FromName = $from['name'];
+		$mail->SetFrom($from['address'], $from['name']);
+		//$mail->From = $from['address'];
+		//$mail->FromName = $from['name'];
 		$mail->IsHTML(true);		
 		return $mail;		
 	}	 
@@ -91,7 +91,7 @@ class PHPMAILERIntegtration{
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
 					$status['message_id']	=	$mail->getLastMessageID(); 
-		} Log::info(print_r($mail,true));
+		} 
 		return $status;
 	}
 	
