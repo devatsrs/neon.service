@@ -48,6 +48,7 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'USAG
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'USAGE_INTERVAL', '100');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_MONITOR_DASHBOARD', 'CallMonitor');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'MONITOR_DASHBOARD', 'CallMonitor');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'QUICKBOOK', '{"OauthConsumerKey":"qyprdGf6OGO6yJ1RSLL8Z4Z6JU7wtg","OauthConsumerSecret":"ul1U30wQQVziAe6Nl2Cr5yor9dufeIuIu7FHceWb","AppToken":"05b87ff1bd203b4cfdbb450bf6da3242ec19"}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'BILLING_DASHBOARD_CUSTOMER', '_BILLING_DASHBOARD_CUSTOMER_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'EMAIL_TO_CUSTOMER', '_EMAIL_TO_CUSTOMER_');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'NEON_API_URL', '_NEON_API_URL_');
