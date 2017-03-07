@@ -25,6 +25,11 @@ source ${SCRIPT_BASEDIR}/env_file_and_folder_permission.sh
 echo "Executing fresh_db_creation.sh..."
 source ${SCRIPT_BASEDIR}/fresh_db_creation.sh
 
+#clear cache
+php ${WEB_LOCATION}/artisan cache:clear
+php ${SERVICE_LOCATION}/artisan cache:clear
+php ${API_LOCATION}/artisan cache:clear
+
 echo "Complete!"
 # Terminate our shell script
 
