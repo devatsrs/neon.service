@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS `tblCLIRateTable` (
 -- Umer
 USE `Ratemanagement3`;
 
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='Alert.View' limit 1) WHERE  `ResourceName`='Dashboard.getTopAlerts';
+
 CREATE TABLE IF NOT EXISTS `tblHelpDeskTickets` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `CompanyID` int(11) DEFAULT NULL,
@@ -169,5 +171,102 @@ CREATE TABLE IF NOT EXISTS `tbl_Account_Contacts_Activity` (
   `TableCreated_at` datetime DEFAULT NULL,
   `GUID` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`Timeline_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='temp table';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 -- ##############################################################
+
+--Abubakar
+USE `RMBilling3`;
+
+ALTER TABLE `tblInvoice`
+	ADD COLUMN `RecurringInvoiceID` INT(50) NULL DEFAULT NULL AFTER `EstimateID`,
+	ADD COLUMN `ProcessID` VARCHAR(50) NULL DEFAULT NULL AFTER `RecurringInvoiceID`;
+
+CREATE TABLE IF NOT EXISTS `tblRecurringInvoice` (
+  `RecurringInvoiceID` int(11) NOT NULL auto_increment,
+  `CompanyID` int(11) NULL,
+  `Title` varchar(100) NULL,
+  `AccountID` int(11) NULL,
+  `Address` varchar(200) NULL,
+  `BillingClassID` int(11) NULL,
+  `BillingCycleType` varchar(50) NULL,
+  `BillingCycleValue` varchar(50) NULL,
+  `Occurrence` int(11) NULL DEFAULT '0',
+  `PONumber` varchar(50) NULL,
+  `Status` int(11) NULL,
+  `LastInvoicedDate` datetime NULL,
+  `NextInvoiceDate` datetime NULL,
+  `CurrencyID` int(11) NULL,
+  `InvoiceType` int(11) NULL,
+  `SubTotal` decimal(18,6) NULL,
+  `TotalDiscount` decimal(18,2) NULL,
+  `TaxRateID` int(11) NULL,
+  `TotalTax` decimal(10,6) NULL,
+  `RecurringInvoiceTotal` decimal(10,6) NULL,
+  `GrandTotal` decimal(10,6) NULL,
+  `Description` varchar(50) NULL,
+  `Attachment` varchar(50) NULL,
+  `Note` longtext NULL,
+  `Terms` longtext NULL,
+  `ItemInvoice` tinyint(3) NULL,
+  `FooterTerm` longtext NULL,
+  `PDF` varchar(500) NULL,
+  `UsagePath` varchar(500) NULL,
+  `CreatedBy` varchar(50) NULL,
+  `ModifiedBy` varchar(50) NULL,
+  `created_at` datetime NULL,
+  `updated_at` datetime NULL,
+  PRIMARY KEY (`RecurringInvoiceID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceDetail` (
+  `RecurringInvoiceDetailID` int(11) NOT NULL auto_increment,
+  `RecurringInvoiceID` int(11) NOT NULL,
+  `ProductID` int(11) NULL,
+  `Description` varchar(250) NOT NULL,
+  `Price` decimal(18,6) NOT NULL,
+  `Qty` int(11) NULL,
+  `Discount` decimal(18,2) NULL,
+  `TaxRateID` int(11) NULL,
+  `TaxRateID2` int(11) NULL,
+  `TaxAmount` decimal(18,6) NOT NULL DEFAULT 0.000000,
+  `LineTotal` decimal(18,6) NOT NULL,
+  `CreatedBy` varchar(50) NULL,
+  `ModifiedBy` varchar(50) NULL,
+  `created_at` datetime NULL,
+  `updated_at` datetime NULL,
+  `ProductType` int(11) NULL,
+  PRIMARY KEY (`RecurringInvoiceDetailID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceLog` (
+  `RecurringInvoicesLogID` int(11) NOT NULL auto_increment,
+  `RecurringInvoiceID` int(11) NULL,
+  `Note` longtext NULL,
+  `RecurringInvoiceLogStatus` int(11) NULL,
+  `created_at` datetime NULL,
+  `updated_at` datetime NULL,
+  PRIMARY KEY (`RecurringInvoicesLogID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceTaxRate` (
+  `RecurringInvoiceTaxRateID` int(11) NOT NULL auto_increment,
+  `RecurringInvoiceID` int(11) NOT NULL,
+  `TaxRateID` int(11) NOT NULL,
+  `TaxAmount` decimal(18,6) NOT NULL,
+  `Title` varchar(500) NOT NULL,
+  `RecurringInvoiceTaxType` tinyint(4) NOT NULL DEFAULT 0,
+  `CreatedBy` varchar(50) NULL,
+  `ModifiedBy` varchar(50) NULL,
+  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
+  `updated_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP' on update CURRENT_TIMESTAMP,
+  PRIMARY KEY (`RecurringInvoiceTaxRateID`),
+  UNIQUE KEY `RecurringInvoiceTaxRateUnique`(`RecurringInvoiceID`,`TaxRateID`,`RecurringInvoiceTaxType`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--Girish
+USE `RMCDR3`;
+
+ALTER TABLE `tblUsageDetailFailedCall`
+	ADD COLUMN `disposition` VARCHAR(50) NULL DEFAULT NULL;
+ALTER TABLE `tblUsageDetails`
+	ADD COLUMN `disposition` VARCHAR(50) NULL DEFAULT NULL;
