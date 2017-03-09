@@ -237,6 +237,40 @@ class TicketEmails{
 			}			
 	}
 	
+	protected function AgentTicketReopened(){
+		
+			$slug					=		"AgentTicketReopened";
+			
+			if(!$this->CheckBasicRequirments())
+			{
+				return $this->Error;
+			}			
+			
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$slug])->first();									
+		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+			$Groupagents 				= 		TicketGroupAgents::get_group_agents($this->TicketData->Group,0,'EmailAddress');
+			$emailData['Subject']		=		$finalSubject;
+            $emailData['Message'] 		= 		$finalBody;
+            $emailData['CompanyID'] 	= 		$this->CompanyID;
+            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+            $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
+            $emailData['CompanyName'] 	= 		$this->Group->GroupName;
+			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
+			$emailData['TicketID'] 		= 		$this->TicketID;
+			$emailData['UserID']		=		User::get_userID();			
+			
+			if($status['status']){
+				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+			}else{
+				$this->SetError($status['message']);
+			}			
+	
+		
+	}
+	
 	
 	protected function SetError($error){
 		$this->Error = $error;
