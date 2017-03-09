@@ -81,14 +81,13 @@ class ReadEmailsTickets extends Command
 		$today 	    	= 	date('Y-m-d');
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        Log::useFiles(storage_path() . '/logs/accountemailalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/reademailstickets-' . $CronJobID . '-' . date('Y-m-d') . '.log');
         try
 		{
 			$Ticketgroups 	=	TicketGroups::where(array("GroupEmailStatus"=>1))->get(); 
 			foreach ($Ticketgroups as $TicketgroupData) { 
-				if(!empty($TicketgroupData->GroupEmailAddress) && !empty($TicketgroupData->GroupEmailServer) && !empty($TicketgroupData->GroupEmailPassword) && $TicketgroupData->GroupEmailStatus==1 ){	
-							
-					try {
+				if(!empty($TicketgroupData->GroupEmailAddress) && !empty($TicketgroupData->GroupEmailServer) && !empty($TicketgroupData->GroupEmailPassword) && $TicketgroupData->GroupEmailStatus==1 ){							
+					
 						$connection =  imap::CheckConnection($TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword); 
 						if($connection['status']==0){
 							throw new Exception($connection['error']);
@@ -96,11 +95,9 @@ class ReadEmailsTickets extends Command
 						$imap = new Imap(array('email'=>$TicketgroupData->GroupEmailAddress,"server"=>$TicketgroupData->GroupEmailServer,"password"=>$TicketgroupData->GroupEmailPassword));
 						
 					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
+						$joblogdata['Message'] = 'Success';
 						
-					} catch (Exception $e) {
-							Log::error("Tracking email failed");
-							Log::error($e);								
-					} 
+					
 				}    			
 			}
 		}
