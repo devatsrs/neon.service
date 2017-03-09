@@ -41,6 +41,13 @@ class TicketsTable extends \Eloquent {
 			return $ValuesID;
 	}
 	
+	static function getResolvedTicketStatus(){
+		//TicketfieldsValues::WHERE
+		 $ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+            ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.FieldValueAgent'=>TicketfieldsValues::$Status_Resolved])->pluck('ValuesID');			
+			return $ValuesID;
+	}
+	
 	static function getOpenTicketStatus(){
 		//TicketfieldsValues::WHERE
 		 $ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
@@ -145,4 +152,20 @@ class TicketsTable extends \Eloquent {
 		return true;
 		//return false;
 	}
+	
+	static function getTicketStatusByID($id,$fld='FieldValueAgent'){
+		//TicketfieldsValues::WHERE
+		 $ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+            ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.ValuesID'=>$id])->pluck($fld);			
+			return $ValuesID;
+	}
+	
+	
+	static function getTicketTypeByID($id,$fld='FieldValueAgent'){
+		//TicketfieldsValues::WHERE
+			$ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+            ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_TYPE_FLD])->where(['tblTicketfieldsValues.ValuesID'=>$id])->pluck($fld);			
+			return $ValuesID;
+	}
+	
 }

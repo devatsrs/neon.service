@@ -549,15 +549,27 @@ protected $server;
 						"created_by"=> 'RMScheduler'
 					];
 						
-				$ticketID =  TicketsTable::insertGetId($logData);
+					$ticketID 		=  TicketsTable::insertGetId($logData);
+					if($GroupID){
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("AgentAssignedGroup")));
+					}					
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("RequesterNewTicketCreated")));
 				}
 				else //reopen ticket if ticket status closed 
 				{
 					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
-					if($old_status==TicketsTable::getClosedTicketStatus()){
+					if($old_status==TicketsTable::getClosedTicketStatus() || $old_status==TicketsTable::getResolvedTicketStatus()){
 						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);		
-					}
+					}	
 				
+					$TicketData_parent = TicketsTable::where(["AccountEmailLogID"=>$parent])->first();
+					Log::info('TicketData_parent:'.$parent);
+					Log::info(print_r($TicketData_parent,true));
+					if($from==$TicketData_parent->Requester){		
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$TicketData_parent->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
+						Log::info("error:".$TicketEmails->GetError());
+					}
+			
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -581,6 +593,7 @@ protected $server;
 				if(!$parent)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
+					 $TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated"));
 					 
 					if(!in_array($from,$AllEmails)){
 						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
@@ -609,6 +622,8 @@ protected $server;
 						}
 					}
 				}
+				
+				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
 			}
@@ -620,7 +635,6 @@ protected $server;
 		/* close the connection */
 		imap_close($inbox);
 		Log::info("reading emails completed");
-	}	
-	     
+	}		     
 }
 ?>
