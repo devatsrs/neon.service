@@ -436,7 +436,8 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
+				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;			
+				Log::info("in_reply_to:".$in_reply_to);	
 				$msg_parent   				=		  AccountEmailLog::where("MessageID",$in_reply_to)->first();
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);
 				
@@ -551,9 +552,9 @@ protected $server;
 						
 					$ticketID 		=  TicketsTable::insertGetId($logData);
 					if($GroupID){
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("AgentAssignedGroup")));
+						//$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("AgentAssignedGroup")));
 					}					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("RequesterNewTicketCreated")));
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -565,9 +566,11 @@ protected $server;
 					$TicketData_parent = TicketsTable::where(["AccountEmailLogID"=>$parent])->first();
 					Log::info('TicketData_parent:'.$parent);
 					Log::info(print_r($TicketData_parent,true));
-					if($from==$TicketData_parent->Requester){		
+					if(isset($TicketData_parent->Requester)){
+						if($from==$TicketData_parent->Requester){		
 						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$TicketData_parent->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
 						Log::info("error:".$TicketEmails->GetError());
+						}
 					}
 			
 				}
@@ -593,7 +596,7 @@ protected $server;
 				if(!$parent)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
-					 $TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated"));
+					 $TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
 					 
 					if(!in_array($from,$AllEmails)){
 						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
