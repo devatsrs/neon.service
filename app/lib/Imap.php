@@ -560,7 +560,8 @@ protected $server;
 				{
 					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
 					if($old_status==TicketsTable::getClosedTicketStatus() || $old_status==TicketsTable::getResolvedTicketStatus()){
-						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);		
+						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
 					}	
 				
 					$TicketData_parent = TicketsTable::where(["AccountEmailLogID"=>$parent])->first();
