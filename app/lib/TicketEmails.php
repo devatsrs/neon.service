@@ -114,7 +114,8 @@ class TicketEmails{
 			"{{CompanyPostCode}}",
 			"{{CompanyCountry}}",
 			"{{TicketCustomerUrl}}",
-			"{{TicketUrl}}"
+			"{{TicketUrl}}",
+			"{{helpdesk_name}}"
 		];
 	
 		foreach($extra as $item){
