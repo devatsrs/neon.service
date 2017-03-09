@@ -250,7 +250,6 @@ class TicketEmails{
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
-			$Groupagents 				= 		TicketGroupAgents::get_group_agents($this->TicketData->Group,0,'EmailAddress');
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
