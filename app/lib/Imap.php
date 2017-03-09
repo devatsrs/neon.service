@@ -559,6 +559,7 @@ protected $server;
 				else //reopen ticket if ticket status closed 
 				{
 					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
+					$ticketID = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("TicketID");
 					if($old_status==TicketsTable::getClosedTicketStatus() || $old_status==TicketsTable::getResolvedTicketStatus()){
 						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
 					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
