@@ -495,8 +495,8 @@ protected $server;
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
-				$cc			=	isset($headerdata->ccaddress)?$this->GetEmailtxt($headerdata->ccaddress):'';
-				$bcc		=	isset($headerdata->bccaddress)?$this->GetEmailtxt($headerdata->bccaddress):'';
+				$cc			=	isset($headerdata->ccaddress)?$headerdata->ccaddress:'';
+				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
 				Log::info("from name from function:".$FromName);
 				Log::info("from name:".$overview[0]->from);
 				$update_id  =	''; $insert_id  =	'';
@@ -559,6 +559,7 @@ protected $server;
 				else //reopen ticket if ticket status closed 
 				{
 					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
+					$ticketID = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("TicketID");
 					if($old_status==TicketsTable::getClosedTicketStatus() || $old_status==TicketsTable::getResolvedTicketStatus()){
 						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
 					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
@@ -573,7 +574,8 @@ protected $server;
 						Log::info("error:".$TicketEmails->GetError());
 						}
 					}
-			
+					
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","CompanyID"=>$CompanyID));
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
