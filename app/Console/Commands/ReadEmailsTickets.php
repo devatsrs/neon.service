@@ -12,6 +12,7 @@ use App\Lib\Company;
 use App\Lib\JobStatus;
 use App\Lib\SiteIntegration;
 use App\Lib\Imap;
+use App\Lib\TicketEmails;
 use Symfony\Component\Console\Input\InputArgument;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -96,8 +97,8 @@ class ReadEmailsTickets extends Command
 						
 					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
 						$joblogdata['Message'] = 'Success';
+						$this->CheckEscalationRule($TicketgroupData,$CompanyID);
 						
-					
 				}    			
 			}
 		}
@@ -126,4 +127,26 @@ class ReadEmailsTickets extends Command
         CronHelper::after_cronrun($this->name, $this);    
 	 /////////////
     }
+	
+	function CheckEscalationRule($GroupData,$CompanyID){
+		
+			$GroupAssignTime    =	 $GroupData->GroupAssignTime; 
+			$GroupAssignEmail   = 	 $GroupData->GroupAssignEmail;	 
+			$GroupID 			=	 $GroupData->GroupID;	
+			$minutes			=	 $GroupAssignTime/60; 
+			$datetime_from 		=    date("Y-m-d H:i:s", strtotime("-".$minutes." minutes"));	
+			
+			if($GroupAssignEmail){		
+				$Tickets 			= 	TicketsTable::select(['TicketID'])->where(["CompanyID"=>$CompanyID])->where(["Agent"=>0])->where(['EscalationEmail'=>0])->WhereRaw('created_at <= "'.$datetime_from.'"')->get();
+				 Log::error("**Escalation check for " .$GroupData->GroupName);
+				 Log::error("**Escalation Tickets:".count($Tickets)."Found");
+				foreach($Tickets as $TicketsData){
+					
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$TicketsData->TicketID,"TriggerType"=>"AgentEscalationRule","CompanyID"=>$CompanyID,"EscalationAgent"=>$GroupAssignEmail));
+						TicketsTable::where(["TicketID"=>$TicketsData->TicketID])->update(array("EscalationEmail"=>1));						
+				}
+			}
+			
+			
+	}
 }
