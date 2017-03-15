@@ -25,7 +25,7 @@ USE `Ratemanagement3`;
 
 --
 -- Dumping routines for database 'Ratemanagement3'
---
+--prc_GetFromEmailAddress
 /*!50003 DROP FUNCTION IF EXISTS `fnFIND_IN_SET` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -8205,15 +8205,15 @@ CREATE  PROCEDURE `prc_GetFromEmailAddress`(
 
 )
 BEGIN
-	DECLARE V_Admin int;
-	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;	
-	
+		DECLARE V_Admin int;
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
 	/*select count(*) into V_Admin from tblUser tu where tu.UserID=p_userID and tu.Roles like '%Admin';*/
-	
+
 	IF p_Ticket = 1
 	THEN
 		SELECT DISTINCT GroupEmailAddress as EmailFrom FROM tblTicketGroups where CompanyID = p_CompanyID and GroupEmailStatus = 1 and GroupEmailAddress IS NOT NULL;
-	END IF;	
+	END IF;
 	IF p_Ticket = 0
 	THEN
 		IF p_Admin > 0
@@ -8222,15 +8222,16 @@ BEGIN
 				UNION ALL
 			SELECT DISTINCT(tu.EmailAddress) as EmailFrom from tblUser tu;
 		END IF;
-		IF p_Admin < 1	
+		IF p_Admin < 1
 		THEN
 			SELECT  tc.EmailFrom as EmailFrom FROM tblCompany tc where tc.EmailFrom IS NOT NULL AND tc.EmailFrom <> ''
 				UNION ALL
-			SELECT tu.EmailAddress as EmailFrom from tblUser tu where tu.UserID = 1;							
+			SELECT tu.EmailAddress as EmailFrom from tblUser tu where tu.UserID = p_userID;
 		END IF;
 	END IF;
-	
+
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
