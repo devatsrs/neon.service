@@ -1,0 +1,67 @@
+--------------------------
+Steps for Installation
+--------------------------
+Manual Installation
+PHP
+Mysql
+Netdata
+S3cmd - for backup only
+
+INTRODUCTION
+--------------------------
+Now onwards we can use command line deployment script for new env setup and for updating existing env.
+Once we merge our staging changes to master and master to respected version number branch and then to encrypt it and
+commit to encrypt repository with version number branch.
+
+We will use this version number branch to be clone or pull to setup or update any env.
+
+Each version will have its own update.sql and rollback.sql file inside service code /bin/deployment.
+Which we will need to generate based on respected release.
+We will have a rollback.sql for each version to rollback db to its previous version.
+so we can rollback to previous version by checkout code with previous version and execute rollback.sql.
+
+Config.sh - File
+--------------------------
+Common file for configuration for new setup / update existing env.
+Read comment given within config.sh script for individual variable.
+CAUTION: DOUBLE CHECK config.sh BEFORE EXECUTING first_time_update.sh.
+SPECIALLY FOR OLD_DB_DATABASE AS IT WILL MOVE TABLES FROM ONE TO ANOTHER DB.
+
+PRE SETUP
+--------------------------
+- all files within script should be given permission by chmod -R +x ./bin/deployment to be executable.
+- Copy staging/vendor/autoload.php and /vendor/composer folder into /bin/deployment folder against service and web.
+- Stop cron job - comment out cron job entry - wait to stop running cron jobs - stop apache if possible ( Not for Hosted env.)
+- Rename existing web and service folder if first time update.
+- set .my.cnf with correct user name and password
+- set config.sh file env variables
+- EXECUTE generate_fresh_db_setup_script.sh - generate the sql file for new and existing setup from staging db ( post_installation_data.sql, first_time_post_installation.sql )
+- Prepare update.sql/rollback.sql file for update or later rollback.
+
+HOSTED FIRST TIME
+--------------------------
+** Execute first_time_update.sh  - for first time update (through auto deployment script) on existing env only*
+
+DEDICATED FIRST TIME
+--------------------------
+** Execute first_time_update.sh   - for first time update (through auto deployment script) on existing env only*
+
+HOSTED NEW ENV
+--------------------------
+** Execute fresh_deployment.sh  - for new env setup
+
+DEDICATED NEW ENV
+--------------------------
+** Execute fresh_deployment.sh   - for new env setup
+
+HOSTED UPDATE
+--------------------------
+** Execute update_env.sh  - for later updates only*
+
+DEDICATED UPDATE
+--------------------------
+** Execute update_env.sh   - for later updates only*
+
+ROLLBACK ENV
+--------------------------
+** Execute rollback_env.sh   - for previous version only*

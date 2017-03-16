@@ -87,7 +87,7 @@ class CustomerRateSheetGenerator extends Command {
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
-            $joboptions = json_decode($job->Options);
+            $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
                 $joboptions->$EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
                 if(isset($joboptions->SelectedIDs)){
@@ -473,6 +473,10 @@ class CustomerRateSheetGenerator extends Command {
             $emaildata['Message'] = $joboptions->message;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
+			if(isset($joboptions->email_from))
+			{
+				$emaildata['EmailFrom'] = $joboptions->email_from;
+			}
             $emailstatus = $emailstatuscustomer = Helper::sendMail('emails.template', $emaildata);
 
             if (isset($emailstatuscustomer["status"]) && $emailstatuscustomer["status"] == 0) {
@@ -492,6 +496,11 @@ class CustomerRateSheetGenerator extends Command {
             $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
+			if(isset($joboptions->email_from))
+			{
+				$emaildata['EmailFrom'] = $joboptions->email_from;
+			}
+			
             $emailstatus = Helper::sendMail('emails.ratesheetgenerator', $emaildata);
 
             if($emailstatus['status']==0){
