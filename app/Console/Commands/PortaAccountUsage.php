@@ -1,23 +1,22 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\GatewayAccount;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Porta;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use App\Lib\Helper;
-use App\Lib\Company;
-use \Exception;
 
 class PortaAccountUsage extends Command {
 
@@ -98,6 +97,10 @@ class PortaAccountUsage extends Command {
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+            $ServiceID = 0;
+            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
+                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
+            }
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -112,7 +115,7 @@ class PortaAccountUsage extends Command {
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
+                TempUsageDetail::applyDiscountPlan($ServiceID);
             }
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
@@ -121,13 +124,14 @@ class PortaAccountUsage extends Command {
                     $gadata = array();
                     $gadata['CompanyID'] = $CompanyID;
                     $gadata['CompanyGatewayID'] = $CompanyGatewayID;
+                    $gadata['ServiceID'] = $ServiceID;
                     $gadata['GatewayAccountID'] = $accounts[] = $row_account['ICustomer'];
 
                     $gadata['AccountName'] = $row_account['Name'];
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                     $gadata['AccountDetailInfo'] = json_encode($row_account);
-                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
-                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
+                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
+                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
                     } else {
                         GatewayAccount::insert($gadata);
                     }
@@ -185,6 +189,7 @@ class PortaAccountUsage extends Command {
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';
                             $data['ProcessID'] = $processID;
+                            $data['ServiceID'] = $ServiceID;
                             $data['ID'] = $row_account['ID'];
                             if (isset($row_account['CallType']) && is_numeric($row_account['CallType'])) {
                                 $InserData[] = $data;
