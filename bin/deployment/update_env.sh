@@ -8,11 +8,12 @@ source $(dirname "$0")/config.sh
 
 echo "copying code..."
 echo "copying web..."
-git checkout ${VERSION} ${WEB_LOCATION}
+#example cd /var/www/html/release.neon && git config core.fileMode false && git pull
+cd ${WEB_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying service..."
-git checkout ${VERSION} ${SERVICE_LOCATION}
+cd ${SERVICE_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying api..."
-git checkout ${VERSION} ${API_LOCATION}
+cd ${API_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 
 echo "Executing env_file_folder_permission..."
 source ${SCRIPT_BASEDIR}/env_file_and_folder_permission.sh

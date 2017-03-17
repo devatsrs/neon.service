@@ -1,9 +1,9 @@
 #!/bin/sh
 
 #Version number to be deploy
-VERSION=4.08
+VERSION=4.09
 #Rollback Version number to be deploy
-PREVIOUS_VERSION=4.07
+PREVIOUS_VERSION=4.08
 # is wholesale setup or retail
 IS_WHOLESALE=0
 #Company name in Licence
@@ -23,11 +23,11 @@ TEMP_PATH=/var/www/html/devtest/deptmp
 #DB host ip or name
 DB_HOST=localhost
 #DB host username
-DB_USERNAME=neon-user-dev
+DB_USERNAME=neon-user
 #DB host password salt (any 5 character)
 DB_PASSWORD_SALT=U03Y!
 #DB Password with salt
-DB_PASSWORD=${DB_PASSWORD_SALT}B!I27U03Yx68
+DB_PASSWORD=${DB_PASSWORD_SALT}aJcH!^VUnI#2WsYZQ45a
 # OLD / Existing RM DB Name (for first time deployment only.)
 OLD_DB_DATABASE=DevCompany2RM
 #RM DB Name
@@ -57,11 +57,11 @@ SERVICE_FOLDER_NAME=${COMPANY}.neon.service
 #API folder name (standard)
 API_FOLDER_NAME=neon.api
 #Web Service Root location
-DOC_ROOT=/var/www/html/devtest
+DOC_ROOT=/var/www/html
 #Web location
 WEB_LOCATION=${DOC_ROOT}/${WEB_FOLDER_NAME}
 #Web URL
-WEB_URL=${HOST_DOMAIN_URL}/devtest/${WEB_FOLDER_NAME}/public
+WEB_URL=${HOST_DOMAIN_URL}
 #Service location
 SERVICE_LOCATION=${DOC_ROOT}/${SERVICE_FOLDER_NAME}
 #API location within web.
