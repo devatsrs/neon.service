@@ -19,7 +19,7 @@ COMPANY_EMAIL=dev@companyname.com
 #Licence key
 LICENCE_KEY=P2bs9zeJGFfAOitXauVjio0G3Q12xQet
 #Temp path for document upload and cdrs.
-TEMP_PATH=/var/www/html/devtest/deptmp
+TEMP_PATH=/var/www/tmp
 #DB host ip or name
 DB_HOST=localhost
 #DB host username
@@ -27,7 +27,7 @@ DB_USERNAME=neon-user
 #DB host password salt (any 5 character)
 DB_PASSWORD_SALT=U03Y!
 #DB Password with salt
-DB_PASSWORD=${DB_PASSWORD_SALT}aJcH!^VUnI#2WsYZQ45a
+DB_PASSWORD=${DB_PASSWORD_SALT}password
 # OLD / Existing RM DB Name (for first time deployment only.)
 OLD_DB_DATABASE=DevCompany2RM
 #RM DB Name
@@ -45,7 +45,7 @@ OLD_DB_DATABASEREPORT=DevCompany2Report
 #Report DB Name
 DB_DATABASEREPORT=${COMPANY}Report
 #Domain Name
-HOST_DOMAIN=linux1.neon-soft.com
+HOST_DOMAIN=domain.neon-soft.com
 #HTTP / HTTPS
 HOST_DOMAIN_URL=http://${HOST_DOMAIN}
 #Host IP = DB Host(IP)
@@ -75,7 +75,7 @@ SSH_HOST=localhost
 #SSH user
 SSH_HOST_USER=root
 #SSH password
-SSH_HOST_PASS=KatiteDo48
+SSH_HOST_PASS=
 #Web Storage locations
 FRONT_STORAGE_PATH=${WEB_LOCATION}"/app/storage"
 #Sippy cdr file location
