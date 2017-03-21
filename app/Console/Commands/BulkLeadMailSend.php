@@ -118,9 +118,9 @@ class BulkLeadMailSend extends Command {
 
                                     $emaildata['EmailToName'] = $account->AccountName;
                                     $replace_array = Helper::create_replace_array($account,array(),$JobLoggedUser);
-                                    $joboptions->message = template_var_replace($joboptions->message,$replace_array);
-                                    $emaildata['Subject'] = $joboptions->subject;
-                                    $emaildata['Message'] = $joboptions->message;
+                                    $message =  template_var_replace($joboptions->message,$replace_array);
+                                    $emaildata['Subject']   = $joboptions->subject;
+                                    $emaildata['Message']   = $message;
                                     $emaildata['CompanyID'] = $CompanyID;
 
                                     $emaildata['mandrill'] = 1;

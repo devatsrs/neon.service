@@ -9,6 +9,7 @@ use App\Lib\AccountEmailLog;
 use App\Lib\IntegrationConfiguration;
 use App\Lib\Freshdesk;
 use App\Lib\MandrilIntegration;
+use App\Lib\TicketGroupAgents;
 use App\Lib\CompanyConfiguration;
 use Illuminate\Support\Facades\Log;
 
@@ -170,7 +171,7 @@ class TicketEmails{
 		$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 	
 		if($status['status']){
-			Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+		//	Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 		}else{
 			$this->SetError($status['message']);
 		}		
@@ -200,7 +201,7 @@ class TicketEmails{
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['UserID']		=		User::getUserIDByUserName($this->CompanyID,$this->TicketData->created_by);
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+			//	Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}			
@@ -230,7 +231,7 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+			//	Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}			
@@ -260,7 +261,7 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}			
@@ -292,7 +293,7 @@ class TicketEmails{
 			Log::info(print_r($emailData,true));
 			Log::info(print_r($status,true));
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}			
@@ -325,7 +326,7 @@ class TicketEmails{
 		{
 			if(!isset($this->TicketData->Group))
 			{
-				$this->SetError("No group Found");		
+			//	$this->SetError("No group Found");		
 				
 			}
 			else
@@ -333,7 +334,7 @@ class TicketEmails{
 				$group =  TicketGroups::find($this->TicketData->Group);
 				if(!$group)
 				{
-					$this->SetError("Invalid Group");						
+				//	$this->SetError("Invalid Group");						
 				}
 				$this->Group = $group;
 			}
@@ -343,20 +344,20 @@ class TicketEmails{
 			$group  = 	TicketGroups::where(["GroupEmailAddress"=>$this->EmailFrom])->first();
 			if(!$group)
 			{
-				$this->SetError("Invalid Group");				
+				//$this->SetError("Invalid Group");				
 			}
 			$this->Group = $group;
 		}
 		
 		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		if(!$this->EmailTemplate){
-			$this->SetError("No email template found.");				
+		//	$this->SetError("No email template found.");				
 		}
-		if(!$this->EmailTemplate->Status){
+		/*if(!$this->EmailTemplate->Status){
 			$this->SetError("Email template status disabled");				
-		}
+		}*/
 		
-		$this->TicketEmailData = AccountEmailLog::where(['AccountEmailLogID'=>$this->TicketData->AccountEmailLogID])->first();
+		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->first();
 		
 		if($this->GetError()){
 			return false;
@@ -394,7 +395,7 @@ class TicketEmails{
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}
@@ -410,7 +411,7 @@ class TicketEmails{
 		
 		if(!$this->CheckBasicRequirments())
 		{
-			return $this->Error;
+			//return $this->Error;
 		} 
 		if(isset($this->TicketEmailData->Cc) && !empty($this->TicketEmailData->Cc)){
 			$emailtoCc = explode(",",$this->TicketEmailData->Cc);
@@ -435,7 +436,7 @@ class TicketEmails{
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 
 			if($status['status']){
-				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
 			}
