@@ -17,9 +17,9 @@ class PHPMAILERIntegtration{
 		Config::set('mail.port',$config->Port);
 		
 		if(isset($data['EmailFrom'])){ 
-			Config::set('mail.from.address',$data['EmailFrom']);
+			Config::set('mail.from.address',trim($data['EmailFrom']));
 		}else{ 
-			Config::set('mail.from.address',$config->EmailFrom);
+			Config::set('mail.from.address',trim($config->EmailFrom));
 		}
 		
 		if(isset($data['CompanyName'])){
