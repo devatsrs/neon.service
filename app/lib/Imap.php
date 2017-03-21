@@ -303,6 +303,27 @@ protected $server;
 		}   		
 	}	
 	
+	function	SetEmailType($email,$CompanyID)
+	{ 
+		$final				  =	 	 array();
+		$MatchArray  		  =      $this->findEmailAddress($email);
+		
+		if(count($MatchArray)>0){
+			if($MatchArray['MatchType']=='Contact'){
+				$final = array("ContactID"=>$MatchArray['MatchID'],"AccountID"=>0,"UserID"=>0);
+			}
+			
+			if($MatchArray['MatchType']=='Account' || $MatchArray['MatchType']=='Lead'){
+				$final = array("ContactID"=>0,"AccountID"=>$MatchArray['MatchID'],"UserID"=>0);
+			}
+			
+			if($MatchArray['MatchType']=='User'){
+				$final = array("ContactID"=>0,"AccountID"=>0,"UserID"=>$MatchArray['MatchID']);
+			}
+		}
+		return $final;
+	}
+	
 	function findEmailAddress($email)
 	{
 		$AccountTitle 	= 	'';
@@ -341,6 +362,16 @@ protected $server;
 				$Accountname  =   isset($Accountdata[0]->AccountName)?' ('.($Accountdata[0]->AccountName).')':'';
 				$AccountTitle =   $ContactSearch[0]->FirstName.' '.$ContactSearch[0]->LastName.$Accountname;							
 		}				
+		
+		$UserSearch 	 =  DB::table('tblUser')->where(['EmailAddress'=>$email])->get(array("UserID","FirstName","LastName"));		
+		
+		if(count($UserSearch)>0 || count($UserSearch)>0)													
+		{	 
+				$MatchType	  =   'User';
+				$MatchID	  =	 $UserSearch[0]->UserID;					
+				$AccountTitle =  $UserSearch[0]->FirstName.' '.$UserSearch[0]->LastName;	
+				$AccountID    =  0;
+		}			 
         
 		return array('MatchType'=>$MatchType,'MatchID'=>$MatchID,"AccountTitle"=>$AccountTitle,"AccountID"=>$AccountID);        
 	}
@@ -406,7 +437,7 @@ protected $server;
 	}
 	
 	
-	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){
+	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){ DB::enableQueryLog();
 		$AllEmails  =   Messages::GetAllSystemEmails();
 		$email 		= 	$email;
 		$password 	= 	$password;		
@@ -535,7 +566,7 @@ protected $server;
 					];	
 				  	 TicketsTable::insertGetId($logData);
 				}*/
-				
+				Log::info("parent:".$parent);
 				if(!$parent){
 				$logData = [
 						'Requester'=> $from,
@@ -550,31 +581,35 @@ protected $server;
 						"Status"=>TicketsTable::getOpenTicketStatus(),
 						"created_by"=> 'RMScheduler'
 					];
+					
+					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
+					$logData 		 	  = 	array_merge($logData,$MatchArray);
 						
 					$ticketID 		=  TicketsTable::insertGetId($logData);
 					if($GroupID){
-						//$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>array("AgentAssignedGroup")));
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentAssignedGroup")));
 					}					
 					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));
 				}
 				else //reopen ticket if ticket status closed 
 				{
-					$old_status = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("Status");
-					$ticketID = TicketsTable::where(["AccountEmailLogID"=>$parent])->pluck("TicketID");
-					if($old_status==TicketsTable::getClosedTicketStatus() || $old_status==TicketsTable::getResolvedTicketStatus()){
-						TicketsTable::where(["AccountEmailLogID"=>$parent])->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
+					$EmailData   = AccountEmailLog::find($parent);
+					$ticketData  = TicketsTable::find($EmailData->TicketID);
+					
+					if($ticketData->Status==TicketsTable::getClosedTicketStatus() || $ticketData->Status==TicketsTable::getResolvedTicketStatus()){
+						TicketsTable::find($ticketData->TicketID)->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
 					}	
 				
-					$TicketData_parent = TicketsTable::where(["AccountEmailLogID"=>$parent])->first();
-					if(isset($TicketData_parent->Requester)){
-						if($from==$TicketData_parent->Requester){		
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$TicketData_parent->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
+					
+					if(isset($ticketData->Requester)){
+						if($from==$ticketData->Requester){		
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
 						Log::info("error:".$TicketEmails->GetError());
 						}
 					}
-					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","CompanyID"=>$CompanyID));
+					$ticketID		=	$ticketData->TicketID;
+					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","CompanyID"=>$CompanyID));
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -592,6 +627,7 @@ protected $server;
 					"CreatedBy"=> 'RMScheduler',
 					"Cc"=>$cc,
 					"Bcc"=>$bcc,
+					"TicketID"=>$ticketID
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
@@ -617,8 +653,8 @@ protected $server;
 							$accountIDSave = $accountID2;
 						}
 						$EmailLogObj = AccountEmailLog::find($EmailLog);
-						$AccountData =	Account::select('FirstName','LastName')->where("AccountID", '=', $accountID)->first();
-						if($accountIDSave){ 
+						$AccountData =	Account::select('FirstName','LastName')->where("AccountID", '=', $accountIDSave)->first();
+						if($AccountData){ 
 							$EmailLogObj->update(array("AccountID"=>$accountIDSave,"CreatedBy" => $AccountData->FirstName.' '.$AccountData->LastName));		
 						}else{
 							 $ContactID 	 =  DB::table('tblContact')->where(array("Email"=>$from))->pluck("ContactID");	
@@ -630,7 +666,7 @@ protected $server;
 					}
 				}
 				
-				
+				Log::info(print_r(DB::getQueryLog(),true));
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
 			}
