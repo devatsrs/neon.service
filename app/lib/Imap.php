@@ -272,6 +272,16 @@ protected $server;
         }
     }
 	
+	function GetCC($str){
+		$cc = array();
+		if(count($str)>0 && is_array($str)){
+			foreach($str as $strData){
+				$cc[] = $strData->mailbox.'@'.$strData->host;
+			}
+		}
+		return implode(",",$cc);		
+	}
+	
 	function GetMessageBody($msg){
 		$doc = new \DOMDocument();
 		$mock = new \DOMDocument;
@@ -467,12 +477,15 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;			
+				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;		
+					
 				Log::info("in_reply_to:".$in_reply_to);	
 				
 
 				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
-				$headerdata					=		  imap_headerinfo($inbox, $email_number);
+				
+				
+				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
@@ -503,14 +516,30 @@ protected $server;
 						}else{
 							$parent = $msg_parent->EmailParent;
 						}
-						$parent_UserID  =  $msg_parent->UserID;				
+						$parent_UserID  =  $msg_parent->UserID;						
+						$parentTicket 	=  $msg_parent->TicketID;
+										
 					/*else if(!empty($msg_parentconversation)){
 						$parent = $msg_parent->TicketID;
 					}*/
 				}else{							    //new ticket						
 					$parent 			  = 	 0; // no parent by default		
 					$parent_UserID  	  =      0; 	
+					$parentTicket		  =		 0;
                 }
+				
+				if(!$parentTicket){
+						$reply_array = explode("__",$in_reply_to);
+						if(count($reply_array) == 3){
+							$ticketnumber 	 = base64_decode($reply_array[1]);
+							$ticketReq 		 = base64_decode($reply_array[2]);
+							$replyTicketData = TicketsTable::where(["TicketID"=>$ticketnumber,"Requester"=>$ticketReq])->first();	
+							
+							if($replyTicketData){
+								$parentTicket = $replyTicketData->TicketID; 	
+							}
+						}
+				}
 				
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments	
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
@@ -527,50 +556,20 @@ protected $server;
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
-				$cc			=	isset($headerdata->ccaddress)?$headerdata->ccaddress:'';
+				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
 				Log::info("from name from function:".$FromName);
 				Log::info("from name:".$overview[0]->from);
+				Log::info("headerdata:".print_r($headerdata,true));
+				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
-						
-				/*if($parent){ 	
-					$logData = [
-					    'TicketID'=>$parent,
-						'Requester'=> $from,
-						"RequesterName"=>$FromName,
-						'Subject'=>$overview[0]->subject,
-						'TicketMessage'=>$message,
-						"MessageID"=>$message_id,
-						"AttachmentPaths"=>$AttachmentPaths,
-						"EmailID"=>$email_number,
-						"EmailCall"=>Messages::Received,
-						"created_at"=>date('Y-m-d H:i:s'),
-					];	
-	          		 TicketsConversation::insertGetId($logData);
-				}else{
-					
-					$logData = [
-						'Requester'=> $from,
-						"RequesterName"=>$FromName,
-						'Subject'=>$overview[0]->subject,
-						'Description'=>$message,
-						'CompanyID'=>$CompanyID,
-						"MessageID"=>$message_id,
-						"AttachmentPaths"=>$AttachmentPaths,
-						"EmailID"=>$email_number,
-						"EmailCall"=>TicketsTable::Received,
-						"Group"=>$GroupID,
-						"created_at"=>date('Y-m-d H:i:s'),
-						"Priority"=>$priority,
-						"Status"=>TicketsTable::getOpenTicketStatus()
-					];	
-				  	 TicketsTable::insertGetId($logData);
-				}*/
+
 				Log::info("parent:".$parent);
-				if(!$parent){
+				if(!$parentTicket){
 				$logData = [
 						'Requester'=> $from,
 						"RequesterName"=>$FromName,
+						"RequesterCC"=>$cc,
 						'Subject'=>$overview[0]->subject,
 						'Description'=>$message,
 						'CompanyID'=>$CompanyID,
@@ -593,8 +592,8 @@ protected $server;
 				}
 				else //reopen ticket if ticket status closed 
 				{
-					$EmailData   = AccountEmailLog::find($parent);
-					$ticketData  = TicketsTable::find($EmailData->TicketID);
+					
+					$ticketData  = TicketsTable::find($parentTicket);
 					
 					if($ticketData->Status==TicketsTable::getClosedTicketStatus() || $ticketData->Status==TicketsTable::getResolvedTicketStatus()){
 						TicketsTable::find($ticketData->TicketID)->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
@@ -631,7 +630,7 @@ protected $server;
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
-				if(!$parent)
+				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
 					 $TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
