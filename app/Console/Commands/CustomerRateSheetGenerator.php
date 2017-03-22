@@ -469,8 +469,9 @@ class CustomerRateSheetGenerator extends Command {
             }
             $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
             $replace_array = Helper::create_replace_array($account,array(),$userInfo);
-            $joboptions->message = template_var_replace($joboptions->message,$replace_array);
-            $emaildata['Message'] = $joboptions->message;
+         //   $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+			$message =  template_var_replace($joboptions->message,$replace_array);
+            $emaildata['Message'] = $message;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
 			if(isset($joboptions->email_from))

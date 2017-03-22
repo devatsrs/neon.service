@@ -184,6 +184,9 @@ class TicketEmails{
 			{
 				return $this->Error;
 			}
+			if(!isset($this->Agent->EmailAddress)){
+				return;
+			}
 			
 			
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -290,8 +293,7 @@ class TicketEmails{
 			
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
-			Log::info(print_r($emailData,true));
-			Log::info(print_r($status,true));
+			
 			if($status['status']){
 				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
@@ -365,7 +367,7 @@ class TicketEmails{
 		return true;
 	}
 	
-		protected function CCNewTicketCreated(){
+	protected function CCNewTicketCreated(){
 			
 		$emailto					=		array();
 		$this->slug					=		"CCNewTicketCreated";
@@ -374,8 +376,8 @@ class TicketEmails{
 		{
 			return $this->Error;
 		} 
-		if(isset($this->TicketEmailData->Cc) && !empty($this->TicketEmailData->Cc)){
-			$emailto = explode(",",$this->TicketEmailData->Cc);
+		if(isset($this->TicketData->RequesterCC) && !empty($this->TicketData->RequesterCC)){
+			$emailto = explode(",",$this->TicketData->RequesterCC);
 		}else{
 			return;
 		}	
