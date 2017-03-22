@@ -626,7 +626,8 @@ protected $server;
 					"CreatedBy"=> 'RMScheduler',
 					"Cc"=>$cc,
 					"Bcc"=>$bcc,
-					"TicketID"=>$ticketID
+					"TicketID"=>$ticketID,
+					"EmailType"=>AccountEmailLog::TicketEmail 
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
