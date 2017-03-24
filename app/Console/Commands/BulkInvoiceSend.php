@@ -116,6 +116,7 @@ class BulkInvoiceSend extends Command {
                     $emaildata['EmailToName'] = $Company->CompanyName;
                     $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $Company->CompanyName . ' to (' . $Account->AccountName . ')';
                     $emaildata['CompanyID'] = $CompanyID;
+					$emaildata['UserID'] = $job->JobLoggedUserID;
                     //Log::info($InvoiceGenerationEmail);
                     if (!empty($Account->Owner)) {
                         $AccountManager = User::find($Account->Owner);
@@ -161,7 +162,8 @@ class BulkInvoiceSend extends Command {
                             $singleemail = trim($singleemail);
                             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                 $emaildata['EmailTo'] = $singleemail;
-                                $emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                                $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
+                                $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                              	$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail);
 								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail);
 								if(!isset($emaildata['EmailFrom'])){
