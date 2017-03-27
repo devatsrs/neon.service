@@ -89,7 +89,7 @@ class CustomerRateSheetGenerator extends Command {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
-                $joboptions->$EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
+                $joboptions->EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
@@ -458,7 +458,7 @@ class CustomerRateSheetGenerator extends Command {
             if ($joboptions->test == 1) {
                 $emaildata['EmailTo'] = $joboptions->testEmail;
                 $emaildata['EmailToName'] = 'test name';
-            } else if($joboptions->$EMAIL_TO_CUSTOMER == 1){
+            } else if($joboptions->EMAIL_TO_CUSTOMER == 1){
                 $emaildata['EmailTo'] = $account->Email;
                 $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
             }else{
