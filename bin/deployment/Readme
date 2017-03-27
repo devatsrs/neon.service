@@ -20,6 +20,9 @@ Which we will need to generate based on respected release.
 We will have a rollback.sql for each version to rollback db to its previous version.
 so we can rollback to previous version by checkout code with previous version and execute rollback.sql.
 
+CAUSION: special character in db password is giving problem in config.sh
+not properly replacing passwords. so be care full for password
+
 Config.sh - File
 --------------------------
 Common file for configuration for new setup / update existing env.

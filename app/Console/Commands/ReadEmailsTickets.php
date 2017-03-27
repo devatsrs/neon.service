@@ -83,6 +83,11 @@ class ReadEmailsTickets extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/reademailstickets-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+		
+		$joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
         try
 		{
 			$Ticketgroups 	=	TicketGroups::where(array("GroupEmailStatus"=>1))->get(); 
