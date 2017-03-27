@@ -328,6 +328,16 @@ class Helper{
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
 	   
+	    $CompanyData						= Company::find($Account->CompanyId);	   
+	    $replace_array['CompanyAddress1'] 	= $CompanyData->Address1;
+		$replace_array['CompanyAddress2'] 	= $CompanyData->Address2;
+		$replace_array['CompanyAddress3'] 	= $CompanyData->Address3;
+		$replace_array['CompanyCity'] 		= $CompanyData->City;
+		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
+		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
+	    $replace_array['Logo'] 				= \App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL').'/assets/images/logo@2x.png'; 
+	    
+	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
        if(!empty($JobLoggedUser)){

@@ -9,6 +9,7 @@ use App\Lib\AccountEmailLog;
 use App\Lib\TicketsTable;
 use App\Lib\Contact;
 use Validator;
+use App\Lib\EmailMessage;
 
 class Imap{
 
@@ -54,7 +55,8 @@ protected $server;
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-
+					
+			
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
 						$parent = $msg_parent->AccountEmailLogID;                        
@@ -388,11 +390,11 @@ protected $server;
 	
 	function getBody($imap,$uid) {
 	$uid  =  imap_uid ($imap,$uid); //getting mail uid
-    $body = $this->get_part($imap, $uid, "TEXT/HTML");
+    $body = $this->get_part($imap, $uid, "TEXT/HTML"); 
     // if HTML body is empty, try getting text body
     if ($body == "") {
         $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
-    }
+    } Log::info("body:".$body);
         return $body;
     }
 
@@ -447,7 +449,7 @@ protected $server;
 	}
 	
 	
-	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){ DB::enableQueryLog();
+	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){ 
 		$AllEmails  =   Messages::GetAllSystemEmails();
 		$email 		= 	$email;
 		$password 	= 	$password;		
@@ -481,7 +483,7 @@ protected $server;
 					
 				Log::info("in_reply_to:".$in_reply_to);	
 				
-
+			
 				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
 				
 				
@@ -528,6 +530,8 @@ protected $server;
 					$parentTicket		  =		 0;
                 }
 				
+				
+				
 				if(!$parentTicket){
 						$reply_array = explode("__",$in_reply_to);
 						if(count($reply_array) == 3){
@@ -548,10 +552,12 @@ protected $server;
 					$AttachmentPaths  = 	serialize([]);										
 				}
 				
-			 	$message = 	$this->getBody($inbox,$email_number);
+				$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID);
+			 	//$message = 	$this->getBody($inbox,$email_number);
 				if(!empty($message)){
 					$message =  $this->GetMessageBody($message);
-				}
+				}				
+				Log::info("message:".$message);
 			
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
@@ -560,11 +566,12 @@ protected $server;
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
 				Log::info("from name from function:".$FromName);
 				Log::info("from name:".$overview[0]->from);
-				Log::info("headerdata:".print_r($headerdata,true));
+								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
 
 				Log::info("parent:".$parent);
+				Log::info("parentTicket:".$parentTicket);
 				if(!$parentTicket){
 				$logData = [
 						'Requester'=> $from,
@@ -666,7 +673,7 @@ protected $server;
 					}
 				}
 				
-				Log::info(print_r(DB::getQueryLog(),true));
+				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
 			}
@@ -678,6 +685,82 @@ protected $server;
 		/* close the connection */
 		imap_close($inbox);
 		Log::info("reading emails completed");
-	}		     
+	}
+	
+	
+	function DownloadInlineImages($con,$msg,$CompanyID){
+		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+		// download email message #1 and fetch it
+		$emailMessage = new EmailMessage($con, $msg);
+		$emailMessage->fetch();
+		
+		// match inline images in html content
+		preg_match_all('/src="cid:(.*)"/Uims', $emailMessage->bodyHTML, $matches);
+		
+		// if there are any matches, loop through them and save to filesystem, change the src property
+		// of the image to an actual URL it can be viewed at
+		if(count($matches)) {
+			
+			// search and replace arrays will be used in str_replace function below
+			$search = array();
+			$replace = array();
+			
+			foreach($matches[1] as $match) { 
+				// work out some unique filename for it and save to filesystem etc
+				$str = explode("@",$match); 
+				$uniqueFilename = $str[0];
+				// change /path/to/images to actual path
+				
+				///
+				
+				$filename 		=  $uniqueFilename;				
+				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
+				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
+				
+				if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
+					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
+				}
+				
+				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $msg . "-" . $file_name; 
+				$filepath2  =  $amazonPath . $msg . "-" . $file_name;  
+				$fp = fopen($filepath, "w+");
+				fwrite($fp, $emailMessage->attachments[$match]['data']); 
+				fclose($fp);
+				
+				$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
+				$dataImage = file_get_contents($filepath);
+				$base64 = 'data:image/' . $typeImage . ';base64,' . base64_encode($dataImage);		
+				//@unlink($filepath);
+				///				
+				
+				if(is_amazon($CompanyID)){
+					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
+						throw new \Exception('Error in Amazon upload');	
+					}					
+				}
+				
+				
+				
+				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID);
+                if (!is_numeric(strpos($path, "https://"))) {
+                    //$path = str_replace('/', '\\', $path);
+					$path2 = CompanyConfiguration::get($CompanyID,'WEB_PATH')."/public";
+                    if (copy($filepath, $path2.'./uploads/' . basename($filepath))) {
+                        $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+                    }
+                }
+				
+				$search[] = "src=\"cid:$match\"";
+				// change www.example.com etc to actual URL
+				$replace[] = "src=\"$path\"";
+			}
+			
+			// now do the replacements
+			$emailMessage->bodyHTML = str_replace($search, $replace, $emailMessage->bodyHTML);
+			
+		}
+		return $emailMessage->bodyHTML;
+	}
+	
 }
 ?>
