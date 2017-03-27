@@ -61,6 +61,10 @@ cp -rf ${SCRIPT_BASEDIR}/web_composer/* ${WEB_LOCATION}/vendor/
 
 cp -rf ${SCRIPT_BASEDIR}/service_composer/* ${SERVICE_LOCATION}/vendor/
 
+git config core.fileMode false
+#for vos ssh file collect.
+git checkout -- ${SERVICE_LOCATION}/vendor/laravelcollective/remote/src
+
 
 echo "place licence file in service and web directory"
 

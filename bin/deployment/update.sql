@@ -17,6 +17,28 @@ UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourc
 
 UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='BillingDashboardInvoiceExpenseWidgets.View' limit 1) WHERE  `ResourceName`='BillingDashboard.invoice_expense_total_widget';
 
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('RecurringInvoice.Add', '1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('RecurringInvoice.Edit', '1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('RecurringInvoice.Delete','1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('RecurringInvoice.View', '1');
+INSERT INTO `tblResourceCategories` (`ResourceCategoryName`, `CompanyID`) VALUES ('RecurringInvoice.All', '1');
+
+
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Add' limit 1) WHERE  `ResourceName`='RecurringInvoice.create';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Add' limit 1) WHERE  `ResourceName`='RecurringInvoice.store';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Edit' limit 1) WHERE  `ResourceName`='RecurringInvoice.edit';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Edit' limit 1) WHERE  `ResourceName`='RecurringInvoice.update';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.getAccountInfo';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.getBillingClassInfo';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.index';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.recurringinvoicelog';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Edit' limit 1) WHERE  `ResourceName`='RecurringInvoice.startstop';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.ajax_datagrid';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.ajax_recurringinvoicelog_datagrid';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.View' limit 1) WHERE  `ResourceName`='RecurringInvoice.calculate_total';
+UPDATE `tblResource` SET `CategoryID`=(select ResourceCategoryID FROM tblResourceCategories WHERE ResourceCategoryName='RecurringInvoice.Delete' limit 1) WHERE  `ResourceName`='RecurringInvoice.delete';
+
+
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='FreshdeskDomain';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='FreshdeskEmail';
 DELETE FROM `tblCompanyConfiguration` WHERE  `Key`='Freshdeskkey';
@@ -174,7 +196,18 @@ CREATE TABLE IF NOT EXISTS `tbl_Account_Contacts_Activity` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 -- ##############################################################
 
---Abubakar
+-- ##########################################################
+INSERT INTO `tblEmailTemplate` (`CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`) VALUES
+	(1, 'Invoice Send', 'New Invoice {{InvoiceNumber}} from {{CompanyName}} ', 'Hi {{AccountName}}<br><br>\r\n\r\n\r\n{{CompanyName}} has sent you an invoice of {{InvoiceGrandTotal}} {{Currency}}, \r\nto download copy of your invoice please click the below link.&nbsp;<br><br>\r\n\r\n\r\n<div><a href="{{InvoiceLink}}" style="background-color:#ff9600;border:1px solid #ff9600;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:13px;font-weight:bold;line-height:30px;text-align:center;text-decoration:none;width:100px;-webkit-text-size-adjust:none;mso-hide:all;" title="Link: {{InvoiceLink}}">View</a></div>\r\n<br>Best Regards,<br><br>\r\n\r\n\r\n{{CompanyName}}<br>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-03-08 12:42:51', 'Sumera Khan', NULL, 2, 'test@test.com', 1, 'InvoiceSingleSend', 1, 1),
+	(1, 'Estimate Send', 'New estimate {{EstimateNumber}} from {{CompanyName}} ', 'Hi {{AccountName}},<br><br>\r\n\r\n\r\n{{CompanyName}} has sent you an estimate of {{EstimateGrandTotal}} {{Currency}}, \r\nto download copy of your estimate please click the below link. <br><br>\r\n\r\n\r\n<div><a href="{{EstimateLink}}" style="background-color:#ff9600;border:2px solid #ff9600;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:13px;font-weight:bold;line-height:30px;text-align:center;text-decoration:none;width:100px;-webkit-text-size-adjust:none;mso-hide:all;" title="Link: {{EstimateLink}}">View Estimate</a></div>\r\n<br><br>\r\n\r\n\r\n\r\nBest Regards,<br><br>\r\n\r\n\r\n{{CompanyName}}\r\n<br>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-03-08 12:34:20', 'Sumera Khan', NULL, 5, 'test@test.com', 1, 'EstimateSingleSend', 1, 1),
+	(1, 'New Comment on Estimate', 'New Comment added to Estimate {{EstimateNumber}}', 'Dear {{AccountName}},<br><br>\r\n\r\nComment added to Estimate {{EstimateNumber}}<br>\r\n{{Comment}}<br><br>\r\n\r\n\r\nBest Regards,<br><br>\r\n\r\n{{CompanyName}}<br>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-03-01 16:18:45', 'Sumera Khan', NULL, 5, 'sumera.staging@code-desk.com', 1, 'EstimateSingleComment', 1, 0),
+	(1, 'New Comment on Task', 'New Comment by {{User}} on Task', '<div>\r\n<table align="center" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; padding-top: 0px; padding-left: 0px; border-spacing: 0; padding-right: 0px; width: 95%; background-color: #f0f0f0">\r\n    <tbody>\r\n    <tr style="vertical-align: top; padding-bottom: 0px; text-align: center; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n        <td style="vertical-align: top; padding-bottom: 0px; text-align: center; padding-top: 0px; padding-left: 0px; padding-right: 0px"><img src="{{Logo}}" border="0" width=""></td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n<table align="center" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; padding-top: 0px; padding-left: 0px; border-spacing: 0; padding-right: 0px; width: 95%; background-color: #f0f0f0">\r\n    <tbody>\r\n    <tr style="vertical-align: top; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n        <td width="5%"></td>\r\n        <td width="90%" style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; vertical-align: top; border-collapse: collapse; font-weight: normal; color: #4d4d4d; padding-bottom: 16px; text-align: center; padding-top: 16px; padding-left: 0px; margin: 0px; line-height: 19px; padding-right: 0px; -moz-hyphens: auto; -webkit-hyphens: auto; hyphens: auto">\r\n            <div style="width: 90%; padding-bottom: 12px; padding-top: 12px; padding-left: 16px; margin: 0px auto; display: block; padding-right: 16px">\r\n                <h6 style="font-size: 20px; font-family: \'helvetica\', \'arial\', sans-serif; word-break: normal; font-weight: normal; color: #4d4d4d; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 0px 0px 12px; line-height: 1.3; padding-right: 0px">Update\r\n                </h6>\r\n                <table class="phenom" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 12px 0px; border-spacing: 0; padding-right: 0px" width="100%">\r\n                    <tbody>\r\n                    <tr style="vertical-align: top; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n                        <td class="phenom-details" style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; vertical-align: top; border-collapse: collapse; font-weight: normal; color: #4d4d4d; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 0px; line-height: 19px; padding-right: 0px; -moz-hyphens: auto; -webkit-hyphens: auto; hyphens: auto">\r\n                            <div style="float: left;clear:left;">\r\n                                <strong>{{User}}</strong> Commented on {{subject}}\r\n                                <p style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; font-weight: normal; color: #4d4d4d; text-align: left; margin: 0px 0px 10px; line-height: 19px; padding: 10px;background-color:#ffffff;border-color: #d6cfcf;border-radius: 10px;border-style: solid;border-width: 1px 3px 3px 1px;margin: 5px;max-width: 95%;padding: 5px;">\r\n                                    {{Comment}}\r\n                                </p>\r\n                            </div>\r\n                        </td>\r\n                    </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </td>\r\n        <td width="5%"></td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n</div>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-03-08 12:32:47', 'Sumera Khan', NULL, 8, 'test@test.com', 1, 'TaskCommentEmail', 1, 0),
+	(1, 'New Comment on Opportunity', 'New Comment by {{User}} on Opportunity', '<div>\r\n<table align="center" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; padding-top: 0px; padding-left: 0px; border-spacing: 0; padding-right: 0px; width: 95%; background-color: #f0f0f0">\r\n    <tbody>\r\n    <tr style="vertical-align: top; padding-bottom: 0px; text-align: center; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n        <td style="vertical-align: top; padding-bottom: 0px; text-align: center; padding-top: 0px; padding-left: 0px; padding-right: 0px"><img src="{{Logo}}" border="0" width=""></td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n<table align="center" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; padding-top: 0px; padding-left: 0px; border-spacing: 0; padding-right: 0px; width: 95%; background-color: #f0f0f0">\r\n    <tbody>\r\n    <tr style="vertical-align: top; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n        <td width="5%"></td>\r\n        <td width="90%" style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; vertical-align: top; border-collapse: collapse; font-weight: normal; color: #4d4d4d; padding-bottom: 16px; text-align: center; padding-top: 16px; padding-left: 0px; margin: 0px; line-height: 19px; padding-right: 0px; -moz-hyphens: auto; -webkit-hyphens: auto; hyphens: auto">\r\n            <div style="width: 90%; padding-bottom: 12px; padding-top: 12px; padding-left: 16px; margin: 0px auto; display: block; padding-right: 16px">\r\n                <h6 style="font-size: 20px; font-family: \'helvetica\', \'arial\', sans-serif; word-break: normal; font-weight: normal; color: #4d4d4d; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 0px 0px 12px; line-height: 1.3; padding-right: 0px">Update\r\n                </h6>\r\n                <table class="phenom" style="vertical-align: top; border-collapse: collapse; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 12px 0px; border-spacing: 0; padding-right: 0px" width="100%">\r\n                    <tbody>\r\n                    <tr style="vertical-align: top; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; padding-right: 0px">\r\n                        <td class="phenom-details" style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; vertical-align: top; border-collapse: collapse; font-weight: normal; color: #4d4d4d; padding-bottom: 0px; text-align: left; padding-top: 0px; padding-left: 0px; margin: 0px; line-height: 19px; padding-right: 0px; -moz-hyphens: auto; -webkit-hyphens: auto; hyphens: auto">\r\n                            <div style="float: left;clear:left;">\r\n                                <strong>{{User}}</strong> Commented on {{subject}}\r\n                                <p style="font-size: 14px; font-family: \'helvetica\', \'arial\', sans-serif; font-weight: normal; color: #4d4d4d; text-align: left; margin: 0px 0px 10px; line-height: 19px; padding: 10px;background-color:#ffffff;border-color: #d6cfcf;border-radius: 10px;border-style: solid;border-width: 1px 3px 3px 1px;margin: 5px;max-width: 95%;padding: 5px;">\r\n                                    {{Comment}}\r\n                                </p>\r\n                            </div>\r\n                        </td>\r\n                    </tr>\r\n                    </tbody>\r\n                </table>\r\n            </div>\r\n        </td>\r\n        <td width="5%"></td>\r\n    </tr>\r\n    </tbody>\r\n</table>\r\n</div>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-03-08 12:33:05', 'Sumera Khan', NULL, 9, 'test@test.com', 1, 'OpportunityCommentEmail', 1, 0);
+-- ###########################################################
+update tblEmailTemplate set EmailFrom = (select Email from tblCompany);
+-- ###########################################################
+
+-- Abubakar
 USE `RMBilling3`;
 
 ALTER TABLE `tblInvoice`
@@ -216,7 +249,7 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoice` (
   `created_at` datetime NULL,
   `updated_at` datetime NULL,
   PRIMARY KEY (`RecurringInvoiceID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceDetail` (
   `RecurringInvoiceDetailID` int(11) NOT NULL auto_increment,
@@ -236,7 +269,7 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceDetail` (
   `updated_at` datetime NULL,
   `ProductType` int(11) NULL,
   PRIMARY KEY (`RecurringInvoiceDetailID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceLog` (
   `RecurringInvoicesLogID` int(11) NOT NULL auto_increment,
@@ -246,24 +279,24 @@ CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceLog` (
   `created_at` datetime NULL,
   `updated_at` datetime NULL,
   PRIMARY KEY (`RecurringInvoicesLogID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblRecurringInvoiceTaxRate` (
-  `RecurringInvoiceTaxRateID` int(11) NOT NULL auto_increment,
-  `RecurringInvoiceID` int(11) NOT NULL,
-  `TaxRateID` int(11) NOT NULL,
-  `TaxAmount` decimal(18,6) NOT NULL,
-  `Title` varchar(500) NOT NULL,
-  `RecurringInvoiceTaxType` tinyint(4) NOT NULL DEFAULT 0,
-  `CreatedBy` varchar(50) NULL,
-  `ModifiedBy` varchar(50) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
-  `updated_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP' on update CURRENT_TIMESTAMP,
-  PRIMARY KEY (`RecurringInvoiceTaxRateID`),
-  UNIQUE KEY `RecurringInvoiceTaxRateUnique`(`RecurringInvoiceID`,`TaxRateID`,`RecurringInvoiceTaxType`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+	`RecurringInvoiceTaxRateID` INT(11) NOT NULL AUTO_INCREMENT,
+	`RecurringInvoiceID` INT(11) NOT NULL,
+	`TaxRateID` INT(11) NOT NULL,
+	`TaxAmount` DECIMAL(18,6) NOT NULL,
+	`Title` VARCHAR(500) NOT NULL COLLATE 'utf8_unicode_ci',
+	`RecurringInvoiceTaxType` TINYINT(4) NOT NULL DEFAULT '0',
+	`CreatedBy` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	`ModifiedBy` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (`RecurringInvoiceTaxRateID`),
+	UNIQUE INDEX `RecurringInvoiceTaxRateUnique` (`RecurringInvoiceID`, `TaxRateID`, `RecurringInvoiceTaxType`)
+) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
---Girish
+-- Girish
 USE `RMCDR3`;
 
 ALTER TABLE `tblUsageDetailFailedCall`

@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
+/* not in use*/
 class InvoiceManualGenerator extends Command {
 
     /**
