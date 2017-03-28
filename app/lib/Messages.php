@@ -143,6 +143,23 @@ class Messages extends \Eloquent{
 				}
 		}
 		
+		$UserSearch 	 =  DB::table('tblUser')->get(array("EmailAddress"));		
+		
+		if(count($UserSearch)>0 || count($UserSearch)>0)													
+		{
+				foreach($UserSearch as $UserSearch){
+					if($UserSearch->EmailAddress!=''  && !in_array($UserSearch->EmailAddress,$array))
+					{
+						if($indexEmail){
+							$array[$UserSearch->EmailAddress] =  $UserSearch->EmailAddress;	
+						}else{
+							$array[] =  $UserSearch->EmailAddress;
+						}	
+						
+					}
+				}
+		}			
+		
 		//return  array_filter(array_unique($array));
 		return $array;
     }
