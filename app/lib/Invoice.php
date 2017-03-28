@@ -833,6 +833,9 @@ class Invoice extends \Eloquent {
 
                         } else if ($TaxRate->TaxType == TaxRate::TAX_RECURRING) {
                             $SubTotal = $SubscriptionTotal;
+							if($SubscriptionTotal == 0 && $TaxRate->FlatStatus == 1) {
+                                $TaxRate->Amount = 0;
+                            }
                             $Title = $TaxRate->Title . ' (Subscription)';
                         }
 
