@@ -35,7 +35,9 @@ class EmailMessage {
 			return false;
 		}
 		else {
-			$this->recurse($structure->parts);
+			if(isset($structure->parts)){
+				$this->recurse($structure->parts);
+			}
 			return true;
 		}
 		
