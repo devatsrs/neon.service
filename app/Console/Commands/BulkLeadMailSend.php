@@ -103,14 +103,14 @@ class BulkLeadMailSend extends Command {
                         if(count($ids)>0){
                             foreach($ids as $id) {
                                 $account = Account::find($id);
-                                if ($account->Email != "") {
-                                    if($joboptions->test==1){
-                                        $emaildata['EmailTo'] = $joboptions->testEmail;
-                                    }else if($EMAIL_TO_CUSTOMER == 1){
-                                        $emaildata['EmailTo'] = $account->Email;//$account->Email;
-                                    }else{
-                                        $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
-                                    }
+                                $emaildata['EmailTo'] = '';
+                                if($joboptions->test==1){
+                                    $emaildata['EmailTo'] = $joboptions->testEmail;
+                                }else if($EMAIL_TO_CUSTOMER == 1){
+                                    $emaildata['EmailTo'] = $account->Email;//$account->Email;
+                                }
+
+                                if ($emaildata['EmailTo'] != "") {
 
                                     if(!empty($joboptions->attachment)){
                                         $emaildata['attach'] = $joboptions->attachment;
