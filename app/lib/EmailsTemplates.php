@@ -192,7 +192,9 @@ class EmailsTemplates{
 					{
 						$array['Signature']= $UserData->EmailFooter;	
 					}
-	        	}
+	        	}else{
+					$array['Signature']= '';	
+				}
 			return $array;
 	}
 	
