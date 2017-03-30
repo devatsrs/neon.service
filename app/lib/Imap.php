@@ -554,6 +554,9 @@ protected $server;
 				
 				$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID);
 			 	//$message = 	$this->getBody($inbox,$email_number);
+				if(empty($message)){
+					$message = 	$this->getBody($inbox,$email_number);
+				}
 				if(!empty($message)){
 					$message =  $this->GetMessageBody($message);
 				}				
@@ -595,7 +598,8 @@ protected $server;
 					if($GroupID){
 						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentAssignedGroup")));
 					}					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));				$TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
+					
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -615,7 +619,7 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","CompanyID"=>$CompanyID));
+					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","Comment"=>$message,"NoteUser"=>$FromName,"CompanyID"=>$CompanyID));
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -641,7 +645,7 @@ protected $server;
 				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
-					 $TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
+					 
 					 
 					if(!in_array($from,$AllEmails)){
 						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
