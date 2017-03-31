@@ -780,6 +780,7 @@ class Invoice extends \Eloquent {
 
                         } else if ($TaxRate->TaxType == TaxRate::TAX_RECURRING) {
                             $SubTotal = $SubscriptionTotal;
+
                             $Title = $TaxRate->Title . ' (Subscription)';
                         }
 
@@ -809,7 +810,7 @@ class Invoice extends \Eloquent {
         $TotalTax = 0;
 
         if(isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
-            if ($TaxRate->FlatStatus == 1) {
+            if ($TaxRate->FlatStatus == 1 && $SubTotal != 0) {
 
                 $TotalTax = $TaxRate->Amount;
 
@@ -1033,8 +1034,12 @@ class Invoice extends \Eloquent {
             $singleemail = trim($singleemail);
             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                 $emaildata['EmailTo'] = $singleemail;
-                $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . '('.$Account->AccountName.') from ' . $CompanyName;
-                $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+               // $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . '('.$Account->AccountName.') from ' . $CompanyName;
+			    $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
+				$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
+			   
+                $status = Helper::sendMail($body, $emaildata,0);
+			   // $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                 $Invoice->update(['InvoiceStatus' => Invoice::AWAITING]);
                 if ($status['status'] == 0) {
                     $status['status'] = 'failure';
@@ -1084,7 +1089,13 @@ class Invoice extends \Eloquent {
                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                         $emaildata['EmailTo'] = $singleemail;
                         $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
-                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+						$emaildata['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+						$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
+						$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
+			   
+               			 $status = Helper::sendMail($body, $emaildata,0);
+				
+                      //  $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                     }
                 }
             }
@@ -1096,7 +1107,12 @@ class Invoice extends \Eloquent {
                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                         $emaildata['EmailTo'] = $singleemail;
                         $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
-                        $status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
+						$emaildata['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+						$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
+						$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
+			   
+               			 $status = Helper::sendMail($body, $emaildata,0);
+                        //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                     }
                 }
 

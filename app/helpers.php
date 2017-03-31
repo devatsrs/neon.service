@@ -263,6 +263,13 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{CompanyName}}',
 		"{{CompanyVAT}}",
 		"{{CompanyAddress}}",
+		"{{CompanyAddress1}}",
+		"{{CompanyAddress2}}",
+		"{{CompanyAddress3}}",
+		"{{CompanyCity}}",
+		"{{CompanyPostCode}}",
+		"{{CompanyCountry}}",
+		"{{Logo}}",
     ];
 
     foreach($extra as $item){
