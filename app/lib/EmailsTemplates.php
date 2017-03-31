@@ -36,6 +36,7 @@ class EmailsTemplates{
 				"{{CompanyCity}}",
 				"{{CompanyPostCode}}",
 				"{{CompanyCountry}}",
+				"{{Logo}}",
 				);
 	
 	 public function __construct($data = array()){
@@ -160,6 +161,7 @@ class EmailsTemplates{
 			$array['CompanyCity']					=   $CompanyData->City;
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
 			$array['CompanyCountry']				=   $CompanyData->Country;			
+			$array['Logo'] 							= \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL').'/assets/images/logo@2x.png'; 
 			return $array;
 	}
 	
@@ -190,7 +192,9 @@ class EmailsTemplates{
 					{
 						$array['Signature']= $UserData->EmailFooter;	
 					}
-	        	}
+	        	}else{
+					$array['Signature']= '';	
+				}
 			return $array;
 	}
 	
