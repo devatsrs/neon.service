@@ -11,6 +11,10 @@ echo "copying web..."
 #example cd /var/www/html/release.neon && git config core.fileMode false && git pull
 cd ${WEB_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying service..."
+
+#Overwrite issue fix
+cd ${SERVICE_LOCATION} && git fetch --all && git reset --hard origin/${VERSION} && git checkout ${VERSION}
+
 cd ${SERVICE_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying api..."
 cd ${API_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
