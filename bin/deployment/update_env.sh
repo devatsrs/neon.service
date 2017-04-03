@@ -16,7 +16,7 @@ echo "copying api..."
 cd ${API_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 
 echo "Executing env_file_folder_permission..."
-source ${SCRIPT_BASEDIR}/env_file_and_folder_permission.sh
+source ${SCRIPT_BASEDIR}/composer_n_permission.sh
 
 
 echo "Executing POST UPDATE SQL file on env DB."
