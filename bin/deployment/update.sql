@@ -8,11 +8,18 @@ ALTER TABLE `tblNote`
 	ADD COLUMN `UserID` INT(11) NOT NULL AFTER `AccountID`;
 */
 
+/*
 UPDATE `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Add' WHERE `ResourceCategoryName`= 'RecurringInvoice.Add';
 UPDATE `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Edit' WHERE `ResourceCategoryName`= 'RecurringInvoice.Edit';
 UPDATE `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Delete' WHERE `ResourceCategoryName`= 'RecurringInvoice.Delete';
 UPDATE `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.View' WHERE `ResourceCategoryName`= 'RecurringInvoice.View';
 UPDATE `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.All' WHERE `ResourceCategoryName`= 'RecurringInvoice.All';
+*/
+INSERT INTO `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Add' , CompanyID=1 ;
+INSERT INTO `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Edit' , CompanyID=1 ;
+INSERT INTO `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.Delete' , CompanyID=1 ;
+INSERT INTO `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.View' , CompanyID=1 ;
+INSERT INTO `tblResourceCategories` SET `ResourceCategoryName` = 'RecurringProfile.All' , CompanyID=1 ;
 
 DROP PROCEDURE IF EXISTS `prc_GetCronJobHistory`;
 DELIMITER //
