@@ -33,7 +33,7 @@ cp -f ${POST_UPDATE_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 source  ${SCRIPT_BASEDIR}/prepare_sql_file.sh
 
 #check drop column for data deletion in script before install.
-mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+mysql --force ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 #Start Crontab
 #service crond start
