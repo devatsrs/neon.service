@@ -9,7 +9,7 @@ source $(dirname "$0")/config.sh
 echo "copying code..."
 echo "copying web..."
 #example cd /var/www/html/release.neon && git config core.fileMode false && git pull
-cd ${WEB_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
+cd ${WEB_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying service..."
 
 #Overwrite issue fix
@@ -17,7 +17,7 @@ cd ${SERVICE_LOCATION} && git fetch --all && git reset --hard origin/${VERSION} 
 
 cd ${SERVICE_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
 echo "copying api..."
-cd ${API_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
+cd ${API_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
 
 echo "Executing env_file_folder_permission..."
 source ${SCRIPT_BASEDIR}/composer_n_permission.sh
