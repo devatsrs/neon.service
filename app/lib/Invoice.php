@@ -833,9 +833,6 @@ class Invoice extends \Eloquent {
 
                         } else if ($TaxRate->TaxType == TaxRate::TAX_RECURRING) {
                             $SubTotal = $SubscriptionTotal;
-							if($SubscriptionTotal == 0 && $TaxRate->FlatStatus == 1) {
-                                $TaxRate->Amount = 0;
-                            }
                             $Title = $TaxRate->Title . ' (Subscription)';
                         }
 
@@ -865,7 +862,7 @@ class Invoice extends \Eloquent {
         $TotalTax = 0;
 
         if(isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
-            if ($TaxRate->FlatStatus == 1) {
+            if ($TaxRate->FlatStatus == 1 && $SubTotal != 0) {
 
                 $TotalTax = $TaxRate->Amount;
 
