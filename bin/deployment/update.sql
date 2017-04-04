@@ -1,4 +1,4 @@
---- Version Neon 4.10
+-- Version Neon 4.10
 -- Abubakar
 
 USE `Ratemanagement3`;
