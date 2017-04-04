@@ -335,20 +335,19 @@ class Helper{
 		$replace_array['CompanyCity'] 		= $CompanyData->City;
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
-		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'),'/assets/images/logo@2x.png'); 		
+		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png'); 		
 		
         $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'));
-		$TEMP_PATH 	  =     \App\Lib\CompanyConfiguration::get($Account->CompanyId,'TEMP_PATH').'/';
 		$Host		  = 	$domain_data['host'];
         $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
 
         if(!empty($result)){
-            if(!empty($result->Logo)){             
+            if(!empty($result->Logo)){           
 				 $path = AmazonS3::unSignedUrl($result->Logo,$Account->CompanyId);  
                         if(strpos($path, "https://") !== false){
 							$replace_array['Logo'] = $path;
                         }else{
-                            $file = $TEMP_PATH.$path;                    
+                            $file = $result->Logo;           
                             $replace_array['Logo'] = MakeWebUrl($Account->CompanyId,$file); 
                         }
 				
