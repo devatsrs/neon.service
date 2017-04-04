@@ -6,6 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Tickets' => $baseDir . '/app/lib/Tickets.php',
     'Absolute_Positioner' => $vendorDir . '/dompdf/dompdf/include/absolute_positioner.cls.php',
     'Abstract_Renderer' => $vendorDir . '/dompdf/dompdf/include/abstract_renderer.cls.php',
     'Account' => $baseDir . '/app/models/Account.php',
