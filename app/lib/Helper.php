@@ -335,8 +335,18 @@ class Helper{
 		$replace_array['CompanyCity'] 		= $CompanyData->City;
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
-	    $replace_array['Logo'] 				= \App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL').'/assets/images/logo@2x.png'; 
-	    
+		$replace_array['Logo'] 				= \App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL').'/assets/images/logo@2x.png'; 
+		
+        $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'));
+		$Host		  = 	$domain_data['host'];
+        $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
+
+        if(!empty($result)){
+            if(!empty($result->Logo)){
+                $replace_array['Logo']       = (!empty($result->Logo))?$result->Logo:"";
+            }
+        }
+	    $replace_array['Logo'] = "<img src='".$replace_array['Logo']."' />";
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
