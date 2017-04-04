@@ -91,6 +91,7 @@ class VOSAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -125,10 +126,7 @@ class VOSAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
-            $ServiceID = 0;
-            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
-                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
-            }
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -143,7 +141,7 @@ class VOSAccountUsage extends Command
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan($ServiceID);
+                TempUsageDetail::applyDiscountPlan();
             }
             Log::error(' ========================== vos transaction start =============================');
             CronJob::createLog($CronJobID);
@@ -172,7 +170,7 @@ class VOSAccountUsage extends Command
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                            if (!empty($excelrow['33']) || ($IpBased ==1 && !empty($excelrow['4']))) {
+                            if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                 $uddata['CompanyID'] = $CompanyID;
@@ -202,7 +200,7 @@ class VOSAccountUsage extends Command
                                     $data_count = 0;
                                 }
                             }
-                            if (!empty($excelrow['40']) || ($IpBased ==1 && !empty($excelrow['10']))) {
+                            if (($IpBased == 0 &&  !empty($excelrow['40']) ) || ($IpBased ==1 && !empty($excelrow['10']))) {
                                 $vendorcdrdata = array();
                                 $vendorcdrdata['CompanyID'] = $CompanyID;
                                 $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;

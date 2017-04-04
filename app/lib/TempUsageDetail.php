@@ -214,16 +214,16 @@ class TempUsageDetail extends \Eloquent {
             return 'none';
         }
     }
-    public static function applyDiscountPlan($ServiceID){
+    public static function applyDiscountPlan(){
         $today = date('Y-m-d');
         $todaytime = date('Y-m-d H:i:s');
         $Accounts = DB::table('tblAccountBilling')
             ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
             ->where('tblAccountDiscountPlan.ServiceID','=','tblAccountBilling.ServiceID')
             ->where('EndDate','<=',$today)
-            ->where('tblAccountDiscountPlan.ServiceID',$ServiceID)
-            ->get(['tblAccountBilling.AccountID','DiscountPlanID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+            ->get(['tblAccountBilling.AccountID','DiscountPlanID','tblAccountDiscountPlan.ServiceID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
         foreach($Accounts as $Account){
+            $ServiceID = $Account->ServiceID;
             $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
             if(!empty($AccountNextBilling)){
                 $BillingCycleType = $AccountNextBilling->BillingCycleType;

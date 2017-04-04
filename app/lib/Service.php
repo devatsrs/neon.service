@@ -19,5 +19,8 @@ class Service extends \Eloquent {
     public static function getServiceID($CompanyID,$ServiceType){
         return Service::where(array('CompanyID'=>$CompanyID,'ServiceType'=>$ServiceType))->pluck('ServiceID');
     }
+    public static function getGatewayServiceID($CompanyGatewayID){
+        return Service::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('ServiceID');
+    }
 
 }
