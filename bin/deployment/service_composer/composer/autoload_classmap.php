@@ -90,6 +90,7 @@ return array(
     'App\\Lib\\TempUsageDownloadLog' => $baseDir . '/app/lib/TempUsageDownloadLog.php',
     'App\\Lib\\TempVendorCDR' => $baseDir . '/app/lib/TempVendorCDR.php',
     'App\\Lib\\TempVendorRate' => $baseDir . '/app/lib/TempVendorRate.php',
+	'App\\Lib\\Themes' => $baseDir . '/app/lib/Themes.php',
     'App\\Lib\\TransactionLog' => $baseDir . '/app/lib/TransactionLog.php',
     'App\\Lib\\Trunk' => $baseDir . '/app/lib/Trunk.php',
     'App\\Lib\\UsageDetail' => $baseDir . '/app/lib/UsageDetail.php',
