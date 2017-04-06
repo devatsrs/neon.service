@@ -32,6 +32,6 @@ API_LOCATION=${WEB_LOCATION}/public/${API_FOLDER_NAME}
 
 
 #Internal variable for __DIR__ equivalent in shell script
-SCRIPT_BASEDIR=$(dirname "$0")
+SCRIPT_BASEDIR=$( cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P )
 
 COMPOSER_UPDATE=0
