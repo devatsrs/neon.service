@@ -583,3 +583,7 @@ function validator_response($validator){
     }
 
 }
+
+function make_web_url($CompanyID,$path){
+	return \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
+}
