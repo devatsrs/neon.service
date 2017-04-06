@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "loading configuration..."
-source $(dirname "$0")/config.sh
+source $(dirname "$0")/update_config.sh
 
 #echo "stoping crond..."
 #service crond stop
