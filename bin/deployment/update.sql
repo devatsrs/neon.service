@@ -1098,7 +1098,7 @@ BEGIN
 		`RateDate` DATE NOT NULL
 	);
 
-	/* insert new account */
+
 	SET @stm = CONCAT('
 	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName)
 	SELECT
@@ -1121,10 +1121,10 @@ BEGIN
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
 
-	/* active new account */
+
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,'0','1',p_NameFormat);
 
-	/* update cdr account */
+
 	SET @stm = CONCAT('
 	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
 	INNER JOIN tblGatewayAccount ga
@@ -1155,7 +1155,7 @@ BEGIN
 	IF v_NewAccountIDCount_ > 0
 	THEN
 
-		/* update header cdr account */
+
 		UPDATE RMCDR3.tblUsageHeader uh
 		INNER JOIN tblGatewayAccount ga
 			ON  ga.CompanyID = uh.CompanyID
@@ -1169,7 +1169,7 @@ BEGIN
 
 	END IF;
 
-	/* temp accounts and trunks*/
+
 	DROP TEMPORARY TABLE IF EXISTS tmp_AccountTrunkCdrUpload_;
 	CREATE TEMPORARY TABLE tmp_AccountTrunkCdrUpload_  (
 		RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1185,7 +1185,7 @@ BEGIN
 
 	IF v_CDRUpload_ > 0
 	THEN
-		/* update UseInBilling when cdr upload*/
+
 		SET @stm = CONCAT('
 		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 		INNER JOIN Ratemanagement3.tblCustomerTrunk ct
@@ -1201,11 +1201,11 @@ BEGIN
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
 
-	/* if rate format is prefix base not charge code*/
+
 	IF p_RateFormat = 2
 	THEN
 
-		/* update trunk with use in billing*/
+
 		SET @stm = CONCAT('
 		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 		INNER JOIN Ratemanagement3.tblCustomerTrunk ct
@@ -1221,7 +1221,7 @@ BEGIN
 		EXECUTE stmt;
 		DEALLOCATE PREPARE stmt;
 
-		/* update trunk without use in billing*/
+
 		SET @stm = CONCAT('
 		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 		INNER JOIN Ratemanagement3.tblCustomerTrunk ct
@@ -1239,7 +1239,7 @@ BEGIN
 
 	END IF;
 
-	/* if rerate on */
+
 	IF p_RateCDR = 1
 	THEN
 
@@ -1251,7 +1251,7 @@ BEGIN
 
 	END IF;
 
-	/* temp accounts and trunks*/
+
 	DROP TEMPORARY TABLE IF EXISTS tmp_AccountTrunk_;
 	CREATE TEMPORARY TABLE tmp_AccountTrunk_  (
 		RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1276,17 +1276,17 @@ BEGIN
 		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
 		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
 
-		/* get outbound rate process*/
+
 		CALL Ratemanagement3.prc_getCustomerCodeRate(v_AccountID_,v_TrunkID_,p_RateCDR,p_RateMethod,p_SpecifyRate);
 
-		/* update prefix outbound process*/
-		/* if rate format is prefix base not charge code*/
+
+
 		IF p_RateFormat = 2
 		THEN
 			CALL prc_updatePrefix(v_AccountID_,v_TrunkID_, p_processId, p_tbltempusagedetail_name);
 		END IF;
 
-		/* outbound rerate process*/
+
 		IF p_RateCDR = 1
 		THEN
 			CALL prc_updateOutboundRate(v_AccountID_,v_TrunkID_, p_processId, p_tbltempusagedetail_name);
@@ -1295,10 +1295,10 @@ BEGIN
 		SET v_pointer_ = v_pointer_ + 1;
 	END WHILE;
 
-	/* if rerate is off and acconts and trunks not setup update prefix from default codedeck*/
+
 	IF p_RateCDR = 0 AND p_RateFormat = 2
 	THEN
-		/* temp accounts and trunks*/
+
 		DROP TEMPORARY TABLE IF EXISTS tmp_Accounts_;
 		CREATE TEMPORARY TABLE tmp_Accounts_  (
 			RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1313,55 +1313,16 @@ BEGIN
 		EXECUTE stm;
 		DEALLOCATE PREPARE stm;
 
-		/* get default code */
+
 		CALL Ratemanagement3.prc_getDefaultCodes(p_CompanyID);
 
-		/* update prefix from default codes
-		 if rate format is prefix base not charge code*/
+
 		CALL prc_updateDefaultPrefix(p_processId, p_tbltempusagedetail_name);
 
 	END IF;
 
-	/* inbound rerate process*/
-	IF p_RateCDR = 1
-	THEN
-		/* temp accounts and trunks*/
-		DROP TEMPORARY TABLE IF EXISTS tmp_Account_;
-		CREATE TEMPORARY TABLE tmp_Account_  (
-			RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-			AccountID INT
-		);
-		SET @stm = CONCAT('
-		INSERT INTO tmp_Account_(AccountID)
-		SELECT DISTINCT AccountID FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud WHERE ProcessID="' , p_processId , '" AND AccountID IS NOT NULL AND ud.is_inbound = 1;
-		');
 
-		PREPARE stm FROM @stm;
-		EXECUTE stm;
-		DEALLOCATE PREPARE stm;
-
-		SET v_pointer_ = 1;
-		SET v_rowCount_ = (SELECT COUNT(*) FROM tmp_Account_);
-
-		WHILE v_pointer_ <= v_rowCount_
-		DO
-
-			SET v_AccountID_ = (SELECT AccountID FROM tmp_Account_ t WHERE t.RowID = v_pointer_);
-
-			/* get inbound rate process*/
-			CALL Ratemanagement3.prc_getCustomerInboundRate(v_AccountID_,p_RateCDR,p_RateMethod,p_SpecifyRate);
-
-			/* update trunk prefix inbound process*/
-			CALL prc_updateInboundPrefix(v_AccountID_, p_processId, p_tbltempusagedetail_name);
-
-			/* inbound rerate process*/
-			CALL prc_updateInboundRate(v_AccountID_, p_processId, p_tbltempusagedetail_name);
-
-			SET v_pointer_ = v_pointer_ + 1;
-
-		END WHILE;
-
-	END IF;
+	CALL prc_RerateInboundCalls(p_CompanyID,p_processId,p_tbltempusagedetail_name,p_RateCDR,p_RateMethod,p_SpecifyRate);
 
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
@@ -1423,7 +1384,7 @@ BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-END|
+END |
 DELIMITER ;
 
 DROP FUNCTION IF EXISTS `FnGetInvoiceNumber`;
