@@ -316,9 +316,8 @@ class CDRUpload extends Command
                 $skiped_rerated_data = array();
                 if($IgnoreZeroCall == 1){
                     foreach($skiped_account_data as $key => $errormg){
-                        if(strpos($errormg,'Doesnt exist in NEON') !== false){
+                        if(strpos($errormg,'Doesnt exist in NEON') === false){
                             $skiped_rerated_data[] = $errormg;
-                        }else{
                             unset($skiped_account_data[$key]);
                         }
                     }
@@ -357,14 +356,14 @@ class CDRUpload extends Command
                     $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' . implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
-                }else if (count($skiped_rerated_data)) {
-                    $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data),fix_jobstatus_meassage($skiped_rerated_data));
-                    $jobdata['JobStatusMessage'] =  implode(',\n\r', $skiped_account_data);
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 }else if (count($skiped_account_data)) {
                     $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusMessage'] =  implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                }else if (count($skiped_rerated_data)) {
+                    $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data),fix_jobstatus_meassage($skiped_rerated_data));
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else if(count($skipped_cli)){
                     $skipped_cli = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skipped_cli));
                     $jobdata['JobStatusMessage'] = 'CLI Not Verified:' . implode(',\n\r', $skipped_cli);
