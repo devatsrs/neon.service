@@ -238,10 +238,10 @@ class CDRUpload extends Command
                             if(empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && !isset($cdrdata['cld']) && trim($cdrdata['cld']) == ''){
+                            if($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld) && trim($temp_row[$attrselection->cld]) == ''){
                                 $error[] = 'CLD is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && !isset($cdrdata['billed_duration']) && trim($cdrdata['billed_duration']) == ''){
+                            if($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && trim($temp_row[$attrselection->billed_duration]) == ''){
                                 $error[] = 'Billed duration is blank at line no:'.$lineno;
                             }
 
