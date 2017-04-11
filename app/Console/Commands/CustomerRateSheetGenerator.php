@@ -87,7 +87,6 @@ class CustomerRateSheetGenerator extends Command {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
-
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
@@ -186,7 +185,6 @@ class CustomerRateSheetGenerator extends Command {
 
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
 
-
                             if (isset($joboptions->isMerge) && $joboptions->isMerge ==1 && isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
 
 
@@ -197,6 +195,10 @@ class CustomerRateSheetGenerator extends Command {
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        if(empty($excel_data)){
+                                            Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
+                                            throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                        }
                                         $excel_data = json_decode(json_encode($excel_data), true);
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                         RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
@@ -219,12 +221,16 @@ class CustomerRateSheetGenerator extends Command {
 
                                 foreach ($joboptions->Trunks as $trunk) {
                                     if (in_array($trunk, $trunks)) {
+                                        $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
+                                        if(empty($excel_data)){
+                                            Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
+                                            throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                        }
                                         $excel_data = json_decode(json_encode($excel_data), true);
-                                        $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                         $data['excel_data'] = $excel_data;
                                         $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
@@ -246,12 +252,16 @@ class CustomerRateSheetGenerator extends Command {
                                 //Log::info("Trunks" . $joboptions->Trunks );
 
                                 if(in_array($joboptions->Trunks,$trunks)) {
+                                    $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->Trunks))->pluck('Trunk');
                                     Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "')");
+                                    if(empty($excel_data)){
+                                        Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
+                                        throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                    }
                                     Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     $excel_data = json_decode(json_encode($excel_data), true);
-                                    $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->Trunks))->pluck('Trunk');
                                     $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                     $data['excel_data'] = $excel_data;
                                     $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
@@ -266,6 +276,8 @@ class CustomerRateSheetGenerator extends Command {
                                     }
                                     Log::info('job is merge 0 old logic' . $JobID);
                                 }
+                            }else{
+                                throw new Exception('Not option matched');
                             }
                             if ($joboptions->sendMail == 0) {
                                 $fullPath = $amazonPath . $file_name; //$destinationPath . $file_name;
@@ -291,7 +303,7 @@ class CustomerRateSheetGenerator extends Command {
                         $jobdata['JobStatusMessage'] = 'RateSheet Generated Successfully, ' ;
                         $jobdata['JobStatusMessage'] .= $countuser.' email sent to users, '.count($errorsuser).' Skipped users ,'.implode(',\n\r',$errorsuser);
                         $jobdata['JobStatusMessage'] .= $countcust.' email sent to account, '.count($errorscustomer).' Skipped Account ,'.implode(',\n\r',$errorscustomer);
-                        $jobdata['JobStatusMessage'] .= count($errorslog).' accounts email log data not saved ,'.implode(',\n\r',$errorslog);
+                        $jobdata['JobStatusMessage'] .= count($errorslog).' accounts exception ,'.implode(',\n\r',$errorslog);
 
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                         $emaildata['Status'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('Title');
