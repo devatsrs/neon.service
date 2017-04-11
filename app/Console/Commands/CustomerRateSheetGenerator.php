@@ -81,15 +81,13 @@ class CustomerRateSheetGenerator extends Command {
         $errorscustomer = array();
         $errorslog = array();
         $emailstatus = array('status' => 0, 'message' => '');
-        $sheetstatusupdate = array();
-        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
-                $joboptions->$EMAIL_TO_CUSTOMER = $EMAIL_TO_CUSTOMER;
+
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
@@ -110,7 +108,6 @@ class CustomerRateSheetGenerator extends Command {
                 Log::info('job start ' . $JobID);
                 $Company = Company::find($CompanyID);
                 Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
-                DB::beginTransaction();
                 Log::info('job transaction start ' . $JobID);
                 if (!empty($ids)) {
 
@@ -177,6 +174,7 @@ class CustomerRateSheetGenerator extends Command {
                 if (!empty($accounts)) {
                     foreach ($accounts as $account) {
                         try {
+                            DB::beginTransaction();
                             $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
                             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
                             $local_dir = $UPLOADPATH . '/' . $amazonPath;
@@ -299,7 +297,6 @@ class CustomerRateSheetGenerator extends Command {
                         $emaildata['Status'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('Title');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Job::where(["JobID" => $JobID])->update($jobdata);
                     } else {
                         $jobdata['JobStatusMessage'] = 'RateSheet Generated Successfully';
                         if ($joboptions->sendMail == 1) {
@@ -309,7 +306,6 @@ class CustomerRateSheetGenerator extends Command {
                         $emaildata['Status'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('Title');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Job::where(["JobID" => $JobID])->update($jobdata);
                     }
 
                 } else {
@@ -324,12 +320,17 @@ class CustomerRateSheetGenerator extends Command {
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'No Data Found';
         }
+
+        Job::where(["JobID" => $JobID])->update($jobdata);
+
         $emaildata['JobStatusMessage'] = $jobdata['JobStatusMessage'];
         $emaildata['Title'] = $job->Title;
         $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
         $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
         $emaildata['Subject'] = $job->Title;
         $emaildata['CompanyID'] = $CompanyID;
+
+
         if ($emailstatus['status'] == 0) {
             Job::send_job_status_email($job,$CompanyID);
         }else {
@@ -455,10 +456,11 @@ class CustomerRateSheetGenerator extends Command {
         if ($joboptions->sendMail == 1) {
             $emaildata['Subject'] = $joboptions->subject;
             $emaildata['attach'] = $local_dir . basename($file_name);
+            $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
             if ($joboptions->test == 1) {
                 $emaildata['EmailTo'] = $joboptions->testEmail;
                 $emaildata['EmailToName'] = 'test name';
-            } else if($joboptions->$EMAIL_TO_CUSTOMER == 1){
+            } else if($EMAIL_TO_CUSTOMER == 1){
                 $emaildata['EmailTo'] = $account->Email;
                 $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
             }else{

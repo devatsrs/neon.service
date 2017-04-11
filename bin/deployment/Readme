@@ -1,3 +1,6 @@
+generate update.sql through db compare first time.
+including data , table and procedure for release env.
+
 --------------------------
 Steps for Installation
 --------------------------

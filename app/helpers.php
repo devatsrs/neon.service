@@ -263,6 +263,13 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{CompanyName}}',
 		"{{CompanyVAT}}",
 		"{{CompanyAddress}}",
+		"{{CompanyAddress1}}",
+		"{{CompanyAddress2}}",
+		"{{CompanyAddress3}}",
+		"{{CompanyCity}}",
+		"{{CompanyPostCode}}",
+		"{{CompanyCountry}}",
+		"{{Logo}}",
     ];
 
     foreach($extra as $item){
@@ -582,4 +589,8 @@ function validator_response($validator){
         return  array("status" => "failed", "message" => $errors);
     }
 
+}
+
+function MakeWebUrl($CompanyID,$path){
+	return \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
 }
