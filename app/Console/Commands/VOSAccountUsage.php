@@ -9,23 +9,25 @@
 namespace App\Console\Commands;
 
 
-use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use App\Lib\UsageDownloadFiles;
-use Exception;
+use App\VOS;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
+use Webpatser\Uuid\Uuid;
+use \Exception;
+use App\Lib\Helper;
+use App\Lib\Company;
 
 class VOSAccountUsage extends Command
 {
@@ -125,10 +127,6 @@ class VOSAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
-            $ServiceID = 0;
-            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
-                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
-            }
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -143,7 +141,7 @@ class VOSAccountUsage extends Command
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
             if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan($ServiceID);
+                TempUsageDetail::applyDiscountPlan();
             }
             Log::error(' ========================== vos transaction start =============================');
             CronJob::createLog($CronJobID);
@@ -193,7 +191,6 @@ class VOSAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
-                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -224,7 +221,6 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
-                                $vendorcdrdata['ServiceID'] = $ServiceID;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){

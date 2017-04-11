@@ -69,7 +69,7 @@ API_LOCATION=${WEB_LOCATION}/public/${API_FOLDER_NAME}
 #API Url
 NEON_API_URL=${WEB_URL}/${API_FOLDER_NAME}/public/api
 #Internal variable for __DIR__ equivalent in shell script
-SCRIPT_BASEDIR=$(dirname "$0")
+SCRIPT_BASEDIR=$( cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P )
 #SSH Settings for host ip / domain for cron job and other shell commands.
 SSH_HOST=localhost
 #SSH user

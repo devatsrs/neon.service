@@ -25,11 +25,11 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0,$OutboundTableID=0,$InboundTableID=0){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0){
         $skiped_account_data =array();
-        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
-        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
-        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
+        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
+        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
         foreach($skiped_account as $skiped_account_row){
             $skiped_account_data[]  = $skiped_account_row->Message;
         }
@@ -214,15 +214,17 @@ class TempUsageDetail extends \Eloquent {
             return 'none';
         }
     }
-    public static function applyDiscountPlan($ServiceID){
+    public static function applyDiscountPlan(){
         $today = date('Y-m-d');
-        $todaytime = date('Y-m-d H:i:s');
         $Accounts = DB::table('tblAccountBilling')
             ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
-            ->where('tblAccountDiscountPlan.ServiceID','=','tblAccountBilling.ServiceID')
-            ->where('EndDate','<=',$today)
-            ->where('tblAccountDiscountPlan.ServiceID',$ServiceID)
-            ->get(['tblAccountBilling.AccountID','DiscountPlanID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+            ->where('NextInvoiceDate',$today)
+            ->Where(function($query)use($today)
+            {
+                $query->whereRaw("DATE(tblAccountDiscountPlan.created_at) <> '".$today."'")
+                      ->orwhere('CreatedBy','<>','RMScheduler');
+            })
+            ->get(['tblAccountBilling.AccountID','DiscountPlanID','NextInvoiceDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
         foreach($Accounts as $Account){
             $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
             if(!empty($AccountNextBilling)){
@@ -232,12 +234,12 @@ class TempUsageDetail extends \Eloquent {
                 $BillingCycleType = $Account->BillingCycleType;
                 $BillingCycleValue =$Account->BillingCycleValue;
             }
-            $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue);
-            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->EndDate));
+            $days = getBillingDay(strtotime($Account->NextInvoiceDate), $BillingCycleType, $BillingCycleValue);
+            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->NextInvoiceDate));
             $getdaysdiff = getdaysdiff($NextInvoiceDate,$today);
             $DayDiff = $getdaysdiff >0?intval($getdaysdiff):0;
-            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
-            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID));
+            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler')");
+            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler'));
 
         }
 
