@@ -306,7 +306,7 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID,$ServiceID);
 
             if(!empty($Account)) {
 
@@ -554,6 +554,7 @@ class Invoice extends \Eloquent {
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
+            $ServiceID = $Invoice->ServiceID;
             $companyID = $Account->CompanyId;
             $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOAD_PATH');
             if(!empty($Invoice->RecurringInvoiceID)){
@@ -569,7 +570,7 @@ class Invoice extends \Eloquent {
                     ->groupBy("TaxRateID")
                     ->get();
             }else{
-                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
+                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID,$ServiceID);
                 $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
                 $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
@@ -830,9 +831,9 @@ class Invoice extends \Eloquent {
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $Account = Account::find((int)$Invoice->AccountID);
-        $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
-        $AccountID = $Account->AccountID;
         $ServiceID = $Invoice->ServiceID;
+        $AccountID = $Account->AccountID;
+        $AccountBilling = AccountBilling::getBillingClass($AccountID,$ServiceID);
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
 
@@ -1628,6 +1629,7 @@ class Invoice extends \Eloquent {
 
     }
 
+    /** not in use */
     public static function sendManualInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
         $error = "";
@@ -2022,6 +2024,8 @@ class Invoice extends \Eloquent {
         return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
 
     }
+
+    /** not in use */
     public static function resendManualInvoice($CompanyID,$Invoice,$InvoiceDetail,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
         $error = "";
