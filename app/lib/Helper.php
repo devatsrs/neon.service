@@ -275,10 +275,10 @@ class Helper{
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
-    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
+    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0,$ServiceID=0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID,$ServiceID);
         }
 
         if (empty($RoundChargesAmount)) {
