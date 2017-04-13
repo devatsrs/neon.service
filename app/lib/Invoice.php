@@ -444,6 +444,7 @@ class Invoice extends \Eloquent {
             $logo = $UPLOADPATH . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
 
+            $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
 
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
@@ -462,7 +463,7 @@ class Invoice extends \Eloquent {
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
 			
             if(empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }else {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
             }
@@ -1202,6 +1203,7 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData = array();
         $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
         $InvoiceDetailData['ProductID'] = 0;
+        $InvoiceDetailData['ServiceID'] = $ServiceID;
         $InvoiceDetailData['ProductType'] = Product::USAGE;
         $InvoiceDetailData['Description'] = $ProductDescription;
         $InvoiceDetailData['StartDate'] = $StartDate;
@@ -1272,6 +1274,7 @@ class Invoice extends \Eloquent {
                 $InvoiceDetailData = array();
                 $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
                 $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
+                $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
                 $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
                 $InvoiceDetailData['Description'] = $ProductDescription.' Activation Fee';
                 $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
@@ -1288,6 +1291,7 @@ class Invoice extends \Eloquent {
             $InvoiceDetailData = array();
             $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
             $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
+            $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
             $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
             $InvoiceDetailData['Description'] = $ProductDescription;
             $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
@@ -1392,6 +1396,7 @@ class Invoice extends \Eloquent {
                 $InvoiceDetailData = array();
                 $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
                 $InvoiceDetailData['ProductID'] = $AccountOneOffCharge->ProductID;
+                $InvoiceDetailData['ServiceID'] = $AccountOneOffCharge->ServiceID;
                 $InvoiceDetailData['ProductType'] = Product::ONEOFFCHARGE;
                 $InvoiceDetailData['Description'] = $ProductDescription ;
                 $InvoiceDetailData['StartDate'] = $AccountOneOffCharge->Date;
@@ -1703,5 +1708,102 @@ class Invoice extends \Eloquent {
             }
         }
         return $Message;
+    }
+
+    public static function getServiceUsageTotal($usage_data){
+        $service_usage_data = array();
+        foreach($usage_data as $usage_data_row){
+            $ServiceID = $usage_data_row['ServiceID'];
+            if(isset($service_usage_data[$ServiceID])){
+                $service_usage_data[$ServiceID]['usage_cost'] +=  $usage_data_row['cost'];
+            }else{
+                $service_usage_data[$ServiceID]['usage_cost'] =  $usage_data_row['cost'];
+            }
+        }
+        return $service_usage_data;
+    }
+    public static function getServiceSubscriptionTotal($InvoiceDetail){
+        $service_sub_data = array();
+        foreach($InvoiceDetail as $InvoiceDetailRow){
+            if($InvoiceDetailRow->ProductType == Product::SUBSCRIPTION) {
+                $ServiceID = $InvoiceDetailRow->ServiceID;
+                if (isset($service_sub_data[$ServiceID])) {
+                    $service_sub_data[$ServiceID]['sub_cost'] += $InvoiceDetailRow->LineTotal;
+                } else {
+                    $service_sub_data[$ServiceID]['sub_cost'] = $InvoiceDetailRow->LineTotal;
+                }
+            }
+        }
+        return $service_sub_data;
+    }
+
+    public static function getServiceAdditionalTotal($InvoiceDetail){
+        $service_add_data = array();
+        foreach($InvoiceDetail as $InvoiceDetailRow){
+            if($InvoiceDetailRow->ProductType == Product::ONEOFFCHARGE) {
+                $ServiceID = $InvoiceDetailRow->ServiceID;
+                if (isset($service_add_data[$ServiceID])) {
+                    $service_add_data[$ServiceID]['add_cost'] += $InvoiceDetailRow->LineTotal;
+                } else {
+                    $service_add_data[$ServiceID]['add_cost'] = $InvoiceDetailRow->LineTotal;
+                }
+            }
+        }
+        return $service_add_data;
+    }
+
+    public static function getServiceData($AccountID,$ServiceID,$usage_data,$InvoiceDetail){
+        $service_data = array();
+        $service_usage_data = self::getServiceUsageTotal($usage_data);
+        $service_sub_data = self::getServiceSubscriptionTotal($InvoiceDetail);
+        $service_add_data = self::getServiceAdditionalTotal($InvoiceDetail);
+        $query = "CALL prc_getAccountService(?,?)";
+        $Accountservices = DB::select($query,array($AccountID,$ServiceID));
+
+
+        /** service applied at account level*/
+        foreach($Accountservices as $Accountservice){
+            $Account_ServiceID = $Accountservice->ServiceID;
+            if(isset($service_usage_data[$Account_ServiceID]) || isset($service_sub_data[$Account_ServiceID]) || isset($service_add_data[$Account_ServiceID])){
+                if(isset($service_usage_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['usage_cost'] = $service_usage_data[$Account_ServiceID]['usage_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['usage_cost'] = 0;
+                }
+                if(isset($service_sub_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['sub_cost'] = $service_sub_data[$Account_ServiceID]['sub_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['sub_cost'] = 0;
+                }
+                if(isset($service_add_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['add_cost'] = $service_add_data[$Account_ServiceID]['add_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['add_cost'] = 0;
+                }
+                $service_data[$Account_ServiceID]['name'] = AccountService::getServiceName($AccountID, $Account_ServiceID);;
+            }
+        }
+
+        /** default service with name other */
+        if(isset($service_usage_data[0]) || isset($service_sub_data[0]) || isset($service_add_data[0])){
+            if(isset($service_usage_data[0])){
+                $service_data[0]['usage_cost'] = $service_usage_data[0]['usage_cost'];
+            }else{
+                $service_data[0]['usage_cost'] = 0;
+            }
+            if(isset($service_sub_data[0])){
+                $service_data[0]['sub_cost'] = $service_sub_data[0]['sub_cost'];
+            }else{
+                $service_data[0]['sub_cost'] = 0;
+            }
+            if(isset($service_add_data[0])){
+                $service_data[0]['add_cost'] = $service_add_data[0]['add_cost'];
+            }else{
+                $service_data[0]['add_cost'] = 0;
+            }
+            $service_data[0]['name'] = Service::$defaultService;
+
+        }
+        return $service_data;
     }
 }

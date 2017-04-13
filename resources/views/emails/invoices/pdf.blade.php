@@ -1,7 +1,7 @@
 @extends('layout.print')
 
 @section('content')
-    <link rel="stylesheet" type="text/css" href="<?php echo URL::to('/'); ?>/assets/css/invoicetemplate/invoicestyle.css" />
+    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/invoicestyle.css'}}" />
 <style type="text/css">
     .invoice,
     .invoice table,.invoice table td,.invoice table th,
@@ -41,20 +41,9 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
-    $is_sub = $is_charge = false;
-    $subscriptiontotal = $chargetotal =$useagetotal= 0;
-    $subscriptionarray= array();
+
     foreach($InvoiceDetail as $ProductRow){
-        if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION){
-            $subscriptiontotal += $ProductRow->LineTotal;
-            $is_sub = true;
-        }
-        if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE){
-            $chargetotal += $ProductRow->LineTotal;
-            $is_charge = true;
-        }
         if($ProductRow->ProductType == \App\Lib\Product::USAGE){
-            $useagetotal += $ProductRow->LineTotal;
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
@@ -100,27 +89,15 @@
             </tr>
             </thead>
             <tbody>
+            @foreach($service_data as $service)
             <tr>
-                <td class="desc">Service - 1</td>
-                <td class="desc">$1,200.00</td>
-                <td class="desc">$1,000.00</td>
-                <td class="desc">$1,000.00</td>
-                <td class="total">$3,200.00</td>
+                <td class="desc">{{$service['name']}}</td>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</td>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</td>
+                <td class="total">{{$CurrencySymbol}}{{number_format($service['usage_cost']+$service['sub_cost']+$service['add_cost'],$RoundChargesAmount)}}</td>
             </tr>
-            <tr>
-                <td class="desc">Service - 2</td>
-                <td class="desc">$1,200.00</td>
-                <td class="desc">$1,000.00</td>
-                <td class="desc">$1,000.00</td>
-                <td class="total">$3,200.00</td>
-            </tr>
-            <tr>
-                <td class="desc">Other Service</td>
-                <td class="desc">$400.00</td>
-                <td class="desc">$400.00</td>
-                <td class="desc">$400.00</td>
-                <td class="total">$1,200.00</td>
-            </tr>
+            @endforeach
 
             <!-- need here end loop of service -->
 
@@ -176,15 +153,27 @@
 
     <div class="page_break"> </div>
     <br/>
+    @foreach($service_data as $ServiceID => $service)
+        <?php
+        $is_sub = $is_charge = false;
+        foreach($InvoiceDetail as $ProductRow){
+            if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION && $ProductRow->ServiceID == $ServiceID){
+                $is_sub = true;
+            }
+            if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE && $ProductRow->ServiceID == $ServiceID){
+                $is_charge = true;
+            }
+        }
+        ?>
     <header class="clearfix">
         <div id="Service">
-            <h1>Service 1</h1>
+            <h1>{{$service['name']}}</h1>
         </div>
     </header>
     <main>
         <div class="ChargesTitle clearfix">
             <div style="float:left;">Usage</div>
-            <div style="text-align:right;float:right;">$6.20</div>
+            <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
@@ -199,76 +188,93 @@
             </tr>
             </thead>
             <tbody>
-            <tr>
-                <td class="leftalign">Usage</td>
-                <td class="leftalign">From 01-01-2017 To 31-01-2017</td>
-                <td class="rightalign">1.24</td>
-                <td class="rightalign">1</td>
-                <td class="leftalign">01-01-2017</td>
-                <td class="leftalign">31-01-2017</td>
-                <td class="rightalign">1.24</td>
-            </tr>
+            @foreach($InvoiceDetail as $ProductRow)
+                @if($ProductRow->ProductType == \App\Lib\Product::USAGE && isset($service['usage_cost']))
+                    <tr>
+                        <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+                        <td class="leftalign">{{$ProductRow->Description}}</td>
+                        <td class="rightalign">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                        <td class="rightalign">{{$ProductRow->Qty}}</td>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                        <td class="rightalign">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
+                    </tr>
+                @endif
+            @endforeach
             </tbody>
         </table>
 
-        <div class="ChargesTitle clearfix">
-            <div style="float:left;">Recurring</div>
-            <div style="text-align:right;float:right;">$99.87</div>
-        </div>
+        @if($is_sub)
+            <div class="ChargesTitle clearfix">
+                <div style="float:left;">Recurring</div>
+                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</div>
+            </div>
 
-        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
-            <thead>
-            <tr>
-                <th class="leftalign">Title</th>
-                <th class="leftalign">Description</th>
-                <th class="rightalign">Price</th>
-                <th class="rightalign">Qty</th>
-                <th class="leftalign">Date From</th>
-                <th class="leftalign">Date To</th>
-                <th class="rightalign">Total</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td class="leftalign">WT Premium - £5.99 - NO IPPHONE</td>
-                <td class="leftalign">WT Premium - £5.99 - NO IPPHONE</td>
-                <td class="rightalign">5.99</td>
-                <td class="rightalign">12</td>
-                <td class="leftalign">01-02-2017</td>
-                <td class="leftalign">28-02-2017</td>
-                <td class="rightalign">71.88</td>
-            </tr>
-            </tbody>
-        </table>
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">Title</th>
+                    <th class="leftalign">Description</th>
+                    <th class="rightalign">Price</th>
+                    <th class="rightalign">Qty</th>
+                    <th class="leftalign">Date From</th>
+                    <th class="leftalign">Date To</th>
+                    <th class="rightalign">Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($InvoiceDetail as $ProductRow)
+                    @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION && $ProductRow->ServiceID == $ServiceID)
+                        <tr>
+                            <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+                            <td class="leftalign">{{$ProductRow->Description}}</td>
+                            <td class="rightalign">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="rightalign">{{$ProductRow->Qty}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                            <td class="rightalign">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
+                        </tr>
+                    @endif
+                @endforeach
+                </tbody>
+            </table>
+        @endif
 
-        <div class="ChargesTitle clearfix">
-            <div style="float:left;">Additional</div>
-            <div style="text-align:right;float:right;">$32.00</div>
-        </div>
+        @if($is_charge)
+            <div class="ChargesTitle clearfix">
+                <div style="float:left;">Additional</div>
+                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</div>
+            </div>
 
-        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
-            <thead>
-            <tr>
-                <th class="leftalign">Title</th>
-                <th class="leftalign">Description</th>
-                <th class="rightalign">Price</th>
-                <th class="rightalign">Qty</th>
-                <th class="leftalign">Date</th>
-                <th class="rightalign">Total</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td class="leftalign">PBXSETUP</td>
-                <td class="leftalign">SETUP COST PER USER</td>
-                <td class="rightalign">10.00</td>
-                <td class="rightalign">2</td>
-                <td class="leftalign">28-02-2017</td>
-                <td class="rightalign">20.00</td>
-            </tr>
-            </tbody>
-        </table>
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">Title</th>
+                    <th class="leftalign">Description</th>
+                    <th class="rightalign">Price</th>
+                    <th class="rightalign">Qty</th>
+                    <th class="leftalign">Date</th>
+                    <th class="rightalign">Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($InvoiceDetail as $ProductRow)
+                    @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE && $ProductRow->ServiceID == $ServiceID)
+                        <tr>
+                            <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
+                            <td class="leftalign">{{$ProductRow->Description}}</td>
+                            <td class="rightalign">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="rightalign">{{$ProductRow->Qty}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                            <td class="rightalign">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
+                        </tr>
+                    @endif
+                @endforeach
+                </tbody>
+            </table>
+        @endif
     </main>
+    @endforeach
 
     <!-- service section end -->
 

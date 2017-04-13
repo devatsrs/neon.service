@@ -14,6 +14,8 @@ class Service extends \Eloquent {
         'Status' =>     'between:0,1',
     );
 
+    public static $defaultService = 'Other Service';
+
     public static $ServiceType = array(""=>"Select", "voice"=>"Voice", "data"=>"Data", "sms"=>"SMS");
 
     public static function getServiceID($CompanyID,$ServiceType){
@@ -21,6 +23,11 @@ class Service extends \Eloquent {
     }
     public static function getGatewayServiceID($CompanyGatewayID){
         return Service::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('ServiceID');
+    }
+
+    public static function getServiceName($ServiceID){
+        return Service::where(array('ServiceID'=>$ServiceID))->pluck('ServiceName');
+
     }
 
 }
