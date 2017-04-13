@@ -692,6 +692,14 @@ protected $server;
 		/* close the connection */
 		imap_close($inbox);
 		Log::info("reading emails completed");
+
+		try {
+			TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+		} catch (Exception $ex) {
+			Log::info("fail TicketSla::assignSlaToTicket");
+			Log::info($ex);
+		}
+
 	}
 	
 	
