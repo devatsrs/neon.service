@@ -52,7 +52,8 @@
     $message = $InvoiceTemplate->InvoiceTo;
 
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
-    $return_message = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
+    $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
+    $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
     ?>
 
