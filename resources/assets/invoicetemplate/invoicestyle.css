@@ -54,6 +54,7 @@ header {
   padding-left: 6px;
   border-left: 6px solid #555555;
   float: left;
+  width:48%;
 }
 
 #client .to {
@@ -70,6 +71,7 @@ h2.name {
 #invoice {
   float: right;
   text-align: right;
+  width:48%;
 }
 
 #invoice h1 {
