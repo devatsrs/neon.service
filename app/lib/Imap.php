@@ -225,9 +225,12 @@ protected $server;
 				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
 				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
 				
-				if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
+				/*if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
 					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
-				}
+				}*/
+				if (!file_exists($UPLOADPATH.'/'.$amazonPath)){
+                    mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
+           	  }
 				
 				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $email_number . "-" . $file_name;
 				$filepath2  =  $amazonPath . $email_number . "-" . $file_name; 
@@ -733,10 +736,9 @@ protected $server;
 				
 				$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
 				$dataImage = file_get_contents($filepath);
-				$base64 = 'data:image/' . $typeImage . ';base64,' . base64_encode($dataImage);		
 				//@unlink($filepath);
 				///				
-				
+				Log::info("amazonPath:".$amazonPath);
 				if(is_amazon($CompanyID)){
 					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
 						throw new \Exception('Error in Amazon upload');	
@@ -744,14 +746,17 @@ protected $server;
 				}
 				
 				
-				
-				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID);
+				Log::info("filepath2:".$filepath2); 
+				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID); 
+				 
                 if (!is_numeric(strpos($path, "https://"))) {
                     //$path = str_replace('/', '\\', $path);
-					$path2 = CompanyConfiguration::get($CompanyID,'WEB_PATH')."/public";
-                    if (copy($filepath, $path2.'./uploads/' . basename($filepath))) {
-                        $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
-                    }
+					
+					$path2 = CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=";
+                    //if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
+                     //   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+                   // } 
+				   $path = $path2.base64_encode($filepath2); 
                 }
 				
 				$search[] = "src=\"cid:$match\"";
