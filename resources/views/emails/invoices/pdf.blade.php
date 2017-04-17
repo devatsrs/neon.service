@@ -348,8 +348,8 @@
                 ?>
                 @foreach($usage_data_table['data'] as $row)
                     <?php
-                    $totalBillDuration  +=  $row['billed_duration'];
-                    $totalTotalCharges  += $row['cost'];
+                    $totalBillDuration  +=  $row['BilledDuration'];
+                    $totalTotalCharges  += $row['ChargedAmount'];
                     ?>
                     <tr>
                         @foreach($usage_data_table['header'] as $table_h_row)
