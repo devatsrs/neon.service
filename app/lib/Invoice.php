@@ -44,6 +44,19 @@ class Invoice extends \Eloquent {
      */
     public static function generate_usage_file($InvoiceID,$usage_data,$start_date,$end_date){
 
+        /** remove extra columns*/
+        foreach($usage_data as $usage_data_row){
+            if(isset($usage_data_row['DurationInSec'])){
+                unset($usage_data_row['DurationInSec']);
+            }
+            if(isset($usage_data_row['BillDurationInSec'])){
+                unset($usage_data_row['BillDurationInSec']);
+            }
+            if(isset($usage_data_row['ServiceID'])){
+                unset($usage_data_row['ServiceID']);
+            }
+        }
+
         if(!empty($InvoiceID)) {
             $fullPath = "";
             $Invoice = Invoice::find($InvoiceID);
@@ -445,6 +458,7 @@ class Invoice extends \Eloquent {
             file_put_contents($logo, file_get_contents($as3url));
 
             $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
+            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
 
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
@@ -463,7 +477,7 @@ class Invoice extends \Eloquent {
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
 			
             if(empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }else {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
             }
@@ -1805,5 +1819,32 @@ class Invoice extends \Eloquent {
 
         }
         return $service_data;
+    }
+
+    public static function usageDataTable($usage_data,$InvoiceTemplate){
+        $usage_data_table = array();
+        //$InvoiceTemplate = InvoiceTemplate::find(1);
+        $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+        if(count($usage_data)) {
+            if (isset($usage_data[0]['AreaPrefix'])) {
+                $UsageColumn = $UsageColumn['Summary'];
+            } else {
+                $UsageColumn = $UsageColumn['Detail'];
+            }
+            $usage_data_table['header'] = $UsageColumn;
+            $order = array();
+            foreach($UsageColumn as $UsageColumnRow){
+                if($UsageColumnRow['Title'] == 'AreaPrefix'){
+                    $order[] = 'Prefix';
+                }else {
+                    $order[] = $UsageColumnRow['Title'];
+                }
+            }
+            foreach($usage_data as $row_key =>$usage_data_row){
+                $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
+            }
+            $usage_data_table['data'] = $usage_data;
+        }
+        return $usage_data_table;
     }
 }
