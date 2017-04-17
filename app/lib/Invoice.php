@@ -516,6 +516,7 @@ class Invoice extends \Eloquent {
             Log::info($output);
             Log::info($local_htmlfile);
             @unlink($local_htmlfile);
+            @unlink($header_html);
             @unlink($footer_html);
             if (file_exists($local_file)) {
                 $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
