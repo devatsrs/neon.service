@@ -1824,6 +1824,8 @@ class Invoice extends \Eloquent {
 
     public static function usageDataTable($usage_data,$InvoiceTemplate){
         $usage_data_table = array();
+        $usage_data_table['data'] = array();
+        $usage_data_table['header'] =array();
         //$InvoiceTemplate = InvoiceTemplate::find(1);
         $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
         if(count($usage_data)) {
