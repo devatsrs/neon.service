@@ -1730,9 +1730,9 @@ class Invoice extends \Eloquent {
         foreach($usage_data as $usage_data_row){
             $ServiceID = $usage_data_row['ServiceID'];
             if(isset($service_usage_data[$ServiceID])){
-                $service_usage_data[$ServiceID]['usage_cost'] +=  $usage_data_row['cost'];
+                $service_usage_data[$ServiceID]['usage_cost'] +=  $usage_data_row['ChargedAmount'];
             }else{
-                $service_usage_data[$ServiceID]['usage_cost'] =  $usage_data_row['cost'];
+                $service_usage_data[$ServiceID]['usage_cost'] =  $usage_data_row['ChargedAmount'];
             }
         }
         return $service_usage_data;
