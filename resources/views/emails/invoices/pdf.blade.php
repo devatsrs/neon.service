@@ -169,9 +169,10 @@
     <!-- adevrtisement and terms section end -->
 
     <!-- need to impliment service brack login -->
-
+    @if($InvoiceTemplate->ServiceSplit==0)
     <div class="page_break"> </div>
     <br/>
+    @endif
     @foreach($service_data as $ServiceID => $service)
         <?php
         $is_sub = $is_charge = false;
@@ -184,6 +185,11 @@
             }
         }
         ?>
+
+        @if($InvoiceTemplate->ServiceSplit==1)
+            <div class="page_break"> </div>
+            <br/>
+        @endif
     <header class="clearfix">
         <div id="Service">
             <h1>{{$service['name']}}</h1>
