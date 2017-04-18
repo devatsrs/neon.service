@@ -1854,21 +1854,29 @@ class Invoice extends \Eloquent {
     public static function usageDataTable($usage_data,$InvoiceTemplate){
         $usage_data_table = array();
         $usage_data_table['header'] =array();
-        //$InvoiceTemplate = InvoiceTemplate::find(1);
-        $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+        $InvoiceTemplate = InvoiceTemplate::find(1);
+        if(empty($InvoiceTemplate->UsageColumn)){
+            $UsageColumn = InvoiceTemplate::defaultUsageColumns();
+        }else{
+            $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+        }
+
         if(count($usage_data)) {
             if (isset($usage_data[0]['AreaPrefix'])) {
                 $UsageColumn = $UsageColumn['Summary'];
             } else {
                 $UsageColumn = $UsageColumn['Detail'];
             }
-            $usage_data_table['header'] = $UsageColumn;
+
             $order = array();
             foreach($UsageColumn as $UsageColumnRow){
-                if($UsageColumnRow['Title'] == 'AreaPrefix'){
-                    $order[] = 'Prefix';
-                }else {
-                    $order[] = $UsageColumnRow['Title'];
+                if($UsageColumnRow['Status']=='true') {
+                    if ($UsageColumnRow['Title'] == 'AreaPrefix') {
+                        $order[] = 'Prefix';
+                    } else {
+                        $order[] = $UsageColumnRow['Title'];
+                    }
+                    $usage_data_table['header'][] = $UsageColumnRow;
                 }
             }
             foreach($usage_data as $row_key =>$usage_data_row){
