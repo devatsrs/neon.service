@@ -306,7 +306,7 @@ class TicketEmails{
 				}
 			}
 			
-			if(!$send)	{return true;}
+			if(!$send)	{return 0;}
 			
 			$sendto						=	   $RespondedVoilation->Value; 
 			if($RespondedVoilation->Value =='0'){
@@ -342,16 +342,19 @@ class TicketEmails{
 			
 			if($status['status']){
 				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
-				return true;
+				return 1;
 			}else{
 				$this->SetError($status['message']);
 			}						
 	}
 	
-	protected function AgentResolveSlaVoilation(){		
+	protected function AgentResolveSlaVoilation()
+	{		
 			$this->slug					=		"AgentResponseSlaVoilation";
 			$send 						=		0;
 			$sendemails					=		'';
+			$sendarray					=		array();
+			
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
@@ -359,50 +362,52 @@ class TicketEmails{
 			
 			$ResolveVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$ResolvedVoilationType])->select(['Time','Value'])->get();	
 			
-			
-			
 			//Log::info(print_r($ResolveVoilation,true));
-			if(count($ResolveVoilation)<1){return true;}
+			if(count($ResolveVoilation)<1){return 0;}
 			
-			foreach($ResolveVoilation as $SingleResolveVoilationData)
+			foreach($ResolveVoilation as $key => $SingleResolveVoilationData)
 			{
 				if($SingleResolveVoilationData->Time=='immediately')
 				{
 					$send = 1;
+					$sendarray[$key]['send'] =  1;
 				}
 				else
 				{
 					$DateSend  = new \DateTime($this->ResolveTime);
 					$DateSend->modify('+'.$SingleResolveVoilationData->Time);
-					$SendDate  =  $DateSend->format('Y-m-d H:i');   Log::info('SendDate:'.print_r($SendDate,true));
+					$SendDate  =  $DateSend->format('Y-m-d H:i');   
 					if($SendDate>date('y-m-d H:i')){
-						$send =1;
+						$sendarray[$key]['send'] =  1;
+					}
+				}				
+				
+				if($sendarray[$key]['send']==1)
+				{
+					$sendto		=	   $SingleResolveVoilationData->Value; 
+					if($SingleResolveVoilationData->Value =='0')
+					{
+							$sendemails 		=	$this->Agent->EmailAddress; 
+					}
+					else
+					{ 
+						$sendids = explode(',',$SingleResolveVoilationData->Value); 
+						
+						foreach($sendids as $agentsID){ 
+							if($agentsID==0){
+								$sendemails[] =	$this->Agent->EmailAddress; 	
+								continue;
+							}
+							$userdata = 	User::find($agentsID);
+							if($userdata){							
+								$sendemails[] =	$userdata->EmailAddress; 
+							}			
+						} 
 					}
 				}
-				if(!$send)	{return true;}
-				
 			}
-			
-			
-			
-			$sendto						=	   $ResolveVoilation->Value; 
-			if($ResolveVoilation->Value =='0'){
-					$sendemails 		=	$this->Agent->EmailAddress; 
-			}else{ 
-				$sendids = explode(',',$ResolveVoilation->Value); 
-				
-				foreach($sendids as $agentsID){ 
-					if($agentsID==0){
-						$sendemails[] =	$this->Agent->EmailAddress; 	
-						continue;
-					}
-					$userdata = 	User::find($agentsID);
-					if($userdata){							
-						$sendemails[] =	$userdata->EmailAddress; 
-					}			
-				} 
-			}	
-			
+				$sendemails= array_unique($sendemails);
+				if(count($sendarray)<1){return 0;}
 			
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -411,7 +416,7 @@ class TicketEmails{
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+            $emailData['EmailTo'] 		= 		$sendemails;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
@@ -419,6 +424,7 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
 			if($status['status']){
+					return 1;
 				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{
 				$this->SetError($status['message']);
