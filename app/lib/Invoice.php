@@ -1650,7 +1650,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
                         $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
-                        $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
+                        $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
                         $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
                         $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
                     } else {

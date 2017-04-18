@@ -332,14 +332,14 @@
                         $totalCalls  += $row['NoOfCalls'];
                         $totalDuration  += $row['DurationInSec'];
                         $totalBillDuration  += $row['BillDurationInSec'];
-                        $totalTotalCharges  += $row['TotalCharges'];
+                        $totalTotalCharges  += $row['ChargedAmount'];
                         ?>
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 @if($table_h_row['Title'] == 'TotalCharges')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$RoundChargesAmount)}}</td>
+                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['TotalCharges']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
                                 @else
                                     <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
                                 @endif
