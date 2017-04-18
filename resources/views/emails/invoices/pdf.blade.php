@@ -7,7 +7,7 @@
         background-color: #f5f5f6;
         font-size: 12px;
     }
-    .bg_graycolor th,td{
+    .bg_graycolor th, .bg_graycolor td{
         border: 1px solid #dddddd;
     }
     .invoice,
@@ -28,6 +28,17 @@
         }
     }
     .page_break{page-break-after: always;}
+    tr {
+        page-break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group
+    }
+
+    tfoot {
+        display: table-row-group
+    }
 </style>
 <div class="inovicebody">
     <!-- logo and invoice from section start-->
@@ -285,99 +296,112 @@
     @endforeach
 
     <!-- service section end -->
-    @if(count($usage_data_table['data']) > 0 && $AccountBilling->CDRType != \App\Lib\Account::NO_CDR)
+    @foreach($service_data as $ServiceID => $service)
+        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $AccountBilling->CDRType != \App\Lib\Account::NO_CDR)
 
-        <div class="page_break"></div>
-        <br />
-        <br />
+            <div class="page_break"></div>
+            <br />
+            <br />
 
 
-        <h2 class="centeralign">Usage</h2>
-        @if($AccountBilling->CDRType == \App\Lib\Account::SUMMARY_CDR)
-            <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
-                <tr>
-                    @foreach($usage_data_table['header'] as $row)
-                        <th class="centeralign">{{$row['UsageName']}}</th>
-                    @endforeach
-                </tr>
-                <?php
-                $totalCalls=0;
-                $totalDuration=0;
-                $totalBillDuration=0;
-                $totalTotalCharges=0;
-                ?>
-                @foreach($usage_data_table['data'] as $row)
-                    <?php
-                    $totalCalls  += $row['NoOfCalls'];
-                    $totalDuration  += $row['DurationInSec'];
-                    $totalBillDuration  += $row['BillDurationInSec'];
-                    $totalTotalCharges  += $row['TotalCharges'];
-                    ?>
+                <header class="clearfix">
+                    <div id="Service">
+                        <h1>{{$service['name']}}</h1>
+                    </div>
+                </header>
+                <main>
+                    <div class="ChargesTitle clearfix">
+                        <div style="float:left;">Usage</div>
+                    </div>
+
+            @if($AccountBilling->CDRType == \App\Lib\Account::SUMMARY_CDR)
+                <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
-                        @foreach($usage_data_table['header'] as $table_h_row)
-                            @if($table_h_row['Title'] == 'TotalCharges')
-                                <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$RoundChargesAmount)}}</td>
-                            @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['TotalCharges']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
-                            @else
-                                <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
-                            @endif
-                        @endforeach
-
-                    </tr>
-                @endforeach
-                <?php
-                $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
-                $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
-                ?>
-                <tr>
-                    <th class="rightalign" colspan="4"><strong>Total</strong></th>
-                    <th>{{$totalCalls}}</th>
-                    <th>{{$totalDuration}}</th>
-                    <th class="centeralign">{{$totalBillDuration}}</th>
-                    <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
-                    <th></th>
-                </tr>
-            </table>
-        @endif
-
-
-        @if($AccountBilling->CDRType == \App\Lib\Account::DETAIL_CDR)
-            <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
-                <tr>
-                    @foreach($usage_data_table['header'] as $row)
-                        <th class="centeralign">{{$row['UsageName']}}</th>
-                    @endforeach
-                </tr>
-                <?php
-                $totalBillDuration=0;
-                $totalTotalCharges=0;
-                ?>
-                @foreach($usage_data_table['data'] as $row)
-                    <?php
-                    $totalBillDuration  +=  $row['BilledDuration'];
-                    $totalTotalCharges  += $row['ChargedAmount'];
-                    ?>
-                    <tr>
-                        @foreach($usage_data_table['header'] as $table_h_row)
-                            @if($table_h_row['Title'] == 'ChargedAmount')
-                                <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
-                            @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
-                                <td class="centeralign">{{substr($row[$table_h_row['Title']],1)}}</td>
-                            @else
-                                <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
-                            @endif
+                        @foreach($usage_data_table['header'] as $row)
+                            <th class="centeralign">{{$row['UsageName']}}</th>
                         @endforeach
                     </tr>
-                @endforeach
-                <tr>
-                    <th class="rightalign" colspan="5"><strong>Total</strong></th>
-                    <th class="centeralign">{{$totalBillDuration}}</th>
-                    <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
-                </tr>
-            </table>
-        @endif
+                    <?php
+                    $totalCalls=0;
+                    $totalDuration=0;
+                    $totalBillDuration=0;
+                    $totalTotalCharges=0;
+                    ?>
+                    @foreach($usage_data_table['data'][$ServiceID] as $row)
+                        <?php
+                        $totalCalls  += $row['NoOfCalls'];
+                        $totalDuration  += $row['DurationInSec'];
+                        $totalBillDuration  += $row['BillDurationInSec'];
+                        $totalTotalCharges  += $row['TotalCharges'];
+                        ?>
+                        <tr>
+                            @foreach($usage_data_table['header'] as $table_h_row)
+                                @if($table_h_row['Title'] == 'TotalCharges')
+                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['TotalCharges'],$RoundChargesAmount)}}</td>
+                                @elseif($table_h_row['Title'] == 'AvgRatePerMin')
+                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['TotalCharges']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                @else
+                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                @endif
+                            @endforeach
 
-    @endif
+                        </tr>
+                    @endforeach
+                    <?php
+                    $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
+                    $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
+                    ?>
+                    <tr>
+                        <th class="rightalign" colspan="4"><strong>Total</strong></th>
+                        <th>{{$totalCalls}}</th>
+                        <th>{{$totalDuration}}</th>
+                        <th class="centeralign">{{$totalBillDuration}}</th>
+                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                        <th></th>
+                    </tr>
+                </table>
+            @endif
+
+
+            @if($AccountBilling->CDRType == \App\Lib\Account::DETAIL_CDR)
+                <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
+                    <tr>
+                        @foreach($usage_data_table['header'] as $row)
+                            <th class="centeralign">{{$row['UsageName']}}</th>
+                        @endforeach
+                    </tr>
+                    <?php
+                    $totalBillDuration=0;
+                    $totalTotalCharges=0;
+                    ?>
+                    @foreach($usage_data_table['data'] as $row)
+                        <?php
+                        $totalBillDuration  +=  $row['BilledDuration'];
+                        $totalTotalCharges  += $row['ChargedAmount'];
+                        ?>
+                        <tr>
+                            @foreach($usage_data_table['header'] as $table_h_row)
+                                @if($table_h_row['Title'] == 'ChargedAmount')
+                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
+                                    <td class="centeralign">{{substr($row[$table_h_row['Title']],1)}}</td>
+                                @else
+                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                @endif
+                            @endforeach
+                        </tr>
+                    @endforeach
+                    <tr>
+                        <th class="rightalign" colspan="5"><strong>Total</strong></th>
+                        <th class="centeralign">{{$totalBillDuration}}</th>
+                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                    </tr>
+                </table>
+            @endif
+                </main>
+
+
+        @endif
+    @endforeach
 
  @stop

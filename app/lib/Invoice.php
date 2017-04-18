@@ -1824,7 +1824,6 @@ class Invoice extends \Eloquent {
 
     public static function usageDataTable($usage_data,$InvoiceTemplate){
         $usage_data_table = array();
-        $usage_data_table['data'] = array();
         $usage_data_table['header'] =array();
         //$InvoiceTemplate = InvoiceTemplate::find(1);
         $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
@@ -1845,8 +1844,13 @@ class Invoice extends \Eloquent {
             }
             foreach($usage_data as $row_key =>$usage_data_row){
                 $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
+                $ServiceID = $usage_data[$row_key]['ServiceID'];
+                if(isset($service_usage_data[$ServiceID])){
+                    $usage_data_table['data'][$ServiceID][] =  $usage_data[$row_key];
+                }else{
+                    $usage_data_table['data'][$ServiceID][] =  $usage_data[$row_key];
+                }
             }
-            $usage_data_table['data'] = $usage_data;
         }
         return $usage_data_table;
     }
