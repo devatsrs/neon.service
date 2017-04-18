@@ -75,6 +75,9 @@ class Invoice extends \Eloquent {
                             if (isset($usage_data_row['ServiceID'])) {
                                 unset($usage_data_row['ServiceID']);
                             }
+
+                            $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+
                             $usage_data[$row_key] = $usage_data_row;
                         }
 
@@ -1879,6 +1882,7 @@ class Invoice extends \Eloquent {
                     $usage_data_table['header'][] = $UsageColumnRow;
                 }
             }
+            $usage_data_table['order']=$order;
             foreach($usage_data as $row_key =>$usage_data_row){
                 $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
                 $ServiceID = $usage_data[$row_key]['ServiceID'];
