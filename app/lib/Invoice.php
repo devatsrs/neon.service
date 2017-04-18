@@ -78,7 +78,12 @@ class Invoice extends \Eloquent {
                             $usage_data[$row_key] = $usage_data_row;
                         }
 
-                        $ServiceTitle = AccountService::getServiceName($AccountID,$ServiceID);
+                        if($ServiceID==0){
+                            $ServiceTitle = Service::$defaultService;
+                        }else{
+                            $ServiceTitle = AccountService::getServiceName($AccountID,$ServiceID);
+                        }
+
                         $local_file = $dir . '/' . str_slug($ServiceTitle) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
 
                         $output = Helper::array_to_csv($usage_data);
