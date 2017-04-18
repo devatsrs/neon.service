@@ -352,20 +352,18 @@
                     $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
                     ?>
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 3}}"></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
                         <th>Total Calls</th>
                         <th>Total Duration</th>
                         <th class="centeralign">Total Billed Duration</th>
                         <th class="centeralign">Total Charge</th>
-                        <th></th>
                     </tr>
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 3}}"><strong>Total</strong></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"><strong>Total</strong></th>
                         <th>{{$totalCalls}}</th>
                         <th>{{$totalDuration}}</th>
                         <th class="centeralign">{{$totalBillDuration}}</th>
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
-                        <th></th>
                     </tr>
                 </table>
             @endif
@@ -400,13 +398,12 @@
                         </tr>
                     @endforeach
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 3}}"></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
                         <th class="centeralign">Total Billed Duration</th>
                         <th class="centeralign">Total Charge</th>
-                        <th></th>
                     </tr>
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 3}}"><strong>Total</strong></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"><strong>Total</strong></th>
                         <th class="centeralign">{{$totalBillDuration}}</th>
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>
