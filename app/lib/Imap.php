@@ -510,8 +510,19 @@ protected $server;
 					$prioritytxt2 =  explode(" (",$prioritytxt[0]);						
 					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:1;
 				}
-				
-				//if(!empty($msg_parent) || !empty($msg_parentconversation)){  // if email is reply of an ticket or conversation					
+
+				//If parent email is not found based on in_reply_to
+				if(empty($msg_parent)){
+
+					//Match the subject with all emails.
+					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
+					if(!empty($original_plain_subject)){
+						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
+						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
+
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(created_at, INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+					}
+				}
 				if(!empty($msg_parent)){  		
 						if($msg_parent->EmailParent==0){
 							$parent = $msg_parent->AccountEmailLogID;                        
@@ -773,6 +784,23 @@ protected $server;
 		}
 		return $emailMessage->bodyHTML;
 	}
-	
+
+	/**
+	 *  Replace FWD: RE: kind of prefix from subject to be matched with orginal subject
+	 * @param string $subject
+	 * @return mixed
+	 */
+	public static function get_original_plain_subject($subject = '') {
+
+		$find = [
+			"/^RE:/",
+			"/^FWD:/",
+		];
+
+		$replace = 1; // replace first occurrence
+
+		return preg_replace($find,"",$subject,$replace);
+	}
+
 }
 ?>
