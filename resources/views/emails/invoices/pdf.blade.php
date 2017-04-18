@@ -374,7 +374,7 @@
                     $totalBillDuration=0;
                     $totalTotalCharges=0;
                     ?>
-                    @foreach($usage_data_table['data'] as $row)
+                    @foreach($usage_data_table['data'][$ServiceID] as $row)
                         <?php
                         $totalBillDuration  +=  $row['BilledDuration'];
                         $totalTotalCharges  += $row['ChargedAmount'];
