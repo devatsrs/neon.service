@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 
+use Chumper\Zipper\Facades\Zipper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -42,20 +43,9 @@ class Invoice extends \Eloquent {
     /**
      *  Generate Usage file Upload and update Amazon path in Invoice Table
      */
-    public static function generate_usage_file($InvoiceID,$usage_data,$start_date,$end_date){
+    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date){
 
-        /** remove extra columns*/
-        foreach($usage_data as $usage_data_row){
-            if(isset($usage_data_row['DurationInSec'])){
-                unset($usage_data_row['DurationInSec']);
-            }
-            if(isset($usage_data_row['BillDurationInSec'])){
-                unset($usage_data_row['BillDurationInSec']);
-            }
-            if(isset($usage_data_row['ServiceID'])){
-                unset($usage_data_row['ServiceID']);
-            }
-        }
+        $zipfiles = array();
 
         if(!empty($InvoiceID)) {
             $fullPath = "";
@@ -72,21 +62,51 @@ class Invoice extends \Eloquent {
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                    $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
-                    $output = Helper::array_to_csv($usage_data);
-                    file_put_contents($local_file, $output);
-                    if (file_exists($local_file)) {
-                        $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath, $CompanyID)) {
+                    foreach($usage_data_table['data'] as $ServiceID => $usage_data) {
+
+                        /** remove extra columns*/
+                        foreach ($usage_data as $row_key => $usage_data_row) {
+                            if (isset($usage_data_row['DurationInSec'])) {
+                                unset($usage_data_row['DurationInSec']);
+                            }
+                            if (isset($usage_data_row['BillDurationInSec'])) {
+                                unset($usage_data_row['BillDurationInSec']);
+                            }
+                            if (isset($usage_data_row['ServiceID'])) {
+                                unset($usage_data_row['ServiceID']);
+                            }
+                            $usage_data[$row_key] = $usage_data_row;
+                        }
+
+                        $ServiceTitle = AccountService::getServiceName($AccountID,$ServiceID);
+                        $local_file = $dir . '/' . str_slug($ServiceTitle) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+
+                        $output = Helper::array_to_csv($usage_data);
+                        file_put_contents($local_file, $output);
+                        if (file_exists($local_file)) {
+                            $zipfiles[]=$local_file;
+                        }
+
+                    }
+                    if (!empty($zipfiles)) {
+                        $local_zip_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.zip';
+
+                        /* make zip of all csv files */
+
+                        Zipper::make($local_zip_file)->add($zipfiles)->close();
+
+                        $fullPath = $amazonPath . basename($local_zip_file); //$destinationPath . $file_name;
+                        if (!AmazonS3::upload($local_zip_file, $amazonPath, $CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
+
+                        AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
+                        $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                     }
+
                 }
             }
-            if (!empty($fullPath)) {
-                AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
-                $Invoice->update(["UsagePath" => $fullPath]); // Update new one
-            }
+
             return $fullPath;
         }
     }
@@ -280,9 +300,11 @@ class Invoice extends \Eloquent {
                          *
                          */
                         $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+
+                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
                         Log::info('PDF Generation start');
 
-                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data);
+                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
                         if(empty($pdf_path)){
                             $error = Invoice::$InvoiceGenrationErrorReasons["PDF"];
                             return array("status" => "failure", "message" => $error);
@@ -299,7 +321,7 @@ class Invoice extends \Eloquent {
                         if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
                                 if (empty($fullPath)) {
                                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                 }
@@ -418,7 +440,7 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static  function generate_pdf($InvoiceID,$data = [],$usage_data = []){
+    public static  function generate_pdf($InvoiceID,$data = [],$usage_data = [],$usage_data_table = []){
         if($InvoiceID>0) {
 			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
@@ -458,7 +480,7 @@ class Invoice extends \Eloquent {
             file_put_contents($logo, file_get_contents($as3url));
 
             $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
-            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+
 
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
@@ -741,7 +763,9 @@ class Invoice extends \Eloquent {
 
                         $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
 
-                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data);
+                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+
+                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
                         if (empty($pdf_path)) {
                             $error['message'] = Invoice::$InvoiceGenrationErrorReasons["PDF"];
                             $error['status'] = 'failure';
@@ -760,7 +784,7 @@ class Invoice extends \Eloquent {
                         if ($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
                                 if (empty($fullPath)) {
                                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                     $error['status'] = 'failure';
