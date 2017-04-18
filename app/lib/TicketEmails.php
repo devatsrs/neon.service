@@ -325,7 +325,7 @@ class TicketEmails{
 					}			
 				} 
 			}
-			
+			$sendemails= array_unique($sendemails);
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
