@@ -204,7 +204,7 @@ class Invoice extends \Eloquent {
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -659,7 +659,7 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
