@@ -653,6 +653,7 @@ protected $server;
 					if(!in_array($from,$AllEmails)){
 						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
 						$contactID =  Contact::insertGetId($ContactData);
+						TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
 						$EmailLogObj = AccountEmailLog::find($EmailLog);
 						$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$contactID));		
 						$AllEmails[] = $from;
@@ -694,7 +695,10 @@ protected $server;
 		Log::info("reading emails completed");
 
 		try {
-			TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+			if(isset($ticketID))
+			{
+				TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+			}
 		} catch (Exception $ex) {
 			Log::info("fail TicketSla::assignSlaToTicket");
 			Log::info($ex);

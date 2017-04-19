@@ -300,8 +300,8 @@ class TicketEmails{
 			}else{
 				$DateSend  = new \DateTime($this->RespondTime);
 				$DateSend->modify('+'.$RespondedVoilation->Time);
-				$SendDate  =  $DateSend->format('Y-m-d H:i');   Log::info('SendDate:'.print_r($SendDate,true));
-				if($SendDate>date('y-m-d H:i')){
+				$SendDate  =  $DateSend->format('Y-m-d H:i');   
+				if($SendDate<=date('y-m-d H:i')){
 					$send =1;
 				}
 			}
@@ -341,7 +341,8 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
 			if($status['status']){
-				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);				
+				TicketsTable::where(["TicketID"=>$this->TicketData->TicketID])->update(array("RespondSlaPolicyVoilationEmailStatus"=>1));		
 				return 1;
 			}else{
 				$this->SetError($status['message']);
@@ -377,12 +378,12 @@ class TicketEmails{
 					$DateSend  = new \DateTime($this->ResolveTime);
 					$DateSend->modify('+'.$SingleResolveVoilationData->Time);
 					$SendDate  =  $DateSend->format('Y-m-d H:i');   
-					if($SendDate>date('y-m-d H:i')){
+					if($SendDate<=date('y-m-d H:i')){
 						$sendarray[$key]['send'] =  1;
 					}
 				}				
 				
-				if($sendarray[$key]['send']==1)
+				if(isset($sendarray[$key]['send']) && $sendarray[$key]['send']==1)
 				{
 					$sendto		=	   $SingleResolveVoilationData->Value; 
 					if($SingleResolveVoilationData->Value =='0')
@@ -423,10 +424,12 @@ class TicketEmails{
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
-			if($status['status']){
+			if($status['status']){ 
+			TicketsTable::where(["TicketID"=>$this->TicketData->TicketID])->update(array("ResolveSlaPolicyVoilationEmailStatus"=>1));
 					return 1;
 				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
-			}else{
+			}else{ 
+				return 0;
 				$this->SetError($status['message']);
 			}			
 	}
