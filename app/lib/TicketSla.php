@@ -38,11 +38,11 @@ class TicketSla extends \Eloquent
 			if(count($SlaTarget)>0){
 				
 				$DateResponse = new \DateTime($CreatedAt);
-				$DateResponse->modify('+'.$SlaTarget->RespondWithinTimeValue.' '.$SlaTarget->RespondWithinTimeType.'');
+				$DateResponse->modify('+'.$SlaTarget->RespondValue.' '.$SlaTarget->RespondType.'');
 				$ResponseTime  =  $DateResponse->format('Y-m-d H:i'); 
 				
 				$DateResolve  = new \DateTime($CreatedAt);
-				$DateResolve->modify('+'.$SlaTarget->ResolveWithinTimeValue.' '.$SlaTarget->ResolveWithinTimeType.'');
+				$DateResolve->modify('+'.$SlaTarget->ResolveValue.' '.$SlaTarget->ResolveType.'');
 				$ResolveTime  =  $DateResolve->format('Y-m-d H:i'); 
 				
 				Log::info("ResponseTime:".$ResponseTime);
