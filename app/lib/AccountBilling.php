@@ -10,8 +10,8 @@ class AccountBilling extends \Eloquent {
 
     public $timestamps = false; // no created_at and updated_at
 
-    public static function getBilling($AccountID,$ServiceID){
-        return AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->first();
+    public static function getBilling($AccountID){
+        return AccountBilling::where('AccountID',$AccountID)->first();
     }
     public static function getBillingKey($AccountBilling,$key){
         return !empty($AccountBilling)?$AccountBilling->$key:'';
@@ -21,18 +21,18 @@ class AccountBilling extends \Eloquent {
         return BillingClass::getInvoiceTemplateID($BillingClassID);
     }
     public static function getSendInvoiceSetting($AccountID){
-        return AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('SendInvoiceSetting');
+        return AccountBilling::where('AccountID',$AccountID)->pluck('SendInvoiceSetting');
     }
 
     public static function getBillingClass($AccountID){
-        $BillingClassID = (int)AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('BillingClassID');
+        $BillingClassID = (int)AccountBilling::where(array('AccountID'=>$AccountID))->pluck('BillingClassID');
         return BillingClass::getBillingClass($BillingClassID);
     }
     public static function getBillingClassKey($BillingClass,$key){
         return !empty($BillingClass)?$BillingClass->$key:'';
     }
     public static function getBillingClassID($AccountID){
-        return AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('BillingClassID');
+        return AccountBilling::where('AccountID',$AccountID)->pluck('BillingClassID');
     }
     public static function getPaymentDueInDays($AccountID){
         $BillingClassID = self::getBillingClassID($AccountID);
@@ -53,11 +53,5 @@ class AccountBilling extends \Eloquent {
     public static function getTaxRate($AccountID){
         $BillingClassID = self::getBillingClassID($AccountID);
         return BillingClass::getTaxRate($BillingClassID);
-    }
-
-    public static function serviceBilling($AccountID){
-        return AccountBilling::where(array('AccountID'=>$AccountID))
-            ->where('ServiceID', '<>', '0')
-            ->count();
     }
 }

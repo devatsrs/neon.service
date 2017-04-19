@@ -6,6 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Tickets' => $baseDir . '/app/lib/Tickets.php',
     'Absolute_Positioner' => $vendorDir . '/dompdf/dompdf/include/absolute_positioner.cls.php',
     'Abstract_Renderer' => $vendorDir . '/dompdf/dompdf/include/abstract_renderer.cls.php',
     'Account' => $baseDir . '/app/models/Account.php',
@@ -349,6 +350,7 @@ return array(
     'RemoteSSH' => $baseDir . '/app/lib/RemoteSSH.php',
     'Renderer' => $vendorDir . '/dompdf/dompdf/include/renderer.cls.php',
     'ResourceCategories' => $baseDir . '/app/models/ResourceCategories.php',
+    'ResourceCategoriesGroups' => $baseDir . '/app/models/ResourceCategoriesGroups.php',
     'Resources' => $baseDir . '/app/models/Resources.php',
     'RetentionController' => $baseDir . '/app/controllers/RetentionController.php',
     'Role' => $baseDir . '/app/models/Role.php',
@@ -393,16 +395,6 @@ return array(
     'Text_Renderer' => $vendorDir . '/dompdf/dompdf/include/text_renderer.cls.php',
     'Themes' => $baseDir . '/app/models/Themes.php',
     'ThemesController' => $baseDir . '/app/controllers/ThemesController.php',
-    'TicketEmails' => $baseDir . '/app/lib/TicketEmails.php',
-    'TicketGroupAgents' => $baseDir . '/app/models/TicketGroupAgents.php',
-    'TicketGroups' => $baseDir . '/app/models/TicketGroups.php',
-    'TicketPriority' => $baseDir . '/app/models/TicketPriority.php',
-    'Ticketfields' => $baseDir . '/app/models/Ticketfields.php',
-    'TicketfieldsValues' => $baseDir . '/app/models/TicketfieldsValues.php',
-    'Tickets' => $baseDir . '/app/lib/Tickets.php',
-    'TicketsConversation' => $baseDir . '/app/models/TicketsConversation.php',
-    'TicketsDetails' => $baseDir . '/app/models/TicketsDetails.php',
-    'TicketsTable' => $baseDir . '/app/models/TicketsTable.php',
     'TimeZone' => $baseDir . '/app/models/TimeZone.php',
     'TransactionLog' => $baseDir . '/app/models/TransactionLog.php',
     'TransactionLogController' => $baseDir . '/app/controllers/TransactionLogController.php',

@@ -106,7 +106,7 @@ class Account extends \Eloquent {
             })->count();
     }
     public static function getBillingTimeZone($AccountID){
-        return AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('BillingTimezone');
+        return AccountBilling::where(array('AccountID'=>$AccountID))->pluck('BillingTimezone');
     }
     public static function getOutstandingAmount($CompanyID,$AccountID,$decimal_places = 2){
 

@@ -87,6 +87,7 @@ class CustomerRateSheetGenerator extends Command {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
             if (count($joboptions) > 0) {
+
                 if(isset($joboptions->SelectedIDs)){
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
