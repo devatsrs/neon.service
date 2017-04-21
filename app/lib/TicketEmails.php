@@ -29,6 +29,8 @@ class TicketEmails{
 	protected $Error;
 	protected $Comment;
 	protected $NoteUser;
+	protected $RespondTime;
+	protected $ResolveTime;
 	
 
 	 public function __construct($data = array()){
@@ -224,14 +226,12 @@ class TicketEmails{
 	}
 	
 	protected function AgentAssignedGroup(){
-			$slug					=		"AgentAssignedGroup";
-			
+			$this->slug					=		"AgentAssignedGroup";
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
 			}			
-			
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$slug])->first();									
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -253,16 +253,14 @@ class TicketEmails{
 			}			
 	}
 	
-	protected function AgentTicketReopened(){
-		
-			$slug					=		"AgentTicketReopened";
-			
+	protected function AgentTicketReopened(){		
+			$this->slug					=		"AgentTicketReopened";
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
 			}			
 			
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$slug])->first();									
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -283,17 +281,166 @@ class TicketEmails{
 			}			
 	}
 	
-	protected function AgentEscalationRule(){
-		
-			$slug					=		"AgentEscalationRule";
+	protected function AgentResponseSlaVoilation(){		 
+			$this->slug					=		"AgentResponseSlaVoilation";
+			$send 						=		0;
+			$sendemails					=		'';
+			if(!$this->CheckBasicRequirments())
+			{
+				return $this->Error;
+			}	
 			
+			$RespondedVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$RespondedVoilationType])->select(['Time','Value'])->first();
+			
+			//Log::info(print_r($RespondedVoilation,true));
+			
+			if($RespondedVoilation->Time=='immediately')
+			{
+				$send = 1;
+			}else{
+				$DateSend  = new \DateTime($this->RespondTime);
+				$DateSend->modify('+'.$RespondedVoilation->Time);
+				$SendDate  =  $DateSend->format('Y-m-d H:i');   Log::info('SendDate:'.print_r($SendDate,true));
+				if($SendDate>date('y-m-d H:i')){
+					$send =1;
+				}
+			}
+			
+			if(!$send)	{return 0;}
+			
+			$sendto						=	   $RespondedVoilation->Value; 
+			if($RespondedVoilation->Value =='0'){
+					$sendemails 		=	$this->Agent->EmailAddress; 
+			}else{ 
+				$sendids = explode(',',$RespondedVoilation->Value); 
+				
+				foreach($sendids as $agentsID){ 
+					if($agentsID==0){
+						$sendemails[] =	$this->Agent->EmailAddress; 	
+						continue;
+					}
+					$userdata = 	User::find($agentsID);
+					if($userdata){							
+						$sendemails[] =	$userdata->EmailAddress; 
+					}			
+				} 
+			}
+			$sendemails= array_unique($sendemails);
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+			$emailData['Subject']		=		$finalSubject;
+            $emailData['Message'] 		= 		$finalBody;
+            $emailData['CompanyID'] 	= 		$this->CompanyID;
+            $emailData['EmailTo'] 		= 		$sendemails;
+            $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
+            $emailData['CompanyName'] 	= 		$this->Group->GroupName;
+			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
+			$emailData['TicketID'] 		= 		$this->TicketID;
+			
+			if($status['status']){
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				return 1;
+			}else{
+				$this->SetError($status['message']);
+			}						
+	}
+	
+	protected function AgentResolveSlaVoilation()
+	{		
+			$this->slug					=		"AgentResponseSlaVoilation";
+			$send 						=		0;
+			$sendemails					=		'';
+			$sendarray					=		array();
+			
+			if(!$this->CheckBasicRequirments())
+			{
+				return $this->Error;
+			}			
+			
+			$ResolveVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$ResolvedVoilationType])->select(['Time','Value'])->get();	
+			
+			//Log::info(print_r($ResolveVoilation,true));
+			if(count($ResolveVoilation)<1){return 0;}
+			
+			foreach($ResolveVoilation as $key => $SingleResolveVoilationData)
+			{
+				if($SingleResolveVoilationData->Time=='immediately')
+				{
+					$send = 1;
+					$sendarray[$key]['send'] =  1;
+				}
+				else
+				{
+					$DateSend  = new \DateTime($this->ResolveTime);
+					$DateSend->modify('+'.$SingleResolveVoilationData->Time);
+					$SendDate  =  $DateSend->format('Y-m-d H:i');   
+					if($SendDate>date('y-m-d H:i')){
+						$sendarray[$key]['send'] =  1;
+					}
+				}				
+				
+				if($sendarray[$key]['send']==1)
+				{
+					$sendto		=	   $SingleResolveVoilationData->Value; 
+					if($SingleResolveVoilationData->Value =='0')
+					{
+							$sendemails 		=	$this->Agent->EmailAddress; 
+					}
+					else
+					{ 
+						$sendids = explode(',',$SingleResolveVoilationData->Value); 
+						
+						foreach($sendids as $agentsID){ 
+							if($agentsID==0){
+								$sendemails[] =	$this->Agent->EmailAddress; 	
+								continue;
+							}
+							$userdata = 	User::find($agentsID);
+							if($userdata){							
+								$sendemails[] =	$userdata->EmailAddress; 
+							}			
+						} 
+					}
+				}
+			}
+				$sendemails= array_unique($sendemails);
+				if(count($sendarray)<1){return 0;}
+			
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+			$emailData['Subject']		=		$finalSubject;
+            $emailData['Message'] 		= 		$finalBody;
+            $emailData['CompanyID'] 	= 		$this->CompanyID;
+            $emailData['EmailTo'] 		= 		$sendemails;
+            $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
+            $emailData['CompanyName'] 	= 		$this->Group->GroupName;
+			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
+			$emailData['TicketID'] 		= 		$this->TicketID;
+			
+			if($status['status']){
+					return 1;
+				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+			}else{
+				$this->SetError($status['message']);
+			}			
+	}
+	
+	protected function AgentEscalationRule(){		
+			
+			$this->slug					=		"AgentEscalationRule";
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
 			}	
 					
 			$EscalationUser				=		User::find($this->EscalationAgent);
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$slug])->first();									
+			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -363,11 +510,11 @@ class TicketEmails{
 			}
 			$this->Group = $group;
 		}
-		
 		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		if(!$this->EmailTemplate){
 			$this->SetError("No email template found.");				
-		}
+		} 
+		
 		if(!$this->EmailTemplate->Status){
 			$this->SetError("Email template status disabled");				
 		}

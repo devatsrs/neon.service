@@ -60,14 +60,16 @@ class EmailMessage {
 			elseif($part->type == 2) {
 				$msg = new EmailMessage($this->connection, $this->messageNumber);
 				$msg->getAttachments = $this->getAttachments;
-				$msg->recurse($part->parts, $partNumber.'.', 0, false);
-				$this->attachments[] = array(
-					'type' => $part->type,
-					'subtype' => $part->subtype,
-					'filename' => '',
-					'data' => $msg,
-					'inline' => false,
-				);
+				if(isset($part->parts)){
+					$msg->recurse($part->parts, $partNumber.'.', 0, false);
+					$this->attachments[] = array(
+						'type' => $part->type,
+						'subtype' => $part->subtype,
+						'filename' => '',
+						'data' => $msg,
+						'inline' => false,
+					);
+				}
 			}
 			elseif(isset($part->parts)) {
 				if($fullPrefix) {
