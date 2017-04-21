@@ -75,8 +75,8 @@ class PHPMAILERIntegtration{
 		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
-		
-		$mail->Body    = $body;
+
+		$mail->Body = $mail->msgHTML($body);
 		$mail->Subject = $data['Subject'];
 		
 		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];
