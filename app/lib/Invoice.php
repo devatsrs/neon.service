@@ -47,6 +47,7 @@ class Invoice extends \Eloquent {
 
         $zipfiles = array();
 
+
         if(!empty($InvoiceID)) {
             $fullPath = "";
             $Invoice = Invoice::find($InvoiceID);
@@ -62,39 +63,53 @@ class Invoice extends \Eloquent {
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                    foreach($usage_data_table['data'] as $ServiceID => $usage_data) {
 
-                        /** remove extra columns*/
-                        foreach ($usage_data as $row_key => $usage_data_row) {
-                            if (isset($usage_data_row['DurationInSec'])) {
-                                unset($usage_data_row['DurationInSec']);
-                            }
-                            if (isset($usage_data_row['BillDurationInSec'])) {
-                                unset($usage_data_row['BillDurationInSec']);
-                            }
-                            if (isset($usage_data_row['ServiceID'])) {
-                                unset($usage_data_row['ServiceID']);
+                    if(count($usage_data_table['data'])>0) {
+
+
+                        foreach ($usage_data_table['data'] as $ServiceID => $usage_data) {
+
+                            /** remove extra columns*/
+                            foreach ($usage_data as $row_key => $usage_data_row) {
+                                if (isset($usage_data_row['DurationInSec'])) {
+                                    unset($usage_data_row['DurationInSec']);
+                                }
+                                if (isset($usage_data_row['BillDurationInSec'])) {
+                                    unset($usage_data_row['BillDurationInSec']);
+                                }
+                                if (isset($usage_data_row['ServiceID'])) {
+                                    unset($usage_data_row['ServiceID']);
+                                }
+
+                                $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+
+                                $usage_data[$row_key] = $usage_data_row;
                             }
 
-                            $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+                            if ($ServiceID == 0) {
+                                $ServiceTitle = Service::$defaultService;
+                            } else {
+                                $ServiceTitle = AccountService::getServiceName($AccountID, $ServiceID);
+                            }
 
-                            $usage_data[$row_key] = $usage_data_row;
+                            $local_file = $dir . '/' . str_slug($ServiceTitle) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+
+                            $output = Helper::array_to_csv($usage_data);
+                            file_put_contents($local_file, $output);
+                            if (file_exists($local_file)) {
+                                $zipfiles[] = $local_file;
+                            }
+
                         }
-
-                        if($ServiceID==0){
-                            $ServiceTitle = Service::$defaultService;
-                        }else{
-                            $ServiceTitle = AccountService::getServiceName($AccountID,$ServiceID);
-                        }
-
-                        $local_file = $dir . '/' . str_slug($ServiceTitle) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+                    }else{
+                        $usage_data = array();
+                        $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
 
                         $output = Helper::array_to_csv($usage_data);
                         file_put_contents($local_file, $output);
                         if (file_exists($local_file)) {
-                            $zipfiles[]=$local_file;
+                            $zipfiles[] = $local_file;
                         }
-
                     }
                     if (!empty($zipfiles)) {
 
