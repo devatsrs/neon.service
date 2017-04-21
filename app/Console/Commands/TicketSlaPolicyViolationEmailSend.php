@@ -57,9 +57,10 @@ class TicketSlaPolicyViolationEmailSend extends Command {
 	 */
 	protected function getArguments()
 	{
-		return [
-			['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
-		];
+		 return [
+            ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID'],
+			['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],           
+        ];
 	}
 
 	/**
@@ -70,11 +71,24 @@ class TicketSlaPolicyViolationEmailSend extends Command {
 	public function fire()
 	{
 		//////////////
-		//CronHelper::beforecronrun($this->name, $this );
+		CronHelper::beforecronrun($this->name, $this );
 
 		$arguments 		= 	$this->argument();
 		$CompanyID 		= 	$arguments["CompanyID"];
  		Company::setup_timezone($CompanyID);
+		
+        CronHelper::before_cronrun($this->name, $this );
+	    $CronJob 		= 	CronJob::find($CronJobID);
+        $cronsetting 	= 	json_decode($CronJob->Settings,true);
+		$today 	    	= 	date('Y-m-d');
+        CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
+        Log::useFiles(storage_path() . '/logs/ticketslapolicyviolationemailsend-' . $CronJobID . '-' . date('Y-m-d') . '.log');
+		
+		$joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';		
 		try
 		{	
 			$CurrentTime			=	 date('Y-m-d H:i');
@@ -103,17 +117,31 @@ class TicketSlaPolicyViolationEmailSend extends Command {
 		}
 		catch (\Exception $e)
 		{
-			$this->info('Failed:' . $e->getMessage());
-			Log::error($e);
+		
+
+            $this->info('Failed:' . $e->getMessage());
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            Log::error($e);
+            if(!empty($cronsetting['ErrorEmail'])) {
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                Log::error("**Email Sent Status " . $result['status']);
+                Log::error("**Email Sent message " . $result['message']);
+            }
+        
 		}
 
-		CronHelper::after_cronrun($this->name, $this);
+		CronJob::deactivateCronJob($CronJob);
+        CronJobLog::createLog($CronJobID,$joblogdata);
+        if(!empty($cronsetting['SuccessEmail'])) {
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            Log::error("**Email Sent Status ".$result['status']);
+            Log::error("**Email Sent message ".$result['message']);
+        }
+
+        CronHelper::after_cronrun($this->name, $this);    
 		/////////////
 
-
 	}
-
-
-
 
 }
