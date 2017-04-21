@@ -1,22 +1,21 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\PBX;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use App\Lib\Helper;
-use App\Lib\Company;
-use \Exception;
 
 class PBXAccountUsage extends Command
 {
@@ -102,6 +101,10 @@ class PBXAccountUsage extends Command
             }
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+            $ServiceID = 0;
+            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
+                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
+            }
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -181,6 +184,7 @@ class PBXAccountUsage extends Command
                         $data['disposition'] = $row_account['disposition'];
                         $data['extension'] = $row_account['extension'];
                         $data['ProcessID'] = $processID;
+                        $data['ServiceID'] = $ServiceID;
                         $data['ID'] = $row_account['ID'];
                         $data['is_inbound'] = 0;
                         $data['cost'] = (float)$row_account['cc_cost'];
