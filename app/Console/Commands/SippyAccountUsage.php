@@ -141,9 +141,7 @@ class SippyAccountUsage extends Command
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
 
             Log::error(' ========================== sippy transaction start =============================');
             CronJob::createLog($CronJobID);
@@ -375,11 +373,10 @@ class SippyAccountUsage extends Command
                 $filedetail .= '<br> No CustomerCDR Data Found!!';
             }
 
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('sippy prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
