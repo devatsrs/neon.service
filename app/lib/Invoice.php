@@ -97,11 +97,18 @@ class Invoice extends \Eloquent {
 
                     }
                     if (!empty($zipfiles)) {
-                        $local_zip_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.zip';
 
-                        /* make zip of all csv files */
+                        // when files only one then csv download other wise zip of all csv download
+                        if(count($zipfiles)==1){
+                            $local_zip_file = $zipfiles[0];
+                        }else{
 
-                        Zipper::make($local_zip_file)->add($zipfiles)->close();
+                            $local_zip_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.zip';
+
+                            /* make zip of all csv files */
+
+                            Zipper::make($local_zip_file)->add($zipfiles)->close();
+                        }
 
                         $fullPath = $amazonPath . basename($local_zip_file); //$destinationPath . $file_name;
                         if (!AmazonS3::upload($local_zip_file, $amazonPath, $CompanyID)) {
@@ -1841,6 +1848,7 @@ class Invoice extends \Eloquent {
     public static function usageDataTable($usage_data,$InvoiceTemplate){
         $usage_data_table = array();
         $usage_data_table['header'] =array();
+        $usage_data_table['data'] = array();
         if(empty($InvoiceTemplate->UsageColumn)){
             $UsageColumn = InvoiceTemplate::defaultUsageColumns();
         }else{
