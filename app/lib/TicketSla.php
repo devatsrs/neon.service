@@ -29,7 +29,7 @@ class TicketSla extends \Eloquent
 			/*$TicketPriority		=	TicketPriority::getPriorityIDByStatus($TicketData->PriorityValue);
 			$Slavoilation  		= 	TicketSlaPolicyViolation::where(['TicketSlaID'=>$TicketData->TicketSlaID])->get();
 			$SlaPolicyApplyTo  	= 	TicketSlaPolicyApplyTo::where(['TicketSlaID'=>$TicketData->TicketSlaID])->get();*/
-			$SlaTarget  		= 	TicketSlaTarget::where(['TicketSlaID'=>$TicketData->TicketSlaID,"PritiryID"=>$TicketPriority])->first();
+			$SlaTarget  		= 	TicketSlaTarget::where(['TicketSlaID'=>$TicketData->TicketSlaID,"PriorityID"=>$TicketPriority])->first();
 			
 			$CreatedAt			=   $TicketData->created_at;
 			

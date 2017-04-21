@@ -74,26 +74,20 @@ class TicketSlaPolicyViolationEmailSend extends Command {
 
 		$arguments 		= 	$this->argument();
 		$CompanyID 		= 	$arguments["CompanyID"];
-
+ 		Company::setup_timezone($CompanyID);
 		try
-		{
+		{	
 			$CurrentTime			=	 date('Y-m-d H:i');
-			$query 					= 	 "call prc_CheckTicketsSlaVoilation ('".$CompanyID."','".$CurrentTime."')"; 
+			$query 					= 	 "call prc_CheckTicketsSlaVoilation ('".$CompanyID."','".$CurrentTime."')";  
 			$tickets 				= 	 DB::select($query);
 			foreach ($tickets as $ticket)
 			{
 				if($ticket->EscalationEmail==1 && $ticket->IsRespondedVoilation==1){
-					$send 	=  new TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>array("AgentResponseSlaVoilation")));	
-					if($send==1){
-						TicketsTable::where(["TicketID"=>$ticket->TicketID])->update(array("RespondSlaPolicyVoilationEmailStatus"=>1));
-					}								
+				$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>array("AgentResponseSlaVoilation")));					
 				}
 				
 				if($ticket->EscalationEmail==1 && $ticket->IsResolvedVoilation==1){
-					$send 	=  new TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>array("AgentResolveSlaVoilation")));	
-					if($send==1){
-						TicketsTable::where(["TicketID"=>$ticket->TicketID])->update(array("ResolveSlaPolicyVoilationEmailStatus"=>1));
-					}					
+			 	$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>array("AgentResolveSlaVoilation")));					
 				}
 				
 				// Call function check voilation reponse
