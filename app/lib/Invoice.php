@@ -1499,15 +1499,7 @@ class Invoice extends \Eloquent {
             $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
             Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
             $Accounts = json_decode(json_encode($Accounts),true);
-            /*$Accounts = Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
-                ->select(["tblAccountBilling.AccountID", "tblAccountBilling.NextInvoiceDate", "AccountName","ServiceID"])
-                ->whereNotIn('tblAccount.AccountID', $skip_accounts)
-                ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
-                ->where('tblAccountBilling.NextInvoiceDate', '<>', '')
-                ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
-                ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
-                ->whereNotNull('tblAccountBilling.BillingCycleType')
-                ->orderby('tblAccount.AccountID')->get();*/
+
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
@@ -1560,7 +1552,7 @@ class Invoice extends \Eloquent {
 
                                     Log::info('Invoice created - ' . print_r($response, true));
                                     $message[] = $response["message"];
-                                    Log::info('Invoice Commited  AccountID = ' . $AccountID);
+                                    Log::info('Invoice Committed  AccountID = ' . $AccountID);
                                     DB::connection('sqlsrv2')->commit();
                                     Log::info('=========== Updating  InvoiceDate =========== ');
                                     $AccountBilling = AccountBilling::getBilling($AccountID, $ServiceID);
@@ -1627,15 +1619,7 @@ class Invoice extends \Eloquent {
             //Log::info($skip_accounts);
         } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
 
-  /*      Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
-            ->select(["tblAccount.AccountID", "AccountName"])
-            ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
-            ->where('tblAccountBilling.NextInvoiceDate', '<>', '')
-            ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
-            ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
-            ->where('tblAccountBilling.AccountID', '=', 5020)
-            ->whereNotIn('tblAccount.AccountID', $skip_accounts)
-            ->whereNotNull('tblAccountBilling.BillingCycleType')->count();*/
+
 		$response['errors'] = $errors;
 		$response['message'] = $message;
 		return $response;
@@ -1857,7 +1841,6 @@ class Invoice extends \Eloquent {
     public static function usageDataTable($usage_data,$InvoiceTemplate){
         $usage_data_table = array();
         $usage_data_table['header'] =array();
-        $InvoiceTemplate = InvoiceTemplate::find(1);
         if(empty($InvoiceTemplate->UsageColumn)){
             $UsageColumn = InvoiceTemplate::defaultUsageColumns();
         }else{
