@@ -93,14 +93,14 @@ class CDRUpload extends Command
             $RateCDR = 0;
             $NameFormat = '';
             $ServiceID = $OutboundRateTableID = $InboundRateTableID = $IgnoreZeroCall = 0;
-            if(isset($joboptions->ServiceID) && $joboptions->ServiceID){
+            if(isset($attrselection->ServiceID) && $attrselection->ServiceID){
                 $ServiceID = $joboptions->ServiceID;
             }
-            if(isset($joboptions->OutboundRateTableID) && $joboptions->OutboundRateTableID){
-                $OutboundRateTableID = $joboptions->OutboundRateTableID;
+            if(isset($attrselection->OutboundRateTableID) && $attrselection->OutboundRateTableID){
+                $OutboundRateTableID = $attrselection->OutboundRateTableID;
             }
-            if(isset($joboptions->InboundRateTableID) && $joboptions->InboundRateTableID){
-                $InboundRateTableID = $joboptions->InboundRateTableID;
+            if(isset($attrselection->InboundRateTableID) && $attrselection->InboundRateTableID){
+                $InboundRateTableID = $attrselection->InboundRateTableID;
             }
             if(isset($joboptions->IgnoreZeroRatedCall) && $joboptions->IgnoreZeroRatedCall){
                 $IgnoreZeroCall = $joboptions->IgnoreZeroRatedCall;
@@ -215,9 +215,9 @@ class CDRUpload extends Command
                             if ($RateCDR == 1 && $RateFormat == Company::CHARGECODE && isset($attrselection->ChargeCode) && !empty($attrselection->ChargeCode)) {
                                 $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
                             }
-                            if(!empty($joboptions->TrunkID)){
-                                $cdrdata['TrunkID'] = $joboptions->TrunkID;
-                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
+                            if(!empty($attrselection->TrunkID)){
+                                $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$attrselection->TrunkID))->Pluck('trunk');
                             }
                             if (isset($attrselection->extension) && !empty($attrselection->extension)) {
                                 $cdrdata['extension'] = $temp_row[$attrselection->extension];
