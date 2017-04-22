@@ -92,7 +92,7 @@ class CDRUpload extends Command
             $attrselection = $TemplateOptions->selection;
             $RateCDR = 0;
             $NameFormat = '';
-            $ServiceID = $OutboundRateTableID = $InboundRateTableID = 0;
+            $ServiceID = $OutboundRateTableID = $InboundRateTableID = $IgnoreZeroCall = 0;
             if(isset($joboptions->ServiceID) && $joboptions->ServiceID){
                 $ServiceID = $joboptions->ServiceID;
             }
@@ -102,6 +102,9 @@ class CDRUpload extends Command
             if(isset($joboptions->InboundRateTableID) && $joboptions->InboundRateTableID){
                 $InboundRateTableID = $joboptions->InboundRateTableID;
             }
+            if(isset($joboptions->IgnoreZeroRatedCall) && $joboptions->IgnoreZeroRatedCall){
+                $IgnoreZeroCall = $joboptions->IgnoreZeroRatedCall;
+            }
 
             if(isset($joboptions->RateCDR) && $joboptions->RateCDR){
                 $RateCDR = $joboptions->RateCDR;
@@ -110,8 +113,8 @@ class CDRUpload extends Command
             if(isset($joboptions->RateFormat) && $joboptions->RateFormat){
                 $RateFormat = $joboptions->RateFormat;
             }
-            if(isset($attrselection->Authentication) && $attrselection->Authentication){
-                $NameFormat = $attrselection->Authentication;
+            if(isset($joboptions->Authentication) && $joboptions->Authentication){
+                $NameFormat = $joboptions->Authentication;
             }
             $CLITranslationRule = $CLDTranslationRule =  '';
             if(!empty($attrselection->CLITranslationRule)){
@@ -235,10 +238,10 @@ class CDRUpload extends Command
                             if(empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && empty($cdrdata['cld'])){
+                            if($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld) && trim($temp_row[$attrselection->cld]) == ''){
                                 $error[] = 'CLD is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && empty($cdrdata['billed_duration'])){
+                            if($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && trim($temp_row[$attrselection->billed_duration]) == ''){
                                 $error[] = 'Billed duration is blank at line no:'.$lineno;
                             }
 
@@ -310,6 +313,15 @@ class CDRUpload extends Command
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
                 $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID);
+                $skiped_rerated_data = array();
+                if($IgnoreZeroCall == 1){
+                    foreach($skiped_account_data as $key => $errormg){
+                        if(strpos($errormg,'Doesnt exist in NEON') === false){
+                            $skiped_rerated_data[] = $errormg;
+                            unset($skiped_account_data[$key]);
+                        }
+                    }
+                }
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
@@ -348,6 +360,10 @@ class CDRUpload extends Command
                     $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusMessage'] =  implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                }else if (count($skiped_rerated_data)) {
+                    $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data),fix_jobstatus_meassage($skiped_rerated_data));
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else if(count($skipped_cli)){
                     $skipped_cli = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skipped_cli));
                     $jobdata['JobStatusMessage'] = 'CLI Not Verified:' . implode(',\n\r', $skipped_cli);

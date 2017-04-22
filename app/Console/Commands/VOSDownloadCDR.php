@@ -138,10 +138,14 @@ class VOSDownloadCDR extends Command {
                     }
 
                     if(filesize($file_path) > 0 &&  UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0 ) {
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         if($isdownloaded == false){
+                            $param = array();
+                            $param['filename'] = $filename;
+                            $param['download_path'] = $destination . '/';
+                            $vos->downloadCDR($param);
                             Log::info("Missing file inserted " . $filename . ' - ' . $vos->get_file_datetime($filename));
                         }
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                     }
 
                     if (count($downloaded) == $FilesDownloadLimit) {

@@ -65,11 +65,7 @@ class Account extends \Eloquent {
         }
         return $formatstaus;
     }
-    public static function checkForCDR($GatewayAccountID){
-        $accountid = GatewayAccount::where(array('GatewayAccountID'=>$GatewayAccountID))->pluck('AccountID');
-        $cdr_type = AccountBilling::getCDRType($accountid);
-        return $cdr_type;
-    }
+
 
     //not in use
     public static function getExcelFormat($filepath){

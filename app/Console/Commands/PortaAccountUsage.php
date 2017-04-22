@@ -79,6 +79,7 @@ class PortaAccountUsage extends Command {
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         Log::useFiles(storage_path() . '/logs/portaaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
 
@@ -97,10 +98,7 @@ class PortaAccountUsage extends Command {
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
-            $ServiceID = 0;
-            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
-                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
-            }
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }

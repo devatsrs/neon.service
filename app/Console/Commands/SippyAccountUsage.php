@@ -93,6 +93,7 @@ class SippyAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -128,10 +129,7 @@ class SippyAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
-            $ServiceID = 0;
-            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
-                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
-            }
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -179,7 +177,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 &&  !empty($cdr_row['i_account'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -270,7 +268,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account_debug']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 && !empty($cdr_row['i_account_debug'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;

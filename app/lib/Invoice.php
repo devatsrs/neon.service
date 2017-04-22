@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 
+use Chumper\Zipper\Facades\Zipper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -42,183 +43,106 @@ class Invoice extends \Eloquent {
     /**
      *  Generate Usage file Upload and update Amazon path in Invoice Table
      */
-    public static function generate_usage_file($InvoiceID){
+    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date){
+
+        $zipfiles = array();
+
 
         if(!empty($InvoiceID)) {
-
+            $fullPath = "";
             $Invoice = Invoice::find($InvoiceID);
             $AccountID = $Invoice->AccountID;
-            $CDRType = AccountBilling::getCDRType($AccountID);
             $CompanyID = $Invoice->CompanyID;
-            $path = "";
-            if ($CDRType == Account::SUMMARY_CDR) {
-                $path = self::generate_usage_summery_file($CompanyID, $AccountID, $InvoiceID);
-            } else if ($CDRType == Account::DETAIL_CDR) {
-                $path = self::generate_usage_detail_file($CompanyID, $AccountID, $InvoiceID);
-            }
-            if (!empty($path)) {
-                AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
-                $Invoice->update(["UsagePath" => $path]); // Update new one
-            }
-            return $path;
-        }
-    }
-
-
-
-    public static function generate_usage_detail_file($CompanyID,$AccountID,$InvoiceID){
-        if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
-            $ProcessID = Uuid::generate();
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-            $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
-            $Invoice = Invoice::find($InvoiceID);
-            if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
-
-                $start_date = $InvoiceDetail['StartDate'];
-                $end_date = $InvoiceDetail['EndDate'];
-                $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = $UPLOADPATH . '/'. $amazonPath;
+            if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
+                $ProcessID = Uuid::generate();
+                $UPLOADPATH = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH');
+                $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
+                $dir = $UPLOADPATH . '/' . $amazonPath;
                 if (!file_exists($dir)) {
                     mkdir($dir, 0777, TRUE);
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                    $local_file = $dir . '/' . str_slug($AccountName) . '-usage-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
-                    $serviceBilling = AccountBilling::serviceBilling($Invoice->AccountID);
-                    if($serviceBilling){
-                        $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID,'ServiceID'=>$Invoice->ServiceID))->distinct()->get(['CompanyGatewayID']);
-                    }else{
-                        $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID))->distinct()->get(['CompanyGatewayID']);
-                    }
-                    $usage_data = array();
-                    foreach($GatewayAccount as $GatewayAccountRow) {
-                        $GatewayAccountRow['CompanyGatewayID'];
-                        $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                        $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                        $AccountBillingTimeZone = Account::getBillingTimeZone($AccountID);
-                        if(!empty($AccountBillingTimeZone)){
-                            $BillingTimeZone = $AccountBillingTimeZone;
-                        }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
-                        Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
-                        $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',1)";
-                        Log::info($query);
-                        $result_data = DB::connection('sqlsrv2')->select($query);
-                        $result_data = json_decode(json_encode($result_data), true);
-                        //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
-                        foreach($result_data as $result_row){
-                            if(isset($result_row['AreaPrefix'])){
-                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
-                                if(isset($usage_data[$key]['AreaPrefix'])){
-                                    $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
-                                    $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
-                                    $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
-                                    $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
-                                    $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                                    $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
-                                }else{
-                                    $usage_data[] = $result_row;
+
+                    if(count($usage_data_table['data'])>0) {
+
+
+                        foreach ($usage_data_table['data'] as $ServiceID => $usage_data) {
+
+                            /** remove extra columns*/
+                            foreach ($usage_data as $row_key => $usage_data_row) {
+                                if (isset($usage_data_row['DurationInSec'])) {
+                                    unset($usage_data_row['DurationInSec']);
                                 }
-                            }else{
-                                $usage_data[] = $result_row;
+                                if (isset($usage_data_row['BillDurationInSec'])) {
+                                    unset($usage_data_row['BillDurationInSec']);
+                                }
+                                if (isset($usage_data_row['ServiceID'])) {
+                                    unset($usage_data_row['ServiceID']);
+                                }
+
+                                $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+
+                                $usage_data[$row_key] = $usage_data_row;
                             }
+
+                            if ($ServiceID == 0) {
+                                $ServiceTitle = Service::$defaultService;
+                            } else {
+                                $ServiceTitle = AccountService::getServiceName($AccountID, $ServiceID);
+                            }
+
+                            $local_file = $dir . '/' . str_slug($ServiceTitle) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+
+                            $output = Helper::array_to_csv($usage_data);
+                            file_put_contents($local_file, $output);
+                            if (file_exists($local_file)) {
+                                $zipfiles[] = $local_file;
+                            }
+
+                        }
+                    }else{
+                        $usage_data = array();
+                        $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+
+                        $output = Helper::array_to_csv($usage_data);
+                        file_put_contents($local_file, $output);
+                        if (file_exists($local_file)) {
+                            $zipfiles[] = $local_file;
                         }
                     }
-                    $output = Helper::array_to_csv($usage_data);
-                    file_put_contents($local_file, $output);
-                    if (file_exists($local_file)) {
-                        $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
+                    if (!empty($zipfiles)) {
+
+                        // when files only one then csv download other wise zip of all csv download
+                        if(count($zipfiles)==1){
+                            $local_zip_file = $zipfiles[0];
+                        }else{
+
+                            $local_zip_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.zip';
+
+                            /* make zip of all csv files */
+
+                            Zipper::make($local_zip_file)->add($zipfiles)->close();
+                        }
+
+                        $fullPath = $amazonPath . basename($local_zip_file); //$destinationPath . $file_name;
+                        if (!AmazonS3::upload($local_zip_file, $amazonPath, $CompanyID)) {
                             throw new Exception('Error in Amazon upload');
                         }
-                        return $fullPath;
+
+                        AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
+                        $Invoice->update(["UsagePath" => $fullPath]); // Update new one
                     }
+
                 }
             }
 
+            return $fullPath;
         }
     }
 
-    public static function generate_usage_summery_file($CompanyID,$AccountID,$InvoiceID){
 
-        if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
 
-            $ProcessID = Uuid::generate();
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-            $InvoiceDetail = InvoiceDetail::select("StartDate", "EndDate")->where("InvoiceID", $InvoiceID)->where("ProductID", 0)->first()->toArray();
-            $Invoice = Invoice::find($InvoiceID);
-            if (isset($InvoiceDetail['StartDate']) && isset($InvoiceDetail['EndDate'])) {
-
-                $start_date = $InvoiceDetail['StartDate'];
-                $end_date = $InvoiceDetail['EndDate'];
-                $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                $dir = $UPLOADPATH . '/'. $amazonPath;
-                if (!file_exists($dir)) {
-                    mkdir($dir, 0777, TRUE);
-                }
-                if (is_writable($dir)) {
-                    $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                    $local_file = $dir . '/' . str_slug($AccountName) . '-summery-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
-                    $serviceBilling = AccountBilling::serviceBilling($Invoice->AccountID);
-                    if($serviceBilling){
-                        $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID,'ServiceID'=>$Invoice->ServiceID))->distinct()->get(['CompanyGatewayID']);
-                    }else{
-                        $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID))->distinct()->get(['CompanyGatewayID']);
-                    }
-                    $usage_data = array();
-                    foreach($GatewayAccount as $GatewayAccountRow) {
-                        $GatewayAccountRow['CompanyGatewayID'];
-                        $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                        $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                        $AccountBillingTimeZone = Account::getBillingTimeZone($AccountID);
-                        if(!empty($AccountBillingTimeZone)){
-                            $BillingTimeZone = $AccountBillingTimeZone;
-                        }
-                        $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$CompanyID);
-                        $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$CompanyID);
-                        Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
-                        $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','". $BillingStartDate . "','" . $BillingEndDate . "',1)";
-                        Log::info($query);
-                        $result_data = DB::connection('sqlsrv2')->select($query);
-                        $result_data = json_decode(json_encode($result_data), true);
-                        //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
-                        foreach($result_data as $result_row){
-                            if(isset($result_row['AreaPrefix'])){
-                                if(isset($result_row['DurationInSec'])){
-                                    unset($result_row['DurationInSec']);
-                                }
-                                if(isset($result_row['BillDurationInSec'])){
-                                    unset($result_row['BillDurationInSec']);
-                                }
-                                $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
-                                if(isset($usage_data[$key]['AreaPrefix'])){
-                                    $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
-                                    $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
-                                    $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
-                                    $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
-                                }else{
-                                    $usage_data[] = $result_row;
-                                }
-                            }else{
-                                $usage_data[] = $result_row;
-                            }
-                        }
-                    }
-                    $output = Helper::array_to_csv($usage_data);
-                    file_put_contents($local_file, $output);
-                    if (file_exists($local_file)) {
-                        $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
-                            throw new Exception('Error in Amazon upload');
-                        }
-                        return $fullPath;
-                    }
-                }
-            }
-
-        }
-    }
     /**
      * Invoice Generation Date
      * */
@@ -306,11 +230,11 @@ class Invoice extends \Eloquent {
             $CompanyName  = Company::getName($CompanyID);
 
             $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
+            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID,$ServiceID);
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -324,7 +248,7 @@ class Invoice extends \Eloquent {
                 if(!empty($InvoiceTemplate)) {
 
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID,$ServiceID);
 
                     /**
                      ***************************
@@ -399,15 +323,18 @@ class Invoice extends \Eloquent {
 
                     if (isset($Invoice)) {
 
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places);
+                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
 
                         /*
                          * PDF Generation CODE HERE
                          *
                          */
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+
+                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
                         Log::info('PDF Generation start');
 
-                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID);
+                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
                         if(empty($pdf_path)){
                             $error = Invoice::$InvoiceGenrationErrorReasons["PDF"];
                             return array("status" => "failure", "message" => $error);
@@ -424,10 +351,10 @@ class Invoice extends \Eloquent {
                         if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID);
-                                /*if (empty($fullPath)) {
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                if (empty($fullPath)) {
                                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
-                                }*/
+                                }
                             }
                         }
 
@@ -502,12 +429,7 @@ class Invoice extends \Eloquent {
 
         $TotalCharges = 0;
         if(!empty($CompanyID) && !empty($AccountID) && !empty($StartDate) && !empty($EndDate) ) {
-            $serviceBilling = AccountBilling::serviceBilling($AccountID);
-            if($serviceBilling){
-                $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->distinct()->get(['CompanyGatewayID']);
-            }else{
-                $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
-            }
+            $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
 
             foreach($GatewayAccount as $GatewayAccountRow) {
                 $GatewayAccountRow['CompanyGatewayID'];
@@ -520,7 +442,7 @@ class Invoice extends \Eloquent {
                 $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$StartDate,$CompanyID);
                 $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$EndDate,$CompanyID);
                 Log::info('original start date ==>'.$StartDate.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$EndDate.' changed end date ==>'.$BillingEndDate);
-                $query = "CALL prc_getAccountInvoiceTotal(" . (int)$AccountID . ",$CompanyID,".$GatewayAccountRow['CompanyGatewayID'].",'$BillingStartDate','$BillingEndDate',0,0)";
+                $query = "CALL prc_getAccountInvoiceTotal(" . (int)$AccountID . ",$CompanyID,".$GatewayAccountRow['CompanyGatewayID'].",".$ServiceID.",'$BillingStartDate','$BillingEndDate',0,0)";
                 $result = DB::connection('sqlsrv2')->select($query);
                 if (isset($result[0])&& !empty($result) && isset($result[0]->TotalCharges) && $result[0]->TotalCharges > 0) {
                     $TotalCharges += $result[0]->TotalCharges;
@@ -548,12 +470,13 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static  function generate_pdf($InvoiceID,$data = []){
+    public static  function generate_pdf($InvoiceID,$data = [],$usage_data = [],$usage_data_table = []){
         if($InvoiceID>0) {
 			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
+            $ServiceID = $Invoice->ServiceID;
             $companyID = $Account->CompanyId;
             $UPLOADPATH = CompanyConfiguration::get($companyID,'UPLOAD_PATH');
             if(!empty($Invoice->RecurringInvoiceID)){
@@ -569,8 +492,8 @@ class Invoice extends \Eloquent {
                     ->groupBy("TaxRateID")
                     ->get();
             }else{
-                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
-                $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID);
+                $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID,$ServiceID);
+                $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,$ServiceID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
                 $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
             }
@@ -586,68 +509,27 @@ class Invoice extends \Eloquent {
             $logo = $UPLOADPATH . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
 
-            $usage_data = array();
+            $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
+
+
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
             $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
             if($InvoiceTemplate->InvoicePages == 'single_with_detail' && empty($Invoice->RecurringInvoiceID)) {
                 foreach ($InvoiceDetail as $Detail) {
                     if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
-
-
                         $start_date = $Detail->StartDate;
                         $end_date = $Detail->EndDate;
-                        $serviceBilling = AccountBilling::serviceBilling($Invoice->AccountID);
-                        if($serviceBilling){
-                            $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID,'ServiceID'=>$Invoice->ServiceID))->distinct()->get(['CompanyGatewayID']);
-                        }else{
-                            $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$Invoice->AccountID))->distinct()->get(['CompanyGatewayID']);
-                        }
-                        foreach($GatewayAccount as $GatewayAccountRow) {
-                            $GatewayAccountRow['CompanyGatewayID'];
-                            $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                            $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
-                            $AccountBillingTimeZone = Account::getBillingTimeZone($Invoice->AccountID);
-                            if(!empty($AccountBillingTimeZone)){
-                                $BillingTimeZone = $AccountBillingTimeZone;
-                            }
-                            $BillingStartDate = change_timezone($BillingTimeZone,$TimeZone,$start_date,$companyID);
-                            $BillingEndDate = change_timezone($BillingTimeZone,$TimeZone,$end_date,$companyID);
-                            Log::info('original start date ==>'.$start_date.' changed start date ==>'.$BillingStartDate.' original end date ==>'.$end_date.' changed end date ==>'.$BillingEndDate);
-                            $query = "CALL prc_getInvoiceUsage(" . $companyID . ",'" . $Invoice->AccountID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',".intval($InvoiceTemplate->ShowZeroCall).")";
-                            Log::info($query);
-                            $result_data = DB::connection('sqlsrv2')->select($query);
-                            $result_data = json_decode(json_encode($result_data), true);
-                            //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
-                            foreach($result_data as $result_row){
-                                if(isset($result_row['AreaPrefix'])){
-                                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
-                                    if(isset($usage_data[$key]['AreaPrefix'])){
-                                        $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
-                                        $usage_data[$key]['Duration'] = add_duration($result_row['Duration'],$usage_data[$key]['Duration']);
-                                        $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'],$usage_data[$key]['BillDuration']);
-                                        $usage_data[$key]['TotalCharges'] += $result_row['TotalCharges'];
-                                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
-                                    }else{
-                                        $usage_data[] = $result_row;
-                                    }
-                                }else{
-                                    $usage_data[] = $result_row;
-                                }
-                            }
-                        }
-
                         $file_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.pdf';
                         $htmlfile_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.html';
                         break;
                     }
                 }
             }
-            $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
+            $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
 			
             if(empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }else {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
             }
@@ -686,6 +568,7 @@ class Invoice extends \Eloquent {
             Log::info($output);
             Log::info($local_htmlfile);
             @unlink($local_htmlfile);
+            @unlink($header_html);
             @unlink($footer_html);
             if (file_exists($local_file)) {
                 $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
@@ -697,53 +580,19 @@ class Invoice extends \Eloquent {
         }
     }
 
-    //Not in Use
-    public static function calculateUsageTax($AccountID, $UsageSubTotal){
 
-        //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
-        $TotalTax = 0;
-        if(!empty($TaxRateIDs)){
-
-            $TaxRateIDs = explode(",",$TaxRateIDs);
-
-            foreach($TaxRateIDs as $TaxRateID) {
-
-                $TaxRateID = intval($TaxRateID);
-
-                if($TaxRateID>0){
-
-                    $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->where("TaxType",TaxRate::TAX_USAGE )->first();
-
-                    if(isset($TaxRate->Amount)) {
-
-                        if ($TaxRate->FlatStatus == 1) {
-
-                            $TotalTax = $TaxRate->Amount;
-
-                        } else {
-
-                            $TotalTax = (($UsageSubTotal * $TaxRate->Amount) / 100);
-                        }
-                    }
-                }
-            }
-        }
-        return $TotalTax;
-
-    }
 
     /**
     Calculate Total Tax on Invoice (Only Add Tax on Overall Invoice + Recurring Tax )
      *  Will add with passed usageTotalTax
      */
-    public static function insertInvoiceTaxRate($InvoiceID,$AccountID,$InvoiceSubTotal,$AdditionalChargeTax) {
+    public static function insertInvoiceTaxRate($InvoiceID,$AccountID,$InvoiceSubTotal,$AdditionalChargeTax,$ServiceID) {
 
         /*$Invoice = Invoice::find($InvoiceID);
         $InvoiceSubTotal = $Invoice->SubTotal;*/
 
         //Get Account TaxIDs
-        $TaxRateIDs = AccountBilling::getTaxRate($AccountID);
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID,$ServiceID);
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
@@ -831,9 +680,9 @@ class Invoice extends \Eloquent {
         $SubTotalWithoutTax = $AdditionalChargeTax =  0;
         $regenerate =1;
         $Account = Account::find((int)$Invoice->AccountID);
-        $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID);
-        $AccountID = $Account->AccountID;
         $ServiceID = $Invoice->ServiceID;
+        $AccountID = $Account->AccountID;
+        $AccountBilling = AccountBilling::getBillingClass($AccountID,$ServiceID);
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
 
@@ -841,14 +690,14 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
                     return $error;
                 }
                 if (!empty($InvoiceTemplate)) {
-                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID,$ServiceID);
 
                     Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $StartDate . ',' . $EndDate . ')');
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
@@ -935,7 +784,7 @@ class Invoice extends \Eloquent {
                     if (isset($Invoice)) {
 
                         // Add Tax in Subtotal and Update all Total Fields in Invoice Table.
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places);
+                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
 
                         /*
                          * PDF Generation CODE HERE
@@ -943,7 +792,11 @@ class Invoice extends \Eloquent {
                          */
                         Log::info('PDF Generation start');
 
-                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID);
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+
+                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+
+                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
                         if (empty($pdf_path)) {
                             $error['message'] = Invoice::$InvoiceGenrationErrorReasons["PDF"];
                             $error['status'] = 'failure';
@@ -962,11 +815,11 @@ class Invoice extends \Eloquent {
                         if ($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID);
-                                /*if (empty($fullPath)) {
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                if (empty($fullPath)) {
                                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                     $error['status'] = 'failure';
-                                }*/
+                                }
                             }
                         }
 
@@ -1166,7 +1019,7 @@ class Invoice extends \Eloquent {
         return $status;
     }
 
-    public static function updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places){
+    public static function updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID){
 
         /**
          * Find
@@ -1187,7 +1040,7 @@ class Invoice extends \Eloquent {
         /* Total Tax to update here */
         Log::info(' SubTotal ' . $SubTotal);
         Log::info(' SubTotalWithouttaxTotal ' . $SubTotalWithoutTax);
-        $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID,$Invoice->AccountID, $SubTotal,$AdditionalChargeTax);
+        $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID,$Invoice->AccountID, $SubTotal,$AdditionalChargeTax,$ServiceID);
         //$TotalTax += $AdditionalChargeTax; // Additional Tax from AdditionalCharge
 
         Log::info(' TotalTax ' . $TotalTax);
@@ -1397,7 +1250,7 @@ class Invoice extends \Eloquent {
         /**
          * Add Data in Invoice
          */
-        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber(AccountBilling::getInvoiceTemplateID($AccountID), $CompanyID);
+        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber(AccountBilling::getInvoiceTemplateID($AccountID,$ServiceID), $CompanyID);
         $Invoice = Invoice::insertInvoice(array(
             "CompanyID" => $CompanyID,
             "AccountID" => $AccountID,
@@ -1426,7 +1279,7 @@ class Invoice extends \Eloquent {
 
 
         //Store Last Invoice Number.
-        InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
+        InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID,$ServiceID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
 
         /**
          * Add Usage in InvoiceDetail
@@ -1435,6 +1288,7 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData = array();
         $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
         $InvoiceDetailData['ProductID'] = 0;
+        $InvoiceDetailData['ServiceID'] = $ServiceID;
         $InvoiceDetailData['ProductType'] = Product::USAGE;
         $InvoiceDetailData['Description'] = $ProductDescription;
         $InvoiceDetailData['StartDate'] = $StartDate;
@@ -1505,6 +1359,7 @@ class Invoice extends \Eloquent {
                 $InvoiceDetailData = array();
                 $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
                 $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
+                $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
                 $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
                 $InvoiceDetailData['Description'] = $ProductDescription.' Activation Fee';
                 $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
@@ -1521,6 +1376,7 @@ class Invoice extends \Eloquent {
             $InvoiceDetailData = array();
             $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
             $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
+            $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
             $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
             $InvoiceDetailData['Description'] = $ProductDescription;
             $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
@@ -1625,6 +1481,7 @@ class Invoice extends \Eloquent {
                 $InvoiceDetailData = array();
                 $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
                 $InvoiceDetailData['ProductID'] = $AccountOneOffCharge->ProductID;
+                $InvoiceDetailData['ServiceID'] = $AccountOneOffCharge->ServiceID;
                 $InvoiceDetailData['ProductType'] = Product::ONEOFFCHARGE;
                 $InvoiceDetailData['Description'] = $ProductDescription ;
                 $InvoiceDetailData['StartDate'] = $AccountOneOffCharge->Date;
@@ -1644,684 +1501,7 @@ class Invoice extends \Eloquent {
 
     }
 
-    public static function sendManualInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
-        $error = "";
-        $StartDate = $LastInvoiceDate;		
-        $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
-		$print_type = Invoice::PRINTTYPE;
-        Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
-
-        if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
-
-            $CompanyName  = Company::getName($CompanyID);
-            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-
-            $Account = Account::find((int)$AccountID);
-            $AccountBilling = AccountBilling::getBillingClass((int)$AccountID);
-
-            if(!empty($Account)) {
-
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat"])->first();
-
-                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
-                    $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
-                    return array("status" => "failure", "message" => $error);
-                }
-
-                Log::info('InvoiceTemplate->InvoiceNumberPrefix =' .($InvoiceTemplate->InvoiceNumberPrefix)) ;
-                Log::info('InvoiceTemplate->Terms =' .($InvoiceTemplate->Terms));
-
-
-                if(!empty($InvoiceTemplate)) {
-
-                    $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
-
-                    /**
-                     ***************************
-                     **************************
-                    Step 1     USAGE
-                     **************************
-                     **************************
-                     */
-                    //Check if Invoice Usage is alrady Created.
-                    //TRUE=Already Billed
-                    //FALSE = Not billed
-                    Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
-
-                    $AlreadyBilled = Invoice::checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate);
-
-                    //If Already Billed
-
-                    if ($AlreadyBilled) {
-                        $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                        return array("status" => "failure", "message" => $error);
-                    }
-
-                    $Invoice = "";
-                    $SubTotal = 0;
-                    $SubTotalWithoutTax = 0;
-                    $AdditionalChargeTax = 0;
-
-                    //If Account usage not already billed
-
-                    if (!$AlreadyBilled) {
-
-                        $uResponse = self::addManualUsage($Account,$CompanyID, $AccountID,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places);
-                        $Invoice = $uResponse["Invoice"];
-                        $SubTotal = $uResponse["SubTotal"];
-
-                    } // Usage Over
-                    $InvoiceID = $Invoice->InvoiceID;
-                    Log::info('Usage Over') ;
-
-                    /**
-                     ***************************
-                     **************************
-                    Step 2  SUBSCRIPTION
-                     **************************
-                     **************************
-                     */
-
-                    /**
-                     * Add Subscription in InvoiceDetail if any
-                     */
-                    //$subResponse = self::addSubscription($Invoice,$InvoiceTemplate,$StartDate,$EndDate,$SubTotal,$decimal_places);
-                    //$SubTotal = $subResponse["SubTotal"];
-                    //$SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
-
-                    /**
-                     * Add OneOffCharge in InvoiceDetail if any
-                     */
-                    //$subResponse = self::addOneOffCharge($Invoice,$InvoiceTemplate,$StartDate,$EndDate,$SubTotal,$decimal_places);
-                    //$SubTotal = $subResponse["SubTotal"];
-                    //$SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
-                    //$AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
-
-                    /**
-                     ***************************
-                     **************************
-                    Step 3  USAGE FILE & Invoice PDF & EMAIL
-                     **************************
-                     **************************
-                     */
-
-                    Log::info('USAGE FILE & Invoice PDF & EMAIL Start') ;
-
-                    if (isset($Invoice)) {
-
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places);
-
-                        /*
-                         * PDF Generation CODE HERE
-                         *
-                         */
-                        Log::info('PDF Generation start');
-
-                        //$pdf_path = Invoice::generate_pdf($Invoice->InvoiceID);
-                        $pdf_path = '';
-                        $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-                        $Account = Account::find($Invoice->AccountID);
-                        $Currency = Currency::find($Account->CurrencyId);
-                        $CurrencyCode = !empty($Currency)?$Currency->Code:'';
-                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-                        $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
-                        } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
-                        }
-                        $logo = $UPLOADPATH . '/' . basename($as3url);
-                        file_put_contents($logo, file_get_contents($as3url));
-                        $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
-                        $usage_data = array();
-                        $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                        $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
-                        $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-                        if($InvoiceTemplate->InvoicePages == 'single_with_detail') {
-                            foreach ($InvoiceDetail as $Detail) {
-                                if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
-
-                                    $companyID = $Account->CompanyId;
-                                    $start_date = $Detail->StartDate;
-                                    $end_date = $Detail->EndDate;
-                                    $result_data = DB::connection('sqlsrv2')->table('tblSummeryData')->where(array('AccountID'=>$AccountID))->get();
-
-                                    $result_data = json_decode(json_encode($result_data), true);
-                                    //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
-                                    $countkey = 0;
-                                    foreach($result_data as $result_row){
-                                        if(empty($result_row['AreaPrefix'])){
-                                            $result_row['AreaPrefix'] = 'Other';
-                                        }
-                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
-                                        if(isset($usage_data[$key]['AreaPrefix'])){
-                                            $usage_data[$key]['NoOfCalls'] += $result_row['TotalCalls'];
-                                            $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
-                                            $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
-                                            $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
-                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
-                                        }else{
-                                            $usage_data[$countkey]['Trunk'] = 'Other';
-                                            $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
-                                            $usage_data[$countkey]['Country'] = $result_row['Country'];
-                                            $usage_data[$countkey]['Description'] = $result_row['AreaName'];
-                                            $usage_data[$countkey]['NoOfCalls'] = $result_row['TotalCalls'];
-                                            $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
-                                            $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
-                                            $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
-                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
-                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
-                                        }
-                                        $countkey++;
-                                    }
-
-                                    $file_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.pdf';
-                                    $htmlfile_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.html';
-                                    break;
-                                }
-                            }
-                        }
-						
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
-                        $body = htmlspecialchars_decode($body);
-                        $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
-                        $footer = htmlspecialchars_decode($footer);
-                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
-                        $header = htmlspecialchars_decode($header);
-
-                        $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
-                        if (!file_exists($destination_dir)) {
-                            mkdir($destination_dir, 0777, true);
-                        }
-                        $file_name = Uuid::generate() .'-'. $file_name;
-                        $htmlfile_name = Uuid::generate() .'-'. $htmlfile_name;
-                        $local_file = $destination_dir .  $file_name;
-                        $local_htmlfile = $destination_dir .  $htmlfile_name;
-                        file_put_contents($local_htmlfile,$body);
-                        $footer_name = 'footer-'. Uuid::generate() .'.html';
-                        $footer_html = $destination_dir.$footer_name;
-                        file_put_contents($footer_html,$footer);
-                        $header_name = 'header-'. Uuid::generate() .'.html';
-                        $header_html = $destination_dir.$header_name;
-                        file_put_contents($header_html,$header);
-                        $output= "";
-                        if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                        }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                        }
-                        Log::info($output);
-                        Log::info($local_htmlfile);
-                        @unlink($local_htmlfile);
-                        @unlink($footer_html);
-                        if (file_exists($local_file)) {
-                            $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
-                                $pdf_path = $fullPath;
-                            }
-                        }
-
-                        if(empty($pdf_path)){
-                            $error = Invoice::$InvoiceGenrationErrorReasons["PDF"];
-                            return array("status" => "failure", "message" => $error);
-                        }else{
-                            $Invoice->update(["PDF" => $pdf_path]);
-                        }
-
-                        Log::info('PDF fullPath ' . $pdf_path);
-
-                        /** Generate Usage File **/
-                        Log::info('Generate Usage File Start ') ;
-
-                        $fullPath = "";
-                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
-                            $InvoiceID = $Invoice->InvoiceID;
-                            if ($InvoiceID > 0 && $AccountID > 0) {
-                                $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = $UPLOADPATH . '/'. $amazonPath;
-                                if (!file_exists($dir)) {
-                                    mkdir($dir, 0777, TRUE);
-                                }
-                                if (is_writable($dir)) {
-                                    $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                                    $local_file = $dir . '/' . str_slug($AccountName) . '-summary-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
-
-                                    $output = Helper::array_to_csv($usage_data);
-                                    file_put_contents($local_file, $output);
-                                    if (file_exists($local_file)) {
-                                        $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
-                                            throw new Exception('Error in Amazon upload');
-                                        }
-                                        if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
-                                            $Invoice->update(["UsagePath" => $fullPath]); // Update new one
-                                        }
-                                    }
-                                }
-                                if (empty($fullPath)) {
-                                    $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
-                                }
-                            }
-                        }
-
-                        Log::info('Usage File fullPath ' . $fullPath ) ;
-
-                        if(empty($error)) {
-
-                            //$status = self::EmailToCustomer($Account,$totals['TotalDue'],$Invoice,$InvoiceTemplate->InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID);
-
-                            if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
-                                $error_1 = $status['message'];
-                            }
-                        }
-
-                    }//Email Sending over
-
-                    Log::info('=========== Email Sending over =========== ') ;
-
-                    /*if (isset($Invoice)) {
-
-                        Log::info('=========== Updating  InvoiceDate =========== ') ;
-
-                        $oldNextInvoiceDate = $NextInvoiceDate;
-                        $Account->update(["LastInvoiceDate"=>$oldNextInvoiceDate]);
-                        $NewNextInvoiceDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($CompanyID,$AccountID,$oldNextInvoiceDate);
-                        $Account->update(["NextInvoiceDate"=>$NewNextInvoiceDate]);
-
-                        Log::info('=========== Updated  InvoiceDate =========== ') ;
-
-                    }*/
-
-                }
-                if(!empty($error)){
-
-                    Log::info('=========== Returning as Error =========== ' . $error) ;
-
-                    return array("status"=>"failure","message"=> $error);
-                }else{
-                    Log::info('=========== Returning as Success =========== AccountID ' . $AccountID) ;
-                    return array("status"=>"success","message"=> "Invoice Created Successfully.",'accounts'=>(isset($error_1)?$error_1:''));
-                }
-            }
-
-        }
-    }
-    public static function addManualUsage($Account,$CompanyID, $AccountID,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places){
-
-        Log::info('Invoice::getAccountUsageTotal('.$CompanyID.','. $AccountID.','. $StartDate.','. $EndDate.')') ;
-
-        //get Total Usage
-        $TotalCharges = DB::connection('sqlsrv2')->table('tblSummeryData')->where(array('AccountID'=>$AccountID))->sum('TotalCharge');
-        //$TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $StartDate, $EndDate);
-
-        /*if( $TotalCharges == 0 ) {
-            $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['NoCDR'];
-            return array("status" => "failure", "message" => $error);
-        }*/
-
-        Log::info('TotalCharges - '.$TotalCharges) ;
-
-        //if ($TotalCharges > 0) {
-        //Create Invoice even if TotalCharges is zero its used for PBX customer
-
-        $Address = Account::getFullAddress($Account);
-
-        $TotalUsageCharges = number_format($TotalCharges, $decimal_places, '.', '');
-
-        $SubTotal = floatval($SubTotal) + floatval($TotalUsageCharges);
-
-        /**
-         * Add Tax Rate
-         * */
-        Log::info('TotalUsageCharges - '.$TotalUsageCharges) ;
-
-        /**
-         * Add Data in Invoice
-         */
-        $InvoiceNumber = InvoiceTemplate::getNextInvoiceNumber(AccountBilling::getInvoiceTemplateID($AccountID), $CompanyID);
-        $Invoice = Invoice::insertInvoice(array(
-            "CompanyID" => $CompanyID,
-            "AccountID" => $AccountID,
-            "Address" => $Address,
-            "InvoiceNumber" => $InvoiceNumber,
-            "FullInvoiceNumber" => $InvoiceTemplate->InvoiceNumberPrefix.$InvoiceNumber,
-            "IssueDate" => date('Y-m-d'),
-            "TotalDiscount" => 0,
-            "CurrencyID" => $Account->CurrencyId,
-            "Note" => "Auto Generated on " . date($InvoiceTemplate->DateFormat),
-            "Terms" => $InvoiceTemplate->Terms,
-            'FooterTerm' => $InvoiceTemplate->FooterTerm,
-            "InvoiceStatus" => Invoice::AWAITING
-        ));
-
-        /**
-         * Insert Data in InvoiceLog
-         */
-        $invoiceloddata = array();
-        $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
-        $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::CREATED].' By RMScheduler';
-        $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
-        $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::CREATED;
-        InvoiceLog::insert($invoiceloddata);
-
-
-        //Store Last Invoice Number.
-        InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
-
-        /**
-         * Add Usage in InvoiceDetail
-         */
-        $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($StartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($EndDate));
-        $InvoiceDetailData = array();
-        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-        $InvoiceDetailData['ProductID'] = 0;
-        $InvoiceDetailData['ProductType'] = Product::USAGE;
-        $InvoiceDetailData['Description'] = $ProductDescription;
-        $InvoiceDetailData['StartDate'] = $StartDate;
-        $InvoiceDetailData['EndDate'] = $EndDate;
-        $InvoiceDetailData['Price'] = $TotalUsageCharges;
-        $InvoiceDetailData['Qty'] = 1;
-        $InvoiceDetailData['Discount'] = 0;
-        $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
-        $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
-        $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
-        InvoiceDetail::insert($InvoiceDetailData);
-
-
-        return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
-
-    }
-    public static function resendManualInvoice($CompanyID,$Invoice,$InvoiceDetail,$InvoiceGenerationEmail,$ProcessID,$JobID){
-
-        $error = "";
-        $SubTotal = 0;
-		$print_type = Invoice::PRINTTYPE;
-        $SubTotalWithoutTax = $AdditionalChargeTax =  0;
-        $regenerate =1;
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-        $Account = Account::find((int)$Invoice->AccountID);
-        $AccountID = $Account->AccountID;
-        $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
-        $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
-
-        Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
-
-        if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
-            $CompanyName = Company::getName($CompanyID);
-
-            $AccountBilling = AccountBilling::getBillingClass($AccountID);
-            $InvoiceID = $Invoice->InvoiceID;
-            if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat"])->first();
-                if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
-                    $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
-                    $error['status'] = 'failure';
-                    return $error;
-                }
-                if (!empty($InvoiceTemplate)) {
-                    $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
-
-                    Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $StartDate . ',' . $EndDate . ')');
-                    $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-
-                    //get Total Usage
-                    $TotalCharges = DB::connection('sqlsrv2')->table('tblSummeryData')->where(array('AccountID'=>$AccountID))->sum('TotalCharge');
-
-
-                    Log::info('TotalCharges - ' . $TotalCharges);
-
-
-                    $Address = Account::getFullAddress($Account);
-
-                    $TotalUsageCharges = number_format($TotalCharges, $decimal_places, '.', '');
-
-                    $SubTotal += $TotalUsageCharges;
-
-                    /**
-                     * Add Tax Rate
-                     * */
-                    Log::info('TotalUsageCharges - ' . $TotalUsageCharges);
-
-                    /**
-                     * Update Data in Invoice
-                     */
-                    $Invoicedataarray = array();
-                    $Invoicedataarray['Address'] = $Address;
-                    $Invoicedataarray['CurrencyID'] = $Account->CurrencyId;
-                    $Invoicedataarray['Note'] = "ReGenerated on " . date($InvoiceTemplate->DateFormat);
-                    $Invoicedataarray['Terms'] = $InvoiceTemplate->Terms;
-                    $Invoicedataarray['FooterTerm'] = $InvoiceTemplate->FooterTerm;
-                    $Invoicedataarray['InvoiceStatus'] = self::AWAITING;
-                    $Invoice->update($Invoicedataarray);
-                    /**
-                     * Update Usage in InvoiceDetail
-                     */
-                    $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($StartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($EndDate));
-                    $InvoiceDetailData = array();
-                    $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-                    $InvoiceDetailData['ProductID'] = 0;
-                    $InvoiceDetailData['ProductType'] = Product::USAGE;
-                    $InvoiceDetailData['Description'] = $ProductDescription;
-                    $InvoiceDetailData['StartDate'] = $StartDate;
-                    $InvoiceDetailData['EndDate'] = $EndDate;
-                    $InvoiceDetailData['Price'] = $TotalUsageCharges;
-                    $InvoiceDetailData['Qty'] = 1;
-                    $InvoiceDetailData['Discount'] = 0;
-                    $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
-                    $InvoiceDetailData["updated_at"] = date("Y-m-d H:i:s");
-                    $InvoiceDetailData["ModifiedBy"] = 'RMScheduler';
-                    InvoiceDetail::where(array('InvoiceID' => $Invoice->InvoiceID, 'ProductID' => 0, 'ProductType' => Product::USAGE))->update($InvoiceDetailData);
-
-                    /**
-                     * Insert Data in InvoiceLog
-                     */
-                    $invoiceloddata = array();
-                    $invoiceloddata['InvoiceID'] = $Invoice->InvoiceID;
-                    $invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::REGENERATED].' By RMScheduler';
-                    $invoiceloddata['created_at'] = date("Y-m-d H:i:s");
-                    $invoiceloddata['InvoiceLogStatus'] = InvoiceLog::REGENERATED;
-                    InvoiceLog::insert($invoiceloddata);
-
-                    // }
-                    Log::info('Usage Over');
-
-
-
-                    Log::info('USAGE FILE & Invoice PDF & EMAIL Start');
-
-                    if (isset($Invoice)) {
-
-                        // Add Tax in Subtotal and Update all Total Fields in Invoice Table.
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places);
-
-                        /*
-                         * PDF Generation CODE HERE
-                         *
-                         */
-                        Log::info('PDF Generation start');
-
-                        //$pdf_path = Invoice::generate_pdf($Invoice->InvoiceID);
-                        $pdf_path = '';
-                        $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-                        $Account = Account::find($Invoice->AccountID);
-                        $Currency = Currency::find($Account->CurrencyId);
-                        $CurrencyCode = !empty($Currency)?$Currency->Code:'';
-                        $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
-                        $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
-                        if (empty($InvoiceTemplate->CompanyLogoUrl) || AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID) == '') {
-                            $as3url =  base_path().'/resources/assets/images/250x100.png'; //'http://placehold.it/250x100';
-                        } else {
-                            $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
-                        }
-                        $logo = $UPLOADPATH . '/' . basename($as3url);
-                        file_put_contents($logo, file_get_contents($as3url));
-                        $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
-                        $usage_data = array();
-                        $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-                        $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
-                        $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-                        if($InvoiceTemplate->InvoicePages == 'single_with_detail') {
-                            foreach ($InvoiceDetail as $Detail) {
-                                if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
-
-                                    $companyID = $Account->CompanyId;
-                                    $start_date = $Detail->StartDate;
-                                    $end_date = $Detail->EndDate;
-                                    $result_data = DB::connection('sqlsrv2')->table('tblSummeryData')->where(array('AccountID'=>$AccountID))->get();
-
-                                    $result_data = json_decode(json_encode($result_data), true);
-                                    //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
-                                    $countkey = 0;
-                                    foreach($result_data as $result_row){
-                                        if(empty($result_row['AreaPrefix'])){
-                                            $result_row['AreaPrefix'] = 'Other';
-                                        }
-                                        $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix',$result_row['Trunk'],'Trunk',$usage_data);
-                                        if(isset($usage_data[$key]['AreaPrefix'])){
-                                            $usage_data[$key]['NoOfCalls'] += $result_row['TotalCalls'];
-                                            $usage_data[$key]['Duration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['Duration']);
-                                            $usage_data[$key]['BillDuration'] = add_duration(((int)($result_row['Duration']/60).':'.$result_row['Duration']%60),$usage_data[$key]['BillDuration']);
-                                            $usage_data[$key]['TotalCharges'] += $result_row['TotalCharge'];
-                                            $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                                            $usage_data[$key]['BillDurationInSec'] += $result_row['Duration'];
-                                        }else{
-                                            $usage_data[$countkey]['Trunk'] = 'Other';
-                                            $usage_data[$countkey]['AreaPrefix'] = $result_row['AreaPrefix'];
-                                            $usage_data[$countkey]['Country'] = $result_row['Country'];
-                                            $usage_data[$countkey]['Description'] = $result_row['AreaName'];
-                                            $usage_data[$countkey]['NoOfCalls'] = $result_row['TotalCalls'];
-                                            $usage_data[$countkey]['Duration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
-                                            $usage_data[$countkey]['BillDuration'] = (int)($result_row['Duration']/60).':'.$result_row['Duration']%60;
-                                            $usage_data[$countkey]['TotalCharges'] = $result_row['TotalCharge'];
-                                            $usage_data[$countkey]['DurationInSec'] = $result_row['Duration'];
-                                            $usage_data[$countkey]['BillDurationInSec'] = $result_row['Duration'];
-
-                                        }
-                                        $countkey++;
-                                    }
-
-                                    $file_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.pdf';
-                                    $htmlfile_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.html';
-                                    break;
-                                }
-                            }
-                        }
-                        $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail','InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data', 'CurrencyCode','CurrencySymbol', 'logo','print_type'))->render();
-                        $body = htmlspecialchars_decode($body);
-                        $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
-                        $footer = htmlspecialchars_decode($footer);
-                        $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
-                        $header = htmlspecialchars_decode($header);
-
-                        $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-                        $destination_dir = $UPLOADPATH . '/'. $amazonPath;
-                        if (!file_exists($destination_dir)) {
-                            mkdir($destination_dir, 0777, true);
-                        }
-                        $file_name = Uuid::generate() .'-'. $file_name;
-                        $htmlfile_name = Uuid::generate() .'-'. $htmlfile_name;
-                        $local_file = $destination_dir .  $file_name;
-                        $local_htmlfile = $destination_dir .  $htmlfile_name;
-                        file_put_contents($local_htmlfile,$body);
-                        $footer_name = 'footer-'. Uuid::generate() .'.html';
-                        $footer_html = $destination_dir.$footer_name;
-                        file_put_contents($footer_html,$footer);
-                        $header_name = 'header-'. Uuid::generate() .'.html';
-                        $header_html = $destination_dir.$header_name;
-                        file_put_contents($header_html,$header);
-                        $output= "";
-                        if(getenv('APP_OS') == 'Linux'){
-                            exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-
-                        }else{
-                            exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                            Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
-                        }
-                        Log::info($output);
-                        Log::info($local_htmlfile);
-                        @unlink($local_htmlfile);
-                        @unlink($footer_html);
-                        if (file_exists($local_file)) {
-                            $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                            if (AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
-                                $pdf_path = $fullPath;
-                            }
-                        }
-
-                        if(empty($pdf_path)){
-                            $error = Invoice::$InvoiceGenrationErrorReasons["PDF"];
-                            return array("status" => "failure", "message" => $error);
-                        }else{
-                            $Invoice->update(["PDF" => $pdf_path]);
-                        }
-
-                        Log::info('PDF fullPath ' . $pdf_path);
-
-                        /** Generate Usage File **/
-                        Log::info('Generate Usage File Start ');
-
-                        $fullPath = "";
-                        $message['message'] = $Account->AccountName;
-                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
-                            $InvoiceID = $Invoice->InvoiceID;
-                            if ($InvoiceID > 0 && $AccountID > 0) {
-                                $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'],$CompanyID,$AccountID) ;
-                                $dir = $UPLOADPATH . '/'. $amazonPath;
-                                if (!file_exists($dir)) {
-                                    mkdir($dir, 0777, TRUE);
-                                }
-                                if (is_writable($dir)) {
-                                    $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
-                                    $local_file = $dir . '/' . str_slug($AccountName) . '-summary-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
-
-                                    $output = Helper::array_to_csv($usage_data);
-                                    file_put_contents($local_file, $output);
-                                    if (file_exists($local_file)) {
-                                        $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
-                                        if (!AmazonS3::upload($local_file, $amazonPath,$CompanyID)) {
-                                            throw new Exception('Error in Amazon upload');
-                                        }
-                                        if (!empty($fullPath)) {
-                                            AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon
-                                            $Invoice->update(["UsagePath" => $fullPath]); // Update new one
-                                        }
-                                    }
-                                }
-                                if (empty($fullPath)) {
-                                    $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
-                                }
-                            }
-                        }
-
-                        Log::info('Usage File fullPath ' . $fullPath);
-
-
-
-
-
-                    }//Email Sending over
-                    Log::info('=========== Email Sending over =========== ');
-                }
-                if (!empty($error)) {
-                    Log::info('=========== Returning as Error =========== ' . print_r($error,true));
-                    return $error;
-                } else {
-                    $message['message']= ' Invoice Regenerated '.(isset($message['message'])?$message['message']:'');
-                    $message['status'] = "success";
-                    Log::info('=========== Returning as Success =========== AccountID ' . $AccountID);
-                    return $message;
-                }
-            }
-        }
-    }
 
     public static function CheckInvoiceFullPaid($InvoiceID,$CompanyID){
         $Response = false;
@@ -2357,15 +1537,7 @@ class Invoice extends \Eloquent {
             $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
             Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
             $Accounts = json_decode(json_encode($Accounts),true);
-            /*$Accounts = Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
-                ->select(["tblAccountBilling.AccountID", "tblAccountBilling.NextInvoiceDate", "AccountName","ServiceID"])
-                ->whereNotIn('tblAccount.AccountID', $skip_accounts)
-                ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
-                ->where('tblAccountBilling.NextInvoiceDate', '<>', '')
-                ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
-                ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
-                ->whereNotNull('tblAccountBilling.BillingCycleType')
-                ->orderby('tblAccount.AccountID')->get();*/
+
             foreach ($Accounts as $Account) {
 
                 $AccountName = $Account['AccountName'];
@@ -2418,7 +1590,7 @@ class Invoice extends \Eloquent {
 
                                     Log::info('Invoice created - ' . print_r($response, true));
                                     $message[] = $response["message"];
-                                    Log::info('Invoice Commited  AccountID = ' . $AccountID);
+                                    Log::info('Invoice Committed  AccountID = ' . $AccountID);
                                     DB::connection('sqlsrv2')->commit();
                                     Log::info('=========== Updating  InvoiceDate =========== ');
                                     $AccountBilling = AccountBilling::getBilling($AccountID, $ServiceID);
@@ -2485,18 +1657,264 @@ class Invoice extends \Eloquent {
             //Log::info($skip_accounts);
         } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
 
-  /*      Account::join('tblAccountBilling', 'tblAccountBilling.AccountID', '=', 'tblAccount.AccountID')
-            ->select(["tblAccount.AccountID", "AccountName"])
-            ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Billing" => 1])
-            ->where('tblAccountBilling.NextInvoiceDate', '<>', '')
-            ->where('tblAccountBilling.NextInvoiceDate', '<>', '0000-00-00')
-            ->where('tblAccountBilling.NextInvoiceDate', '<=', $today)
-            ->where('tblAccountBilling.AccountID', '=', 5020)
-            ->whereNotIn('tblAccount.AccountID', $skip_accounts)
-            ->whereNotNull('tblAccountBilling.BillingCycleType')->count();*/
+
 		$response['errors'] = $errors;
 		$response['message'] = $message;
 		return $response;
     }
 
+    public static function getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$start_date,$end_date){
+
+        $usage_data = array();
+        $ShowZeroCall = 1;
+        $GatewayAccount = GatewayAccount::where(array('AccountID' => $AccountID))->distinct()->get(['CompanyGatewayID']);
+        $AccountBilling = AccountBilling::getBillingClass($AccountID,$ServiceID);
+        if(!empty($AccountBilling) && isset($AccountBilling->InvoiceTemplateID)) {
+            $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
+            if (!empty($InvoiceTemplate) && isset($InvoiceTemplate->ShowZeroCall)) {
+                $ShowZeroCall = intval($InvoiceTemplate->ShowZeroCall);
+            }
+        }
+        foreach ($GatewayAccount as $GatewayAccountRow) {
+            $GatewayAccountRow['CompanyGatewayID'];
+            $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
+            $TimeZone = CompanyGateway::getGatewayTimeZone($GatewayAccountRow['CompanyGatewayID']);
+            $AccountBillingTimeZone = Account::getBillingTimeZone($AccountID);
+            if (!empty($AccountBillingTimeZone)) {
+                $BillingTimeZone = $AccountBillingTimeZone;
+            }
+            $BillingStartDate = change_timezone($BillingTimeZone, $TimeZone, $start_date, $CompanyID);
+            $BillingEndDate = change_timezone($BillingTimeZone, $TimeZone, $end_date, $CompanyID);
+            Log::info('original start date ==>' . $start_date . ' changed start date ==>' . $BillingStartDate . ' original end date ==>' . $end_date . ' changed end date ==>' . $BillingEndDate);
+            $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','" . $ServiceID . "','".$GatewayAccountRow['CompanyGatewayID']."','" . $BillingStartDate . "','" . $BillingEndDate . "',".$ShowZeroCall.")";
+            Log::info($query);
+            $result_data = DB::connection('sqlsrv2')->select($query);
+            $result_data = json_decode(json_encode($result_data), true);
+            //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
+            foreach ($result_data as $result_row) {
+                if (isset($result_row['AreaPrefix'])) {
+                    /*if(isset($result_row['DurationInSec'])){
+                        unset($result_row['DurationInSec']);
+                    }
+                    if(isset($result_row['BillDurationInSec'])){
+                        unset($result_row['BillDurationInSec']);
+                    }*/
+                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk', $usage_data);
+                    if (isset($usage_data[$key]['AreaPrefix'])) {
+                        $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
+                        $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
+                        $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
+                        $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
+                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
+                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
+                    } else {
+                        $usage_data[] = $result_row;
+                    }
+                } else {
+                    $usage_data[] = $result_row;
+                }
+            }
+        }
+        return $usage_data;
+    }
+
+    public static function create_accountdetails($Account){
+        $replace_array = array();
+        $replace_array['FirstName'] = $Account->FirstName;
+        $replace_array['LastName'] = $Account->LastName;
+        $replace_array['AccountName'] = $Account->AccountName;
+        $replace_array['AccountNumber'] = $Account->Number;
+        $replace_array['VatNumber'] = $Account->VatNumber;
+        $replace_array['NominalCode'] = $Account->NominalAnalysisNominalAccountNumber;
+        $replace_array['Email'] = $Account->Email;
+        $replace_array['Address1'] = $Account->Address1;
+        $replace_array['Address2'] = $Account->Address2;
+        $replace_array['Address3'] = $Account->Address3;
+        $replace_array['City'] = $Account->City;
+        $replace_array['State'] = $Account->State;
+        $replace_array['PostCode'] = $Account->PostCode;
+        $replace_array['Country'] = $Account->Country;
+        $replace_array['Phone'] = $Account->Phone;
+        $replace_array['Fax'] = $Account->Fax;
+        $replace_array['Website'] = $Account->Website;
+        $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
+        $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
+        $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+
+        return $replace_array;
+    }
+
+
+    public static function getInvoiceToByAccount($Message,$replace_array){
+        $extra = [
+            '{AccountName}',
+            '{AccountNumber}',
+            '{VatNumber}',
+            '{VatNumber}',
+            '{NominalCode}',
+            '{Phone}',
+            '{Fax}',
+            '{Website}',
+            '{Email}',
+            '{Address1}',
+            '{Address2}',
+            '{Address3}',
+            '{City}',
+            '{State}',
+            '{PostCode}',
+            '{Country}',
+            '{Currency}',
+            '{CompanyName}',
+            '{CompanyVAT}',
+            '{CompanyAddress}'
+        ];
+
+        foreach($extra as $item){
+            $item_name = str_replace(array('{','}'),array('',''),$item);
+            if(array_key_exists($item_name,$replace_array)) {
+                $Message = str_replace($item,$replace_array[$item_name],$Message);
+            }
+        }
+        return $Message;
+    }
+
+    public static function getServiceUsageTotal($usage_data){
+        $service_usage_data = array();
+        foreach($usage_data as $usage_data_row){
+            $ServiceID = $usage_data_row['ServiceID'];
+            if(isset($service_usage_data[$ServiceID])){
+                $service_usage_data[$ServiceID]['usage_cost'] +=  $usage_data_row['ChargedAmount'];
+            }else{
+                $service_usage_data[$ServiceID]['usage_cost'] =  $usage_data_row['ChargedAmount'];
+            }
+        }
+        return $service_usage_data;
+    }
+    public static function getServiceSubscriptionTotal($InvoiceDetail){
+        $service_sub_data = array();
+        foreach($InvoiceDetail as $InvoiceDetailRow){
+            if($InvoiceDetailRow->ProductType == Product::SUBSCRIPTION) {
+                $ServiceID = $InvoiceDetailRow->ServiceID;
+                if (isset($service_sub_data[$ServiceID])) {
+                    $service_sub_data[$ServiceID]['sub_cost'] += $InvoiceDetailRow->LineTotal;
+                } else {
+                    $service_sub_data[$ServiceID]['sub_cost'] = $InvoiceDetailRow->LineTotal;
+                }
+            }
+        }
+        return $service_sub_data;
+    }
+
+    public static function getServiceAdditionalTotal($InvoiceDetail){
+        $service_add_data = array();
+        foreach($InvoiceDetail as $InvoiceDetailRow){
+            if($InvoiceDetailRow->ProductType == Product::ONEOFFCHARGE) {
+                $ServiceID = $InvoiceDetailRow->ServiceID;
+                if (isset($service_add_data[$ServiceID])) {
+                    $service_add_data[$ServiceID]['add_cost'] += $InvoiceDetailRow->LineTotal;
+                } else {
+                    $service_add_data[$ServiceID]['add_cost'] = $InvoiceDetailRow->LineTotal;
+                }
+            }
+        }
+        return $service_add_data;
+    }
+
+    public static function getServiceData($AccountID,$ServiceID,$usage_data,$InvoiceDetail){
+        $service_data = array();
+        $service_usage_data = self::getServiceUsageTotal($usage_data);
+        $service_sub_data = self::getServiceSubscriptionTotal($InvoiceDetail);
+        $service_add_data = self::getServiceAdditionalTotal($InvoiceDetail);
+        $query = "CALL prc_getAccountService(?,?)";
+        $Accountservices = DB::select($query,array($AccountID,$ServiceID));
+
+
+        /** service applied at account level*/
+        foreach($Accountservices as $Accountservice){
+            $Account_ServiceID = $Accountservice->ServiceID;
+            if(isset($service_usage_data[$Account_ServiceID]) || isset($service_sub_data[$Account_ServiceID]) || isset($service_add_data[$Account_ServiceID])){
+                if(isset($service_usage_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['usage_cost'] = $service_usage_data[$Account_ServiceID]['usage_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['usage_cost'] = 0;
+                }
+                if(isset($service_sub_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['sub_cost'] = $service_sub_data[$Account_ServiceID]['sub_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['sub_cost'] = 0;
+                }
+                if(isset($service_add_data[$Account_ServiceID])){
+                    $service_data[$Account_ServiceID]['add_cost'] = $service_add_data[$Account_ServiceID]['add_cost'];
+                }else{
+                    $service_data[$Account_ServiceID]['add_cost'] = 0;
+                }
+                $service_data[$Account_ServiceID]['name'] = AccountService::getServiceName($AccountID, $Account_ServiceID);;
+            }
+        }
+
+        /** default service with name other */
+        if(isset($service_usage_data[0]) || isset($service_sub_data[0]) || isset($service_add_data[0])){
+            if(isset($service_usage_data[0])){
+                $service_data[0]['usage_cost'] = $service_usage_data[0]['usage_cost'];
+            }else{
+                $service_data[0]['usage_cost'] = 0;
+            }
+            if(isset($service_sub_data[0])){
+                $service_data[0]['sub_cost'] = $service_sub_data[0]['sub_cost'];
+            }else{
+                $service_data[0]['sub_cost'] = 0;
+            }
+            if(isset($service_add_data[0])){
+                $service_data[0]['add_cost'] = $service_add_data[0]['add_cost'];
+            }else{
+                $service_data[0]['add_cost'] = 0;
+            }
+            $service_data[0]['name'] = Service::$defaultService;
+
+        }
+        return $service_data;
+    }
+
+    public static function usageDataTable($usage_data,$InvoiceTemplate){
+        $usage_data_table = array();
+        $usage_data_table['header'] =array();
+        $usage_data_table['data'] = array();
+        if(empty($InvoiceTemplate->UsageColumn)){
+            $UsageColumn = InvoiceTemplate::defaultUsageColumns();
+        }else{
+            $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+        }
+
+        if(count($usage_data)) {
+            if (isset($usage_data[0]['AreaPrefix'])) {
+                $UsageColumn = $UsageColumn['Summary'];
+            } else {
+                $UsageColumn = $UsageColumn['Detail'];
+            }
+
+            $order = array();
+            foreach($UsageColumn as $UsageColumnRow){
+                if($UsageColumnRow['Status']=='true') {
+                    if ($UsageColumnRow['Title'] == 'AreaPrefix') {
+                        $order[] = 'Prefix';
+                    } else {
+                        $order[] = $UsageColumnRow['Title'];
+                    }
+                    $usage_data_table['header'][] = $UsageColumnRow;
+                }
+            }
+            $usage_data_table['order']=$order;
+            foreach($usage_data as $row_key =>$usage_data_row){
+                $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
+                $ServiceID = $usage_data[$row_key]['ServiceID'];
+                if(isset($service_usage_data[$ServiceID])){
+                    $usage_data_table['data'][$ServiceID][] =  $usage_data[$row_key];
+                }else{
+                    $usage_data_table['data'][$ServiceID][] =  $usage_data[$row_key];
+                }
+            }
+        }
+        return $usage_data_table;
+    }
 }
