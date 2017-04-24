@@ -656,6 +656,12 @@ protected $server;
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				if($parentTicket){
+					if(!$parent){
+						AccountEmailLog::find($EmailLog)->update(["EmailParent"=>$EmailLog]);
+					}
+				}
+				
 				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
