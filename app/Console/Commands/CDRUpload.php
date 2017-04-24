@@ -78,8 +78,7 @@ class CDRUpload extends Command
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         Log::useFiles(storage_path() . '/logs/cdrupload-' . $JobID . '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
-        $skiped_account = $error = array();
-        $skiped_account_data = array();
+        $error = array();
         $skipped_cli = array();
         $active_cli = array();
         try {
@@ -93,6 +92,20 @@ class CDRUpload extends Command
             $attrselection = $TemplateOptions->selection;
             $RateCDR = 0;
             $NameFormat = '';
+            $ServiceID = $OutboundRateTableID = $InboundRateTableID = $IgnoreZeroCall = 0;
+            if(isset($attrselection->ServiceID) && $attrselection->ServiceID){
+                $ServiceID = $attrselection->ServiceID;
+            }
+            if(isset($attrselection->OutboundRateTableID) && $attrselection->OutboundRateTableID){
+                $OutboundRateTableID = $attrselection->OutboundRateTableID;
+            }
+            if(isset($attrselection->InboundRateTableID) && $attrselection->InboundRateTableID){
+                $InboundRateTableID = $attrselection->InboundRateTableID;
+            }
+            if(isset($joboptions->IgnoreZeroRatedCall) && $joboptions->IgnoreZeroRatedCall){
+                $IgnoreZeroCall = $joboptions->IgnoreZeroRatedCall;
+            }
+
             if(isset($joboptions->RateCDR) && $joboptions->RateCDR){
                 $RateCDR = $joboptions->RateCDR;
             }
@@ -100,8 +113,8 @@ class CDRUpload extends Command
             if(isset($joboptions->RateFormat) && $joboptions->RateFormat){
                 $RateFormat = $joboptions->RateFormat;
             }
-            if(isset($attrselection->Authentication) && $attrselection->Authentication){
-                $NameFormat = $attrselection->Authentication;
+            if(isset($joboptions->Authentication) && $joboptions->Authentication){
+                $NameFormat = $joboptions->Authentication;
             }
             $CLITranslationRule = $CLDTranslationRule =  '';
             if(!empty($attrselection->CLITranslationRule)){
@@ -159,6 +172,7 @@ class CDRUpload extends Command
                         }
                         $cdrdata = array();
                         $cdrdata['ProcessID'] = $ProcessID;
+                        $cdrdata['ServiceID'] = $ServiceID;
                         $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                         $cdrdata['CompanyID'] = $CompanyID;
                         $cdrdata['trunk'] = 'Other';
@@ -201,9 +215,9 @@ class CDRUpload extends Command
                             if ($RateCDR == 1 && $RateFormat == Company::CHARGECODE && isset($attrselection->ChargeCode) && !empty($attrselection->ChargeCode)) {
                                 $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
                             }
-                            if(!empty($joboptions->TrunkID)){
-                                $cdrdata['TrunkID'] = $joboptions->TrunkID;
-                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
+                            if(!empty($attrselection->TrunkID)){
+                                $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$attrselection->TrunkID))->Pluck('trunk');
                             }
                             if (isset($attrselection->extension) && !empty($attrselection->extension)) {
                                 $cdrdata['extension'] = $temp_row[$attrselection->extension];
@@ -224,10 +238,10 @@ class CDRUpload extends Command
                             if(empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && empty($cdrdata['cld'])){
+                            if($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld) && trim($temp_row[$attrselection->cld]) == ''){
                                 $error[] = 'CLD is blank at line no:'.$lineno;
                             }
-                            if($RateCDR == 1 && empty($cdrdata['billed_duration'])){
+                            if($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && trim($temp_row[$attrselection->billed_duration]) == ''){
                                 $error[] = 'Billed duration is blank at line no:'.$lineno;
                             }
 
@@ -244,6 +258,7 @@ class CDRUpload extends Command
                                 } else if ($call_type == 'failed') {
                                     /** if user field is failed or blocked call any reason make duration zero */
                                     $cdrdata['billed_duration'] = 0;
+                                    $cdrdata['billed_second'] = 0;
                                 }
                                 if ($call_type == 'both' && $RateCDR == 1) {
 
@@ -297,22 +312,27 @@ class CDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat);
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID);
+                $skiped_rerated_data = array();
+                if($IgnoreZeroCall == 1){
+                    foreach($skiped_account_data as $key => $errormg){
+                        if(strpos($errormg,'Doesnt exist in NEON') === false){
+                            $skiped_rerated_data[] = $errormg;
+                            unset($skiped_account_data[$key]);
+                        }
+                    }
+                }
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
 
                 $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->count();
-                $delet_cdr_account = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
+
                 if ((count($skipped_cli) == 0 && count($skiped_account_data) == 0 && $joboptions->CheckFile == 1) || $joboptions->CheckFile == 0) {
                     DB::connection('sqlsrvcdr')->beginTransaction();
 
                     if (!empty($result[0]->min_date)) {
-                        $StartDate = $result[0]->min_date;
-                        $EndDate = $result[0]->max_date;
-
-                        /*Add CDR log for Invoice generation. - to check cdr is available.
-                         * */
+                        /** Add CDR log for Invoice generation. - to check cdr is available. */
                         $logdata['CompanyGatewayID'] = $CompanyGatewayID;
                         $logdata['CompanyID'] = $CompanyID;
                         $logdata['start_time'] = $result[0]->min_date;
@@ -320,12 +340,6 @@ class CDRUpload extends Command
                         $logdata['created_at'] = date('Y-m-d H:i:s');
                         $logdata['ProcessID'] = $ProcessID;
                         TempUsageDownloadLog::insert($logdata);
-
-                        /*foreach($delet_cdr_account as $delet_cdr_accountrow){
-                            // Delete old records.
-                            Log::info("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
-                            DB::connection('sqlsrv2')->statement("CALL prc_DeleteCDR('" . $CompanyID . "','" . $CompanyGatewayID . "','" . $delet_cdr_accountrow->min_date . "','" . $delet_cdr_accountrow->max_date . "','".$delet_cdr_accountrow->AccountID."','')");
-                        }*/
                     }
                     if($RateCDR == 0) {
                         Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
@@ -346,6 +360,10 @@ class CDRUpload extends Command
                     $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusMessage'] =  implode(',\n\r', $skiped_account_data);
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                }else if (count($skiped_rerated_data)) {
+                    $skiped_account_data = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skiped_account_data),fix_jobstatus_meassage($skiped_rerated_data));
+                    $jobdata['JobStatusMessage'] = $totaldata_count.' Records Uploaded  \n\r' . implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else if(count($skipped_cli)){
                     $skipped_cli = array_merge(fix_jobstatus_meassage($error),fix_jobstatus_meassage($skipped_cli));
                     $jobdata['JobStatusMessage'] = 'CLI Not Verified:' . implode(',\n\r', $skipped_cli);
@@ -376,8 +394,7 @@ class CDRUpload extends Command
             DB::connection('sqlsrv2')->rollback();
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
             } catch (\Exception $err) {
                 Log::error($err);
             }

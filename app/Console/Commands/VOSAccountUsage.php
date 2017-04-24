@@ -9,25 +9,23 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use App\Lib\UsageDownloadFiles;
-use App\VOS;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
-use App\Lib\Helper;
-use App\Lib\Company;
 
 class VOSAccountUsage extends Command
 {
@@ -93,6 +91,7 @@ class VOSAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -127,6 +126,7 @@ class VOSAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -168,7 +168,7 @@ class VOSAccountUsage extends Command
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                            if (!empty($excelrow['33']) || ($IpBased ==1 && !empty($excelrow['4']))) {
+                            if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                 $uddata['CompanyID'] = $CompanyID;
@@ -189,6 +189,7 @@ class VOSAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -197,7 +198,7 @@ class VOSAccountUsage extends Command
                                     $data_count = 0;
                                 }
                             }
-                            if (!empty($excelrow['40']) || ($IpBased ==1 && !empty($excelrow['10']))) {
+                            if (($IpBased == 0 &&  !empty($excelrow['40']) ) || ($IpBased ==1 && !empty($excelrow['10']))) {
                                 $vendorcdrdata = array();
                                 $vendorcdrdata['CompanyID'] = $CompanyID;
                                 $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -219,6 +220,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
+                                $vendorcdrdata['ServiceID'] = $ServiceID;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){

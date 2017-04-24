@@ -15,18 +15,18 @@ use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
 
 class SippyAccountUsage extends Command
 {
@@ -93,6 +93,7 @@ class SippyAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -128,6 +129,7 @@ class SippyAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -175,7 +177,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 &&  !empty($cdr_row['i_account'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -197,6 +199,7 @@ class SippyAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -265,7 +268,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account_debug']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 && !empty($cdr_row['i_account_debug'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -288,6 +291,7 @@ class SippyAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserVData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserVData)){

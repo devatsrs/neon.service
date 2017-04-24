@@ -62,7 +62,7 @@ class AccountSubscription extends \Eloquent
 
             if ($SubscriptionType == 2 && $days >= 365 ) { // if yearly
                 Log::info(' ========== yearly start ============');
-                $TotalAmount += $Subscription->YearlyFee;
+                $TotalAmount += $Subscription->AnnuallyFee;
                 Log::info(' ========== yearly end ============');
 
             }else if($SubscriptionType == 1 && $quarter_days == $days){ // if quarterly
