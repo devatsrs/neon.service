@@ -94,7 +94,7 @@ class CDRUpload extends Command
             $NameFormat = '';
             $ServiceID = $OutboundRateTableID = $InboundRateTableID = $IgnoreZeroCall = 0;
             if(isset($attrselection->ServiceID) && $attrselection->ServiceID){
-                $ServiceID = $joboptions->ServiceID;
+                $ServiceID = $attrselection->ServiceID;
             }
             if(isset($attrselection->OutboundRateTableID) && $attrselection->OutboundRateTableID){
                 $OutboundRateTableID = $attrselection->OutboundRateTableID;

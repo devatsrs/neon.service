@@ -17,9 +17,9 @@ class PHPMAILERIntegtration{
 		Config::set('mail.port',$config->Port);
 		
 		if(isset($data['EmailFrom'])){ 
-			Config::set('mail.from.address',$data['EmailFrom']);
+			Config::set('mail.from.address',trim($data['EmailFrom']));
 		}else{ 
-			Config::set('mail.from.address',$config->EmailFrom);
+			Config::set('mail.from.address',trim($config->EmailFrom));
 		}
 		
 		if(isset($data['CompanyName'])){
@@ -44,10 +44,8 @@ class PHPMAILERIntegtration{
 		$mail->SMTPSecure = $encryption;                            // Enable TLS encryption, `ssl` also accepted
 	
 		$mail->Port = $port;                                    // TCP port to connect to
-		$mail->SetFrom($from['address'], $from['name']);
-		//$mail->From = $from['address'];
-		//$mail->FromName = $from['name'];
-		$mail->IsHTML(true);		
+		$mail->SetFrom(trim($from['address']), trim($from['name']));
+		$mail->IsHTML(true);
 		return $mail;		
 	}	 
 	
@@ -77,14 +75,16 @@ class PHPMAILERIntegtration{
 		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
-		
-		$mail->Body    = $body;
+
+		$mail->Body = $mail->msgHTML($body);
 		$mail->Subject = $data['Subject'];
 		
-		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];	
+		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];
+
 		if (!$mail->send()) {
 					$status['status'] = 0;
 					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
+					//Log::info(print_r($mail,true));
 		} else {
 					$mail->clearAllRecipients();
 					$status['status'] = 1;
