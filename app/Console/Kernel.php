@@ -74,7 +74,6 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\QuickBookInvoicePost',		
 		'App\Console\Commands\PBXAccountBlock',
 		'App\Console\Commands\ReadEmailsTickets',
-		'App\Console\Commands\TicketSlaPolicyViolationEmailSend',
 	];
 
 	/**
