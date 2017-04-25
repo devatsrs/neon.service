@@ -106,12 +106,7 @@ function next_billing_date($BillingCycleType,$BillingCycleValue,$BillingStartDat
                 }
                 break;
             case 'yearly':
-                $CurrentDate = date("Y-m-d",  $BillingStartDate); // Current date
-                if($CurrentDate<=date("Y-m-d")) {
-                    $NextInvoiceDate = date("Y-m-d", strtotime("+1 year", $BillingStartDate));
-                }else{
-                    $NextInvoiceDate = date("Y-m-d",$CurrentDate);
-                }
+                $NextInvoiceDate = date("Y-m-d", strtotime("+1 year", $BillingStartDate));
                 break;
         }
 
@@ -381,6 +376,16 @@ function getBillingDay($BillingStartDate,$BillingCycleType,$BillingCycleValue){
             $interval = $date1->diff($date2);
             $BillingDays =  $interval->days;
             break;
+        case 'yearly':
+            $year = date("Y",  $BillingStartDate);
+            //multiple conditions to check the leap year
+            if( (0 == $year % 4) and (0 != $year % 100) or (0 == $year % 400) ){
+                $BillingDays = 366;
+            } else {
+                $BillingDays = 365;
+            }
+            break;
+
     }
     return $BillingDays;
 }
