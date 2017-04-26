@@ -397,7 +397,7 @@ protected $server;
     // if HTML body is empty, try getting text body
     if ($body == "") {
         $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
-    } Log::info("body:".$body);
+    } 
         return $body;
     }
 
@@ -484,11 +484,7 @@ protected $server;
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;		
 					
-				Log::info("in_reply_to:".$in_reply_to);	
-				
-			
 				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
-				
 				
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				
@@ -574,21 +570,16 @@ protected $server;
 				if(!empty($message)){
 					$message =  $this->GetMessageBody($message);
 				}				
-				Log::info("message:".$message);
 			
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
-				Log::info("from name from function:".$FromName);
-				Log::info("from name:".$overview[0]->from);
 								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
 
-				Log::info("parent:".$parent);
-				Log::info("parentTicket:".$parentTicket);
 				if(!$parentTicket){
 				$logData = [
 						'Requester'=> $from,
@@ -629,7 +620,6 @@ protected $server;
 					if(isset($ticketData->Requester)){
 						if($from==$ticketData->Requester){		
 						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
-						Log::info("error:".$TicketEmails->GetError());
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
@@ -767,7 +757,6 @@ protected $server;
 				$dataImage = file_get_contents($filepath);
 				//@unlink($filepath);
 				///				
-				Log::info("amazonPath:".$amazonPath);
 				if(is_amazon($CompanyID)){
 					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
 						throw new \Exception('Error in Amazon upload');	
@@ -775,7 +764,6 @@ protected $server;
 				}
 				
 				
-				Log::info("filepath2:".$filepath2); 
 				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID); 
 				 
                 if (!is_numeric(strpos($path, "https://"))) {
