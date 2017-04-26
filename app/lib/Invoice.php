@@ -650,7 +650,7 @@ class Invoice extends \Eloquent {
                 }
             }
         }
-        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID);
+        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID,$ServiceID);
         return $TaxGrandTotal;
     }
 
@@ -1392,12 +1392,12 @@ class Invoice extends \Eloquent {
 
         //}
     }
-    public static function addOneOffTaxCharge($InvoiceID,$AccountID){
+    public static function addOneOffTaxCharge($InvoiceID,$AccountID,$ServiceID){
         $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
 
-        $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $AccountID)->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $AccountOneOffCharges = AccountOneOffCharge::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->whereBetween('Date',array($StartDate,$EndDate))->get();
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {

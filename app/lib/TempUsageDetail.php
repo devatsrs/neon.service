@@ -224,7 +224,7 @@ class TempUsageDetail extends \Eloquent {
             ->get(['tblAccountBilling.AccountID','DiscountPlanID','tblAccountDiscountPlan.ServiceID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
         foreach($Accounts as $Account){
             $ServiceID = $Account->ServiceID;
-            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
+            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID,$ServiceID);
             if(!empty($AccountNextBilling)){
                 $BillingCycleType = $AccountNextBilling->BillingCycleType;
                 $BillingCycleValue =$AccountNextBilling->BillingCycleValue;
