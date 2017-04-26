@@ -40,10 +40,10 @@ class CompanyGateway extends \Eloquent {
         return CompanyGateway::where(array('GatewayID'=>$gatewayid,'CompanyID'=>$CompanyID))->pluck('CompanyGatewayID');
     }
     public static function getGatewayTimeZone($CompanyGatewayID){
-        return CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('TimeZone');
+        return CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('TimeZone');
     }
     public static function getGatewayBillingTimeZone($CompanyGatewayID){
-        return CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('BillingTimeZone');
+        return CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('BillingTimeZone');
     }
 
     public static function getUniqueID($CompanyGatewayID){
