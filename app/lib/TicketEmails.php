@@ -548,7 +548,15 @@ class TicketEmails{
 		}else{
 			return;
 		}	
-			
+		
+		if (($key = array_search($this->TicketData->Requester, $emailto)) !== false){			
+			    unset($emailto[$key]);
+		}	
+		
+		if (($key = array_search($this->Group->GroupEmailAddress, $emailto)) !== false){			
+			    unset($emailto[$key]);
+		}	
+		
 		if(count($emailto)>0){
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
 			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -571,7 +579,7 @@ class TicketEmails{
 		}	
 	}
 	
-		protected function CCNoteaddedtoticket()
+	protected function CCNoteaddedtoticket()
 	{	
 		$emailtoCc					=		array();
 		$emailtoBcc					=		array();
