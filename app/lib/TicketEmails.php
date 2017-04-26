@@ -310,13 +310,13 @@ class TicketEmails{
 			
 			$sendto						=	   $RespondedVoilation->Value; 
 			if($RespondedVoilation->Value =='0'){
-					$sendemails 		=	$this->Agent->EmailAddress; 
+					$sendemails 		=	isset($this->Agent->EmailAddress)?$this->Agent->EmailAddress:'';
 			}else{ 
 				$sendids = explode(',',$RespondedVoilation->Value); 
 				
 				foreach($sendids as $agentsID){ 
 					if($agentsID==0){
-						$sendemails[] =	$this->Agent->EmailAddress; 	
+						$sendemails[] =	isset($this->Agent->EmailAddress)?$this->Agent->EmailAddress:'';	
 						continue;
 					}
 					$userdata = 	User::find($agentsID);
@@ -325,7 +325,9 @@ class TicketEmails{
 					}			
 				} 
 			}
+			if(is_array($sendemails)){
 			$sendemails= array_unique($sendemails);
+			}
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -388,7 +390,7 @@ class TicketEmails{
 					$sendto		=	   $SingleResolveVoilationData->Value; 
 					if($SingleResolveVoilationData->Value =='0')
 					{
-							$sendemails 		=	$this->Agent->EmailAddress; 
+							$sendemails 		=	isset($this->Agent->EmailAddress)?$this->Agent->EmailAddress:'';
 					}
 					else
 					{ 
@@ -396,7 +398,7 @@ class TicketEmails{
 						
 						foreach($sendids as $agentsID){ 
 							if($agentsID==0){
-								$sendemails[] =	$this->Agent->EmailAddress; 	
+								$sendemails[] =	isset($this->Agent->EmailAddress)?$this->Agent->EmailAddress:'';	
 								continue;
 							}
 							$userdata = 	User::find($agentsID);
@@ -407,7 +409,9 @@ class TicketEmails{
 					}
 				}
 			}
-				$sendemails= array_unique($sendemails);
+				if(is_array($sendemails)){
+					$sendemails= array_unique($sendemails);
+				}
 				if(count($sendarray)<1){return 0;}
 			
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
