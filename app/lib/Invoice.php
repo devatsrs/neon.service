@@ -200,11 +200,11 @@ class Invoice extends \Eloquent {
     /**
      * Invoice Generation Date
      * */
-    public static function calculateNextInvoiceDateFromLastInvoiceDate($CompanyID,$AccountID,$LastInvoiceDate){
+    public static function calculateNextInvoiceDateFromLastInvoiceDate($CompanyID,$AccountID,$ServiceID,$LastInvoiceDate){
 
         if(!empty($CompanyID) && !empty($AccountID) && !empty($LastInvoiceDate) ){
 
-            $BillingCycle = AccountBilling::select(["BillingCycleType", "BillingCycleValue"])->where("AccountID", $AccountID)->first()->toArray();
+            $BillingCycle = AccountBilling::select(["BillingCycleType", "BillingCycleValue"])->where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
             //"weekly"=>"Weekly", "monthly"=>"Monthly" , "daily"=>"Daily", "in_specific_days"=>"In Specific days", "monthly_anniversary"=>"Monthly anniversary");
 
             $NextInvoiceDate = "";
@@ -650,7 +650,7 @@ class Invoice extends \Eloquent {
                 }
             }
         }
-        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID);
+        $TaxGrandTotal += self::addOneOffTaxCharge($InvoiceID,$AccountID,$ServiceID);
         return $TaxGrandTotal;
     }
 
@@ -1101,8 +1101,8 @@ class Invoice extends \Eloquent {
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
 
                     //Advance Subscription Date
-                    $SubscriptionStartDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$StartDate); // Advance Date 1-7-2015 - 1-8-2015
-                    $SubscriptionEndDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$SubscriptionStartDate); // Advance Date 1-7-2015 - 1-8-2015
+                    $SubscriptionStartDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$StartDate); // Advance Date 1-7-2015 - 1-8-2015
+                    $SubscriptionEndDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$SubscriptionStartDate); // Advance Date 1-7-2015 - 1-8-2015
                     $SubscriptionEndDate = date("Y-m-d", strtotime("-1 Day", strtotime($SubscriptionEndDate))); // Convert 1-8-2015 -to 31-7-2015
 
                     if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$StartDate)) {
@@ -1317,7 +1317,7 @@ class Invoice extends \Eloquent {
                 $FirstTime = false;
             }
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
-            $BillingCycleType = AccountBilling::where('AccountID',$Invoice->AccountID)->pluck('BillingCycleType');
+            $BillingCycleType = AccountBilling::where(["AccountID"=>$Invoice->AccountID,"ServiceID"=>$Invoice->ServiceID])->pluck('BillingCycleType');
             $QuarterSubscription =  0;
             if($BillingCycleType == 'quarterly'){
                 $QuarterSubscription = 1;
@@ -1392,12 +1392,12 @@ class Invoice extends \Eloquent {
 
         //}
     }
-    public static function addOneOffTaxCharge($InvoiceID,$AccountID){
+    public static function addOneOffTaxCharge($InvoiceID,$AccountID,$ServiceID){
         $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
 
-        $AccountOneOffCharges = AccountOneOffCharge::where("AccountID", $AccountID)->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $AccountOneOffCharges = AccountOneOffCharge::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->whereBetween('Date',array($StartDate,$EndDate))->get();
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {

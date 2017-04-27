@@ -103,10 +103,11 @@ class ReadEmailsTickets extends Command
 					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
 						$joblogdata['Message'] = 'Success';
 						$this->CheckEscalationRule($TicketgroupData,$CompanyID);
-						$this->TicketSlaPolicyViolationEmailSend($CompanyID);
-						
+
 				}    			
 			}
+			$this->TicketSlaPolicyViolationEmailSend($CompanyID);
+
 		}
 		catch (\Exception $e)
 		{
