@@ -527,11 +527,13 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
-			
-            if(empty($Invoice->RecurringInvoiceID)) {
+
+            if(!empty($Invoice->RecurringInvoiceID)) {
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+            }else if($InvoiceTemplate->GroupByService == 1) {
                 $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }else {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -596,8 +598,8 @@ class Invoice extends \Eloquent {
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
-        foreach($InvoiceDetails as $InvoiceDetails){
-            $SubscriptionTotal +=   $InvoiceDetails->LineTotal;
+        foreach($InvoiceDetails as $InvoiceDetail){
+            $SubscriptionTotal +=   $InvoiceDetail->LineTotal;
         }
         //delete tax first
         InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
