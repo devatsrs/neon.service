@@ -303,7 +303,7 @@
 
     <!-- service section end -->
     @foreach($service_data as $ServiceID => $service)
-        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $AccountBilling->CDRType != \App\Lib\Account::NO_CDR)
+        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
 
             <div class="page_break"></div>
             <br />
@@ -320,7 +320,7 @@
                         <div style="float:left;">Usage</div>
                     </div>
 
-            @if($AccountBilling->CDRType == \App\Lib\Account::SUMMARY_CDR)
+            @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
@@ -375,7 +375,7 @@
             @endif
 
 
-            @if($AccountBilling->CDRType == \App\Lib\Account::DETAIL_CDR)
+            @if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR)
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)

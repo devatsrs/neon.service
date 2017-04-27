@@ -234,7 +234,7 @@ class Invoice extends \Eloquent {
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat","UsageColumn","CDRType"])->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -348,7 +348,7 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ') ;
 
                         $fullPath = "";
-                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
@@ -692,7 +692,7 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat","UsageColumn","CDRType"])->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -814,7 +814,7 @@ class Invoice extends \Eloquent {
 
                         $fullPath = "";
                         $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
-                        if ($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
                                 $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
