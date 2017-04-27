@@ -619,7 +619,8 @@ protected $server;
 					
 					if(isset($ticketData->Requester)){
 						if($from==$ticketData->Requester){		
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message));
+						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message)); 
+						TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate"=>date('Y-m-d H:i:s'))); 
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
