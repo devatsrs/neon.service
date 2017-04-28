@@ -599,3 +599,23 @@ function validator_response($validator){
 function MakeWebUrl($CompanyID,$path){
 	return \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
 }
+
+function remove_extra_columns($usage_data,$usage_data_table){
+    foreach ($usage_data as $row_key => $usage_data_row) {
+        if (isset($usage_data_row['DurationInSec'])) {
+            unset($usage_data_row['DurationInSec']);
+        }
+        if (isset($usage_data_row['BillDurationInSec'])) {
+            unset($usage_data_row['BillDurationInSec']);
+        }
+        if (isset($usage_data_row['ServiceID'])) {
+            unset($usage_data_row['ServiceID']);
+        }
+
+        $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+
+        $usage_data[$row_key] = $usage_data_row;
+    }
+    return $usage_data;
+
+}

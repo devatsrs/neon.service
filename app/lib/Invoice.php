@@ -70,21 +70,7 @@ class Invoice extends \Eloquent {
                         foreach ($usage_data_table['data'] as $ServiceID => $usage_data) {
 
                             /** remove extra columns*/
-                            foreach ($usage_data as $row_key => $usage_data_row) {
-                                if (isset($usage_data_row['DurationInSec'])) {
-                                    unset($usage_data_row['DurationInSec']);
-                                }
-                                if (isset($usage_data_row['BillDurationInSec'])) {
-                                    unset($usage_data_row['BillDurationInSec']);
-                                }
-                                if (isset($usage_data_row['ServiceID'])) {
-                                    unset($usage_data_row['ServiceID']);
-                                }
-
-                                $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
-
-                                $usage_data[$row_key] = $usage_data_row;
-                            }
+                            $usage_data = remove_extra_columns($usage_data,$usage_data_table);
 
                             if ($ServiceID == 0) {
                                 $ServiceTitle = Service::$defaultService;
@@ -102,6 +88,8 @@ class Invoice extends \Eloquent {
 
                         }
                     }else if(count($usage_data_noservice)>0 && $GroupByService == 0) {
+                        /** remove extra columns*/
+                        $usage_data_noservice = remove_extra_columns($usage_data_noservice,$usage_data_table);
                         $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
                         $output = Helper::array_to_csv($usage_data_noservice);
                         file_put_contents($local_file, $output);
