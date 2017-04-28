@@ -219,7 +219,7 @@
                     <tr>
                         <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                         <td class="leftalign">{{$ProductRow->Description}}</td>
-                        <td class="rightalign">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                        <td class="rightalign">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
                         <td class="rightalign">{{$ProductRow->Qty}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
