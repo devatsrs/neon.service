@@ -9,8 +9,10 @@ use App\Lib\FileUploadTemplate;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\Trunk;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -93,6 +95,8 @@ class CDRUpload extends Command
             $RateCDR = 0;
             $NameFormat = '';
             $ServiceID = $OutboundRateTableID = $InboundRateTableID = $IgnoreZeroCall = 0;
+            $Services = Service::where(array("CompanyID"=>$CompanyID,"Status"=>1))->lists('ServiceName', 'ServiceID');;
+            $Trunks = Trunk::where([ "Status" => 1 , "CompanyID" => $CompanyID])->lists('Trunk', 'TrunkID');
             if(isset($attrselection->ServiceID) && $attrselection->ServiceID){
                 $ServiceID = $attrselection->ServiceID;
             }
@@ -172,10 +176,25 @@ class CDRUpload extends Command
                         }
                         $cdrdata = array();
                         $cdrdata['ProcessID'] = $ProcessID;
-                        $cdrdata['ServiceID'] = $ServiceID;
+
+                        if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) && isset($temp_row[$attrselection->ServiceID]) && $ServiceID_1 = array_search($temp_row[$attrselection->ServiceID],$Services)){
+                            $cdrdata['ServiceID'] = $ServiceID_1;
+                        }else{
+                            $cdrdata['ServiceID'] = $ServiceID;
+                        }
+
+                        if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && array_key_exists($attrselection->TrunkID,$Trunks)){
+                            $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                            $cdrdata['trunk'] = $Trunks[$attrselection->TrunkID];
+                        }else if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && isset($temp_row[$attrselection->TrunkID]) && $TrunkID_1 = array_search($temp_row[$attrselection->TrunkID],$Trunks)){
+                            $cdrdata['TrunkID'] = $TrunkID_1;
+                            $cdrdata['trunk'] = $Trunks[$TrunkID_1];
+                        }else{
+                            $cdrdata['trunk'] = 'Other';
+                        }
+
                         $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                         $cdrdata['CompanyID'] = $CompanyID;
-                        $cdrdata['trunk'] = 'Other';
                         $cdrdata['area_prefix'] = 'Other';
                         $call_type = '';
 

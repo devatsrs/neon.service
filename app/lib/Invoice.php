@@ -43,7 +43,7 @@ class Invoice extends \Eloquent {
     /**
      *  Generate Usage file Upload and update Amazon path in Invoice Table
      */
-    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date){
+    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date,$GroupByService,$usage_data_noservice){
 
         $zipfiles = array();
 
@@ -64,27 +64,13 @@ class Invoice extends \Eloquent {
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
 
-                    if(count($usage_data_table['data'])>0) {
+                    if(count($usage_data_table['data'])>0 && $GroupByService == 1) {
 
 
                         foreach ($usage_data_table['data'] as $ServiceID => $usage_data) {
 
                             /** remove extra columns*/
-                            foreach ($usage_data as $row_key => $usage_data_row) {
-                                if (isset($usage_data_row['DurationInSec'])) {
-                                    unset($usage_data_row['DurationInSec']);
-                                }
-                                if (isset($usage_data_row['BillDurationInSec'])) {
-                                    unset($usage_data_row['BillDurationInSec']);
-                                }
-                                if (isset($usage_data_row['ServiceID'])) {
-                                    unset($usage_data_row['ServiceID']);
-                                }
-
-                                $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
-
-                                $usage_data[$row_key] = $usage_data_row;
-                            }
+                            $usage_data = remove_extra_columns($usage_data,$usage_data_table);
 
                             if ($ServiceID == 0) {
                                 $ServiceTitle = Service::$defaultService;
@@ -100,6 +86,15 @@ class Invoice extends \Eloquent {
                                 $zipfiles[] = $local_file;
                             }
 
+                        }
+                    }else if(count($usage_data_noservice)>0 && $GroupByService == 0) {
+                        /** remove extra columns*/
+                        $usage_data_noservice = remove_extra_columns($usage_data_noservice,$usage_data_table);
+                        $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+                        $output = Helper::array_to_csv($usage_data_noservice);
+                        file_put_contents($local_file, $output);
+                        if (file_exists($local_file)) {
+                            $zipfiles[] = $local_file;
                         }
                     }else{
                         $usage_data = array();
@@ -234,7 +229,7 @@ class Invoice extends \Eloquent {
 
             if(!empty($Account)) {
 
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm","InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$AccountBilling->InvoiceTemplateID)->first();
 
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
@@ -348,10 +343,10 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ') ;
 
                         $fullPath = "";
-                        if($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
                                 if (empty($fullPath)) {
                                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                 }
@@ -527,11 +522,13 @@ class Invoice extends \Eloquent {
                 }
             }
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
-			
-            if(empty($Invoice->RecurringInvoiceID)) {
+
+            if(!empty($Invoice->RecurringInvoiceID)) {
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+            }else if($InvoiceTemplate->GroupByService == 1) {
                 $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }else {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -596,8 +593,8 @@ class Invoice extends \Eloquent {
 
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
-        foreach($InvoiceDetails as $InvoiceDetails){
-            $SubscriptionTotal +=   $InvoiceDetails->LineTotal;
+        foreach($InvoiceDetails as $InvoiceDetail){
+            $SubscriptionTotal +=   $InvoiceDetail->LineTotal;
         }
         //delete tax first
         InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
@@ -690,7 +687,7 @@ class Invoice extends \Eloquent {
             $CompanyName = Company::getName($CompanyID);
 
             if (!empty($Account)) {
-                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->select(["Terms","FooterTerm", "InvoiceNumberPrefix","DateFormat","UsageColumn"])->first();
+                $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID", $AccountBilling->InvoiceTemplateID)->first();
                 if ( empty($AccountBilling->InvoiceTemplateID) || empty($InvoiceTemplate) ) {
                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['InvoiceTemplate'];
                     $error['status'] = 'failure';
@@ -812,10 +809,10 @@ class Invoice extends \Eloquent {
 
                         $fullPath = "";
                         $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
-                        if ($AccountBilling->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                        if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
                                 if (empty($fullPath)) {
                                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                     $error['status'] = 'failure';

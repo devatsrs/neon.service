@@ -59,13 +59,26 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
-
+    $is_sub = $is_charge = false;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::USAGE){
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
+        if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION){
+            $is_sub = true;
+        }
+        if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE){
+            $is_charge = true;
+        }
     }
+    $total_usage= $total_sub = $total_add = 0;
+    foreach($service_data as $service){
+        $total_usage += $service['usage_cost'];
+        $total_sub += $service['sub_cost'];
+        $total_add += $service['add_cost'];
+    }
+
 
     $message = $InvoiceTemplate->InvoiceTo;
 
@@ -74,6 +87,7 @@
     $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
     ?>
+
 
 
     <main>
@@ -97,10 +111,9 @@
         <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
             <thead>
 
-            <!-- need here start loop of service -->
+
 
             <tr>
-                <th class="desc">DESCRIPTION</th>
                 <th class="desc">Usage</th>
                 <th class="desc">Recurring</th>
                 <th class="desc">Additional</th>
@@ -108,29 +121,27 @@
             </tr>
             </thead>
             <tbody>
-            @foreach($service_data as $service)
-            <tr>
-                <td class="desc">{{$service['name']}}</td>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</td>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</td>
-                <td class="total">{{$CurrencySymbol}}{{number_format($service['usage_cost']+$service['sub_cost']+$service['add_cost'],$RoundChargesAmount)}}</td>
-            </tr>
-            @endforeach
 
-            <!-- need here end loop of service -->
+            <tr>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
+                <td class="desc">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
+                <td class="total">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
+            </tr>
+
+
 
             </tbody>
             <tfoot>
             <tr>
-                <td colspan="2"></td>
+                <td ></td>
                 <td colspan="2">SUB TOTAL</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
                 <tr>
-                    <td colspan="2"></td>
+                    <td ></td>
                     <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
                 </tr>
@@ -138,20 +149,20 @@
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
-                    <td colspan="2"></td>
+                    <td ></td>
                     <td colspan="2">Discount</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDiscount,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
-                    <td colspan="2"></td>
+                    <td ></td>
                     <td colspan="2">BROUGHT FORWARD</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             <tr>
-                <td colspan="2"></td>
+                <td ></td>
                 <td colspan="2">GRAND TOTAL</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
             </tr>
@@ -168,38 +179,16 @@
     </div>
     <!-- adevrtisement and terms section end -->
 
-    <!-- need to impliment service brack login -->
-    @if($InvoiceTemplate->ServiceSplit==0)
+
+
     <div class="page_break"> </div>
     <br/>
-    @endif
-    @foreach($service_data as $ServiceID => $service)
-        <?php
-        $is_sub = $is_charge = false;
-        foreach($InvoiceDetail as $ProductRow){
-            if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION && $ProductRow->ServiceID == $ServiceID){
-                $is_sub = true;
-            }
-            if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE && $ProductRow->ServiceID == $ServiceID){
-                $is_charge = true;
-            }
-        }
-        ?>
 
-        @if($InvoiceTemplate->ServiceSplit==1)
-            <div class="page_break"> </div>
-            <br/>
-        @endif
-    <header class="clearfix">
-        <div id="Service">
-            <h1>{{$service['name']}}</h1>
-        </div>
-    </header>
     <main>
-        @if($service['usage_cost'] != 0)
+        @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
             <div style="float:left;">Usage</div>
-            <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</div>
+            <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
@@ -215,7 +204,7 @@
             </thead>
             <tbody>
             @foreach($InvoiceDetail as $ProductRow)
-                @if($ProductRow->ProductType == \App\Lib\Product::USAGE && isset($service['usage_cost']))
+                @if($ProductRow->ProductType == \App\Lib\Product::USAGE)
                     <tr>
                         <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                         <td class="leftalign">{{$ProductRow->Description}}</td>
@@ -223,7 +212,7 @@
                         <td class="rightalign">{{$ProductRow->Qty}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
-                        <td class="rightalign">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
+                        <td class="rightalign">{{number_format($total_usage,$RoundChargesAmount)}}</td>
                     </tr>
                 @endif
             @endforeach
@@ -234,7 +223,7 @@
         @if($is_sub)
             <div class="ChargesTitle clearfix">
                 <div style="float:left;">Recurring</div>
-                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</div>
+                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -251,7 +240,7 @@
                 </thead>
                 <tbody>
                 @foreach($InvoiceDetail as $ProductRow)
-                    @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION && $ProductRow->ServiceID == $ServiceID)
+                    @if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION)
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
@@ -270,7 +259,7 @@
         @if($is_charge)
             <div class="ChargesTitle clearfix">
                 <div style="float:left;">Additional</div>
-                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</div>
+                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -286,7 +275,7 @@
                 </thead>
                 <tbody>
                 @foreach($InvoiceDetail as $ProductRow)
-                    @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE && $ProductRow->ServiceID == $ServiceID)
+                    @if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE)
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
@@ -301,22 +290,18 @@
             </table>
         @endif
     </main>
-    @endforeach
 
-    <!-- service section end -->
-    @foreach($service_data as $ServiceID => $service)
-        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
+
+
+
+        @if(isset($usage_data_table['data']) && count($usage_data_table['data']) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
 
             <div class="page_break"></div>
             <br />
             <br />
 
 
-                <header class="clearfix">
-                    <div id="Service">
-                        <h1>{{$service['name']}}</h1>
-                    </div>
-                </header>
+
                 <main>
                     <div class="ChargesTitle clearfix">
                         <div style="float:left;">Usage</div>
@@ -335,25 +320,29 @@
                     $totalBillDuration=0;
                     $totalTotalCharges=0;
                     ?>
-                    @foreach($usage_data_table['data'][$ServiceID] as $row)
-                        <?php
-                        $totalCalls  += $row['NoOfCalls'];
-                        $totalDuration  += $row['DurationInSec'];
-                        $totalBillDuration  += $row['BillDurationInSec'];
-                        $totalTotalCharges  += $row['ChargedAmount'];
-                        ?>
-                        <tr>
-                            @foreach($usage_data_table['header'] as $table_h_row)
-                                @if($table_h_row['Title'] == 'TotalCharges')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
-                                @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
-                                @else
-                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
-                                @endif
-                            @endforeach
+                    @foreach($service_data as $ServiceID => $service)
+                        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0)
+                            @foreach($usage_data_table['data'][$ServiceID] as $row)
+                                <?php
+                                $totalCalls  += $row['NoOfCalls'];
+                                $totalDuration  += $row['DurationInSec'];
+                                $totalBillDuration  += $row['BillDurationInSec'];
+                                $totalTotalCharges  += $row['ChargedAmount'];
+                                ?>
+                                <tr>
+                                    @foreach($usage_data_table['header'] as $table_h_row)
+                                        @if($table_h_row['Title'] == 'TotalCharges')
+                                            <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                        @elseif($table_h_row['Title'] == 'AvgRatePerMin')
+                                            <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                        @else
+                                            <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                        @endif
+                                    @endforeach
 
-                        </tr>
+                                </tr>
+                            @endforeach
+                        @endif
                     @endforeach
                     <?php
                     $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
@@ -388,22 +377,26 @@
                     $totalBillDuration=0;
                     $totalTotalCharges=0;
                     ?>
-                    @foreach($usage_data_table['data'][$ServiceID] as $row)
-                        <?php
-                        $totalBillDuration  +=  $row['BilledDuration'];
-                        $totalTotalCharges  += $row['ChargedAmount'];
-                        ?>
-                        <tr>
-                            @foreach($usage_data_table['header'] as $table_h_row)
-                                @if($table_h_row['Title'] == 'ChargedAmount')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
-                                @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
-                                    <td class="centeralign">{{substr($row[$table_h_row['Title']],1)}}</td>
-                                @else
-                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
-                                @endif
+                    @foreach($service_data as $ServiceID => $service)
+                        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0)
+                            @foreach($usage_data_table['data'][$ServiceID] as $row)
+                                <?php
+                                $totalBillDuration  +=  $row['BilledDuration'];
+                                $totalTotalCharges  += $row['ChargedAmount'];
+                                ?>
+                                <tr>
+                                    @foreach($usage_data_table['header'] as $table_h_row)
+                                        @if($table_h_row['Title'] == 'ChargedAmount')
+                                            <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                        @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
+                                            <td class="centeralign">{{substr($row[$table_h_row['Title']],1)}}</td>
+                                        @else
+                                            <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                        @endif
+                                    @endforeach
+                                </tr>
                             @endforeach
-                        </tr>
+                        @endif
                     @endforeach
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
@@ -421,6 +414,6 @@
 
 
         @endif
-    @endforeach
+
 
  @stop
