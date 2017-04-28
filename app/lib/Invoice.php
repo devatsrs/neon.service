@@ -43,7 +43,7 @@ class Invoice extends \Eloquent {
     /**
      *  Generate Usage file Upload and update Amazon path in Invoice Table
      */
-    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date){
+    public static function generate_usage_file($InvoiceID,$usage_data_table,$start_date,$end_date,$GroupByService,$usage_data_noservice){
 
         $zipfiles = array();
 
@@ -64,7 +64,7 @@ class Invoice extends \Eloquent {
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
 
-                    if(count($usage_data_table['data'])>0) {
+                    if(count($usage_data_table['data'])>0 && $GroupByService == 1) {
 
 
                         foreach ($usage_data_table['data'] as $ServiceID => $usage_data) {
@@ -100,6 +100,13 @@ class Invoice extends \Eloquent {
                                 $zipfiles[] = $local_file;
                             }
 
+                        }
+                    }else if(count($usage_data_noservice)>0 && $GroupByService == 0) {
+                        $local_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($start_date)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($end_date)) . '__' . $ProcessID . '.csv';
+                        $output = Helper::array_to_csv($usage_data_noservice);
+                        file_put_contents($local_file, $output);
+                        if (file_exists($local_file)) {
+                            $zipfiles[] = $local_file;
                         }
                     }else{
                         $usage_data = array();
@@ -351,7 +358,7 @@ class Invoice extends \Eloquent {
                         if($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
                                 if (empty($fullPath)) {
                                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                 }
@@ -817,7 +824,7 @@ class Invoice extends \Eloquent {
                         if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
                             $InvoiceID = $Invoice->InvoiceID;
                             if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate);
+                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
                                 if (empty($fullPath)) {
                                     $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
                                     $error['status'] = 'failure';
