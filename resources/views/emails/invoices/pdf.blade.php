@@ -196,6 +196,7 @@
         </div>
     </header>
     <main>
+        @if($service['usage_cost'] != 0)
         <div class="ChargesTitle clearfix">
             <div style="float:left;">Usage</div>
             <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</div>
@@ -228,6 +229,7 @@
             @endforeach
             </tbody>
         </table>
+        @endif
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">

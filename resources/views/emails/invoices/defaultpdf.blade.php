@@ -185,6 +185,7 @@
     <br/>
 
     <main>
+        @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
             <div style="float:left;">Usage</div>
             <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
@@ -217,6 +218,7 @@
             @endforeach
             </tbody>
         </table>
+        @endif
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">
