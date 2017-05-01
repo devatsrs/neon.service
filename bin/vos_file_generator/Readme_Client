@@ -21,6 +21,8 @@ GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
 Generally server timezone and db timezones are same but
 we need to make sure they are same or not , otherwise we need to set offset
 
+crontab -e
+
 Crontab entry
 #CDR file Generation
 * * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
