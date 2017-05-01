@@ -18,9 +18,9 @@ mysqldump  --no-data --routines --databases Ratemanagement3 RMBilling3 RMCDR3 St
 #permission
 chmod -R 777 ${POST_INSTALLATION_SQL_SCRIPT}
 #Do not write CREATE TABLE statements for first time update
-mysqldump  --no-data --routines --no-create-info --databases Ratemanagement3 RMBilling3 RMCDR3 StagingReport > ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
+#mysqldump  --no-data --routines --no-create-info --databases Ratemanagement3 RMBilling3 RMCDR3 StagingReport > ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
 #permission
-chmod -R 777 ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
+#chmod -R 777 ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT}
 
 #Staging RM DB for schema export
 STAGING_RM_DB=Ratemanagement3
@@ -44,6 +44,7 @@ mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblRateSheetFormate >> ${
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblPermission >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResource >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategories >> ${POST_INSTALLATION_SQL_SCRIPT}
+mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblRate >> ${POST_INSTALLATION_SQL_SCRIPT}
 
