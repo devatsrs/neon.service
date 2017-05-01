@@ -33,7 +33,6 @@ class TicketSla extends \Eloquent
 			
 			$CreatedAt			=   $TicketData->created_at;
 			
-			Log::info(print_r($SlaTarget,true));
 			
 			if(count($SlaTarget)>0){
 				
@@ -43,12 +42,7 @@ class TicketSla extends \Eloquent
 				
 				$DateResolve  = new \DateTime($CreatedAt);
 				$DateResolve->modify('+'.$SlaTarget->ResolveValue.' '.$SlaTarget->ResolveType.'');
-				$ResolveTime  =  $DateResolve->format('Y-m-d H:i'); 
-				
-				Log::info("ResponseTime:".$ResponseTime);
-				Log::info("ResolveTime:".$ResolveTime);
-				
-				
+				$ResolveTime  =  $DateResolve->format('Y-m-d H:i'); 				
 			}	
 			
 			/*switch ($TicketData->PriorityValue) {

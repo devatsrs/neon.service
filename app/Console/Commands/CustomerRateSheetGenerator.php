@@ -196,8 +196,8 @@ class CustomerRateSheetGenerator extends Command {
                                         $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         if(empty($excel_data)){
-                                            Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
-                                            throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                            Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
+                                            throw new Exception('No rate sheet data found against trunk: '.$trunkname);
                                         }
                                         $excel_data = json_decode(json_encode($excel_data), true);
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
@@ -227,8 +227,8 @@ class CustomerRateSheetGenerator extends Command {
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         if(empty($excel_data)){
-                                            Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
-                                            throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                            Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
+                                            throw new Exception('No rate sheet data found against trunk: '.$trunkname);
                                         }
                                         $excel_data = json_decode(json_encode($excel_data), true);
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
@@ -256,8 +256,8 @@ class CustomerRateSheetGenerator extends Command {
                                     Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "')");
                                     if(empty($excel_data)){
-                                        Log::info('Not rate sheet data found against account:'.$account->AccountName.' trunk:'.$trunkname);
-                                        throw new Exception('Not rate sheet data found against trunk:'.$trunkname);
+                                        Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
+                                        throw new Exception('No rate sheet data found against trunk: '.$trunkname);
                                     }
                                     Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);

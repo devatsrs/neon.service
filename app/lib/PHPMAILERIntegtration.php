@@ -83,8 +83,7 @@ class PHPMAILERIntegtration{
 
 		if (!$mail->send()) {
 					$status['status'] = 0;
-					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
-					//Log::info(print_r($mail,true));
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';					
 		} else {
 					$mail->clearAllRecipients();
 					$status['status'] = 1;

@@ -103,9 +103,11 @@ class ReadEmailsTickets extends Command
 					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
 						$joblogdata['Message'] = 'Success';
 						$this->CheckEscalationRule($TicketgroupData,$CompanyID);
-						
+
 				}    			
 			}
+			$this->TicketSlaPolicyViolationEmailSend($CompanyID);
+
 		}
 		catch (\Exception $e)
 		{
@@ -151,7 +153,23 @@ class ReadEmailsTickets extends Command
 						TicketsTable::where(["TicketID"=>$TicketsData->TicketID])->update(array("EscalationEmail"=>1));						
 				}
 			}
+	}
+	
+	function TicketSlaPolicyViolationEmailSend($CompanyID)
+	{		
 			
+		$CurrentTime			=	 date('Y-m-d H:i');
+		$query 					= 	 "call prc_CheckTicketsSlaVoilation ('".$CompanyID."','".$CurrentTime."')";  
+		$tickets 				= 	 DB::select($query);
+		foreach ($tickets as $ticket)
+		{
+			if($ticket->EscalationEmail==1 && $ticket->IsRespondedVoilation==1){
+			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>array("AgentResponseSlaVoilation")));					
+			}
 			
+			if($ticket->EscalationEmail==1 && $ticket->IsResolvedVoilation==1){
+			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>array("AgentResolveSlaVoilation")));					
+			}						
+		}		
 	}
 }

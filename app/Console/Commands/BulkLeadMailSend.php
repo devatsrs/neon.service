@@ -1,5 +1,4 @@
-<?php
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\lib\AmazonS3;
@@ -38,8 +37,7 @@ class BulkLeadMailSend extends Command {
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct(){
         parent::__construct();
     }
     /**
