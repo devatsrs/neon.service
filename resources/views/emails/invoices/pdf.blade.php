@@ -353,11 +353,11 @@
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 @if($table_h_row['Title'] == 'TotalCharges')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                    <td >{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                    <td >{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
                                 @else
-                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                    <td >{{$row[$table_h_row['Title']]}}</td>
                                 @endif
                             @endforeach
 
@@ -412,11 +412,11 @@
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 @if($table_h_row['Title'] == 'ChargedAmount')
-                                    <td class="centeralign">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                    <td >{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
-                                    <td class="centeralign">{{substr($row[$table_h_row['Title']],1)}}</td>
+                                    <td >{{substr($row[$table_h_row['Title']],1)}}</td>
                                 @else
-                                    <td class="centeralign">{{$row[$table_h_row['Title']]}}</td>
+                                    <td >{{$row[$table_h_row['Title']]}}</td>
                                 @endif
                             @endforeach
                         </tr>
