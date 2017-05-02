@@ -18,10 +18,12 @@ chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
 #webcdr / xxxxxxx
 mysql -u root -p
 
-SET PASSWORD FOR 'webcdr'@'localhost' = PASSWORD('11026Xf9D');
 
+
+MySQL>
 CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'password';
-MySQL> GRANT SELECT ON vos3000.* TO 'webcdr'@'localhost';
+OR SET PASSWORD FOR 'webcdr'@'localhost' = PASSWORD('password');
+MySQL> GRANT SELECT ON vos3000db.* TO 'webcdr'@'localhost';
 
 Generally server timezone and db timezones are same but
 we need to make sure they are same or not , otherwise we need to set offset

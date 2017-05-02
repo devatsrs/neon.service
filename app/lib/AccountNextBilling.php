@@ -10,8 +10,8 @@ class AccountNextBilling extends \Eloquent {
 
     public $timestamps = false; // no created_at and updated_at
 
-    public static function getBilling($AccountID){
-        return AccountNextBilling::where('AccountID',$AccountID)->first();
+    public static function getBilling($AccountID,$ServiceID){
+        return AccountNextBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->first();
     }
     public static function getBillingKey($AccountBilling,$key){
         return !empty($AccountBilling)?$AccountBilling->$key:'';

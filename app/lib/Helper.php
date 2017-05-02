@@ -275,10 +275,10 @@ class Helper{
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
-    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
+    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0,$ServiceID=0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID,$ServiceID);
         }
 
         if (empty($RoundChargesAmount)) {
@@ -327,6 +327,33 @@ class Helper{
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+	   
+	    $CompanyData						= Company::find($Account->CompanyId);	   
+	    $replace_array['CompanyAddress1'] 	= $CompanyData->Address1;
+		$replace_array['CompanyAddress2'] 	= $CompanyData->Address2;
+		$replace_array['CompanyAddress3'] 	= $CompanyData->Address3;
+		$replace_array['CompanyCity'] 		= $CompanyData->City;
+		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
+		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
+		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png'); 		
+		
+        $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'));
+		$Host		  = 	$domain_data['host'];
+        $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
+
+        if(!empty($result)){
+            if(!empty($result->Logo)){           
+				 $path = AmazonS3::unSignedUrl($result->Logo,$Account->CompanyId);  
+                        if(strpos($path, "https://") !== false){
+							$replace_array['Logo'] = $path;
+                        }else{
+                            $file = $result->Logo;           
+                            $replace_array['Logo'] = MakeWebUrl($Account->CompanyId,$file); 
+                        }
+				
+            }
+        }
+	    $replace_array['Logo'] = '<img src="'.$replace_array['Logo'].'" />';
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
        $Signature = '';
@@ -431,11 +458,11 @@ class Helper{
     else
     {
         $body = $data['Message'];
-    } Log::info(print_r($status,true));
+    } 
 	if(!isset($status['message_id']))
 	{
 		$status['message_id'] = '';
-	} Log::info($status['message_id']);
+	} 
 	if(!isset($data['EmailCall']))
 	{
 		$data['EmailCall'] = Messages::Sent;
@@ -463,7 +490,6 @@ class Helper{
 		"EmailParent"=>isset($data['EmailParent'])?$data['EmailParent']:$EmailParent,
 		"EmailCall"=>$data['EmailCall'],
     ];
-	Log::info(print_r($logData,true));
     $data =  AccountEmailLog::insertGetId($logData);
     return $data;
 }

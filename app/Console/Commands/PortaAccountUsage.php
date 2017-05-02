@@ -79,6 +79,7 @@ class PortaAccountUsage extends Command {
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         Log::useFiles(storage_path() . '/logs/portaaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
 
@@ -97,10 +98,7 @@ class PortaAccountUsage extends Command {
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
-            $ServiceID = 0;
-            if(isset($companysetting->ServiceType) && $companysetting->ServiceType){
-                $ServiceID = Service::getServiceID($CompanyID,$companysetting->ServiceType);
-            }
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -114,9 +112,7 @@ class PortaAccountUsage extends Command {
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan($ServiceID);
-            }
+            TempUsageDetail::applyDiscountPlan();
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -231,11 +227,11 @@ class PortaAccountUsage extends Command {
             $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrvcdrazure')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('Porta prc_insertCDR start');
             DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('Porta prc_insertCDR end');

@@ -7,4 +7,12 @@ class AccountService extends \Eloquent {
     protected $primaryKey = "AccountServiceID";
     protected $guarded = array('AccountServiceID');
 
+    public static function getServiceName($AccountID,$ServiceID){
+        $servicename = AccountService::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('ServiceTitle');
+        if(empty($servicename)){
+            $servicename =  Service::getServiceName($ServiceID);
+        }
+        return $servicename;
+    }
+
 }

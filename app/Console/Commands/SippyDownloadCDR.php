@@ -98,14 +98,14 @@ class SippyDownloadCDR extends Command {
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));
-            $downloaded = array();
+			$downloaded = array();
 
             if(count($filenames) > 0) {
 
                 /**
                  * GET array of files that are not exist in db
                  */
-
+                
                 foreach ($filenames as $filename) {
                     $isdownloaded = false;
                     $file_path = $destination . '/' . basename($filename);
@@ -139,10 +139,14 @@ class SippyDownloadCDR extends Command {
                     }
 
                     if(filesize($file_path) > 0 && UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0) {
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         if($isdownloaded == false){
+                            $param = array();
+                            $param['filename'] = $filename;
+                            $param['download_path'] = $destination . '/';
+                            $sippy->downloadCDR($param);
                             Log::info("Missing file inserted " . $filename . ' - ' . $sippy->get_file_datetime($filename));
                         }
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
 
                     }
 
@@ -151,10 +155,10 @@ class SippyDownloadCDR extends Command {
                     }
 
                 }
-
+                
             }
-
-            $downloaded_files = count($downloaded);
+			
+			$downloaded_files = count($downloaded);
             $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
             if (count($downloaded) > 0) {
 
@@ -165,7 +169,7 @@ class SippyDownloadCDR extends Command {
             CronJobLog::insert($joblogdata);
 
             CronJob::deactivateCronJob($CronJob);
-
+			
 
             Log::info("SippySSH File Download Completed ");
 

@@ -17,6 +17,5 @@ class AccountEmailLog extends \Eloquent {
     const CallOfficeAlert = 7;
     const CallBlackListAlert = 8;
     const VendorBalanceReport = 9;
-
-
+	const TicketEmail = 10;
 }
