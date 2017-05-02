@@ -352,12 +352,20 @@
                         ?>
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
+                                <?php
+                                $classname = 'centeralign';
+                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                    $classname = 'rightalign';
+                                }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
+                                    $classname = 'leftalign';
+                                }
+                                ?>
                                 @if($table_h_row['Title'] == 'TotalCharges')
-                                    <td >{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td >{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
                                 @else
-                                    <td >{{$row[$table_h_row['Title']]}}</td>
+                                    <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                 @endif
                             @endforeach
 
@@ -369,10 +377,10 @@
                     ?>
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"></th>
-                        <th>Total Calls</th>
-                        <th>Total Duration</th>
-                        <th class="centeralign">Total Billed Duration</th>
-                        <th class="centeralign">Total Charge</th>
+                        <th>Calls</th>
+                        <th>Duration</th>
+                        <th class="centeralign">Billed Duration</th>
+                        <th class="centeralign">Charge</th>
                     </tr>
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"><strong>Total</strong></th>
@@ -411,20 +419,28 @@
                         ?>
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
+                                <?php
+                                $classname = 'centeralign';
+                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                    $classname = 'rightalign';
+                                }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
+                                    $classname = 'leftalign';
+                                }
+                                ?>
                                 @if($table_h_row['Title'] == 'ChargedAmount')
-                                    <td >{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
-                                    <td >{{substr($row[$table_h_row['Title']],1)}}</td>
+                                    <td class="{{$classname}}">{{substr($row[$table_h_row['Title']],1)}}</td>
                                 @else
-                                    <td >{{$row[$table_h_row['Title']]}}</td>
+                                    <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                 @endif
                             @endforeach
                         </tr>
                     @endforeach
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
-                        <th class="centeralign">Total Billed Duration</th>
-                        <th class="centeralign">Total Charge</th>
+                        <th class="centeralign">Billed Duration</th>
+                        <th class="centeralign">Charge</th>
                     </tr>
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"><strong>Total</strong></th>
