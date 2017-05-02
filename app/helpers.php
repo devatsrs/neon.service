@@ -613,6 +613,7 @@ function remove_extra_columns($usage_data,$usage_data_table){
         }
 
         $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+        $usage_data_row = array_combine(array_merge($usage_data_table, $usage_data_table['order']), $usage_data_table);
 
         $usage_data[$row_key] = $usage_data_row;
     }

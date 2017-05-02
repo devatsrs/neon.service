@@ -326,7 +326,15 @@
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
-                            <th class="centeralign">{{$row['UsageName']}}</th>
+                            <?php
+                            $classname = 'centeralign';
+                            if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount'))){
+                                $classname = 'rightalign';
+                            }else if(in_array($row['Title'],array('Trunk','Prefix','Country','Description'))){
+                                $classname = 'leftalign';
+                            }
+                            ?>
+                            <th class="{{$classname}}">{{$row['UsageName']}}</th>
                         @endforeach
                     </tr>
                     <?php
@@ -381,7 +389,15 @@
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
-                            <th class="centeralign">{{$row['UsageName']}}</th>
+                            <?php
+                            $classname = 'centeralign';
+                            if(in_array($row['Title'],array('ChargedAmount'))){
+                                $classname = 'rightalign';
+                            }else if(in_array($row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
+                                $classname = 'leftalign';
+                            }
+                            ?>
+                            <th class="{{$classname}}">{{$row['UsageName']}}</th>
                         @endforeach
                     </tr>
                     <?php
