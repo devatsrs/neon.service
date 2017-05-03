@@ -347,7 +347,7 @@
                                             $classname = 'leftalign';
                                         }
                                         ?>
-                                        @if($table_h_row['Title'] == 'TotalCharges')
+                                        @if($table_h_row['Title'] == 'ChargedAmount')
                                             <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                         @elseif($table_h_row['Title'] == 'AvgRatePerMin')
                                             <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
