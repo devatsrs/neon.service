@@ -109,17 +109,6 @@ return [
 			'prefix'    => '',
 			'strict'    => false,
         ],
-        'sqlsrvcdrazure' => [
-            'driver'   => 'mysql',
-            'host'     => env('DB_HOSTCDR', 'localhost'),
-            'database' => env('DB_DATABASECDR', 'forge'),
-            'username' => env('DB_USERNAMECDR', 'forge'),
-            'password' => substr(env('DB_PASSWORDCDR', ''),5),
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
-			'prefix'    => '',
-			'strict'    => false,
-        ],
         'pbxmysql' => [
             'driver'    => 'mysql',
             'host'      => env('DB_HOSTPBX', 'localhost'),
