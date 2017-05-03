@@ -34,8 +34,7 @@ class User extends \Eloquent {
     }
 	
 	    public static function getUserIDByUserName($CompanyID,$Name){
-        $UserID = '';
-        $users = User::where(["CompanyID"=>$CompanyID,"Status"=>'1'])->get();
+        /*$users = User::where(["CompanyID"=>$CompanyID,"Status"=>'1'])->get();
         if(count($users)>0){
             foreach($users as $user){
                 $username = $user->FirstName.' '. $user->LastName;
@@ -45,8 +44,13 @@ class User extends \Eloquent {
                     }
                 }
             }
-        }
-        return $UserID;
+        }		*/
+		$UserID = User::select("UserID")
+		  ->where(["CompanyID"=>$CompanyID,"Status"=>'1'])
+          ->WhereRaw("concat(FirstName, ' ', LastName) like '%".$Name."%'")
+          ->first();		
+		
+        return isset($UserID->UserID)?$UserID->UserID:'';
     }
 	
     /*public static function getMinUserID($CompanyID){
