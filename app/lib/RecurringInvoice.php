@@ -51,7 +51,7 @@ class RecurringInvoice extends \Eloquent {
                                 $Invoice->update(["PDF" => $pdf_path]);
                                 $recurringInvoice = RecurringInvoice::find($Invoice->RecurringInvoiceID);
                                 $InvoiceTemplateID = BillingClass::where('BillingClassID',$recurringInvoice->BillingClassID)->pluck('InvoiceTemplateID');
-                                InvoiceTemplate::where(array('InvoiceTemplateID',$InvoiceTemplateID))->update(array("LastInvoiceNumber" => $Invoice->InvoiceNumber));
+                                InvoiceTemplate::where(array('InvoiceTemplateID'=>$InvoiceTemplateID))->update(array("LastInvoiceNumber" => $Invoice->InvoiceNumber));
                                 DB::connection('sqlsrv2')->commit();
                                 $recurringInvoice = RecurringInvoice::find($RInvoiceID);
                                 $RecurringInvoiceData['NextInvoiceDate'] = next_billing_date($recurringInvoice->BillingCycleType, $recurringInvoice->BillingCycleValue, strtotime($recurringInvoice->NextInvoiceDate));

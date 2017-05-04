@@ -123,11 +123,11 @@ class ManualPortaAccountCDRImport extends Command {
         Log::error('prc_insertTempCDR end');
         $result = DB::connection('sqlsrv2')->select("CALL prc_start_end_time('" . $ProcessID . "')");
         Log::info(print_r($result,true));
-        DB::connection('sqlsrvcdrazure')->beginTransaction();
+        DB::connection('sqlsrvcdr')->beginTransaction();
         Log::error(' prc_insertCDR start');
-        DB::connection('sqlsrvcdrazure')->statement("CALL prc_insertCDR('" . $ProcessID . "')");
+        DB::connection('sqlsrvcdr')->statement("CALL prc_insertCDR('" . $ProcessID . "')");
         Log::error(' prc_insertCDR end');
-        DB::connection('sqlsrvcdrazure')->commit();
+        DB::connection('sqlsrvcdr')->commit();
         TempUsageDetail::where(["processId" => $ProcessID])->delete();
         Log::error(print_r($error,true));
 

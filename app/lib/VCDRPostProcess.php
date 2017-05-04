@@ -12,6 +12,6 @@ class VCDRPostProcess extends \Eloquent {
 
     protected $guarded = ['VCDRPostProcessID'];
 
-    protected $connection = 'sqlsrvcdrazure';
+    protected $connection = 'sqlsrvcdr';
 
 }
