@@ -168,7 +168,7 @@
             </tr>
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
-                    <td colspan="2"></td>
+                    <td ></td>
                     <td colspan="2">TOTAL DUE</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</td>
                 </tr>
