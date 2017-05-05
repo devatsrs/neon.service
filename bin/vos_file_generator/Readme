@@ -1,39 +1,65 @@
-https://github.com/earlruby/extract_vos3000_data
+Execute following command to setup VOS CDR file generation with attached script.
 
-Log into your Linux-based switch as root and create a "webcdr" account that will run the script:
+
+mysql -u root -p
+show databases;
+# check db name is vos3000 or vos3000db & Update the extract_vos3000_data file db name accordingly.
+// OR SET PASSWORD FOR 'webcdr'@'localhost' = PASSWORD('password');
+CREATE USER 'webcdr'@'localhost' IDENTIFIED BY '19I7Pbwr0n24';
+GRANT SELECT ON *.* TO 'webcdr'@'localhost';
+exit
+
+-------------------------------------
+
+#create .my.cnf , copy code from .my.cnf and past after following command
+cat > /home/webcdr/.my.cnf
+
+#check if done
+cat /home/webcdr/.my.cnf
+
+#check mysql .my.cnf wokrs or not
+mysql
+exit
+
+#permission on /home/webcdr/.my.cnf
+chown webcdr /home/webcdr/.my.cnf chmod 600 /home/webcdr/.my.cnf
+
+---------------------------------
 
 useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
-#echo "21Yk76v1#Jsd" | passwd "webcdr" --stdin;
-
 passwd webcdr
->enter new password:
+https://lastpass.com/generatepassword.php
+19I7Pbwr0n24
+
 su webcdr
 mkdir ~webcdr/bin
 mkdir ~webcdr/cdr_data
 chown -R webcdr ~webcdr
 chmod -R 0755 ~webcdr/
 
-chown webcdr ~webcdr/.my.cnf chmod 600 ~webcdr/.my.cnf
-
-#webcdr / xxxxxxx
-mysql -u root -p
-
-
-
-MySQL>
-CREATE USER 'webcdr'@'localhost' IDENTIFIED BY 'password';
-OR SET PASSWORD FOR 'webcdr'@'localhost' = PASSWORD('password');
-MySQL> GRANT SELECT ON vos3000db.* TO 'webcdr'@'localhost';
+-----------------------
+https://github.com/earlruby/extract_vos3000_data
 
 Generally server timezone and db timezones are same but
-we need to make sure they are same or not , otherwise we need to set offset
+we need to make sure they are same or not , otherwise we need to set offset on extract_vos3000_data
 
-Crontab entry
--------------
+#check extract_vos3000_data for db name vos3000 or vos3000db
+
+#copy extract_vos3000_data code and past after cat command
+cat > /home/webcdr/bin/extract_vos3000_data
+
+#check if done
+cat /home/webcdr/bin/extract_vos3000_data | more
+
+-----------------------------------
+
+#setup cronjob
+crontab -e
+
 #CDR file Generation
 * * * * * /home/webcdr/bin/extract_vos3000_data --stop-time-field stoptime  --stop-time-format epoch1000
 
-#EveryDay - Delete cdr files over 90 days - mid night
-0 0 * * * find /home/webcdr/cdr_data -maxdepth 1 -mtime +90 -exec rm {} \;
+#EveryDay - Delete cdr files over 15 days - mid night
+0 0 * * * find /home/webcdr/cdr_data -maxdepth 1 -mtime +15 -exec rm {} \;
 
--------------------------------------
+
