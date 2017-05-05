@@ -253,7 +253,7 @@ class PBXAccountUsage extends Command
 
                         }
                         if ($data_count > $insertLimit && !empty($InserData)) {
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                             $InserData = array();
                             $data_count = 0;
                         }
@@ -262,7 +262,7 @@ class PBXAccountUsage extends Command
                 }//loop
 
                 if (!empty($InserData)) {
-                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                 }
                 date_default_timezone_set(Config::get('app.timezone'));
@@ -275,7 +275,7 @@ class PBXAccountUsage extends Command
 
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
 
@@ -286,7 +286,7 @@ class PBXAccountUsage extends Command
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
 
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
             Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
@@ -294,7 +294,7 @@ class PBXAccountUsage extends Command
             Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('pbx prc_insertCDR start');
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('pbx prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
@@ -303,7 +303,7 @@ class PBXAccountUsage extends Command
             $logdata['created_at'] = date('Y-m-d H:i:s');
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             CronJobLog::insert($joblogdata);
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
@@ -312,7 +312,7 @@ class PBXAccountUsage extends Command
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }

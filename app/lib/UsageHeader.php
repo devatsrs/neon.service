@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 class UsageHeader extends \Eloquent {
 	protected $fillable = [];
-    protected $connection = 'sqlsrvcdrazure';
+    protected $connection = 'sqlsrvcdr';
     protected $guarded = array('UsageHeaderID');
     protected $table = 'tblUsageHeader';
     protected  $primaryKey = "UsageHeaderID";
@@ -31,7 +31,7 @@ class UsageHeader extends \Eloquent {
         return $StartDate;
     }
     public static function getVendorStartHeaderDate($CompanyID){
-        $StartDate =  DB::connection('sqlsrvcdrazure')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
+        $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
         $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')
             ->join('tblUsageVendorSummary','tblUsageVendorSummary.SummaryVendorHeaderID','=','tblSummaryVendorHeader.SummaryVendorHeaderID')
             ->where(['CompanyID'=>$CompanyID])->count();

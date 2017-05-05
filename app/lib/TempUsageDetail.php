@@ -41,7 +41,7 @@ class TempUsageDetail extends \Eloquent {
     public static function RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID){
         $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
-        $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
+        $TempUsageDetails = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $skiped_account_data = array();
 
         //@TODO: create new procedure to fix Rerate even if account or trunk not setup and rerating is on.
@@ -71,10 +71,10 @@ class TempUsageDetail extends \Eloquent {
             }
         }
         // Update cost = 0 where AccountID not set and Trunk is not set.
-        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
-        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
 
-        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
+        $FailedAccounts = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
         foreach($FailedAccounts as $FailedAccount){
             $TempRateLogdata = array();
             $TempRateLogdata['CompanyID'] = $CompanyID;
@@ -244,7 +244,7 @@ class TempUsageDetail extends \Eloquent {
     }
 
     public static function PostProcessCDR($CompanyID,$ProcessID){
-        $UsageHeaders = DB::connection('sqlsrvcdrazure')->select('call prc_PostProcessCDR('.intval($CompanyID).')');
+        $UsageHeaders = DB::connection('sqlsrvcdr')->select('call prc_PostProcessCDR('.intval($CompanyID).')');
         $ProcessIDs = array();
         Alert::CallMonitorAlert($CompanyID,$ProcessID);
         foreach($UsageHeaders as $UsageHeader){
