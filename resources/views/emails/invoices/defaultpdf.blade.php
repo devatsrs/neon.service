@@ -166,6 +166,13 @@
                 <td colspan="2">GRAND TOTAL</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
             </tr>
+            @if($InvoiceTemplate->ShowPrevBal)
+                <tr>
+                    <td colspan="2"></td>
+                    <td colspan="2">TOTAL DUE</td>
+                    <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</td>
+                </tr>
+            @endif
             </tfoot>
         </table>
         <!-- content of front page section end -->
