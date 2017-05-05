@@ -143,12 +143,12 @@ class CDRRecalculate extends Command {
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
                 //if(count($skiped_account_data) == 0) {
-                DB::connection('sqlsrvcdrazure')->beginTransaction();
+                DB::connection('sqlsrvcdr')->beginTransaction();
                 DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
-                DB::connection('sqlsrvcdrazure')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
-                DB::connection('sqlsrvcdrazure')->commit();
+                DB::connection('sqlsrvcdr')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
+                DB::connection('sqlsrvcdr')->commit();
                 //}
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== cdr transaction end =============================');
                 $jobdata['updated_at'] = date('Y-m-d H:i:s');
                 $jobdata['ModifiedBy'] = 'RMScheduler';
@@ -159,13 +159,13 @@ class CDRRecalculate extends Command {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
 
             } catch (\Exception $err) {
                 Log::error($err);
             }
             try{
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
             } catch (\Exception $err) {
                 Log::error($err);
             }

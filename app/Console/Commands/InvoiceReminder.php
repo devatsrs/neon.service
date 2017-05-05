@@ -3,6 +3,7 @@ namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
 use App\Lib\Invoice;
@@ -75,6 +76,8 @@ class InvoiceReminder extends Command
         $ProcessID = Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $errors = array();
         $errorslog = array();
         try {
@@ -90,7 +93,7 @@ class InvoiceReminder extends Command
                     if (!empty($joboptions->attachment)) {
                         $path = AmazonS3::unSignedUrl($joboptions->attachment,$CompanyID);
                         if (strpos($path, "https://") !== false) {
-                            $file = Config::get('app.temp_location') . basename($path);
+                            $file = $TEMP_PATH . basename($path);
                             file_put_contents($file, file_get_contents($path));
                             $joboptions->attachment = $file;
                         } else {
@@ -144,7 +147,7 @@ class InvoiceReminder extends Command
                             if (!empty($Account->Email)) {
                                 if($joboptions->test==1){
                                     $emaildata['EmailTo'] = $joboptions->testEmail;
-                                }else if (getenv('EmailToCustomer') == 1) {
+                                }else if ($EMAIL_TO_CUSTOMER == 1) {
                                     $emaildata['EmailTo'] = $Account->Email;//$invoice->Email;
                                 } else {
                                     $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$invoice->Email;
@@ -162,10 +165,11 @@ class InvoiceReminder extends Command
                                 $replace_array['InvoiceGrandTotal'] = $invoice->GrandTotal;
                                 $replace_array['InvoiceOutstanding'] = $InvoiceOutStanding;
                                 $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
-                                $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+                                //$joboptions->message = template_var_replace($joboptions->message,$replace_array);
+								$message =  template_var_replace($joboptions->message,$replace_array);
 
                                 $emaildata['Subject'] = $joboptions->subject;
-                                $emaildata['Message'] = $joboptions->message;
+                                $emaildata['Message'] = $message;
                                 $emaildata['CompanyID'] = $CompanyID;
 
                                 $emaildata['mandrill'] = 1;

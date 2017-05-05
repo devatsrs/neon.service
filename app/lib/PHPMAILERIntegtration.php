@@ -11,18 +11,29 @@ class PHPMAILERIntegtration{
 	 } 
 
 
-	public static function SetEmailConfiguration($config,$companyID)
+	public static function SetEmailConfiguration($config,$companyID,$data)
 	{
 		Config::set('mail.host',$config->SMTPServer);
 		Config::set('mail.port',$config->Port);
-		Config::set('mail.from.address',$config->EmailFrom);
-		Config::set('mail.from.name',$config->CompanyName);
-		Config::set('mail.encryption',($config->IsSSL==1?'SSL':'TLS'));
+		
+		if(isset($data['EmailFrom'])){ 
+			Config::set('mail.from.address',trim($data['EmailFrom']));
+		}else{ 
+			Config::set('mail.from.address',trim($config->EmailFrom));
+		}
+		
+		if(isset($data['CompanyName'])){
+			Config::set('mail.from.name',$data['CompanyName']);
+		}else{
+			Config::set('mail.from.name',$config->CompanyName);
+		}
+		Config::set('mail.encryption',($config->IsSSL==1?'ssl':'tls'));
 		Config::set('mail.username',$config->SMTPUsername);
 		Config::set('mail.password',$config->SMTPPassword);
 		extract(Config::get('mail'));
 	
 		$mail = new \PHPMailer;
+		//$mail->SMTPDebug = 1;
 		//$mail->SMTPDebug = 3;                               // Enable verbose debug output
 		$mail->isSMTP();                                      // Set mailer to use SMTP
 		$mail->Host = $host;  // Specify main and backup SMTP servers
@@ -33,10 +44,8 @@ class PHPMAILERIntegtration{
 		$mail->SMTPSecure = $encryption;                            // Enable TLS encryption, `ssl` also accepted
 	
 		$mail->Port = $port;                                    // TCP port to connect to
-	
-		$mail->From = $from['address'];
-		$mail->FromName = $from['name'];
-		$mail->IsHTML(true);		
+		$mail->SetFrom(trim($from['address']), trim($from['name']));
+		$mail->IsHTML(true);
 		return $mail;		
 	}	 
 	
@@ -46,7 +55,7 @@ class PHPMAILERIntegtration{
 			 $companyID = User::get_companyID();
 		}
 		
-		 $mail 		=   self::SetEmailConfiguration($config,$companyID);
+		 $mail 		=   self::SetEmailConfiguration($config,$companyID,$data);
 		 $status 	= 	array('status' => 0, 'message' => 'Something wrong with sending mail.');
 	
 		if(getenv('APP_ENV') != 'Production'){
@@ -66,21 +75,22 @@ class PHPMAILERIntegtration{
 		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
-		
-		$mail->Body    = $body;
+
+		$mail->Body = $mail->msgHTML($body);
 		$mail->Subject = $data['Subject'];
 		
-		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];	
+		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];
+
 		if (!$mail->send()) {
 					$status['status'] = 0;
-					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';					
 		} else {
 					$mail->clearAllRecipients();
 					$status['status'] = 1;
 					$status['message'] = 'Email has been sent';
 					$status['body'] = $body;
 					$status['message_id']	=	$mail->getLastMessageID(); 
-		}
+		} 
 		return $status;
 	}
 	
@@ -97,13 +107,13 @@ class PHPMAILERIntegtration{
 	
 			if(count($email_addresses)>0){
 				foreach($email_addresses as $email_address){
-					if($type='EmailTo'){
+					if($type=='EmailTo'){
 						$mail->addAddress(trim($email_address));
 					}
-					if($type='cc'){
+					if($type=='cc'){
 						$mail->AddCC(trim($email_address));
 					}
-					if($type='bcc'){
+					if($type=='bcc'){
 						$mail->AddBCC(trim($email_address));
 					}
 				}

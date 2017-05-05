@@ -8,12 +8,11 @@ composer.lock
 .DS_Store
 Thumbs.db
 /.idea
-/wkhtmltox
 /mailoutput/*
 /storage/app/*
 /storage/framework/catch/*
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/logs/*
-/wkhtmltopdf
-storage/locks/
+storage/locks/*
+bin/deployment/configs/

@@ -79,7 +79,7 @@ class ReImportCDRbyAccount extends Command {
         try {
             DB::beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
             Log::error(' ========================== porta transaction start =============================');
 
             $porta = new Porta($CompanyGatewayID);
@@ -147,7 +147,7 @@ class ReImportCDRbyAccount extends Command {
                         //Log::error("CallType ==".$row_account['CallType']);
                         if (isset($row_account['CallType']) && is_numeric($row_account['CallType'])) {
 
-                            $UniqueID = DB::connection('sqlsrvcdrazure')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
+                            $UniqueID = DB::connection('sqlsrvcdr')->select("CALL prc_checkUniqueID('" . $CompanyGatewayID . "','" . $row_account['ID'] . "')");
                             if (count($UniqueID) == 0) {
                                 Log::error("CallType ==".$row_account['CallType'].$processID);
                                 TempUsageDetail::insert($data);
@@ -164,7 +164,7 @@ class ReImportCDRbyAccount extends Command {
             date_default_timezone_set(Config::get('app.timezone'));
             DB::commit();
             DB::connection('sqlsrv2')->commit();
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             Log::error("Porta CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== porta transaction end =============================');
             ///
@@ -180,11 +180,11 @@ class ReImportCDRbyAccount extends Command {
             DB::connection('sqlsrv2')->statement("CALL prc_insertTempCDR('" . $processID . "')");
             Log::error('Porta prc_insertTempCDR end');
 
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
             Log::error('Porta prc_insertCDR start');
-            DB::connection('sqlsrvcdrazure')->statement("CALL prc_insertCDR('" . $processID . "')");
+            DB::connection('sqlsrvcdr')->statement("CALL prc_insertCDR('" . $processID . "')");
             Log::error('Porta prc_insertCDR end');
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             //TempUsageDetail::where(["processId" => $processID])->delete();
             DB::connection('sqlsrv2')->select("CALL prc_getActiveGatewayAccount(" . $CompanyID . "," . $CompanyGatewayID.",'','1')");
 
@@ -192,7 +192,7 @@ class ReImportCDRbyAccount extends Command {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }

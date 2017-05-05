@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -15,7 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\Helper;
 use App\Lib\Company;
 
-
+//-- not in use
 class DBFixing extends Command
 {
 
@@ -68,6 +69,7 @@ class DBFixing extends Command
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
 
+        $DELETE_CDR_TIME = CompanyConfiguration::get($CompanyID,'DELETE_CDR_TIME');
         $CronJob =  CronJob::find($CronJobID);
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
@@ -84,7 +86,7 @@ class DBFixing extends Command
             Log::useFiles(storage_path() . '/logs/dbfixing-' . $CompanyID . '-' . date('Y-m-d') . '.log');
             Log::info('fixiing delete old cdr Starts.');
             $DeleteCDRDateTime = '-3 month';
-            $DeleteCDRTime = getenv('DELETE_CDR_TIME');
+            $DeleteCDRTime = $DELETE_CDR_TIME;
             if(!empty($DeleteCDRTime)){
                 $DeleteCDRDateTime = '- '.$DeleteCDRTime;
             }

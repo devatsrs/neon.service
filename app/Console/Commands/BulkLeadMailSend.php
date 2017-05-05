@@ -1,9 +1,9 @@
-<?php
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
 use App\Lib\Account;
 use App\lib\AmazonS3;
 use App\Lib\Company;
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
 use App\Lib\Job;
@@ -37,8 +37,7 @@ class BulkLeadMailSend extends Command {
      *
      * @return void
      */
-    public function __construct()
-    {
+    public function __construct(){
         parent::__construct();
     }
     /**
@@ -72,6 +71,8 @@ class BulkLeadMailSend extends Command {
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $jobType = JobType::where(['JobTypeID'=>$job->JobTypeID])->pluck('Code');
         $CompanyID = $arguments["CompanyID"];
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $errors = array();
         $errorslog = array();
         try {
@@ -87,7 +88,7 @@ class BulkLeadMailSend extends Command {
                     if(!empty($joboptions->attachment)){
                         $path = AmazonS3::unSignedUrl($joboptions->attachment,$CompanyID);
                         if(strpos($path, "https://") !== false){
-                            $file = Config::get('app.temp_location').basename($path);
+                            $file = $TEMP_PATH.basename($path);
                             file_put_contents($file,file_get_contents($path));
                             $joboptions->attachment = $file;
                         }else{
@@ -100,14 +101,14 @@ class BulkLeadMailSend extends Command {
                         if(count($ids)>0){
                             foreach($ids as $id) {
                                 $account = Account::find($id);
-                                if ($account->Email != "") {
-                                    if($joboptions->test==1){
-                                        $emaildata['EmailTo'] = $joboptions->testEmail;
-                                    }else if(getenv('EmailToCustomer') == 1){
-                                        $emaildata['EmailTo'] = $account->Email;//$account->Email;
-                                    }else{
-                                        $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
-                                    }
+                                $emaildata['EmailTo'] = '';
+                                if($joboptions->test==1){
+                                    $emaildata['EmailTo'] = $joboptions->testEmail;
+                                }else if($EMAIL_TO_CUSTOMER == 1){
+                                    $emaildata['EmailTo'] = $account->Email;//$account->Email;
+                                }
+
+                                if ($emaildata['EmailTo'] != "") {
 
                                     if(!empty($joboptions->attachment)){
                                         $emaildata['attach'] = $joboptions->attachment;
@@ -115,12 +116,17 @@ class BulkLeadMailSend extends Command {
 
                                     $emaildata['EmailToName'] = $account->AccountName;
                                     $replace_array = Helper::create_replace_array($account,array(),$JobLoggedUser);
-                                    $joboptions->message = template_var_replace($joboptions->message,$replace_array);
-                                    $emaildata['Subject'] = $joboptions->subject;
-                                    $emaildata['Message'] = $joboptions->message;
+                                    $message =  template_var_replace($joboptions->message,$replace_array);
+                                    $emaildata['Subject']   = $joboptions->subject;
+                                    $emaildata['Message']   = $message;
                                     $emaildata['CompanyID'] = $CompanyID;
 
                                     $emaildata['mandrill'] = 1;
+									if(isset($joboptions->email_from))
+									{
+										$emaildata['EmailFrom'] = $joboptions->email_from;
+									}
+									
                                     $status = Helper::sendMail('emails.template', $emaildata);
                                     if (isset($status["status"]) && $status["status"] == 0) {
                                         $errors[] = $account->AccountName.', '.$status["message"];
@@ -193,7 +199,7 @@ class BulkLeadMailSend extends Command {
                             if(!empty($result)){
                                 foreach($result as $account) {
                                     if (!empty($account->Email)) {
-                                        if(getenv('EmailToCustomer') == 1){
+                                        if($EMAIL_TO_CUSTOMER == 1){
                                             $emaildata['EmailTo'] = $account->Email;//$account->Email;
                                         }else{
                                             $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
@@ -204,9 +210,10 @@ class BulkLeadMailSend extends Command {
                                         }
                                         $emaildata['EmailToName'] = $account->AccountName;
                                         $replace_array = Helper::create_replace_array($account,array(),$JobLoggedUser);
-                                        $joboptions->message = template_var_replace($joboptions->message,$replace_array);
+                                        //$joboptions->message = template_var_replace($joboptions->message,$replace_array);
+										$message =  template_var_replace($joboptions->message,$replace_array);
                                         $emaildata['Subject'] = $joboptions->subject;
-                                        $emaildata['Message'] = $joboptions->message;
+                                        $emaildata['Message'] = $message;
                                         $emaildata['CompanyID'] = $CompanyID;
 
                                         $emaildata['mandrill'] = 1;

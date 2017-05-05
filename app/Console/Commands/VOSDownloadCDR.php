@@ -10,6 +10,7 @@ namespace App\Console\Commands;
 
 
 
+use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -78,6 +79,7 @@ class VOSDownloadCDR extends Command {
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/vosdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
+        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
 
             Log::info("Start");
@@ -93,7 +95,7 @@ class VOSDownloadCDR extends Command {
             $vos = new VOS($CompanyGatewayID);
             Log::info("VOS Connected");
             $filenames = $vos->getCDRs();
-            $destination = Config::get('app.vos_location') .$CompanyGatewayID;
+            $destination = $VOS_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
                 mkdir($destination, 0777, true);
             }
@@ -136,10 +138,14 @@ class VOSDownloadCDR extends Command {
                     }
 
                     if(filesize($file_path) > 0 &&  UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0 ) {
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                         if($isdownloaded == false){
+                            $param = array();
+                            $param['filename'] = $filename;
+                            $param['download_path'] = $destination . '/';
+                            $vos->downloadCDR($param);
                             Log::info("Missing file inserted " . $filename . ' - ' . $vos->get_file_datetime($filename));
                         }
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
                     }
 
                     if (count($downloaded) == $FilesDownloadLimit) {

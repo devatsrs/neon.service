@@ -25,11 +25,11 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0,$OutboundTableID=0,$InboundTableID=0){
         $skiped_account_data =array();
-        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
-        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
-        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."')");
+        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
+        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
         foreach($skiped_account as $skiped_account_row){
             $skiped_account_data[]  = $skiped_account_row->Message;
         }
@@ -41,7 +41,7 @@ class TempUsageDetail extends \Eloquent {
     public static function RateCDR($CompanyID,$ProcessID,$temptableName,$CompanyGatewayID){
         $CompanyGateway = CompanyGateway::find($CompanyGatewayID);
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
-        $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
+        $TempUsageDetails = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $skiped_account_data = array();
 
         //@TODO: create new procedure to fix Rerate even if account or trunk not setup and rerating is on.
@@ -71,10 +71,10 @@ class TempUsageDetail extends \Eloquent {
             }
         }
         // Update cost = 0 where AccountID not set and Trunk is not set.
-        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
-        DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->update(["cost" => 0 ]);
+        DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->where('trunk','Other')->update(["cost" => 0 ]);
 
-        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
+        $FailedAccounts = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
         foreach($FailedAccounts as $FailedAccount){
             $TempRateLogdata = array();
             $TempRateLogdata['CompanyID'] = $CompanyID;
@@ -216,17 +216,15 @@ class TempUsageDetail extends \Eloquent {
     }
     public static function applyDiscountPlan(){
         $today = date('Y-m-d');
+        $todaytime = date('Y-m-d H:i:s');
         $Accounts = DB::table('tblAccountBilling')
             ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
-            ->where('NextInvoiceDate',$today)
-            ->Where(function($query)use($today)
-            {
-                $query->whereRaw("DATE(tblAccountDiscountPlan.created_at) <> '".$today."'")
-                      ->orwhere('CreatedBy','<>','RMScheduler');
-            })
-            ->get(['tblAccountBilling.AccountID','DiscountPlanID','NextInvoiceDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+            ->where('tblAccountDiscountPlan.ServiceID','=','tblAccountBilling.ServiceID')
+            ->where('EndDate','<=',$today)
+            ->get(['tblAccountBilling.AccountID','DiscountPlanID','tblAccountDiscountPlan.ServiceID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
         foreach($Accounts as $Account){
-            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID);
+            $ServiceID = $Account->ServiceID;
+            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID,$ServiceID);
             if(!empty($AccountNextBilling)){
                 $BillingCycleType = $AccountNextBilling->BillingCycleType;
                 $BillingCycleValue =$AccountNextBilling->BillingCycleValue;
@@ -234,19 +232,19 @@ class TempUsageDetail extends \Eloquent {
                 $BillingCycleType = $Account->BillingCycleType;
                 $BillingCycleValue =$Account->BillingCycleValue;
             }
-            $days = getBillingDay(strtotime($Account->NextInvoiceDate), $BillingCycleType, $BillingCycleValue);
-            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->NextInvoiceDate));
+            $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue);
+            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->EndDate));
             $getdaysdiff = getdaysdiff($NextInvoiceDate,$today);
             $DayDiff = $getdaysdiff >0?intval($getdaysdiff):0;
-            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler')");
-            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler'));
+            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
+            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID));
 
         }
 
     }
 
     public static function PostProcessCDR($CompanyID,$ProcessID){
-        $UsageHeaders = DB::connection('sqlsrvcdrazure')->select('call prc_PostProcessCDR('.intval($CompanyID).')');
+        $UsageHeaders = DB::connection('sqlsrvcdr')->select('call prc_PostProcessCDR('.intval($CompanyID).')');
         $ProcessIDs = array();
         Alert::CallMonitorAlert($CompanyID,$ProcessID);
         foreach($UsageHeaders as $UsageHeader){

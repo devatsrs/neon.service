@@ -1,22 +1,21 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\PBX;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use App\Lib\Helper;
-use App\Lib\Company;
-use \Exception;
 
 class PBXAccountUsage extends Command
 {
@@ -78,6 +77,7 @@ class PBXAccountUsage extends Command
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         Log::useFiles(storage_path() . '/logs/pbxaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
@@ -102,6 +102,7 @@ class PBXAccountUsage extends Command
             }
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -115,9 +116,7 @@ class PBXAccountUsage extends Command
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
             $param['RateCDR'] = $RateCDR;
@@ -180,8 +179,10 @@ class PBXAccountUsage extends Command
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
+                        $data['disposition'] = $row_account['disposition'];
                         $data['extension'] = $row_account['extension'];
                         $data['ProcessID'] = $processID;
+                        $data['ServiceID'] = $ServiceID;
                         $data['ID'] = $row_account['ID'];
                         $data['is_inbound'] = 0;
                         $data['cost'] = (float)$row_account['cc_cost'];
@@ -252,7 +253,7 @@ class PBXAccountUsage extends Command
 
                         }
                         if ($data_count > $insertLimit && !empty($InserData)) {
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                             $InserData = array();
                             $data_count = 0;
                         }
@@ -261,7 +262,7 @@ class PBXAccountUsage extends Command
                 }//loop
 
                 if (!empty($InserData)) {
-                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                 }
                 date_default_timezone_set(Config::get('app.timezone'));
@@ -274,7 +275,7 @@ class PBXAccountUsage extends Command
 
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
             //ProcessCDR
 
@@ -285,15 +286,15 @@ class PBXAccountUsage extends Command
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
 
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('pbx prc_insertCDR start');
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('pbx prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
@@ -302,7 +303,7 @@ class PBXAccountUsage extends Command
             $logdata['created_at'] = date('Y-m-d H:i:s');
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             CronJobLog::insert($joblogdata);
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
@@ -311,7 +312,7 @@ class PBXAccountUsage extends Command
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }
