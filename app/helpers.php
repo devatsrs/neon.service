@@ -182,9 +182,9 @@ function get_timezone_offset($remote_tz, $origin_tz = null) {
     $offset = $origin_dtz->getOffset($origin_dt) - $remote_dtz->getOffset($remote_dt);
     return $offset;
 }
-function searcharray($val1, $key1, $val2='',$key2='',$array) {
+function searcharray($val1, $key1, $val2='',$key2='',$val3='',$key3='',$array) {
     foreach ($array as $k => $val) {
-        if(array_search($val1,$val)== $key1 && array_search($val2,$val)== $key2){
+        if(array_search($val1,$val)== $key1 && array_search($val2,$val)== $key2 && array_search($val3,$val)== $key3){
             return $k;
         }
     }
