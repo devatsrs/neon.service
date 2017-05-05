@@ -89,9 +89,11 @@ BILLING_DASHBOARD_CUSTOMER=BillingDashboardTotalOutstanding,BillingDashboardTota
 #Billing Dashboard widgets
 if [ "$IS_WHOLESALE" = "1" ]; then
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPendingDispute,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
+    MONITOR_DASHBOARD=AnalysisMonitor
     echo "This is Wholesale setup"
 else
     BILLING_DASHBOARD=BillingDashboardSummaryWidgets,BillingDashboardPincodeWidget,BillingDashboardMissingGatewayWidget,BillingDashboardTotalOutstanding,BillingDashboardTotalInvoiceSent,BillingDashboardTotalInvoiceReceived,BillingDashboardDueAmount,BillingDashboardOverDueAmount,BillingDashboardPaymentReceived,BillingDashboardPaymentSent,BillingDashboardPendingDispute,BillingDashboardPendingEstimate,BillingDashboardInvoiceExpense,BillingDashboardOutstanding
+    MONITOR_DASHBOARD=CallMonitor,AnalysisMonitor
     echo "This is Retail setup"
 fi
 
