@@ -1696,14 +1696,14 @@ class Invoice extends \Eloquent {
                     if(isset($result_row['BillDurationInSec'])){
                         unset($result_row['BillDurationInSec']);
                     }*/
-                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk', $usage_data);
+                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk',$result_row['ServiceID'],'ServiceID', $usage_data);
                     if (isset($usage_data[$key]['AreaPrefix'])) {
                         $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
                         $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
                         $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
-                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
+                        $usage_data[$key]['DurationInSec'] += $result_row['DurationInSec'];
+                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                     } else {
                         $usage_data[] = $result_row;
                     }
