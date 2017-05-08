@@ -6,7 +6,7 @@
 #After Ready to deploy we will first run this script.
 # Before deploying to anybody we will generate this sql script to be deploy after fresh installation.
 # And commit this POST_INSTALLATION_SQL_SCRIPT to master.
-source $(dirname "$0")/config.sh
+#source $(dirname "$0")/config.sh
 
 echo "Exporting Staging DBs Schema to sql file..."
 
@@ -49,13 +49,14 @@ mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_
 mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblRate >> ${POST_INSTALLATION_SQL_SCRIPT}
 
 #Backup for rollback  --------
-echo "Backup Tables data and old procedures for rollback."
-mkdir -p /home/auto_backup/${COMPANY}
-mysqldump --compact --no-create-info  ${OLD_DB_DATABASE} tblResourceCategories tblResource tblCompanyConfiguration  > /home/auto_backup/${COMPANY}/tblresourcecategories_tblResource_tblCompanyConfiguration.sql
-mysqldump --compact --no-data  --routines --no-create-info --databases ReleaseRM > /home/auto_backup/${COMPANY}/ReleaseRM.sql
-mysqldump --compact --no-data --routines --no-create-info --databases ReleaseBilling > /home/auto_backup/${COMPANY}/ReleaseBilling.sql
-mysqldump --compact --no-data --routines --no-create-info --databases ReleaseCDR > /home/auto_backup/${COMPANY}/ReleaseCDR.sql
-mysqldump --compact --no-data --routines --no-create-info --databases ReleaseReport > /home/auto_backup/${COMPANY}/ReleaseReport.sql
+#manually backup for rollback to old release.
+#echo "Backup Tables data and old procedures for rollback."
+#mkdir -p /home/auto_backup/${COMPANY}
+#mysqldump --compact --no-create-info  ${OLD_DB_DATABASE} tblResourceCategories tblResource tblCompanyConfiguration  > /home/auto_backup/${COMPANY}/tblresourcecategories_tblResource_tblCompanyConfiguration.sql
+#mysqldump --compact --no-data  --routines --no-create-info --databases ReleaseRM > /home/auto_backup/${COMPANY}/ReleaseRM.sql
+#mysqldump --compact --no-data --routines --no-create-info --databases ReleaseBilling > /home/auto_backup/${COMPANY}/ReleaseBilling.sql
+#mysqldump --compact --no-data --routines --no-create-info --databases ReleaseCDR > /home/auto_backup/${COMPANY}/ReleaseCDR.sql
+#mysqldump --compact --no-data --routines --no-create-info --databases ReleaseReport > /home/auto_backup/${COMPANY}/ReleaseReport.sql
 
 # ----------------------------
 
