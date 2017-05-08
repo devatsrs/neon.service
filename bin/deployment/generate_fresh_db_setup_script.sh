@@ -65,5 +65,5 @@ echo "Cleanup sql file for new DBs."
 sed -i 's/utf8mb4_general_ci/utf8_unicode_ci/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/utf8mb4/utf8/g' ${POST_INSTALLATION_SQL_SCRIPT}
 sed -i 's/ AUTO_INCREMENT=[0-9]*//g' ${POST_INSTALLATION_SQL_SCRIPT}
-
+echo "Done!"
 exit 0;
