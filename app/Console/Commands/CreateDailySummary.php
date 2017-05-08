@@ -140,7 +140,7 @@ class CreateDailySummary extends Command {
                     try {
                         DB::rollback();
                         DB::connection('sqlsrv2')->rollback();
-                        DB::connection('sqlsrvcdrazure')->rollback();
+                        DB::connection('sqlsrvcdr')->rollback();
                     } catch (\Exception $err) {
                         Log::error($err);
                     }
@@ -162,7 +162,7 @@ class CreateDailySummary extends Command {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }

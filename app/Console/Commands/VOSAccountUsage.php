@@ -9,25 +9,23 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use App\Lib\UsageDownloadFiles;
-use App\VOS;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
-use App\Lib\Helper;
-use App\Lib\Company;
 
 class VOSAccountUsage extends Command
 {
@@ -93,6 +91,7 @@ class VOSAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -127,6 +126,7 @@ class VOSAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -140,9 +140,7 @@ class VOSAccountUsage extends Command
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
             Log::error(' ========================== vos transaction start =============================');
             CronJob::createLog($CronJobID);
 
@@ -170,7 +168,7 @@ class VOSAccountUsage extends Command
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                            if (!empty($excelrow['33']) || ($IpBased ==1 && !empty($excelrow['4']))) {
+                            if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                 $uddata['CompanyID'] = $CompanyID;
@@ -191,15 +189,16 @@ class VOSAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                                     $InserData = array();
                                     $data_count = 0;
                                 }
                             }
-                            if (!empty($excelrow['40']) || ($IpBased ==1 && !empty($excelrow['10']))) {
+                            if (($IpBased == 0 &&  !empty($excelrow['40']) ) || ($IpBased ==1 && !empty($excelrow['10']))) {
                                 $vendorcdrdata = array();
                                 $vendorcdrdata['CompanyID'] = $CompanyID;
                                 $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -221,10 +220,11 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
+                                $vendorcdrdata['ServiceID'] = $ServiceID;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){
-                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                                    DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                                     $InserVData = array();
                                     $data_countv =0;
                                 }
@@ -235,11 +235,11 @@ class VOSAccountUsage extends Command
                         }//loop
 
                         if(!empty($InserData)){
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                         }
                         if(!empty($InserVData)){
-                            DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                            DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                         }
 
                         fclose($handle);
@@ -274,9 +274,9 @@ class VOSAccountUsage extends Command
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
             $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
 
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
 
             if (!empty($result[0]->min_date)) {
                 $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
@@ -293,20 +293,20 @@ class VOSAccountUsage extends Command
                 $filedetail = '<br> No Data Found!!';
             }
 
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('vos prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
 
@@ -330,7 +330,7 @@ class VOSAccountUsage extends Command
 
                 Log::error('vos delete file count ' . count($delete_files));
 
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
@@ -341,7 +341,7 @@ class VOSAccountUsage extends Command
 
         } catch (Exception $e) {
             try {
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
             }
@@ -354,10 +354,10 @@ class VOSAccountUsage extends Command
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete();
                 //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
+                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
             } catch (\Exception $err) {
                 Log::error($err);
             }

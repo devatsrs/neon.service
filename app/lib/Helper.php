@@ -275,10 +275,10 @@ class Helper{
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
-    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0) {
+    public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0,$ServiceID=0) {
         $RoundChargesAmount = 2;
         if($AccountID>0){
-            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID);
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID,$ServiceID);
         }
 
         if (empty($RoundChargesAmount)) {
@@ -344,15 +344,14 @@ class Helper{
 
         if(!empty($result)){
 
-            if(!empty($result->Logo)){           
+		if(!empty($result->Logo)){           
 				 $path = AmazonS3::unSignedUrl($result->Logo,$Account->CompanyId);  
                         if(strpos($path, "https://") !== false){
 							$replace_array['Logo'] = $path;
                         }else{
 
                             $file = $result->Logo;           
-
-                            $replace_array['Logo'] = make_web_url($Account->CompanyId,$file);
+                            $replace_array['Logo'] = MakeWebUrl($Account->CompanyId,$file); 
                         }
 				
             }
@@ -409,5 +408,93 @@ class Helper{
         }
         return $settings;
     }
+	
+	static function email_log_data_Ticket($data,$view = '',$status,$CompanyID){ 
+	$EmailParent =	 0;
+	if($data['TicketID']){
+		//	$EmailParent =	TicketsTable::where(["TicketID"=>$data['TicketID']])->pluck('AccountEmailLogID');
+	}
+
+	
+    $status_return = array('status' => 0, 'message' => 'Something wrong with Saving log.');
+    if(!isset($data['EmailTo']) && empty($data['EmailTo'])){
+        $status_return['message'] = 'Email To not set in Account mail log';
+        return $status_return;
+    }
+    
+    if(!isset($data['Subject']) && empty($data['Subject'])){
+        $status_return['message'] = 'Subject not set in Account mail log';
+        return $status_return;
+    }
+    if(!isset($data['Message']) && empty($data['Message'])){
+        $status_return['message'] = 'Message not set in Account mail log';
+        return $status_return;
+    }
+
+    if(is_array($data['EmailTo'])){
+        $data['EmailTo'] = implode(',',$data['EmailTo']);
+    }
+
+    if(!isset($data['cc']))
+    {
+        $data['cc'] = '';
+    }
+
+    if(!isset($data['bcc']))
+    {
+        $data['bcc'] = '';
+    }
+
+    if(isset($data['AttachmentPaths']) && count($data['AttachmentPaths'])>0)
+    {
+        $data['AttachmentPaths'] = serialize($data['AttachmentPaths']);
+    }
+    else
+    {
+        $data['AttachmentPaths'] = serialize([]);
+    }
+
+    if($view!='')
+    {
+        $body = htmlspecialchars_decode(View::make($view, compact('data'))->render());
+    }
+    else
+    {
+        $body = $data['Message'];
+    } 
+	if(!isset($status['message_id']))
+	{
+		$status['message_id'] = '';
+	} 
+	if(!isset($data['EmailCall']))
+	{
+		$data['EmailCall'] = Messages::Sent;
+	}
+
+	if(isset($data['EmailFrom']))
+	{
+		$data['EmailFrom'] = $data['EmailFrom'];
+	}else{
+		$data['EmailFrom'] = User::get_user_email();
+	}
+	
+    $logData = ['EmailFrom'=>$data['EmailFrom'],
+        'EmailTo'=>$data['EmailTo'],
+        'Subject'=>$data['Subject'],
+        'Message'=>$body,
+        'CompanyID'=>$CompanyID,
+        'UserID'=>isset($data['UserID'])?$data['UserID']:0,
+        'CreatedBy'=>"RMScheduler",
+		"created_at"=>date("Y-m-d H:i:s"),
+        'Cc'=>$data['cc'],
+        'Bcc'=>$data['bcc'],
+        "AttachmentPaths"=>$data['AttachmentPaths'],
+		"MessageID"=>$status['message_id'],
+		"EmailParent"=>isset($data['EmailParent'])?$data['EmailParent']:$EmailParent,
+		"EmailCall"=>$data['EmailCall'],
+    ];
+    $data =  AccountEmailLog::insertGetId($logData);
+    return $data;
+}
 
 }

@@ -27,7 +27,6 @@ return array(
     'Guzzle\\Tests' => array($vendorDir . '/guzzle/guzzle/tests'),
     'Guzzle' => array($vendorDir . '/guzzle/guzzle/src'),
     'File' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
-    'Dotenv' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'Doctrine\\Common\\Lexer\\' => array($vendorDir . '/doctrine/lexer/lib'),
     'Doctrine\\Common\\Annotations\\' => array($vendorDir . '/doctrine/annotations/lib'),
     'Detection' => array($vendorDir . '/mobiledetect/mobiledetectlib/namespaced'),

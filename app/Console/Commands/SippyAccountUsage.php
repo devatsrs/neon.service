@@ -15,18 +15,18 @@ use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use \Exception;
 
 class SippyAccountUsage extends Command
 {
@@ -93,6 +93,7 @@ class SippyAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         $dataactive['Active'] = 1;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
@@ -128,6 +129,7 @@ class SippyAccountUsage extends Command
             $file_count = 1;
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -141,9 +143,7 @@ class SippyAccountUsage extends Command
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
 
             Log::error(' ========================== sippy transaction start =============================');
             CronJob::createLog($CronJobID);
@@ -177,7 +177,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 &&  !empty($cdr_row['i_account'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -199,10 +199,11 @@ class SippyAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                                     $InserData = array();
                                     $data_count = 0;
                                 }
@@ -214,7 +215,7 @@ class SippyAccountUsage extends Command
                         }//loop
 
                         if(!empty($InserData)){
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                         }
 
@@ -267,7 +268,7 @@ class SippyAccountUsage extends Command
                         $InserData = $InserVData = array();
                         foreach($cdr_rows as $cdr_row){
 
-                            if (!empty($cdr_row['i_account_debug']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
+                            if (($IpBased ==0 && !empty($cdr_row['i_account_debug'])) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
 
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -290,10 +291,11 @@ class SippyAccountUsage extends Command
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
+                                $uddata['ServiceID'] = $ServiceID;
 
                                 $InserVData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserVData)){
-                                    DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                                    DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                                     $InserVData = array();
                                     $data_count = 0;
                                 }
@@ -305,11 +307,11 @@ class SippyAccountUsage extends Command
                         }//loop
 
                         if(!empty($InserData)){
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                         }
                         if(!empty($InserVData)){
-                            DB::connection('sqlsrvcdrazure')->table($tempVendortable)->insert($InserVData);
+                            DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                         }
 
 
@@ -334,8 +336,8 @@ class SippyAccountUsage extends Command
 
 
             Log::error(' ========================== sippy transaction end =============================');
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
-            $vtotaldata_count = DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
+            $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
 
             //ProcessCDR
 
@@ -352,7 +354,7 @@ class SippyAccountUsage extends Command
 
 
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
 
             $filedetail = "";
             if (!empty($vresult[0]->min_date)) {
@@ -375,14 +377,13 @@ class SippyAccountUsage extends Command
                 $filedetail .= '<br> No CustomerCDR Data Found!!';
             }
 
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('sippy prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('sippy prc_insertCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
@@ -390,7 +391,7 @@ class SippyAccountUsage extends Command
             /** update vendor file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $vdelete_files);
 
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
 
@@ -413,8 +414,8 @@ class SippyAccountUsage extends Command
 
                 Log::error('sippy delete file count ' . count($delete_files));
 
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-                DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
@@ -425,7 +426,7 @@ class SippyAccountUsage extends Command
 
         } catch (Exception $e) {
             try {
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
             }
@@ -441,8 +442,8 @@ class SippyAccountUsage extends Command
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
-                DB::connection('sqlsrvcdrazure')->table($tempVendortable)->where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["processId" => $processID])->delete();
 
             } catch (\Exception $err) {
                 Log::error($err);

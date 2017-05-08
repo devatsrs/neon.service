@@ -93,7 +93,7 @@ class Job extends \Eloquent {
         if(isset($trunks) && !is_array($trunks)){
             $trunkname = '_'.str_replace(' ','',DB::table('tblTrunk')->where(array('TrunkID'=>$trunks))->pluck('Trunk'));
         }
-        $file_name = Str::slug($file_prefix.'_'.Account::find($AccountID)->AccountName.'_'. $trunkname.'_'. date('YmdHis').'_'. Uuid::generate());
+        $file_name = Str::slug($file_prefix.'_'.Account::find($AccountID)->AccountName.'_'. $trunkname.'_'. date('YmdHis'));
         return $file_name;
 
     }

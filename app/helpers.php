@@ -106,12 +106,7 @@ function next_billing_date($BillingCycleType,$BillingCycleValue,$BillingStartDat
                 }
                 break;
             case 'yearly':
-                $CurrentDate = date("Y-m-d",  $BillingStartDate); // Current date
-                if($CurrentDate<=date("Y-m-d")) {
-                    $NextInvoiceDate = date("Y-m-d", strtotime("+1 year", $BillingStartDate));
-                }else{
-                    $NextInvoiceDate = date("Y-m-d",$CurrentDate);
-                }
+                $NextInvoiceDate = date("Y-m-d", strtotime("+1 year", $BillingStartDate));
                 break;
         }
 
@@ -187,9 +182,9 @@ function get_timezone_offset($remote_tz, $origin_tz = null) {
     $offset = $origin_dtz->getOffset($origin_dt) - $remote_dtz->getOffset($remote_dt);
     return $offset;
 }
-function searcharray($val1, $key1, $val2='',$key2='',$array) {
+function searcharray($val1, $key1, $val2='',$key2='',$val3='',$key3='',$array) {
     foreach ($array as $k => $val) {
-        if(array_search($val1,$val)== $key1 && array_search($val2,$val)== $key2){
+        if(array_search($val1,$val)== $key1 && array_search($val2,$val)== $key2 && array_search($val3,$val)== $key3){
             return $k;
         }
     }
@@ -263,6 +258,13 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{CompanyName}}',
 		"{{CompanyVAT}}",
 		"{{CompanyAddress}}",
+		"{{CompanyAddress1}}",
+		"{{CompanyAddress2}}",
+		"{{CompanyAddress3}}",
+		"{{CompanyCity}}",
+		"{{CompanyPostCode}}",
+		"{{CompanyCountry}}",
+		"{{Logo}}",
     ];
 
     foreach($extra as $item){
@@ -374,6 +376,16 @@ function getBillingDay($BillingStartDate,$BillingCycleType,$BillingCycleValue){
             $interval = $date1->diff($date2);
             $BillingDays =  $interval->days;
             break;
+        case 'yearly':
+            $year = date("Y",  $BillingStartDate);
+            //multiple conditions to check the leap year
+            if( (0 == $year % 4) and (0 != $year % 100) or (0 == $year % 400) ){
+                $BillingDays = 366;
+            } else {
+                $BillingDays = 365;
+            }
+            break;
+
     }
     return $BillingDays;
 }
@@ -584,6 +596,32 @@ function validator_response($validator){
 
 }
 
-function make_web_url($CompanyID,$path){
+function MakeWebUrl($CompanyID,$path){
 	return \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
+}
+
+function remove_extra_columns($usage_data,$usage_data_table){
+    foreach ($usage_data as $row_key => $usage_data_row) {
+        if (isset($usage_data_row['DurationInSec'])) {
+            unset($usage_data_row['DurationInSec']);
+        }
+        if (isset($usage_data_row['BillDurationInSec'])) {
+            unset($usage_data_row['BillDurationInSec']);
+        }
+        if (isset($usage_data_row['ServiceID'])) {
+            unset($usage_data_row['ServiceID']);
+        }
+
+        $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+        foreach($usage_data_table['header'] as $table_h_row){
+            if($table_h_row['Title'] != $table_h_row['UsageName'] && isset($usage_data_row[$table_h_row['Title']]) && isset($usage_data_row[$table_h_row['UsageName']])){
+                $usage_data_row[$table_h_row['UsageName']] = $usage_data_row[$table_h_row['Title']];
+                unset($usage_data_row[$table_h_row['Title']]);
+            }
+        }
+
+        $usage_data[$row_key] = $usage_data_row;
+    }
+    return $usage_data;
+
 }

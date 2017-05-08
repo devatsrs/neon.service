@@ -39,6 +39,7 @@ return array(
     'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
     'GoetasWebservices\\Xsd\\XsdToPhpRuntime\\' => array($vendorDir . '/goetas-webservices/xsd2php-runtime/src'),
+    'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'Doctrine\\Instantiator\\' => array($vendorDir . '/doctrine/instantiator/src/Doctrine/Instantiator'),
     'Cartalyst\\Stripe\\Laravel\\' => array($vendorDir . '/cartalyst/stripe-laravel/src'),
     'Cartalyst\\Stripe\\' => array($vendorDir . '/cartalyst/stripe/src'),

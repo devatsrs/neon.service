@@ -1,23 +1,22 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\GatewayAccount;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Porta;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
-use App\Lib\Helper;
-use App\Lib\Company;
-use \Exception;
 
 class PortaAccountUsage extends Command {
 
@@ -80,6 +79,7 @@ class PortaAccountUsage extends Command {
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         Log::useFiles(storage_path() . '/logs/portaaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
 
@@ -98,6 +98,7 @@ class PortaAccountUsage extends Command {
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -111,9 +112,7 @@ class PortaAccountUsage extends Command {
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
             $porta = new Porta($CompanyGatewayID);
             $responselistAccounts = $porta->listAccounts();
             if(isset($responselistAccounts['CustomersShortInfo'])) {
@@ -121,13 +120,14 @@ class PortaAccountUsage extends Command {
                     $gadata = array();
                     $gadata['CompanyID'] = $CompanyID;
                     $gadata['CompanyGatewayID'] = $CompanyGatewayID;
+                    $gadata['ServiceID'] = $ServiceID;
                     $gadata['GatewayAccountID'] = $accounts[] = $row_account['ICustomer'];
 
                     $gadata['AccountName'] = $row_account['Name'];
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
                     $gadata['AccountDetailInfo'] = json_encode($row_account);
-                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
-                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
+                    if (GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->count()) {
+                        GatewayAccount::where(array('CompanyGatewayID' => $CompanyGatewayID, 'CompanyID' => $CompanyID,'ServiceID' => $ServiceID, 'GatewayAccountID' => $row_account['ICustomer']))->update($gadata);
                     } else {
                         GatewayAccount::insert($gadata);
                     }
@@ -185,13 +185,14 @@ class PortaAccountUsage extends Command {
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';
                             $data['ProcessID'] = $processID;
+                            $data['ServiceID'] = $ServiceID;
                             $data['ID'] = $row_account['ID'];
                             if (isset($row_account['CallType']) && is_numeric($row_account['CallType'])) {
                                 $InserData[] = $data;
                                 $data_count++;
                             }
                             if ($data_count > $insertLimit && !empty($InserData)) {
-                                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                                 $InserData = array();
                                 $data_count = 0;
                             }
@@ -202,13 +203,13 @@ class PortaAccountUsage extends Command {
                 }
             }// loop
             if (!empty($InserData)) {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
             }
             date_default_timezone_set(Config::get('app.timezone'));
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
 
 
@@ -223,16 +224,16 @@ class PortaAccountUsage extends Command {
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
+            DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('Porta prc_insertCDR start');
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('Porta prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
@@ -242,28 +243,28 @@ class PortaAccountUsage extends Command {
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
 			
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
 
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
             CronJobLog::insert($joblogdata);
-            DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+            DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
 
         } catch (\Exception $e) {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
 
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
             } catch (\Exception $err) {
                 Log::error($err);
             }

@@ -5,14 +5,16 @@ use Illuminate\Support\Facades\DB;
 
 class UsageHeader extends \Eloquent {
 	protected $fillable = [];
-    protected $connection = 'sqlsrvcdrazure';
+    protected $connection = 'sqlsrvcdr';
     protected $guarded = array('UsageHeaderID');
     protected $table = 'tblUsageHeader';
     protected  $primaryKey = "UsageHeaderID";
 
     public static function getStartHeaderDate($CompanyID){
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
-        $usagecount = DB::connection('neon_report')->table('tblSummaryHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $usagecount = DB::connection('neon_report')->table('tblSummaryHeader')
+            ->join('tblUsageSummary','tblUsageSummary.SummaryHeaderID','=','tblSummaryHeader.SummaryHeaderID')
+            ->where(['CompanyID'=>$CompanyID])->count();
         $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
         $DeleteTime = $DELETE_SUMMARY_TIME;
@@ -29,8 +31,10 @@ class UsageHeader extends \Eloquent {
         return $StartDate;
     }
     public static function getVendorStartHeaderDate($CompanyID){
-        $StartDate =  DB::connection('sqlsrvcdrazure')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
-        $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')->where(['CompanyID'=>$CompanyID])->count();
+        $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
+        $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')
+            ->join('tblUsageVendorSummary','tblUsageVendorSummary.SummaryVendorHeaderID','=','tblSummaryVendorHeader.SummaryVendorHeaderID')
+            ->where(['CompanyID'=>$CompanyID])->count();
         $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
         $DeleteTime = $DELETE_SUMMARY_TIME;

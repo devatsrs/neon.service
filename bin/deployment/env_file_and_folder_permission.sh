@@ -61,13 +61,22 @@ cp -rf ${SCRIPT_BASEDIR}/web_composer/* ${WEB_LOCATION}/vendor/
 
 cp -rf ${SCRIPT_BASEDIR}/service_composer/* ${SERVICE_LOCATION}/vendor/
 
+git config core.fileMode false
+#for vos ssh file collect.
+git checkout -- ${SERVICE_LOCATION}/vendor/laravelcollective/remote/src
+
 
 echo "place licence file in service and web directory"
 
-cp -f ${SCRIPT_BASEDIR}/licence ${WEB_LOCATION}
+cp -f ${SCRIPT_BASEDIR}/web_licence ${WEB_LOCATION}/licence
 
-cp -f ${SCRIPT_BASEDIR}/licence ${SERVICE_LOCATION}
+cp -f ${SCRIPT_BASEDIR}/service_licence ${SERVICE_LOCATION}/licence
 
+echo "Clearing Web API and Service Cache"
+
+php ${WEB_LOCATION}/artisan cache:clear
+php ${SERVICE_LOCATION}/artisan cache:clear
+php ${API_LOCATION}/artisan cache:clear
 
 
 echo "Creating folders and Adding Permissions to folders"

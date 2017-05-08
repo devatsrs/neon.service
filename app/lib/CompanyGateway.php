@@ -40,10 +40,10 @@ class CompanyGateway extends \Eloquent {
         return CompanyGateway::where(array('GatewayID'=>$gatewayid,'CompanyID'=>$CompanyID))->pluck('CompanyGatewayID');
     }
     public static function getGatewayTimeZone($CompanyGatewayID){
-        return CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('TimeZone');
+        return CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('TimeZone');
     }
     public static function getGatewayBillingTimeZone($CompanyGatewayID){
-        return CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('BillingTimeZone');
+        return CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('BillingTimeZone');
     }
 
     public static function getUniqueID($CompanyGatewayID){
@@ -88,6 +88,7 @@ class CompanyGateway extends \Eloquent {
                                     `cost` DOUBLE NULL DEFAULT NULL,
                                     `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                                     `ID` INT(11) NULL DEFAULT NULL,
+                                    `ServiceID` INT(11) NULL DEFAULT NULL,
                                     `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `is_inbound` TINYINT(1) DEFAULT 0,
@@ -141,6 +142,7 @@ class CompanyGateway extends \Eloquent {
                 `billed_second` INT(11) NULL DEFAULT NULL,
                 `duration` INT(11) NULL DEFAULT NULL,
                 `ID` INT(11) NULL DEFAULT NULL,
+                `ServiceID` INT(11) NULL DEFAULT NULL,
                 `selling_cost` DOUBLE NULL DEFAULT NULL,
                 `buying_cost` DOUBLE NULL DEFAULT NULL,
                 `connect_time` DATETIME NULL DEFAULT NULL,

@@ -12,6 +12,6 @@ class CDRPostProcess extends \Eloquent {
 
     protected $guarded = ['CDRPostProcessID'];
 
-    protected $connection = 'sqlsrvcdrazure';
+    protected $connection = 'sqlsrvcdr';
 
 }

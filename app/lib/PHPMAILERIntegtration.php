@@ -75,16 +75,15 @@ class PHPMAILERIntegtration{
 		if(isset($data['attach'])){
             $mail->addAttachment($data['attach']);
         }
-		
-		$mail->Body    = $body;
+
+		$mail->Body = $mail->msgHTML($body);
 		$mail->Subject = $data['Subject'];
 		
 		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];
 
 		if (!$mail->send()) {
 					$status['status'] = 0;
-					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';
-					Log::info(print_r($mail,true));
+					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';					
 		} else {
 					$mail->clearAllRecipients();
 					$status['status'] = 1;

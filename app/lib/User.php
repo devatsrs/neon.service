@@ -32,6 +32,27 @@ class User extends \Eloquent {
         }
 
     }
+	
+	    public static function getUserIDByUserName($CompanyID,$Name){
+        /*$users = User::where(["CompanyID"=>$CompanyID,"Status"=>'1'])->get();
+        if(count($users)>0){
+            foreach($users as $user){
+                $username = $user->FirstName.' '. $user->LastName;
+                if($username==$Name){
+                    if(!empty($user->UserID)){
+                        $UserID = $user->UserID;
+                    }
+                }
+            }
+        }		*/
+		$UserID = User::select("UserID")
+		  ->where(["CompanyID"=>$CompanyID,"Status"=>'1'])
+          ->WhereRaw("concat(FirstName, ' ', LastName) like '%".$Name."%'")
+          ->first();		
+		
+        return isset($UserID->UserID)?$UserID->UserID:'';
+    }
+	
     /*public static function getMinUserID($CompanyID){
         return $UserID = User::where("CompanyID",$CompanyID)->where("Roles","like","%Admin%")->min("UserID");
     }*/

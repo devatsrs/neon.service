@@ -2,6 +2,7 @@
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Log;
 
 class TicketfieldsValues extends \Eloquent {
 
@@ -14,5 +15,23 @@ class TicketfieldsValues extends \Eloquent {
 	
 	static $Status_Closed = 'Closed';
 	static $Status_Open = 'Open';
+	static $Status_Resolved = 'Resolved';
+	static $Status_UnResolved = 'All UnResolved';
+
+
+	/*public function getUnResolvedTicketStatus(){
+
+		$ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+			->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.FieldValueAgent'=>TicketfieldsValues::$Status_UnResolved])->pluck('ValuesID');
+		return $ValuesID;
+
+	}*/
 	
+	static function GetUnResolvedTicketStatus(){
+		  $statusArray	= 	TicketsTable::getTicketStatus(0);
+		  unset($statusArray[array_search('Resolved', $statusArray)]);
+		  unset($statusArray[array_search('Closed', $statusArray)]);
+		  $status = implode(',',array_keys($statusArray));
+          return $status;
+	}
 }

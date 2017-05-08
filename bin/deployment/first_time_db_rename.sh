@@ -10,6 +10,8 @@ POST_INSTALLATION_SQL_SCRIPT_NEW=${SCRIPT_BASEDIR}"/first_time_post_installation
 echo "copy Pre generated post installation data file to new"
 cp -f ${FIRST_TIME_POST_INSTALLATION_SQL_SCRIPT} ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
+POST_UPDATE_SQL_SCRIPT=${SCRIPT_BASEDIR}"/update.sql"
+cat ${POST_UPDATE_SQL_SCRIPT} >> ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 source ${SCRIPT_BASEDIR}/prepare_sql_file.sh
 
@@ -22,14 +24,13 @@ echo 'CREATE DATABASE `'${DB_DATABASE2}'` /*!40100 COLLATE utf8_unicode_ci */' |
 echo 'CREATE DATABASE `'${DB_DATABASECDR}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 echo 'CREATE DATABASE `'${DB_DATABASEREPORT}'` /*!40100 COLLATE utf8_unicode_ci */' | mysql
 
-mysql ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
 echo "Renaming tables.";
 echo "###########################################################";
 #source https://gist.github.com/pmoranga/2006012
 
-TNAMES=${OLD_DB_DATABASE}"_tables.txt"
-SCRIPT=${OLD_DB_DATABASE}"_rename_tables.sql"
+TNAMES="/tmp/"${OLD_DB_DATABASE}"_tables.txt"
+SCRIPT="/tmp/"${OLD_DB_DATABASE}"_rename_tables.sql"
 
 ##########################DB_DATABASE####################################
 
@@ -105,4 +106,5 @@ mysql --show-warnings $DB_DATABASEREPORT < $SCRIPT
 
 echo "rename of tables done! dont forget to give permissions to the new Database $OLD_DB_DATABASEREPORT and drop the old DB"
 
-
+echo "Executing POST_INSTALLATION_SQL_SCRIPT_NEW"
+mysql --force ${DB_DATABASE} < ${POST_INSTALLATION_SQL_SCRIPT_NEW}
