@@ -25,7 +25,7 @@ chmod -R 777 ${POST_INSTALLATION_SQL_SCRIPT}
 #Staging RM DB for schema export
 STAGING_RM_DB=Ratemanagement3
 #Wholesale RM Db for tblRate export
-WHOLESALE_RM_DB=RateManagement4
+WHOLESALE_RM_DB=wavetelwholesaleRM
 
 echo "Adding default tables into POST INSTALLATION SQL file."
 cat <<EOT >> ${POST_INSTALLATION_SQL_SCRIPT}
