@@ -311,6 +311,7 @@
     @endforeach
 
     <!-- service section end -->
+	@if($InvoiceTemplate->InvoicePages == 'single_with_detail')
     @foreach($service_data as $ServiceID => $service)
         @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
 
@@ -421,7 +422,7 @@
                     ?>
                     @foreach($usage_data_table['data'][$ServiceID] as $row)
                         <?php
-                        $totalBillDuration  +=  $row['BilledDuration'];
+                        $totalBillDuration  +=  $row['BillDuration'];
                         $totalTotalCharges  += $row['ChargedAmount'];
                         ?>
                         <tr>
@@ -461,5 +462,6 @@
 
         @endif
     @endforeach
+	@endif
 
  @stop
