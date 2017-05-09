@@ -299,7 +299,7 @@
     </main>
 
 
-
+		@if($InvoiceTemplate->InvoicePages == 'single_with_detail')
 
         @if(isset($usage_data_table['data']) && count($usage_data_table['data']) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
 
@@ -453,6 +453,7 @@
 
 
         @endif
+		@endif
 
 
  @stop
