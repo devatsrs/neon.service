@@ -28,6 +28,7 @@ INSERT INTO `tblResourceCategoriesGroups` (`CategoriesGroupID`, `GroupName`) VAL
 
 -- ###############################################################################################
 DELIMITER //
+DROP PROCEDURE IF EXISTS `prc_GetAjaxResourceList`;
 CREATE  PROCEDURE `prc_GetAjaxResourceList`(
 	IN `p_CompanyID` INT,
 	IN `p_userid` LONGTEXT,
@@ -201,6 +202,7 @@ ALTER TABLE `tblTempAccount`
 	ADD COLUMN `IsCustomer` TINYINT(1) NULL DEFAULT NULL AFTER `IsVendor`;
 
 DELIMITER //
+DROP PROCEDURE `prc_WSProcessImportAccount`;
 CREATE PROCEDURE `prc_WSProcessImportAccount`(
 	IN `p_processId` VARCHAR(200) ,
 	IN `p_companyId` INT,
@@ -2339,11 +2341,38 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Catego
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CategoryID`) VALUES ('AccountService.*', 'AccountServiceController.*', 1, 1298);
 
 
+
+
+-- BusinessHours#################
+-- BusinessHours#################
+INSERT INTO `tblTicketBusinessHours` (`ID`, `CompanyID`, `IsDefault`, `Name`, `Description`, `Timezone`, `HoursType`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES	(1, 1, 1, 'Default', 'Default Business Calendar', '0', 2,'2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL);
+INSERT INTO `tblTicketsWorkingDays` (`ID`, `BusinessHoursID`, `Day`, `Status`, `StartTime`, `EndTime`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES
+	(1, 1, 2, 1, '08:00:00', '17:00:00', '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL),
+	(2, 1, 3, 1, '08:00:00', '17:00:00', '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL),
+	(3, 1, 4, 1, '08:00:00', '17:00:00', '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL),
+	(4, 1, 5, 1, '08:00:00', '17:00:00', '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL),
+	(5, 1, 6, 1, '08:00:00', '17:00:00', '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL);
+
+-- #################################################################################
+
+INSERT INTO `tblTicketSla` (`TicketSlaID`, `CompanyID`, `IsDefault`, `Name`, `Description`, `Status`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES	(1, 1, 1, 'Default SLA', 'Default SLA', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL);
+
+INSERT INTO `tblTicketSlaTarget` (`SlaTargetID`, `TicketSlaID`, `PriorityID`, `RespondValue`, `RespondType`, `ResolveValue`, `ResolveType`, `OperationalHrs`, `EscalationEmail`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES
+(1, 1, 4, 15, 'Minute', 1, 'Hour', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL),
+(2, 1, 3, 30, 'Minute', 2, 'Hour', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL),
+(3, 1, 2, 1, 'Hour', 2, 'Hour', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL),
+(4, 1, 1, 2, 'Hour', 1, 'Day', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL);
+
+INSERT INTO `tblTicketSlaPolicyViolation` (`ViolationID`, `TicketSlaID`, `Time`, `Value`, `VoilationType`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES
+	(1, 1, 'immediately', '0', 0, '2017-05-08 10:44:18', NULL, '2017-05-08 10:44:18', NULL),
+	(2, 1, 'immediately', '0', 1, '2017-05-08 10:44:22', NULL, '2017-05-08 10:44:22', NULL);
+
+
 -- Abubakar
 
 
-INSERT INTO `tblEmailTemplate` (`TemplateID`, `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (null, 1, 'Notification - Invoice Paid by Customer', 'Invoice {{InvoiceNumber}} from {{CompanyName}} Paid by {{FirstName}} {{LastName}}', '<br>Invoice {{InvoiceNumber}} from {{CompanyName}} Paid by Customer {{FirstName}} {{LastName}}<br>\r\n\r\nto view paid invoice please click the below link.<br><br>\r\n\r\n\r\n<div><!--[if mso]>\r\n  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{InvoiceLink}}" style="height:30px;v-text-anchor:middle;width:100px;" arcsize="10%" strokecolor="#ff9600" fillcolor="#ff9600">\r\n    <w:anchorlock/>\r\n    <center style="color:#ffffff;font-family:sans-serif;font-size:13px;font-weight:bold;">View</center>\r\n  </v:roundrect>\r\n<![endif]-->\r\n<a href="{{InvoiceLink}}" style="background-color:#ff9600;border:1px solid #ff9600;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:13px;font-weight:bold;line-height:30px;text-align:center;text-decoration:none;width:100px;-webkit-text-size-adjust:none;mso-hide:all;" title="Link: {{InvoiceLink}}">View</a></div>\r\n<br><br>', '2017-04-11 19:30:19', 'Sumera Saeed', '2017-04-11 19:34:24', 'Sumera Saeed', NULL, 0, 'abubakar@code-desk.com', 1, 'InvoicePaidNotification', 1, 0, 0);
-INSERT INTO `tblEmailTemplate` (`TemplateID`, `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (70, 1, 'Dispute Email to Customer Template', 'A dispute from {{CompanyName}} ', 'Hi {{AccountName}}<br><br>\r\n\r\n\r\n{{CompanyName}} has added a dispute of {{DisputeAmount}} {{Currency}} against {{InvoiceNumber}}\r\n\r\n\r\n\r\nBest Regards,<br><br>\r\n\r\n\r\n{{CompanyName}}', '2017-04-13 18:28:39', 'Sumera Saeed', '2017-04-13 18:28:39', 'Sumera Saeed', NULL, 0, 'abubakar@code-desk.com', 1, 'DisputeEmailCustomer', 1, 0, 0);
+INSERT INTO `tblEmailTemplate` (`TemplateID`, `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (null, 1, 'Notification - Invoice Paid by Customer', 'Invoice {{InvoiceNumber}} from {{CompanyName}} Paid by {{FirstName}} {{LastName}}', '<br>Invoice {{InvoiceNumber}} from {{CompanyName}} Paid by Customer {{FirstName}} {{LastName}}<br>\r\n\r\nto view paid invoice please click the below link.<br><br>\r\n\r\n\r\n<div><!--[if mso]>\r\n  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{InvoiceLink}}" style="height:30px;v-text-anchor:middle;width:100px;" arcsize="10%" strokecolor="#ff9600" fillcolor="#ff9600">\r\n    <w:anchorlock/>\r\n    <center style="color:#ffffff;font-family:sans-serif;font-size:13px;font-weight:bold;">View</center>\r\n  </v:roundrect>\r\n<![endif]-->\r\n<a href="{{InvoiceLink}}" style="background-color:#ff9600;border:1px solid #ff9600;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:13px;font-weight:bold;line-height:30px;text-align:center;text-decoration:none;width:100px;-webkit-text-size-adjust:none;mso-hide:all;" title="Link: {{InvoiceLink}}">View</a></div>\r\n<br><br>', '2017-04-11 19:30:19', 'System', '2017-04-11 19:34:24', 'System', NULL, 0, 'you@yourcompany.com', 1, 'InvoicePaidNotification', 1, 0, 0);
+INSERT INTO `tblEmailTemplate` (`TemplateID`, `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (70, 1, 'Dispute Email to Customer Template', 'A dispute from {{CompanyName}} ', 'Hi {{AccountName}}<br><br>\r\n\r\n\r\n{{CompanyName}} has added a dispute of {{DisputeAmount}} {{Currency}} against {{InvoiceNumber}}\r\n\r\n\r\n\r\nBest Regards,<br><br>\r\n\r\n\r\n{{CompanyName}}', '2017-04-13 18:28:39', 'System', '2017-04-13 18:28:39', 'System', NULL, 0, 'you@yourcompany.com', 1, 'DisputeEmailCustomer', 1, 0, 0);
 
 
 DROP TABLE IF EXISTS `tblTicketLog`;
@@ -2794,15 +2823,15 @@ ALTER TABLE `tblAccountNextBilling`
 ALTER TABLE `tblAccountNextBilling` ADD UNIQUE KEY `AccountID`(`ServiceID`,`AccountID`);
 
 CREATE TABLE IF NOT EXISTS `tblAccountService` (
-  `AccountServiceID` int(11) NOT NULL auto_increment,
-  `AccountID` int(11) NOT NULL DEFAULT '0',
-  `ServiceID` int(3) NOT NULL DEFAULT '0',
-  `CompanyID` int(3) NOT NULL DEFAULT '0',
-  `Status` int(3) NOT NULL DEFAULT '1',
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
-  `updated_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP' on update CURRENT_TIMESTAMP,
-  `ServiceTitle` varchar(50) NULL,
-  PRIMARY KEY (`AccountServiceID`)
+	`AccountServiceID` INT(11) NOT NULL AUTO_INCREMENT,
+	`AccountID` INT(11) NOT NULL DEFAULT '0',
+	`ServiceID` INT(3) NOT NULL DEFAULT '0',
+	`CompanyID` INT(3) NOT NULL DEFAULT '0',
+	`Status` INT(3) NOT NULL DEFAULT '1',
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	`ServiceTitle` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	PRIMARY KEY (`AccountServiceID`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `tblAccountTariff` (
@@ -5522,6 +5551,7 @@ END|
 DELIMITER ;
 
 DELIMITER |
+DROP PROCEDURE IF EXISTS `prc_GetCDR`;
 CREATE PROCEDURE `prc_GetCDR`(
 	IN `p_company_id` INT,
 	IN `p_CompanyGatewayID` INT,
