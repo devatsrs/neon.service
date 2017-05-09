@@ -412,7 +412,7 @@
                         @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0)
                             @foreach($usage_data_table['data'][$ServiceID] as $row)
                                 <?php
-                                $totalBillDuration  +=  $row['BilledDuration'];
+                                $totalBillDuration  +=  $row['BillDuration'];
                                 $totalTotalCharges  += $row['ChargedAmount'];
                                 ?>
                                 <tr>
