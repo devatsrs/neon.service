@@ -1696,14 +1696,14 @@ class Invoice extends \Eloquent {
                     if(isset($result_row['BillDurationInSec'])){
                         unset($result_row['BillDurationInSec']);
                     }*/
-                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk', $usage_data);
+                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk',$result_row['ServiceID'],'ServiceID', $usage_data);
                     if (isset($usage_data[$key]['AreaPrefix'])) {
                         $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
                         $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
                         $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
                         $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
-                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
+                        $usage_data[$key]['DurationInSec'] += $result_row['DurationInSec'];
+                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                     } else {
                         $usage_data[] = $result_row;
                     }
@@ -1903,6 +1903,9 @@ class Invoice extends \Eloquent {
             }
             $usage_data_table['order']=$order;
             foreach($usage_data as $row_key =>$usage_data_row){
+                if (isset($usage_data_row['AreaPrefix'])) {
+                    $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount']/$usage_data_row['BillDurationInSec'])*60,6);
+                }
                 $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
                 $ServiceID = $usage_data[$row_key]['ServiceID'];
                 if(isset($service_usage_data[$ServiceID])){

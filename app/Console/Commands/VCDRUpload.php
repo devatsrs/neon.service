@@ -241,12 +241,12 @@ class VCDRUpload extends Command
                 $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
-                $delet_cdr_account = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
+                $delet_cdr_account = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();
                 Log::info(print_r($result, true));
 
 
                 if (count($skiped_account_data) == 0) {
-                    DB::connection('sqlsrvcdrazure')->beginTransaction();
+                    DB::connection('sqlsrvcdr')->beginTransaction();
 
                     if (!empty($result[0]->min_date)) {
                         $StartDate = $result[0]->min_date;
@@ -268,11 +268,11 @@ class VCDRUpload extends Command
                     }
 
                     Log::error(' prc_insertCDR start');
-                    DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertVendorCDR ('" . $ProcessID . "', '" . $temptableName . "' )");
+                    DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $ProcessID . "', '" . $temptableName . "' )");
                     Log::error(' prc_insertCDR end');
-                    DB::connection('sqlsrvcdrazure')->commit();
+                    DB::connection('sqlsrvcdr')->commit();
                 }
-                //DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                //DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 foreach ($skiped_account as $accountrow) {
                     $skiped_account_data[] = $accountrow->AccountName;
                 }
@@ -303,8 +303,8 @@ class VCDRUpload extends Command
             DB::connection('sqlsrv2')->rollback();
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $ProcessID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
-                //DB::connection('sqlsrvcdrazure')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();//TempUsageDetail::where(["processId" => $processID])->delete();
+                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '" . $processID . "'");
             } catch (\Exception $err) {
                 Log::error($err);
             }

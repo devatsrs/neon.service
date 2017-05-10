@@ -691,7 +691,18 @@ protected $server;
 				
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
+				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+
+				try {
+					if(isset($ticketID))
+					{
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
 			}
 			} catch (Exception $e) {
 				Log::error("Tracking email imap failed");
@@ -702,15 +713,7 @@ protected $server;
 		imap_close($inbox);
 		Log::info("reading emails completed");
 
-		try {
-			if(isset($ticketID))
-			{
-				TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-			}
-		} catch (Exception $ex) {
-			Log::info("fail TicketSla::assignSlaToTicket");
-			Log::info($ex);
-		}
+
 
 	}
 	

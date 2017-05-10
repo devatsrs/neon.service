@@ -30,7 +30,7 @@ class TempVendorCDR extends \Eloquent {
     /** not in use */
     public static function RateCDR($CompanyID,$ProcessID,$temptableName){
         //$TempUsageDetails = TempUsageDetail::where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
-        $TempUsageDetails = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
+        $TempUsageDetails = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','!=','other')->groupBy('AccountID','trunk')->select(array('trunk','AccountID'))->get();
         $skiped_account_data = array();
         foreach($TempUsageDetails as $TempUsageDetail){
             $TrunkID = DB::table('tblTrunk')->where(array('trunk'=>$TempUsageDetail->trunk))->pluck('TrunkID');
@@ -45,11 +45,11 @@ class TempVendorCDR extends \Eloquent {
                 Log::error("rarateaccount query = $TempUsageDetail->trunk");
             }
         }
-        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','=','other')->groupBy('GatewayAccountID','trunk')->select(array('GatewayAccountID','trunk'))->get();
+        $FailedAccounts = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNotNull('AccountID')->where('trunk','=','other')->groupBy('GatewayAccountID','trunk')->select(array('GatewayAccountID','trunk'))->get();
         foreach($FailedAccounts as $FailedAccount){
             $skiped_account_data[] = $FailedAccount->GatewayAccountID.' Account Trunk Not Matched '.$FailedAccount->trunk;
         }
-        $FailedAccounts = DB::connection('sqlsrvcdrazure')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
+        $FailedAccounts = DB::connection('sqlsrvcdr')->table($temptableName)->where(array('ProcessID'=>$ProcessID))->whereNull('AccountID')->groupBy('GatewayAccountID')->select(array('GatewayAccountID'))->get();
         foreach($FailedAccounts as $FailedAccount){
             $skiped_account_data[] = 'Account Not Matched '.$FailedAccount->GatewayAccountID;
         }
