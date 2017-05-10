@@ -118,6 +118,7 @@ class MORAccountUsage extends Command {
             $insertLimit = 1000;
 
             $response = $mor->getAccountCDRs2($param);
+            $response = json_decode(json_encode($response), true);
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
                 foreach ((array)$response as $row_account) {
@@ -128,6 +129,8 @@ class MORAccountUsage extends Command {
                         $data['GatewayAccountID'] = $row_account['username'];
                     }else if($companysetting->NameFormat == 'CLI'){
                         $data['GatewayAccountID'] = $row_account['cli'];
+                    }else if($companysetting->NameFormat == 'IP'){
+                        $data['GatewayAccountID'] = $row_account['originator_ip'];
                     }
                     $data['connect_time'] = $row_account['connect_time'];
                     $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
