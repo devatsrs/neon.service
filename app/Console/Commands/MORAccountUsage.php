@@ -134,7 +134,6 @@ class MORAccountUsage extends Command {
                     }
                     $data['connect_time'] = $row_account['connect_time'];
                     $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
-                    $data['disconnect_time'] = $row_account['disconnect_time'];
                     $data['cost'] = (float)$row_account['cost'];
                     $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
                     $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
