@@ -143,6 +143,7 @@ class MORAccountUsage extends Command {
                     $data['trunk'] = 'Other';
                     $data['area_prefix'] = 'Other';
                     $data['ProcessID'] = $processID;
+                    $data['remote_ip'] = $row_account['originator_ip'];
                     $data['ServiceID'] = $ServiceID;
                     $data['disposition'] = $row_account['disposition'];
                     $data['ID'] = $row_account['ID'];
