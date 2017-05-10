@@ -203,7 +203,7 @@ class MOR{
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
 
-                $query = "select u.username,u.originator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.billsec as billed_second,user_price as cost,disposition
+                $query = "select u.username,c.originator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.billsec as billed_second,user_price as cost,disposition
                     from calls c
                     inner join users u on c.user_id = u.id
                     where `calldate` >= '" . $addparams['start_date_ymd'] . "' and `calldate` < '" . $addparams['end_date_ymd'] . "'";
