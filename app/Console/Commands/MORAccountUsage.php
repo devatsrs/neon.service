@@ -105,8 +105,9 @@ class MORAccountUsage extends Command {
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
-            $param['period_start'] = strtotime($this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID));
-            $param['period_end'] = strtotime($this->getLastDate($param['period_start'], $CompanyID, $CronJobID));
+            $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
+            $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
+
 
             Log::error(print_r($param, true));
 
@@ -245,13 +246,13 @@ class MORAccountUsage extends Command {
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $cronsetting = json_decode($Settings);
 
-        $seconds = strtotime(date('Y-m-d 00:00:00')) - $startdate;
+        $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
         $hours = round($seconds / 60 / 60);
 
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
-            $endtimefinal = date('Y-m-d H:i:s', $startdate + $cronsetting->MaxInterval * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
-            $endtimefinal = date('Y-m-d H:i:s', $startdate + $usageinterval * 60);
+            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $usageinterval * 60);
         }
 
         return $endtimefinal;
