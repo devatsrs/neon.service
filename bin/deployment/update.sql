@@ -642,11 +642,11 @@ IF ((select count(*) from tblTicketSla where CompanyID=p_CompanyID) = 1 ) THEN
 		where sla.CompanyID=p_CompanyID
 			and
 			(
-				(pol.CompanyFilter is null  OR (pol.CompanyFilter is not null and FIND_IN_SET(v_AccountID,pol.CompanyFilter) > 0 ))
-				OR
-				(pol.GroupFilter is null  OR (pol.GroupFilter is not null and FIND_IN_SET(v_Group,pol.GroupFilter) > 0) )
-				OR
-				(pol.TypeFilter is null OR (pol.TypeFilter is not null and FIND_IN_SET(v_Type,pol.TypeFilter) > 0) )
+						(pol.CompanyFilter = ''  OR (pol.CompanyFilter != '' and FIND_IN_SET(v_AccountID,pol.CompanyFilter) > 0 ))
+						OR
+						(pol.GroupFilter = ''  OR (pol.GroupFilter != '' and FIND_IN_SET(v_Group,pol.GroupFilter) > 0) )
+						OR
+						(pol.TypeFilter = '' OR (pol.TypeFilter != '' and FIND_IN_SET(v_Type,pol.TypeFilter) > 0) )
 			)
 		limit 1	;
 
@@ -2356,6 +2356,7 @@ INSERT INTO `tblTicketsWorkingDays` (`ID`, `BusinessHoursID`, `Day`, `Status`, `
 -- #################################################################################
 
 INSERT INTO `tblTicketSla` (`TicketSlaID`, `CompanyID`, `IsDefault`, `Name`, `Description`, `Status`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES	(1, 1, 1, 'Default SLA', 'Default SLA', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL);
+INSERT INTO `tblTicketSlaPolicyApplyTo` (`TicketSlaID`, `GroupFilter`, `TypeFilter`, `CompanyFilter`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES (1, '', '', '', '2017-05-09 16:20:10', NULL, '2017-05-09 16:20:10', NULL);
 
 INSERT INTO `tblTicketSlaTarget` (`SlaTargetID`, `TicketSlaID`, `PriorityID`, `RespondValue`, `RespondType`, `ResolveValue`, `ResolveType`, `OperationalHrs`, `EscalationEmail`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES
 (1, 1, 4, 15, 'Minute', 1, 'Hour', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL),
