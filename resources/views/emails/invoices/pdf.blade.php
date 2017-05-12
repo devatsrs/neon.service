@@ -100,11 +100,11 @@
             <!-- need here start loop of service -->
 
             <tr>
-                <th class="desc">Description</th>
-                <th class="desc">Usage</th>
-                <th class="desc">Recurring</th>
-                <th class="desc">Additional</th>
-                <th class="total">Total</th>
+                <th class="desc"><b>Description</b></th>
+                <th class="desc"><b>Usage</b></th>
+                <th class="desc"><b>Recurring</b></th>
+                <th class="desc"><b>Additional</b></th>
+                <th class="total"><b>Total</b></th>
             </tr>
             </thead>
             <tbody>
