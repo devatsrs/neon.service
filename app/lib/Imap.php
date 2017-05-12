@@ -807,7 +807,7 @@ protected $server;
 
 		$replace = 1; // replace first occurrence
 
-		return preg_replace($find,"",$subject,$replace);
+		return trim(preg_replace($find,"",$subject,$replace));
 	}
 
 }
