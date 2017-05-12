@@ -519,7 +519,7 @@ protected $server;
 						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
 						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(created_at, INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
 					}
 				}
 				if(!empty($msg_parent)){  		
