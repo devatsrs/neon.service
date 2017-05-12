@@ -580,6 +580,18 @@ protected $server;
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
 
+
+				$check_auto = $this->check_auto_generated($header,$message);
+				if($check_auto){
+
+					Log::info("Auto Responder Detected :");
+					Log::info("header");
+					Log::info($header);
+					Log::info("overview");
+					Log::info($overview);
+					continue;
+				}
+
 				if(!$parentTicket){
 				$logData = [
 						'Requester'=> $from,
@@ -808,6 +820,34 @@ protected $server;
 		$replace = 1; // replace first occurrence
 
 		return trim(preg_replace($find,"",$subject,$replace));
+	}
+
+	/**
+	 * http://stackoverflow.com/questions/9426801/detect-auto-reply-emails-programatically
+	 * detect auto reply email to avoid creating tickets.
+	 * Auto submited and email delivery failure emails will be ignored.
+	 * @param string $header
+	 */
+	public static function check_auto_generated($header = '',$body) {
+
+		$find_header = [
+			"/^Auto-Submitted:/",
+		];
+		$find_body = [
+			"/^Delivery to the following recipient failed permanently:/",
+			"/^This message was created automatically by mail delivery software/",
+		];
+
+		if(preg_grep($find_header,$header)) {
+			return true;
+		}
+		if(preg_grep($find_body,$body)) {
+			return true;
+		}
+
+		return false;
+
+
 	}
 
 }
