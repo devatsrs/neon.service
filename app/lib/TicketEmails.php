@@ -353,7 +353,7 @@ class TicketEmails{
 	
 	protected function AgentResolveSlaVoilation()
 	{		
-			$this->slug					=		"AgentResponseSlaVoilation";
+			$this->slug					=		"AgentResolveSlaVoilation";
 			$send 						=		0;
 			$sendemails					=		'';
 			$sendarray					=		array();
