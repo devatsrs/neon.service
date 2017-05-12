@@ -802,6 +802,7 @@ protected $server;
 		$find = [
 			"/^RE:/",
 			"/^FWD:/",
+			"/^Test Mail/", // to test in staging
 		];
 
 		$replace = 1; // replace first occurrence
