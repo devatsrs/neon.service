@@ -49,7 +49,7 @@
             @endif
         </div>
         <div id="company">
-            <h2 class="name">INVOICE FROM</h2>
+            <h2 class="name"><b>Invoice From</b></h2>
             <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
         </div>
     </header>
@@ -93,7 +93,7 @@
     <main>
         <div id="details" class="clearfix">
             <div id="client">
-                <div class="to">INVOICE TO:</div>
+                <div class="to"><b>Invoice To:</b></div>
                 <div>{{nl2br($return_message)}}</div>
             </div>
             <div id="invoice">
@@ -114,10 +114,10 @@
 
 
             <tr>
-                <th class="desc">Usage</th>
-                <th class="desc">Recurring</th>
-                <th class="desc">Additional</th>
-                <th class="total">TOTAL</th>
+                <th class="desc"><b>Usage</b></th>
+                <th class="desc"><b>Recurring</b></th>
+                <th class="desc"><b>Additional</b></th>
+                <th class="total"><b>Total</b></th>
             </tr>
             </thead>
             <tbody>
@@ -135,7 +135,7 @@
             <tfoot>
             <tr>
                 <td ></td>
-                <td colspan="2">SUB TOTAL</td>
+                <td colspan="2">Sub Total</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if(count($InvoiceTaxRates))
@@ -157,19 +157,29 @@
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
                     <td ></td>
-                    <td colspan="2">BROUGHT FORWARD</td>
+                    <td colspan="2">Brought Forward</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             <tr>
                 <td ></td>
-                <td colspan="2">GRAND TOTAL</td>
+                <td colspan="2">
+					@if(!$InvoiceTemplate->ShowPrevBal)
+						<b>
+					@endif
+					
+					Grand Total
+					
+					@if(!$InvoiceTemplate->ShowPrevBal)
+						</b>				
+					@endif
+				</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
                     <td ></td>
-                    <td colspan="2">TOTAL DUE</td>
+                    <td colspan="2"><b>Total Due</b></td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
