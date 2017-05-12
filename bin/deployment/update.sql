@@ -3,7 +3,10 @@
 ---- Umer
 
 USE `Ratemanagement3`;
-
+-- ###############################################################################################
+INSERT INTO `tblEmailTemplate` ( `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES
+	(1, 'Agent Response SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResponseSlaVoilation', 1, 0, 1),
+	(1, 'Agent Resolve SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}&nbsp;&nbsp;&nbsp;&nbsp;<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResolveSlaVoilation', 1, 0, 1);
 -- ###############################################################################################
 ALTER TABLE `tblResourceCategories`	ADD COLUMN `CategoryGroupID` INT NULL DEFAULT '0' AFTER `CompanyID`;
 -- ###############################################################################################
@@ -940,46 +943,53 @@ BEGIN
 	DECLARE V_DueToday int(11);
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET  sql_mode='';
 
 	SELECT
 		 group_concat(TFV.ValuesID separator ',') INTO V_Status FROM tblTicketfieldsValues TFV
 	LEFT JOIN tblTicketfields TF
 		ON TF.TicketFieldsID = TFV.FieldsID
 	WHERE
-		TF.FieldType = 'default_status' AND TFV.FieldValueAgent ='Open';  --  TFV.FieldValueAgent!='Closed' AND TFV.FieldValueAgent!='Resolved';
+		TF.FieldType = 'default_status' AND TFV.FieldValueAgent!='Closed' AND TFV.FieldValueAgent!='Resolved';
 
-
-	-- find overdue
+	 DROP TEMPORARY TABLE IF EXISTS tmp_tickets_sla_voilation_;
+	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_tickets_sla_voilation_(
+		TicketID int,
+		TicketSlaID int,
+		CreatedDate datetime,
+		DueDate datetime,
+		IsResolvedVoilation int
+	);
+		insert into tmp_tickets_sla_voilation_
 		SELECT
-
-			count(*) into V_OverDue
-
+			T.TicketID,
+			T.TicketSlaID as TicketSlaID,
+			T.created_at as CreatedDate,	  
+		   T.DueDate,
+		   T.ResolveSlaPolicyVoilationEmailStatus AS IsResolvedVoilation
 		FROM
 			tblTickets T
+		LEFT JOIN tblTicketSlaTarget TST
+			ON TST.TicketSlaID = T.TicketSlaID
 		WHERE
 			T.CompanyID = p_CompanyID
-			AND (V_Status = '' OR find_in_set(T.`Status`,V_Status) )
-			AND (P_Group = '' OR FIND_IN_SET(T.`Group`,P_Group) )
-			AND (P_Agent = '' OR T.`Agent` = P_Agent )
-			AND DueDate is not null
-			AND DueDate < p_currentDateTime;
+			AND TST.PriorityID = T.Priority
+			AND (V_Status = '' OR find_in_set(T.`Status`,V_Status))
+			AND (T.RespondSlaPolicyVoilationEmailStatus = 0 OR T.ResolveSlaPolicyVoilationEmailStatus = 0)
+			AND T.TicketSlaID>0
+			AND (P_Group = '' OR FIND_IN_SET(T.`Group`,P_Group))
+			AND (P_Agent = '' OR FIND_IN_SET(T.`Agent`,P_Agent));
 
 
-		-- find due today
+			UPDATE tmp_tickets_sla_voilation_ TSV SET
+			TSV.IsResolvedVoilation  =
+			CASE
+				WHEN p_currentDateTime>=TSV.DueDate THEN 1 ELSE 0
+			END;
 
-		SELECT
-
-			count(*) into   V_DueToday
-
-		FROM
-			tblTickets T
-		WHERE
-			T.CompanyID = p_CompanyID
-			AND (V_Status = '' OR find_in_set(T.`Status`,V_Status) )
-			AND (P_Group = '' OR FIND_IN_SET(T.`Group`,P_Group) )
-			AND (P_Agent = '' OR T.`Agent` = P_Agent )
-			AND DueDate is not null
-			AND DATE(DueDate) = DATE(p_currentDateTime);
+			
+			select count(*) as OverDue INTO V_OverDue from tmp_tickets_sla_voilation_ where IsResolvedVoilation >0;
+			select count(*) as DueToday INTO V_DueToday from tmp_tickets_sla_voilation_ where IsResolvedVoilation >0 and DATE(p_currentDateTime) = DATE(DueDate);
 
 			SELECT V_OverDue as OverDue,V_DueToday as DueToday;
 
