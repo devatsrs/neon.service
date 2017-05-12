@@ -27,9 +27,9 @@ INSERT INTO `tblResourceCategoriesGroups` (`CategoriesGroupID`, `GroupName`) VAL
 	(12, 'Integration');
 
 -- ###############################################################################################
-DELIMITER //
 DROP PROCEDURE IF EXISTS `prc_GetAjaxResourceList`;
-CREATE  PROCEDURE `prc_GetAjaxResourceList`(
+DELIMITER //
+CREATE PROCEDURE `prc_GetAjaxResourceList`(
 	IN `p_CompanyID` INT,
 	IN `p_userid` LONGTEXT,
 	IN `p_roleids` LONGTEXT,
@@ -201,8 +201,9 @@ ALTER TABLE `tblTempAccount`
 ALTER TABLE `tblTempAccount`
 	ADD COLUMN `IsCustomer` TINYINT(1) NULL DEFAULT NULL AFTER `IsVendor`;
 
+DROP PROCEDURE IF EXISTS `prc_WSProcessImportAccount`;
+
 DELIMITER //
-DROP PROCEDURE `prc_WSProcessImportAccount`;
 CREATE PROCEDURE `prc_WSProcessImportAccount`(
 	IN `p_processId` VARCHAR(200) ,
 	IN `p_companyId` INT,
@@ -642,11 +643,11 @@ IF ((select count(*) from tblTicketSla where CompanyID=p_CompanyID) = 1 ) THEN
 		where sla.CompanyID=p_CompanyID
 			and
 			(
-				(pol.CompanyFilter is null  OR (pol.CompanyFilter is not null and FIND_IN_SET(v_AccountID,pol.CompanyFilter) > 0 ))
-				OR
-				(pol.GroupFilter is null  OR (pol.GroupFilter is not null and FIND_IN_SET(v_Group,pol.GroupFilter) > 0) )
-				OR
-				(pol.TypeFilter is null OR (pol.TypeFilter is not null and FIND_IN_SET(v_Type,pol.TypeFilter) > 0) )
+						(pol.CompanyFilter = ''  OR (pol.CompanyFilter != '' and FIND_IN_SET(v_AccountID,pol.CompanyFilter) > 0 ))
+						OR
+						(pol.GroupFilter = ''  OR (pol.GroupFilter != '' and FIND_IN_SET(v_Group,pol.GroupFilter) > 0) )
+						OR
+						(pol.TypeFilter = '' OR (pol.TypeFilter != '' and FIND_IN_SET(v_Type,pol.TypeFilter) > 0) )
 			)
 		limit 1	;
 
@@ -2356,6 +2357,7 @@ INSERT INTO `tblTicketsWorkingDays` (`ID`, `BusinessHoursID`, `Day`, `Status`, `
 -- #################################################################################
 
 INSERT INTO `tblTicketSla` (`TicketSlaID`, `CompanyID`, `IsDefault`, `Name`, `Description`, `Status`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES	(1, 1, 1, 'Default SLA', 'Default SLA', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL);
+INSERT INTO `tblTicketSlaPolicyApplyTo` (`TicketSlaID`, `GroupFilter`, `TypeFilter`, `CompanyFilter`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES (1, '', '', '', '2017-05-09 16:20:10', NULL, '2017-05-09 16:20:10', NULL);
 
 INSERT INTO `tblTicketSlaTarget` (`SlaTargetID`, `TicketSlaID`, `PriorityID`, `RespondValue`, `RespondType`, `ResolveValue`, `ResolveType`, `OperationalHrs`, `EscalationEmail`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`) VALUES
 (1, 1, 4, 15, 'Minute', 1, 'Hour', '1', 1, '2017-05-08 10:44:16', NULL, '2017-05-08 10:44:16', NULL),
@@ -2416,7 +2418,7 @@ CREATE TABLE IF NOT EXISTS `tblTicketDashboardTimeline` (
 
 DROP PROCEDURE IF EXISTS `prc_GetTicketDashboardTimeline`;
 DELIMITER //
-CREATE DEFINER=`root`@`localhost` PROCEDURE `prc_GetTicketDashboardTimeline`(
+CREATE PROCEDURE `prc_GetTicketDashboardTimeline`(
 	IN `p_CompanyID` INT,
 	IN `P_Group` INT,
 	IN `P_Agent` INT,
@@ -2540,7 +2542,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS `prc_GetCronJobHistory`;
 DELIMITER //
-CREATE DEFINER=`root`@`localhost` PROCEDURE `prc_GetCronJobHistory`(
+CREATE PROCEDURE `prc_GetCronJobHistory`(
 	IN `p_CronJobID` INT,
 	IN `p_StartDate` DATETIME,
 	IN `p_EndDate` DATETIME,
@@ -2639,7 +2641,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS `prc_GetTicketDashboardSummary`;
 DELIMITER //
-CREATE DEFINER=`root`@`localhost` PROCEDURE `prc_GetTicketDashboardSummary`(
+CREATE PROCEDURE `prc_GetTicketDashboardSummary`(
 	IN `p_CompanyID` INT,
 	IN `P_Group` VARCHAR(100),
 	IN `P_Agent` VARCHAR(100)
@@ -2705,7 +2707,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS `prc_CheckDueTickets`;
 DELIMITER //
-CREATE DEFINER=`root`@`localhost` PROCEDURE `prc_CheckDueTickets`(
+CREATE PROCEDURE `prc_CheckDueTickets`(
 	IN `p_CompanyID` int,
 	IN `p_currentDateTime` DATETIME,
 	IN `P_Group` VARCHAR(50),
@@ -2879,7 +2881,7 @@ RETURN v_Round_;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_AccountPaymentReminder`;
+DROP PROCEDURE IF EXISTS `prc_AccountPaymentReminder`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_AccountPaymentReminder`(
@@ -4089,6 +4091,30 @@ ALTER TABLE `tblInvoiceTemplate`
   , ADD COLUMN `UsageColumn` longtext NULL
   , ADD COLUMN `GroupByService` INT NULL DEFAULT '0'
   , ADD COLUMN `CDRType` INT(11) NULL DEFAULT '0';
+
+ UPDATE tblInvoiceTemplate SET  InvoiceTo = '{AccountName}
+{Address1},
+{Address2},
+{Address3},
+{City},
+{PostCode},
+{Country}' WHERE InvoiceTo IS NULL;
+
+
+UPDATE tblInvoiceTemplate SET  
+UsageColumn = '{"Summary":[{"Title":"Trunk","ValuesID":"1","UsageName":"Trunk","Status":true,"FieldOrder":1},{"Title":"Prefix","ValuesID":"2","UsageName":"Prefix","Status":true,"FieldOrder":2},{"Title":"Country","ValuesID":"3","UsageName":"Country","Status":true,"FieldOrder":3},{"Title":"Description","ValuesID":"4","UsageName":"Description","Status":true,"FieldOrder":4},{"Title":"NoOfCalls","ValuesID":"5","UsageName":"No of calls","Status":true,"FieldOrder":5},{"Title":"Duration","ValuesID":"6","UsageName":"Duration","Status":true,"FieldOrder":6},{"Title":"BillDuration","ValuesID":"7","UsageName":"Billed Duration","Status":true,"FieldOrder":7},{"Title":"AvgRatePerMin","ValuesID":"8","UsageName":"Avg Rate\/Min","Status":true,"FieldOrder":8},{"Title":"ChargedAmount","ValuesID":"7","UsageName":"Cost","Status":true,"FieldOrder":9}],"Detail":[{"Title":"Prefix","ValuesID":"1","UsageName":"Prefix","Status":true,"FieldOrder":1},{"Title":"CLI","ValuesID":"2","UsageName":"CLI","Status":true,"FieldOrder":2},{"Title":"CLD","ValuesID":"3","UsageName":"CLD","Status":true,"FieldOrder":3},{"Title":"ConnectTime","ValuesID":"4","UsageName":"Connect Time","Status":true,"FieldOrder":4},{"Title":"DisconnectTime","ValuesID":"4","UsageName":"Disconnect Time","Status":true,"FieldOrder":5},{"Title":"BillDuration","ValuesID":"6","UsageName":"Duration","Status":true,"FieldOrder":6},{"Title":"ChargedAmount","ValuesID":"7","UsageName":"Cost","Status":true,"FieldOrder":7}]}'
+WHERE UsageColumn IS NULL;
+
+
+UPDATE tblInvoiceTemplate SET  GroupByService = 0;
+
+UPDATE tblInvoiceTemplate 
+INNER JOIN Ratemanagement3.tblBillingClass
+ON tblBillingClass.InvoiceTemplateID = tblInvoiceTemplate.InvoiceTemplateID
+SET tblInvoiceTemplate.CDRType = tblBillingClass.CDRType
+WHERE tblBillingClass.CDRType IS NOT NULL;
+
+UPDATE tblInvoiceTemplate SET tblInvoiceTemplate.CDRType = 1 WHERE CDRType IS NULL;
 
 DROP TABLE `tblUsageDaily`;
 
@@ -5550,8 +5576,10 @@ BEGIN
 END|
 DELIMITER ;
 
-DELIMITER |
 DROP PROCEDURE IF EXISTS `prc_GetCDR`;
+
+DELIMITER |
+
 CREATE PROCEDURE `prc_GetCDR`(
 	IN `p_company_id` INT,
 	IN `p_CompanyGatewayID` INT,
@@ -8549,8 +8577,8 @@ BEGIN
 	DEALLOCATE PREPARE stmt2;
 
 	SET @stm6 = CONCAT('
-	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblVendorCDRHeader h
 	ON h.CompanyID = d.CompanyID
@@ -8574,8 +8602,8 @@ BEGIN
 	DEALLOCATE PREPARE stmt3;
 
 	SET @stm4 = CONCAT('
-	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblVendorCDRHeader h
 	ON h.CompanyID = d.CompanyID
@@ -9676,3 +9704,31 @@ BEGIN
 
 END|
 DELIMITER ;
+
+
+-- migrate Service  script here
+USE `Ratemanagement3`;
+
+DROP PROCEDURE IF EXISTS `migrateService`;
+DELIMITER |
+CREATE PROCEDURE `migrateService`()
+BEGIN
+
+IF ( (SELECT COUNT(*) FROM RMBilling3.tblAccountSubscription ) > 0 OR (SELECT COUNT(*) FROM RMBilling3.tblAccountOneOffCharge ) > 0  OR (SELECT COUNT(*) FROM tblCLIRateTable WHERE CompanyID =1) > 0)
+THEN
+
+INSERT INTO `tblService` (`ServiceID`, `ServiceName`, `ServiceType`, `CompanyID`, `Status`, `created_at`, `updated_at`, `CompanyGatewayID`) VALUES (1, 'Default Service', 'voice', 1, 1, '2017-05-08 13:02:01', '2017-05-09 02:00:41', 0);
+
+INSERT INTO tblAccountService (AccountID,ServiceID,CompanyID,Status)
+SELECT AccountID,1,CompanyId,1 FROM tblAccount WHERE AccountType = 1 AND Status =1 AND VerificationStatus = 2 AND CompanyId = 1;
+
+UPDATE RMBilling3.tblAccountSubscription SET ServiceID =1 WHERE ServiceID = 0;
+UPDATE RMBilling3.tblAccountOneOffCharge SET ServiceID =1 WHERE ServiceID = 0;
+UPDATE tblCLIRateTable SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
+
+END IF;
+
+END|
+DELIMITER ;
+
+CALL migrateService();
