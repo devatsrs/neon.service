@@ -658,14 +658,28 @@ protected $server;
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
 					 
 					 
-					if(!in_array($from,$AllEmails)){
-						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
+					if(!in_array($from,$AllEmails))
+					{
+						$FromNameArray	   =  explode(" ",$FromName);
+						$ContactFirstName  =  $FromNameArray[0];
+						
+						if(count($FromNameArray)>1)
+						{	
+							unset($FromNameArray[0]);
+							$ContactLastName  = implode(" ",$FromNameArray);
+						}else{
+							$ContactLastName  = '';
+						}
+						
+						$ContactData = array("FirstName"=>$ContactFirstName,"LastName"=>$ContactLastName,"Email"=>$from,"CompanyId"=>$CompanyID);
 						$contactID =  Contact::insertGetId($ContactData);
 						TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
 						$EmailLogObj = AccountEmailLog::find($EmailLog);
 						$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$contactID));		
 						$AllEmails[] = $from;
-					}else{
+					}
+					else
+					{
 						$accountIDSave  =	0;
 						$accountID   	=  DB::table('tblAccount')->where(array("Email"=>$from))->pluck("AccountID");
 						$accountID2  	=  DB::table('tblAccount')->where(array("BillingEmail"=>$from))->pluck("AccountID");
