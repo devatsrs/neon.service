@@ -163,13 +163,23 @@
 						</b>				
 					@endif
 				</td>
-                <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
+                <td class="subtotal">
+                    @if(!$InvoiceTemplate->ShowPrevBal)
+                        <b>
+                    @endif
+
+                    {{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}
+
+                    @if(!$InvoiceTemplate->ShowPrevBal)
+                        </b>
+                    @endif
+                </td>
             </tr>
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
                     <td colspan="2"></td>
                     <td colspan="2"><b>Total Due</b></td>
-                    <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</td>
+                    <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
                 </tr>
             @endif
             </tfoot>
