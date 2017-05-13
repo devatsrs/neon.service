@@ -81,7 +81,7 @@
                     @if($ProductRow->ProductType == \App\Lib\Product::ITEM)
                         <tr>
                             <td class="desc">{{$data['Products'][$ProductRow->ProductType][$ProductRow->ProductID]}}</td>
-                            <td class="desc">{{$ProductRow->Description}}</td>
+                            <td class="desc">{{nl2br($ProductRow->Description)}}</td>
                             <td class="desc">{{$ProductRow->Qty}}</td>
                             <td class="desc">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                             <td class="total">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
