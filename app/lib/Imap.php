@@ -842,11 +842,18 @@ protected $server;
 			"/^This message was created automatically by mail delivery software/",
 		];
 
-		if(preg_grep(array_map('strtolower', $find_header),strtolower($header))) {
-			return true;
+
+		foreach($find_header as $f_header){
+
+			if(preg_grep(strtolower($f_header),strtolower($header))) {
+				return true;
+			}
 		}
-		if(preg_grep(array_map('strtolower', $find_body),strtolower($body))) {
-			return true;
+		foreach($find_body as $f_body) {
+
+			if (preg_grep(strtolower($f_body), strtolower($body))) {
+				return true;
+			}
 		}
 
 		return false;
