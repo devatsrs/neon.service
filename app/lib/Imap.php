@@ -513,6 +513,10 @@ protected $server;
 				//If parent email is not found based on in_reply_to
 				if(empty($msg_parent)){
 
+					// http://staging.neon-soft.com/tickets/19/detail
+					//https://email09.godaddy.com/view_print_multi.php?uidArray=26391|INBOX&aEmlPart=0
+
+
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
 					if(!empty($original_plain_subject)){
@@ -838,10 +842,10 @@ protected $server;
 			"/^This message was created automatically by mail delivery software/",
 		];
 
-		if(preg_grep($find_header,$header)) {
+		if(preg_grep(array_map('strtolower', $find_header),strtolower($header))) {
 			return true;
 		}
-		if(preg_grep($find_body,$body)) {
+		if(preg_grep(array_map('strtolower', $find_body),strtolower($body))) {
 			return true;
 		}
 
