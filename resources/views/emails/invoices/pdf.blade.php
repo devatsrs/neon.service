@@ -49,7 +49,7 @@
             @endif
         </div>
         <div id="company">
-            <h2 class="name">INVOICE FROM</h2>
+            <h2 class="name"><b>Invoice From</b></h2>
             <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
         </div>
     </header>
@@ -79,7 +79,7 @@
     <main>
         <div id="details" class="clearfix">
             <div id="client">
-                <div class="to">INVOICE TO:</div>
+                <div class="to"><b>Invoice To:</b></div>
                 <div>{{nl2br($return_message)}}</div>
             </div>
             <div id="invoice">
@@ -100,11 +100,11 @@
             <!-- need here start loop of service -->
 
             <tr>
-                <th class="desc">DESCRIPTION</th>
-                <th class="desc">Usage</th>
-                <th class="desc">Recurring</th>
-                <th class="desc">Additional</th>
-                <th class="total">TOTAL</th>
+                <th class="desc"><b>Description</b></th>
+                <th class="desc"><b>Usage</b></th>
+                <th class="desc"><b>Recurring</b></th>
+                <th class="desc"><b>Additional</b></th>
+                <th class="total"><b>Total</b></th>
             </tr>
             </thead>
             <tbody>
@@ -124,7 +124,7 @@
             <tfoot>
             <tr>
                 <td colspan="2"></td>
-                <td colspan="2">SUB TOTAL</td>
+                <td colspan="2">Sub Total</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if(count($InvoiceTaxRates))
@@ -146,20 +146,40 @@
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">BROUGHT FORWARD</td>
+                    <td colspan="2">Brought Forward</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             <tr>
                 <td colspan="2"></td>
-                <td colspan="2">GRAND TOTAL</td>
-                <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
+                <td colspan="2">
+					@if(!$InvoiceTemplate->ShowPrevBal)
+						<b>
+					@endif
+					
+					Grand Total
+					
+					@if(!$InvoiceTemplate->ShowPrevBal)
+						</b>				
+					@endif
+				</td>
+                <td class="subtotal">
+                    @if(!$InvoiceTemplate->ShowPrevBal)
+                        <b>
+                    @endif
+
+                    {{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}
+
+                    @if(!$InvoiceTemplate->ShowPrevBal)
+                        </b>
+                    @endif
+                </td>
             </tr>
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">TOTAL DUE</td>
-                    <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</td>
+                    <td colspan="2"><b>Total Due</b></td>
+                    <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
                 </tr>
             @endif
             </tfoot>
@@ -311,6 +331,7 @@
     @endforeach
 
     <!-- service section end -->
+	@if($InvoiceTemplate->InvoicePages == 'single_with_detail')
     @foreach($service_data as $ServiceID => $service)
         @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0 && $InvoiceTemplate->CDRType != \App\Lib\Account::NO_CDR)
 
@@ -421,7 +442,7 @@
                     ?>
                     @foreach($usage_data_table['data'][$ServiceID] as $row)
                         <?php
-                        $totalBillDuration  +=  $row['BilledDuration'];
+                        $totalBillDuration  +=  $row['BillDuration'];
                         $totalTotalCharges  += $row['ChargedAmount'];
                         ?>
                         <tr>
@@ -461,5 +482,6 @@
 
         @endif
     @endforeach
+	@endif
 
  @stop
