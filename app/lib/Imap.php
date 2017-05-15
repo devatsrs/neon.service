@@ -835,26 +835,29 @@ protected $server;
 	public static function check_auto_generated($header = '',$body) {
 
 		$find_header = [
-			"/^Auto-Submitted:/",
+			"Auto-Submitted:",
 		];
 		$find_body = [
-			"/^Delivery to the following recipient failed permanently:/",
-			"/^This message was created automatically by mail delivery software/",
+			"Delivery to the following recipient failed permanently:",
+			"Delivery to the following recipients failed permanently:",
+			"This message was created automatically by mail delivery software",
 		];
 
 
 		foreach($find_header as $f_header){
 
-			if(preg_grep(strtolower($f_header),strtolower($header))) {
-				return true;
+			if(strpos(strtolower($header),strtolower($f_header)) !== false){
+ 				return true;
 			}
 		}
 		foreach($find_body as $f_body) {
 
-			if (preg_grep(strtolower($f_body), strtolower($body))) {
-				return true;
+			if(strpos(strtolower($body),strtolower($f_body)) !== false){
+ 				return true;
 			}
 		}
+
+
 
 		return false;
 
