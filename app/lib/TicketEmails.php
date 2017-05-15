@@ -292,8 +292,7 @@ class TicketEmails{
 			
 			$RespondedVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$RespondedVoilationType])->select(['Time','Value'])->first();
 			
-			//Log::info(print_r($RespondedVoilation,true));
-			
+			if(count($RespondedVoilation)<1){return 0;}			
 			if($RespondedVoilation->Time=='immediately')
 			{
 				$send = 1;
