@@ -513,13 +513,17 @@ protected $server;
 				//If parent email is not found based on in_reply_to
 				if(empty($msg_parent)){
 
+					// http://staging.neon-soft.com/tickets/19/detail
+					//https://email09.godaddy.com/view_print_multi.php?uidArray=26391|INBOX&aEmlPart=0
+
+
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
 					if(!empty($original_plain_subject)){
 						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
 						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(created_at, INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
 					}
 				}
 				if(!empty($msg_parent)){  		
@@ -579,6 +583,16 @@ protected $server;
 								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
+
+				$message_plain_body = $this->getBody($inbox,$email_number); // last message plain body.
+				$check_auto_generated = $this->check_auto_generated($header,$message_plain_body);
+				if($check_auto_generated){
+
+					Log::info("Auto Responder Detected :");
+					Log::info("header");
+					Log::info($header);
+					continue;
+				}
 
 				if(!$parentTicket){
 				$logData = [
@@ -658,14 +672,28 @@ protected $server;
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
 					 
 					 
-					if(!in_array($from,$AllEmails)){
-						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
+					if(!in_array($from,$AllEmails))
+					{
+						$FromNameArray	   =  explode(" ",$FromName);
+						$ContactFirstName  =  $FromNameArray[0];
+						
+						if(count($FromNameArray)>1)
+						{	
+							unset($FromNameArray[0]);
+							$ContactLastName  = implode(" ",$FromNameArray);
+						}else{
+							$ContactLastName  = '';
+						}
+						
+						$ContactData = array("FirstName"=>$ContactFirstName,"LastName"=>$ContactLastName,"Email"=>$from,"CompanyId"=>$CompanyID);
 						$contactID =  Contact::insertGetId($ContactData);
 						TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
 						$EmailLogObj = AccountEmailLog::find($EmailLog);
 						$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$contactID));		
 						$AllEmails[] = $from;
-					}else{
+					}
+					else
+					{
 						$accountIDSave  =	0;
 						$accountID   	=  DB::table('tblAccount')->where(array("Email"=>$from))->pluck("AccountID");
 						$accountID2  	=  DB::table('tblAccount')->where(array("BillingEmail"=>$from))->pluck("AccountID");
@@ -691,7 +719,18 @@ protected $server;
 				
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
+				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+
+				try {
+					if(isset($ticketID))
+					{
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
 			}
 			} catch (Exception $e) {
 				Log::error("Tracking email imap failed");
@@ -702,15 +741,7 @@ protected $server;
 		imap_close($inbox);
 		Log::info("reading emails completed");
 
-		try {
-			if(isset($ticketID))
-			{
-				TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-			}
-		} catch (Exception $ex) {
-			Log::info("fail TicketSla::assignSlaToTicket");
-			Log::info($ex);
-		}
+
 
 	}
 	
@@ -799,11 +830,50 @@ protected $server;
 		$find = [
 			"/^RE:/",
 			"/^FWD:/",
+			"/^Test Mail/", // to test in staging
 		];
 
 		$replace = 1; // replace first occurrence
 
-		return preg_replace($find,"",$subject,$replace);
+		return trim(preg_replace($find,"",$subject,$replace));
+	}
+
+	/**
+	 * http://stackoverflow.com/questions/9426801/detect-auto-reply-emails-programatically
+	 * detect auto reply email to avoid creating tickets.
+	 * Auto submited and email delivery failure emails will be ignored.
+	 * @param string $header
+	 */
+	public static function check_auto_generated($header = '',$body) {
+
+		$find_header = [
+			"Auto-Submitted:",
+		];
+		$find_body = [
+			"Delivery to the following recipient failed permanently:",
+			"Delivery to the following recipients failed permanently:",
+			"This message was created automatically by mail delivery software",
+		];
+
+
+		foreach($find_header as $f_header){
+
+			if(strpos(strtolower($header),strtolower($f_header)) !== false){
+ 				return true;
+			}
+		}
+		foreach($find_body as $f_body) {
+
+			if(strpos(strtolower($body),strtolower($f_body)) !== false){
+ 				return true;
+			}
+		}
+
+
+
+		return false;
+
+
 	}
 
 }
