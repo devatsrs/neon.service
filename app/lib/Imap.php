@@ -590,12 +590,9 @@ protected $server;
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto){
-
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
-					Log::info("overview");
-					Log::info($overview);
 					continue;
 				}
 
