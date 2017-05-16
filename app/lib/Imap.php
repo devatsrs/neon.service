@@ -584,15 +584,13 @@ protected $server;
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
 
-
-				$check_auto = $this->check_auto_generated($header,$message);
-				if($check_auto){
+				$message_plain_body = $this->getBody($inbox,$email_number); // last message plain body.
+				$check_auto_generated = $this->check_auto_generated($header,$message_plain_body);
+				if($check_auto_generated){
 
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
-					Log::info("overview");
-					Log::info($overview);
 					continue;
 				}
 
