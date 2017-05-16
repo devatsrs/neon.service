@@ -2,42 +2,26 @@
 #* * * * * php /var/www/html/neon-service-branch/dev-mysql/dev/artisan neonservice  >> /dev/cron_job_dev 2>&1
 #* * * * * php /var/www/html/neon-service-branch/dev-mysql/girish/artisan neonservice >> /dev/cron_job_girish 2>&1
 * * * * * php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
-* * * * * sleep 10; php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
-* * * * * sleep 20; php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
-* * * * * sleep 30; php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
-* * * * * sleep 40; php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
-* * * * * sleep 50; php /var/www/html/neon-service-branch/dev-mysql/staging/artisan neonservice  >> /dev/cron_job_staging 2>&1
 
 #Demos
-#demo old * * * * * php /var/www/html/wt_demo.neon.service/artisan neonservice >> /dev/cron_job_demo 2>&1
-#demo wholesale old  * * * * * php /var/www/html/WholeSaleDemoNew.neon.service/artisan neonservice >> /dev/cron_job_wholesaledemo 2>&1
-
 * * * * * php /var/www/html/release.neon.service/artisan neonservice >> /dev/cron_job_release 2>&1
 * * * * * php /var/www/html/demo.neon.service/artisan neonservice >> /dev/cron_job_demo 2>&1
 * * * * * php /var/www/html/wt_wholesale_demo.neon.service/artisan neonservice >> /dev/cron_job_wt_wholesale_demo 2>&1
 
 #client
-* * * * * php /var/www/html/covercommunications.neon.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
-* * * * * php /var/www/html/fivebyfive.neon.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
+#Wholesale
+* * * * * php /var/www/html/voicecourier.neon.service/artisan neonservice >> /dev/cron_job_voicecourier 2>&1
 * * * * * php /var/www/html/wavetelwholesale.neon.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
-#Updating... * * * * * php /var/www/html/codedesk.neon.service/artisan neonservice >> /dev/cron_job_codedesk 2>&1
-* * * * * php /var/www/html/wavetelpbx.neon.service/artisan neonservice >> /dev/cron_job_wavetel_retail 2>&1
-* * * * * php /var/www/html/tek185.neon.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
 * * * * * php /var/www/html/usmantel.neon.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
 
-
-* * * * * php /var/www/html/twistvoip.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
-* * * * * php /var/www/html/pbxlines.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
-* * * * * php /var/www/html/d2call.neon.service/artisan neonservice >> /dev/cron_job_d2call 2>&1
-* * * * * php /var/www/html/shaztech.neon.service/artisan neonservice >> /dev/cron_job_shaztech 2>&1
-* * * * * php /var/www/html/voicecourier.neon.service/artisan neonservice >> /dev/cron_job_voicecourier 2>&1
-
-
-
-#Wavetel Amazon FTP Access
-* * * * * php /mnt/hd2/puts3
-
-
+# Retail
+* * * * * sleep 10; php /var/www/html/tek185.neon.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
+* * * * * sleep 20; php /var/www/html/wavetelpbx.neon.service/artisan neonservice >> /dev/cron_job_wavetel_retail 2>&1
+* * * * * sleep 30; php /var/www/html/codedesk.neon.service/artisan neonservice >> /dev/cron_job_codedesk 2>&1
+* * * * * sleep 10; php /var/www/html/covercommunications.neon.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
+* * * * * sleep 20; php /var/www/html/twistvoip.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
+* * * * * sleep 30; php /var/www/html/pbxlines.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
+* * * * * sleep 10; php /var/www/html/shaztech.neon.service/artisan neonservice >> /dev/cron_job_shaztech 2>&1
 
 #DB Backup  commands
 0 2 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /etc/automysqlbackup/uk-hosted-backup.conf >> /dev/cron_job_uk_hosted_backup 2>&1
@@ -47,27 +31,8 @@
 30 18 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /etc/automysqlbackup/india-hosted-backup.conf >> /dev/cron_job_india_hosted_backup 2>&1
 0 11 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /etc/automysqlbackup/nz-hosted-backup.conf >> /dev/cron_job_nz_hosted_backup 2>&1
 
+#Wavetel Amazon FTP Access
+* * * * * php /mnt/hd2/puts3
 
 #Hosted server files
 0 0 * * *  /home/hostedfolders/neon-hosted-files.sh
-
-
-
-
-#OLD Release* * * * * php /var/www/html/neon-service-branch/dev-mysql/release/artisan neonservice >> /dev/cron_job_release 2>&1
-#OLD * * * * * php /var/www/html/wholesaledemo.service/artisan neonservice >> /dev/cron_job_wholesaledemo 2>&1
-#OLD * * * * * php /var/www/html/demo.service/artisan neonservice >> /dev/cron_job_demo 2>&1
-
-#client
-#OLD * * * * * php /var/www/html/business.billing.wave-tel.com.service/artisan neonservice >> /dev/cron_job_wavetel_retail 2>&1
-#* * * * * php /var/www/html/tech-1.service/artisan neonservice >> /dev/cron_job_tech 2>&1
-#OLD* * * * * php /var/www/html/codedesk.neon-soft.com.service/artisan neonservice >> /dev/cron_job_codedesk 2>&1
-#OLD* * * * * php /var/www/html/rm.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
-#OLD* * * * * php /var/www/html/fivebyfive.service/artisan neonservice >> /dev/cron_job_fivebyfive 2>&1
-#OLD* * * * * php /var/www/html/covercommunications.service/artisan neonservice >> /dev/cron_job_covercomm 2>&1
-#OLD * * * * * php /var/www/html/shaztech.service/artisan neonservice >> /dev/cron_job_shaztech 2>&1
-#old* * * * * php /var/www/html/tek185.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
-#OLD * * * * * php /var/www/html/d2call.service/artisan neonservice >> /dev/cron_job_d2call 2>&1
-#OLD* * * * * php /var/www/html/voicecourier.service/artisan neonservice >> /dev/cron_job_voicecourier 2>&1
-#OLD* * * * * php /var/www/html/twistvoip.neon-soft.com.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
-#OLD* * * * * php /var/www/html/billing.pbxlines.com.service/artisan neonservice >> /dev/cron_job_pbxline 2>&1
