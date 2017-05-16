@@ -591,8 +591,6 @@ protected $server;
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
-					Log::info("overview");
-					Log::info($overview);
 					continue;
 				}
 
