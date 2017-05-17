@@ -2031,7 +2031,8 @@ BEGIN
 					ELSE 0 END as CustomerType,
 			acel.EmailCall,
 			tc.TicketID,
-			CASE WHEN tc.AccountEmailLogID != 0 AND acel.EmailParent=0 THEN 1 ELSE 0 END as TicketSubmit,
+		/*	CASE WHEN tc.AccountEmailLogID != 0 AND acel.EmailParent=0 THEN 1 ELSE 0 END as TicketSubmit,*/
+		   0 as TicketSubmit,
 			tc.Subject,
 			acel.AccountEmailLogID as ID,
 			tc.Agent,
@@ -2098,7 +2099,7 @@ BEGIN
 				ELSE 0 END as CustomerType,
 			0 as EmailCall,
 			tc.TicketID,
-			IF(tc.AccountEmailLogID = 0,0,1) as TicketSubmit,
+			IF(tl.TicketFieldID = 0,0,1) as TicketSubmit,
 			tc.Subject,
 			tl.TicketLogID as ID,
 			tc.Agent,

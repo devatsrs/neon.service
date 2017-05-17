@@ -477,6 +477,7 @@ protected $server;
 				$MatchID 					= 		  '';
 				$priority					=		  1;				
 				$headers 					=		  array();
+				$message					=	      '';
 				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
 				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
@@ -566,14 +567,16 @@ protected $server;
 					$AttachmentPaths  = 	serialize([]);										
 				}
 				
-				$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID);
+				//$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID); 
 			 	//$message = 	$this->getBody($inbox,$email_number);
-				if(empty($message)){
-					$message = 	$this->getBody($inbox,$email_number);
+				//if(empty($message)){
+				$message = 	$this->getBody($inbox,$email_number);  //get body from email
+				//}
+				if(count($attachmentsDB)>0){
+					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				if(!empty($message)){
-					$message =  $this->GetMessageBody($message);
-				}				
+				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
+								
 			
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
@@ -583,11 +586,10 @@ protected $server;
 								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
-
-				$message_plain_body = $this->getBody($inbox,$email_number); // last message plain body.
-				$check_auto_generated = $this->check_auto_generated($header,$message_plain_body);
-				if($check_auto_generated){
-
+				
+				//Log::info("message :".$message);
+				$check_auto = $this->check_auto_generated($header,$message);
+				if($check_auto){
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
@@ -613,13 +615,13 @@ protected $server;
 					];
 					
 					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
-					$logData 		 	  = 	array_merge($logData,$MatchArray);
-						
-					$ticketID 		=  TicketsTable::insertGetId($logData);
+					$logData 		 	  = 	array_merge($logData,$MatchArray);						
+					$ticketID 			  =  	TicketsTable::insertGetId($logData); 
+					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
 					if($GroupID){
 						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentAssignedGroup")));
 					}					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));				$TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
+					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));				$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
 					
 				}
 				else //reopen ticket if ticket status closed 
@@ -749,14 +751,14 @@ protected $server;
 	}
 	
 	
-	function DownloadInlineImages($con,$msg,$CompanyID){
+	function DownloadInlineImages($con,$msg,$CompanyID,$msgbody){ 
 		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 		// download email message #1 and fetch it
 		$emailMessage = new EmailMessage($con, $msg);
 		$emailMessage->fetch();
 		
 		// match inline images in html content
-		preg_match_all('/src="cid:(.*)"/Uims', $emailMessage->bodyHTML, $matches);
+		preg_match_all('/src="cid:(.*)"/Uims', $msgbody, $matches);
 		
 		// if there are any matches, loop through them and save to filesystem, change the src property
 		// of the image to an actual URL it can be viewed at
@@ -817,10 +819,10 @@ protected $server;
 			}
 			
 			// now do the replacements
-			$emailMessage->bodyHTML = str_replace($search, $replace, $emailMessage->bodyHTML);
+			$msgbody = str_replace($search, $replace, $msgbody);
 			
 		}
-		return $emailMessage->bodyHTML;
+		return $msgbody;
 	}
 
 	/**
