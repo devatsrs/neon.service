@@ -594,7 +594,9 @@ protected $server;
 					continue;
 				}
 
+
 				if(!$parentTicket){
+					// New ticket
 				$logData = [
 						'Requester'=> $from,
 						"RequesterName"=>$FromName,
@@ -638,6 +640,7 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
+					//Email to all cc emails from main ticket.
 					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","Comment"=>$message,"NoteUser"=>$FromName,"CompanyID"=>$CompanyID));
 				}
 				$logData = ['EmailFrom'=> $from,
