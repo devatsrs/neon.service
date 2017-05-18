@@ -49,23 +49,16 @@ class TicketImportRule extends \Eloquent
                         Log::info("Value " . $Value);
                         Log::info("TicketImportRuleConditionTypeID " . $TicketImportRuleConditionTypeID);
 
-                        if ($TicketImportRuleConditionTypeID > 0 && (new TicketImportRuleConditionType())->isEmailFrom($TicketImportRuleConditionTypeID)) {
-
-                            //@TODO: this is for requester email match only.
-                            $fromEmail = $TicketData["Requester"];
-
-                            Log::info("fromEmail " . $fromEmail);
-
-                            if (TicketImportRuleCondition::field($fromEmail)->operand($Operand)->value($Value)->check()) {
-                                $total_rule_matches++;
-                                Log::info("total_rule_matches " . $total_rule_matches);
-
-                                if ($Match == self::MATCH_ANY) {
-                                    Log::info("MATCH_ANY break");
-                                    break;
-                                }
+                        if ($TicketImportRuleConditionTypeID > 0 && (new TicketImportRuleConditionType())->validate($TicketData,$TicketImportRuleConditionTypeID,$Operand,$Value)) {
+                            $total_rule_matches++;
+                            Log::info("total_rule_matches " . $total_rule_matches);
+                            if ($Match == self::MATCH_ANY) {
+                                Log::info("MATCH_ANY break");
+                                break;
                             }
+
                         }
+
                     }
                 }
 
@@ -74,7 +67,7 @@ class TicketImportRule extends \Eloquent
                 // condition match check
                 if (($Match == self::MATCH_ANY && $total_rule_matches == 1) || ($Match == self::MATCH_ALL && $total_rule_matches == count($TicketImportRuleConditions))) {
 
-                    $log_ = (new TicketImportRuleAction)->doActions($TicketImportRuleID, $TicketData);
+                    $log_ = (new TicketImportRuleActionType())->doActions($TicketImportRuleID, $TicketData);
                     if(is_array($log_)){
                         $log = array_merge($log,$log_);
                     }

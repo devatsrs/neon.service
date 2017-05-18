@@ -50,34 +50,42 @@ class TicketImportRuleCondition extends \Eloquent {
         switch ($this->operand) {
 
             case self::IS:
-
-                if ($this->field == $this->value){
+                $values = explode(',',$this->value);
+                if (in_array($this->field ,$values)){
                     Log::info("is compare ");
 
                     return true;
                 }
                 break;
 
-            case self::IS_NOT :
-
-                if ($this->field != $this->value){
+            case self::IS_NOT:
+                $values = explode(',',$this->value);
+                if (!in_array($this->field ,$values)){
                     Log::info("is  not compare ");
                     return true;
                 }
                 break;
 
-            case self::CONTAINS :
-
-                if (strpos($this->field, $this->value) !== false ){
-                    Log::info("contains compare ");
-
-                    return true;
+            case self::CONTAINS:
+                $values = explode(',',$this->value);
+                foreach($values as $value) {
+                    if (strpos($this->field, $value) !== false) {
+                        Log::info("contains compare ");
+                        return true;
+                    }
                 }
                 break;
 
             case self::DOES_NOT_CONTAIN:
 
-                if (strpos($this->field, $this->value) == false ){
+                $values = explode(',',$this->value);
+                $cnt = 0;
+                foreach($values as $value) {
+                    if (strpos($this->field, $value) == false) {
+                        $cnt++;
+                    }
+                }
+                if($cnt == count($values)){
                     Log::info("doesnt contains compare ");
                     return true;
                 }

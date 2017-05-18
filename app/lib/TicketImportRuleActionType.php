@@ -70,4 +70,90 @@ class TicketImportRuleActionType extends \Eloquent  {
         return false;
     }
 
+    function isSetPriority($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SET_PRIORITY){
+            return true;
+        }
+        return false;
+    }
+
+    function isSetStatus($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SET_STATUS){
+            return true;
+        }
+        return false;
+    }
+
+    function isSetAgent($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SET_AGENT){
+            return true;
+        }
+        return false;
+    }
+
+    function isSetGroup($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SET_GROUP){
+            return true;
+        }
+        return false;
+    }
+
+    public function doActions($TicketImportRuleID,$TicketData) {
+
+        $TicketImportRuleActions = TicketImportRuleAction::where(["TicketImportRuleID" => $TicketImportRuleID])->orderby("Order")->get();
+
+        $TicketID = $TicketData["TicketID"];
+        $log = array();
+
+        Log::info("doActions - " . count($TicketImportRuleActions) );
+        Log::info($TicketImportRuleActions);
+
+        if(count($TicketImportRuleActions) > 0) {
+
+            foreach ($TicketImportRuleActions as $TicketImportRuleAction) {
+
+                $TicketImportRuleActionTypeID = $TicketImportRuleAction["TicketImportRuleActionTypeID"];
+                $Value                        = $TicketImportRuleAction["Value"];
+
+                Log::info("TicketImportRuleActionTypeID " . $TicketImportRuleActionTypeID);
+
+                if ($this->isDeleteTicket($TicketImportRuleActionTypeID)) {
+                    TicketsTable::deleteTicket($TicketID);
+                    $log[] = TicketImportRuleActionType::DELETE_TICKET;
+                    Log::info($log);
+                    return $log;
+
+                } else if ($this->isSkipNotification($TicketImportRuleActionTypeID)) {
+
+                    $log[] = TicketImportRuleActionType::SKIP_NOTIFICATION;
+
+                } else if ($this->isSetPriority($TicketImportRuleActionTypeID)) {
+
+                    TicketsTable::setTicketFieldValue($TicketID,"Priority",$Value);
+                    $log[] = TicketImportRuleActionType::SET_PRIORITY;
+
+                } else if ($this->isSetStatus($TicketImportRuleActionTypeID)) {
+
+                    TicketsTable::setTicketFieldValue($TicketID,"Status",$Value);
+                    $log[] = TicketImportRuleActionType::SET_STATUS;
+
+                } else if ($this->isSetAgent($TicketImportRuleActionTypeID)) {
+
+                    TicketsTable::setTicketFieldValue($TicketID,"Agent",$Value);
+                    $log[] = TicketImportRuleActionType::SET_AGENT;
+                } else if ($this->isSetGroup($TicketImportRuleActionTypeID)) {
+
+                    TicketsTable::setTicketFieldValue($TicketID,"Group",$Value);
+                    $log[] = TicketImportRuleActionType::SET_GROUP;
+                }
+            }
+        }
+
+        return $log;
+    }
+
 }
