@@ -49,7 +49,7 @@ class TicketImportRuleConditionType extends \Eloquent  {
 
     }
 
-    function isEmailFrom($TicketImportRuleConditionTypeID){
+    function isEmailFrom($TicketImportRuleConditionTypeID) {
 
         if($this->get($TicketImportRuleConditionTypeID) == self::EMAIL_FROM){
             return true;

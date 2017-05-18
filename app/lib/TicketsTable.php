@@ -169,5 +169,13 @@ class TicketsTable extends \Eloquent {
             ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_TYPE_FLD])->where(['tblTicketfieldsValues.ValuesID'=>$id])->pluck($fld);			
 			return $ValuesID;
 	}
-	
+
+	static function deleteTicket($TicketID) {
+		$Ticket = TicketsTable::find($TicketID);
+		if(!empty($Ticket) && isset($Ticket->TicketID) && $Ticket->TicketID > 0 ) {
+			$Ticket->delete();
+			return true;
+		}
+		return false;
+	}
 }

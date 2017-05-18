@@ -8,15 +8,12 @@ class TicketImportRuleActionType extends \Eloquent  {
     protected $guarded 		=	 array("TicketImportRuleActionTypeID");
 
 
-    const EMAIL_FROM = 'from_email';
-    const EMAIL_TO = 'to_email';
-    const SUBJECT = 'subject';
-    const DESCRIPTION = 'description';
-    const DESC_OR_SUB = 'subject_or_description';
-    const PRIORITY = 'priority';
-    const STATUS = 'status';
-    const AGENT = 'agent';
-    const GROUP = 'group';
+    const DELETE_TICKET = 'delete_ticket';
+    const SKIP_NOTIFICATION = 'skip_notification';
+    const SET_PRIORITY = 'set_priority';
+    const SET_STATUS = 'set_status';
+    const SET_AGENT = 'set_agent';
+    const SET_GROUP = 'set_group';
 
     protected $enable_cache = true;
     protected $cache_name = "TicketImportRuleActionType";
@@ -48,9 +45,17 @@ class TicketImportRuleActionType extends \Eloquent  {
 
     }
 
-    function isEmailFrom($TicketImportRuleConditionTypeID){
+    function isDeleteTicket($TicketImportRuleActionTypeID){
 
-        if($this->get($TicketImportRuleConditionTypeID) == self::EMAIL_FROM){
+        if($this->get($TicketImportRuleActionTypeID) == self::DELETE_TICKET){
+            return true;
+        }
+        return false;
+    }
+
+    function isSkipNotification($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SKIP_NOTIFICATION){
             return true;
         }
         return false;
