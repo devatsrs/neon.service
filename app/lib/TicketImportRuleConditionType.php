@@ -2,6 +2,7 @@
 namespace App\Lib;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class TicketImportRuleConditionType extends \Eloquent  {
 
@@ -35,6 +36,9 @@ class TicketImportRuleConditionType extends \Eloquent  {
             Cache::forever($this->cache_name, $cache);
 
         }
+        Log::info("TicketImportRuleConditionType");
+        Log::info($cache);
+
         return $cache[$this->cache_name];
     }
 
@@ -42,6 +46,7 @@ class TicketImportRuleConditionType extends \Eloquent  {
     function get($key){
 
         $cache = Cache::get($this->cache_name);
+        $cache = isset($cache[$this->cache_name])?$cache[$this->cache_name]:"";
         if(!empty($cache) && isset($cache[$key])){
                 return $cache[$key];
         }

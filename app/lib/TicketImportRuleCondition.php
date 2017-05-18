@@ -1,9 +1,15 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\Log;
+
 class TicketImportRuleCondition extends \Eloquent {
 
-	var $field;
+    protected $guarded = array("TicketImportRuleConditionID");
+    protected $table = 'tblTicketImportRuleCondition';
+    protected $primaryKey = "TicketImportRuleConditionID";
+
+    var $field;
     var $operand;
     var $value;
 
@@ -36,11 +42,18 @@ class TicketImportRuleCondition extends \Eloquent {
             return false;
         }
 
+        Log::info("TicketImportRuleCondition::chech()");
+        Log::info("operand"  . $this->operand);
+        Log::info("field"  . $this->field);
+        Log::info("value"  . $this->value);
+
         switch ($this->operand) {
 
             case self::IS:
 
                 if ($this->field == $this->value){
+                    Log::info("is compare ");
+
                     return true;
                 }
                 break;
@@ -48,6 +61,7 @@ class TicketImportRuleCondition extends \Eloquent {
             case self::IS_NOT :
 
                 if ($this->field != $this->value){
+                    Log::info("is  not compare ");
                     return true;
                 }
                 break;
@@ -55,6 +69,8 @@ class TicketImportRuleCondition extends \Eloquent {
             case self::CONTAINS :
 
                 if (strpos($this->field, $this->value) !== false ){
+                    Log::info("contains compare ");
+
                     return true;
                 }
                 break;
@@ -62,6 +78,7 @@ class TicketImportRuleCondition extends \Eloquent {
             case self::DOES_NOT_CONTAIN:
 
                 if (strpos($this->field, $this->value) == false ){
+                    Log::info("doesnt contains compare ");
                     return true;
                 }
                 break;
@@ -70,6 +87,7 @@ class TicketImportRuleCondition extends \Eloquent {
 
                 $length = strlen($this->value);
                 if ( substr($this->field, 0, $length) === $this->value ) {
+                    Log::info("start with compare ");
                     return true;
                 }
                 break;
@@ -78,9 +96,11 @@ class TicketImportRuleCondition extends \Eloquent {
 
                 $length = strlen($this->value);
                 if ($length == 0) {
+                    Log::info("end with compare ");
                     return true;
                 }
                 if ( substr($this->field, -$length) === $this->value ) {
+                    Log::info("end with compare ");
                     return true;
                 }
                 break;
