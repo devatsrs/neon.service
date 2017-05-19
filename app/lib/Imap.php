@@ -488,7 +488,6 @@ protected $server;
 				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
 				
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
-				
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -586,7 +585,6 @@ protected $server;
 								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
-				
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto){
@@ -595,8 +593,12 @@ protected $server;
 					Log::info($header);
 					continue;
 				}
-
-
+				
+				$CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first(); 
+				if(count($CheckInboxGroup)>0){
+					$GroupID = $CheckInboxGroup->GroupID;
+				}
+				
 				$logData = [
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
