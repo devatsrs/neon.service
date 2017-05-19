@@ -597,53 +597,110 @@ protected $server;
 				}
 
 
+				$logData = [
+					'Requester'=> $from,
+					"RequesterName"=>$FromName,
+					"RequesterCC"=>$cc,
+					'Subject'=>$overview[0]->subject,
+					'Description'=>$message,
+					'CompanyID'=>$CompanyID,
+					"AttachmentPaths"=>$AttachmentPaths,
+					"Group"=>$GroupID,
+					"created_at"=>date('Y-m-d H:i:s'),
+					"Priority"=>$priority,
+					"Status"=> TicketsTable::getOpenTicketStatus(),
+					"created_by"=> 'RMScheduler'
+				];
+
+				$skip_email_notification = false;
 				if(!$parentTicket){
 					// New ticket
-				$logData = [
-						'Requester'=> $from,
-						"RequesterName"=>$FromName,
-						"RequesterCC"=>$cc,
-						'Subject'=>$overview[0]->subject,
-						'Description'=>$message,
-						'CompanyID'=>$CompanyID,
-						"AttachmentPaths"=>$AttachmentPaths,
-						"Group"=>$GroupID,
-						"created_at"=>date('Y-m-d H:i:s'),
-						"Priority"=>$priority,
-						"Status"=>TicketsTable::getOpenTicketStatus(),
-						"created_by"=> 'RMScheduler'
-					];
-					
+
 					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
-					$logData 		 	  = 	array_merge($logData,$MatchArray);						
-					$ticketID 			  =  	TicketsTable::insertGetId($logData); 
+					$logData 		 	  = 	array_merge($logData,$MatchArray);
+
+					$ticketID 			  =  	TicketsTable::insertGetId($logData);
+
+					// --------------- check for TicketImportRule ----------------
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$to,]);
+					try{
+						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					} catch ( \Exception $ex){
+
+						Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
+						Log::error("TicketRuleData");
+						Log::error($ticketRuleData);
+						Log::error(print_r($ex,true));
+					}
+
+					if(is_array($TicketImportRuleResult)) {
+						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction TicketDeleted");
+							continue;
+						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
+							$skip_email_notification = true;
+						} else {
+							Log::info("TicketImportRuleAction Result");
+							Log::info($TicketImportRuleResult);
+						}
+					}
+					// -------------------------------
+
 					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
-					if($GroupID){
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentAssignedGroup")));
-					}					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));				$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
+
+					if(!$skip_email_notification) {
+						if ($GroupID) {
+							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
+						}
+						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
+					}
 					
 				}
 				else //reopen ticket if ticket status closed 
 				{
 					
 					$ticketData  = TicketsTable::find($parentTicket);
-					
-					if($ticketData->Status==TicketsTable::getClosedTicketStatus() || $ticketData->Status==TicketsTable::getResolvedTicketStatus()){
-						TicketsTable::find($ticketData->TicketID)->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
-					}	
-				
-					
+
+					// --------------- check for TicketImportRule ----------------
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
+					$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+
+					if(is_array($TicketImportRuleResult)) {
+						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction TicketDeleted");
+							continue;
+						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
+							$skip_email_notification = true;
+						} else {
+							Log::info("TicketImportRuleAction Result");
+							Log::info($TicketImportRuleResult);
+						}
+					}
+					// -------------------------------
+
+					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
+						if(!$skip_email_notification) {
+							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
+						}
+					}
+
 					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){		
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message)); 
-						TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate"=>date('Y-m-d H:i:s'))); 
+						if($from==$ticketData->Requester){
+							if(!$skip_email_notification) {
+								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
+							}
+							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					//Email to all cc emails from main ticket.
-					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","Comment"=>$message,"NoteUser"=>$FromName,"CompanyID"=>$CompanyID));
+					if(!$skip_email_notification) {
+						//Email to all cc emails from main ticket.
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
+					}
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -727,8 +784,7 @@ protected $server;
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
 
 				try {
-					if(isset($ticketID))
-					{
+					if(isset($ticketID)){
 						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
 					}
 				} catch (Exception $ex) {

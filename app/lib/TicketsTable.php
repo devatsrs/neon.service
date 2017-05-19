@@ -3,7 +3,6 @@ namespace App\Lib;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Lib\TicketsTable;
 
 class TicketsTable extends \Eloquent {
 
@@ -174,6 +173,7 @@ class TicketsTable extends \Eloquent {
 	static function deleteTicket($TicketID) {
 		$Ticket = TicketsTable::find($TicketID);
 		if(!empty($Ticket) && isset($Ticket->TicketID) && $Ticket->TicketID > 0 ) {
+			AccountEmailLog::where(["TicketID"=>$TicketID])->delete();
 			$Ticket->delete();
 			Log::info("TicketDeleted " . $TicketID);
 			return true;
