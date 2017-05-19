@@ -1,8 +1,8 @@
 <?php
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Lib\TicketsTable;
 
 class TicketsTable extends \Eloquent {
 
@@ -169,5 +169,32 @@ class TicketsTable extends \Eloquent {
             ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_TYPE_FLD])->where(['tblTicketfieldsValues.ValuesID'=>$id])->pluck($fld);			
 			return $ValuesID;
 	}
-	
+
+	static function deleteTicket($TicketID) {
+		$Ticket = TicketsTable::find($TicketID);
+		if(!empty($Ticket) && isset($Ticket->TicketID) && $Ticket->TicketID > 0 ) {
+			TicketsDetails::where(["TicketID"=>$TicketID])->delete();
+			TicketLog::where(["TicketID"=>$TicketID])->delete();
+			AccountEmailLog::where(["TicketID"=>$TicketID])->delete();
+			$Ticket->delete();
+			Log::info("TicketDeleted " . $TicketID);
+			return true;
+		}
+		return false;
+	}
+	static function setTicketFieldValue($TicketID,$Field,$Value) {
+		$Ticket = TicketsTable::find($TicketID);
+		if(!empty($Ticket) && isset($Ticket->TicketID) && $Ticket->TicketID > 0 ) {
+
+			try{
+				if($Ticket->update([$Field=>$Value])){
+					return true;
+				}
+			} catch (\Exception $ex){
+				Log::info("Error with setTicketValue " );
+				Log::info(print_r($ex,true));
+			}
+		}
+		return false;
+	}
 }
