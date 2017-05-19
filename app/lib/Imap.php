@@ -398,7 +398,7 @@ protected $server;
     if ($body == "") {
         $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
     } 
-        return $body;
+        return html_entity_decode($body);
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
