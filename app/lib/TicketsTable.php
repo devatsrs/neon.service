@@ -173,6 +173,8 @@ class TicketsTable extends \Eloquent {
 	static function deleteTicket($TicketID) {
 		$Ticket = TicketsTable::find($TicketID);
 		if(!empty($Ticket) && isset($Ticket->TicketID) && $Ticket->TicketID > 0 ) {
+			TicketsDetails::where(["TicketID"=>$TicketID])->delete();
+			TicketLog::where(["TicketID"=>$TicketID])->delete();
 			AccountEmailLog::where(["TicketID"=>$TicketID])->delete();
 			$Ticket->delete();
 			Log::info("TicketDeleted " . $TicketID);
