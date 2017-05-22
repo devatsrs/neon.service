@@ -9,6 +9,7 @@ use App\Lib\CronJobLog;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\TempVendorCDR;
 use App\MOR;
 use Exception;
 use Illuminate\Console\Command;
@@ -73,6 +74,7 @@ class MORAccountUsage extends Command {
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         Log::useFiles(storage_path() . '/logs/moraccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
 
@@ -113,8 +115,8 @@ class MORAccountUsage extends Command {
 
 
 
-            $InserData = array();
-            $data_count = 0;
+            $InserData = $InserVData = array();
+            $data_count = $data_countv = 0;
             $insertLimit = 1000;
 
             $response = $mor->getAccountCDRs2($param);
@@ -125,11 +127,11 @@ class MORAccountUsage extends Command {
                     $data = array();
                     $data['CompanyGatewayID'] = $CompanyGatewayID;
                     $data['CompanyID'] = $CompanyID;
-                    if($companysetting->NameFormat == 'NUB') {
+                    if ($companysetting->NameFormat == 'NUB') {
                         $data['GatewayAccountID'] = $row_account['username'];
-                    }else if($companysetting->NameFormat == 'CLI'){
+                    } else if ($companysetting->NameFormat == 'CLI') {
                         $data['GatewayAccountID'] = $row_account['cli'];
-                    }else if($companysetting->NameFormat == 'IP'){
+                    } else if ($companysetting->NameFormat == 'IP') {
                         $data['GatewayAccountID'] = $row_account['originator_ip'];
                     }
                     $data['connect_time'] = $row_account['connect_time'];
@@ -141,7 +143,7 @@ class MORAccountUsage extends Command {
                     $data['billed_second'] = $row_account['billed_second'];
                     $data['duration'] = $row_account['duration'];
                     $data['trunk'] = 'Other';
-                    $data['area_prefix'] = 'Other';
+                    $data['area_prefix'] = sippy_vos_areaprefix($row_account['prefix'],$RateCDR);
                     $data['ProcessID'] = $processID;
                     $data['remote_ip'] = $row_account['originator_ip'];
                     $data['ServiceID'] = $ServiceID;
@@ -155,22 +157,64 @@ class MORAccountUsage extends Command {
                         $data_count = 0;
                     }
                 }// loop
+                if (!empty($InserData)) {
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                }
+                if ($companysetting->NameFormat == 'IP') {
+                    foreach ((array)$response as $row_account) {
+                        if(!empty($row_account['terminator_ip'])) {
+                            $vendorcdrdata = array();
+                            $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
+                            $vendorcdrdata['CompanyID'] = $CompanyID;
+                            $vendorcdrdata['GatewayAccountID'] = $row_account['terminator_ip'];
+                            $vendorcdrdata['connect_time'] = $row_account['connect_time'];
+                            $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
+                            $vendorcdrdata['buying_cost'] = (float)$row_account['provider_price'];
+                            $vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
+                            $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
+                            $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                            $vendorcdrdata['billed_duration'] = $row_account['billed_second'];
+                            $vendorcdrdata['billed_second'] = $row_account['billed_second'];
+                            $vendorcdrdata['duration'] = $row_account['duration'];
+                            $vendorcdrdata['trunk'] = 'Other';
+                            $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix($row_account['prefix'],$RateCDR);
+                            $vendorcdrdata['ProcessID'] = $processID;
+                            $vendorcdrdata['ServiceID'] = $ServiceID;
+                            $vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
+                            $vendorcdrdata['ID'] = $row_account['ID'];
+                            $InserVData[] = $vendorcdrdata;
+                            $data_countv++;
+                            if ($data_countv > $insertLimit && !empty($InserVData)) {
+                                DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                                $InserVData = array();
+                                $data_countv = 0;
+                            }
+                        }
+                    }// loop
+                    if (!empty($InserVData)) {
+                        DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                    }
+                }
             }
 
-            if (!empty($InserData)) {
-                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-            }
+
             date_default_timezone_set(Config::get('app.timezone'));
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
 
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' ) end");
+
             Log::error("MOR CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== MOR transaction end =============================');
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
@@ -185,6 +229,7 @@ class MORAccountUsage extends Command {
 
             Log::error('MOR prc_insertCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('MOR prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
@@ -200,7 +245,8 @@ class MORAccountUsage extends Command {
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
 
-            DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+            DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+            DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
 
         } catch (\Exception $e) {
@@ -214,7 +260,8 @@ class MORAccountUsage extends Command {
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
             } catch (\Exception $err) {
                 Log::error($err);
