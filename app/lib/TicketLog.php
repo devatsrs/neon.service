@@ -42,6 +42,7 @@ class TicketLog extends \Eloquent
             'AccountID' => $AccountID,
             'CompanyID' => $CompanyID,
             'TicketID' => $TicketID,
+			"NewTicket" =>1,
             'created_at' => date("Y-m-d H:i:s")];
         TicketLog::insert($data);
     }
