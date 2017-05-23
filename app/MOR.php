@@ -12,7 +12,7 @@ class MOR{
     private static $config = array();
     private static $cli;
     private static $timeout=0; /* 60 seconds timeout */
-    private static $dbname1 = 'MOR_CDR';
+    private static $dbname1 = 'mor';
 
    public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'MOR');
