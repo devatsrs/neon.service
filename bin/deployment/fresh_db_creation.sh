@@ -16,6 +16,8 @@ echo "Importing Prepared sql files for new DBs."
 cat <<EOT >> ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 USE \`${DB_DATABASE}\`;
 
+Update mysql.proc  SET \`definer\` = 'root@localhost' where \`db\` != 'sys';
+
 INSERT INTO tblServerInfo (CompanyID, ServerInfoTitle, ServerInfoUrl, created_at, CreatedBy, updated_at) VALUES (1, '_DB_COMPANY_NAME_', '_HOST_DOMAIN_URL_:19999', '2017-02-22 00:00:00', 'Setup Script', '2017-02-22 00:00:00');
 
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'SSH', '{"host":"_SSH_HOST_","username":"_SSH_HOST_USER_","password":"_SSH_HOST_PASS_"}');
@@ -73,7 +75,7 @@ INSERT INTO tblCompany (CompanyID, CompanyName,  CustomerAccountPrefix, FirstNam
 VALUES (1, '${DB_COMPANY_NAME}', '22221', '${FIRST_NAME}', '${LAST_NAME}', '${COMPANY_EMAIL}', '',  1, 'Etc/GMT', '2017-02-17 10:12:25', 'Dev');
 
 INSERT INTO tblUser (UserID, CompanyID, FirstName, LastName, EmailAddress, password, AdminUser, AccountingUser, Status, Roles, remember_token, updated_at, created_at, created_by, updated_by, EmailFooter, Color, JobNotification)
-VALUES (1, 1, '${FIRST_NAME}', '${LAST_NAME}', '${COMPANY_EMAIL}', '$2y$10$PlVXiwVLUxkuiwSyKQJyUeHAVysVkya6VDuinVOrG2GLTmPr1wk4.', 1, 1, 1, 'Admin,Billing Admin', 'mJZaptV7wrwCooghFLeaFtXfQcG3dgAYasFMPzlWGEWuUAxrZ8EqTZF8f1sA', '2016-11-17 10:26:12', '2015-02-07 07:24:02', NULL, '${FIRST_NAME} ${LAST_NAME}', 'From ,<br><br><b>${FIRST_NAME} ${LAST_NAME}</b><br><br>', '', 1);
+VALUES (1, 1, '${FIRST_NAME}', '${LAST_NAME}', '${COMPANY_EMAIL}', '$2y$10$sq90tpZqfyZwpkolmUAag.TEGKl1lscgYbuVSIjPnGi9hswll4Xom', 1, 1, 1, 'Admin,Billing Admin', 'mJZaptV7wrwCooghFLeaFtXfQcG3dgAYasFMPzlWGEWuUAxrZ8EqTZF8f1sA', '2016-11-17 10:26:12', '2015-02-07 07:24:02', NULL, '${FIRST_NAME} ${LAST_NAME}', 'From ,<br><br><b>${FIRST_NAME} ${LAST_NAME}</b><br><br>', '', 1);
 
 
 INSERT INTO tblCRMBoards (CompanyID, BoardName, Status, BoardType, CreatedBy, created_at)
@@ -136,6 +138,12 @@ INSERT INTO \`tblTicketSlaPolicyViolation\` (\`ViolationID\`, \`TicketSlaID\`, \
 	(2, 1, 'immediately', '0', 1, '2017-05-08 10:44:22', NULL, '2017-05-08 10:44:22', NULL);
 
 
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (1, 1, 61, 'Active Cron Job Email', '{"AlertEmailInterval":"60","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (2, 1, 60, 'Activity Reminder', '{"ThresholdTime":"60","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"8:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (3, 1, 57, 'Auto Invoice Generator', '{"ThresholdTime":"120","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"7:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (4, 1, 17, 'DB CleanUp', '{"ThresholdTime":"120","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (5, 1, 18, 'Server CleanUP', '{"ThresholdTime":"120","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"2:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
+INSERT INTO tblCronJob (CronJobID, CompanyID, CronJobCommandID, JobTitle, Settings, \`Status\`, created_at, created_by) VALUES (6, 1, 70, 'System Alerts', '{"ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"5","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM"}', 1, '2017-05-22 00:00:00', 'System');
 
 -- # One time set up for dim tables
 USE ${DB_DATABASEREPORT};
