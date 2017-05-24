@@ -44,6 +44,7 @@ mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblRateSheetFormate >> ${
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblPermission >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResource >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategories >> ${POST_INSTALLATION_SQL_SCRIPT}
+mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategoriesGroups >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblRate >> ${POST_INSTALLATION_SQL_SCRIPT}

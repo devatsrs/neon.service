@@ -11,6 +11,19 @@ exit
 
 -------------------------------------
 
+useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
+passwd webcdr
+https://lastpass.com/generatepassword.php
+19I7Pbwr0n24
+
+su webcdr
+mkdir ~webcdr/bin
+mkdir ~webcdr/cdr_data
+chown -R webcdr ~webcdr
+chmod -R 0755 ~webcdr/
+
+-----------------------
+
 #create .my.cnf , copy code from .my.cnf and past after following command
 cat > /home/webcdr/.my.cnf
 
@@ -26,18 +39,6 @@ chown webcdr /home/webcdr/.my.cnf chmod 600 /home/webcdr/.my.cnf
 
 ---------------------------------
 
-useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
-passwd webcdr
-https://lastpass.com/generatepassword.php
-19I7Pbwr0n24
-
-su webcdr
-mkdir ~webcdr/bin
-mkdir ~webcdr/cdr_data
-chown -R webcdr ~webcdr
-chmod -R 0755 ~webcdr/
-
------------------------
 https://github.com/earlruby/extract_vos3000_data
 
 Generally server timezone and db timezones are same but
