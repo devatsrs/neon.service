@@ -1677,6 +1677,15 @@ INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID
 INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (9, 'group', 'Group', NULL, NULL, NULL, NULL);
 
 
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'delete_ticket', 'Delete the Ticket', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'skip_notification', 'Skip New Ticket Email Notifications', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'set_priority', 'Set Priority as', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'set_status', 'Set Status as', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (5, 'set_agent', 'Assign to Agent', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'set_group', 'Assign to Group', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'set_type', 'Set Type as', NULL, NULL, NULL, NULL);
+
+
 -- Billing
 
 USE `RMBilling3`;
