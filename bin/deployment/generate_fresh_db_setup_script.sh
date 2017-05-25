@@ -47,6 +47,7 @@ mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategories >> 
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblResourceCategoriesGroups >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblIntegration >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblTicketImportRuleConditionType >> ${POST_INSTALLATION_SQL_SCRIPT}
+mysqldump --compact --no-create-info  ${STAGING_RM_DB} tblTicketImportRuleActionType >> ${POST_INSTALLATION_SQL_SCRIPT}
 mysqldump --compact --no-create-info -w 'CodeDeckId = 1' ${WHOLESALE_RM_DB} tblRate >> ${POST_INSTALLATION_SQL_SCRIPT}
 
 #Backup for rollback  --------
