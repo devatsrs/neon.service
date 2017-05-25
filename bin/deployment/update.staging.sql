@@ -7059,7 +7059,7 @@ BEGIN
 			 InvoiceID
 	from tblTempPayment tp
 	INNER JOIN Ratemanagement3.tblAccount ac
-		ON  ac.AccountID = tp.AccountID  and ac.AccountType = 1
+		ON  ac.AccountID = tp.AccountID  and ac.AccountType = 1 and ac.CurrencyId IS NOT NULL
 	where tp.ProcessID = p_ProcessID
 			AND tp.PaymentDate <= NOW()
 			AND tp.CompanyID = p_CompanyID;
@@ -8914,6 +8914,15 @@ SET SESSION group_concat_max_len=5000;
 		AND pt.ProcessID = p_ProcessID;
 
 
+		INSERT INTO tmp_error_
+	SELECT DISTINCT
+		CONCAT('Currency Not Set - Account: ',IFNULL(ac.AccountName,''),' Action: ' ,IFNULL(pt.PaymentType,''),' Payment Date: ',IFNULL(pt.PaymentDate,''),' Amount: ',pt.Amount) as ErrorMessage
+	FROM tblTempPayment pt
+	INNER JOIN Ratemanagement3.tblAccount ac on ac.AccountID = pt.AccountID
+			and ac.AccountType = 1
+		WHERE pt.CompanyID = p_CompanyID
+		   AND ac.CurrencyId IS NULL
+			AND pt.ProcessID = p_ProcessID;
 
 
 	IF (SELECT COUNT(*) FROM tmp_error_) > 0
