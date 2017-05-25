@@ -43,8 +43,10 @@ ALTER TABLE `tblAccount`
   , DROP COLUMN `BillingStartDate`
   , DROP COLUMN `LastInvoiceDate`
   , DROP COLUMN `NextInvoiceDate`
-  , DROP COLUMN `CustomerCLI`
-  , MODIFY COLUMN `ResellerEmail` varchar(200) NULL;
+  , DROP COLUMN `CustomerCLI`  ;
+
+  ALTER TABLE `tblAccount`
+  MODIFY COLUMN `ResellerEmail` varchar(200) NULL;
 
 
 ALTER TABLE `tblAccountBilling`
@@ -1663,6 +1665,17 @@ DELIMITER ;
 -- girish auto service migrate existing
 CALL migrateService();
 
+-- Umer ticket Import Rules
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'from_email', 'Requester Email', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'to_email', 'To Email', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'subject', 'Subject', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'description', 'Description', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (5, 'subject_or_description', 'Subject or Description', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'priority', 'Priority', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'status', 'Status', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (8, 'agent', 'Agent', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (9, 'group', 'Group', NULL, NULL, NULL, NULL);
+
 
 -- Billing
 
@@ -1674,8 +1687,6 @@ ALTER TABLE `tblAccountSubscription`
   MODIFY COLUMN `AnnuallyFee` decimal(18,2) NULL
   , MODIFY COLUMN `QuarterlyFee` decimal(18,2) NULL;
 
-ALTER TABLE `tblBillingSubscription`
-  CHANGE COLUMN `AnuallyFee` `AnuallyFee__delete` decimal(18,2) NULL DEFAULT NULL;
 
 ALTER TABLE `tblBillingSubscription`
   MODIFY COLUMN `QuarterlyFee` decimal(18,2) NULL;
@@ -9316,7 +9327,7 @@ CREATE TABLE `tblHeader` (
   `DateID` bigint(20) NOT NULL,
   `CompanyID` int(11) NULL,
   `AccountID` int(11) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `TotalCharges` double NULL,
   `TotalBilledDuration` int(11) NULL,
   `TotalDuration` int(11) NULL,
@@ -9334,7 +9345,7 @@ CREATE TABLE `tblHeaderV` (
   `DateID` bigint(20) NOT NULL,
   `CompanyID` int(11) NULL,
   `VAccountID` int(11) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `TotalCharges` double NULL,
   `TotalSales` double NULL,
   `TotalBilledDuration` int(11) NULL,

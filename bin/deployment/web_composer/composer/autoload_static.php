@@ -278,6 +278,10 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
             array (
                 0 => __DIR__ . '/..' . '/filp/whoops/src',
             ),
+            'Webpatser\\Uuid' => 
+            array (
+                0 => __DIR__ . '/..' . '/webpatser/laravel-uuid/src',
+            ),
             'Way\\Generators' => 
             array (
                 0 => __DIR__ . '/..' . '/way/generators/src',
@@ -589,6 +593,7 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'EstimateTaxRate' => __DIR__ . '/../..' . '/app/models/EstimateTaxRate.php',
         'EstimatesController' => __DIR__ . '/../..' . '/app/controllers/EstimatesController.php',
         'FTP' => __DIR__ . '/../..' . '/app/lib/FTP.php',
+        'FTPCDRTemplateController' => __DIR__ . '/../..' . '/app/controllers/FTPCDRTemplateController.php',
         'FileUploadTemplate' => __DIR__ . '/../..' . '/app/models/FileUploadTemplate.php',
         'Fixed_Positioner' => __DIR__ . '/..' . '/dompdf/dompdf/include/fixed_positioner.cls.php',
         'Font' => __DIR__ . '/..' . '/phenx/php-font-lib/classes/Font.php',
@@ -686,6 +691,7 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'List_Bullet_Positioner' => __DIR__ . '/..' . '/dompdf/dompdf/include/list_bullet_positioner.cls.php',
         'List_Bullet_Renderer' => __DIR__ . '/..' . '/dompdf/dompdf/include/list_bullet_renderer.cls.php',
         'Locale' => __DIR__ . '/..' . '/symfony/intl/Resources/stubs/Locale.php',
+        'MOR' => __DIR__ . '/../..' . '/app/lib/MOR.php',
         'Maatwebsite\\Excel\\Classes\\Cache' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/Cache.php',
         'Maatwebsite\\Excel\\Classes\\FormatIdentifier' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/FormatIdentifier.php',
         'Maatwebsite\\Excel\\Classes\\LaravelExcelWorksheet' => __DIR__ . '/..' . '/maatwebsite/excel/src/Maatwebsite/Excel/Classes/LaravelExcelWorksheet.php',
@@ -839,6 +845,12 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'TicketEmails' => __DIR__ . '/../..' . '/app/lib/TicketEmails.php',
         'TicketGroupAgents' => __DIR__ . '/../..' . '/app/models/TicketGroupAgents.php',
         'TicketGroups' => __DIR__ . '/../..' . '/app/models/TicketGroups.php',
+        'TicketImportRule' => __DIR__ . '/../..' . '/app/models/TicketImportRule.php',
+        'TicketImportRuleAction' => __DIR__ . '/../..' . '/app/models/TicketImportRuleAction.php',
+        'TicketImportRuleActionType' => __DIR__ . '/../..' . '/app/models/TicketImportRuleActionType.php',
+        'TicketImportRuleCondition' => __DIR__ . '/../..' . '/app/models/TicketImportRuleCondition.php',
+        'TicketImportRuleConditionType' => __DIR__ . '/../..' . '/app/models/TicketImportRuleConditionType.php',
+        'TicketImportRulesController' => __DIR__ . '/../..' . '/app/controllers/TicketImportRulesController.php',
         'TicketLog' => __DIR__ . '/../..' . '/app/models/TicketLog.php',
         'TicketPriority' => __DIR__ . '/../..' . '/app/models/TicketPriority.php',
         'TicketSla' => __DIR__ . '/../..' . '/app/models/TicketSla.php',
