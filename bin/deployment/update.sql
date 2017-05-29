@@ -17,8 +17,10 @@ ALTER TABLE `tblAccountBilling`
   , DROP COLUMN `RoundChargesAmount`
   , DROP COLUMN `CDRType`
   , DROP COLUMN `InvoiceTemplateID`
-  , DROP COLUMN `TaxRateId`
-  , ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
+  , DROP COLUMN `TaxRateId`  ;
+
+ALTER TABLE `tblAccountBilling`
+  ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
 ALTER TABLE `tblAccountBilling` ADD UNIQUE KEY `AccountID`(`ServiceID`,`AccountID`);
 
@@ -71,31 +73,6 @@ ALTER TABLE `tblEmailTemplate`
 ALTER TABLE `tblHelpDeskTickets`
   ADD COLUMN `ContactID` int(11) NULL;
 
-CREATE TABLE `tblHelpDeskTicketsdevtest` (
-  `ID` int(11) NOT NULL auto_increment,
-  `CompanyID` int(11) NULL,
-  `AccountID` int(11) NULL,
-  `TicketID` int(11) NULL,
-  `Subject` varchar(200) NOT NULL,
-  `Description` text NOT NULL,
-  `Priority` varchar(100) NULL,
-  `Status` varchar(100) NULL,
-  `Type` varchar(100) NULL,
-  `GUID` varchar(100) NULL,
-  `Group` varchar(100) NULL,
-  `to_emails` varchar(500) NULL,
-  `RequestEmail` varchar(100) NULL,
-  `TicketType` tinyint(4) NOT NULL DEFAULT 0,
-  `TicketAgent` int(11) NOT NULL DEFAULT '0',
-  `ApiCreatedDate` datetime NULL,
-  `ApiUpdateDate` datetime NULL,
-  `created_at` datetime NULL,
-  `created_by` varchar(100) NULL,
-  `updated_at` datetime NULL,
-  `updated_by` varchar(100) NULL,
-  PRIMARY KEY (`ID`)
-) ENGINE=InnoDB COMMENT='Fresh desk tickets will save  here temporarily
-prc_getAccountTimeLine will use it';
 
 ALTER TABLE `tblNote`
   ADD COLUMN `UserID` int(11) NOT NULL DEFAULT '0'
@@ -544,7 +521,7 @@ END IF;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_AccountPaymentReminder`;
+DROP PROCEDURE IF EXISTS `prc_AccountPaymentReminder`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_AccountPaymentReminder`(
@@ -581,7 +558,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_AddAccountIPCLI`;
+DROP PROCEDURE IF EXISTS `prc_AddAccountIPCLI`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_AddAccountIPCLI`(
@@ -747,7 +724,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_applyAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_applyAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_applyAccountDiscountPlan`(
@@ -1311,7 +1288,7 @@ SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_checkCustomerCli`;
+DROP PROCEDURE IF EXISTS `prc_checkCustomerCli`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_checkCustomerCli`(
@@ -1507,7 +1484,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_getAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountDiscountPlan`(
@@ -1545,7 +1522,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetAccounts`;
+DROP PROCEDURE IF EXISTS `prc_GetAccounts`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetAccounts`(
@@ -1774,7 +1751,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountTimeLine`;
+DROP PROCEDURE IF EXISTS `prc_getAccountTimeLine`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountTimeLine`(
@@ -1945,7 +1922,7 @@ END IF;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetAjaxResourceList`;
+DROP PROCEDURE IF EXISTS `prc_GetAjaxResourceList`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetAjaxResourceList`(
@@ -2042,7 +2019,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetBlockUnblockAccount`;
+DROP PROCEDURE IF EXISTS `prc_GetBlockUnblockAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetBlockUnblockAccount`(
@@ -2079,7 +2056,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getContactTimeLine`;
+DROP PROCEDURE IF EXISTS `prc_getContactTimeLine`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getContactTimeLine`(
@@ -2207,7 +2184,7 @@ WHERE
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCrmDashboardSalesManager`;
+DROP PROCEDURE IF EXISTS `prc_GetCrmDashboardSalesManager`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCrmDashboardSalesManager`(
@@ -2307,7 +2284,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCrmDashboardSalesUser`;
+DROP PROCEDURE IF EXISTS `prc_GetCrmDashboardSalesUser`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCrmDashboardSalesUser`(
@@ -2364,7 +2341,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getCustomerCodeRate`;
+DROP PROCEDURE IF EXISTS `prc_getCustomerCodeRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getCustomerCodeRate`(
@@ -2539,7 +2516,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getCustomerInboundRate`;
+DROP PROCEDURE IF EXISTS `prc_getCustomerInboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getCustomerInboundRate`(
@@ -3533,7 +3510,7 @@ END IF;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_LowBalanceReminder`;
+DROP PROCEDURE IF EXISTS `prc_LowBalanceReminder`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_LowBalanceReminder`(
@@ -3571,7 +3548,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcessDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_ProcessDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcessDiscountPlan`(
@@ -3664,7 +3641,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RateTableRateInsertUpdate`;
+DROP PROCEDURE IF EXISTS `prc_RateTableRateInsertUpdate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RateTableRateInsertUpdate`(IN `p_CompanyID` INT, IN `p_RateTableRateID` LONGTEXT
@@ -3923,7 +3900,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_setAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_setAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_setAccountDiscountPlan`(
@@ -4051,7 +4028,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_WSProcessImportAccount`;
+DROP PROCEDURE IF EXISTS `prc_WSProcessImportAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_WSProcessImportAccount`(
@@ -4667,7 +4644,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetail`(
@@ -4759,7 +4736,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetailbyProcessID`;
+DROP PROCEDURE IF EXISTS `fnUsageDetailbyProcessID`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetailbyProcessID`(IN `p_ProcessID` VARCHAR(200)
@@ -4810,7 +4787,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetailbyUsageHeaderID`;
+DROP PROCEDURE IF EXISTS `fnUsageDetailbyUsageHeaderID`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetailbyUsageHeaderID`( 
@@ -4858,7 +4835,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnVendorUsageDetail`;
+DROP PROCEDURE IF EXISTS `fnVendorUsageDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnVendorUsageDetail`(
@@ -5144,7 +5121,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_checkCDRIsLoadedOrNot`;
+DROP PROCEDURE IF EXISTS `prc_checkCDRIsLoadedOrNot`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_checkCDRIsLoadedOrNot`(IN `p_AccountID` INT, IN `p_CompanyID` INT, IN `p_UsageEndDate` DATETIME )
@@ -5188,7 +5165,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_Convert_Invoices_to_Estimates`;
+DROP PROCEDURE IF EXISTS `prc_Convert_Invoices_to_Estimates`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_Convert_Invoices_to_Estimates`(
@@ -5365,7 +5342,7 @@ where
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_CreateInvoiceFromRecurringInvoice`;
+DROP PROCEDURE IF EXISTS `prc_CreateInvoiceFromRecurringInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_CreateInvoiceFromRecurringInvoice`(
@@ -5708,7 +5685,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_CustomerPanel_getInvoice`;
+DROP PROCEDURE IF EXISTS `prc_CustomerPanel_getInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_CustomerPanel_getInvoice`(
@@ -5899,7 +5876,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_DeleteCDR`;
+DROP PROCEDURE IF EXISTS `prc_DeleteCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteCDR`(
@@ -5982,7 +5959,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_DeleteVCDR`;
+DROP PROCEDURE IF EXISTS `prc_DeleteVCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteVCDR`(
@@ -6060,7 +6037,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountInvoiceTotal`;
+DROP PROCEDURE IF EXISTS `prc_getAccountInvoiceTotal`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountInvoiceTotal`(
@@ -6112,7 +6089,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountNameByGatway`;
+DROP PROCEDURE IF EXISTS `prc_getAccountNameByGatway`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountNameByGatway`(IN `p_company_id` INT, IN `p_gatewayid` INT
@@ -6403,7 +6380,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getActiveGatewayAccount`;
+DROP PROCEDURE IF EXISTS `prc_getActiveGatewayAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getActiveGatewayAccount`(
@@ -6526,7 +6503,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getBillingSubscription`;
+DROP PROCEDURE IF EXISTS `prc_getBillingSubscription`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getBillingSubscription`(
@@ -6656,7 +6633,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCDR`;
+DROP PROCEDURE IF EXISTS `prc_GetCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCDR`(
@@ -6772,7 +6749,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpense`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpense`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpense`(
@@ -7027,7 +7004,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpenseDrilDown`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpenseDrilDown`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpenseDrilDown`(IN `p_CompanyID` INT, IN `p_CurrencyID` INT, IN `p_StartDate` VARCHAR(50), IN `p_EndDate` VARCHAR(50), IN `p_Type` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_CustomerID` INT, IN `p_Export` INT)
@@ -7287,7 +7264,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpenseTotalOutstanding`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpenseTotalOutstanding`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpenseTotalOutstanding`(
@@ -7511,7 +7488,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashBoardPinCodes`;
+DROP PROCEDURE IF EXISTS `prc_getDashBoardPinCodes`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashBoardPinCodes`(IN `p_CompanyID` INT, IN `p_StartDate` DATE, IN `p_EndDate` DATE, IN `p_AccountID` INT, IN `p_Type` INT, IN `p_Limit` INT, IN `p_PinExt` VARCHAR(50), IN `p_CurrencyID` INT)
@@ -7579,7 +7556,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardTotalOutStanding`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardTotalOutStanding`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardTotalOutStanding`(
@@ -7644,7 +7621,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDisputeDetail`;
+DROP PROCEDURE IF EXISTS `prc_getDisputeDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDisputeDetail`(IN `p_CompanyID` INT, IN `p_DisputeID` INT)
@@ -7695,7 +7672,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDisputes`;
+DROP PROCEDURE IF EXISTS `prc_getDisputes`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDisputes`(IN `p_CompanyID` INT, IN `p_InvoiceType` INT, IN `p_AccountID` INT, IN `p_InvoiceNumber` VARCHAR(100), IN `p_Status` INT, IN `p_StartDate` DATETIME, IN `p_EndDate` DATETIME, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_Export` INT)
@@ -7845,7 +7822,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDueInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getDueInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDueInvoice`(
@@ -7885,7 +7862,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getEstimate`;
+DROP PROCEDURE IF EXISTS `prc_getEstimate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getEstimate`(
@@ -8037,7 +8014,7 @@ BEGIN
     END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetEstimateLog`;
+DROP PROCEDURE IF EXISTS `prc_GetEstimateLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetEstimateLog`(IN `p_CompanyID` INT, IN `p_EstimateID` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_isExport` INT)
@@ -8116,7 +8093,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getInvoice`(
@@ -8420,7 +8397,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetInvoiceLog`;
+DROP PROCEDURE IF EXISTS `prc_GetInvoiceLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetInvoiceLog`(
@@ -8513,7 +8490,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetInvoiceTransactionLog`;
+DROP PROCEDURE IF EXISTS `prc_GetInvoiceTransactionLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetInvoiceTransactionLog`(
@@ -8641,7 +8618,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getInvoiceUsage`;
+DROP PROCEDURE IF EXISTS `prc_getInvoiceUsage`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getInvoiceUsage`(
@@ -8727,7 +8704,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getMissingAccounts`;
+DROP PROCEDURE IF EXISTS `prc_getMissingAccounts`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getMissingAccounts`(IN `p_CompanyID` int, IN `p_CompanyGatewayID` INT)
@@ -8744,7 +8721,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPaymentPendingInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getPaymentPendingInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPaymentPendingInvoice`(
@@ -8783,7 +8760,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPayments`;
+DROP PROCEDURE IF EXISTS `prc_getPayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPayments`(
@@ -8992,7 +8969,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPincodesGrid`;
+DROP PROCEDURE IF EXISTS `prc_getPincodesGrid`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPincodesGrid`(IN `p_CompanyID` INT, IN `p_Pincode` VARCHAR(50), IN `p_PinExt` VARCHAR(50), IN `p_StartDate` DATE, IN `p_EndDate` DATE, IN `p_AccountID` INT, IN `p_CurrencyID` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_isExport` INT)
@@ -9068,7 +9045,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetRecurringInvoiceLog`;
+DROP PROCEDURE IF EXISTS `prc_GetRecurringInvoiceLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetRecurringInvoiceLog`(
@@ -9148,7 +9125,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getRecurringInvoices`;
+DROP PROCEDURE IF EXISTS `prc_getRecurringInvoices`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getRecurringInvoices`(
@@ -9249,7 +9226,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSOA`;
+DROP PROCEDURE IF EXISTS `prc_getSOA`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSOA`(
@@ -9781,7 +9758,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSOA_invoicenumber`;
+DROP PROCEDURE IF EXISTS `prc_getSOA_invoicenumber`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSOA_invoicenumber`(IN `p_CompanyID` INT, IN `p_accountID` INT, IN `p_StartDate` datetime, IN `p_EndDate` datetime, IN `p_isExport` INT )
@@ -10177,7 +10154,7 @@ BEGIN
   END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByCountry`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByCountry`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByCountry`(
@@ -10301,7 +10278,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByCustomer`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByCustomer`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByCustomer`(
@@ -10404,7 +10381,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByPrefix`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByPrefix`(
@@ -10558,7 +10535,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetTransactionsLogbyInterval`;
+DROP PROCEDURE IF EXISTS `prc_GetTransactionsLogbyInterval`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetTransactionsLogbyInterval`(IN `p_CompanyID` int, IN `p_Interval` varchar(50) )
@@ -10595,7 +10572,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetVendorCDR`;
+DROP PROCEDURE IF EXISTS `prc_GetVendorCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetVendorCDR`(
@@ -10699,7 +10676,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertPayments`;
+DROP PROCEDURE IF EXISTS `prc_insertPayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertPayments`(
@@ -10771,7 +10748,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_InsertTempReRateCDR`;
+DROP PROCEDURE IF EXISTS `prc_InsertTempReRateCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_InsertTempReRateCDR`(
@@ -11041,7 +11018,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcesssCDR`;
+DROP PROCEDURE IF EXISTS `prc_ProcesssCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcesssCDR`(
@@ -11149,7 +11126,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcesssVCDR`;
+DROP PROCEDURE IF EXISTS `prc_ProcesssVCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcesssVCDR`(
@@ -11443,7 +11420,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RerateInboundCalls`;
+DROP PROCEDURE IF EXISTS `prc_RerateInboundCalls`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RerateInboundCalls`(
@@ -11796,7 +11773,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_start_end_time`;
+DROP PROCEDURE IF EXISTS `prc_start_end_time`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_start_end_time`(IN `p_ProcessID` VARCHAR(2000), IN `p_tbltempusagedetail_name` VARCHAR(50))
@@ -11817,7 +11794,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateDefaultPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateDefaultPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateDefaultPrefix`(IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -11912,7 +11889,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateDefaultVendorPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateDefaultVendorPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateDefaultVendorPrefix`(IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12007,7 +11984,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateInboundPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateInboundPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateInboundPrefix`(
@@ -12098,7 +12075,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateInboundRate`;
+DROP PROCEDURE IF EXISTS `prc_updateInboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateInboundRate`(
@@ -12158,7 +12135,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateOutboundRate`;
+DROP PROCEDURE IF EXISTS `prc_updateOutboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateOutboundRate`(
@@ -12218,7 +12195,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updatePrefix`;
+DROP PROCEDURE IF EXISTS `prc_updatePrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updatePrefix`(
@@ -12340,7 +12317,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateSOAOffSet`;
+DROP PROCEDURE IF EXISTS `prc_updateSOAOffSet`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateSOAOffSet`(
@@ -12419,7 +12396,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorPrefix`(IN `p_AccountID` INT, IN `p_TrunkID` INT, IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12501,7 +12478,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorRate`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorRate`(IN `p_AccountID` INT, IN `p_TrunkID` INT, IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12553,7 +12530,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_validatePayments`;
+DROP PROCEDURE IF EXISTS `prc_validatePayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_validatePayments`(
@@ -12664,7 +12641,7 @@ CREATE INDEX `IX_ID` ON `tblVendorCDRFailed`(`ID`);
 ALTER TABLE `tblVendorCDRHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
-DROP PROCEDURE `prc_DeleteDuplicateUniqueID`;
+DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteDuplicateUniqueID`(IN `p_CompanyID` INT, IN `p_CompanyGatewayID` INT, IN `p_ProcessID` VARCHAR(200), IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12704,7 +12681,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertCDR`;
+DROP PROCEDURE IF EXISTS `prc_insertCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertCDR`(
@@ -12791,7 +12768,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertVendorCDR`;
+DROP PROCEDURE IF EXISTS `prc_insertVendorCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertVendorCDR`(
@@ -12874,7 +12851,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_PostProcessCDR`;
+DROP PROCEDURE IF EXISTS `prc_PostProcessCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_PostProcessCDR`(IN `p_CompanyID` INT)
@@ -12928,7 +12905,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RetailMonitorCalls`;
+DROP PROCEDURE IF EXISTS `prc_RetailMonitorCalls`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RetailMonitorCalls`(
@@ -13008,7 +12985,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_unsetCDRUsageAccount`;
+DROP PROCEDURE IF EXISTS `prc_unsetCDRUsageAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_unsetCDRUsageAccount`(
@@ -13079,6 +13056,48 @@ END|
 DELIMITER ;
 
 USE `StagingReport`;
+
+CREATE TABLE `tblHeader` (
+	`HeaderID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`DateID` BIGINT(20) NOT NULL,
+	`CompanyID` INT(11) NULL DEFAULT NULL,
+	`AccountID` INT(11) NULL DEFAULT NULL,
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`TotalCharges` DOUBLE NULL DEFAULT NULL,
+	`TotalBilledDuration` INT(11) NULL DEFAULT NULL,
+	`TotalDuration` INT(11) NULL DEFAULT NULL,
+	`NoOfCalls` INT(11) NULL DEFAULT NULL,
+	`NoOfFailCalls` INT(11) NULL DEFAULT NULL,
+	PRIMARY KEY (`HeaderID`),
+	UNIQUE INDEX `Unique_key` (`DateID`, `AccountID`),
+	INDEX `FK_tblSummaryHeaderNew_dim_date` (`DateID`),
+	INDEX `IX_CompanyID` (`CompanyID`),
+	CONSTRAINT `tblHeader_ibfk_1` FOREIGN KEY (`DateID`) REFERENCES `tblDimDate` (`DateID`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB
+;
+
+CREATE TABLE `tblHeaderV` (
+	`HeaderVID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`DateID` BIGINT(20) NOT NULL,
+	`CompanyID` INT(11) NULL DEFAULT NULL,
+	`VAccountID` INT(11) NULL DEFAULT NULL,
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`TotalCharges` DOUBLE NULL DEFAULT NULL,
+	`TotalSales` DOUBLE NULL DEFAULT NULL,
+	`TotalBilledDuration` INT(11) NULL DEFAULT NULL,
+	`TotalDuration` INT(11) NULL DEFAULT NULL,
+	`NoOfCalls` INT(11) NULL DEFAULT NULL,
+	`NoOfFailCalls` INT(11) NULL DEFAULT NULL,
+	PRIMARY KEY (`HeaderVID`),
+	UNIQUE INDEX `Unique_key` (`DateID`, `VAccountID`),
+	INDEX `FK_tblHeaderV_dim_date` (`DateID`),
+	INDEX `IX_CompanyID` (`CompanyID`),
+	CONSTRAINT `tblHeader_ibfk_2` FOREIGN KEY (`DateID`) REFERENCES `tblDimDate` (`DateID`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
 
 DROP INDEX `IX_CompanyID` ON `tblHeader`;
 
@@ -13238,7 +13257,7 @@ RETURN v_Round_;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetCountry`;
+DROP PROCEDURE IF EXISTS `fnGetCountry`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetCountry`()
@@ -13259,7 +13278,7 @@ SELECT CountryID,Prefix,Country,ISO2,ISO3 FROM Ratemanagement3.tblCountry;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fngetDefaultCodes`;
+DROP PROCEDURE IF EXISTS `fngetDefaultCodes`;
 
 DELIMITER |
 CREATE PROCEDURE `fngetDefaultCodes`(IN `p_CompanyID` INT)
@@ -13287,7 +13306,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetUsageForSummary`;
+DROP PROCEDURE IF EXISTS `fnGetUsageForSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetUsageForSummary`(
@@ -13352,7 +13371,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetUsageForSummaryLive`;
+DROP PROCEDURE IF EXISTS `fnGetUsageForSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetUsageForSummaryLive`(
@@ -13417,7 +13436,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetVendorUsageForSummary`;
+DROP PROCEDURE IF EXISTS `fnGetVendorUsageForSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetVendorUsageForSummary`(
@@ -13483,7 +13502,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetVendorUsageForSummaryLive`;
+DROP PROCEDURE IF EXISTS `fnGetVendorUsageForSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetVendorUsageForSummaryLive`(
@@ -13550,7 +13569,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageSummary`;
+DROP PROCEDURE IF EXISTS `fnUsageSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageSummary`(
@@ -13773,7 +13792,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageSummaryDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageSummaryDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageSummaryDetail`(
@@ -13915,7 +13934,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageVendorSummary`;
+DROP PROCEDURE IF EXISTS `fnUsageVendorSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageVendorSummary`(
@@ -14132,7 +14151,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageVendorSummaryDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageVendorSummaryDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageVendorSummaryDetail`(
@@ -14275,7 +14294,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateSummary`;
+DROP PROCEDURE IF EXISTS `prc_generateSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateSummary`(
@@ -14447,7 +14466,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateSummaryLive`;
+DROP PROCEDURE IF EXISTS `prc_generateSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateSummaryLive`(
@@ -14622,7 +14641,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateVendorSummary`;
+DROP PROCEDURE IF EXISTS `prc_generateVendorSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateVendorSummary`(
@@ -14800,7 +14819,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateVendorSummaryLive`;
+DROP PROCEDURE IF EXISTS `prc_generateVendorSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateVendorSummaryLive`(
@@ -14979,7 +14998,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountExpense`;
+DROP PROCEDURE IF EXISTS `prc_getAccountExpense`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountExpense`(IN `p_CompanyID` INT, IN `p_AccountID` INT)
@@ -15186,7 +15205,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardPayableReceivable`;
+DROP PROCEDURE IF EXISTS  `prc_getDashboardPayableReceivable`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardPayableReceivable`(
@@ -15492,7 +15511,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardProfitLoss`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardProfitLoss`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardProfitLoss`(
@@ -15620,7 +15639,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateUnbilledAmount`;
+DROP PROCEDURE IF EXISTS `prc_updateUnbilledAmount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateUnbilledAmount`(
@@ -15698,7 +15717,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorUnbilledAmount`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorUnbilledAmount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorUnbilledAmount`(
@@ -15779,7 +15798,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_verifySummary`;
+DROP PROCEDURE IF EXISTS `prc_verifySummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_verifySummary`(IN `p_CompanyID` INT, IN `p_AccountID` INT, IN `p_StartDate` DATETIME, IN `p_EndDate` DATETIME)
