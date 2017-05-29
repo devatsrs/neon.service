@@ -4104,11 +4104,11 @@ ALTER TABLE `tblInvoiceTemplate`
   , ADD COLUMN `CDRType` INT(11) NULL DEFAULT '0';
 
  UPDATE tblInvoiceTemplate SET  InvoiceTo = '{AccountName}
-{Address1},
-{Address2},
-{Address3},
-{City},
-{PostCode},
+{Address1}
+{Address2}
+{Address3}
+{City}
+{PostCode}
 {Country}' WHERE InvoiceTo IS NULL;
 
 
