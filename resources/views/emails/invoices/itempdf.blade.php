@@ -32,7 +32,7 @@
                 @endif
             </div>
             <div id="company">
-                <h2 class="name">INVOICE FROM</h2>
+                <h2 class="name"><b>Invoice From</b></h2>
                 <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
             </div>
         </header>
@@ -49,7 +49,7 @@
         <main>
             <div id="details" class="clearfix">
                 <div id="client">
-                    <div class="to">INVOICE TO:</div>
+                    <div class="to"><b>Invoice To:</b></div>
                     <div>{{nl2br($return_message)}}</div>
                 </div>
                 <div id="invoice">
@@ -60,18 +60,18 @@
             </div>
 
             <!-- content of front page section start -->
-            <div id="Service">
+            <!--<div id="Service">
                 <h1>Item</h1>
-            </div>
+            </div>-->
             <div class="clearfix"></div>
             <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
                 <thead>
                 <tr>
-                    <th class="desc">Title</th>
-                    <th class="desc">Description</th>
-                    <th class="desc">Quantity</th>
-                    <th class="desc">Price</th>
-                    <th class="total">Line Total</th>
+                    <th class="desc"><b>Title</b></th>
+                    <th class="desc"><b>Description</b></th>
+                    <th class="desc"><b>Quantity</b></th>
+                    <th class="desc"><b>Price</b></th>
+                    <th class="total"><b>Line Total</b></th>
                 </tr>
                 </thead>
 
@@ -81,7 +81,7 @@
                     @if($ProductRow->ProductType == \App\Lib\Product::ITEM)
                         <tr>
                             <td class="desc">{{$data['Products'][$ProductRow->ProductType][$ProductRow->ProductID]}}</td>
-                            <td class="desc">{{$ProductRow->Description}}</td>
+                            <td class="desc">{{nl2br($ProductRow->Description)}}</td>
                             <td class="desc">{{$ProductRow->Qty}}</td>
                             <td class="desc">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                             <td class="total">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
@@ -92,7 +92,7 @@
                 <tfoot>
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">SUB TOTAL</td>
+                    <td colspan="2">Sub Total</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
                 </tr>
 
@@ -108,8 +108,8 @@
 
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">GRAND TOTAL</td>
-                    <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
+                    <td colspan="2"><b>Grand Total</b></td>
+                    <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
                 </tr>
 
                 </tfoot>

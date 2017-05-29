@@ -398,7 +398,7 @@ protected $server;
     if ($body == "") {
         $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
     } 
-        return $body;
+        return html_entity_decode($body);
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
@@ -477,6 +477,7 @@ protected $server;
 				$MatchID 					= 		  '';
 				$priority					=		  1;				
 				$headers 					=		  array();
+				$message					=	      '';
 				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
 				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
@@ -487,7 +488,6 @@ protected $server;
 				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
 				
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
-				
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -513,13 +513,17 @@ protected $server;
 				//If parent email is not found based on in_reply_to
 				if(empty($msg_parent)){
 
+					// http://staging.neon-soft.com/tickets/19/detail
+					//https://email09.godaddy.com/view_print_multi.php?uidArray=26391|INBOX&aEmlPart=0
+
+
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
 					if(!empty($original_plain_subject)){
 						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
 						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(created_at, INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
 					}
 				}
 				if(!empty($msg_parent)){  		
@@ -562,14 +566,16 @@ protected $server;
 					$AttachmentPaths  = 	serialize([]);										
 				}
 				
-				$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID);
+				//$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID); 
 			 	//$message = 	$this->getBody($inbox,$email_number);
-				if(empty($message)){
-					$message = 	$this->getBody($inbox,$email_number);
+				//if(empty($message)){
+				$message = 	$this->getBody($inbox,$email_number);  //get body from email
+				//}
+				if(count($attachmentsDB)>0){
+					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				if(!empty($message)){
-					$message =  $this->GetMessageBody($message);
-				}				
+				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
+								
 			
                 $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
@@ -579,52 +585,124 @@ protected $server;
 								
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
-
-				if(!$parentTicket){
+				//Log::info("message :".$message);
+				$check_auto = $this->check_auto_generated($header,$message);
+				if($check_auto){
+					Log::info("Auto Responder Detected :");
+					Log::info("header");
+					Log::info($header);
+					continue;
+				}
+				
+				$CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first(); 
+				if(count($CheckInboxGroup)>0){
+					$GroupID = $CheckInboxGroup->GroupID;
+				}
+				
 				$logData = [
-						'Requester'=> $from,
-						"RequesterName"=>$FromName,
-						"RequesterCC"=>$cc,
-						'Subject'=>$overview[0]->subject,
-						'Description'=>$message,
-						'CompanyID'=>$CompanyID,
-						"AttachmentPaths"=>$AttachmentPaths,
-						"Group"=>$GroupID,
-						"created_at"=>date('Y-m-d H:i:s'),
-						"Priority"=>$priority,
-						"Status"=>TicketsTable::getOpenTicketStatus(),
-						"created_by"=> 'RMScheduler'
-					];
-					
+					'Requester'=> $from,
+					"RequesterName"=>$FromName,
+					"RequesterCC"=>$cc,
+					'Subject'=>$overview[0]->subject,
+					'Description'=>$message,
+					'CompanyID'=>$CompanyID,
+					"AttachmentPaths"=>$AttachmentPaths,
+					"Group"=>$GroupID,
+					"created_at"=>date('Y-m-d H:i:s'),
+					"Priority"=>$priority,
+					"Status"=> TicketsTable::getOpenTicketStatus(),
+					"created_by"=> 'RMScheduler'
+				];
+
+				$skip_email_notification = false;
+				if(!$parentTicket){
+					// New ticket
+
 					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
 					$logData 		 	  = 	array_merge($logData,$MatchArray);
-						
-					$ticketID 		=  TicketsTable::insertGetId($logData);
-					if($GroupID){
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentAssignedGroup")));
-					}					
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("RequesterNewTicketCreated")));				$TicketEmails 		=  new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNewTicketCreated","CompanyID"=>$CompanyID));
+
+					$ticketID 			  =  	TicketsTable::insertGetId($logData);
+
+					// --------------- check for TicketImportRule ----------------
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$to,]);
+					try{
+						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					} catch ( \Exception $ex){
+
+						Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
+						Log::error("TicketRuleData");
+						Log::error($ticketRuleData);
+						Log::error(print_r($ex,true));
+					}
+
+					if(is_array($TicketImportRuleResult)) {
+						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction TicketDeleted");
+							continue;
+						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
+							$skip_email_notification = true;
+						} else {
+							Log::info("TicketImportRuleAction Result");
+							Log::info($TicketImportRuleResult);
+						}
+					}
+					// -------------------------------
+
+					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
+
+					if(!$skip_email_notification) {
+						if ($GroupID) {
+							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
+						}
+						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
+					}
 					
 				}
 				else //reopen ticket if ticket status closed 
 				{
 					
 					$ticketData  = TicketsTable::find($parentTicket);
-					
-					if($ticketData->Status==TicketsTable::getClosedTicketStatus() || $ticketData->Status==TicketsTable::getResolvedTicketStatus()){
-						TicketsTable::find($ticketData->TicketID)->update(["Status"=>TicketsTable::getOpenTicketStatus()]);	
-					$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"CompanyID"=>$CompanyID,"TriggerType"=>array("AgentTicketReopened")));		
-					}	
-				
-					
+
+					// --------------- check for TicketImportRule ----------------
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
+					$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+
+					if(is_array($TicketImportRuleResult)) {
+						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction TicketDeleted");
+							continue;
+						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
+							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
+							$skip_email_notification = true;
+						} else {
+							Log::info("TicketImportRuleAction Result");
+							Log::info($TicketImportRuleResult);
+						}
+					}
+					// -------------------------------
+
+					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
+						if(!$skip_email_notification) {
+							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
+						}
+					}
+
 					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){		
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$ticketData->TicketID,"TriggerType"=>"RequesterRepliestoTicket","CompanyID"=>$CompanyID,"Comment"=>$message)); 
-						TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate"=>date('Y-m-d H:i:s'))); 
+						if($from==$ticketData->Requester){
+							if(!$skip_email_notification) {
+								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
+							}
+							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					$TicketEmails 	=   new TicketEmails(array("TicketID"=>$ticketID,"TriggerType"=>"CCNoteaddedtoticket","Comment"=>$message,"NoteUser"=>$FromName,"CompanyID"=>$CompanyID));
+					if(!$skip_email_notification) {
+						//Email to all cc emails from main ticket.
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
+					}
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -658,14 +736,28 @@ protected $server;
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
 					 
 					 
-					if(!in_array($from,$AllEmails)){
-						$ContactData = array("FirstName"=>$FromName,"Email"=>$from,"CompanyId"=>$CompanyID);
+					if(!in_array($from,$AllEmails))
+					{
+						$FromNameArray	   =  explode(" ",$FromName);
+						$ContactFirstName  =  $FromNameArray[0];
+						
+						if(count($FromNameArray)>1)
+						{	
+							unset($FromNameArray[0]);
+							$ContactLastName  = implode(" ",$FromNameArray);
+						}else{
+							$ContactLastName  = '';
+						}
+						
+						$ContactData = array("FirstName"=>$ContactFirstName,"LastName"=>$ContactLastName,"Email"=>$from,"CompanyId"=>$CompanyID);
 						$contactID =  Contact::insertGetId($ContactData);
 						TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
 						$EmailLogObj = AccountEmailLog::find($EmailLog);
 						$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$contactID));		
 						$AllEmails[] = $from;
-					}else{
+					}
+					else
+					{
 						$accountIDSave  =	0;
 						$accountID   	=  DB::table('tblAccount')->where(array("Email"=>$from))->pluck("AccountID");
 						$accountID2  	=  DB::table('tblAccount')->where(array("BillingEmail"=>$from))->pluck("AccountID");
@@ -691,7 +783,17 @@ protected $server;
 				
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID); 
+				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+
+				try {
+					if(isset($ticketID)){
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
 			}
 			} catch (Exception $e) {
 				Log::error("Tracking email imap failed");
@@ -702,27 +804,19 @@ protected $server;
 		imap_close($inbox);
 		Log::info("reading emails completed");
 
-		try {
-			if(isset($ticketID))
-			{
-				TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-			}
-		} catch (Exception $ex) {
-			Log::info("fail TicketSla::assignSlaToTicket");
-			Log::info($ex);
-		}
+
 
 	}
 	
 	
-	function DownloadInlineImages($con,$msg,$CompanyID){
+	function DownloadInlineImages($con,$msg,$CompanyID,$msgbody){ 
 		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 		// download email message #1 and fetch it
 		$emailMessage = new EmailMessage($con, $msg);
 		$emailMessage->fetch();
 		
 		// match inline images in html content
-		preg_match_all('/src="cid:(.*)"/Uims', $emailMessage->bodyHTML, $matches);
+		preg_match_all('/src="cid:(.*)"/Uims', $msgbody, $matches);
 		
 		// if there are any matches, loop through them and save to filesystem, change the src property
 		// of the image to an actual URL it can be viewed at
@@ -783,10 +877,10 @@ protected $server;
 			}
 			
 			// now do the replacements
-			$emailMessage->bodyHTML = str_replace($search, $replace, $emailMessage->bodyHTML);
+			$msgbody = str_replace($search, $replace, $msgbody);
 			
 		}
-		return $emailMessage->bodyHTML;
+		return $msgbody;
 	}
 
 	/**
@@ -799,11 +893,50 @@ protected $server;
 		$find = [
 			"/^RE:/",
 			"/^FWD:/",
+			"/^Test Mail/", // to test in staging
 		];
 
 		$replace = 1; // replace first occurrence
 
-		return preg_replace($find,"",$subject,$replace);
+		return trim(preg_replace($find,"",$subject,$replace));
+	}
+
+	/**
+	 * http://stackoverflow.com/questions/9426801/detect-auto-reply-emails-programatically
+	 * detect auto reply email to avoid creating tickets.
+	 * Auto submited and email delivery failure emails will be ignored.
+	 * @param string $header
+	 */
+	public static function check_auto_generated($header = '',$body) {
+
+		$find_header = [
+			"Auto-Submitted:",
+		];
+		$find_body = [
+			"Delivery to the following recipient failed permanently:",
+			"Delivery to the following recipients failed permanently:",
+			"This message was created automatically by mail delivery software",
+		];
+
+
+		foreach($find_header as $f_header){
+
+			if(strpos(strtolower($header),strtolower($f_header)) !== false){
+ 				return true;
+			}
+		}
+		foreach($find_body as $f_body) {
+
+			if(strpos(strtolower($body),strtolower($f_body)) !== false){
+ 				return true;
+			}
+		}
+
+
+
+		return false;
+
+
 	}
 
 }
