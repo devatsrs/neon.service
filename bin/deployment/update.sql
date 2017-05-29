@@ -15951,7 +15951,7 @@ update tblResourceCategories trc set trc.CategoryGroupID = 2 where trc.ResourceC
 DELETE from tblResourceCategories where ResourceCategoryName like '%Messages%';	
 
 
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES	(1, 'TICKETING_SYSTEM', '1');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES	(1, 'TICKETING_SYSTEM', '0');
 
 
 INSERT INTO `tblTicketBusinessHours` (`ID`, `CompanyID`, `IsDefault`, `Name`, `Description`, `Timezone`, `HoursType`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES	(1, 1, 1, 'Default', 'Default Business Calendar', '0', 2, '2017-04-26 11:29:58', NULL, '2017-04-26 11:29:58', NULL);
