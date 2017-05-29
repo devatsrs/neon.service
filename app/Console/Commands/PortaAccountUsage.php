@@ -121,7 +121,8 @@ class PortaAccountUsage extends Command {
                     $gadata['CompanyID'] = $CompanyID;
                     $gadata['CompanyGatewayID'] = $CompanyGatewayID;
                     $gadata['ServiceID'] = $ServiceID;
-                    $gadata['GatewayAccountID'] = $accounts[] = $row_account['ICustomer'];
+                    $gadata['GatewayAccountID'] = $row_account['ICustomer'];
+                    $accounts[$row_account['ICustomer']] = $row_account['Name'];
 
                     $gadata['AccountName'] = $row_account['Name'];
                     $row_account['CreationDate'] = date("Y-m-d H:i:s", (doubleval(filter_var($row_account['CreationDate'], FILTER_SANITIZE_NUMBER_INT)) / 1000));
@@ -159,7 +160,7 @@ class PortaAccountUsage extends Command {
             $InserData = array();
             $data_count = 0;
             $insertLimit = 1000;
-            foreach ($accounts as $GatewayAccountID) {
+            foreach ($accounts as $GatewayAccountID => $AccountName) {
                 $param['ICustomer'] = $GatewayAccountID; //$rowdata->GatewayAccountID;
                 $response = array();
 
@@ -181,6 +182,10 @@ class PortaAccountUsage extends Command {
                             $data['billed_second'] = $row_account['Charged_Quantity'];
                             $data['duration'] = $row_account['Used_Quantity'];
 
+                            $data['AccountIP'] = '';
+                            $data['AccountName'] = $AccountName;
+                            $data['AccountNumber'] = '';
+                            $data['AccountCLI'] = '';
                             //$data['AccountID'] = $rowdata->AccountID;
                             $data['trunk'] = 'Other';
                             $data['area_prefix'] = 'Other';
