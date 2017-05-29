@@ -43,8 +43,10 @@ ALTER TABLE `tblAccount`
   , DROP COLUMN `BillingStartDate`
   , DROP COLUMN `LastInvoiceDate`
   , DROP COLUMN `NextInvoiceDate`
-  , DROP COLUMN `CustomerCLI`
-  , MODIFY COLUMN `ResellerEmail` varchar(200) NULL;
+  , DROP COLUMN `CustomerCLI`  ;
+
+  ALTER TABLE `tblAccount`
+  MODIFY COLUMN `ResellerEmail` varchar(200) NULL;
 
 
 ALTER TABLE `tblAccountBilling`
@@ -1663,6 +1665,26 @@ DELIMITER ;
 -- girish auto service migrate existing
 CALL migrateService();
 
+-- Umer ticket Import Rules
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'from_email', 'Requester Email', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'to_email', 'To Email', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'subject', 'Subject', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'description', 'Description', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (5, 'subject_or_description', 'Subject or Description', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'priority', 'Priority', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'status', 'Status', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (8, 'agent', 'Agent', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (9, 'group', 'Group', NULL, NULL, NULL, NULL);
+
+
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'delete_ticket', 'Delete the Ticket', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'skip_notification', 'Skip New Ticket Email Notifications', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'set_priority', 'Set Priority as', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'set_status', 'Set Status as', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (5, 'set_agent', 'Assign to Agent', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'set_group', 'Assign to Group', NULL, NULL, NULL, NULL);
+INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'set_type', 'Set Type as', NULL, NULL, NULL, NULL);
+
 
 -- Billing
 
@@ -1674,8 +1696,6 @@ ALTER TABLE `tblAccountSubscription`
   MODIFY COLUMN `AnnuallyFee` decimal(18,2) NULL
   , MODIFY COLUMN `QuarterlyFee` decimal(18,2) NULL;
 
-ALTER TABLE `tblBillingSubscription`
-  CHANGE COLUMN `AnuallyFee` `AnuallyFee__delete` decimal(18,2) NULL DEFAULT NULL;
 
 ALTER TABLE `tblBillingSubscription`
   MODIFY COLUMN `QuarterlyFee` decimal(18,2) NULL;
@@ -7048,7 +7068,7 @@ BEGIN
 			 InvoiceID
 	from tblTempPayment tp
 	INNER JOIN Ratemanagement3.tblAccount ac
-		ON  ac.AccountID = tp.AccountID  and ac.AccountType = 1
+		ON  ac.AccountID = tp.AccountID  and ac.AccountType = 1 and ac.CurrencyId IS NOT NULL
 	where tp.ProcessID = p_ProcessID
 			AND tp.PaymentDate <= NOW()
 			AND tp.CompanyID = p_CompanyID;
@@ -8903,6 +8923,15 @@ SET SESSION group_concat_max_len=5000;
 		AND pt.ProcessID = p_ProcessID;
 
 
+		INSERT INTO tmp_error_
+	SELECT DISTINCT
+		CONCAT('Currency Not Set - Account: ',IFNULL(ac.AccountName,''),' Action: ' ,IFNULL(pt.PaymentType,''),' Payment Date: ',IFNULL(pt.PaymentDate,''),' Amount: ',pt.Amount) as ErrorMessage
+	FROM tblTempPayment pt
+	INNER JOIN Ratemanagement3.tblAccount ac on ac.AccountID = pt.AccountID
+			and ac.AccountType = 1
+		WHERE pt.CompanyID = p_CompanyID
+		   AND ac.CurrencyId IS NULL
+			AND pt.ProcessID = p_ProcessID;
 
 
 	IF (SELECT COUNT(*) FROM tmp_error_) > 0
@@ -9316,7 +9345,7 @@ CREATE TABLE `tblHeader` (
   `DateID` bigint(20) NOT NULL,
   `CompanyID` int(11) NULL,
   `AccountID` int(11) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `TotalCharges` double NULL,
   `TotalBilledDuration` int(11) NULL,
   `TotalDuration` int(11) NULL,
@@ -9334,7 +9363,7 @@ CREATE TABLE `tblHeaderV` (
   `DateID` bigint(20) NOT NULL,
   `CompanyID` int(11) NULL,
   `VAccountID` int(11) NULL,
-  `created_at` datetime NULL DEFAULT 'CURRENT_TIMESTAMP',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   `TotalCharges` double NULL,
   `TotalSales` double NULL,
   `TotalBilledDuration` int(11) NULL,
