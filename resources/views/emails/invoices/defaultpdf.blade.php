@@ -342,7 +342,7 @@
                             $classname = 'centeralign';
                             if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount'))){
                                 $classname = 'rightalign';
-                            }else if(in_array($row['Title'],array('Trunk','Prefix','Country','Description'))){
+                            }else if(in_array($row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                 $classname = 'leftalign';
                             }
                             ?>
@@ -370,7 +370,7 @@
                                         $classname = 'centeralign';
                                         if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount'))){
                                             $classname = 'rightalign';
-                                        }else if(in_array($table_h_row['Title'],array('Trunk','Prefix','Country','Description'))){
+                                        }else if(in_array($table_h_row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                             $classname = 'leftalign';
                                         }
                                         ?>
