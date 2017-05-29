@@ -12636,6 +12636,26 @@ USE `RMCDR3`;
 ALTER TABLE `tblUsageHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblCDRPostProcess`
+  MODIFY COLUMN `CDRPostProcessID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblUsageDetailFailedCall`
+  MODIFY COLUMN `UsageDetailFailedCallID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblUsageDetails`
+  MODIFY COLUMN `UsageDetailID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblVCDRPostProcess`
+  MODIFY COLUMN `VCDRPostProcessID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblVendorCDR`
+  MODIFY COLUMN `VendorCDRID` bigint(20) unsigned NOT NULL auto_increment;
+
+CREATE INDEX `IX_ID` ON `tblVendorCDR`(`ID`);
+
+ALTER TABLE `tblVendorCDRFailed`
+  MODIFY COLUMN `VendorCDRFailedID` bigint(20) unsigned NOT NULL auto_increment;
+
 CREATE INDEX `IX_ID` ON `tblVendorCDRFailed`(`ID`);
 
 ALTER TABLE `tblVendorCDRHeader`
