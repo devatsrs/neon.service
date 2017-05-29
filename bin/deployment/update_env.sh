@@ -6,6 +6,8 @@ source $(dirname "$0")/update_config.sh
 #echo "stoping crond..."
 #service crond stop
 
+echo $WEB_LOCATION
+
 if [ -d "$WEB_LOCATION" ]; then
 
     echo "copying code..."

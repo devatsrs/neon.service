@@ -515,6 +515,7 @@ SELECT AccountID,1,CompanyId,1 FROM tblAccount WHERE AccountType = 1 AND Status 
 UPDATE RMBilling3.tblAccountSubscription SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE RMBilling3.tblAccountOneOffCharge SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE tblCLIRateTable SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
+UPDATE tblAccountDiscountPlan SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
 
 END IF;
 
