@@ -122,6 +122,9 @@ class PortaAccountUsage extends Command {
                     $gadata['CompanyGatewayID'] = $CompanyGatewayID;
                     $gadata['ServiceID'] = $ServiceID;
                     $gadata['GatewayAccountID'] = $row_account['ICustomer'];
+                    $gadata['AccountIP'] = '';
+                    $gadata['AccountNumber'] = '';
+                    $gadata['AccountCLI'] = '';
                     $accounts[$row_account['ICustomer']] = $row_account['Name'];
 
                     $gadata['AccountName'] = $row_account['Name'];
