@@ -100,7 +100,8 @@ class CompanyGateway extends \Eloquent {
                                     `is_rerated` TINYINT(1) NULL DEFAULT 0,
                                     `disposition` VARCHAR(50) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`TempUsageDetailID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`)
+                                    INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
+                                    INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
@@ -166,7 +167,8 @@ class CompanyGateway extends \Eloquent {
                 `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                 `is_rerated` TINYINT(1) NULL DEFAULT 0,
                  PRIMARY KEY (`TempVendorCDRID`),
-                 INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`)
+                 INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
+                 INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
 
