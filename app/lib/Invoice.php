@@ -1893,11 +1893,7 @@ class Invoice extends \Eloquent {
             $order = array();
             foreach($UsageColumn as $UsageColumnRow){
                 if($UsageColumnRow['Status']=='true') {
-                    if ($UsageColumnRow['Title'] == 'AreaPrefix') {
-                        $order[] = 'Prefix';
-                    } else {
-                        $order[] = $UsageColumnRow['Title'];
-                    }
+                    $order[] = $UsageColumnRow['Title'];
                     $usage_data_table['header'][] = $UsageColumnRow;
                 }
             }
