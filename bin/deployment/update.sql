@@ -4462,6 +4462,14 @@ ALTER TABLE `tblInvoiceTemplate`
   , ADD COLUMN `GroupByService` int(11) NULL DEFAULT '0'
   , ADD COLUMN `CDRType` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblGatewayAccount`
+  MODIFY COLUMN `AccountName` varchar(100) NULL
+  , MODIFY COLUMN `AccountIP` varchar(100) NULL
+  , ADD COLUMN `AccountNumber` varchar(100) NULL
+  , ADD COLUMN `AccountCLI` varchar(100) NULL;
+
+CREATE INDEX `IX6` ON `tblGatewayAccount`(`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`);
+
 DROP TABLE `tblUsageDaily`;
 
 DROP TABLE `tblUsageHourly`;
@@ -4912,6 +4920,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ApplyAuthRule`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ApplyAuthRule`(
 	IN `p_CompanyID` INT,
@@ -4936,10 +4946,12 @@ BEGIN
 	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -4954,20 +4966,22 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAMENUB' OR aa.VendorAuthRule ='NAMENUB' )) OR
-				aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUBNAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -4982,24 +4996,26 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUBNAME' OR aa.VendorAuthRule ='NUBNAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUB'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
-				AND a.Number = ga.AccountName
+				AND a.Number = ga.AccountNumber
 			LEFT JOIN Ratemanagement3.tblAccountAuthenticate aa 
 				ON a.AccountID = aa.AccountID 
 				AND aa.ServiceID = ga.ServiceID	
@@ -5010,68 +5026,74 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUB' OR aa.VendorAuthRule ='NUB' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'IP'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'IP' OR aa.VendorAuthRule ='IP')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ( FIND_IN_SET(ga.AccountName,aa.CustomerAuthValue) != 0 OR FIND_IN_SET(ga.AccountName,aa.VendorAuthValue) != 0 )
+				AND ( (aa.CustomerAuthRule = 'IP' AND FIND_IN_SET(ga.AccountIP,aa.CustomerAuthValue) != 0) OR (aa.VendorAuthRule ='IP' AND FIND_IN_SET(ga.AccountIP,aa.VendorAuthValue) != 0) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'CLI'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 			INNER JOIN Ratemanagement3.tblCLIRateTable aa
 				ON a.AccountID = aa.AccountID
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ga.AccountName = aa.CLI
+				AND ga.AccountCLI = aa.CLI
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = '' OR p_NameFormat IS NULL OR p_NameFormat = 'NAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
@@ -5086,34 +5108,36 @@ BEGIN
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAME' OR aa.VendorAuthRule ='NAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+		
 		IF p_NameFormat = 'Other'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'Other' OR aa.VendorAuthRule ='Other')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
 				AND ga.ServiceID = aa.ServiceID 
-				AND ( aa.VendorAuthValue = ga.AccountName OR aa.CustomerAuthValue = ga.AccountName )
+				AND ( (aa.VendorAuthRule ='Other' AND aa.VendorAuthValue = ga.AccountName) OR (aa.CustomerAuthRule = 'Other' AND aa.CustomerAuthValue = ga.AccountName) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID;
-
+	
 		END IF;
 
 		SET v_pointer_ = v_pointer_ + 1;
@@ -5588,6 +5612,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_CreateRerateLog`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_CreateRerateLog`(
 	IN `p_processId` INT,
@@ -5602,17 +5628,21 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 
@@ -5622,10 +5652,10 @@ BEGIN
 
 	IF p_RateCDR = 1
 	THEN
-
+	
 		IF ( SELECT COUNT(*) FROM tmp_Service_ ) > 0
 		THEN
-
+		
 			SET @stm = CONCAT('
 			INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
 			SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,2,  CONCAT( "Account:  " , a.AccountName ," - Service: ",IFNULL(s.ServiceName,"")," - Unable to Rerate number ",IFNULL(ud.cld,"")," - No Matching prefix found") as Message ,DATE(NOW())
@@ -5633,11 +5663,11 @@ BEGIN
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			LEFT JOIN Ratemanagement3.tblService s on  s.ServiceID = ud.ServiceID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		ELSE
 
 			SET @stm = CONCAT('
@@ -5646,11 +5676,11 @@ BEGIN
 			FROM  RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		END IF;
 
 		SET @stm = CONCAT('
@@ -6389,8 +6419,6 @@ CREATE PROCEDURE `prc_getActiveGatewayAccount`(
 	IN `p_CompanyID` INT,
 	IN `p_CompanyGatewayID` INT,
 	IN `p_NameFormat` VARCHAR(50)
-
-
 )
 BEGIN
 
@@ -6404,10 +6432,12 @@ BEGIN
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_ActiveAccount;
 	CREATE TEMPORARY TABLE tmp_ActiveAccount (
-		GatewayAccountID varchar(100),
+		AccountName varchar(100),
+		AccountNumber varchar(100),
+		AccountCLI varchar(100),
+		AccountIP varchar(100),
 		AccountID INT,
-		ServiceID INT,
-		AccountName varchar(100)
+		ServiceID INT
 	);
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_AuthenticateRules_;
@@ -6494,7 +6524,10 @@ BEGIN
 
 	UPDATE tblGatewayAccount
 	INNER JOIN tmp_ActiveAccount a
-		ON a.GatewayAccountID = tblGatewayAccount.GatewayAccountID
+		ON a.AccountName = tblGatewayAccount.AccountName
+		AND a.AccountNumber = tblGatewayAccount.AccountNumber
+		AND a.AccountCLI = tblGatewayAccount.AccountCLI
+		AND a.AccountIP = tblGatewayAccount.AccountIP
 		AND tblGatewayAccount.CompanyGatewayID = p_CompanyGatewayID
 		AND tblGatewayAccount.ServiceID = a.ServiceID
 	SET tblGatewayAccount.AccountID = a.AccountID
@@ -8709,14 +8742,37 @@ DELIMITER ;
 DROP PROCEDURE IF EXISTS `prc_getMissingAccounts`;
 
 DELIMITER |
-CREATE PROCEDURE `prc_getMissingAccounts`(IN `p_CompanyID` int, IN `p_CompanyGatewayID` INT)
+CREATE PROCEDURE `prc_getMissingAccounts`(
+	IN `p_CompanyID` int,
+	IN `p_CompanyGatewayID` INT
+)
 BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-	SELECT cg.Title,ga.AccountName from tblGatewayAccount ga
-	inner join Ratemanagement3.tblCompanyGateway cg on ga.CompanyGatewayID = cg.CompanyGatewayID
-	where ga.GatewayAccountID is not null and ga.CompanyID =p_CompanyID and ga.AccountID is null AND cg.`Status` =1
-	AND (p_CompanyGatewayID = 0 or ga.CompanyGatewayID = p_CompanyGatewayID )
+	
+	SELECT 
+		cg.Title,
+		CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'NUB'
+		THEN
+			ga.AccountNumber
+		ELSE
+			CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'IP'
+			THEN
+				ga.AccountIP
+			ELSE
+				CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'CLI'
+				THEN
+					ga.AccountCLI
+				ELSE 
+					ga.AccountName
+				END
+			END
+		END
+		AS AccountName
+	FROM tblGatewayAccount ga
+	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON ga.CompanyGatewayID = cg.CompanyGatewayID
+	WHERE ga.GatewayAccountID IS NOT NULL and ga.CompanyID =p_CompanyID AND ga.AccountID IS NULL AND cg.`Status` =1
+	AND (p_CompanyGatewayID = 0 OR ga.CompanyGatewayID = p_CompanyGatewayID )
 	ORDER BY ga.CompanyGatewayID,ga.AccountName;
 	
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
@@ -10775,12 +10831,15 @@ BEGIN
 
 	SELECT fnGetBillingTime(p_CompanyGatewayID,p_AccountID) INTO v_BillingTime_;
 
-	SET @stm1 = CONCAT('
+	
+
+	set @stm1 = CONCAT('
 
 	INSERT INTO RMCDR3.`' , p_tbltempusagedetail_name , '` (
 		CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		AccountID,
 		ServiceID,
 		connect_time,
@@ -10808,6 +10867,7 @@ BEGIN
 		uh.CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		uh.AccountID,
 		uh.ServiceID,
 		connect_time,
@@ -10864,6 +10924,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ProcessCDRAccount`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ProcessCDRAccount`(
 	IN `p_CompanyID` INT,
@@ -10878,17 +10940,23 @@ BEGIN
 	
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,ServiceID)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
 		ud.ServiceID
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
 		AND ga.ServiceID = ud.ServiceID
@@ -10900,9 +10968,30 @@ BEGIN
 	PREPARE stmt FROM @stm;
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
+	
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
 
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
+	
+	
 
 	/* update cdr account */
 	SET @stm = CONCAT('
@@ -10910,7 +10999,10 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
 		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
@@ -10925,10 +11017,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblUsageHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
-		AND ga.ServiceID = uh.ServiceID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -10940,10 +11029,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblUsageHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
-			AND ga.ServiceID = uh.ServiceID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11171,23 +11257,31 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,IsVendor)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID,IsVendor)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
+		ud.ServiceID,
 		1 as IsVendor
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
+		AND ga.ServiceID = ud.ServiceID
 		AND ga.CompanyID = ud.CompanyID
 	WHERE ProcessID =  "' , p_processId , '"
 		AND ga.GatewayAccountID IS NULL
@@ -11198,6 +11292,25 @@ BEGIN
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
 
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
+	
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
 
@@ -11207,11 +11320,15 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
-	AND uh.CompanyID = ' ,  p_companyid , '
+	AND uh.CompanyID = ' ,  p_CompanyID , '
 	AND uh.ProcessID = "' , p_processId , '" ;
 	');
 	PREPARE stmt FROM @stm;
@@ -11221,9 +11338,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblVendorCDRHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -11234,9 +11349,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblVendorCDRHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11372,12 +11485,16 @@ BEGIN
 	
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 	
@@ -12663,6 +12780,16 @@ CREATE INDEX `IX_ID` ON `tblVendorCDRFailed`(`ID`);
 ALTER TABLE `tblVendorCDRHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblUsageHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblUsageHeader`(`GatewayAccountPKID`);
+
+ALTER TABLE `tblVendorCDRHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblVendorCDRHeader`(`GatewayAccountPKID`);  
+
 DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID`;
 
 DELIMITER |
@@ -12763,14 +12890,11 @@ BEGIN
 	SET SESSION innodb_lock_wait_timeout = 180;
 
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12784,10 +12908,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '"
 		AND billed_duration = 0 AND cost = 0 AND ( disposition <> "ANSWERED" OR disposition IS NULL);
@@ -12811,10 +12932,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '" ;
 	');
@@ -12847,15 +12965,14 @@ BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
+	SET SESSION innodb_lock_wait_timeout = 180;
+
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblVendorCDRHeader h 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.ServiceID = d.ServiceID
-		AND h.GatewayAccountID = d.GatewayAccountID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12865,14 +12982,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt2;
 
 	SET @stm6 = CONCAT('
-	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" AND  billed_duration = 0 AND buying_cost = 0 ;
 	');
@@ -12890,14 +13004,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt3;
 
 	SET @stm4 = CONCAT('
-	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" ;
 	');
@@ -16275,7 +16386,23 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Catego
 
 CALL migrateService();
 
+USE `RMBilling3`;
+
+delete from tblGatewayAccount where AccountID IS NULL AND AccountCLI IS NULL; 
+
 USE `RMCDR3`;
+
+update tblUsageHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblUsageHeader.GatewayAccountID
+set tblUsageHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
+
+update tblVendorCDRHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblVendorCDRHeader.GatewayAccountID
+set tblVendorCDRHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
 
 SET @tables = NULL;
 SELECT GROUP_CONCAT('`', table_schema, '`.`', table_name,'`') INTO @tables FROM information_schema.tables 
