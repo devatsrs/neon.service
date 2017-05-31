@@ -175,6 +175,10 @@ class PBXAccountUsage extends Command
                         $data['billed_duration'] = $row_account['billsec'];
                         $data['duration'] = $row_account['duration'];
 
+                        $data['AccountIP'] = '';
+                        $data['AccountName'] = '';
+                        $data['AccountNumber'] = $row_account['accountcode'];
+                        $data['AccountCLI'] = '';
 
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
