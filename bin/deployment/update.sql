@@ -17,8 +17,10 @@ ALTER TABLE `tblAccountBilling`
   , DROP COLUMN `RoundChargesAmount`
   , DROP COLUMN `CDRType`
   , DROP COLUMN `InvoiceTemplateID`
-  , DROP COLUMN `TaxRateId`
-  , ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
+  , DROP COLUMN `TaxRateId`  ;
+
+ALTER TABLE `tblAccountBilling`
+  ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
 ALTER TABLE `tblAccountBilling` ADD UNIQUE KEY `AccountID`(`ServiceID`,`AccountID`);
 
@@ -71,31 +73,6 @@ ALTER TABLE `tblEmailTemplate`
 ALTER TABLE `tblHelpDeskTickets`
   ADD COLUMN `ContactID` int(11) NULL;
 
-CREATE TABLE `tblHelpDeskTicketsdevtest` (
-  `ID` int(11) NOT NULL auto_increment,
-  `CompanyID` int(11) NULL,
-  `AccountID` int(11) NULL,
-  `TicketID` int(11) NULL,
-  `Subject` varchar(200) NOT NULL,
-  `Description` text NOT NULL,
-  `Priority` varchar(100) NULL,
-  `Status` varchar(100) NULL,
-  `Type` varchar(100) NULL,
-  `GUID` varchar(100) NULL,
-  `Group` varchar(100) NULL,
-  `to_emails` varchar(500) NULL,
-  `RequestEmail` varchar(100) NULL,
-  `TicketType` tinyint(4) NOT NULL DEFAULT 0,
-  `TicketAgent` int(11) NOT NULL DEFAULT '0',
-  `ApiCreatedDate` datetime NULL,
-  `ApiUpdateDate` datetime NULL,
-  `created_at` datetime NULL,
-  `created_by` varchar(100) NULL,
-  `updated_at` datetime NULL,
-  `updated_by` varchar(100) NULL,
-  PRIMARY KEY (`ID`)
-) ENGINE=InnoDB COMMENT='Fresh desk tickets will save  here temporarily
-prc_getAccountTimeLine will use it';
 
 ALTER TABLE `tblNote`
   ADD COLUMN `UserID` int(11) NOT NULL DEFAULT '0'
@@ -538,13 +515,14 @@ SELECT AccountID,1,CompanyId,1 FROM tblAccount WHERE AccountType = 1 AND Status 
 UPDATE RMBilling3.tblAccountSubscription SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE RMBilling3.tblAccountOneOffCharge SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE tblCLIRateTable SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
+UPDATE tblAccountDiscountPlan SET ServiceID =1 WHERE ServiceID = 0;
 
 END IF;
 
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_AccountPaymentReminder`;
+DROP PROCEDURE IF EXISTS `prc_AccountPaymentReminder`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_AccountPaymentReminder`(
@@ -581,7 +559,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_AddAccountIPCLI`;
+DROP PROCEDURE IF EXISTS `prc_AddAccountIPCLI`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_AddAccountIPCLI`(
@@ -747,7 +725,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_applyAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_applyAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_applyAccountDiscountPlan`(
@@ -1311,7 +1289,7 @@ SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_checkCustomerCli`;
+DROP PROCEDURE IF EXISTS `prc_checkCustomerCli`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_checkCustomerCli`(
@@ -1507,7 +1485,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_getAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountDiscountPlan`(
@@ -1545,7 +1523,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetAccounts`;
+DROP PROCEDURE IF EXISTS `prc_GetAccounts`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetAccounts`(
@@ -1720,7 +1698,8 @@ BEGIN
 			CONCAT((SELECT Symbol FROM tblCurrency WHERE tblCurrency.CurrencyId = tblAccount.CurrencyId) ,ROUND(COALESCE(abc.SOAOffset,0),v_Round_)) as 'OutStanding',
 			tblAccount.Email,
 			CONCAT((SELECT Symbol FROM tblCurrency WHERE tblCurrency.CurrencyId = tblAccount.CurrencyId) ,ROUND(COALESCE(abc.UnbilledAmount,0),v_Round_)  - ROUND(COALESCE(abc.VendorUnbilledAmount,0),v_Round_)) as 'Unbilled Amount',
-			CONCAT((SELECT Symbol FROM tblCurrency WHERE tblCurrency.CurrencyId = tblAccount.CurrencyId) ,ROUND(COALESCE(abc.PermanentCredit,0),v_Round_)) as 'Credit Limit'
+			CONCAT((SELECT Symbol FROM tblCurrency WHERE tblCurrency.CurrencyId = tblAccount.CurrencyId) ,ROUND(COALESCE(abc.PermanentCredit,0),v_Round_)) as 'Credit Limit',
+			CONCAT(tblUser.FirstName,' ',tblUser.LastName) as 'Account Owner'
 		FROM tblAccount
 		LEFT JOIN tblAccountBalance abc
 			ON abc.AccountID = tblAccount.AccountID
@@ -1774,7 +1753,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountTimeLine`;
+DROP PROCEDURE IF EXISTS `prc_getAccountTimeLine`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountTimeLine`(
@@ -1945,7 +1924,7 @@ END IF;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetAjaxResourceList`;
+DROP PROCEDURE IF EXISTS `prc_GetAjaxResourceList`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetAjaxResourceList`(
@@ -2042,7 +2021,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetBlockUnblockAccount`;
+DROP PROCEDURE IF EXISTS `prc_GetBlockUnblockAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetBlockUnblockAccount`(
@@ -2079,7 +2058,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getContactTimeLine`;
+DROP PROCEDURE IF EXISTS `prc_getContactTimeLine`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getContactTimeLine`(
@@ -2207,7 +2186,7 @@ WHERE
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCrmDashboardSalesManager`;
+DROP PROCEDURE IF EXISTS `prc_GetCrmDashboardSalesManager`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCrmDashboardSalesManager`(
@@ -2307,7 +2286,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCrmDashboardSalesUser`;
+DROP PROCEDURE IF EXISTS `prc_GetCrmDashboardSalesUser`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCrmDashboardSalesUser`(
@@ -2364,7 +2343,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getCustomerCodeRate`;
+DROP PROCEDURE IF EXISTS `prc_getCustomerCodeRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getCustomerCodeRate`(
@@ -2539,7 +2518,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getCustomerInboundRate`;
+DROP PROCEDURE IF EXISTS `prc_getCustomerInboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getCustomerInboundRate`(
@@ -3533,7 +3512,7 @@ END IF;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_LowBalanceReminder`;
+DROP PROCEDURE IF EXISTS `prc_LowBalanceReminder`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_LowBalanceReminder`(
@@ -3571,7 +3550,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcessDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_ProcessDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcessDiscountPlan`(
@@ -3664,7 +3643,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RateTableRateInsertUpdate`;
+DROP PROCEDURE IF EXISTS `prc_RateTableRateInsertUpdate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RateTableRateInsertUpdate`(IN `p_CompanyID` INT, IN `p_RateTableRateID` LONGTEXT
@@ -3923,7 +3902,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_setAccountDiscountPlan`;
+DROP PROCEDURE IF EXISTS `prc_setAccountDiscountPlan`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_setAccountDiscountPlan`(
@@ -4051,7 +4030,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_WSProcessImportAccount`;
+DROP PROCEDURE IF EXISTS `prc_WSProcessImportAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_WSProcessImportAccount`(
@@ -4483,6 +4462,14 @@ ALTER TABLE `tblInvoiceTemplate`
   , ADD COLUMN `GroupByService` int(11) NULL DEFAULT '0'
   , ADD COLUMN `CDRType` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblGatewayAccount`
+  MODIFY COLUMN `AccountName` varchar(100) NULL
+  , MODIFY COLUMN `AccountIP` varchar(100) NULL
+  , ADD COLUMN `AccountNumber` varchar(100) NULL
+  , ADD COLUMN `AccountCLI` varchar(100) NULL;
+
+CREATE INDEX `IX6` ON `tblGatewayAccount`(`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`);
+
 DROP TABLE `tblUsageDaily`;
 
 DROP TABLE `tblUsageHourly`;
@@ -4667,7 +4654,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetail`(
@@ -4759,7 +4746,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetailbyProcessID`;
+DROP PROCEDURE IF EXISTS `fnUsageDetailbyProcessID`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetailbyProcessID`(IN `p_ProcessID` VARCHAR(200)
@@ -4810,7 +4797,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageDetailbyUsageHeaderID`;
+DROP PROCEDURE IF EXISTS `fnUsageDetailbyUsageHeaderID`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageDetailbyUsageHeaderID`( 
@@ -4858,7 +4845,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnVendorUsageDetail`;
+DROP PROCEDURE IF EXISTS `fnVendorUsageDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnVendorUsageDetail`(
@@ -4933,6 +4920,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ApplyAuthRule`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ApplyAuthRule`(
 	IN `p_CompanyID` INT,
@@ -4957,10 +4946,12 @@ BEGIN
 	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -4975,20 +4966,22 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAMENUB' OR aa.VendorAuthRule ='NAMENUB' )) OR
-				aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUBNAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -5003,24 +4996,26 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUBNAME' OR aa.VendorAuthRule ='NUBNAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUB'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
-				AND a.Number = ga.AccountName
+				AND a.Number = ga.AccountNumber
 			LEFT JOIN Ratemanagement3.tblAccountAuthenticate aa 
 				ON a.AccountID = aa.AccountID 
 				AND aa.ServiceID = ga.ServiceID	
@@ -5031,68 +5026,74 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUB' OR aa.VendorAuthRule ='NUB' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'IP'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'IP' OR aa.VendorAuthRule ='IP')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ( FIND_IN_SET(ga.AccountName,aa.CustomerAuthValue) != 0 OR FIND_IN_SET(ga.AccountName,aa.VendorAuthValue) != 0 )
+				AND ( (aa.CustomerAuthRule = 'IP' AND FIND_IN_SET(ga.AccountIP,aa.CustomerAuthValue) != 0) OR (aa.VendorAuthRule ='IP' AND FIND_IN_SET(ga.AccountIP,aa.VendorAuthValue) != 0) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'CLI'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 			INNER JOIN Ratemanagement3.tblCLIRateTable aa
 				ON a.AccountID = aa.AccountID
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ga.AccountName = aa.CLI
+				AND ga.AccountCLI = aa.CLI
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = '' OR p_NameFormat IS NULL OR p_NameFormat = 'NAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
@@ -5107,34 +5108,36 @@ BEGIN
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAME' OR aa.VendorAuthRule ='NAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+		
 		IF p_NameFormat = 'Other'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'Other' OR aa.VendorAuthRule ='Other')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
 				AND ga.ServiceID = aa.ServiceID 
-				AND ( aa.VendorAuthValue = ga.AccountName OR aa.CustomerAuthValue = ga.AccountName )
+				AND ( (aa.VendorAuthRule ='Other' AND aa.VendorAuthValue = ga.AccountName) OR (aa.CustomerAuthRule = 'Other' AND aa.CustomerAuthValue = ga.AccountName) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID;
-
+	
 		END IF;
 
 		SET v_pointer_ = v_pointer_ + 1;
@@ -5144,7 +5147,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_checkCDRIsLoadedOrNot`;
+DROP PROCEDURE IF EXISTS `prc_checkCDRIsLoadedOrNot`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_checkCDRIsLoadedOrNot`(IN `p_AccountID` INT, IN `p_CompanyID` INT, IN `p_UsageEndDate` DATETIME )
@@ -5188,7 +5191,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_Convert_Invoices_to_Estimates`;
+DROP PROCEDURE IF EXISTS `prc_Convert_Invoices_to_Estimates`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_Convert_Invoices_to_Estimates`(
@@ -5365,7 +5368,7 @@ where
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_CreateInvoiceFromRecurringInvoice`;
+DROP PROCEDURE IF EXISTS `prc_CreateInvoiceFromRecurringInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_CreateInvoiceFromRecurringInvoice`(
@@ -5609,6 +5612,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_CreateRerateLog`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_CreateRerateLog`(
 	IN `p_processId` INT,
@@ -5623,17 +5628,21 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 
@@ -5643,10 +5652,10 @@ BEGIN
 
 	IF p_RateCDR = 1
 	THEN
-
+	
 		IF ( SELECT COUNT(*) FROM tmp_Service_ ) > 0
 		THEN
-
+		
 			SET @stm = CONCAT('
 			INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
 			SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,2,  CONCAT( "Account:  " , a.AccountName ," - Service: ",IFNULL(s.ServiceName,"")," - Unable to Rerate number ",IFNULL(ud.cld,"")," - No Matching prefix found") as Message ,DATE(NOW())
@@ -5654,11 +5663,11 @@ BEGIN
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			LEFT JOIN Ratemanagement3.tblService s on  s.ServiceID = ud.ServiceID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		ELSE
 
 			SET @stm = CONCAT('
@@ -5667,11 +5676,11 @@ BEGIN
 			FROM  RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		END IF;
 
 		SET @stm = CONCAT('
@@ -5708,7 +5717,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_CustomerPanel_getInvoice`;
+DROP PROCEDURE IF EXISTS `prc_CustomerPanel_getInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_CustomerPanel_getInvoice`(
@@ -5899,7 +5908,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_DeleteCDR`;
+DROP PROCEDURE IF EXISTS `prc_DeleteCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteCDR`(
@@ -5982,7 +5991,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_DeleteVCDR`;
+DROP PROCEDURE IF EXISTS `prc_DeleteVCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteVCDR`(
@@ -6060,7 +6069,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountInvoiceTotal`;
+DROP PROCEDURE IF EXISTS `prc_getAccountInvoiceTotal`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountInvoiceTotal`(
@@ -6112,7 +6121,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountNameByGatway`;
+DROP PROCEDURE IF EXISTS `prc_getAccountNameByGatway`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountNameByGatway`(IN `p_company_id` INT, IN `p_gatewayid` INT
@@ -6403,15 +6412,13 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getActiveGatewayAccount`;
+DROP PROCEDURE IF EXISTS `prc_getActiveGatewayAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getActiveGatewayAccount`(
 	IN `p_CompanyID` INT,
 	IN `p_CompanyGatewayID` INT,
 	IN `p_NameFormat` VARCHAR(50)
-
-
 )
 BEGIN
 
@@ -6425,10 +6432,12 @@ BEGIN
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_ActiveAccount;
 	CREATE TEMPORARY TABLE tmp_ActiveAccount (
-		GatewayAccountID varchar(100),
+		AccountName varchar(100),
+		AccountNumber varchar(100),
+		AccountCLI varchar(100),
+		AccountIP varchar(100),
 		AccountID INT,
-		ServiceID INT,
-		AccountName varchar(100)
+		ServiceID INT
 	);
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_AuthenticateRules_;
@@ -6515,7 +6524,10 @@ BEGIN
 
 	UPDATE tblGatewayAccount
 	INNER JOIN tmp_ActiveAccount a
-		ON a.GatewayAccountID = tblGatewayAccount.GatewayAccountID
+		ON a.AccountName = tblGatewayAccount.AccountName
+		AND a.AccountNumber = tblGatewayAccount.AccountNumber
+		AND a.AccountCLI = tblGatewayAccount.AccountCLI
+		AND a.AccountIP = tblGatewayAccount.AccountIP
 		AND tblGatewayAccount.CompanyGatewayID = p_CompanyGatewayID
 		AND tblGatewayAccount.ServiceID = a.ServiceID
 	SET tblGatewayAccount.AccountID = a.AccountID
@@ -6526,7 +6538,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getBillingSubscription`;
+DROP PROCEDURE IF EXISTS `prc_getBillingSubscription`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getBillingSubscription`(
@@ -6656,7 +6668,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetCDR`;
+DROP PROCEDURE IF EXISTS `prc_GetCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetCDR`(
@@ -6772,7 +6784,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpense`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpense`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpense`(
@@ -7027,7 +7039,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpenseDrilDown`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpenseDrilDown`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpenseDrilDown`(IN `p_CompanyID` INT, IN `p_CurrencyID` INT, IN `p_StartDate` VARCHAR(50), IN `p_EndDate` VARCHAR(50), IN `p_Type` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_CustomerID` INT, IN `p_Export` INT)
@@ -7287,7 +7299,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardinvoiceExpenseTotalOutstanding`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardinvoiceExpenseTotalOutstanding`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardinvoiceExpenseTotalOutstanding`(
@@ -7511,7 +7523,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashBoardPinCodes`;
+DROP PROCEDURE IF EXISTS `prc_getDashBoardPinCodes`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashBoardPinCodes`(IN `p_CompanyID` INT, IN `p_StartDate` DATE, IN `p_EndDate` DATE, IN `p_AccountID` INT, IN `p_Type` INT, IN `p_Limit` INT, IN `p_PinExt` VARCHAR(50), IN `p_CurrencyID` INT)
@@ -7579,7 +7591,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardTotalOutStanding`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardTotalOutStanding`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardTotalOutStanding`(
@@ -7644,7 +7656,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDisputeDetail`;
+DROP PROCEDURE IF EXISTS `prc_getDisputeDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDisputeDetail`(IN `p_CompanyID` INT, IN `p_DisputeID` INT)
@@ -7695,7 +7707,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDisputes`;
+DROP PROCEDURE IF EXISTS `prc_getDisputes`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDisputes`(IN `p_CompanyID` INT, IN `p_InvoiceType` INT, IN `p_AccountID` INT, IN `p_InvoiceNumber` VARCHAR(100), IN `p_Status` INT, IN `p_StartDate` DATETIME, IN `p_EndDate` DATETIME, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_Export` INT)
@@ -7845,7 +7857,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDueInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getDueInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDueInvoice`(
@@ -7885,7 +7897,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getEstimate`;
+DROP PROCEDURE IF EXISTS `prc_getEstimate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getEstimate`(
@@ -8037,7 +8049,7 @@ BEGIN
     END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetEstimateLog`;
+DROP PROCEDURE IF EXISTS `prc_GetEstimateLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetEstimateLog`(IN `p_CompanyID` INT, IN `p_EstimateID` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_isExport` INT)
@@ -8116,7 +8128,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getInvoice`(
@@ -8420,7 +8432,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetInvoiceLog`;
+DROP PROCEDURE IF EXISTS `prc_GetInvoiceLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetInvoiceLog`(
@@ -8513,7 +8525,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetInvoiceTransactionLog`;
+DROP PROCEDURE IF EXISTS `prc_GetInvoiceTransactionLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetInvoiceTransactionLog`(
@@ -8641,7 +8653,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getInvoiceUsage`;
+DROP PROCEDURE IF EXISTS `prc_getInvoiceUsage`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getInvoiceUsage`(
@@ -8727,24 +8739,47 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getMissingAccounts`;
+DROP PROCEDURE IF EXISTS `prc_getMissingAccounts`;
 
 DELIMITER |
-CREATE PROCEDURE `prc_getMissingAccounts`(IN `p_CompanyID` int, IN `p_CompanyGatewayID` INT)
+CREATE PROCEDURE `prc_getMissingAccounts`(
+	IN `p_CompanyID` int,
+	IN `p_CompanyGatewayID` INT
+)
 BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-	SELECT cg.Title,ga.AccountName from tblGatewayAccount ga
-	inner join Ratemanagement3.tblCompanyGateway cg on ga.CompanyGatewayID = cg.CompanyGatewayID
-	where ga.GatewayAccountID is not null and ga.CompanyID =p_CompanyID and ga.AccountID is null AND cg.`Status` =1
-	AND (p_CompanyGatewayID = 0 or ga.CompanyGatewayID = p_CompanyGatewayID )
+	
+	SELECT 
+		cg.Title,
+		CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'NUB'
+		THEN
+			ga.AccountNumber
+		ELSE
+			CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'IP'
+			THEN
+				ga.AccountIP
+			ELSE
+				CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'CLI'
+				THEN
+					ga.AccountCLI
+				ELSE 
+					ga.AccountName
+				END
+			END
+		END
+		AS AccountName
+	FROM tblGatewayAccount ga
+	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON ga.CompanyGatewayID = cg.CompanyGatewayID
+	WHERE ga.GatewayAccountID IS NOT NULL and ga.CompanyID =p_CompanyID AND ga.AccountID IS NULL AND cg.`Status` =1
+	AND (p_CompanyGatewayID = 0 OR ga.CompanyGatewayID = p_CompanyGatewayID )
 	ORDER BY ga.CompanyGatewayID,ga.AccountName;
 	
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPaymentPendingInvoice`;
+DROP PROCEDURE IF EXISTS `prc_getPaymentPendingInvoice`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPaymentPendingInvoice`(
@@ -8783,7 +8818,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPayments`;
+DROP PROCEDURE IF EXISTS `prc_getPayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPayments`(
@@ -8992,7 +9027,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getPincodesGrid`;
+DROP PROCEDURE IF EXISTS `prc_getPincodesGrid`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getPincodesGrid`(IN `p_CompanyID` INT, IN `p_Pincode` VARCHAR(50), IN `p_PinExt` VARCHAR(50), IN `p_StartDate` DATE, IN `p_EndDate` DATE, IN `p_AccountID` INT, IN `p_CurrencyID` INT, IN `p_PageNumber` INT, IN `p_RowspPage` INT, IN `p_lSortCol` VARCHAR(50), IN `p_SortOrder` VARCHAR(50), IN `p_isExport` INT)
@@ -9068,7 +9103,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetRecurringInvoiceLog`;
+DROP PROCEDURE IF EXISTS `prc_GetRecurringInvoiceLog`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetRecurringInvoiceLog`(
@@ -9148,7 +9183,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getRecurringInvoices`;
+DROP PROCEDURE IF EXISTS `prc_getRecurringInvoices`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getRecurringInvoices`(
@@ -9249,7 +9284,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSOA`;
+DROP PROCEDURE IF EXISTS `prc_getSOA`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSOA`(
@@ -9781,7 +9816,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSOA_invoicenumber`;
+DROP PROCEDURE IF EXISTS `prc_getSOA_invoicenumber`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSOA_invoicenumber`(IN `p_CompanyID` INT, IN `p_accountID` INT, IN `p_StartDate` datetime, IN `p_EndDate` datetime, IN `p_isExport` INT )
@@ -10177,7 +10212,7 @@ BEGIN
   END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByCountry`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByCountry`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByCountry`(
@@ -10301,7 +10336,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByCustomer`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByCustomer`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByCustomer`(
@@ -10404,7 +10439,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getSummaryReportByPrefix`;
+DROP PROCEDURE IF EXISTS `prc_getSummaryReportByPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getSummaryReportByPrefix`(
@@ -10558,7 +10593,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetTransactionsLogbyInterval`;
+DROP PROCEDURE IF EXISTS `prc_GetTransactionsLogbyInterval`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetTransactionsLogbyInterval`(IN `p_CompanyID` int, IN `p_Interval` varchar(50) )
@@ -10595,7 +10630,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_GetVendorCDR`;
+DROP PROCEDURE IF EXISTS `prc_GetVendorCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_GetVendorCDR`(
@@ -10699,7 +10734,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertPayments`;
+DROP PROCEDURE IF EXISTS `prc_insertPayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertPayments`(
@@ -10771,7 +10806,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_InsertTempReRateCDR`;
+DROP PROCEDURE IF EXISTS `prc_InsertTempReRateCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_InsertTempReRateCDR`(
@@ -10796,12 +10831,15 @@ BEGIN
 
 	SELECT fnGetBillingTime(p_CompanyGatewayID,p_AccountID) INTO v_BillingTime_;
 
-	SET @stm1 = CONCAT('
+	
+
+	set @stm1 = CONCAT('
 
 	INSERT INTO RMCDR3.`' , p_tbltempusagedetail_name , '` (
 		CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		AccountID,
 		ServiceID,
 		connect_time,
@@ -10829,6 +10867,7 @@ BEGIN
 		uh.CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		uh.AccountID,
 		uh.ServiceID,
 		connect_time,
@@ -10885,6 +10924,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ProcessCDRAccount`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ProcessCDRAccount`(
 	IN `p_CompanyID` INT,
@@ -10899,17 +10940,23 @@ BEGIN
 	
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,ServiceID)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
 		ud.ServiceID
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
 		AND ga.ServiceID = ud.ServiceID
@@ -10921,9 +10968,30 @@ BEGIN
 	PREPARE stmt FROM @stm;
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
+	
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
 
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
+	
+	
 
 	/* update cdr account */
 	SET @stm = CONCAT('
@@ -10931,7 +10999,10 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
 		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
@@ -10946,10 +11017,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblUsageHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
-		AND ga.ServiceID = uh.ServiceID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -10961,10 +11029,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblUsageHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
-			AND ga.ServiceID = uh.ServiceID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11041,7 +11106,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcesssCDR`;
+DROP PROCEDURE IF EXISTS `prc_ProcesssCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcesssCDR`(
@@ -11149,7 +11214,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_ProcesssVCDR`;
+DROP PROCEDURE IF EXISTS `prc_ProcesssVCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_ProcesssVCDR`(
@@ -11192,23 +11257,31 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,IsVendor)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID,IsVendor)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
+		ud.ServiceID,
 		1 as IsVendor
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
+		AND ga.ServiceID = ud.ServiceID
 		AND ga.CompanyID = ud.CompanyID
 	WHERE ProcessID =  "' , p_processId , '"
 		AND ga.GatewayAccountID IS NULL
@@ -11219,6 +11292,25 @@ BEGIN
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
 
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
+	
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
 
@@ -11228,11 +11320,15 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
-	AND uh.CompanyID = ' ,  p_companyid , '
+	AND uh.CompanyID = ' ,  p_CompanyID , '
 	AND uh.ProcessID = "' , p_processId , '" ;
 	');
 	PREPARE stmt FROM @stm;
@@ -11242,9 +11338,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblVendorCDRHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -11255,9 +11349,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblVendorCDRHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11393,12 +11485,16 @@ BEGIN
 	
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 	
@@ -11443,7 +11539,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RerateInboundCalls`;
+DROP PROCEDURE IF EXISTS `prc_RerateInboundCalls`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RerateInboundCalls`(
@@ -11796,7 +11892,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_start_end_time`;
+DROP PROCEDURE IF EXISTS `prc_start_end_time`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_start_end_time`(IN `p_ProcessID` VARCHAR(2000), IN `p_tbltempusagedetail_name` VARCHAR(50))
@@ -11817,7 +11913,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateDefaultPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateDefaultPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateDefaultPrefix`(IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -11912,7 +12008,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateDefaultVendorPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateDefaultVendorPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateDefaultVendorPrefix`(IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12007,7 +12103,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateInboundPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateInboundPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateInboundPrefix`(
@@ -12098,7 +12194,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateInboundRate`;
+DROP PROCEDURE IF EXISTS `prc_updateInboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateInboundRate`(
@@ -12158,7 +12254,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateOutboundRate`;
+DROP PROCEDURE IF EXISTS `prc_updateOutboundRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateOutboundRate`(
@@ -12218,7 +12314,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updatePrefix`;
+DROP PROCEDURE IF EXISTS `prc_updatePrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updatePrefix`(
@@ -12340,7 +12436,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateSOAOffSet`;
+DROP PROCEDURE IF EXISTS `prc_updateSOAOffSet`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateSOAOffSet`(
@@ -12419,7 +12515,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorPrefix`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorPrefix`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorPrefix`(IN `p_AccountID` INT, IN `p_TrunkID` INT, IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12501,7 +12597,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorRate`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorRate`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorRate`(IN `p_AccountID` INT, IN `p_TrunkID` INT, IN `p_processId` INT, IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12553,7 +12649,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_validatePayments`;
+DROP PROCEDURE IF EXISTS `prc_validatePayments`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_validatePayments`(
@@ -12659,12 +12755,42 @@ USE `RMCDR3`;
 ALTER TABLE `tblUsageHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblCDRPostProcess`
+  MODIFY COLUMN `CDRPostProcessID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblUsageDetailFailedCall`
+  MODIFY COLUMN `UsageDetailFailedCallID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblUsageDetails`
+  MODIFY COLUMN `UsageDetailID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblVCDRPostProcess`
+  MODIFY COLUMN `VCDRPostProcessID` bigint(20) unsigned NOT NULL auto_increment;
+
+ALTER TABLE `tblVendorCDR`
+  MODIFY COLUMN `VendorCDRID` bigint(20) unsigned NOT NULL auto_increment;
+
+CREATE INDEX `IX_ID` ON `tblVendorCDR`(`ID`);
+
+ALTER TABLE `tblVendorCDRFailed`
+  MODIFY COLUMN `VendorCDRFailedID` bigint(20) unsigned NOT NULL auto_increment;
+
 CREATE INDEX `IX_ID` ON `tblVendorCDRFailed`(`ID`);
 
 ALTER TABLE `tblVendorCDRHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
-DROP PROCEDURE `prc_DeleteDuplicateUniqueID`;
+ALTER TABLE `tblUsageHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblUsageHeader`(`GatewayAccountPKID`);
+
+ALTER TABLE `tblVendorCDRHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblVendorCDRHeader`(`GatewayAccountPKID`);  
+
+DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_DeleteDuplicateUniqueID`(IN `p_CompanyID` INT, IN `p_CompanyGatewayID` INT, IN `p_ProcessID` VARCHAR(200), IN `p_tbltempusagedetail_name` VARCHAR(200))
@@ -12704,7 +12830,53 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertCDR`;
+DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID2`;
+
+DELIMITER |
+
+CREATE PROCEDURE `prc_DeleteDuplicateUniqueID2`(
+	IN `p_CompanyID` INT,
+	IN `p_CompanyGatewayID` INT,
+	IN `p_ProcessID` VARCHAR(200),
+	IN `p_tbltempusagedetail_name` VARCHAR(200)
+)
+BEGIN
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+	SET @stm1 = CONCAT('
+		DELETE tud FROM `' , p_tbltempusagedetail_name , '` tud
+		INNER JOIN tblVendorCDR ud ON tud.ID =ud.ID
+		INNER JOIN  tblVendorCDRHeader uh on uh.VendorCDRHeaderID = ud.VendorCDRHeaderID
+			AND tud.CompanyID = uh.CompanyID
+			AND tud.CompanyGatewayID = uh.CompanyGatewayID
+		WHERE tud.CompanyID = "' , p_CompanyID , '"
+		AND tud.CompanyGatewayID = "' , p_CompanyGatewayID , '"
+		AND tud.ProcessID = "' , p_processId , '";
+	');
+	PREPARE stmt1 FROM @stm1;
+	EXECUTE stmt1;
+	DEALLOCATE PREPARE stmt1;
+
+	SET @stm2 = CONCAT('
+		DELETE tud FROM `' , p_tbltempusagedetail_name , '` tud
+		INNER JOIN tblVendorCDRFailed ud ON tud.ID =ud.ID
+		INNER JOIN  tblVendorCDRHeader uh on uh.VendorCDRHeaderID = ud.VendorCDRHeaderID
+			AND tud.CompanyID = uh.CompanyID
+			AND tud.CompanyGatewayID = uh.CompanyGatewayID
+		WHERE tud.CompanyID = "' , p_CompanyID , '"
+		AND tud.CompanyGatewayID = "' , p_CompanyGatewayID , '"
+		AND tud.ProcessID = "' , p_processId , '";
+	');
+	PREPARE stmt2 FROM @stm2;
+	EXECUTE stmt2;
+	DEALLOCATE PREPARE stmt2;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+END|
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `prc_insertCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertCDR`(
@@ -12718,14 +12890,11 @@ BEGIN
 	SET SESSION innodb_lock_wait_timeout = 180;
 
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12739,10 +12908,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '"
 		AND billed_duration = 0 AND cost = 0 AND ( disposition <> "ANSWERED" OR disposition IS NULL);
@@ -12766,10 +12932,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '" ;
 	');
@@ -12791,7 +12954,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_insertVendorCDR`;
+DROP PROCEDURE IF EXISTS `prc_insertVendorCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_insertVendorCDR`(
@@ -12802,15 +12965,14 @@ BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
+	SET SESSION innodb_lock_wait_timeout = 180;
+
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblVendorCDRHeader h 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.ServiceID = d.ServiceID
-		AND h.GatewayAccountID = d.GatewayAccountID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12820,14 +12982,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt2;
 
 	SET @stm6 = CONCAT('
-	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" AND  billed_duration = 0 AND buying_cost = 0 ;
 	');
@@ -12845,14 +13004,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt3;
 
 	SET @stm4 = CONCAT('
-	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" ;
 	');
@@ -12874,7 +13030,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_PostProcessCDR`;
+DROP PROCEDURE IF EXISTS `prc_PostProcessCDR`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_PostProcessCDR`(IN `p_CompanyID` INT)
@@ -12928,7 +13084,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_RetailMonitorCalls`;
+DROP PROCEDURE IF EXISTS `prc_RetailMonitorCalls`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_RetailMonitorCalls`(
@@ -13008,7 +13164,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_unsetCDRUsageAccount`;
+DROP PROCEDURE IF EXISTS `prc_unsetCDRUsageAccount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_unsetCDRUsageAccount`(
@@ -13079,6 +13235,48 @@ END|
 DELIMITER ;
 
 USE `StagingReport`;
+
+CREATE TABLE IF NOT EXISTS `tblHeader` (
+	`HeaderID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`DateID` BIGINT(20) NOT NULL,
+	`CompanyID` INT(11) NULL DEFAULT NULL,
+	`AccountID` INT(11) NULL DEFAULT NULL,
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`TotalCharges` DOUBLE NULL DEFAULT NULL,
+	`TotalBilledDuration` INT(11) NULL DEFAULT NULL,
+	`TotalDuration` INT(11) NULL DEFAULT NULL,
+	`NoOfCalls` INT(11) NULL DEFAULT NULL,
+	`NoOfFailCalls` INT(11) NULL DEFAULT NULL,
+	PRIMARY KEY (`HeaderID`),
+	UNIQUE INDEX `Unique_key` (`DateID`, `AccountID`),
+	INDEX `FK_tblSummaryHeaderNew_dim_date` (`DateID`),
+	INDEX `IX_CompanyID` (`CompanyID`),
+	CONSTRAINT `tblHeader_ibfk_1` FOREIGN KEY (`DateID`) REFERENCES `tblDimDate` (`DateID`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB
+;
+
+CREATE TABLE IF NOT EXISTS `tblHeaderV` (
+	`HeaderVID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`DateID` BIGINT(20) NOT NULL,
+	`CompanyID` INT(11) NULL DEFAULT NULL,
+	`VAccountID` INT(11) NULL DEFAULT NULL,
+	`created_at` DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+	`TotalCharges` DOUBLE NULL DEFAULT NULL,
+	`TotalSales` DOUBLE NULL DEFAULT NULL,
+	`TotalBilledDuration` INT(11) NULL DEFAULT NULL,
+	`TotalDuration` INT(11) NULL DEFAULT NULL,
+	`NoOfCalls` INT(11) NULL DEFAULT NULL,
+	`NoOfFailCalls` INT(11) NULL DEFAULT NULL,
+	PRIMARY KEY (`HeaderVID`),
+	UNIQUE INDEX `Unique_key` (`DateID`, `VAccountID`),
+	INDEX `FK_tblHeaderV_dim_date` (`DateID`),
+	INDEX `IX_CompanyID` (`CompanyID`),
+	CONSTRAINT `tblHeader_ibfk_2` FOREIGN KEY (`DateID`) REFERENCES `tblDimDate` (`DateID`) ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+COLLATE='utf8_unicode_ci'
+ENGINE=InnoDB;
 
 DROP INDEX `IX_CompanyID` ON `tblHeader`;
 
@@ -13238,7 +13436,7 @@ RETURN v_Round_;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetCountry`;
+DROP PROCEDURE IF EXISTS `fnGetCountry`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetCountry`()
@@ -13259,7 +13457,7 @@ SELECT CountryID,Prefix,Country,ISO2,ISO3 FROM Ratemanagement3.tblCountry;
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fngetDefaultCodes`;
+DROP PROCEDURE IF EXISTS `fngetDefaultCodes`;
 
 DELIMITER |
 CREATE PROCEDURE `fngetDefaultCodes`(IN `p_CompanyID` INT)
@@ -13287,7 +13485,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetUsageForSummary`;
+DROP PROCEDURE IF EXISTS `fnGetUsageForSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetUsageForSummary`(
@@ -13352,7 +13550,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetUsageForSummaryLive`;
+DROP PROCEDURE IF EXISTS `fnGetUsageForSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetUsageForSummaryLive`(
@@ -13417,7 +13615,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetVendorUsageForSummary`;
+DROP PROCEDURE IF EXISTS `fnGetVendorUsageForSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetVendorUsageForSummary`(
@@ -13483,7 +13681,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnGetVendorUsageForSummaryLive`;
+DROP PROCEDURE IF EXISTS `fnGetVendorUsageForSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `fnGetVendorUsageForSummaryLive`(
@@ -13550,7 +13748,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageSummary`;
+DROP PROCEDURE IF EXISTS `fnUsageSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageSummary`(
@@ -13773,7 +13971,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageSummaryDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageSummaryDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageSummaryDetail`(
@@ -13915,7 +14113,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageVendorSummary`;
+DROP PROCEDURE IF EXISTS `fnUsageVendorSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageVendorSummary`(
@@ -14132,7 +14330,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `fnUsageVendorSummaryDetail`;
+DROP PROCEDURE IF EXISTS `fnUsageVendorSummaryDetail`;
 
 DELIMITER |
 CREATE PROCEDURE `fnUsageVendorSummaryDetail`(
@@ -14275,7 +14473,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateSummary`;
+DROP PROCEDURE IF EXISTS `prc_generateSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateSummary`(
@@ -14447,7 +14645,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateSummaryLive`;
+DROP PROCEDURE IF EXISTS `prc_generateSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateSummaryLive`(
@@ -14622,7 +14820,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateVendorSummary`;
+DROP PROCEDURE IF EXISTS `prc_generateVendorSummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateVendorSummary`(
@@ -14800,7 +14998,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_generateVendorSummaryLive`;
+DROP PROCEDURE IF EXISTS `prc_generateVendorSummaryLive`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_generateVendorSummaryLive`(
@@ -14979,7 +15177,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getAccountExpense`;
+DROP PROCEDURE IF EXISTS `prc_getAccountExpense`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getAccountExpense`(IN `p_CompanyID` INT, IN `p_AccountID` INT)
@@ -15186,7 +15384,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardPayableReceivable`;
+DROP PROCEDURE IF EXISTS  `prc_getDashboardPayableReceivable`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardPayableReceivable`(
@@ -15492,7 +15690,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_getDashboardProfitLoss`;
+DROP PROCEDURE IF EXISTS `prc_getDashboardProfitLoss`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_getDashboardProfitLoss`(
@@ -15620,7 +15818,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateUnbilledAmount`;
+DROP PROCEDURE IF EXISTS `prc_updateUnbilledAmount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateUnbilledAmount`(
@@ -15698,7 +15896,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_updateVendorUnbilledAmount`;
+DROP PROCEDURE IF EXISTS `prc_updateVendorUnbilledAmount`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_updateVendorUnbilledAmount`(
@@ -15779,7 +15977,7 @@ BEGIN
 END|
 DELIMITER ;
 
-DROP PROCEDURE `prc_verifySummary`;
+DROP PROCEDURE IF EXISTS `prc_verifySummary`;
 
 DELIMITER |
 CREATE PROCEDURE `prc_verifySummary`(IN `p_CompanyID` INT, IN `p_AccountID` INT, IN `p_StartDate` DATETIME, IN `p_EndDate` DATETIME)
@@ -15986,8 +16184,23 @@ INSERT INTO `tblEmailTemplate` ( `CompanyID`, `TemplateName`, `Subject`, `Templa
 	(1, 'Agent Response SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResponseSlaVoilation', 1, 0, 1),
 	(1, 'Agent Resolve SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}&nbsp;&nbsp;&nbsp;&nbsp;<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResolveSlaVoilation', 1, 0, 1);
 
+INSERT INTO `tblEmailTemplate` ( `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES
+(1, 'Agent - New Ticket Created', 'New Ticket has been created - [#{{TicketID}}] {{Subject}}', 'Hi,<br>{{Subject}}&nbsp;&nbsp;&nbsp; {{Requester}}<br>A new ticket has been created.&nbsp;<br>You may view&nbsp; the ticket <br><br>Regards,<br>{{helpdesk_name}}<br>', '2017-01-24 13:34:46', 'System', '2017-02-22 08:05:01', 'System', NULL, 4, '', 1, 'AgentNewTicketCreated', 1, 0, 1),
+(1, 'Agent - Ticket Assigned to Agent', 'Ticket Assigned - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>A new ticket (Ticket ID - {{TicketID}}) has been assigned to you. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br><br>{{CompanyName}}<br>', '2017-01-25 14:29:56', 'System', '2017-03-10 11:41:48', 'System', NULL, 4, '', 1, 'TicketAssignedtoAgent', 1, 0, 1),
+(1, 'Agent - Requester Replies to Ticket', 'New Reply Received - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>The customer has responded to the ticket (#{{TicketID}})<br><br>{{Subject}}<br><br>Ticket comment<br>{{Comment}}<br>', '2017-01-25 14:30:24', 'System', '2017-02-21 10:36:53', 'System', NULL, 4, '', 1, 'RequesterRepliestoTicket', 1, 0, 1),
+(1, 'Agent - Note added to ticket', 'Note Added - [#{{TicketID}}] {{Subject}}', '<p>Hi ,&nbsp;<br><br>{{NoteUser}}&nbsp;added a note and wants you to have a look.<br></p><p><br></p><p><a href="{{TicketUrl}}" title="Link: {{TicketUrl}}">View</a></p>Subject:&nbsp;<br>{{Subject}}<br><br>Requester: {{RequesterName}}&nbsp;<br><br>Note Content:&nbsp;<br>{{Notebody}}<br><br><br>', '2017-01-25 14:33:46', 'System', '2017-05-11 15:18:34', '', NULL, 4, '', 1, 'Noteaddedtoticket', 1, 0, 1),
+(1, 'Requester - Agent Resolved the Ticket', 'Ticket Resolved - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},<br><br>Our Support Rep has indicated that your Ticket (#{{TicketID}}) has been Resolved.&nbsp;<br><br>If you believe that the ticket has not been resolved, please reply to this email to automatically reopen the ticket.<br>If there is no response from you, we will assume that the ticket has been resolved and the ticket will be automatically closed after 48 hours.<br><br>Sincerely,<br>{{helpdesk_name}}<br>Support Team<br>', '2017-01-25 14:36:11', 'System', '2017-02-22 13:06:20', 'System', NULL, 4, '', 1, 'AgentSolvestheTicket', 1, 0, 1),
+(1, 'Requester - Agent Closes the Ticket', 'Ticket Closed - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},<br><br>Your Ticket #{{TicketID}} - {{Subject}} -&nbsp; has been closed.<br><br>We hope that the ticket was resolved to your satisfaction. If you feel that the ticket should not be closed or if the ticket has not been resolved, please reply to this email.<br><br>Sincerely,<br>{{helpdesk_name}}<br>Support Team<br>', '2017-01-25 14:36:26', 'System', '2017-02-22 13:09:00', 'System', NULL, 4, '', 1, 'AgentClosestheTicket', 1, 0, 1),
+(1, 'Requester - New Ticket Created', 'Ticket Received - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},&nbsp;<br><br>We would like to acknowledge that we have received your request and a ticket has been created with Ticket ID - {{TicketID}}.<br>A support representative will be reviewing your request and will send you a personal response.(usually within 24 hours).<br><br><span>To view the status of the ticket or add comments, please visit&nbsp;</span><br>{{TicketCustomerUrl}}<br><br>Thank you for your patience.<br><br>Sincerely,<br><span>{{helpdesk_name}} Support Team</span><br>', '2017-01-25 15:08:14', 'System', '2017-05-18 12:50:24', '', NULL, 4, '', 1, 'RequesterNewTicketCreated', 1, 0, 1),
+(1, 'CC - New Ticket Created', 'Added as CC - [#{{TicketID}}] {{Subject}}', '<p>{{RequesterName}} submitted a new ticket to {{CompanyName}} and requested that we copy you</p><br>Ticket Description:&nbsp;<br>{{Description}}<br>', '2017-01-25 15:24:18', 'System', '2017-03-10 13:44:49', 'System', NULL, 4, '', 1, 'CCNewTicketCreated', 1, 0, 1),
+(1, 'Agent - Assigned to Group', 'Assigned to Group - [#{{TicketID}}]  {{Subject}}', '<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">Hi</span><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">A new ticket (#</span>{{TicketID}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">) has been assigned to your group "</span>{{Group}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">". Please follow the link below to view the ticket.</span><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Subject}}<br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Description}}<br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{TicketUrl}}<br>', '2017-02-22 08:13:11', 'System', '2017-03-09 15:42:50', 'System', NULL, 4, '', 1, 'AgentAssignedGroup', 1, 0, 1),
+(1, 'Agent - Ticket Reopened', 'Ticket Reopened - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>&nbsp;ticket (Ticket ID - {{TicketID}}) has been reopened. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br>{{TicketUrl}}<br><br>{{CompanyName}}<br><br>', '2017-01-25 14:29:56', 'System', '2017-03-09 16:47:24', 'System', NULL, 4, '', 1, 'AgentTicketReopened', 1, 0, 1),
+(1, 'Agent - Escalation Email', 'Ticket unassigned - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>&nbsp;ticket (Ticket ID - {{TicketID}}) is not assigned to any agent. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br>{{TicketUrl}}<br><br>{{CompanyName}}<br><br>', '2017-01-25 14:29:56', 'System', '2017-03-10 09:39:31', 'System', NULL, 4, '', 1, 'AgentEscalationRule', 1, 0, 1),
+(1, 'CC - Note added to ticket', 'New comment -  [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">There is a new comment in the ticket #{{TicketID}} &nbsp;submitted by&nbsp;{{NoteUser}}<br></p><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Subject}}<br>{{Description}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span>{{TicketUrl}}<br><span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span>{{CompanyName}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span><p></p>', '2017-01-25 15:35:02', 'System', '2017-05-11 16:38:40', '', NULL, 4, '', 1, 'CCNoteaddedtoticket', 1, 0, 1);
 
+INSERT INTO `tblTicketPriority` (`PriorityID`, `PriorityValue`) VALUES (1, 'Low'),(2, 'Medium'),(3, 'High'),(4, 'Urgent');
 
+INSERT INTO `tblCronJobCommand` (`CronJobCommandID`, `CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (73, 1, NULL, 'Ticket Emails', 'reademailstickets', '[[{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2016-09-28 14:07:52', 'RateManagementSystem');
 
 INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'from_email', 'Requester Email', NULL, NULL, NULL, NULL);
 INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'to_email', 'To Email', NULL, NULL, NULL, NULL);
@@ -16173,7 +16386,23 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Catego
 
 CALL migrateService();
 
+USE `RMBilling3`;
+
+delete from tblGatewayAccount where AccountID IS NULL AND AccountCLI IS NULL; 
+
 USE `RMCDR3`;
+
+update tblUsageHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblUsageHeader.GatewayAccountID
+set tblUsageHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
+
+update tblVendorCDRHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblVendorCDRHeader.GatewayAccountID
+set tblVendorCDRHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
 
 SET @tables = NULL;
 SELECT GROUP_CONCAT('`', table_schema, '`.`', table_name,'`') INTO @tables FROM information_schema.tables 

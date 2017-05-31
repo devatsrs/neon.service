@@ -177,6 +177,10 @@ class VOSAccountUsage extends Command
                                 }else{
                                     $uddata['GatewayAccountID'] = $excelrow['33'];
                                 }
+                                $uddata['AccountIP'] = $excelrow['4'];
+                                $uddata['AccountName'] = $excelrow['33'];
+                                $uddata['AccountNumber'] = '';
+                                $uddata['AccountCLI'] = '';
                                 $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
                                 $uddata['cost'] = (float)$excelrow['26'];
@@ -207,6 +211,10 @@ class VOSAccountUsage extends Command
                                 }else{
                                     $vendorcdrdata['GatewayAccountID'] = $excelrow['40'];
                                 }
+                                $vendorcdrdata['AccountIP'] = $excelrow['10'];
+                                $vendorcdrdata['AccountName'] = $excelrow['40'];
+                                $vendorcdrdata['AccountNumber'] = '';
+                                $vendorcdrdata['AccountCLI'] = '';
                                 $vendorcdrdata['billed_duration'] = $excelrow['23'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
                                 $vendorcdrdata['billed_second'] = $excelrow['23'];
