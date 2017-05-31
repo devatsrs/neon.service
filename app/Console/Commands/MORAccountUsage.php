@@ -129,11 +129,16 @@ class MORAccountUsage extends Command {
                     $data['CompanyID'] = $CompanyID;
                     if ($companysetting->NameFormat == 'NUB') {
                         $data['GatewayAccountID'] = $row_account['username'];
-                    } else if ($companysetting->NameFormat == 'CLI') {
-                        $data['GatewayAccountID'] = $row_account['cli'];
                     } else if ($companysetting->NameFormat == 'IP') {
                         $data['GatewayAccountID'] = $row_account['originator_ip'];
                     }
+                    /*if ($companysetting->NameFormat == 'CLI') {
+                        $data['GatewayAccountID'] = $row_account['cli'];
+                    }*/
+                    $data['AccountIP'] = $row_account['originator_ip'];
+                    $data['AccountName'] = $row_account['username'];
+                    $data['AccountNumber'] = $row_account['username'];
+                    $data['AccountCLI'] = '';
                     $data['connect_time'] = $row_account['connect_time'];
                     $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
                     $data['cost'] = (float)$row_account['cost'];
@@ -164,6 +169,10 @@ class MORAccountUsage extends Command {
                     foreach ((array)$response as $row_account) {
                         if(!empty($row_account['terminator_ip'])) {
                             $vendorcdrdata = array();
+                            $vendorcdrdata['AccountIP'] = $row_account['terminator_ip'];
+                            $vendorcdrdata['AccountName'] = '';
+                            $vendorcdrdata['AccountNumber'] = '';
+                            $vendorcdrdata['AccountCLI'] = '';
                             $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                             $vendorcdrdata['CompanyID'] = $CompanyID;
                             $vendorcdrdata['GatewayAccountID'] = $row_account['terminator_ip'];

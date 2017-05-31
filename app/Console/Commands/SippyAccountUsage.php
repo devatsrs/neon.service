@@ -187,6 +187,10 @@ class SippyAccountUsage extends Command
                                 }else{
                                     $uddata['GatewayAccountID'] = $cdr_row['i_account'];
                                 }
+                                $uddata['AccountIP'] = $cdr_row['remote_ip'];
+                                $uddata['AccountName'] = '';
+                                $uddata['AccountNumber'] = '';
+                                $uddata['AccountCLI'] = '';
                                 $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 $uddata['cost'] = (float)$cdr_row['cost'];
@@ -278,6 +282,10 @@ class SippyAccountUsage extends Command
                                 }else{
                                     $uddata['GatewayAccountID'] = $cdr_row['i_account_debug'];
                                 }
+                                $uddata['AccountIP'] = $cdr_row['remote_ip'];
+                                $uddata['AccountName'] = '';
+                                $uddata['AccountNumber'] = '';
+                                $uddata['AccountCLI'] = '';
                                 $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                 $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                 //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
