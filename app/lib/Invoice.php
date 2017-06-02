@@ -594,7 +594,10 @@ class Invoice extends \Eloquent {
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
         foreach($InvoiceDetails as $InvoiceDetail){
-            $SubscriptionTotal +=   $InvoiceDetail->LineTotal;
+            $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
+            if($ExemptTax == 0) {
+                $SubscriptionTotal += $InvoiceDetail->LineTotal;
+            }
         }
         //delete tax first
         InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
