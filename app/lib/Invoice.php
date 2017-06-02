@@ -1397,7 +1397,9 @@ class Invoice extends \Eloquent {
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
 
-        $AccountOneOffCharges = AccountOneOffCharge::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
+        $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($AccountID,$ServiceID,$StartDate,$EndDate));
+        Log::info("Call prc_getAccountOneOffCharge($AccountID,$ServiceID,$StartDate,$EndDate)") ;
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {
