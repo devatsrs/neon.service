@@ -253,6 +253,28 @@ class CDRUpload extends Command
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                                if ($NameFormat == 'NUB') {
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountCLI'] = '';
+                                } else if ($NameFormat == 'IP') {
+                                    $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+                                }else if ($NameFormat == 'CLI') {
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
+                                }else{
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+                                }
+
                             }
                             if(empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;

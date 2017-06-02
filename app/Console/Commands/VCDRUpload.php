@@ -199,6 +199,11 @@ class VCDRUpload extends Command
                         }
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                            $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
+                            $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
+                            $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
+                            $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
+
                         }
 
                         if(empty($cdrdata['GatewayAccountID'])){
