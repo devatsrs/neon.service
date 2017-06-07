@@ -826,54 +826,57 @@ protected $server;
 			$search = array();
 			$replace = array();
 			
-			foreach($matches[1] as $match) { 
-				// work out some unique filename for it and save to filesystem etc
-				$str = explode("@",$match); 
-				$uniqueFilename = $str[0];
-				// change /path/to/images to actual path
-				
-				///
-				
-				$filename 		=  $uniqueFilename;				
-				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
-				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
-				
-				if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
-					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
+			foreach($matches[1] as $match) {
+
+				if(isset($emailMessage->attachments[$match]['data'])) {
+
+					// work out some unique filename for it and save to filesystem etc
+					$str = explode("@", $match);
+					$uniqueFilename = $str[0];
+					// change /path/to/images to actual path
+
+					///
+
+					$filename = $uniqueFilename;
+					$file_name = \Webpatser\Uuid\Uuid::generate() . "_" . basename($filename);
+					$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+
+					if (!is_dir($UPLOADPATH . '/' . $amazonPath)) {
+						mkdir($UPLOADPATH . '/' . $amazonPath, 0777, true);
+					}
+
+					$filepath = $UPLOADPATH . '/' . $amazonPath . $msg . "-" . $file_name;
+					$filepath2 = $amazonPath . $msg . "-" . $file_name;
+					$fp = fopen($filepath, "w+");
+					fwrite($fp, $emailMessage->attachments[$match]['data']);
+					fclose($fp);
+
+					$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
+					$dataImage = file_get_contents($filepath);
+					//@unlink($filepath);
+					///
+					if (is_amazon($CompanyID)) {
+						if (!AmazonS3::upload($filepath, $amazonPath, $CompanyID)) {
+							throw new \Exception('Error in Amazon upload');
+						}
+					}
+
+					$path = AmazonS3::unSignedUrl($filepath2, $CompanyID);
+
+					if (!is_numeric(strpos($path, "https://"))) {
+						//$path = str_replace('/', '\\', $path);
+
+						$path2 = CompanyConfiguration::get($CompanyID, 'WEB_URL') . "/download_file?file=";
+						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
+						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+						// }
+						$path = $path2 . base64_encode($filepath2);
+					}
+
+					$search[] = "src=\"cid:$match\"";
+					// change www.example.com etc to actual URL
+					$replace[] = "src=\"$path\"";
 				}
-				
-				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $msg . "-" . $file_name; 
-				$filepath2  =  $amazonPath . $msg . "-" . $file_name;  
-				$fp = fopen($filepath, "w+");
-				fwrite($fp, $emailMessage->attachments[$match]['data']); 
-				fclose($fp);
-				
-				$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
-				$dataImage = file_get_contents($filepath);
-				//@unlink($filepath);
-				///				
-				if(is_amazon($CompanyID)){
-					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
-						throw new \Exception('Error in Amazon upload');	
-					}					
-				}
-				
-				
-				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID); 
-				 
-                if (!is_numeric(strpos($path, "https://"))) {
-                    //$path = str_replace('/', '\\', $path);
-					
-					$path2 = CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=";
-                    //if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
-                     //   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
-                   // } 
-				   $path = $path2.base64_encode($filepath2); 
-                }
-				
-				$search[] = "src=\"cid:$match\"";
-				// change www.example.com etc to actual URL
-				$replace[] = "src=\"$path\"";
 			}
 			
 			// now do the replacements
