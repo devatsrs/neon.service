@@ -21,15 +21,19 @@ protected $server;
 	 public function __construct($data = array()){
 		 foreach($data as $key => $value){
 			 $this->$key = $value;
-		 }		 		 
+		 }
 	 }
 	 
 	 function ReadEmails($CompanyID){
 		 
 		$email 		= 	$this->email;
 		$password 	= 	$this->password;		
-		$server		=	$this->server;		
-		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
+		$server		=	$this->server;
+		try{
+			$inbox  	= 	imap_open("{".$server."}", $email, $password);
+		} catch (\Exception $e) {
+			throw $e;
+		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
 
 		if($emails){
@@ -457,7 +461,11 @@ protected $server;
 		$email 		= 	$email;
 		$password 	= 	$password;		
 		$server		=	$server;		
-		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
+		try{
+			$inbox  	= 	imap_open("{".$server."}INBOX", $email, $password);
+		} catch (\Exception $ex) {
+			throw $ex;
+		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
 		Log::info("connectiong:".$email);
 		if($emails){
