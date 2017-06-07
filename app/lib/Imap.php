@@ -114,7 +114,9 @@ protected $server;
 			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
-				
+
+				$message = html_entity_decode($message);
+
 				$logData = ['EmailFrom'=> $from,
 				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
 				'Subject'=>$overview[0]->subject,
@@ -402,7 +404,7 @@ protected $server;
     if ($body == "") {
         $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
     } 
-        return html_entity_decode($body);
+        return $body;
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
@@ -583,9 +585,10 @@ protected $server;
 					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
 				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
-								
-			
-                $from   	= 	$this->GetEmailtxt($overview[0]->from);
+
+				$message = html_entity_decode($message);
+
+				$from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
