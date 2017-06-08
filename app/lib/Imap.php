@@ -57,9 +57,19 @@ protected $server;
 				$structure		= 		imap_fetchstructure($inbox, $email_number); 
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
-				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-					
+				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
+
+				//-- check in reply to with previous email
+				// if exists then don't check for auto reply
+				$in_reply_tos   = explode(PHP_EOL,$in_reply_to);
+				foreach($in_reply_tos as $in_reply_to_id){
+
+					$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
+					if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
+						break;
+					}
+				}
+
 			
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
@@ -598,7 +608,7 @@ protected $server;
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
-				if($check_auto){
+				if($check_auto && !empty($msg_parent)){
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
