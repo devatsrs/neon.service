@@ -60,23 +60,21 @@
     <?php
     $InvoiceTo =$InvoiceFrom = '';
     $is_sub = $is_charge = false;
+    $total_usage= $total_sub = $total_add = 0;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+            $total_usage += $ProductRow->LineTotal;
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
         if($ProductRow->ProductType == \App\Lib\Product::SUBSCRIPTION){
+            $total_sub += $ProductRow->LineTotal;
             $is_sub = true;
         }
         if($ProductRow->ProductType == \App\Lib\Product::ONEOFFCHARGE){
+            $total_add += $ProductRow->LineTotal;
             $is_charge = true;
         }
-    }
-    $total_usage= $total_sub = $total_add = 0;
-    foreach($service_data as $service){
-        $total_usage += $service['usage_cost'];
-        $total_sub += $service['sub_cost'];
-        $total_add += $service['add_cost'];
     }
 
 
@@ -342,7 +340,7 @@
                             $classname = 'centeralign';
                             if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount'))){
                                 $classname = 'rightalign';
-                            }else if(in_array($row['Title'],array('Trunk','Prefix','Country','Description'))){
+                            }else if(in_array($row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                 $classname = 'leftalign';
                             }
                             ?>
@@ -355,9 +353,10 @@
                     $totalBillDuration=0;
                     $totalTotalCharges=0;
                     ?>
-                    @foreach($service_data as $ServiceID => $service)
-                        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0)
-                            @foreach($usage_data_table['data'][$ServiceID] as $row)
+
+
+                            @foreach($usage_data_table['data'] as $ServiceID => $usage_data)
+							@foreach($usage_data as $row)
                                 <?php
                                 $totalCalls  += $row['NoOfCalls'];
                                 $totalDuration  += $row['DurationInSec'];
@@ -370,7 +369,7 @@
                                         $classname = 'centeralign';
                                         if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount'))){
                                             $classname = 'rightalign';
-                                        }else if(in_array($table_h_row['Title'],array('Trunk','Prefix','Country','Description'))){
+                                        }else if(in_array($table_h_row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                             $classname = 'leftalign';
                                         }
                                         ?>
@@ -385,8 +384,9 @@
 
                                 </tr>
                             @endforeach
-                        @endif
-                    @endforeach
+							@endforeach
+
+
                     <?php
                     $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
                     $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
@@ -428,9 +428,10 @@
                     $totalBillDuration=0;
                     $totalTotalCharges=0;
                     ?>
-                    @foreach($service_data as $ServiceID => $service)
-                        @if(isset($usage_data_table['data'][$ServiceID]) && count($usage_data_table['data'][$ServiceID]) > 0)
-                            @foreach($usage_data_table['data'][$ServiceID] as $row)
+
+
+                            @foreach($usage_data_table['data'] as $ServiceID => $usage_data)
+							@foreach($usage_data as $row)
                                 <?php
                                 $totalBillDuration  +=  $row['BillDuration'];
                                 $totalTotalCharges  += $row['ChargedAmount'];
@@ -455,8 +456,9 @@
                                     @endforeach
                                 </tr>
                             @endforeach
-                        @endif
-                    @endforeach
+							@endforeach
+
+
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
                         <th class="centeralign">Billed Duration</th>

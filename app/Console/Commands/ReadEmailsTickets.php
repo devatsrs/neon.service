@@ -94,12 +94,12 @@ class ReadEmailsTickets extends Command
 			foreach ($Ticketgroups as $TicketgroupData) { 
 				if(!empty($TicketgroupData->GroupEmailAddress) && !empty($TicketgroupData->GroupEmailServer) && !empty($TicketgroupData->GroupEmailPassword) && $TicketgroupData->GroupEmailStatus==1 ){							
 					
-						$connection =  imap::CheckConnection($TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword); 
+						/*$connection =  imap::CheckConnection($TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword);
 						if($connection['status']==0){
 							throw new Exception($connection['error']);
-						}						
+						}*/
 						$imap = new Imap(array('email'=>$TicketgroupData->GroupEmailAddress,"server"=>$TicketgroupData->GroupEmailServer,"password"=>$TicketgroupData->GroupEmailPassword));
-						
+
 					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
 						$joblogdata['Message'] = 'Success';
 						$this->CheckEscalationRule($TicketgroupData,$CompanyID);

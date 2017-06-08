@@ -594,7 +594,10 @@ class Invoice extends \Eloquent {
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
         foreach($InvoiceDetails as $InvoiceDetail){
-            $SubscriptionTotal +=   $InvoiceDetail->LineTotal;
+            $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
+            if($ExemptTax == 0) {
+                $SubscriptionTotal += $InvoiceDetail->LineTotal;
+            }
         }
         //delete tax first
         InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
@@ -1394,7 +1397,9 @@ class Invoice extends \Eloquent {
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
 
-        $AccountOneOffCharges = AccountOneOffCharge::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
+        $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($AccountID,$ServiceID,$StartDate,$EndDate));
+        Log::info("Call prc_getAccountOneOffCharge($AccountID,$ServiceID,$StartDate,$EndDate)") ;
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {
@@ -1893,11 +1898,7 @@ class Invoice extends \Eloquent {
             $order = array();
             foreach($UsageColumn as $UsageColumnRow){
                 if($UsageColumnRow['Status']=='true') {
-                    if ($UsageColumnRow['Title'] == 'AreaPrefix') {
-                        $order[] = 'Prefix';
-                    } else {
-                        $order[] = $UsageColumnRow['Title'];
-                    }
+                    $order[] = $UsageColumnRow['Title'];
                     $usage_data_table['header'][] = $UsageColumnRow;
                 }
             }

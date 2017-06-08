@@ -6,21 +6,31 @@ source $(dirname "$0")/update_config.sh
 #echo "stoping crond..."
 #service crond stop
 
-echo "copying code..."
-echo "copying web..."
-#example cd /var/www/html/release.neon && git config core.fileMode false && git pull
-cd ${WEB_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
-echo "copying service..."
+echo $WEB_LOCATION
 
-#Overwrite issue fix
-cd ${SERVICE_LOCATION} && git fetch --all && git reset --hard origin/${VERSION} && git checkout ${VERSION}
+if [ -d "$WEB_LOCATION" ]; then
 
-cd ${SERVICE_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
-echo "copying api..."
-cd ${API_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
+    echo "copying code..."
+    echo "copying web..."
+    #example cd /var/www/html/release.neon && git config core.fileMode false && git pull
+    cd ${WEB_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
+    echo "copying service..."
 
-echo "Executing env_file_folder_permission..."
-source ${SCRIPT_BASEDIR}/composer_n_permission.sh
+    #Overwrite issue fix
+    cd ${SERVICE_LOCATION} && git fetch --all && git reset --hard origin/${VERSION} && git checkout ${VERSION}
+
+    cd ${SERVICE_LOCATION} && git config core.fileMode false && git checkout ${VERSION} && git pull
+    echo "copying api..."
+    cd ${API_LOCATION} && git fetch --all && git config core.fileMode false && git checkout ${VERSION} && git pull
+
+    echo "Executing env_file_folder_permission..."
+    source ${SCRIPT_BASEDIR}/composer_n_permission.sh
+
+else
+
+    echo "Web directory " $WEB_LOCATION " not found, Code import skipped. "
+
+fi
 
 
 echo "Executing POST UPDATE SQL file on env DB."
