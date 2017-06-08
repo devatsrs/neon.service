@@ -497,7 +497,7 @@ protected $server;
 
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
-				$in_reply_tos   = explode(PHP_EOL,$in_reply_to);
+				$in_reply_tos   = explode(' ',$in_reply_to);
 				foreach($in_reply_tos as $in_reply_to_id){
 
 					$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
@@ -505,7 +505,9 @@ protected $server;
 						break;
 					}
 				}
-				
+				Log::info("in_reply_tos");
+				Log::info($in_reply_tos);
+
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
