@@ -608,7 +608,7 @@ protected $server;
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
-				if($check_auto && !empty($msg_parent)){
+				if($check_auto && empty($msg_parent)){
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
