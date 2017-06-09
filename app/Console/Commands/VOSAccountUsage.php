@@ -133,12 +133,15 @@ class VOSAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
             Log::error(' ========================== vos transaction start =============================');
@@ -190,7 +193,7 @@ class VOSAccountUsage extends Command
                                 $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
@@ -225,7 +228,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
                                 $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;

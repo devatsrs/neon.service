@@ -230,9 +230,6 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
-    $area_prefix = preg_replace('/^00/','',$area_prefix);
-    $area_prefix = preg_replace('/^2222/','',$area_prefix);
-    $area_prefix = preg_replace('/^3333/','',$area_prefix);
 return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
