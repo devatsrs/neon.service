@@ -402,8 +402,8 @@ protected $server;
     $body = $this->get_part($imap, $uid, "TEXT/HTML"); 
     // if HTML body is empty, try getting text body
     if ($body == "") {
-        $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
-    } 
+        $body = nl2br($this->get_part($imap, $uid, "TEXT/PLAIN"));
+    }
         return $body;
     }
 
@@ -595,9 +595,10 @@ protected $server;
 				if(count($attachmentsDB)>0){
 					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
+				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
 
-				$message = html_entity_decode($message);
+				$message = $this->body_cleanup($message);
+
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
@@ -964,5 +965,11 @@ protected $server;
 
 	}
 
+	public function body_cleanup($message){
+
+		$message = html_entity_decode($message);
+		return $message ;
+
+	}
 }
 ?>
