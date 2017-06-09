@@ -324,7 +324,7 @@ class Invoice extends \Eloquent {
                          * PDF Generation CODE HERE
                          *
                          */
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
 
                         $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
                         Log::info('PDF Generation start');
@@ -792,7 +792,7 @@ class Invoice extends \Eloquent {
                          */
                         Log::info('PDF Generation start');
 
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
 
                         $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
 
@@ -1665,7 +1665,7 @@ class Invoice extends \Eloquent {
 		return $response;
     }
 
-    public static function getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$start_date,$end_date){
+    public static function getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$start_date,$end_date,$InvoiceTemplate){
 
         $usage_data = array();
         $ShowZeroCall = 1;
@@ -1677,6 +1677,17 @@ class Invoice extends \Eloquent {
                 $ShowZeroCall = intval($InvoiceTemplate->ShowZeroCall);
             }
         }
+        $UsageColumn = getUsageColumns($InvoiceTemplate);
+        $activeColumns = array();
+        $GroupColumns = array('Trunk','Country','AreaPrefix','Description');
+        foreach($UsageColumn as $UsageColumnRow){
+            if($UsageColumnRow['Status']=='true') {
+                $activeColumns[] = $UsageColumnRow['Title'];
+
+            }
+        }
+        $activeColumns = array_intersect($activeColumns,$GroupColumns);
+
         foreach ($GatewayAccount as $GatewayAccountRow) {
             $GatewayAccountRow['CompanyGatewayID'];
             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
@@ -1695,29 +1706,29 @@ class Invoice extends \Eloquent {
             //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
             foreach ($result_data as $result_row) {
                 if (isset($result_row['AreaPrefix'])) {
-                    /*if(isset($result_row['DurationInSec'])){
-                        unset($result_row['DurationInSec']);
+                    $key_col_comb = '';
+                    foreach($activeColumns as $activeColumn){
+                        $key_col_comb .= $activeColumn.'##'.$result_row[$activeColumn].'##';
                     }
-                    if(isset($result_row['BillDurationInSec'])){
-                        unset($result_row['BillDurationInSec']);
-                    }*/
-                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk',$result_row['ServiceID'],'ServiceID', $usage_data);
-                    if (isset($usage_data[$key]['AreaPrefix'])) {
-                        $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
-                        $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
-                        $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
-                        $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
-                        $usage_data[$key]['DurationInSec'] += $result_row['DurationInSec'];
-                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDurationInSec'];
+                    if($InvoiceTemplate->GroupByService){
+                        $key_col_comb .= 'ServiceID##'.$result_row['ServiceID'].'##';
+                    }
+                    if (isset($usage_data[$key_col_comb])) {
+                        $usage_data[$key_col_comb]['NoOfCalls'] += $result_row['NoOfCalls'];
+                        $usage_data[$key_col_comb]['ChargedAmount'] += $result_row['ChargedAmount'];
+                        $usage_data[$key_col_comb]['DurationInSec'] += $result_row['DurationInSec'];
+                        $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
+                        $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
+                        $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
                     } else {
-                        $usage_data[] = $result_row;
+                        $usage_data[$key_col_comb] = $result_row;
                     }
                 } else {
                     $usage_data[] = $result_row;
                 }
             }
         }
-        return $usage_data;
+        return array_values($usage_data);
     }
 
     public static function create_accountdetails($Account){
@@ -1882,18 +1893,8 @@ class Invoice extends \Eloquent {
         $usage_data_table = array();
         $usage_data_table['header'] =array();
         $usage_data_table['data'] = array();
-        if(empty($InvoiceTemplate->UsageColumn)){
-            $UsageColumn = InvoiceTemplate::defaultUsageColumns();
-        }else{
-            $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
-        }
-
+        $UsageColumn = getUsageColumns($InvoiceTemplate);
         if(count($usage_data)) {
-            if (isset($usage_data[0]['AreaPrefix'])) {
-                $UsageColumn = $UsageColumn['Summary'];
-            } else {
-                $UsageColumn = $UsageColumn['Detail'];
-            }
 
             $order = array();
             foreach($UsageColumn as $UsageColumnRow){

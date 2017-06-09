@@ -622,3 +622,18 @@ function remove_extra_columns($usage_data,$usage_data_table){
     return $usage_data;
 
 }
+
+function getUsageColumns($InvoiceTemplate){
+    if(empty($InvoiceTemplate->UsageColumn)){
+        $UsageColumn = \App\Lib\InvoiceTemplate::defaultUsageColumns();
+    }else{
+        $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+    }
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR){
+        $UsageColumn = $UsageColumn['Summary'];
+    }else{
+        $UsageColumn = $UsageColumn['Detail'];
+    }
+
+    return $UsageColumn;
+}
