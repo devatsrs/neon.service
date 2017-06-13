@@ -91,7 +91,9 @@ class NeonAlert extends \Eloquent {
             if(!empty($settings['ReminderEmail'])) {
                 $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
                 $status = Helper::sendMail($email_view, $emaildata);
-                Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'],0,$EmailType);
+                if($status['status'] == 1) {
+                    Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
+                }
             }
 
             $CustomerEmail = $Account->BillingEmail;
@@ -130,9 +132,11 @@ class NeonAlert extends \Eloquent {
             Log::info('AccountID = '.$AccountID.' email '.$settings['ReminderEmail'].' SendReminder sent ');
             $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
             $status = Helper::sendMail($email_view, $emaildata);
-            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
-            if($statuslog['status'] == 1 && $status['status'] == 1) {
-                Helper::alert_email_log($AlertID, $statuslog['AccountEmailLog']->AccountEmailLogID);
+            if($status['status'] == 1) {
+                $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
+                if ($statuslog['status'] == 1) {
+                    Helper::alert_email_log($AlertID, $statuslog['AccountEmailLog']->AccountEmailLogID);
+                }
             }
         }
     }
