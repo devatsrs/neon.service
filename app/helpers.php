@@ -230,9 +230,6 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
-    $area_prefix = preg_replace('/^00/','',$area_prefix);
-    $area_prefix = preg_replace('/^2222/','',$area_prefix);
-    $area_prefix = preg_replace('/^3333/','',$area_prefix);
 return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
@@ -624,4 +621,19 @@ function remove_extra_columns($usage_data,$usage_data_table){
     }
     return $usage_data;
 
+}
+
+function getUsageColumns($InvoiceTemplate){
+    if(empty($InvoiceTemplate->UsageColumn)){
+        $UsageColumn = \App\Lib\InvoiceTemplate::defaultUsageColumns();
+    }else{
+        $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+    }
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR){
+        $UsageColumn = $UsageColumn['Summary'];
+    }else{
+        $UsageColumn = $UsageColumn['Detail'];
+    }
+
+    return $UsageColumn;
 }
