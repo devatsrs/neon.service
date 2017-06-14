@@ -45,7 +45,7 @@ class PaymentGateway extends \Eloquent {
                 $transactiondata['updated_at'] = date('Y-m-d H:i:s');
                 $transactiondata['CreatedBy'] = 'RMScheduler';
                 $transactiondata['ModifyBy'] = 'RMScheduler';
-                $transactiondata['Reposnse'] = json_encode($transaction);
+                $transactiondata['Response'] = json_encode($transaction);
                 TransactionLog::insert($transactiondata);
                 return $transactionResponse;
             case '':
