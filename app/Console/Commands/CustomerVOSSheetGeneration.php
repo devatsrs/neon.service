@@ -60,10 +60,14 @@ class CustomerVOSSheetGeneration extends Command {
             $tunkids = '';
             $file_path = '';
             $amazonPath = '';
+            $Format = '';
             if(isset($joboptions->Trunks) && is_array($joboptions->Trunks)){
                 $tunkids = implode(',',$joboptions->Trunks);
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
+            }
+            if(isset($joboptions->Format)){
+                $Format = $joboptions->Format;
             }
             /*if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
@@ -79,7 +83,7 @@ class CustomerVOSSheetGeneration extends Command {
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
-            $excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
+            $excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');
