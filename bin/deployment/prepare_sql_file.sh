@@ -32,6 +32,7 @@ sed -i "s/_VOS_LOCATION_/$(echo "$VOS_LOCATION" | sed 's/\//\\\//g')/g" ${POST_I
 sed -i "s/_LICENCE_KEY_/$(echo "$LICENCE_KEY" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_RM_ARTISAN_FILE_LOCATION_/$(echo "${SERVICE_LOCATION}"/artisan | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_CRM_DASHBOARD_/$(echo "$CRM_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i "s/_MONITOR_DASHBOARD_/$(echo "$MONITOR_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_BILLING_DASHBOARD_CUSTOMER_/$(echo "$BILLING_DASHBOARD_CUSTOMER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_BILLING_DASHBOARD_/$(echo "$BILLING_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_EMAIL_TO_CUSTOMER_/$(echo "$EMAIL_TO_CUSTOMER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
