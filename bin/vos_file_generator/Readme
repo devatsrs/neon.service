@@ -35,7 +35,7 @@ mysql
 exit
 
 #permission on /home/webcdr/.my.cnf
-chown webcdr /home/webcdr/.my.cnf chmod 600 /home/webcdr/.my.cnf
+chown webcdr /home/webcdr/.my.cnf ;chmod 600 /home/webcdr/.my.cnf
 
 ---------------------------------
 
