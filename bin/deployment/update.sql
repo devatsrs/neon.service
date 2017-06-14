@@ -515,7 +515,7 @@ SELECT AccountID,1,CompanyId,1 FROM tblAccount WHERE AccountType = 1 AND Status 
 UPDATE RMBilling3.tblAccountSubscription SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE RMBilling3.tblAccountOneOffCharge SET ServiceID =1 WHERE ServiceID = 0;
 UPDATE tblCLIRateTable SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
-UPDATE tblAccountDiscountPlan SET ServiceID =1 WHERE CompanyID =1 AND ServiceID = 0;
+UPDATE tblAccountDiscountPlan SET ServiceID =1 WHERE ServiceID = 0;
 
 END IF;
 
@@ -4462,6 +4462,14 @@ ALTER TABLE `tblInvoiceTemplate`
   , ADD COLUMN `GroupByService` int(11) NULL DEFAULT '0'
   , ADD COLUMN `CDRType` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblGatewayAccount`
+  MODIFY COLUMN `AccountName` varchar(100) NULL
+  , MODIFY COLUMN `AccountIP` varchar(100) NULL
+  , ADD COLUMN `AccountNumber` varchar(100) NULL
+  , ADD COLUMN `AccountCLI` varchar(100) NULL;
+
+CREATE INDEX `IX6` ON `tblGatewayAccount`(`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`);
+
 DROP TABLE `tblUsageDaily`;
 
 DROP TABLE `tblUsageHourly`;
@@ -4912,6 +4920,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ApplyAuthRule`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ApplyAuthRule`(
 	IN `p_CompanyID` INT,
@@ -4936,10 +4946,12 @@ BEGIN
 	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -4954,20 +4966,22 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAMENUB' OR aa.VendorAuthRule ='NAMENUB' )) OR
-				aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUBNAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
@@ -4982,24 +4996,26 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUBNAME' OR aa.VendorAuthRule ='NUBNAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'NUB'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
-				AND a.Number = ga.AccountName
+				AND a.Number = ga.AccountNumber
 			LEFT JOIN Ratemanagement3.tblAccountAuthenticate aa 
 				ON a.AccountID = aa.AccountID 
 				AND aa.ServiceID = ga.ServiceID	
@@ -5010,68 +5026,74 @@ BEGIN
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NUB' OR aa.VendorAuthRule ='NUB' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'IP'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'IP' OR aa.VendorAuthRule ='IP')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ( FIND_IN_SET(ga.AccountName,aa.CustomerAuthValue) != 0 OR FIND_IN_SET(ga.AccountName,aa.VendorAuthValue) != 0 )
+				AND ( (aa.CustomerAuthRule = 'IP' AND FIND_IN_SET(ga.AccountIP,aa.CustomerAuthValue) != 0) OR (aa.VendorAuthRule ='IP' AND FIND_IN_SET(ga.AccountIP,aa.VendorAuthValue) != 0) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = 'CLI'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
 			INNER JOIN Ratemanagement3.tblCLIRateTable aa
 				ON a.AccountID = aa.AccountID
 				AND ga.ServiceID = p_ServiceID AND aa.ServiceID = ga.ServiceID 
-				AND ga.AccountName = aa.CLI
+				AND ga.AccountCLI = aa.CLI
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID;
-
+	
 		END IF;
-
+	
 		IF p_NameFormat = '' OR p_NameFormat IS NULL OR p_NameFormat = 'NAME'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				ga.ServiceID,
-				a.AccountName
+				ga.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId 
@@ -5086,34 +5108,36 @@ BEGIN
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ( ( aa.AccountID IS NOT NULL AND (aa.CustomerAuthRule = 'NAME' OR aa.VendorAuthRule ='NAME' )) OR
-					aa.AccountID IS NULL
-				);
-
+              aa.AccountID IS NULL
+          );
+	
 		END IF;
-
+		
 		IF p_NameFormat = 'Other'
 		THEN
-
+	
 			INSERT INTO tmp_ActiveAccount
 			SELECT DISTINCT
-				GatewayAccountID,
+				ga.AccountName,
+				ga.AccountNumber,
+				ga.AccountCLI,
+				ga.AccountIP,
 				a.AccountID,
-				aa.ServiceID,
-				a.AccountName
+				aa.ServiceID
 			FROM Ratemanagement3.tblAccount  a
 			INNER JOIN Ratemanagement3.tblAccountAuthenticate aa
 				ON a.AccountID = aa.AccountID AND (aa.CustomerAuthRule = 'Other' OR aa.VendorAuthRule ='Other')
 			INNER JOIN tblGatewayAccount ga
 				ON ga.CompanyID = a.CompanyId
 				AND ga.ServiceID = aa.ServiceID 
-				AND ( aa.VendorAuthValue = ga.AccountName OR aa.CustomerAuthValue = ga.AccountName )
+				AND ( (aa.VendorAuthRule ='Other' AND aa.VendorAuthValue = ga.AccountName) OR (aa.CustomerAuthRule = 'Other' AND aa.CustomerAuthValue = ga.AccountName) )
 			WHERE a.CompanyId = p_CompanyID
-			AND a.`Status` = 1
+			AND a.`Status` = 1			
 			AND GatewayAccountID IS NOT NULL
 			AND ga.AccountID IS NULL
 			AND ga.CompanyGatewayID = p_CompanyGatewayID
 			AND ga.ServiceID = p_ServiceID;
-
+	
 		END IF;
 
 		SET v_pointer_ = v_pointer_ + 1;
@@ -5588,6 +5612,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_CreateRerateLog`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_CreateRerateLog`(
 	IN `p_processId` INT,
@@ -5602,17 +5628,21 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 
@@ -5622,10 +5652,10 @@ BEGIN
 
 	IF p_RateCDR = 1
 	THEN
-
+	
 		IF ( SELECT COUNT(*) FROM tmp_Service_ ) > 0
 		THEN
-
+		
 			SET @stm = CONCAT('
 			INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
 			SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,2,  CONCAT( "Account:  " , a.AccountName ," - Service: ",IFNULL(s.ServiceName,"")," - Unable to Rerate number ",IFNULL(ud.cld,"")," - No Matching prefix found") as Message ,DATE(NOW())
@@ -5633,11 +5663,11 @@ BEGIN
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			LEFT JOIN Ratemanagement3.tblService s on  s.ServiceID = ud.ServiceID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		ELSE
 
 			SET @stm = CONCAT('
@@ -5646,11 +5676,11 @@ BEGIN
 			FROM  RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 			INNER JOIN Ratemanagement3.tblAccount a on  ud.AccountID = a.AccountID
 			WHERE ud.ProcessID = "' , p_processid  , '" and ud.is_inbound = 0 AND ud.is_rerated = 0 AND ud.billed_second <> 0 and ud.area_prefix = "Other"');
-
+	
 			PREPARE stmt FROM @stm;
 			EXECUTE stmt;
 			DEALLOCATE PREPARE stmt;
-
+		
 		END IF;
 
 		SET @stm = CONCAT('
@@ -6389,8 +6419,6 @@ CREATE PROCEDURE `prc_getActiveGatewayAccount`(
 	IN `p_CompanyID` INT,
 	IN `p_CompanyGatewayID` INT,
 	IN `p_NameFormat` VARCHAR(50)
-
-
 )
 BEGIN
 
@@ -6404,10 +6432,12 @@ BEGIN
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_ActiveAccount;
 	CREATE TEMPORARY TABLE tmp_ActiveAccount (
-		GatewayAccountID varchar(100),
+		AccountName varchar(100),
+		AccountNumber varchar(100),
+		AccountCLI varchar(100),
+		AccountIP varchar(100),
 		AccountID INT,
-		ServiceID INT,
-		AccountName varchar(100)
+		ServiceID INT
 	);
 
 	DROP TEMPORARY TABLE IF EXISTS tmp_AuthenticateRules_;
@@ -6494,7 +6524,10 @@ BEGIN
 
 	UPDATE tblGatewayAccount
 	INNER JOIN tmp_ActiveAccount a
-		ON a.GatewayAccountID = tblGatewayAccount.GatewayAccountID
+		ON a.AccountName = tblGatewayAccount.AccountName
+		AND a.AccountNumber = tblGatewayAccount.AccountNumber
+		AND a.AccountCLI = tblGatewayAccount.AccountCLI
+		AND a.AccountIP = tblGatewayAccount.AccountIP
 		AND tblGatewayAccount.CompanyGatewayID = p_CompanyGatewayID
 		AND tblGatewayAccount.ServiceID = a.ServiceID
 	SET tblGatewayAccount.AccountID = a.AccountID
@@ -8709,14 +8742,37 @@ DELIMITER ;
 DROP PROCEDURE IF EXISTS `prc_getMissingAccounts`;
 
 DELIMITER |
-CREATE PROCEDURE `prc_getMissingAccounts`(IN `p_CompanyID` int, IN `p_CompanyGatewayID` INT)
+CREATE PROCEDURE `prc_getMissingAccounts`(
+	IN `p_CompanyID` int,
+	IN `p_CompanyGatewayID` INT
+)
 BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
-	SELECT cg.Title,ga.AccountName from tblGatewayAccount ga
-	inner join Ratemanagement3.tblCompanyGateway cg on ga.CompanyGatewayID = cg.CompanyGatewayID
-	where ga.GatewayAccountID is not null and ga.CompanyID =p_CompanyID and ga.AccountID is null AND cg.`Status` =1
-	AND (p_CompanyGatewayID = 0 or ga.CompanyGatewayID = p_CompanyGatewayID )
+	
+	SELECT 
+		cg.Title,
+		CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'NUB'
+		THEN
+			ga.AccountNumber
+		ELSE
+			CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'IP'
+			THEN
+				ga.AccountIP
+			ELSE
+				CASE WHEN REPLACE(JSON_EXTRACT(cg.Settings, '$.NameFormat'),'"','') = 'CLI'
+				THEN
+					ga.AccountCLI
+				ELSE 
+					ga.AccountName
+				END
+			END
+		END
+		AS AccountName
+	FROM tblGatewayAccount ga
+	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON ga.CompanyGatewayID = cg.CompanyGatewayID
+	WHERE ga.GatewayAccountID IS NOT NULL and ga.CompanyID =p_CompanyID AND ga.AccountID IS NULL AND cg.`Status` =1
+	AND (p_CompanyGatewayID = 0 OR ga.CompanyGatewayID = p_CompanyGatewayID )
 	ORDER BY ga.CompanyGatewayID,ga.AccountName;
 	
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
@@ -10775,12 +10831,15 @@ BEGIN
 
 	SELECT fnGetBillingTime(p_CompanyGatewayID,p_AccountID) INTO v_BillingTime_;
 
-	SET @stm1 = CONCAT('
+	
+
+	set @stm1 = CONCAT('
 
 	INSERT INTO RMCDR3.`' , p_tbltempusagedetail_name , '` (
 		CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		AccountID,
 		ServiceID,
 		connect_time,
@@ -10808,6 +10867,7 @@ BEGIN
 		uh.CompanyID,
 		CompanyGatewayID,
 		GatewayAccountID,
+		GatewayAccountPKID,
 		uh.AccountID,
 		uh.ServiceID,
 		connect_time,
@@ -10864,6 +10924,8 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_ProcessCDRAccount`;
+
 DELIMITER |
 CREATE PROCEDURE `prc_ProcessCDRAccount`(
 	IN `p_CompanyID` INT,
@@ -10878,17 +10940,23 @@ BEGIN
 	
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,ServiceID)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
 		ud.ServiceID
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON  ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
 		AND ga.ServiceID = ud.ServiceID
@@ -10900,9 +10968,30 @@ BEGIN
 	PREPARE stmt FROM @stm;
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
+	
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
 
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
+	
+	
 
 	/* update cdr account */
 	SET @stm = CONCAT('
@@ -10910,7 +10999,10 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
 		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
@@ -10925,10 +11017,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblUsageHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
-		AND ga.ServiceID = uh.ServiceID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -10940,10 +11029,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblUsageHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
-			AND ga.ServiceID = uh.ServiceID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11171,23 +11257,31 @@ BEGIN
 		`CompanyGatewayID` INT(11) NULL DEFAULT NULL,
 		`MessageType` INT(11) NOT NULL,
 		`Message` VARCHAR(500) NOT NULL,
-		`RateDate` DATE NOT NULL
+		`RateDate` DATE NOT NULL	
 	);
 
 	/* insert new account */
 	SET @stm = CONCAT('
-	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,IsVendor)
+	INSERT INTO tblGatewayAccount (CompanyID, CompanyGatewayID, GatewayAccountID, AccountName,AccountNumber,AccountCLI,AccountIP,ServiceID,IsVendor)
 	SELECT
 		DISTINCT
 		ud.CompanyID,
 		ud.CompanyGatewayID,
 		ud.GatewayAccountID,
-		ud.GatewayAccountID,
+		ud.AccountName,
+		ud.AccountNumber,
+		ud.AccountCLI,
+		ud.AccountIP,
+		ud.ServiceID,
 		1 as IsVendor
 	FROM RMCDR3.' , p_tbltempusagedetail_name , ' ud
 	LEFT JOIN tblGatewayAccount ga
-		ON ga.GatewayAccountID = ud.GatewayAccountID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
 		AND ga.CompanyGatewayID = ud.CompanyGatewayID
+		AND ga.ServiceID = ud.ServiceID
 		AND ga.CompanyID = ud.CompanyID
 	WHERE ProcessID =  "' , p_processId , '"
 		AND ga.GatewayAccountID IS NULL
@@ -11198,6 +11292,25 @@ BEGIN
 	EXECUTE stmt;
 	DEALLOCATE PREPARE stmt;
 
+	/* update cdr account */
+	SET @stm = CONCAT('
+	UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` uh
+	INNER JOIN tblGatewayAccount ga
+		ON  ga.CompanyID = uh.CompanyID
+		AND ga.CompanyGatewayID = uh.CompanyGatewayID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
+	SET uh.GatewayAccountPKID = ga.GatewayAccountPKID
+	WHERE uh.CompanyID = ' ,  p_CompanyID , '
+	AND uh.ProcessID = "' , p_processId , '" ;
+	');
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
+	
 	/* active new account */
 	CALL  prc_getActiveGatewayAccount(p_CompanyID,p_CompanyGatewayID,p_NameFormat);
 
@@ -11207,11 +11320,15 @@ BEGIN
 	INNER JOIN tblGatewayAccount ga
 		ON  ga.CompanyID = uh.CompanyID
 		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		AND ga.AccountName = uh.AccountName
+		AND ga.AccountNumber = uh.AccountNumber
+		AND ga.AccountCLI = uh.AccountCLI
+		AND ga.AccountIP = uh.AccountIP
+		AND ga.ServiceID = uh.ServiceID
 	SET uh.AccountID = ga.AccountID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
-	AND uh.CompanyID = ' ,  p_companyid , '
+	AND uh.CompanyID = ' ,  p_CompanyID , '
 	AND uh.ProcessID = "' , p_processId , '" ;
 	');
 	PREPARE stmt FROM @stm;
@@ -11221,9 +11338,7 @@ BEGIN
 	SELECT COUNT(*) INTO v_NewAccountIDCount_ 
 	FROM RMCDR3.tblVendorCDRHeader uh
 	INNER JOIN tblGatewayAccount ga
-		ON  ga.CompanyID = uh.CompanyID
-		AND ga.CompanyGatewayID = uh.CompanyGatewayID
-		AND ga.GatewayAccountID = uh.GatewayAccountID
+		ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 	WHERE uh.AccountID IS NULL
 	AND ga.AccountID is not null
 	AND uh.CompanyID = p_CompanyID
@@ -11234,9 +11349,7 @@ BEGIN
 		/* update header cdr account */
 		UPDATE RMCDR3.tblVendorCDRHeader uh
 		INNER JOIN tblGatewayAccount ga
-			ON  ga.CompanyID = uh.CompanyID
-			AND ga.CompanyGatewayID = uh.CompanyGatewayID
-			AND ga.GatewayAccountID = uh.GatewayAccountID
+			ON  uh.GatewayAccountPKID = ga.GatewayAccountPKID
 		SET uh.AccountID = ga.AccountID
 		WHERE uh.AccountID IS NULL
 		AND ga.AccountID is not null
@@ -11372,12 +11485,16 @@ BEGIN
 	
 	SET @stm = CONCAT('
 	INSERT INTO tmp_tblTempRateLog_ (CompanyID,CompanyGatewayID,MessageType,Message,RateDate)
-	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( "Account:  " , ga.AccountName ," - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
+	SELECT DISTINCT ud.CompanyID,ud.CompanyGatewayID,1,  CONCAT( " Account Name : ( " , ga.AccountName ," ) Number ( " , ga.AccountNumber ," ) IP  ( " , ga.AccountIP ," ) CLI  ( " , ga.AccountCLI," ) - Gateway: ",cg.Title," - Doesnt exist in NEON") as Message ,DATE(NOW())
 	FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud
 	INNER JOIN tblGatewayAccount ga 
-		ON ga.CompanyGatewayID = ud.CompanyGatewayID
+		ON ga.AccountName = ud.AccountName
+		AND ga.AccountNumber = ud.AccountNumber
+		AND ga.AccountCLI = ud.AccountCLI
+		AND ga.AccountIP = ud.AccountIP
+		AND ga.CompanyGatewayID = ud.CompanyGatewayID
 		AND ga.CompanyID = ud.CompanyID
-		AND ga.GatewayAccountID = ud.GatewayAccountID
+		AND ga.ServiceID = ud.ServiceID
 	INNER JOIN Ratemanagement3.tblCompanyGateway cg ON cg.CompanyGatewayID = ud.CompanyGatewayID
 	WHERE ud.ProcessID = "' , p_processid  , '" and ud.AccountID IS NULL');
 	
@@ -12663,6 +12780,16 @@ CREATE INDEX `IX_ID` ON `tblVendorCDRFailed`(`ID`);
 ALTER TABLE `tblVendorCDRHeader`
   ADD COLUMN `ServiceID` int(11) NULL DEFAULT '0';
 
+ALTER TABLE `tblUsageHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblUsageHeader`(`GatewayAccountPKID`);
+
+ALTER TABLE `tblVendorCDRHeader`
+  ADD COLUMN `GatewayAccountPKID` int(11) NULL;
+
+CREATE INDEX `IX_GAID` ON `tblVendorCDRHeader`(`GatewayAccountPKID`);  
+
 DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID`;
 
 DELIMITER |
@@ -12703,6 +12830,52 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_DeleteDuplicateUniqueID2`;
+
+DELIMITER |
+
+CREATE PROCEDURE `prc_DeleteDuplicateUniqueID2`(
+	IN `p_CompanyID` INT,
+	IN `p_CompanyGatewayID` INT,
+	IN `p_ProcessID` VARCHAR(200),
+	IN `p_tbltempusagedetail_name` VARCHAR(200)
+)
+BEGIN
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+	SET @stm1 = CONCAT('
+		DELETE tud FROM `' , p_tbltempusagedetail_name , '` tud
+		INNER JOIN tblVendorCDR ud ON tud.ID =ud.ID
+		INNER JOIN  tblVendorCDRHeader uh on uh.VendorCDRHeaderID = ud.VendorCDRHeaderID
+			AND tud.CompanyID = uh.CompanyID
+			AND tud.CompanyGatewayID = uh.CompanyGatewayID
+		WHERE tud.CompanyID = "' , p_CompanyID , '"
+		AND tud.CompanyGatewayID = "' , p_CompanyGatewayID , '"
+		AND tud.ProcessID = "' , p_processId , '";
+	');
+	PREPARE stmt1 FROM @stm1;
+	EXECUTE stmt1;
+	DEALLOCATE PREPARE stmt1;
+
+	SET @stm2 = CONCAT('
+		DELETE tud FROM `' , p_tbltempusagedetail_name , '` tud
+		INNER JOIN tblVendorCDRFailed ud ON tud.ID =ud.ID
+		INNER JOIN  tblVendorCDRHeader uh on uh.VendorCDRHeaderID = ud.VendorCDRHeaderID
+			AND tud.CompanyID = uh.CompanyID
+			AND tud.CompanyGatewayID = uh.CompanyGatewayID
+		WHERE tud.CompanyID = "' , p_CompanyID , '"
+		AND tud.CompanyGatewayID = "' , p_CompanyGatewayID , '"
+		AND tud.ProcessID = "' , p_processId , '";
+	');
+	PREPARE stmt2 FROM @stm2;
+	EXECUTE stmt2;
+	DEALLOCATE PREPARE stmt2;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+END|
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS `prc_insertCDR`;
 
 DELIMITER |
@@ -12717,14 +12890,11 @@ BEGIN
 	SET SESSION innodb_lock_wait_timeout = 180;
 
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblUsageHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12738,10 +12908,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '"
 		AND billed_duration = 0 AND cost = 0 AND ( disposition <> "ANSWERED" OR disposition IS NULL);
@@ -12765,10 +12932,7 @@ BEGIN
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition
 	FROM  `' , p_tbltempusagedetail_name , '` d
 	INNER JOIN tblUsageHeader h
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE   processid = "' , p_processId , '" ;
 	');
@@ -12801,15 +12965,14 @@ BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
+	SET SESSION innodb_lock_wait_timeout = 180;
+
 	SET @stm2 = CONCAT('
-	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
-	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
+	INSERT INTO   tblVendorCDRHeader (CompanyID,CompanyGatewayID,GatewayAccountPKID,GatewayAccountID,AccountID,StartDate,created_at,ServiceID)
+	SELECT DISTINCT d.CompanyID,d.CompanyGatewayID,d.GatewayAccountPKID,d.GatewayAccountID,d.AccountID,DATE_FORMAT(connect_time,"%Y-%m-%d"),NOW(),d.ServiceID
 	FROM `' , p_tbltempusagedetail_name , '` d
 	LEFT JOIN tblVendorCDRHeader h 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.ServiceID = d.ServiceID
-		AND h.GatewayAccountID = d.GatewayAccountID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE h.GatewayAccountID IS NULL AND processid = "' , p_processId , '";
 	');
@@ -12819,14 +12982,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt2;
 
 	SET @stm6 = CONCAT('
-	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDRFailed (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" AND  billed_duration = 0 AND buying_cost = 0 ;
 	');
@@ -12844,14 +13004,11 @@ BEGIN
 	DEALLOCATE PREPARE stmt3;
 
 	SET @stm4 = CONCAT('
-	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
-	SELECT VendorCDRHeaderID,billed_duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
+	INSERT INTO tblVendorCDR (VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID)
+	SELECT VendorCDRHeaderID,billed_duration,duration,billed_second, ID, selling_cost, buying_cost, connect_time, disconnect_time,cli, cld,trunk,area_prefix,  remote_ip, ProcessID
 	FROM `' , p_tbltempusagedetail_name , '` d 
 	INNER JOIN tblVendorCDRHeader h	 
-	ON h.CompanyID = d.CompanyID
-		AND h.CompanyGatewayID = d.CompanyGatewayID
-		AND h.GatewayAccountID = d.GatewayAccountID
-		AND h.ServiceID = d.ServiceID
+	ON h.GatewayAccountPKID = d.GatewayAccountPKID
 		AND h.StartDate = DATE_FORMAT(connect_time,"%Y-%m-%d")
 	WHERE processid = "' , p_processId , '" ;
 	');
@@ -16027,8 +16184,23 @@ INSERT INTO `tblEmailTemplate` ( `CompanyID`, `TemplateName`, `Subject`, `Templa
 	(1, 'Agent Response SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResponseSlaVoilation', 1, 0, 1),
 	(1, 'Agent Resolve SlaVoilation', 'Response time SLA violated - [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">Hi,<br><br>There has been no response from the helpdesk for Ticket ID #{{TicketID}}.<br><br>Ticket Details:&nbsp;<br><br>Subject - {{Subject}}<br><br>Requestor - {{Requester}}<br><br>Regards,<br>{{CompanyName}}&nbsp;&nbsp;&nbsp;&nbsp;<br></p><p></p>', '2017-01-25 15:35:02', 'System', '2017-03-30 12:40:55', 'System', NULL, 4, '', 1, 'AgentResolveSlaVoilation', 1, 0, 1);
 
+INSERT INTO `tblEmailTemplate` ( `CompanyID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES
+(1, 'Agent - New Ticket Created', 'New Ticket has been created - [#{{TicketID}}] {{Subject}}', 'Hi,<br>{{Subject}}&nbsp;&nbsp;&nbsp; {{Requester}}<br>A new ticket has been created.&nbsp;<br>You may view&nbsp; the ticket <br><br>Regards,<br>{{helpdesk_name}}<br>', '2017-01-24 13:34:46', 'System', '2017-02-22 08:05:01', 'System', NULL, 4, '', 1, 'AgentNewTicketCreated', 1, 0, 1),
+(1, 'Agent - Ticket Assigned to Agent', 'Ticket Assigned - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>A new ticket (Ticket ID - {{TicketID}}) has been assigned to you. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br><br>{{CompanyName}}<br>', '2017-01-25 14:29:56', 'System', '2017-03-10 11:41:48', 'System', NULL, 4, '', 1, 'TicketAssignedtoAgent', 1, 0, 1),
+(1, 'Agent - Requester Replies to Ticket', 'New Reply Received - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>The customer has responded to the ticket (#{{TicketID}})<br><br>{{Subject}}<br><br>Ticket comment<br>{{Comment}}<br>', '2017-01-25 14:30:24', 'System', '2017-02-21 10:36:53', 'System', NULL, 4, '', 1, 'RequesterRepliestoTicket', 1, 0, 1),
+(1, 'Agent - Note added to ticket', 'Note Added - [#{{TicketID}}] {{Subject}}', '<p>Hi ,&nbsp;<br><br>{{NoteUser}}&nbsp;added a note and wants you to have a look.<br></p><p><br></p><p><a href="{{TicketUrl}}" title="Link: {{TicketUrl}}">View</a></p>Subject:&nbsp;<br>{{Subject}}<br><br>Requester: {{RequesterName}}&nbsp;<br><br>Note Content:&nbsp;<br>{{Notebody}}<br><br><br>', '2017-01-25 14:33:46', 'System', '2017-05-11 15:18:34', '', NULL, 4, '', 1, 'Noteaddedtoticket', 1, 0, 1),
+(1, 'Requester - Agent Resolved the Ticket', 'Ticket Resolved - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},<br><br>Our Support Rep has indicated that your Ticket (#{{TicketID}}) has been Resolved.&nbsp;<br><br>If you believe that the ticket has not been resolved, please reply to this email to automatically reopen the ticket.<br>If there is no response from you, we will assume that the ticket has been resolved and the ticket will be automatically closed after 48 hours.<br><br>Sincerely,<br>{{helpdesk_name}}<br>Support Team<br>', '2017-01-25 14:36:11', 'System', '2017-02-22 13:06:20', 'System', NULL, 4, '', 1, 'AgentSolvestheTicket', 1, 0, 1),
+(1, 'Requester - Agent Closes the Ticket', 'Ticket Closed - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},<br><br>Your Ticket #{{TicketID}} - {{Subject}} -&nbsp; has been closed.<br><br>We hope that the ticket was resolved to your satisfaction. If you feel that the ticket should not be closed or if the ticket has not been resolved, please reply to this email.<br><br>Sincerely,<br>{{helpdesk_name}}<br>Support Team<br>', '2017-01-25 14:36:26', 'System', '2017-02-22 13:09:00', 'System', NULL, 4, '', 1, 'AgentClosestheTicket', 1, 0, 1),
+(1, 'Requester - New Ticket Created', 'Ticket Received - [#{{TicketID}}] {{Subject}}', 'Dear {{RequesterName}},&nbsp;<br><br>We would like to acknowledge that we have received your request and a ticket has been created with Ticket ID - {{TicketID}}.<br>A support representative will be reviewing your request and will send you a personal response.(usually within 24 hours).<br><br><span>To view the status of the ticket or add comments, please visit&nbsp;</span><br>{{TicketCustomerUrl}}<br><br>Thank you for your patience.<br><br>Sincerely,<br><span>{{helpdesk_name}} Support Team</span><br>', '2017-01-25 15:08:14', 'System', '2017-05-18 12:50:24', '', NULL, 4, '', 1, 'RequesterNewTicketCreated', 1, 0, 1),
+(1, 'CC - New Ticket Created', 'Added as CC - [#{{TicketID}}] {{Subject}}', '<p>{{RequesterName}} submitted a new ticket to {{CompanyName}} and requested that we copy you</p><br>Ticket Description:&nbsp;<br>{{Description}}<br>', '2017-01-25 15:24:18', 'System', '2017-03-10 13:44:49', 'System', NULL, 4, '', 1, 'CCNewTicketCreated', 1, 0, 1),
+(1, 'Agent - Assigned to Group', 'Assigned to Group - [#{{TicketID}}]  {{Subject}}', '<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">Hi</span><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">A new ticket (#</span>{{TicketID}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">) has been assigned to your group "</span>{{Group}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">". Please follow the link below to view the ticket.</span><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Subject}}<br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Description}}<br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{TicketUrl}}<br>', '2017-02-22 08:13:11', 'System', '2017-03-09 15:42:50', 'System', NULL, 4, '', 1, 'AgentAssignedGroup', 1, 0, 1),
+(1, 'Agent - Ticket Reopened', 'Ticket Reopened - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>&nbsp;ticket (Ticket ID - {{TicketID}}) has been reopened. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br>{{TicketUrl}}<br><br>{{CompanyName}}<br><br>', '2017-01-25 14:29:56', 'System', '2017-03-09 16:47:24', 'System', NULL, 4, '', 1, 'AgentTicketReopened', 1, 0, 1),
+(1, 'Agent - Escalation Email', 'Ticket unassigned - [#{{TicketID}}] {{Subject}}', 'Hi,<br><br>&nbsp;ticket (Ticket ID - {{TicketID}}) is not assigned to any agent. Please review the ticket information below.<br><br>{{Subject}}<br>{{Description}}<br>{{TicketUrl}}<br><br>{{CompanyName}}<br><br>', '2017-01-25 14:29:56', 'System', '2017-03-10 09:39:31', 'System', NULL, 4, '', 1, 'AgentEscalationRule', 1, 0, 1),
+(1, 'CC - Note added to ticket', 'New comment -  [#{{TicketID}}] {{Subject}}', '<p style="margin-right: 0px; margin-bottom: 0px; margin-left: 0px; padding: 0px; outline: 0px; font-size: 13px; font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; vertical-align: baseline; border: 0px; line-height: 1.3; word-break: normal; word-wrap: break-word; color: rgb(51, 51, 51);">There is a new comment in the ticket #{{TicketID}} &nbsp;submitted by&nbsp;{{NoteUser}}<br></p><br style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;">{{Subject}}<br>{{Description}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span>{{TicketUrl}}<br><span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span>{{CompanyName}}<span style="color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 13px;"><br></span><p></p>', '2017-01-25 15:35:02', 'System', '2017-05-11 16:38:40', '', NULL, 4, '', 1, 'CCNoteaddedtoticket', 1, 0, 1);
 
+INSERT INTO `tblTicketPriority` (`PriorityID`, `PriorityValue`) VALUES (1, 'Low'),(2, 'Medium'),(3, 'High'),(4, 'Urgent');
 
+INSERT INTO `tblCronJobCommand` (`CronJobCommandID`, `CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (73, 1, NULL, 'Ticket Emails', 'reademailstickets', '[[{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2016-09-28 14:07:52', 'RateManagementSystem');
 
 INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'from_email', 'Requester Email', NULL, NULL, NULL, NULL);
 INSERT INTO `tblTicketImportRuleConditionType` (`TicketImportRuleConditionTypeID`, `Condition`, `ConditionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'to_email', 'To Email', NULL, NULL, NULL, NULL);
@@ -16049,18 +16221,16 @@ INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Ac
 INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'set_group', 'Assign to Group', NULL, NULL, NULL, NULL);
 INSERT INTO `tblTicketImportRuleActionType` (`TicketImportRuleActionTypeID`, `Action`, `ActionText`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'set_type', 'Set Type as', NULL, NULL, NULL, NULL);
 
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'default_requester', '0', 1, 'text', 'Search a requester', NULL, 1, 1, 1, 1, 1, 'Search a requester', 'Requester1', 2, 3, 3, NULL, NULL, '2017-05-17 13:51:53', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (1, 'default_requester', '0', 1, 'text', 'Search a requester', NULL, 1, 1, 1, 1, 1, 'Search a requester', 'Requester', 2, 3, 3, NULL, NULL, '2017-06-01 10:55:19', 'System');
 INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (2, 'default_subject', '0', 1, 'text', 'Subject', NULL, 1, 0, 1, 1, 1, 'Subject', 'Subject', 0, 0, 2, NULL, NULL, '2017-01-11 21:28:49', 'System');
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'default_ticket_type', '0', 5, 'dropdown', 'Type', NULL, 1, 1, 1, 1, 1, 'Type', 'Type', 0, 0, 5, NULL, NULL, '2017-04-26 15:13:07', 'System');
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'default_status', '0', 5, 'dropdown', 'Status', NULL, 1, 0, 1, 1, 0, 'Status', 'Status', 0, 0, 4, NULL, NULL, '2017-05-17 08:46:54', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (3, 'default_ticket_type', '0', 5, 'dropdown', 'Type', NULL, 1, 1, 1, 1, 1, 'Type', 'Type', 0, 0, 5, NULL, NULL, '2017-05-31 18:27:14', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (4, 'default_status', '0', 5, 'dropdown', 'Status', NULL, 1, 0, 1, 0, 0, 'Status', 'Status', 0, 0, 4, NULL, NULL, '2017-05-31 18:22:29', 'System');
 INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (5, 'default_priority', '0', 5, 'dropdown', 'Priority', NULL, 1, 0, 1, 1, 1, 'Priority', 'Priority', 0, 0, 6, NULL, NULL, '2017-03-28 22:55:32', 'System');
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'default_group', '0', 5, 'dropdown', 'Group', NULL, 1, 1, 1, 1, 1, 'Group', 'Neon First Group', 0, 0, 7, NULL, NULL, '2017-04-26 15:13:07', 'System');
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (8, 'default_description', '0', 2, 'paragraph', 'Description', NULL, 1, 0, 1, 1, 0, 'Description', 'Description', 0, 0, 9, NULL, NULL, '2017-05-17 08:47:16', 'System');
-INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'default_agent', '0', 5, 'dropdown_blank', 'Agent', NULL, 0, 0, 0, 0, 0, 'Agent', 'Assigned to', 0, 0, 8, NULL, NULL, '2017-04-26 15:13:07', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (6, 'default_group', '0', 5, 'dropdown', 'Group', NULL, 1, 0, 0, 0, 0, 'Group', 'Group', 0, 0, 7, NULL, NULL, '2017-05-31 18:28:20', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (8, 'default_description', '0', 2, 'paragraph', 'Description', NULL, 1, 0, 1, 1, 1, 'Description', 'Description', 0, 0, 9, NULL, NULL, '2017-05-31 18:29:26', 'System');
+INSERT INTO `tblTicketfields` (`TicketFieldsID`, `FieldType`, `FieldStaticType`, `FieldHtmlType`, `FieldDomType`, `FieldName`, `FieldDesc`, `AgentReqSubmit`, `AgentReqClose`, `CustomerDisplay`, `CustomerEdit`, `CustomerReqSubmit`, `AgentLabel`, `CustomerLabel`, `AgentCcDisplay`, `CustomerCcDisplay`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 'default_agent', '0', 5, 'dropdown', 'Agent', NULL, 0, 0, 1, 0, 0, 'Agent', 'Assigned to', 0, 0, 8, NULL, NULL, '2017-05-31 18:29:03', 'System');
 
 
-INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (7, 3, 1, 'Other', 'Other', 0, 2, NULL, NULL, '2017-03-28 22:56:22', 'System');
-INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (11, 3, 1, 'NEON', 'NEON', 0, 1, NULL, NULL, '2017-03-28 22:56:22', 'System');
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (13, 4, 0, 'Open', 'Being Processed', 1, 4, NULL, NULL, '2017-05-17 08:46:54', 'System');
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (14, 4, 0, 'Pending', 'Awaiting your Reply', 0, 1, NULL, NULL, '2017-05-17 08:46:54', 'System');
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (15, 4, 0, 'Resolved', 'This ticket has been Resolved', 0, 2, NULL, NULL, '2017-05-17 08:46:54', 'System');
@@ -16068,6 +16238,7 @@ INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `Field
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (17, 4, 0, 'All UnResolved', 'This ticket has been All Un Resolved', 0, 7, NULL, NULL, '2017-05-17 08:46:54', 'System');
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (18, 4, 1, 'Waiting on Customer', 'Awaiting your Reply', 0, 5, NULL, NULL, '2017-05-17 08:46:54', 'System');
 INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (19, 4, 1, 'Waiting on Third Party', 'Being Processed', 1, 6, NULL, NULL, '2017-05-17 08:46:54', 'System');
+INSERT INTO `tblTicketfieldsValues` (`ValuesID`, `FieldsID`, `FieldType`, `FieldValueAgent`, `FieldValueCustomer`, `FieldSlaTime`, `FieldOrder`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES (21, 3, 1, 'Other', 'Other', NULL, 9, '2017-05-31 18:20:19', 'System', '2017-05-31 18:27:14', 'System');
 
 DELETE FROM `tblResourceCategories` WHERE ResourceCategoryID between 1249 AND 1298;
 DELETE FROM `tblResource` WHERE CategoryID between 1249 AND 1298;
@@ -16214,7 +16385,23 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Catego
 
 CALL migrateService();
 
+USE `RMBilling3`;
+
+delete from tblGatewayAccount where AccountID IS NULL AND AccountCLI IS NULL; 
+
 USE `RMCDR3`;
+
+update tblUsageHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblUsageHeader.GatewayAccountID
+set tblUsageHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
+
+update tblVendorCDRHeader inner join 
+RMBilling3.tblGatewayAccount 
+on tblGatewayAccount.GatewayAccountID = tblVendorCDRHeader.GatewayAccountID
+set tblVendorCDRHeader.GatewayAccountPKID = tblGatewayAccount.GatewayAccountPKID;
+
 
 SET @tables = NULL;
 SELECT GROUP_CONCAT('`', table_schema, '`.`', table_name,'`') INTO @tables FROM information_schema.tables 

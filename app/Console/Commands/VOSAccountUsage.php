@@ -133,12 +133,15 @@ class VOSAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
             Log::error(' ========================== vos transaction start =============================');
@@ -177,6 +180,10 @@ class VOSAccountUsage extends Command
                                 }else{
                                     $uddata['GatewayAccountID'] = $excelrow['33'];
                                 }
+                                $uddata['AccountIP'] = $excelrow['4'];
+                                $uddata['AccountName'] = $excelrow['33'];
+                                $uddata['AccountNumber'] = '';
+                                $uddata['AccountCLI'] = '';
                                 $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
                                 $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
                                 $uddata['cost'] = (float)$excelrow['26'];
@@ -186,7 +193,7 @@ class VOSAccountUsage extends Command
                                 $uddata['billed_second'] = $excelrow['23'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['24']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
@@ -207,6 +214,10 @@ class VOSAccountUsage extends Command
                                 }else{
                                     $vendorcdrdata['GatewayAccountID'] = $excelrow['40'];
                                 }
+                                $vendorcdrdata['AccountIP'] = $excelrow['10'];
+                                $vendorcdrdata['AccountName'] = $excelrow['40'];
+                                $vendorcdrdata['AccountNumber'] = '';
+                                $vendorcdrdata['AccountCLI'] = '';
                                 $vendorcdrdata['billed_duration'] = $excelrow['23'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
                                 $vendorcdrdata['billed_second'] = $excelrow['23'];
@@ -217,7 +228,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
                                 $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$excelrow['34']),$RateCDR);
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;

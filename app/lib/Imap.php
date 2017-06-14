@@ -21,15 +21,19 @@ protected $server;
 	 public function __construct($data = array()){
 		 foreach($data as $key => $value){
 			 $this->$key = $value;
-		 }		 		 
+		 }
 	 }
 	 
 	 function ReadEmails($CompanyID){
 		 
 		$email 		= 	$this->email;
 		$password 	= 	$this->password;		
-		$server		=	$this->server;		
-		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
+		$server		=	$this->server;
+		try{
+			$inbox  	= 	imap_open("{".$server."}", $email, $password);
+		} catch (\Exception $e) {
+			throw $e;
+		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
 
 		if($emails){
@@ -53,9 +57,9 @@ protected $server;
 				$structure		= 		imap_fetchstructure($inbox, $email_number); 
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
+				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-					
+
 			
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
@@ -110,7 +114,9 @@ protected $server;
 			
                 $from   = $this->GetEmailtxt($overview[0]->from);
 				$to 	= $this->GetEmailtxt($overview[0]->to);
-				
+
+				$message = html_entity_decode($message);
+
 				$logData = ['EmailFrom'=> $from,
 				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
 				'Subject'=>$overview[0]->subject,
@@ -396,9 +402,9 @@ protected $server;
     $body = $this->get_part($imap, $uid, "TEXT/HTML"); 
     // if HTML body is empty, try getting text body
     if ($body == "") {
-        $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
-    } 
-        return html_entity_decode($body);
+        $body = nl2br($this->get_part($imap, $uid, "TEXT/PLAIN"));
+    }
+        return $body;
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
@@ -457,7 +463,11 @@ protected $server;
 		$email 		= 	$email;
 		$password 	= 	$password;		
 		$server		=	$server;		
-		$inbox  	= 	imap_open("{".$server."}", $email, $password)  or Log::info("can't connect: " . imap_last_error()); 
+		try{
+			$inbox  	= 	imap_open("{".$server."}INBOX", $email, $password);
+		} catch (\Exception $ex) {
+			throw $ex;
+		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
 		Log::info("connectiong:".$email);
 		if($emails){
@@ -483,10 +493,21 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;		
-					
-				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
-				
+				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
+
+				//-- check in reply to with previous email
+				// if exists then don't check for auto reply
+				$in_reply_tos   = explode(' ',$in_reply_to);
+				foreach($in_reply_tos as $in_reply_to_id){
+
+					$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
+					if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
+						break;
+					}
+				}
+				Log::info("in_reply_tos");
+				Log::info($in_reply_tos);
+
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
@@ -574,10 +595,12 @@ protected $server;
 				if(count($attachmentsDB)>0){
 					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
-								
-			
-                $from   	= 	$this->GetEmailtxt($overview[0]->from);
+				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
+
+				$message = $this->body_cleanup($message);
+
+
+				$from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
@@ -587,7 +610,7 @@ protected $server;
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
-				if($check_auto){
+				if($check_auto && empty($msg_parent)){
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
@@ -826,54 +849,57 @@ protected $server;
 			$search = array();
 			$replace = array();
 			
-			foreach($matches[1] as $match) { 
-				// work out some unique filename for it and save to filesystem etc
-				$str = explode("@",$match); 
-				$uniqueFilename = $str[0];
-				// change /path/to/images to actual path
-				
-				///
-				
-				$filename 		=  $uniqueFilename;				
-				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
-				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
-				
-				if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
-					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
+			foreach($matches[1] as $match) {
+
+				if(isset($emailMessage->attachments[$match]['data'])) {
+
+					// work out some unique filename for it and save to filesystem etc
+					$str = explode("@", $match);
+					$uniqueFilename = $str[0];
+					// change /path/to/images to actual path
+
+					///
+
+					$filename = $uniqueFilename;
+					$file_name = \Webpatser\Uuid\Uuid::generate() . "_" . basename($filename);
+					$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+
+					if (!is_dir($UPLOADPATH . '/' . $amazonPath)) {
+						mkdir($UPLOADPATH . '/' . $amazonPath, 0777, true);
+					}
+
+					$filepath = $UPLOADPATH . '/' . $amazonPath . $msg . "-" . $file_name;
+					$filepath2 = $amazonPath . $msg . "-" . $file_name;
+					$fp = fopen($filepath, "w+");
+					fwrite($fp, $emailMessage->attachments[$match]['data']);
+					fclose($fp);
+
+					$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
+					$dataImage = file_get_contents($filepath);
+					//@unlink($filepath);
+					///
+					if (is_amazon($CompanyID)) {
+						if (!AmazonS3::upload($filepath, $amazonPath, $CompanyID)) {
+							throw new \Exception('Error in Amazon upload');
+						}
+					}
+
+					$path = AmazonS3::unSignedUrl($filepath2, $CompanyID);
+
+					if (!is_numeric(strpos($path, "https://"))) {
+						//$path = str_replace('/', '\\', $path);
+
+						$path2 = CompanyConfiguration::get($CompanyID, 'WEB_URL') . "/download_file?file=";
+						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
+						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+						// }
+						$path = $path2 . base64_encode($filepath2);
+					}
+
+					$search[] = "src=\"cid:$match\"";
+					// change www.example.com etc to actual URL
+					$replace[] = "src=\"$path\"";
 				}
-				
-				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $msg . "-" . $file_name; 
-				$filepath2  =  $amazonPath . $msg . "-" . $file_name;  
-				$fp = fopen($filepath, "w+");
-				fwrite($fp, $emailMessage->attachments[$match]['data']); 
-				fclose($fp);
-				
-				$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
-				$dataImage = file_get_contents($filepath);
-				//@unlink($filepath);
-				///				
-				if(is_amazon($CompanyID)){
-					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
-						throw new \Exception('Error in Amazon upload');	
-					}					
-				}
-				
-				
-				 $path = AmazonS3::unSignedUrl($filepath2,$CompanyID); 
-				 
-                if (!is_numeric(strpos($path, "https://"))) {
-                    //$path = str_replace('/', '\\', $path);
-					
-					$path2 = CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=";
-                    //if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
-                     //   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
-                   // } 
-				   $path = $path2.base64_encode($filepath2); 
-                }
-				
-				$search[] = "src=\"cid:$match\"";
-				// change www.example.com etc to actual URL
-				$replace[] = "src=\"$path\"";
 			}
 			
 			// now do the replacements
@@ -939,5 +965,11 @@ protected $server;
 
 	}
 
+	public function body_cleanup($message){
+
+		$message = html_entity_decode($message);
+		return $message ;
+
+	}
 }
 ?>

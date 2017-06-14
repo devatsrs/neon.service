@@ -128,12 +128,15 @@ class FTPAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -190,7 +193,7 @@ class FTPAccountUsage extends Command
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 

@@ -109,12 +109,15 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
@@ -175,6 +178,10 @@ class PBXAccountUsage extends Command
                         $data['billed_duration'] = $row_account['billsec'];
                         $data['duration'] = $row_account['duration'];
 
+                        $data['AccountIP'] = '';
+                        $data['AccountName'] = '';
+                        $data['AccountNumber'] = $row_account['accountcode'];
+                        $data['AccountCLI'] = '';
 
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';

@@ -90,12 +90,15 @@ class MORAccountUsage extends Command {
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
             $mor = new MOR($CompanyGatewayID);
@@ -129,11 +132,16 @@ class MORAccountUsage extends Command {
                     $data['CompanyID'] = $CompanyID;
                     if ($companysetting->NameFormat == 'NUB') {
                         $data['GatewayAccountID'] = $row_account['username'];
-                    } else if ($companysetting->NameFormat == 'CLI') {
-                        $data['GatewayAccountID'] = $row_account['cli'];
                     } else if ($companysetting->NameFormat == 'IP') {
                         $data['GatewayAccountID'] = $row_account['originator_ip'];
                     }
+                    /*if ($companysetting->NameFormat == 'CLI') {
+                        $data['GatewayAccountID'] = $row_account['cli'];
+                    }*/
+                    $data['AccountIP'] = $row_account['originator_ip'];
+                    $data['AccountName'] = $row_account['username'];
+                    $data['AccountNumber'] = $row_account['username'];
+                    $data['AccountCLI'] = '';
                     $data['connect_time'] = $row_account['connect_time'];
                     $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
                     $data['cost'] = (float)$row_account['cost'];
@@ -143,7 +151,7 @@ class MORAccountUsage extends Command {
                     $data['billed_second'] = $row_account['billed_second'];
                     $data['duration'] = $row_account['duration'];
                     $data['trunk'] = 'Other';
-                    $data['area_prefix'] = sippy_vos_areaprefix($row_account['prefix'],$RateCDR);
+                    $data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
                     $data['ProcessID'] = $processID;
                     $data['remote_ip'] = $row_account['originator_ip'];
                     $data['ServiceID'] = $ServiceID;
@@ -164,6 +172,10 @@ class MORAccountUsage extends Command {
                     foreach ((array)$response as $row_account) {
                         if(!empty($row_account['terminator_ip'])) {
                             $vendorcdrdata = array();
+                            $vendorcdrdata['AccountIP'] = $row_account['terminator_ip'];
+                            $vendorcdrdata['AccountName'] = '';
+                            $vendorcdrdata['AccountNumber'] = '';
+                            $vendorcdrdata['AccountCLI'] = '';
                             $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                             $vendorcdrdata['CompanyID'] = $CompanyID;
                             $vendorcdrdata['GatewayAccountID'] = $row_account['terminator_ip'];
@@ -177,7 +189,7 @@ class MORAccountUsage extends Command {
                             $vendorcdrdata['billed_second'] = $row_account['billed_second'];
                             $vendorcdrdata['duration'] = $row_account['duration'];
                             $vendorcdrdata['trunk'] = 'Other';
-                            $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix($row_account['prefix'],$RateCDR);
+                            $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
                             $vendorcdrdata['ProcessID'] = $processID;
                             $vendorcdrdata['ServiceID'] = $ServiceID;
                             $vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
