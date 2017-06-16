@@ -1927,14 +1927,13 @@ class Invoice extends \Eloquent {
         $AccountID = $Options['AccountID'];
         $Account = Account::find($AccountID);
         $AccountName = $Account['AccountName'];
-        $NextInvoiceDate = $Options['PeriodFrom'];
-        $LastInvoiceDate = $Options['PeriodTo'];
+        $NextInvoiceDate = $Options['PeriodTo'];
+        $LastInvoiceDate = $Options['PeriodFrom'];
         $response = $errors = $message = array();
         try {
 
             Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
             if (!empty($NextInvoiceDate) && strtotime($NextInvoiceDate) <= strtotime(date("Y-m-d"))) {
-
                 $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
                 /**
                  * 1. If Account is not in tblAccountGateway Generate Invoice
@@ -1943,10 +1942,7 @@ class Invoice extends \Eloquent {
                  * not sending any traffic then also 0 value invoice is generated.
                  * */
                 $isCDRLoaded = DB::connection('sqlsrv2')->select("CALL prc_checkCDRIsLoadedOrNot(" . (int)$AccountID . ",$CompanyID,'$EndDate')");
-
                 Log::info('isCDRLoaded ' . print_r($isCDRLoaded, true));
-
-
                 if (isset($isCDRLoaded[0]->isLoaded) && $isCDRLoaded[0]->isLoaded == 1) {
 
                     Log::info(' ========================== Invoice Send Start =============================');
@@ -1972,19 +1968,12 @@ class Invoice extends \Eloquent {
                         Log::info('Invoice rollback  AccountID = ' . $AccountID);
                         Log::info(' ========================== Error  =============================');
                         Log::info('Invoice with Error - ' . print_r($response, true));
-
                     }
-
                 } else {
                     $errors[] = $AccountName . " " . Invoice::$InvoiceGenrationErrorReasons["NoCDR"];
-
                 }
-
             }
-
             Log::info(' ========================== Invoice Send End =============================');
-
-
         } catch (\Exception $e) {
 
             try {
@@ -1993,17 +1982,12 @@ class Invoice extends \Eloquent {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
                 Log::error($e);
-
                 $errors[] = $AccountName . " " . $e->getMessage();
-
-
             } catch (Exception $err) {
                 Log::error($err);
                 $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
             }
-
         }
-
 
         $response['errors'] = $errors;
         $response['message'] = $message;
