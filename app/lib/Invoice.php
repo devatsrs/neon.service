@@ -1927,8 +1927,9 @@ class Invoice extends \Eloquent {
         $AccountID = $Options['AccountID'];
         $Account = Account::find($AccountID);
         $AccountName = $Account['AccountName'];
-        $NextInvoiceDate = $Options['PeriodTo'];
         $LastInvoiceDate = $Options['PeriodFrom'];
+        $NextInvoiceDate = $Options['PeriodTo'];
+        $NextInvoiceDate =  date("Y-m-d 23:59:59", strtotime( "+1 Day", strtotime($NextInvoiceDate)));
         $response = $errors = $message = array();
         try {
 
