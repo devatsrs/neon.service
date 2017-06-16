@@ -1923,15 +1923,15 @@ class Invoice extends \Eloquent {
 
     public static function GenerateManualInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$Options)
     {
-
+        $ServiceID = 0;
+        $AccountID = $Options['AccountID'];
+        $Account = Account::find($AccountID);
+        $AccountName = $Account['AccountName'];
+        $NextInvoiceDate = $Options['PeriodFrom'];
+        $LastInvoiceDate = $Options['PeriodTo'];
         $response = $errors = $message = array();
         try {
-            $ServiceID = 0;
-            $AccountID = $Options['AccountID'];
-            $Account = Account::find($AccountID);
-            $AccountName = $Account['AccountName'];
-            $NextInvoiceDate = $Options['NextInvoiceDate'];
-            $LastInvoiceDate = $Options['LastInvoiceDate'];
+
             Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
             if (!empty($NextInvoiceDate) && strtotime($NextInvoiceDate) <= strtotime(date("Y-m-d"))) {
 
