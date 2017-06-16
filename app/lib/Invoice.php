@@ -1096,7 +1096,8 @@ class Invoice extends \Eloquent {
                 if($AccountSubscription->EndDate == '0000-00-00'){
                     $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
                 }
-                if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID)){
+                $BillingCycleType = AccountBilling::where(["AccountID"=>$Invoice->AccountID,"ServiceID"=>$ServiceID])->pluck('BillingCycleType');
+                if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID) && $BillingCycleType != 'manual'){
                 $isAdvanceSubscription =1;
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
 
@@ -1918,5 +1919,94 @@ class Invoice extends \Eloquent {
             }
         }
         return $usage_data_table;
+    }
+
+    public static function GenerateManualInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$Options)
+    {
+
+        $response = $errors = $message = array();
+        try {
+            $ServiceID = 0;
+            $AccountID = $Options['AccountID'];
+            $Account = Account::find($AccountID);
+            $AccountName = $Account['AccountName'];
+            $NextInvoiceDate = $Options['NextInvoiceDate'];
+            $LastInvoiceDate = $Options['LastInvoiceDate'];
+            Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
+            if (!empty($NextInvoiceDate) && strtotime($NextInvoiceDate) <= strtotime(date("Y-m-d"))) {
+
+                $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
+                /**
+                 * 1. If Account is not in tblAccountGateway Generate Invoice
+                 * 2. If Account is present check **cdr download log** end date > $EndDate (1-11-2015 > 31-10-2015)
+                 * 3. If no calling in CDR then also log is generated so checking in log only. not in tblUsageDetails so if customer is
+                 * not sending any traffic then also 0 value invoice is generated.
+                 * */
+                $isCDRLoaded = DB::connection('sqlsrv2')->select("CALL prc_checkCDRIsLoadedOrNot(" . (int)$AccountID . ",$CompanyID,'$EndDate')");
+
+                Log::info('isCDRLoaded ' . print_r($isCDRLoaded, true));
+
+
+                if (isset($isCDRLoaded[0]->isLoaded) && $isCDRLoaded[0]->isLoaded == 1) {
+
+                    Log::info(' ========================== Invoice Send Start =============================');
+
+                    DB::beginTransaction();
+                    DB::connection('sqlsrv2')->beginTransaction();
+
+                    Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
+                    $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID, $ServiceID);
+                    Log::info('Invoice::sendInvoice done');
+                    if (isset($response["status"]) && $response["status"] == 'success') {
+
+                        Log::info('Invoice created - ' . print_r($response, true));
+                        $message[] = $response["message"];
+                        Log::info('Invoice Committed  AccountID = ' . $AccountID);
+                        DB::connection('sqlsrv2')->commit();
+                        DB::commit();
+
+                    } else {
+                        $errors[] = $response["message"];
+                        DB::rollback();
+                        DB::connection('sqlsrv2')->rollback();
+                        Log::info('Invoice rollback  AccountID = ' . $AccountID);
+                        Log::info(' ========================== Error  =============================');
+                        Log::info('Invoice with Error - ' . print_r($response, true));
+
+                    }
+
+                } else {
+                    $errors[] = $AccountName . " " . Invoice::$InvoiceGenrationErrorReasons["NoCDR"];
+
+                }
+
+            }
+
+            Log::info(' ========================== Invoice Send End =============================');
+
+
+        } catch (\Exception $e) {
+
+            try {
+
+                Log::error('Invoice Rollback AccountID = ' . $AccountID);
+                DB::rollback();
+                DB::connection('sqlsrv2')->rollback();
+                Log::error($e);
+
+                $errors[] = $AccountName . " " . $e->getMessage();
+
+
+            } catch (Exception $err) {
+                Log::error($err);
+                $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
+            }
+
+        }
+
+
+        $response['errors'] = $errors;
+        $response['message'] = $message;
+        return $response;
     }
 }
