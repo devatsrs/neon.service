@@ -1960,6 +1960,15 @@ class Invoice extends \Eloquent {
                         $message[] = $response["message"];
                         Log::info('Invoice Committed  AccountID = ' . $AccountID);
                         DB::connection('sqlsrv2')->commit();
+                        Log::info('=========== Updating  InvoiceDate =========== ');
+                        $oldNextInvoiceDate = $NextInvoiceDate;
+                        AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["LastInvoiceDate" => $oldNextInvoiceDate]);
+                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID, $ServiceID);
+                        if (!empty($AccountNextBilling)) {
+                            AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
+                            AccountNextBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->delete();
+                        }
+                        Log::info('=========== Updated  InvoiceDate =========== ');
                         DB::commit();
 
                     } else {
