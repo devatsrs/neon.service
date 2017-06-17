@@ -1750,7 +1750,8 @@ class Invoice extends \Eloquent {
         $replace_array['Phone'] = $Account->Phone;
         $replace_array['Fax'] = $Account->Fax;
         $replace_array['Website'] = $Account->Website;
-        $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
+        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);

@@ -398,7 +398,7 @@ class ImportAccount extends Command {
 									$Customer   				= trim($temp_row[$attrselection->Customer]);
 									$CustomerVal 				= 0;
 									if($Customer=='Yes'){$CustomerVal = 1;}	
-                                    $tempItemData['IsCustomer'] = $Customer;
+                                    $tempItemData['IsCustomer'] = $CustomerVal;
                                 }							
 
                                 if (isset($tempItemData['AccountName'])) {
