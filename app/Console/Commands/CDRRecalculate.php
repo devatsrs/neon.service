@@ -136,7 +136,7 @@ class CDRRecalculate extends Command {
                     $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'',$RateMethod,$SpecifyRate);
                 }
                 if (count($skiped_account_data)) {
-                    $jobdata['JobStatusMessage'] = implode(',\n\r', $skiped_account_data);
+                    $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else {
                     $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';
