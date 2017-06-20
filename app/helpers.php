@@ -609,14 +609,17 @@ function remove_extra_columns($usage_data,$usage_data_table){
         if (isset($usage_data_row['ServiceID'])) {
             unset($usage_data_row['ServiceID']);
         }
-
-        $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+		$usage_data_row = array_replace(array_flip($usage_data_table['order']),$usage_data_row);
+		$usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
         foreach($usage_data_table['header'] as $table_h_row){
             if($table_h_row['Title'] != $table_h_row['UsageName'] && isset($usage_data_row[$table_h_row['Title']])){
-                $usage_data_row[$table_h_row['UsageName']] = $usage_data_row[$table_h_row['Title']];
-                unset($usage_data_row[$table_h_row['Title']]);
+                $table_h_row['UsageName'] = str_replace("<br>"," ",$table_h_row['UsageName']);
+				 $keys = array_keys($usage_data_row);
+				 $index = array_search($table_h_row['Title'], $keys);
+				 $keys[$index] = $table_h_row['UsageName'];
+				 $usage_data_row = array_combine($keys, array_values($usage_data_row));
             }
-        }
+        }		
 
         $usage_data[$row_key] = $usage_data_row;
     }

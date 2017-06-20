@@ -1720,8 +1720,10 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     } else {
                         $usage_data[$key_col_comb] = $result_row;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     }
                 } else {
                     $usage_data[] = $result_row;
