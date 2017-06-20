@@ -142,7 +142,7 @@ class ImportAccountIp extends Command {
                                 if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName,'AccountType'=>1])->count()>0){
                                     $tempItemData['AccountName'] = $AccountName;
                                 }else{
-                                    $error[] = $AccountName.' - Account Name is not exists.';
+                                    $error[] = $AccountName." - Account Name doesn't exists.";
 
                                 }
 
