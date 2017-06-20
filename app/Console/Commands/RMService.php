@@ -80,7 +80,8 @@ class RMService extends Command {
                 //'getSippyDownloadCommand',
 				'ImportAccount',
                 'DialStringUpload',
-                'QuickBookInvoicePost'
+                'QuickBookInvoicePost',
+                'ImportAccountIP'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -326,6 +327,16 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " quickbookinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            //Account Import IPs
+            foreach($allpending['data']['ImportAccountIP'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." importaccountip " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " importaccountip " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

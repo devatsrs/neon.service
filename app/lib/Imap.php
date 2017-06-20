@@ -57,9 +57,9 @@ protected $server;
 				$structure		= 		imap_fetchstructure($inbox, $email_number); 
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;				
+				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-					
+
 			
 				if(!empty($msg_parent)){ // if email is reply of an email
 					if($msg_parent->EmailParent==0){
@@ -402,8 +402,8 @@ protected $server;
     $body = $this->get_part($imap, $uid, "TEXT/HTML"); 
     // if HTML body is empty, try getting text body
     if ($body == "") {
-        $body = $this->get_part($imap, $uid, "TEXT/PLAIN");
-    } 
+        $body = nl2br($this->get_part($imap, $uid, "TEXT/PLAIN"));
+    }
         return $body;
     }
 
@@ -493,10 +493,21 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;		
-					
-				$msg_parent   				=		  AccountEmailLog::where(["MessageID"=>$in_reply_to])->first();				
-				
+				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
+
+				//-- check in reply to with previous email
+				// if exists then don't check for auto reply
+				$in_reply_tos   = explode(' ',$in_reply_to);
+				foreach($in_reply_tos as $in_reply_to_id){
+
+					$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
+					if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
+						break;
+					}
+				}
+				Log::info("in_reply_tos");
+				Log::info($in_reply_tos);
+
 				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
@@ -584,9 +595,10 @@ protected $server;
 				if(count($attachmentsDB)>0){
 					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				$message =  nl2br($this->GetMessageBody($message));  //get only body section from email. remove css and scripts
+				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
 
-				$message = html_entity_decode($message);
+				$message = $this->body_cleanup($message);
+
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$to 		= 	$this->GetEmailtxt($overview[0]->to);
@@ -598,7 +610,7 @@ protected $server;
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
-				if($check_auto){
+				if($check_auto && empty($msg_parent)){
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
@@ -953,5 +965,11 @@ protected $server;
 
 	}
 
+	public function body_cleanup($message){
+
+		$message = html_entity_decode($message);
+		return $message ;
+
+	}
 }
 ?>

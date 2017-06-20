@@ -1721,8 +1721,10 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     } else {
                         $usage_data[$key_col_comb] = $result_row;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     }
                 } else {
                     $usage_data[] = $result_row;
@@ -1751,7 +1753,8 @@ class Invoice extends \Eloquent {
         $replace_array['Phone'] = $Account->Phone;
         $replace_array['Fax'] = $Account->Fax;
         $replace_array['Website'] = $Account->Website;
-        $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
+        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
