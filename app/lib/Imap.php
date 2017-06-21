@@ -541,8 +541,15 @@ protected $server;
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
 					if(!empty($original_plain_subject)){
-						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
-						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
+						$EmailFrom = $EmailTo = "";
+						if(isset($overview[0]->from)){
+							$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
+						}
+						if(isset($overview[0]->to)) {
+							$EmailTo = $this->GetEmailtxt($overview[0]->to);
+						}else {
+							$EmailTo = $email;
+						}
 
 						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
 					}
@@ -601,7 +608,11 @@ protected $server;
 
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
-				$to 		= 	$this->GetEmailtxt($overview[0]->to);
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email;
+				}
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
