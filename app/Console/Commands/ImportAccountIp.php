@@ -204,6 +204,9 @@ class ImportAccountIp extends Command {
                                         $tempItemData['IP'] = trim($key);
                                         $tempItemData['CompanyID'] = $CompanyID;
                                         $tempItemData['ProcessID'] = $ProcessID;
+                                        if(empty($tempItemData['ServiceID'])){
+                                            $tempItemData['ServiceID'] = 0;
+                                        }
                                         //$tempItemData['ServiceID'] = 0;
                                         $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
                                         $tempItemData['created_by'] = 'System';
