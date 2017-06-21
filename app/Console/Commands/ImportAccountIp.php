@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\AccountService;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
@@ -9,6 +10,7 @@ use App\Lib\Job;
 use App\Lib\Currency;
 use App\Lib\Country;
 use App\Lib\JobFile;
+use App\Lib\Service;
 use App\Lib\User;
 use App\Lib\FileUploadTemplate;
 use App\Lib\VendorFileUploadTemplate;
@@ -169,6 +171,25 @@ class ImportAccountIp extends Command {
                                 }
                             }
 
+                            if (isset($attrselection->Service) && !empty($attrselection->Service) && !empty($temp_row[$attrselection->Service])) {
+                                $Service = trim($temp_row[$attrselection->Service]);
+                                if(!empty($tempItemData['AccountName']) && !empty($Service)){
+                                    $ServiceID = Service::getServiceIDByName($Service);
+                                    if(!empty($ServiceID)){
+                                        $AccountID = Account::where(['CompanyID'=> $CompanyID,'AccountName'=>$tempItemData['AccountName'],'AccountType'=>1])->pluck('AccountID');
+                                        if(AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->count()>0){
+                                            $tempItemData['ServiceID'] = $ServiceID;
+                                        }else{
+                                            $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
+
+                                        }
+                                    }else{
+                                        $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
+                                    }
+                                }
+                            }
+
+
                             if (isset($tempItemData['AccountName']) && isset($TempIP) && isset($tempItemData['Type'])) {
                                 //Log::info(print_r($tempItemData,true));
                                 $TempIP = str_replace(' ',',',$TempIP);
@@ -181,7 +202,7 @@ class ImportAccountIp extends Command {
                                         $tempItemData['IP'] = trim($key);
                                         $tempItemData['CompanyID'] = $CompanyID;
                                         $tempItemData['ProcessID'] = $ProcessID;
-                                        $tempItemData['ServiceID'] = 0;
+                                        //$tempItemData['ServiceID'] = 0;
                                         $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
                                         $tempItemData['created_by'] = 'System';
                                         $batch_insert_array[] = $tempItemData;
