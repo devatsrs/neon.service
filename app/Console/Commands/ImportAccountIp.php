@@ -136,6 +136,7 @@ class ImportAccountIp extends Command {
                             unset($temp_row[0]);
 
                         }
+                        $tempservice=1;
                         $tempItemData = array();
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)) {
@@ -181,16 +182,17 @@ class ImportAccountIp extends Command {
                                             $tempItemData['ServiceID'] = $ServiceID;
                                         }else{
                                             $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
-
+                                            $tempservice=0;
                                         }
                                     }else{
                                         $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
+                                        $tempservice=0;
                                     }
                                 }
                             }
 
 
-                            if (isset($tempItemData['AccountName']) && isset($TempIP) && isset($tempItemData['Type'])) {
+                            if (isset($tempItemData['AccountName']) && isset($TempIP) && isset($tempItemData['Type']) && $tempservice==1) {
                                 //Log::info(print_r($tempItemData,true));
                                 $TempIP = str_replace(' ',',',$TempIP);
                                 $TempIP = str_replace("\n", ",", $TempIP);
