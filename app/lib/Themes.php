@@ -18,7 +18,6 @@ class Themes extends \Eloquent {
     const ACTIVE 			= 	'active';
 	
 
-
    public static function get_theme_status()
 	{
        $Company 		= 	Company::find(User::get_companyID());		
