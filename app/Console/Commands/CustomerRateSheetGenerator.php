@@ -83,6 +83,7 @@ class CustomerRateSheetGenerator extends Command {
         $emailstatus = array('status' => 0, 'message' => '');
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
+        $CustomerEmailSend=0;
         if (!empty($job)) {
             $ProcessID = Uuid::generate();
             $joboptions = json_decode($job->Options); 
@@ -91,6 +92,10 @@ class CustomerRateSheetGenerator extends Command {
                     $ids = $joboptions->SelectedIDs;
                 }else if($job->AccountID >0 ){
                     $ids = $job->AccountID;
+                }
+
+                if(isset($joboptions->SelectedIDs) && !empty($joboptions->sendMail)){
+                    $CustomerEmailSend=1;
                 }
 
                 $criteria = '';
@@ -174,7 +179,21 @@ class CustomerRateSheetGenerator extends Command {
                     foreach ($accounts as $account) {
                         try {
                             DB::beginTransaction();
-                            $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+
+                            if($CustomerEmailSend==1 && is_array($joboptions->Trunks)){
+                                if(count($joboptions->Trunks)==1){
+                                    $jobtrunkname = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->Trunks[0]))->pluck('Trunk');
+                                    $file_name = $jobtrunkname.'-'.date('YmdHis');
+                                }else{
+                                    $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+                                }
+
+                            }else{
+                                $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+                            }
+                            log::info('file name '.$file_name);
+
+                            //$file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
                             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
                             $local_dir = $UPLOADPATH . '/' . $amazonPath;
                             $excel_data_all = array();

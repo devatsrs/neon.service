@@ -221,6 +221,7 @@ class TempUsageDetail extends \Eloquent {
             ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
             ->where('tblAccountDiscountPlan.ServiceID','=','tblAccountBilling.ServiceID')
             ->where('EndDate','<=',$today)
+            ->where('tblAccountBilling.BillingCycleType','<>','manual')
             ->get(['tblAccountBilling.AccountID','DiscountPlanID','tblAccountDiscountPlan.ServiceID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
         foreach($Accounts as $Account){
             $ServiceID = $Account->ServiceID;

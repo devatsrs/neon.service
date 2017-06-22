@@ -61,10 +61,14 @@ class VendorVOSSheetGeneration extends Command {
             $tunkids = '';
             $file_path = '';
             $amazonPath = '';
+            $Format = '';
             if(isset($joboptions->Trunks) && is_array($joboptions->Trunks)){
                 $tunkids = implode(',',$joboptions->Trunks);
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
+            }
+            if(isset($joboptions->Format)){
+                $Format = $joboptions->Format;
             }
             /*if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
@@ -80,7 +84,7 @@ class VendorVOSSheetGeneration extends Command {
                 $Effective = $joboptions->Effective;
             }
 
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."')");
+            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');

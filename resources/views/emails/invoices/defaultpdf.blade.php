@@ -395,7 +395,7 @@
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"></th>
                         <th>Calls</th>
                         <th>Duration</th>
-                        <th class="centeralign">Billed Duration</th>
+                        <th class="centeralign">Billed <br> Duration</th>
                         <th class="centeralign">Charge</th>
                     </tr>
                     <tr>
@@ -461,7 +461,7 @@
 
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
-                        <th class="centeralign">Billed Duration</th>
+                        <th class="centeralign">Billed <br> Duration</th>
                         <th class="centeralign">Charge</th>
                     </tr>
                     <tr>

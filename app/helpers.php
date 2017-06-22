@@ -230,9 +230,6 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR){
     if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
-    $area_prefix = preg_replace('/^00/','',$area_prefix);
-    $area_prefix = preg_replace('/^2222/','',$area_prefix);
-    $area_prefix = preg_replace('/^3333/','',$area_prefix);
 return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
@@ -255,6 +252,7 @@ function template_var_replace($EmailMessage,$replace_array){
         '{{OutstandingIncludeUnbilledAmount}}',
         '{{BalanceThreshold}}',
         '{{Currency}}',
+        '{{CurrencySign}}',
         '{{CompanyName}}',
 		"{{CompanyVAT}}",
 		"{{CompanyAddress}}",
@@ -611,17 +609,34 @@ function remove_extra_columns($usage_data,$usage_data_table){
         if (isset($usage_data_row['ServiceID'])) {
             unset($usage_data_row['ServiceID']);
         }
-
-        $usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
+		$usage_data_row = array_replace(array_flip($usage_data_table['order']),$usage_data_row);
+		$usage_data_row = array_intersect_key($usage_data_row, array_flip($usage_data_table['order']));
         foreach($usage_data_table['header'] as $table_h_row){
             if($table_h_row['Title'] != $table_h_row['UsageName'] && isset($usage_data_row[$table_h_row['Title']])){
-                $usage_data_row[$table_h_row['UsageName']] = $usage_data_row[$table_h_row['Title']];
-                unset($usage_data_row[$table_h_row['Title']]);
+                $table_h_row['UsageName'] = str_replace("<br>"," ",$table_h_row['UsageName']);
+				 $keys = array_keys($usage_data_row);
+				 $index = array_search($table_h_row['Title'], $keys);
+				 $keys[$index] = $table_h_row['UsageName'];
+				 $usage_data_row = array_combine($keys, array_values($usage_data_row));
             }
-        }
+        }		
 
         $usage_data[$row_key] = $usage_data_row;
     }
     return $usage_data;
 
+}
+function getUsageColumns($InvoiceTemplate){
+    if(empty($InvoiceTemplate->UsageColumn)){
+        $UsageColumn = \App\Lib\InvoiceTemplate::defaultUsageColumns();
+    }else{
+        $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
+    }
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR){
+        $UsageColumn = $UsageColumn['Summary'];
+    }else{
+        $UsageColumn = $UsageColumn['Detail'];
+    }
+
+    return $UsageColumn;
 }

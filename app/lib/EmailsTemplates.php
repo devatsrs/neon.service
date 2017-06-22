@@ -25,6 +25,7 @@ class EmailsTemplates{
 				'{{Country}}',
 				'{{Signature}}',
 				'{{Currency}}',
+				'{{CurrencySign}}',
 				'{{OutstandingExcludeUnbilledAmount}}',
 				'{{OutstandingIncludeUnbilledAmount}}',
 				'{{BalanceThreshold}}',
@@ -75,6 +76,7 @@ class EmailsTemplates{
 				$replace_array['Address3']				=	 $AccoutData->Address3;
 				$replace_array['InvoiceNumber']			=	 $InvoiceData->FullInvoiceNumber;		
 				$replace_array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId,"CompanyId"=>$CompanyID])->pluck("Code");
+				$replace_array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId,"CompanyId"=>$CompanyID])->pluck("Symbol");
 				$RoundChargesAmount 					= 	 Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID);
 				$replace_array['InvoiceGrandTotal']		=	 number_format($InvoiceData->GrandTotal,$RoundChargesAmount);
 				$replace_array['AccountName']			=	 $AccoutData->AccountName;

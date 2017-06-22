@@ -323,7 +323,8 @@ class Helper{
        $replace_array['Country'] = $Account->Country;
        $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
-       $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+       $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
+       $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);

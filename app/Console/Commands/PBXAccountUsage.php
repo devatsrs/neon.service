@@ -109,12 +109,15 @@ class PBXAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
@@ -184,6 +187,7 @@ class PBXAccountUsage extends Command
                         $data['area_prefix'] = 'Other';
                         $data['pincode'] = $row_account['pincode'];
                         $data['disposition'] = $row_account['disposition'];
+                        $data['userfield'] = $row_account['userfield'];
                         $data['extension'] = $row_account['extension'];
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
@@ -231,6 +235,7 @@ class PBXAccountUsage extends Command
                             $data['cld'] = $row_account['firstdst'];
                             $data['cost'] = 0;
                             $data['is_inbound'] = 1;
+                            $data['userfield'] = str_replace('outbound','',$row_account['userfield']);
 
                             /**
                              * Outbound Entry
@@ -241,6 +246,7 @@ class PBXAccountUsage extends Command
                             $data_outbound['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data_outbound['cost'] = (float)$row_account['cc_cost'];
                             $data_outbound['is_inbound'] = 0;
+                            $data_outbound['userfield'] = str_replace('inbound','',$row_account['userfield']);
 
                         }
                         $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);

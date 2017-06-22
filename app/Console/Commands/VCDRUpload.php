@@ -150,6 +150,7 @@ class VCDRUpload extends Command
                     $cdrdata['CompanyID'] = $CompanyID;
                     $cdrdata['trunk'] = 'Other';
                     $cdrdata['area_prefix'] = 'Other';
+                    $cdrdata['ServiceID'] = 0;
 
                     //check empty row
                     $checkemptyrow = array_filter(array_values($temp_row));
