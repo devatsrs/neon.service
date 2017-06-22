@@ -101,8 +101,9 @@ class PBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
+                $count = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->count();
                 $disabled = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->pluck('te_disabled');
-                if($disabled == '') {
+                if($disabled == '' && $count) {
                     DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $addparams['te_code'])->update(array('te_disabled'=>'on'));
                     $response = array('message'=>'account blocked');
                 }
