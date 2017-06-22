@@ -1979,8 +1979,6 @@ Delimiter ;;
 DROP PROCEDURE IF EXISTS  `prc_AssignSlaToTicket`;
 CREATE PROCEDURE `prc_AssignSlaToTicket`(
 	IN `p_CompanyID` INT,
-	IN `p_TicketID` INT,
-	IN `p_CompanyID` INT,
 	IN `p_TicketID` INT)
 LANGUAGE SQL
 NOT DETERMINISTIC
