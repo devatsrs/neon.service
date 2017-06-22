@@ -29,5 +29,9 @@ class Service extends \Eloquent {
         return Service::where(array('ServiceID'=>$ServiceID))->pluck('ServiceName');
 
     }
+    public static function getServiceIDByName($ServiceName){
+        return Service::where(array('ServiceName'=>$ServiceName))->pluck('ServiceID');
+
+    }
 
 }
