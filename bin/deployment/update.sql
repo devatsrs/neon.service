@@ -3,6 +3,7 @@ USE `Ratemanagement3`;
 INSERT INTO `tblJobType` (`JobTypeID`, `Code`, `Title`, `Description`, `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy`) VALUES (24, 'ICU', 'IP Upload', NULL, '2017-06-07 13:05:46', 'System', NULL, NULL);
 INSERT INTO `tblRateSheetFormate` (`RateSheetFormateID`, `Title`, `Description`, `Customer`, `Vendor`, `Status`, `created_at`, `CreatedBy`, `updated_at`, `UpdatedBy`) VALUES (5, 'Vos 2.0', NULL, 1, 1, 1, '2017-06-13 00:00:00', NULL, NULL, NULL);
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'HIDE_AVGRATEMINUTE', '0');
+INSERT INTO `tblIntegration` (`IntegrationID`, `CompanyId`, `Title`, `Slug`, `ParentID`, `MultiOption`) VALUES (19, 1, 'SagePay', 'sagepay', 4, 'N');
 
 CREATE TABLE IF NOT EXISTS `tblTempAccountIP` (
   `tblTempAccountIPID` bigint(20) NOT NULL auto_increment,
