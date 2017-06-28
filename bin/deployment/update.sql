@@ -3,6 +3,7 @@ USE `Ratemanagement3`;
 INSERT INTO `tblJobType` (`JobTypeID`, `Code`, `Title`, `Description`, `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy`) VALUES (24, 'ICU', 'IP Upload', NULL, '2017-06-07 13:05:46', 'System', NULL, NULL);
 INSERT INTO `tblRateSheetFormate` (`RateSheetFormateID`, `Title`, `Description`, `Customer`, `Vendor`, `Status`, `created_at`, `CreatedBy`, `updated_at`, `UpdatedBy`) VALUES (5, 'Vos 2.0', NULL, 1, 1, 1, '2017-06-13 00:00:00', NULL, NULL, NULL);
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'HIDE_AVGRATEMINUTE', '0');
+INSERT INTO `tblIntegration` (`IntegrationID`, `CompanyId`, `Title`, `Slug`, `ParentID`, `MultiOption`) VALUES (19, 1, 'SagePay', 'sagepay', 4, 'N');
 
 CREATE TABLE IF NOT EXISTS `tblTempAccountIP` (
   `tblTempAccountIPID` bigint(20) NOT NULL auto_increment,
@@ -1979,8 +1980,6 @@ Delimiter ;;
 DROP PROCEDURE IF EXISTS  `prc_AssignSlaToTicket`;
 CREATE PROCEDURE `prc_AssignSlaToTicket`(
 	IN `p_CompanyID` INT,
-	IN `p_TicketID` INT,
-	IN `p_CompanyID` INT,
 	IN `p_TicketID` INT)
 LANGUAGE SQL
 NOT DETERMINISTIC
@@ -2782,11 +2781,11 @@ INSERT INTO `tblResourceCategories` (`ResourceCategoryID`, `ResourceCategoryName
 INSERT INTO `tblResourceCategories` (`ResourceCategoryID`, `ResourceCategoryName`, `CompanyID`, `CategoryGroupID`) VALUES (1302, 'NoticeBoardPost.View', 1, 9);
 INSERT INTO `tblResourceCategories` (`ResourceCategoryID`, `ResourceCategoryName`, `CompanyID`, `CategoryGroupID`) VALUES (1301, 'NoticeBoardPost.All', 1, 9);
 
-INSERT INTO `tblResource` (`ResourceID`, `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES (2283, 'NoticeBoard.delete', 'NoticeBoardController.delete', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1305);
-INSERT INTO `tblResource` (`ResourceID`, `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES (2282, 'NoticeBoard.store', 'NoticeBoardController.store', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1303);
-INSERT INTO `tblResource` (`ResourceID`, `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES (2281, 'NoticeBoard.get_mor_updates', 'NoticeBoardController.get_mor_updates', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1302);
-INSERT INTO `tblResource` (`ResourceID`, `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES (2280, 'NoticeBoard.*', 'NoticeBoardController.*', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1301);
-INSERT INTO `tblResource` (`ResourceID`, `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES (2279, 'NoticeBoard.index', 'NoticeBoardController.index', 1, 'System', NULL, '2017-06-09 12:33:00.000', '2017-06-09 12:33:00.000', 1302);
+INSERT INTO `tblResource` ( `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ( 'NoticeBoard.delete', 'NoticeBoardController.delete', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1305);
+INSERT INTO `tblResource` ( `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ( 'NoticeBoard.store', 'NoticeBoardController.store', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1303);
+INSERT INTO `tblResource` ( `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ( 'NoticeBoard.get_mor_updates', 'NoticeBoardController.get_mor_updates', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1302);
+INSERT INTO `tblResource` ( `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ( 'NoticeBoard.*', 'NoticeBoardController.*', 1, 'System', NULL, '2017-06-09 12:33:01.000', '2017-06-09 12:33:01.000', 1301);
+INSERT INTO `tblResource` ( `ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ( 'NoticeBoard.index', 'NoticeBoardController.index', 1, 'System', NULL, '2017-06-09 12:33:00.000', '2017-06-09 12:33:00.000', 1302);
 
 
 DROP PROCEDURE IF EXISTS `prc_getCustomerCodeRate`;
@@ -4601,6 +4600,153 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_RerateOutboundTrunk`;
+DELIMITER |
+CREATE PROCEDURE `prc_RerateOutboundTrunk`(
+	IN `p_processId` INT,
+	IN `p_tbltempusagedetail_name` VARCHAR(200),
+	IN `p_RateCDR` INT,
+	IN `p_RateFormat` INT,
+	IN `p_RateMethod` VARCHAR(50),
+	IN `p_SpecifyRate` DECIMAL(18,6)
+)
+BEGIN
+
+	DECLARE v_rowCount_ INT;
+	DECLARE v_pointer_ INT;
+	DECLARE v_AccountID_ INT;
+	DECLARE v_TrunkID_ INT;
+	DECLARE v_CDRUpload_ INT;
+	DECLARE v_cld_ VARCHAR(500);
+
+	/* temp accounts and trunks*/
+	DROP TEMPORARY TABLE IF EXISTS tmp_AccountTrunkCdrUpload_;
+	CREATE TEMPORARY TABLE tmp_AccountTrunkCdrUpload_  (
+		RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		AccountID INT,
+		TrunkID INT
+	);
+	SET @stm = CONCAT('
+	INSERT INTO tmp_AccountTrunkCdrUpload_(AccountID,TrunkID)
+	SELECT DISTINCT AccountID,TrunkID FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud WHERE ProcessID="' , p_processId , '" AND AccountID IS NOT NULL AND TrunkID IS NOT NULL AND ud.is_inbound = 0;
+	');
+
+	SET v_CDRUpload_ = (SELECT COUNT(*) FROM tmp_AccountTrunkCdrUpload_);
+
+	IF v_CDRUpload_ > 0
+	THEN
+		/* update UseInBilling when cdr upload*/
+		SET @stm = CONCAT('
+		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
+		INNER JOIN Ratemanagement3.tblCustomerTrunk ct 
+			ON ct.AccountID = ud.AccountID AND ct.TrunkID = ud.TrunkID AND ct.Status =1
+		INNER JOIN Ratemanagement3.tblTrunk t 
+			ON t.TrunkID = ct.TrunkID  
+			SET ud.UseInBilling=ct.UseInBilling,ud.TrunkPrefix = ct.Prefix
+		WHERE  ud.ProcessID = "' , p_processId , '";
+		');
+	END IF;
+
+	PREPARE stmt FROM @stm;
+	EXECUTE stmt;
+	DEALLOCATE PREPARE stmt;
+
+	/* if rate format is prefix base not charge code*/
+	IF p_RateFormat = 2
+	THEN
+
+		/* update trunk with use in billing*/
+		SET @stm = CONCAT('
+		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
+		INNER JOIN Ratemanagement3.tblCustomerTrunk ct 
+			ON ct.AccountID = ud.AccountID AND ct.Status =1 
+			AND ct.UseInBilling = 1 AND cld LIKE CONCAT(ct.Prefix , "%")
+		INNER JOIN Ratemanagement3.tblTrunk t 
+			ON t.TrunkID = ct.TrunkID  
+			SET ud.trunk = t.Trunk,ud.TrunkID =t.TrunkID,ud.UseInBilling=ct.UseInBilling,ud.TrunkPrefix = ct.Prefix
+		WHERE  ud.ProcessID = "' , p_processId , '" AND ud.is_inbound = 0 AND ud.TrunkID IS NULL;
+		');
+
+		PREPARE stmt FROM @stm;
+		EXECUTE stmt;
+		DEALLOCATE PREPARE stmt;
+
+		/* update trunk without use in billing*/
+		SET @stm = CONCAT('
+		UPDATE RMCDR3.`' , p_tbltempusagedetail_name , '` ud
+		INNER JOIN Ratemanagement3.tblCustomerTrunk ct 
+			ON ct.AccountID = ud.AccountID AND ct.Status =1 
+			AND ct.UseInBilling = 0 
+		INNER JOIN Ratemanagement3.tblTrunk t 
+			ON t.TrunkID = ct.TrunkID  
+			SET ud.trunk = t.Trunk,ud.TrunkID =t.TrunkID,ud.UseInBilling=ct.UseInBilling
+		WHERE  ud.ProcessID = "' , p_processId , '" AND ud.is_inbound = 0 AND ud.TrunkID IS NULL;
+		');
+
+		PREPARE stmt FROM @stm;
+		EXECUTE stmt;
+		DEALLOCATE PREPARE stmt;
+
+	END IF;
+	
+	/* if rerate on */
+	IF p_RateCDR = 1
+	THEN
+
+		SET @stm = CONCAT('UPDATE   RMCDR3.`' , p_tbltempusagedetail_name , '` ud SET cost = 0,is_rerated=0  WHERE ProcessID = "',p_processId,'" AND ( AccountID IS NULL OR TrunkID IS NULL ) ') ;
+
+		PREPARE stmt FROM @stm;
+		EXECUTE stmt;
+		DEALLOCATE PREPARE stmt;
+
+	END IF;
+
+	/* temp accounts and trunks*/
+	DROP TEMPORARY TABLE IF EXISTS tmp_AccountTrunk_;
+	CREATE TEMPORARY TABLE tmp_AccountTrunk_  (
+		RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		AccountID INT,
+		TrunkID INT
+	);
+	SET @stm = CONCAT('
+	INSERT INTO tmp_AccountTrunk_(AccountID,TrunkID)
+	SELECT DISTINCT AccountID,TrunkID FROM RMCDR3.`' , p_tbltempusagedetail_name , '` ud WHERE ProcessID="' , p_processId , '" AND AccountID IS NOT NULL AND TrunkID IS NOT NULL AND ud.is_inbound = 0;
+	');
+
+	PREPARE stm FROM @stm;
+	EXECUTE stm;
+	DEALLOCATE PREPARE stm;
+
+	SET v_pointer_ = 1;
+	SET v_rowCount_ = (SELECT COUNT(*)FROM tmp_AccountTrunk_);
+
+	WHILE v_pointer_ <= v_rowCount_
+	DO
+
+		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_); 
+		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
+
+		/* get outbound rate process*/
+		CALL Ratemanagement3.prc_getCustomerCodeRate(v_AccountID_,v_TrunkID_,p_RateCDR,p_RateMethod,p_SpecifyRate,0);
+
+		/* update prefix outbound process*/
+		/* if rate format is prefix base not charge code*/
+		IF p_RateFormat = 2
+		THEN
+			CALL prc_updatePrefix(v_AccountID_,v_TrunkID_, p_processId, p_tbltempusagedetail_name,0);
+		END IF;
+
+		/* outbound rerate process*/
+		IF p_RateCDR = 1
+		THEN
+			CALL prc_updateOutboundRate(v_AccountID_,v_TrunkID_, p_processId, p_tbltempusagedetail_name,0,p_RateMethod,p_SpecifyRate);
+		END IF;
+
+		SET v_pointer_ = v_pointer_ + 1;
+	END WHILE;
+
+END|
+DELIMITER ;
 
 
 USE `RMCDR3`;
