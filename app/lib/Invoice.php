@@ -324,7 +324,7 @@ class Invoice extends \Eloquent {
                          * PDF Generation CODE HERE
                          *
                          */
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
 
                         $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
                         Log::info('PDF Generation start');
@@ -594,7 +594,10 @@ class Invoice extends \Eloquent {
         $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::SUBSCRIPTION)->get();
         $SubscriptionTotal = 0;
         foreach($InvoiceDetails as $InvoiceDetail){
-            $SubscriptionTotal +=   $InvoiceDetail->LineTotal;
+            $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
+            if($ExemptTax == 0) {
+                $SubscriptionTotal += $InvoiceDetail->LineTotal;
+            }
         }
         //delete tax first
         InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
@@ -789,7 +792,7 @@ class Invoice extends \Eloquent {
                          */
                         Log::info('PDF Generation start');
 
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate);
+                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
 
                         $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
 
@@ -1093,7 +1096,8 @@ class Invoice extends \Eloquent {
                 if($AccountSubscription->EndDate == '0000-00-00'){
                     $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
                 }
-                if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID)){
+                $BillingCycleType = AccountBilling::where(["AccountID"=>$Invoice->AccountID,"ServiceID"=>$ServiceID])->pluck('BillingCycleType');
+                if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID) && $BillingCycleType != 'manual'){
                 $isAdvanceSubscription =1;
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
 
@@ -1394,7 +1398,9 @@ class Invoice extends \Eloquent {
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
         $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
 
-        $AccountOneOffCharges = AccountOneOffCharge::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->whereBetween('Date',array($StartDate,$EndDate))->get();
+        $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
+        $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($AccountID,$ServiceID,$StartDate,$EndDate));
+        Log::info("Call prc_getAccountOneOffCharge($AccountID,$ServiceID,$StartDate,$EndDate)") ;
         $AdditionalChargeTotalTax = 0;
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {
@@ -1660,7 +1666,7 @@ class Invoice extends \Eloquent {
 		return $response;
     }
 
-    public static function getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$start_date,$end_date){
+    public static function getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$start_date,$end_date,$InvoiceTemplate){
 
         $usage_data = array();
         $ShowZeroCall = 1;
@@ -1672,6 +1678,17 @@ class Invoice extends \Eloquent {
                 $ShowZeroCall = intval($InvoiceTemplate->ShowZeroCall);
             }
         }
+        $UsageColumn = getUsageColumns($InvoiceTemplate);
+        $activeColumns = array();
+        $GroupColumns = array('Trunk','Country','AreaPrefix','Description');
+        foreach($UsageColumn as $UsageColumnRow){
+            if($UsageColumnRow['Status']=='true') {
+                $activeColumns[] = $UsageColumnRow['Title'];
+
+            }
+        }
+        $activeColumns = array_intersect($activeColumns,$GroupColumns);
+
         foreach ($GatewayAccount as $GatewayAccountRow) {
             $GatewayAccountRow['CompanyGatewayID'];
             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
@@ -1690,29 +1707,31 @@ class Invoice extends \Eloquent {
             //$usage_data = $usage_data+json_decode(json_encode($result_data), true);
             foreach ($result_data as $result_row) {
                 if (isset($result_row['AreaPrefix'])) {
-                    /*if(isset($result_row['DurationInSec'])){
-                        unset($result_row['DurationInSec']);
+                    $key_col_comb = '';
+                    foreach($activeColumns as $activeColumn){
+                        $key_col_comb .= $activeColumn.'##'.$result_row[$activeColumn].'##';
                     }
-                    if(isset($result_row['BillDurationInSec'])){
-                        unset($result_row['BillDurationInSec']);
-                    }*/
-                    $key = searcharray($result_row['AreaPrefix'], 'AreaPrefix', $result_row['Trunk'], 'Trunk', $usage_data);
-                    if (isset($usage_data[$key]['AreaPrefix'])) {
-                        $usage_data[$key]['NoOfCalls'] += $result_row['NoOfCalls'];
-                        $usage_data[$key]['Duration'] = add_duration($result_row['Duration'], $usage_data[$key]['Duration']);
-                        $usage_data[$key]['BillDuration'] = add_duration($result_row['BillDuration'], $usage_data[$key]['BillDuration']);
-                        $usage_data[$key]['ChargedAmount'] += $result_row['ChargedAmount'];
-                        $usage_data[$key]['DurationInSec'] += $result_row['Duration'];
-                        $usage_data[$key]['BillDurationInSec'] += $result_row['BillDuration'];
+                    if($InvoiceTemplate->GroupByService){
+                        $key_col_comb .= 'ServiceID##'.$result_row['ServiceID'].'##';
+                    }
+                    if (isset($usage_data[$key_col_comb])) {
+                        $usage_data[$key_col_comb]['NoOfCalls'] += $result_row['NoOfCalls'];
+                        $usage_data[$key_col_comb]['ChargedAmount'] += $result_row['ChargedAmount'];
+                        $usage_data[$key_col_comb]['DurationInSec'] += $result_row['DurationInSec'];
+                        $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
+                        $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
+                        $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     } else {
-                        $usage_data[] = $result_row;
+                        $usage_data[$key_col_comb] = $result_row;
+						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
                     }
                 } else {
                     $usage_data[] = $result_row;
                 }
             }
         }
-        return $usage_data;
+        return array_values($usage_data);
     }
 
     public static function create_accountdetails($Account){
@@ -1734,7 +1753,8 @@ class Invoice extends \Eloquent {
         $replace_array['Phone'] = $Account->Phone;
         $replace_array['Fax'] = $Account->Fax;
         $replace_array['Website'] = $Account->Website;
-        $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
+        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
@@ -1877,32 +1897,21 @@ class Invoice extends \Eloquent {
         $usage_data_table = array();
         $usage_data_table['header'] =array();
         $usage_data_table['data'] = array();
-        if(empty($InvoiceTemplate->UsageColumn)){
-            $UsageColumn = InvoiceTemplate::defaultUsageColumns();
-        }else{
-            $UsageColumn = json_decode($InvoiceTemplate->UsageColumn,true);
-        }
-
+        $UsageColumn = getUsageColumns($InvoiceTemplate);
         if(count($usage_data)) {
-            if (isset($usage_data[0]['AreaPrefix'])) {
-                $UsageColumn = $UsageColumn['Summary'];
-            } else {
-                $UsageColumn = $UsageColumn['Detail'];
-            }
 
             $order = array();
             foreach($UsageColumn as $UsageColumnRow){
                 if($UsageColumnRow['Status']=='true') {
-                    if ($UsageColumnRow['Title'] == 'AreaPrefix') {
-                        $order[] = 'Prefix';
-                    } else {
-                        $order[] = $UsageColumnRow['Title'];
-                    }
+                    $order[] = $UsageColumnRow['Title'];
                     $usage_data_table['header'][] = $UsageColumnRow;
                 }
             }
             $usage_data_table['order']=$order;
             foreach($usage_data as $row_key =>$usage_data_row){
+                if (isset($usage_data_row['AreaPrefix'])) {
+                    $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount']/$usage_data_row['BillDurationInSec'])*60,6);
+                }
                 $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
                 $ServiceID = $usage_data[$row_key]['ServiceID'];
                 if(isset($service_usage_data[$ServiceID])){
@@ -1913,5 +1922,88 @@ class Invoice extends \Eloquent {
             }
         }
         return $usage_data_table;
+    }
+
+    public static function GenerateManualInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$Options)
+    {
+        $ServiceID = 0;
+        $AccountID = $Options['AccountID'];
+        $Account = Account::find($AccountID);
+        $AccountName = $Account['AccountName'];
+        $LastInvoiceDate = $Options['PeriodFrom'];
+        $NextInvoiceDate = $Options['PeriodTo'];
+        $NextInvoiceDate =  date("Y-m-d", strtotime( "+1 Day", strtotime($NextInvoiceDate)));
+        $response = $errors = $message = array();
+        try {
+
+            Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
+            if (!empty($NextInvoiceDate) && strtotime($NextInvoiceDate) <= strtotime(date("Y-m-d"))) {
+                $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
+                /**
+                 * 1. If Account is not in tblAccountGateway Generate Invoice
+                 * 2. If Account is present check **cdr download log** end date > $EndDate (1-11-2015 > 31-10-2015)
+                 * 3. If no calling in CDR then also log is generated so checking in log only. not in tblUsageDetails so if customer is
+                 * not sending any traffic then also 0 value invoice is generated.
+                 * */
+                $isCDRLoaded = DB::connection('sqlsrv2')->select("CALL prc_checkCDRIsLoadedOrNot(" . (int)$AccountID . ",$CompanyID,'$EndDate')");
+                Log::info('isCDRLoaded ' . print_r($isCDRLoaded, true));
+                if (isset($isCDRLoaded[0]->isLoaded) && $isCDRLoaded[0]->isLoaded == 1) {
+
+                    Log::info(' ========================== Invoice Send Start =============================');
+
+                    DB::beginTransaction();
+                    DB::connection('sqlsrv2')->beginTransaction();
+
+                    Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
+                    $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID, $ServiceID);
+                    Log::info('Invoice::sendInvoice done');
+                    if (isset($response["status"]) && $response["status"] == 'success') {
+
+                        Log::info('Invoice created - ' . print_r($response, true));
+                        $message[] = $response["message"];
+                        Log::info('Invoice Committed  AccountID = ' . $AccountID);
+                        DB::connection('sqlsrv2')->commit();
+                        Log::info('=========== Updating  InvoiceDate =========== ');
+                        $oldNextInvoiceDate = $NextInvoiceDate;
+                        AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["LastInvoiceDate" => $oldNextInvoiceDate]);
+                        $AccountNextBilling = AccountNextBilling::getBilling($AccountID, $ServiceID);
+                        if (!empty($AccountNextBilling)) {
+                            AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
+                            AccountNextBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->delete();
+                        }
+                        Log::info('=========== Updated  InvoiceDate =========== ');
+                        DB::commit();
+
+                    } else {
+                        $errors[] = $response["message"];
+                        DB::rollback();
+                        DB::connection('sqlsrv2')->rollback();
+                        Log::info('Invoice rollback  AccountID = ' . $AccountID);
+                        Log::info(' ========================== Error  =============================');
+                        Log::info('Invoice with Error - ' . print_r($response, true));
+                    }
+                } else {
+                    $errors[] = $AccountName . " " . Invoice::$InvoiceGenrationErrorReasons["NoCDR"];
+                }
+            }
+            Log::info(' ========================== Invoice Send End =============================');
+        } catch (\Exception $e) {
+
+            try {
+
+                Log::error('Invoice Rollback AccountID = ' . $AccountID);
+                DB::rollback();
+                DB::connection('sqlsrv2')->rollback();
+                Log::error($e);
+                $errors[] = $AccountName . " " . $e->getMessage();
+            } catch (Exception $err) {
+                Log::error($err);
+                $errors[] = $AccountName . " " . $e->getMessage() . ' ## ' . $err->getMessage();
+            }
+        }
+
+        $response['errors'] = $errors;
+        $response['message'] = $message;
+        return $response;
     }
 }

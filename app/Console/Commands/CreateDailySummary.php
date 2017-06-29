@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-
+// not in use
 class CreateDailySummary extends Command {
 
     /**
@@ -140,7 +140,7 @@ class CreateDailySummary extends Command {
                     try {
                         DB::rollback();
                         DB::connection('sqlsrv2')->rollback();
-                        DB::connection('sqlsrvcdrazure')->rollback();
+                        DB::connection('sqlsrvcdr')->rollback();
                     } catch (\Exception $err) {
                         Log::error($err);
                     }
@@ -162,7 +162,7 @@ class CreateDailySummary extends Command {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (\Exception $err) {
                 Log::error($err);
             }

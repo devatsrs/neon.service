@@ -128,12 +128,15 @@ class FTPAccountUsage extends Command
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
-            $CLITranslationRule = $CLDTranslationRule =  '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
             if(!empty($companysetting->CLDTranslationRule)){
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            }
+            if(!empty($companysetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             if($RateCDR == 0) {
                 TempUsageDetail::applyDiscountPlan();
@@ -190,13 +193,13 @@ class FTPAccountUsage extends Command
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($CLDTranslationRule,$cdr_row['prefix']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                                     $InserData = array();
                                     $data_count = 0;
                                 }
@@ -208,7 +211,7 @@ class FTPAccountUsage extends Command
                         }//loop
 
                         if(!empty($InserData)){
-                            DB::connection('sqlsrvcdrazure')->table($temptableName)->insert($InserData);
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
 
                         }
 
@@ -233,7 +236,7 @@ class FTPAccountUsage extends Command
 
 
             Log::error(' ========================== ftp transaction end =============================');
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
 
             //ProcessCDR
 
@@ -248,7 +251,7 @@ class FTPAccountUsage extends Command
 
 
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
 
             $filedetail = "";
             if (!empty($result[0]->min_date)) {
@@ -272,12 +275,12 @@ class FTPAccountUsage extends Command
                 Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
             }
             Log::error('ftp prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('ftp prc_insertCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
 
@@ -300,7 +303,7 @@ class FTPAccountUsage extends Command
 
                 Log::error('ftp delete file count ' . count($delete_files));
 
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
@@ -311,7 +314,7 @@ class FTPAccountUsage extends Command
 
         } catch (Exception $e) {
             try {
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
             }
@@ -325,7 +328,7 @@ class FTPAccountUsage extends Command
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete();
 
             } catch (\Exception $err) {
                 Log::error($err);

@@ -9,6 +9,7 @@ use App\Lib\Job;
 use App\Lib\Currency;
 use App\Lib\Country;
 use App\Lib\JobFile;
+use App\Lib\User;
 use App\Lib\FileUploadTemplate;
 use App\Lib\VendorFileUploadTemplate;
 use Illuminate\Support\Facades\DB;
@@ -380,6 +381,25 @@ class ImportAccount extends Command {
                                         $tempItemData['Currency'] = '';
                                     }
                                 }
+								
+								if (isset($attrselection->AccountOwner) && !empty($attrselection->AccountOwner)) {
+									$owner = User::getUserIDByUserName($CompanyID,$temp_row[$attrselection->AccountOwner]); 
+                                    $tempItemData['Owner'] = $owner;
+                                }
+								
+								if (isset($attrselection->Vendor) && !empty($attrselection->Vendor)) {
+									$vendor 				  = 	trim($temp_row[$attrselection->Vendor]); 
+									$vendorval  			  = 	0;
+									if($vendor=='Yes') {$vendorval = 1;}
+                                    $tempItemData['IsVendor'] = 	$vendorval;
+                                }
+								
+								if (isset($attrselection->Customer) && !empty($attrselection->Customer)) {
+									$Customer   				= trim($temp_row[$attrselection->Customer]);
+									$CustomerVal 				= 0;
+									if($Customer=='Yes'){$CustomerVal = 1;}	
+                                    $tempItemData['IsCustomer'] = $CustomerVal;
+                                }							
 
                                 if (isset($tempItemData['AccountName'])) {
                                     if($AccountType==1 && $erroraccountnumber==0){

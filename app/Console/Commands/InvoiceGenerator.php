@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -59,7 +60,7 @@ class InvoiceGenerator extends Command {
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
-        $ProcessID = Uuid::generate();
+        $ProcessID = CompanyGateway::getProcessID();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
         $JobID = $arguments["JobID"];
@@ -134,29 +135,41 @@ class InvoiceGenerator extends Command {
         /** ************************************************************/
 
         try {
-
-            /** regular invoice start */
-            $response = Invoice::GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID);
-            $errors = isset($response['errors'])?$response['errors']:array();
-            $message = isset($response['message'])?$response['message']:array();
-
-
-
-
-
-            /** recurring invoice generation start*/
-            $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data);
-            $recuringerrors = array_filter($recuringerrors);
-            if(count($errors)>0 || count($recuringerrors)>0){
-                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($recuringerrors)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$recuringerrors):'');
-            }else if(isset($message['accounts']) && $message['accounts'] != ''){
-                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);
+            $job = Job::find($JobID);
+            $joboptions = json_decode($job->Options,true);
+            $ManualInvoice = isset($joboptions['ManualInvoice']) && $joboptions['ManualInvoice'] == 1?1:0;
+            if($ManualInvoice == 1){
+                $response = Invoice::GenerateManualInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$joboptions);
+                $manual_errors = isset($response['errors'])?$response['errors']:array();
+                if(count($manual_errors)>0){
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = (count($manual_errors)>0?'Error Message: '.implode(',\n\r',$manual_errors):'');
+                } else {
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = 'Invoice created Successfully';
+                }
             }else{
-                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] = 'Invoice created Successfully';
+                /** regular invoice start */
+                $response = Invoice::GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID);
+                $errors = isset($response['errors'])?$response['errors']:array();
+                $message = isset($response['message'])?$response['message']:array();
+
+                /** recurring invoice generation start*/
+                $recuringerrors = RecurringInvoice::GenerateRecurringInvoice($CompanyID,$ProcessID,$UserID,$date,$JobID,$InvoiceGenerationEmail,$data);
+                $recuringerrors = array_filter($recuringerrors);
+
+                if(count($errors)>0 || count($recuringerrors)>0){
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'').(count($recuringerrors)>0?'\n\r Skipped Recurring Invoice: '.implode(',',$recuringerrors):'');
+                }else if(isset($message['accounts']) && $message['accounts'] != ''){
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = 'Skipped account: '.implode(',\n\r',$message);
+                }else{
+                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                    $jobdata['JobStatusMessage'] = 'Invoice created Successfully';
+                }
             }
+
 
 
             $jobdata['ModifiedBy'] = 'RMScheduler';

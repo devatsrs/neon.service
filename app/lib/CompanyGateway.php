@@ -3,6 +3,7 @@ namespace App\Lib;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Webpatser\Uuid\Uuid;
 
 
@@ -66,11 +67,18 @@ class CompanyGateway extends \Eloquent {
             Log::error( $tbltempusagedetail_name);
             $tbltempusagedetail_name .=$extra_prefix;
 
+            self::dropTableForNewColumn($tbltempusagedetail_name);
+
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
                                     `CompanyID` INT(11) NULL DEFAULT NULL,
                                     `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
                                     `GatewayAccountID` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `AccountName` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `AccountNumber` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `AccountCLI` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `AccountIP` VARCHAR(100) NULL DEFAULT NULL ,
                                     `AccountID` INT(11) NULL DEFAULT NULL,
                                     `TrunkID` INT(11) NULL DEFAULT NULL,
                                     `UseInBilling` TINYINT(1) NULL DEFAULT NULL,
@@ -94,8 +102,10 @@ class CompanyGateway extends \Eloquent {
                                     `is_inbound` TINYINT(1) DEFAULT 0,
                                     `is_rerated` TINYINT(1) NULL DEFAULT 0,
                                     `disposition` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `userfield` VARCHAR(255) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`TempUsageDetailID`),
-                                    INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`)
+                                    INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
+                                    INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
@@ -134,7 +144,12 @@ class CompanyGateway extends \Eloquent {
             	`TempVendorCDRID` INT(11) NOT NULL AUTO_INCREMENT,
                 `CompanyID` INT(11) NULL DEFAULT NULL,
                 `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
                 `GatewayAccountID` VARCHAR(100) NULL DEFAULT NULL,
+                `AccountName` VARCHAR(100) NULL DEFAULT NULL ,
+                `AccountNumber` VARCHAR(100) NULL DEFAULT NULL ,
+                `AccountCLI` VARCHAR(100) NULL DEFAULT NULL ,
+                `AccountIP` VARCHAR(100) NULL DEFAULT NULL ,
                 `AccountID` INT(11) NULL DEFAULT NULL,
                 `TrunkID` INT(11) NULL DEFAULT NULL,
                 `UseInBilling` TINYINT(1) NULL DEFAULT NULL,
@@ -156,7 +171,8 @@ class CompanyGateway extends \Eloquent {
                 `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                 `is_rerated` TINYINT(1) NULL DEFAULT 0,
                  PRIMARY KEY (`TempVendorCDRID`),
-                 INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`)
+                 INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
+                 INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
 
@@ -170,6 +186,14 @@ class CompanyGateway extends \Eloquent {
     public static function getProcessID(){
         $processID = Uuid::generate();
         return  DB::connection('sqlsrv2')->table('tblProcessID')->insertGetId(array('Process'=>$processID));
+    }
+
+    public static function dropTableForNewColumn($tbltempusagedetail_name){
+        if(!Schema::hasColumn($tbltempusagedetail_name, 'userfield')) ; //check whether users table has email column
+        {
+            DB::connection('sqlsrvcdr')->statement('DROP TABLE IF EXISTS `'.$tbltempusagedetail_name.'`');
+
+        }
     }
 
 

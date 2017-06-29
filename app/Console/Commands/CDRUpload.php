@@ -253,6 +253,28 @@ class CDRUpload extends Command
                             }
                             if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                                 $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                                if ($NameFormat == 'NUB') {
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountCLI'] = '';
+                                } else if ($NameFormat == 'IP') {
+                                    $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+                                }else if ($NameFormat == 'CLI') {
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
+                                }else{
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+                                }
+
                             }
                             if(empty($cdrdata['GatewayAccountID'])){
                                 $error[] = 'Account is blank at line no:'.$lineno;
@@ -345,7 +367,7 @@ class CDRUpload extends Command
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 Log::info(print_r($result,true));
 
-                $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->count();
+                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->count();
 
                 if ((count($skipped_cli) == 0 && count($skiped_account_data) == 0 && $joboptions->CheckFile == 1) || $joboptions->CheckFile == 0) {
                     DB::connection('sqlsrvcdr')->beginTransaction();

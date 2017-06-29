@@ -10,6 +10,13 @@ sed -i 's/RMCDR3/'${DB_DATABASECDR}'/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/StagingReport/'${DB_DATABASEREPORT}'/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/ AUTO_INCREMENT=[0-9]*//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 
+sed -i 's/Sumera Khan/System/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/bhavin@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/umer.ahmed@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/umer.ahmed@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/girish.vadher@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/saeedsumera@hotmail.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+
 sed -i "s/_HOST_DOMAIN_URL_/$(echo "$HOST_DOMAIN_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_DB_COMPANY_NAME_/$(echo "$DB_COMPANY_NAME" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_WEB_URL_/$(echo "$WEB_URL" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
@@ -25,6 +32,7 @@ sed -i "s/_VOS_LOCATION_/$(echo "$VOS_LOCATION" | sed 's/\//\\\//g')/g" ${POST_I
 sed -i "s/_LICENCE_KEY_/$(echo "$LICENCE_KEY" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_RM_ARTISAN_FILE_LOCATION_/$(echo "${SERVICE_LOCATION}"/artisan | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_CRM_DASHBOARD_/$(echo "$CRM_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i "s/_MONITOR_DASHBOARD_/$(echo "$MONITOR_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_BILLING_DASHBOARD_CUSTOMER_/$(echo "$BILLING_DASHBOARD_CUSTOMER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_BILLING_DASHBOARD_/$(echo "$BILLING_DASHBOARD" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i "s/_EMAIL_TO_CUSTOMER_/$(echo "$EMAIL_TO_CUSTOMER" | sed 's/\//\\\//g')/g" ${POST_INSTALLATION_SQL_SCRIPT_NEW}

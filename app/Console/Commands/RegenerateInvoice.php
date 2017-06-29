@@ -108,16 +108,11 @@ class RegenerateInvoice extends Command {
                             DB::connection('sqlsrv2')->beginTransaction();
 
 
-                            $hasUsageInInvoice =  InvoiceDetail::where("InvoiceID",$InvoiceID)
-                                ->Where(function($query)
-                                {
-                                    $query->where("ProductType",Product::USAGE)
-                                        ->orWhere("ProductType",Product::SUBSCRIPTION);
-                                })->count();
+                            $hasUsageInInvoice =  InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::USAGE)->count();
 
                             if($hasUsageInInvoice == 0){
 
-                                $errors[] = $Account->AccountName .' ' . ' Invoice has no usage or Subscription';
+                                $errors[] = $Account->AccountName .'('.$Invoice->FullInvoiceNumber.') ' . ' Invoice has no usage';
 
                                 DB::commit();
                                 DB::connection('sqlsrv2')->commit();
