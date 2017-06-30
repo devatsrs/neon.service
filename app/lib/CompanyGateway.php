@@ -195,6 +195,9 @@ class CompanyGateway extends \Eloquent {
 
         }
     }
+    public static function getCallID(){
+        return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array());
+    }
 
 
 }

@@ -1,5 +1,6 @@
 <?php namespace App\Lib;
 
+use App\SippySSH;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -59,13 +60,35 @@ class UsageDownloadFiles extends Model {
 
     }
     /** get sippy pending files */
-    public static function getSippyPendingFile($CompanyGatewayID,$type){
+    public static function getSippyPendingFile($CompanyGatewayID,$FilesMaxProccess){
+        $tempfilenames = array();
         $filenames = array();
-        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))
-            ->where('FileName','like','%'.$type.'%')->orderby('created_at')->get();
+        $customercdrfiles = array();
+
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->orderby('created_at')->get();
         foreach ($new_filenames as $file) {
-            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+            $customercdrarray = explode(SippySSH::$customer_cdr_file_name,$file->FileName);
+            $vendorcdrarray = explode(SippySSH::$vendor_cdr_file_name,$file->FileName);
+
+            if(count($customercdrarray)==2){
+                $customercdrfiles[] = $customercdrarray[1];
+            }
+            if((count($customercdrarray) ==2 && in_array($customercdrarray[1],$customercdrfiles)) || (count($vendorcdrarray) ==2 && in_array($vendorcdrarray[1],$customercdrfiles))){
+                if(isset($customercdrarray[1])){
+                    $tempfilenames[$customercdrarray[1]][$file->UsageDownloadFilesID] = $file->FileName;
+                }else{
+                    $tempfilenames[$vendorcdrarray[1]][$file->UsageDownloadFilesID] = $file->FileName;
+                }
+            }
         }
+        $file_count = 1;
+        foreach($tempfilenames as $time_key => $files){
+            if(count($files) == 2 && $file_count <= $FilesMaxProccess){
+                $filenames[$time_key] = $files;
+                $file_count++;
+            }
+        }
+
         return $filenames;
 
     }
