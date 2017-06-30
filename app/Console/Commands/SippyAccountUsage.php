@@ -106,7 +106,7 @@ class SippyAccountUsage extends Command
         $delete_files = $vdelete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-
+        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
         $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
@@ -388,7 +388,7 @@ class SippyAccountUsage extends Command
             Log::error('sippy prc_insertCDR end');
 
             Log::error('sippy prc_linkCDR end');
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "')");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
             Log::error('sippy prc_linkCDR end');
 
             /** update file process to completed */

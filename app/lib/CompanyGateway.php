@@ -67,7 +67,7 @@ class CompanyGateway extends \Eloquent {
             Log::error( $tbltempusagedetail_name);
             $tbltempusagedetail_name .=$extra_prefix;
 
-            self::dropTableForNewColumn($tbltempusagedetail_name);
+            //self::dropTableForNewColumn($tbltempusagedetail_name);
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
@@ -197,6 +197,62 @@ class CompanyGateway extends \Eloquent {
     }
     public static function getCallID(){
         return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array());
+    }
+
+
+    public static function CreateTempLinkTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
+
+        $UniqueID = self::getUniqueID($CompanyGatewayID);
+
+        if( empty($UniqueID)){
+            $UniqueID = $CompanyID.$CompanyGatewayID;
+            CompanyGateway::where("CompanyGatewayID",$CompanyGatewayID)->update(["UniqueID"=>$UniqueID]);
+        }
+
+        if(!empty($UniqueID)) {
+            $UniqueID .=$extra_prefix;
+
+            $link_table1 = 'tblTempCallDetail_1_'.$UniqueID;
+            $link_table2 = 'tblTempCallDetail_2_'.$UniqueID;
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table1 . '` (
+                                    `TempCallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `GCID1` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `CID` BIGINT(20) NULL DEFAULT NULL,
+                                    `CompanyGatewayID1` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `FailCall` TINYINT(4) NULL DEFAULT NULL,
+                                    `ProcessID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    PRIMARY KEY (`TempCallDetailID`),
+                                    INDEX `IX_CID` (`GCID`),
+                                    INDEX `IX_ProcessID` (`ProcessID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('sqlsrvcdr')->statement($sql_create_table);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table1);
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table2 . '` (
+                                    `TempCallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `GCID2` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `VCID` BIGINT(20) NULL DEFAULT NULL,
+                                    `CompanyGatewayID2` INT(11) NULL DEFAULT NULL,
+                                    `GatewayVAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `VAccountID` INT(11) NULL DEFAULT NULL,
+                                    `FailCallV` TINYINT(4) NULL DEFAULT NULL,
+                                    `ProcessID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    PRIMARY KEY (`TempCallDetailID`),
+                                    INDEX `IX_CID` (`GCID`),
+                                    INDEX `IX_ProcessID` (`ProcessID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('sqlsrvcdr')->statement($sql_create_table);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table2);
+
+            Log::error(' done ');
+
+            return $UniqueID;
+        }
     }
 
 
