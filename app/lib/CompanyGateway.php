@@ -225,7 +225,7 @@ class CompanyGateway extends \Eloquent {
                                     `FailCall` TINYINT(4) NULL DEFAULT NULL,
                                     `ProcessID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
                                     PRIMARY KEY (`TempCallDetailID`),
-                                    INDEX `IX_CID` (`GCID`),
+                                    INDEX `IX_CID` (`GCID1`),
                                     INDEX `IX_ProcessID` (`ProcessID`)
                                 )
                                 ENGINE=InnoDB ; ';
@@ -242,7 +242,7 @@ class CompanyGateway extends \Eloquent {
                                     `FailCallV` TINYINT(4) NULL DEFAULT NULL,
                                     `ProcessID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
                                     PRIMARY KEY (`TempCallDetailID`),
-                                    INDEX `IX_CID` (`GCID`),
+                                    INDEX `IX_CID` (`GCID2`),
                                     INDEX `IX_ProcessID` (`ProcessID`)
                                 )
                                 ENGINE=InnoDB ; ';
