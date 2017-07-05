@@ -172,23 +172,29 @@ sub main {
         $pass++;
     }
 
-	# Check if file size is > 0
-    my $cdr_file_name_filesize = -s $cdr_file_name;
+    #check file exists
+    if (-e $cdr_file_name ) {
 
-    if( $cdr_file_name_filesize > 0 ) {
+        # Check if file size is > 0
+        my $cdr_file_name_filesize = -s $cdr_file_name;
 
-		# Success! Compress and move the file
-		#my $command = "gzip --force $cdr_file_name; mv $cdr_file_name.gz $output_dir/."; OLD
-		my $command = "mv $cdr_file_name $output_dir/.";
-		my $errno = system($command);
-		if ($errno > 0) {
-			print "Error #$errno while executing '$command'\n";
-			exit($errno);
-		}
-	}else{
+        if ($cdr_file_name_filesize > 0) {
 
-        unlink $cdr_file_name if -e $cdr_file_name;
-	}
+            # Success! Compress and move the file
+            #my $command = "gzip --force $cdr_file_name; mv $cdr_file_name.gz $output_dir/."; OLD
+            my $command = "mv $cdr_file_name $output_dir/.";
+            my $errno = system($command);
+            if ($errno > 0) {
+                print "Error #$errno while executing '$command'\n";
+                exit($errno);
+            }
+        } else {
+
+            unlink $cdr_file_name if -e $cdr_file_name;
+        }
+    } else {
+        die "############## CDR File not exists. ##############";
+    }
 }
 
 sub last_quarter_hour($) {
