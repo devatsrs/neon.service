@@ -531,6 +531,9 @@ protected $server;
 					$priority	  =	isset(Messages::$EmailPriority[trim($prioritytxt2[0])])?Messages::$EmailPriority[trim($prioritytxt2[0])]:1;
 				}
 
+				if(!isset($overview[0]->subject)){
+					$overview[0]->subject = "(no subject)";
+				}
 				//If parent email is not found based on in_reply_to
 				if(empty($msg_parent)){
 
@@ -637,6 +640,7 @@ protected $server;
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
 					"RequesterCC"=>$cc,
+					"RequesterBCC"=>$bcc,
 					'Subject'=>$overview[0]->subject,
 					'Description'=>$message,
 					'CompanyID'=>$CompanyID,
