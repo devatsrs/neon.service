@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Log;
 class Summary extends \Eloquent {
     public static function generateSummary($CompanyID,$today){
 
+
         if($today == 1){
+            self::CreateCustomerTempTable($CompanyID,0,'Live');
             $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
             $error_message = DB::connection('neon_report')->select($query);
@@ -14,6 +16,8 @@ class Summary extends \Eloquent {
                 throw  new \Exception($error_message[0]->Message);
             }
         }else {
+            self::CreateCustomerTempTable($CompanyID,0);
+            exit;
             $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
             self::markFinalSummary($CompanyID, $startdate);
@@ -48,6 +52,7 @@ class Summary extends \Eloquent {
     }
     public static function generateVendorSummary($CompanyID,$today){
         if($today == 1){
+            self::CreateVendorTempTable($CompanyID,0,'Live');
             $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
             Log::info($query);
             $error_message = DB::connection('neon_report')->select($query);
@@ -55,6 +60,7 @@ class Summary extends \Eloquent {
                 throw  new \Exception($error_message[0]->Message);
             }
         }else {
+            self::CreateVendorTempTable($CompanyID,0);
             $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
             self::markFinalSummary($CompanyID, $startdate);
@@ -78,6 +84,161 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
+        }
+    }
+
+    public static function CreateCustomerTempTable($CompanyID,$CompanyGatewayID=0,$extra_prefix=''){
+
+        $UniqueID = $CompanyID;
+
+        if(!empty($CompanyGatewayID)){
+            $UniqueID = $CompanyID.$CompanyGatewayID;
+        }
+
+        if(!empty($UniqueID)) {
+            $UniqueID .=$extra_prefix;
+
+            $temp_table1 = 'tmp_tblUsageDetailsReport_'.$UniqueID;
+
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $temp_table1 . '` (
+                                    `UsageDetailsReportID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `UsageDetailID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `VAccountID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayVAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `ServiceID` INT(11) NULL DEFAULT NULL,
+                                    `connect_time` TIME NULL DEFAULT NULL,
+                                    `connect_date` DATE NULL DEFAULT NULL,
+                                    `billed_duration` INT(11) NULL DEFAULT NULL,
+                                    `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `cost` DECIMAL(18,6) NULL DEFAULT NULL,
+                                    `duration` INT(11) NULL DEFAULT NULL,
+                                    `trunk` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `call_status` TINYINT(4) NULL DEFAULT NULL,
+                                    `call_status_v` TINYINT(4) NULL DEFAULT NULL,
+                                    `disposition` VARCHAR(50) NULL DEFAULT NULL,
+                                    `userfield` VARCHAR(255) NULL DEFAULT NULL ,
+                                    `pincode` VARCHAR(50) NULL DEFAULT NULL ,
+	                                `extension` VARCHAR(50) NULL DEFAULT NULL ,
+                                    PRIMARY KEY (`UsageDetailsReportID`),
+                                    INDEX `temp_connect_time` (`connect_time`, `connect_date`),
+                                    INDEX `IX_CompanyID` (`CompanyID`),
+                                    INDEX `IX_UsageDetailID` (`UsageDetailID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement(' DELETE FROM '.$temp_table1);
+
+            Log::error($temp_table1 . ' done ');
+
+            $link_table1 = 'tblTempCallDetail_1_'.$UniqueID;
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table1 . '` (
+                                    `CallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `GCID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `CID` BIGINT(20) NULL DEFAULT NULL,
+                                    `VCID` BIGINT(20) NULL DEFAULT NULL,
+                                    `UsageHeaderID` INT(11) NULL DEFAULT NULL,
+	                                `VendorCDRHeaderID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayVAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `VAccountID` INT(11) NULL DEFAULT NULL,
+                                    `FailCall` TINYINT(4) NULL DEFAULT NULL,
+                                    `FailCallV` TINYINT(4) NULL DEFAULT NULL,
+                                    PRIMARY KEY (`CallDetailID`),
+                                    INDEX `IX_GCID` (`GCID`),
+                                    INDEX `IX_CID` (`CID`),
+                                    INDEX `IX_VCID` (`VCID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('sqlsrvcdr')->statement($sql_create_table);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table1);
+
+            Log::error($link_table1 . ' done ');
+
+            return $UniqueID;
+        }
+    }
+
+    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID=0,$extra_prefix=''){
+
+        $UniqueID = $CompanyID;
+
+        if(!empty($CompanyGatewayID)){
+            $UniqueID = $CompanyID.$CompanyGatewayID;
+        }
+
+        if(!empty($UniqueID)) {
+            $UniqueID .=$extra_prefix;
+
+
+            $temp_table1 = 'tmp_tblVendorUsageDetailsReport_'.$UniqueID;
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $temp_table1 . '` (
+                                   	`VendorUsageDetailsReportID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `VendorCDRID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `VAccountID` INT(11) NULL DEFAULT NULL,
+                                    `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayVAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `ServiceID` INT(11) NULL DEFAULT NULL,
+                                    `connect_time` TIME NULL DEFAULT NULL,
+                                    `connect_date` DATE NULL DEFAULT NULL,
+                                    `billed_duration` INT(11) NULL DEFAULT NULL,
+                                    `duration` INT(11) NULL DEFAULT NULL,
+                                    `selling_cost` DECIMAL(18,6) NULL DEFAULT NULL,
+                                    `buying_cost` DECIMAL(18,6) NULL DEFAULT NULL,
+                                    `trunk` VARCHAR(50) NULL DEFAULT NULL,
+                                    `area_prefix` VARCHAR(50) NULL DEFAULT NULL,
+                                    `call_status` TINYINT(4) NULL DEFAULT NULL,
+                                    `call_status_v` TINYINT(4) NULL DEFAULT NULL,
+                                    PRIMARY KEY (`VendorUsageDetailsReportID`),
+                                    INDEX `temp_connect_time` (`connect_time`, `connect_date`),
+                                    INDEX `IX_CompanyID` (`CompanyID`),
+                                    INDEX `IX_VendorCDRID` (`VendorCDRID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement(' DELETE FROM '.$temp_table1);
+
+            Log::error(' done ');
+
+            $link_table1 = 'tblTempCallDetail_2_'.$UniqueID;
+
+            $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table1 . '` (
+                                    `CallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+                                    `GCID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
+                                    `CID` BIGINT(20) NULL DEFAULT NULL,
+                                    `VCID` BIGINT(20) NULL DEFAULT NULL,
+                                    `UsageHeaderID` INT(11) NULL DEFAULT NULL,
+	                                `VendorCDRHeaderID` INT(11) NULL DEFAULT NULL,
+                                    `CompanyGatewayID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `GatewayVAccountPKID` INT(11) NULL DEFAULT NULL,
+                                    `AccountID` INT(11) NULL DEFAULT NULL,
+                                    `VAccountID` INT(11) NULL DEFAULT NULL,
+                                    `FailCall` TINYINT(4) NULL DEFAULT NULL,
+                                    `FailCallV` TINYINT(4) NULL DEFAULT NULL,
+                                    PRIMARY KEY (`CallDetailID`),
+                                    INDEX `IX_GCID` (`GCID`),
+                                    INDEX `IX_CID` (`CID`),
+                                    INDEX `IX_VCID` (`VCID`)
+                                )
+                                ENGINE=InnoDB ; ';
+            DB::connection('sqlsrvcdr')->statement($sql_create_table);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table1);
+
+            Log::error($link_table1 . ' done ');
+
+            return $UniqueID;
         }
     }
 

@@ -11,10 +11,12 @@ class UsageHeader extends \Eloquent {
     protected  $primaryKey = "UsageHeaderID";
 
     public static function getStartHeaderDate($CompanyID){
+        $usagecount = 0;
         $StartDate =  UsageHeader::where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
-        $usagecount = DB::connection('neon_report')->table('tblSummaryHeader')
-            ->join('tblUsageSummary','tblUsageSummary.SummaryHeaderID','=','tblSummaryHeader.SummaryHeaderID')
-            ->where(['CompanyID'=>$CompanyID])->count();
+        $usage = DB::connection('neon_report')->table('tblHeader')->where(['CompanyID'=>$CompanyID])->first();
+        if(!empty($usage) && count($usage)){
+            $usagecount = 1;
+        }
         $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
         $DeleteTime = $DELETE_SUMMARY_TIME;
@@ -31,10 +33,12 @@ class UsageHeader extends \Eloquent {
         return $StartDate;
     }
     public static function getVendorStartHeaderDate($CompanyID){
+        $usagecount = 0;
         $StartDate =  DB::connection('sqlsrvcdr')->table('tblVendorCDRHeader')->where(['CompanyID'=>$CompanyID])->whereNotNull('AccountID')->min('StartDate');
-        $usagecount = DB::connection('neon_report')->table('tblSummaryVendorHeader')
-            ->join('tblUsageVendorSummary','tblUsageVendorSummary.SummaryVendorHeaderID','=','tblSummaryVendorHeader.SummaryVendorHeaderID')
-            ->where(['CompanyID'=>$CompanyID])->count();
+        $usage = DB::connection('neon_report')->table('tblHeaderV')->where(['CompanyID'=>$CompanyID])->first();
+        if(!empty($usage) && count($usage)){
+            $usagecount = 1;
+        }
         $DELETE_SUMMARY_TIME = CompanyConfiguration::get($CompanyID,'DELETE_SUMMARY_TIME');
         $delete_strtotime = '-3 month';
         $DeleteTime = $DELETE_SUMMARY_TIME;
