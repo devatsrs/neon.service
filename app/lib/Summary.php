@@ -8,16 +8,15 @@ class Summary extends \Eloquent {
 
 
         if($today == 1){
-            self::CreateCustomerTempTable($CompanyID,0,'Live');
-            $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
+            $UniqueID = self::CreateCustomerTempTable($CompanyID,0,date("Y-m-d"),'Live');
+            $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "','".$UniqueID."')";
             Log::info($query);
             $error_message = DB::connection('neon_report')->select($query);
             if(count($error_message)){
                 throw  new \Exception($error_message[0]->Message);
             }
         }else {
-            self::CreateCustomerTempTable($CompanyID,0);
-            exit;
+
             $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
             self::markFinalSummary($CompanyID, $startdate);
@@ -30,7 +29,8 @@ class Summary extends \Eloquent {
                     $end_summary = $enddate;
                 }
                 try {
-                    $query = "call prc_generateSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "')";
+                    $UniqueID = self::CreateCustomerTempTable($CompanyID,0,$start_summary);
+                    $query = "call prc_generateSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
                     Log::info($query);
                     $error_message = DB::connection('neon_report')->select($query);
                     if(count($error_message)){
@@ -52,15 +52,15 @@ class Summary extends \Eloquent {
     }
     public static function generateVendorSummary($CompanyID,$today){
         if($today == 1){
-            self::CreateVendorTempTable($CompanyID,0,'Live');
-            $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "')";
+            $UniqueID = self::CreateVendorTempTable($CompanyID,0,date("Y-m-d"),'Live');
+            $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "','".$UniqueID."')";
             Log::info($query);
             $error_message = DB::connection('neon_report')->select($query);
             if(count($error_message)){
                 throw  new \Exception($error_message[0]->Message);
             }
         }else {
-            self::CreateVendorTempTable($CompanyID,0);
+
             $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
             self::markFinalSummary($CompanyID, $startdate);
@@ -73,7 +73,8 @@ class Summary extends \Eloquent {
                     $end_summary = $enddate;
                 }
                 try {
-                    $query = "call prc_generateVendorSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "')";
+                    $UniqueID = self::CreateVendorTempTable($CompanyID,0,$start_summary);
+                    $query = "call prc_generateVendorSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
                     Log::info($query);
                     $error_message = DB::connection('neon_report')->select($query);
                     if(count($error_message)){
@@ -87,7 +88,7 @@ class Summary extends \Eloquent {
         }
     }
 
-    public static function CreateCustomerTempTable($CompanyID,$CompanyGatewayID=0,$extra_prefix=''){
+    public static function CreateCustomerTempTable($CompanyID,$CompanyGatewayID=0,$date,$extra_prefix=''){
 
         $UniqueID = $CompanyID;
 
@@ -96,6 +97,9 @@ class Summary extends \Eloquent {
         }
 
         if(!empty($UniqueID)) {
+            $tag = '"RateCDR":"1"';
+            $RateCDR = CompanyGateway::where(array('CompanyID'=>$CompanyID,'Status'=>1))->where('Settings','LIKE', '%'.$tag.'%')->count();
+            $UniqueID .= date('Ymd',strtotime($date));
             $UniqueID .=$extra_prefix;
 
             $temp_table1 = 'tmp_tblUsageDetailsReport_'.$UniqueID;
@@ -131,7 +135,7 @@ class Summary extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
-            DB::connection('neon_report')->statement(' DELETE FROM '.$temp_table1);
+
 
             Log::error($temp_table1 . ' done ');
 
@@ -158,7 +162,10 @@ class Summary extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
-            DB::connection('neon_report')->statement(' DELETE FROM '.$link_table1);
+            if($RateCDR >0 ) {
+                DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
+                DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
+            }
 
             Log::error($link_table1 . ' done ');
 
@@ -166,7 +173,7 @@ class Summary extends \Eloquent {
         }
     }
 
-    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID=0,$extra_prefix=''){
+    public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID=0,$date,$extra_prefix=''){
 
         $UniqueID = $CompanyID;
 
@@ -175,6 +182,9 @@ class Summary extends \Eloquent {
         }
 
         if(!empty($UniqueID)) {
+            $tag = '"RateCDR":"1"';
+            $RateCDR = CompanyGateway::where(array('CompanyID'=>$CompanyID,'Status'=>1))->where('Settings','LIKE', '%'.$tag.'%')->count();
+            $UniqueID .= date('Ymd',strtotime($date));
             $UniqueID .=$extra_prefix;
 
 
@@ -207,7 +217,7 @@ class Summary extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
-            DB::connection('neon_report')->statement(' DELETE FROM '.$temp_table1);
+
 
             Log::error($temp_table1 .' done ');
 
@@ -234,7 +244,11 @@ class Summary extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
-            DB::connection('neon_report')->statement(' DELETE FROM '.$link_table1);
+            if($RateCDR >0 ) {
+                DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
+                DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
+            }
+
 
             Log::error($link_table1 . ' done ');
 
