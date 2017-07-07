@@ -494,7 +494,7 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'';
+				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 
 				//-- check in reply to with previous email
@@ -639,6 +639,7 @@ protected $server;
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
 					"RequesterCC"=>$cc,
+					"RequesterBCC"=>$bcc,
 					'Subject'=>$overview_subject,
 					'Description'=>$message,
 					'CompanyID'=>$CompanyID,
