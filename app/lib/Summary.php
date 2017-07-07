@@ -157,8 +157,8 @@ class Summary extends \Eloquent {
                                     INDEX `IX_VCID` (`VCID`)
                                 )
                                 ENGINE=InnoDB ; ';
-            DB::connection('sqlsrvcdr')->statement($sql_create_table);
-            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table1);
+            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement(' DELETE FROM '.$link_table1);
 
             Log::error($link_table1 . ' done ');
 
@@ -209,7 +209,7 @@ class Summary extends \Eloquent {
             DB::connection('neon_report')->statement($sql_create_table);
             DB::connection('neon_report')->statement(' DELETE FROM '.$temp_table1);
 
-            Log::error(' done ');
+            Log::error($temp_table1 .' done ');
 
             $link_table1 = 'tblTempCallDetail_2_'.$UniqueID;
 
@@ -233,8 +233,8 @@ class Summary extends \Eloquent {
                                     INDEX `IX_VCID` (`VCID`)
                                 )
                                 ENGINE=InnoDB ; ';
-            DB::connection('sqlsrvcdr')->statement($sql_create_table);
-            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$link_table1);
+            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement(' DELETE FROM '.$link_table1);
 
             Log::error($link_table1 . ' done ');
 
