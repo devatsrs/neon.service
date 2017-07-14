@@ -58,6 +58,7 @@ protected $server;
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
+				$overview_subject   =   isset($overview[0]->subject)?$overview[0]->subject:'';
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
 
 			
@@ -119,7 +120,7 @@ protected $server;
 
 				$logData = ['EmailFrom'=> $from,
 				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
-				'Subject'=>$overview[0]->subject,
+				'Subject'=>$overview_subject,
 				'Message'=>$message,
 				'CompanyID'=>$CompanyID,
 				"MessageID"=>$message_id,
@@ -144,7 +145,7 @@ protected $server;
 						"AccountID"=> $parent_account,
 						"Title"=>$title,
 						"MsgLoggedUserID"=>$parent_UserID,
-						"Description"=>$overview[0]->subject,
+						"Description"=>$overview_subject,
 						"MatchType"=>$MatchType,
 						"MatchID"=>$MatchID,
 						"EmailID"=>$EmailLog
@@ -493,6 +494,7 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
+				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 
 				//-- check in reply to with previous email
@@ -539,7 +541,7 @@ protected $server;
 
 
 					//Match the subject with all emails.
-					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
+					$original_plain_subject = $this->get_original_plain_subject($overview_subject);
 					if(!empty($original_plain_subject)){
 						$EmailFrom = $EmailTo = "";
 						if(isset($overview[0]->from)){
@@ -637,7 +639,8 @@ protected $server;
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
 					"RequesterCC"=>$cc,
-					'Subject'=>$overview[0]->subject,
+					"RequesterBCC"=>$bcc,
+					'Subject'=>$overview_subject,
 					'Description'=>$message,
 					'CompanyID'=>$CompanyID,
 					"AttachmentPaths"=>$AttachmentPaths,
@@ -740,7 +743,7 @@ protected $server;
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
-					'Subject'=>$overview[0]->subject,
+					'Subject'=>$overview_subject,
 					'Message'=>$message,
 					'CompanyID'=>$CompanyID,
 					"MessageID"=>$message_id,
