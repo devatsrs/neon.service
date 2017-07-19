@@ -253,6 +253,7 @@ class Summary extends \Eloquent {
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
             }else{
+                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID)");
                 DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
             }
 
