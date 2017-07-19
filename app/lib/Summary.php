@@ -170,6 +170,9 @@ class Summary extends \Eloquent {
                 Log::error(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
+            }else{
+                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Customer')");
+                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Customer'));
             }
 
             Log::error($link_table1 . ' done ');
@@ -255,8 +258,8 @@ class Summary extends \Eloquent {
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
             }else{
-                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID)");
-                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
+                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Vendor')");
+                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Vendor'));
             }
 
 
