@@ -132,6 +132,7 @@ class Summary extends \Eloquent {
                                     `pincode` VARCHAR(50) NULL DEFAULT NULL ,
 	                                `extension` VARCHAR(50) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`UsageDetailsReportID`),
+                                    UNIQUE INDEX `UK` (`UsageDetailID`, `call_status`),
                                     INDEX `temp_connect_time` (`connect_time`, `connect_date`),
                                     INDEX `IX_CompanyID` (`CompanyID`),
                                     INDEX `IX_UsageDetailID` (`UsageDetailID`)
@@ -214,6 +215,7 @@ class Summary extends \Eloquent {
                                     `call_status` TINYINT(4) NULL DEFAULT NULL,
                                     `call_status_v` TINYINT(4) NULL DEFAULT NULL,
                                     PRIMARY KEY (`VendorUsageDetailsReportID`),
+                                    UNIQUE INDEX `UK` (`VendorCDRID`, `call_status_v`),
                                     INDEX `temp_connect_time` (`connect_time`, `connect_date`),
                                     INDEX `IX_CompanyID` (`CompanyID`),
                                     INDEX `IX_VendorCDRID` (`VendorCDRID`)
