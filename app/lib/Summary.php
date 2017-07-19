@@ -267,25 +267,25 @@ class Summary extends \Eloquent {
             foreach($table as $Tables_in_db_name=>$tablename) {
 
                 if(strpos($tablename,'tmp_tblUsageDetailsReport_'.$CompanyID) !== false){
-                    if(str_replace('tmp_tblUsageDetailsReport_'.$CompanyID,'',$tablename)<$deletedate){
+                    if(str_replace(array('tmp_tblUsageDetailsReport_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
                     }
                 }
                 if(strpos($tablename,'tmp_tblVendorUsageDetailsReport_'.$CompanyID) !== false){
-                    if(str_replace('tmp_tblVendorUsageDetailsReport_'.$CompanyID,'',$tablename)<$deletedate){
+                    if(str_replace(array('tmp_tblVendorUsageDetailsReport_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
                     }
                 }
 
                 if(strpos($tablename,'tblTempCallDetail_1_'.$CompanyID) !== false){
-                    if(str_replace('tblTempCallDetail_1_'.$CompanyID,'',$tablename)<$deletedate){
+                    if(str_replace(array('tblTempCallDetail_1_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
                     }
                 }
                 if(strpos($tablename,'tblTempCallDetail_2_'.$CompanyID) !== false){
-                    if(str_replace('tblTempCallDetail_2_'.$CompanyID,'',$tablename)<$deletedate){
+                    if(str_replace(array('tblTempCallDetail_2_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
                     }
