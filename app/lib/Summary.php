@@ -249,9 +249,11 @@ class Summary extends \Eloquent {
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
-            if($RateCDR >0 ) {
+            if($RateCDR >0 || empty($extra_prefix)) {
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->statement(' DELETE FROM ' . $link_table1);
+            }else{
+                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
             }
 
 
