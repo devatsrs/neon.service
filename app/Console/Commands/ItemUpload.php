@@ -176,6 +176,20 @@ class ItemUpload extends Command {
                             }else{
                                 $tempItemData['Note'] = '';
                             }
+                            if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                $action_value = $temp_row[$attrselection->Action];
+                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
+                                    $tempItemData['Change'] = 'D';
+                                }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
+                                    $tempItemData['Change'] = 'U';
+                                }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
+                                    $tempItemData['Change'] = 'I';
+                                }else{
+                                    $tempItemData['Change'] = 'I';
+                                }
+                            }else{
+                                $tempItemData['Change'] = 'I';
+                            }
 
                             $attrDynamicFields = preg_grep("/^DynamicFields/", array_keys((array) $attrselection));
 //                            echo "<pre>";print_r($DynamicFields);exit;
