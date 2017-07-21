@@ -1,0 +1,14 @@
+
+
+https://www.linux.com/learn/how-do-painless-mysql-server-backups-automysqlbackup
+
+
+
+mkdir -p /home/automysqlbackup/bin
+tar zxvf automysqlbackup-v3.0_rc6.tar.gz --directory /home/automysqlbackup/bin
+
+chown root:root /home/automysqlbackup/bin/automysqlbackup
+chmod 0700 /home/automysqlbackup/bin/automysqlbackup
+cp /home/automysqlbackup/bin/automysqlbackup /usr/local/bin/
+mkdir /var/www/automysqlbackup
+cp /home/automysqlbackup/bin/automysqlbackup.conf /home/automysqlbackup/automysqlbackup.conf
