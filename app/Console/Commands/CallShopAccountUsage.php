@@ -122,7 +122,7 @@ class CallShopAccountUsage extends Command {
             $data_count = $data_countv = 0;
             $insertLimit = 1000;
 
-            $response = $call_shop->getAccountCDRs2($param);
+            $response = $call_shop->getAccountCDRs($param);
             $response = json_decode(json_encode($response), true);
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
