@@ -183,7 +183,7 @@ class StreamcoAccountUsage extends Command {
                         $vendorcdrdata['disconnect_time'] = $row_account['disconnect_time'];
                         $vendorcdrdata['connect_time'] = $row_account['connect_time'];
                         $vendorcdrdata['buying_cost'] = (float)$row_account['provider_price'];
-                        //$vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
+                        $vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
                         $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
                         $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
                         $vendorcdrdata['billed_duration'] = $row_account['billed_second'];
