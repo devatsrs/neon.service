@@ -81,8 +81,8 @@ class Streamco{
                 $query = "select u.name as providername,c.caller_id as  cli,c.callee_id as cld,cc.ID as ID, c.ID as ID2,c.start_time as connect_time,c.end_time as disconnect_time ,c.total_seconds as duration,c.answered_seconds as billed_second,c.price as provider_price,c.hangup_cause as disposition,c.code as provider_prefix,cc.price as cost
                     from terminator_billed_cdr c
                     left join config.terminators u on c.terminator_id = u.id
-                    left join terminator_billed_cdr cc on c.call_id = u.call_id
-                    where `end_time` >= '" . $addparams['start_date_ymd'] . "' and `end_time` < '" . $addparams['end_date_ymd'] . "'";
+                    left join originator_billed_cdr cc on c.call_id = cc.call_id
+                    where c.`end_time` >= '" . $addparams['start_date_ymd'] . "' and c.`end_time` < '" . $addparams['end_date_ymd'] . "'";
 
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
