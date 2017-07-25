@@ -1,8 +1,8 @@
 <?php
 namespace App;
 
+use Collective\Remote\RemoteFacade;
 use App\Lib\GatewayAPI;
-use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -71,11 +71,11 @@ class Streamco{
 
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
-            }catch(Exception $e){
+            }catch(\Exception $e){
                 $response['faultString'] =  $e->getMessage();
                 $response['faultCode'] =  $e->getCode();
                 Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
-                throw new Exception($e->getMessage());
+                throw new \Exception($e->getMessage());
             }
         }
         return $response;
@@ -94,11 +94,11 @@ class Streamco{
 
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
-            }catch(Exception $e){
+            }catch(\Exception $e){
                 $response['faultString'] =  $e->getMessage();
                 $response['faultCode'] =  $e->getCode();
                 Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
-                throw new Exception($e->getMessage());
+                throw new \Exception($e->getMessage());
             }
         }
         return $response;
@@ -108,12 +108,12 @@ class Streamco{
     /** get list of array of files
      * @return array
      */
-    public function getCustomerRateFile(){
+    public function getCustomerRateFile($FileLocationFrom=''){
 
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $filename = array();
-            $files =  RemoteFacade::nlist(self::$config['FileLocationFrom']);
+            $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
                 if(strpos($file,'.csv') !== false && strpos($file,'customer_rate') !== false){
                     $filename[] =$file;
@@ -131,12 +131,12 @@ class Streamco{
     /** get list of array of files
      * @return array
      */
-    public function getVendorRateFile(){
+    public function getVendorRateFile($FileLocationFrom=''){
 
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $filename = array();
-            $files =  RemoteFacade::nlist(self::$config['FileLocationFrom']);
+            $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
                 if(strpos($file,'.csv') !== false && strpos($file,'vendor_rate') !== false){
                     $filename[] =$file;
@@ -159,9 +159,9 @@ class Streamco{
     public static function downloadRemoteFile($addparams=array()){
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            $downloading_path = $addparams['download_path'] . str_random(20); // basename($addparams['filename']);
-            $new_path = $addparams['download_path'] . $addparams['filename'];
-            $status = RemoteFacade::get(self::$config['FileLocationFrom'] .'/'. $addparams['filename'], $downloading_path);
+            $downloading_path = $addparams['download_path'] .'/'. str_random(20); // basename($addparams['filename']);
+            $new_path = $addparams['download_path'] .'/'. $addparams['filename'];
+            $status = RemoteFacade::get($addparams['FileLocationFrom'] .'/'. $addparams['filename'], $downloading_path);
             if(!rename( $downloading_path , $new_path )){
                 @unlink($downloading_path);
             }

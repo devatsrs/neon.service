@@ -1,9 +1,14 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
+use App\Lib\CronJob;
 use App\Streamco;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
+use App\Lib\CronJobLog;
+use App\Lib\UsageDownloadFiles;
 
 class CustomerRateFileDownload extends Command {
 
@@ -59,8 +64,8 @@ class CustomerRateFileDownload extends Command {
 
 		$CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
 		$FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
-		$FileLocationFrom =  $cronsetting['FileLocationFrom'];
-		$FileLocationTo =  $cronsetting['FileLocationTo'];
+		$FileLocationFrom =  '/home/temp/test_files_generation'; // $cronsetting['FileLocationFrom'];
+		$FileLocationTo =  '/home/temp/test_files_generation_to' ; //$cronsetting['FileLocationTo'];
 		Log::useFiles(storage_path().'/logs/customerratefiledownload-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
 		try {
 
@@ -76,7 +81,7 @@ class CustomerRateFileDownload extends Command {
 
 			$Streamco = new Streamco($CompanyGatewayID);
 			Log::info("Streamco Connected");
-			$filenames = $Streamco->getCustomerRateFile();
+			$filenames = $Streamco->getCustomerRateFile($FileLocationFrom);
 			$destination = $FileLocationTo .'/'.$CompanyGatewayID;
 			if (!file_exists($destination)) {
 				mkdir($destination, 0777, true);
@@ -96,7 +101,8 @@ class CustomerRateFileDownload extends Command {
 					if (!file_exists($file_path)) {
 						$param = array();
 						$param['filename'] = $filename;
-						$param['download_path'] = $destination . '/';
+						$param['FileLocationFrom'] = $FileLocationFrom;
+						$param['download_path'] = $destination ;
 						//$param['download_temppath'] = Config::get('app.temp_location').$CompanyGatewayID.'/';
 						$Streamco->downloadRemoteFile($param);
 
@@ -153,7 +159,7 @@ class CustomerRateFileDownload extends Command {
 			Log::info("Streamco file Download Completed ");
 
 
-		}catch (Exception $e) {
+		}catch (\Exception $e) {
 			Log::error($e);
 			CronJob::deactivateCronJob($CronJob);
 
