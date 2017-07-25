@@ -5,7 +5,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-class customerratefiledownload extends Command {
+class CustomerRatefileDownload extends Command {
 
 	/**
 	 * The console command name.
