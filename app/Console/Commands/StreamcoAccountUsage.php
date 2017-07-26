@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 
+use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
@@ -103,6 +104,14 @@ class StreamcoAccountUsage extends Command {
             }
             TempUsageDetail::applyDiscountPlan();
             $streamco = new Streamco($CompanyGatewayID);
+
+            // starts import accounts
+            $addparams['CompanyGatewayID'] = $CompanyGatewayID;
+            $addparams['CompanyID'] = $CompanyID;
+            $addparams['ProcessID'] = $processID;
+            $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
+            Account::importStreamcoAccounts($streamco,$addparams);
+            // ends import accounts
 
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);

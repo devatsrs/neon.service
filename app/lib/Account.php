@@ -186,4 +186,35 @@ class Account extends \Eloquent {
         return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
 
+    public static function importStreamcoAccounts($streamco,$addparams) {
+        $processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
+        $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;
+        $CompanyGatewayID = isset($addparams['CompanyGatewayID']) ? $addparams['CompanyGatewayID'] : 0;
+        Log::info('Accounts Import Start');
+        $account_response = $streamco->importStreamcoAccounts($addparams);
+        if(isset($account_response['result']) && $account_response['result'] == 'OK') {
+            $importoption = 1;
+            $AccountIDs = '';
+            Log::info("start CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$AccountIDs."','".$importoption."','" . $addparams['ImportDate'] . "')");
+            try {
+                DB::beginTransaction();
+                $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
+                Log::info("end CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
+                DB::commit();
+                $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                Log::info($JobStatusMessage);
+                Account::updateAccountNo($CompanyID);
+                Log::info('update account number - Done');
+                Log::info(count($JobStatusMessage));
+                Log::info('Accounts Import End');
+            }catch ( Exception $err ){
+                try{
+                    DB::rollback();
+                }catch (Exception $err) {
+                    Log::error($err);
+                }
+                Log::error($err);
+            }
+        }
+    }
 }
