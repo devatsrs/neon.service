@@ -98,6 +98,8 @@ class Streamco{
     }
 
     public static function importStreamcoAccounts($addparams=array()) {
+        // same code in web/Streamco.php@getAccountsDetail()
+        // if you change anything here than you also have to change there
         $response = array();
 //        $currency = Currency::getCurrencyDropdownIDList();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
