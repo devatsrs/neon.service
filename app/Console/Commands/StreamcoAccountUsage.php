@@ -144,7 +144,7 @@ class StreamcoAccountUsage extends Command {
                         $data['GatewayAccountID'] = $row_account['username'];
                         $data['AccountIP'] = '';
                         $data['AccountName'] = $row_account['username'];
-                        $data['AccountNumber'] = $row_account['username'];
+                        $data['AccountNumber'] = '';
                         $data['AccountCLI'] = '';
                         $data['disconnect_time'] = $row_account['disconnect_time'];
                         $data['connect_time'] = $row_account['connect_time'];
@@ -184,7 +184,7 @@ class StreamcoAccountUsage extends Command {
                         $vendorcdrdata = array();
                         $vendorcdrdata['AccountIP'] = '';
                         $vendorcdrdata['AccountName'] = $row_account['providername'];
-                        $vendorcdrdata['AccountNumber'] = $row_account['providername'];
+                        $vendorcdrdata['AccountNumber'] = '';
                         $vendorcdrdata['AccountCLI'] = '';
                         $vendorcdrdata['GatewayAccountID'] = $row_account['providername'];
                         $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;

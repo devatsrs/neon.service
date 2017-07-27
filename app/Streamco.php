@@ -56,9 +56,10 @@ class Streamco{
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             try{
 
-                $query = "select u.name as username,c.caller_id as  cli,c.callee_id as cld, c.ID as ID ,c.start_time as connect_time,c.end_time as disconnect_time ,c.total_seconds as duration,c.answered_seconds as billed_second,price as cost,hangup_cause as disposition,code as prefix
+                $query = "select com.name as username,c.caller_id as  cli,c.callee_id as cld, c.ID as ID ,c.start_time as connect_time,c.end_time as disconnect_time ,c.total_seconds as duration,c.answered_seconds as billed_second,price as cost,hangup_cause as disposition,code as prefix
                     from originator_billed_cdr c
                     left join config.originators u on c.originator_id = u.id
+                    left join config.companies com on com.id = u.company_id
                     where `end_time` >= '" . $addparams['start_date_ymd'] . "' and `end_time` < '" . $addparams['end_date_ymd'] . "'";
 
                 Log::info($query);
@@ -78,10 +79,11 @@ class Streamco{
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             try{
 
-                $query = "select u.name as providername,c.caller_id as  cli,c.callee_id as cld,IFNULL(cc.ID,c.ID) as ID, c.ID as ID2,c.start_time as connect_time,c.end_time as disconnect_time ,c.total_seconds as duration,c.answered_seconds as billed_second,c.price as provider_price,c.hangup_cause as disposition,c.code as provider_prefix,cc.price as cost
+                $query = "select com.name as providername,c.caller_id as  cli,c.callee_id as cld,IFNULL(cc.ID,c.ID) as ID, c.ID as ID2,c.start_time as connect_time,c.end_time as disconnect_time ,c.total_seconds as duration,c.answered_seconds as billed_second,c.price as provider_price,c.hangup_cause as disposition,c.code as provider_prefix,cc.price as cost
                     from terminator_billed_cdr c
                     left join config.terminators u on c.terminator_id = u.id
                     left join originator_billed_cdr cc on c.call_id = cc.call_id
+                    left join config.companies com on com.id = u.company_id
                     where c.`end_time` >= '" . $addparams['start_date_ymd'] . "' and c.`end_time` < '" . $addparams['end_date_ymd'] . "'";
 
                 Log::info($query);
