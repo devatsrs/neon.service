@@ -35,7 +35,7 @@ class RateImportExporter
         }
 
         if(!empty($UniqueID)) {
-            $tbltemprateimport_name = self::getTablenameByUniqueID($UniqueID);
+            $tbltemprateimport_name = self::getTablenameByUniqueID($UniqueID,$extra_prefix);
 
             Log::error( $tbltemprateimport_name);
             $tbltemprateimport_name .=$extra_prefix;
