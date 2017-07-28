@@ -78,6 +78,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ManualImportAccounts',
 		'App\Console\Commands\CustomerRateFileDownload',
 		'App\Console\Commands\VendorRateFileDownload',
+		'App\Console\Commands\VendorRateFileProcess',
 	];
 
 	/**

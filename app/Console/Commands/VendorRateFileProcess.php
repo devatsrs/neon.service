@@ -14,6 +14,7 @@ use App\Lib\TempVendorCDR;
 use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\RateImportExporter;
+use App\Streamco;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -92,14 +93,14 @@ class VendorRateFileProcess extends Command {
 		if(isset($cronsetting['FilesMaxProcess']) && $cronsetting['FilesMaxProcess'] > 0){
 			$FilesMaxProcess = $cronsetting['FilesMaxProcess'];
 		}else{
-			$FilesMaxProcess = '30';
+			$FilesMaxProcess = '5';
 		}
 		$data_count = 0;
 		$insertLimit = 1000;
 
 
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-		$FileLocationTo =  '/home/temp/test_files_generation_to' ; //$cronsetting['FileLocationTo'];
+		$FileLocationTo =  $cronsetting['FileLocation']; //'/home/temp/test_files_generation_to' ; //
 
 
 		$dataactive['Active'] = 1;
@@ -107,7 +108,7 @@ class VendorRateFileProcess extends Command {
 		$dataactive['PID'] = $getmypid;
 		$CronJob->update($dataactive);
 
-		$processID = CompanyGateway::getProcessID();
+		$processID = rand(11111,99999999);
 
 		$joblogdata = array();
 		$joblogdata['CronJobID'] = $CronJobID;
@@ -150,7 +151,7 @@ class VendorRateFileProcess extends Command {
 			}
 			foreach ($filenames as $UsageDownloadFilesID => $filename) {
 				Log::info("Loop Start");
-
+				$row_count = 0;
 				if ($filename != '' && $file_count <= $FilesMaxProcess) {
 
 					$param = array();
@@ -166,8 +167,6 @@ class VendorRateFileProcess extends Command {
 
 
 					try {
-
-						if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
 
 							$InserData = array();
 							$TrunkID = $AccountID = 0;
@@ -238,7 +237,6 @@ class VendorRateFileProcess extends Command {
 										$uddata['AccountID'] = $AccountID;
 										$uddata['TrunkID'] = $TrunkID;
 										$uddata['Code'] = $row['Code'];
-										$uddata['IsVendor'] = 1;
 										$uddata['Rate'] = $row['Rate'];
 										$uddata['Preference'] = $row['Preference'];
 										$uddata['ConnectionFee'] = $row['ConnectionFee'];
@@ -272,11 +270,8 @@ class VendorRateFileProcess extends Command {
 
 							if(!empty($InserData)){
 								DB::table($temptableName)->insert($InserData);
-
 							}
 
-							fclose($handle);
-						}
 					}catch(\Exception $e){
 
 						Log::error($e);
@@ -321,8 +316,6 @@ class VendorRateFileProcess extends Command {
 			CronJobLog::insert($joblogdata);
 
 			DB::table($temptableName)->where(["processId" => $processID])->delete();
-
-
 
 		} catch (\Exception $e) {
 			try {

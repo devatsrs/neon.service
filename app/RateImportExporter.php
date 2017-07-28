@@ -9,6 +9,7 @@
 namespace App;
 
 
+use App\Lib\CompanyGateway;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -19,6 +20,9 @@ class RateImportExporter
     public $CompanyID = 0;
 
 
+    public static function getUniqueID($CompanyGatewayID){
+        return CompanyGateway::where("CompanyGatewayID",$CompanyGatewayID)->pluck("UniqueID");
+    }
 
     /* Create tblTempCustomerRatesImport_ tblTempVendorRatesImport_ Temp table as per UniqueID * */
     public static function CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
