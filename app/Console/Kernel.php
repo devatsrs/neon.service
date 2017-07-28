@@ -77,6 +77,9 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ReadEmailsTickets',
 		'App\Console\Commands\MORAccountUsage',
 		'App\Console\Commands\ManualImportAccounts',
+		'App\Console\Commands\CustomerRateFileDownload',
+		'App\Console\Commands\VendorRateFileDownload',
+		'App\Console\Commands\VendorRateFileProcess',
 		'App\Console\Commands\ItemUpload',
 	];
 
