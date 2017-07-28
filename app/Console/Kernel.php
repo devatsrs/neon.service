@@ -81,6 +81,9 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\VendorRateFileDownload',
 		'App\Console\Commands\VendorRateFileProcess',
 		'App\Console\Commands\ItemUpload',
+		'App\Console\Commands\CallShopAccountUsage',
+		'App\Console\Commands\StreamcoAccountUsage',
+		'App\Console\Commands\StreamcoAccountImport',
 	];
 
 	/**

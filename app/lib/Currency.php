@@ -28,4 +28,9 @@ class Currency extends \Eloquent {
         }
         return $CurrencyId;
     }
+
+    public static function getCurrencyDropdownIDList($CompanyID){
+        return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
+    }
+
 }
