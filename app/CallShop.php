@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class MOR{
+class CallShop{
     private static $config = array();
     private static $cli;
     private static $timeout=0; /* 60 seconds timeout */
-    private static $dbname1 = 'mor';
+    private static $dbname1 = 'svbpanel';
 
    public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'MOR');
@@ -98,10 +98,11 @@ class MOR{
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
 
-                $query = "select u.username,c.originator_ip,c.terminator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.billsec as billed_second,user_price as cost,provider_price,disposition,prefix
-                    from calls c
-                    inner join users u on c.user_id = u.id
-                    where `calldate` >= '" . $addparams['start_date_ymd'] . "' and `calldate` < '" . $addparams['end_date_ymd'] . "'";
+                $query = "select u.usuario as username,p.usuario as providername,c.dispositivo_usuario as  cli,c.numero_destino as cld, c.ID as ID ,c.fecha as disconnect_time ,c.duracion as duration,c.duracion as billed_second,usuario_coste_final as cost,proveedor_coste_final as provider_price,hangupcause as disposition,usuario_prefijo as prefix,proveedor_prefijo as provider_prefix
+                    from cdrs c
+                    left join usuarios u on c.usuario_id = u.id
+                    left join proveedores p on c.proveedor_id = p.id
+                    where `fecha` >= '" . $addparams['start_date_ymd'] . "' and `fecha` < '" . $addparams['end_date_ymd'] . "'";
 
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);

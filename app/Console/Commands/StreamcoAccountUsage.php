@@ -1,5 +1,7 @@
 <?php namespace App\Console\Commands;
 
+
+use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
@@ -10,7 +12,7 @@ use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
-use App\MOR;
+use App\Streamco;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -18,14 +20,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class MORAccountUsage extends Command {
+class StreamcoAccountUsage extends Command {
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'moraccountusage';
+    protected $name = 'streamcoaccountusage';
 
     /**
      * The console command description.
@@ -72,14 +74,14 @@ class MORAccountUsage extends Command {
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
-        Log::useFiles(storage_path() . '/logs/moraccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/streamcoaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
 
         try {
-            Log::error(' ========================== mor transaction start =============================');
+            Log::error(' ========================== streamco transaction start =============================');
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
@@ -101,7 +103,7 @@ class MORAccountUsage extends Command {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
-            $mor = new MOR($CompanyGatewayID);
+            $streamco = new Streamco($CompanyGatewayID);
 
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
@@ -122,91 +124,91 @@ class MORAccountUsage extends Command {
             $data_count = $data_countv = 0;
             $insertLimit = 1000;
 
-            $response = $mor->getAccountCDRs($param);
+            $response = $streamco->getAccountCDRs($param);
             $response = json_decode(json_encode($response), true);
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
                 foreach ((array)$response as $row_account) {
-                    $data = array();
-                    $data['CompanyGatewayID'] = $CompanyGatewayID;
-                    $data['CompanyID'] = $CompanyID;
-                    if ($companysetting->NameFormat == 'NUB') {
+                    if (!empty($row_account['username'])) {
+                        $data = array();
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
                         $data['GatewayAccountID'] = $row_account['username'];
-                    } else if ($companysetting->NameFormat == 'IP') {
-                        $data['GatewayAccountID'] = $row_account['originator_ip'];
-                    }
-                    /*if ($companysetting->NameFormat == 'CLI') {
-                        $data['GatewayAccountID'] = $row_account['cli'];
-                    }*/
-                    $data['AccountIP'] = $row_account['originator_ip'];
-                    $data['AccountName'] = $row_account['username'];
-                    $data['AccountNumber'] = $row_account['username'];
-                    $data['AccountCLI'] = '';
-                    $data['connect_time'] = $row_account['connect_time'];
-                    $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
-                    $data['cost'] = (float)$row_account['cost'];
-                    $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
-                    $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
-                    $data['billed_duration'] = $row_account['billed_second'];
-                    $data['billed_second'] = $row_account['billed_second'];
-                    $data['duration'] = $row_account['duration'];
-                    $data['trunk'] = 'Other';
-                    $data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
-                    $data['ProcessID'] = $processID;
-                    $data['remote_ip'] = $row_account['originator_ip'];
-                    $data['ServiceID'] = $ServiceID;
-                    $data['disposition'] = $row_account['disposition'];
-                    $data['ID'] = $row_account['ID'];
-                    $InserData[] = $data;
-                    $data_count++;
-                    if ($data_count > $insertLimit && !empty($InserData)) {
-                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                        $InserData = array();
-                        $data_count = 0;
+                        $data['AccountIP'] = '';
+                        $data['AccountName'] = $row_account['username'];
+                        $data['AccountNumber'] = '';
+                        $data['AccountCLI'] = '';
+                        $data['disconnect_time'] = $row_account['disconnect_time'];
+                        $data['connect_time'] = $row_account['connect_time'];
+                        $data['cost'] = (float)$row_account['cost'];
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
+                        $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                        $data['billed_duration'] = $row_account['billed_second'];
+                        $data['billed_second'] = $row_account['billed_second'];
+                        $data['duration'] = $row_account['duration'];
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['prefix']), $RateCDR);
+                        $data['ProcessID'] = $processID;
+                        //$data['remote_ip'] = $row_account['originator_ip'];
+                        $data['ServiceID'] = $ServiceID;
+                        $data['disposition'] = $row_account['disposition'];
+                        $data['ID'] = $row_account['ID'];
+                        $InserData[] = $data;
+                        $data_count++;
+                        if ($data_count > $insertLimit && !empty($InserData)) {
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                            $InserData = array();
+                            $data_count = 0;
+                        }
                     }
                 }// loop
                 if (!empty($InserData)) {
                     DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                 }
-                if ($companysetting->NameFormat == 'IP') {
-                    foreach ((array)$response as $row_account) {
-                        if(!empty($row_account['terminator_ip'])) {
-                            $vendorcdrdata = array();
-                            $vendorcdrdata['AccountIP'] = $row_account['terminator_ip'];
-                            $vendorcdrdata['AccountName'] = '';
-                            $vendorcdrdata['AccountNumber'] = '';
-                            $vendorcdrdata['AccountCLI'] = '';
-                            $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
-                            $vendorcdrdata['CompanyID'] = $CompanyID;
-                            $vendorcdrdata['GatewayAccountID'] = $row_account['terminator_ip'];
-                            $vendorcdrdata['connect_time'] = $row_account['connect_time'];
-                            $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
-                            $vendorcdrdata['buying_cost'] = (float)$row_account['provider_price'];
-                            $vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
-                            $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
-                            $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
-                            $vendorcdrdata['billed_duration'] = $row_account['billed_second'];
-                            $vendorcdrdata['billed_second'] = $row_account['billed_second'];
-                            $vendorcdrdata['duration'] = $row_account['duration'];
-                            $vendorcdrdata['trunk'] = 'Other';
-                            $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
-                            $vendorcdrdata['ProcessID'] = $processID;
-                            $vendorcdrdata['ServiceID'] = $ServiceID;
-                            $vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
-                            $vendorcdrdata['ID'] = $row_account['ID'];
-                            $InserVData[] = $vendorcdrdata;
-                            $data_countv++;
-                            if ($data_countv > $insertLimit && !empty($InserVData)) {
-                                DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
-                                $InserVData = array();
-                                $data_countv = 0;
-                            }
+
+            }
+            $vendor_response = $streamco->getVAccountCDRs($param);
+            $vendor_response = json_decode(json_encode($vendor_response), true);
+            if (!isset($vendor_response['faultCode'])) {
+                Log::error('call count ' . count($vendor_response));
+                foreach ((array)$vendor_response as $row_account) {
+                    if (!empty($row_account['providername'])) {
+                        $vendorcdrdata = array();
+                        $vendorcdrdata['AccountIP'] = '';
+                        $vendorcdrdata['AccountName'] = $row_account['providername'];
+                        $vendorcdrdata['AccountNumber'] = '';
+                        $vendorcdrdata['AccountCLI'] = '';
+                        $vendorcdrdata['GatewayAccountID'] = $row_account['providername'];
+                        $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
+                        $vendorcdrdata['CompanyID'] = $CompanyID;
+                        $vendorcdrdata['disconnect_time'] = $row_account['disconnect_time'];
+                        $vendorcdrdata['connect_time'] = $row_account['connect_time'];
+                        $vendorcdrdata['buying_cost'] = (float)$row_account['provider_price'];
+                        $vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
+                        $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
+                        $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                        $vendorcdrdata['billed_duration'] = $row_account['billed_second'];
+                        $vendorcdrdata['billed_second'] = $row_account['billed_second'];
+                        $vendorcdrdata['duration'] = $row_account['duration'];
+                        $vendorcdrdata['trunk'] = 'Other';
+                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['provider_prefix']), $RateCDR);
+                        $vendorcdrdata['ProcessID'] = $processID;
+                        $vendorcdrdata['ServiceID'] = $ServiceID;
+                        //$vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
+                        $vendorcdrdata['ID'] = $row_account['ID'];
+                        $InserVData[] = $vendorcdrdata;
+                        $data_countv++;
+                        if ($data_countv > $insertLimit && !empty($InserVData)) {
+                            DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                            $InserVData = array();
+                            $data_countv = 0;
                         }
-                    }// loop
-                    if (!empty($InserVData)) {
-                        DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                     }
+                }// loop
+                if (!empty($InserVData)) {
+                    DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                 }
+
             }
 
 
@@ -221,8 +223,8 @@ class MORAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' ) end");
 
-            Log::error("MOR CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
-            Log::error(' ========================== MOR transaction end =============================');
+            Log::error("streamco CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
+            Log::error(' ========================== streamco transaction end =============================');
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
@@ -235,14 +237,14 @@ class MORAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
-            Log::error("MOR CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("streamco CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("MOR CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("streamco CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
-            Log::error('MOR prc_insertCDR start');
+            Log::error('streamco prc_insertCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
-            Log::error('MOR prc_insertCDR end');
+            Log::error('streamco prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
             $logdata['start_time'] = $param['start_date_ymd'];
