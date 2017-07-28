@@ -8,6 +8,7 @@ use App\Lib\Account;
 use App\Lib\Trunk;
 use App\Lib\CustomerTrunk;
 use App\Lib\VendorTrunk;
+use App\Lib\LastPrefixNo;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
@@ -190,6 +191,8 @@ class Streamco{
                 $totaltrunksinserted = 0;
                 $totalcustomerstrunksinserted = 0;
                 $totalvendorstrunksinserted = 0;
+                $created_at = date('Y-m-d H:i:s');
+                $CreatedBy = 'auto import account';
                 $queryo = "SELECT
                               c.name AS AccountName,o.name AS TrunkName,IF(o.company_id,1,0) AS IsCustomer
                           FROM
@@ -212,6 +215,7 @@ class Streamco{
                                     $trunkdata['Trunk'] = $temp_row->TrunkName;
                                     $trunkdata['CompanyID'] = $CompanyID;
                                     $trunkdata['Status'] = 1;
+                                    $trunkdata['created_at'] = $created_at;
                                     $TrunkID = Trunk::insertGetId($trunkdata);
                                     $totaltrunksinserted++;
                                 }
@@ -223,8 +227,12 @@ class Streamco{
                                     $customertrunkdata['AccountID'] = $AccountID;
                                     $customertrunkdata['TrunkID'] = $TrunkID;
                                     $customertrunkdata['Status'] = 1;
+                                    $customertrunkdata['Prefix'] = LastPrefixNo::getLastPrefix($CompanyID);
                                     $customertrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    $customertrunkdata['created_at'] = $created_at;
+                                    $customertrunkdata['CreatedBy'] = $CreatedBy;
                                     CustomerTrunk::insert($customertrunkdata);
+                                    LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'],$CompanyID);
                                     $totalcustomerstrunksinserted++;
                                 }
                             }
@@ -253,6 +261,7 @@ class Streamco{
                                     $trunkdata['Trunk'] = $temp_row->TrunkName;
                                     $trunkdata['CompanyID'] = $CompanyID;
                                     $trunkdata['Status'] = 1;
+                                    $trunkdata['created_at'] = $created_at;
                                     $TrunkID = Trunk::insertGetId($trunkdata);
                                     $totaltrunksinserted++;
                                 }
@@ -265,6 +274,8 @@ class Streamco{
                                     $vendortrunkdata['TrunkID'] = $TrunkID;
                                     $vendortrunkdata['Status'] = 1;
                                     $vendortrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    $vendortrunkdata['created_at'] = $created_at;
+                                    $vendortrunkdata['CreatedBy'] = $CreatedBy;
                                     VendorTrunk::insert($vendortrunkdata);
                                     $totalvendorstrunksinserted++;
                                 }
