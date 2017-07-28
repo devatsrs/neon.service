@@ -1,7 +1,13 @@
 <?php
 namespace App;
 
+use App\Lib\CodeDeck;
+use App\Lib\Currency;
 use App\Lib\GatewayAPI;
+use App\Lib\Account;
+use App\Lib\Trunk;
+use App\Lib\CustomerTrunk;
+use App\Lib\VendorTrunk;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
@@ -103,23 +109,30 @@ class Streamco{
         // same code in web/Streamco.php@getAccountsDetail()
         // if you change anything here than you also have to change there
         $response = array();
-//        $currency = Currency::getCurrencyDropdownIDList();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             try{
+                $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
                 $dbname = 'config';
-                $query1 = "select a.name,a.enabled,c.email,c.invoice_email,c.address from ".$dbname.".originators a LEFT JOIN ".$dbname.".companies c ON a.company_id=c.id"; // and userfield like '%outbound%'  removed for inbound calls
-                $query2 = "select a.name,a.enabled,c.email,c.invoice_email,c.address from ".$dbname.".terminators a LEFT JOIN ".$dbname.".companies c ON a.company_id=c.id"; // and userfield like '%outbound%'  removed for inbound calls
-                $results1 = DB::connection('pbxmysql')->select($query1);
-                $results2 = DB::connection('pbxmysql')->select($query2);
-                if(count($results1)>0 || count($results2)>0){
+                $query = "SELECT DISTINCT
+                              c.name,c.address,c.email,c.invoice_email,o.company_id,cu.name AS currency,IF(o.company_id,1,0) AS IsCustomer,IF(t.company_id,1,0) AS IsVendor
+                          FROM
+                              ".$dbname.".companies AS c
+                          LEFT JOIN
+                              ".$dbname.".originators AS o ON o.company_id = c.id
+                          LEFT JOIN
+                              ".$dbname.".terminators AS t ON t.company_id = c.id
+                          LEFT JOIN
+                              ".$dbname.".currencies AS cu ON c.balance_currency_id=cu.id";
+                $results = DB::connection('pbxmysql')->select($query);
+                if(count($results)>0){
                     $tempItemData = array();
                     $batch_insert_array = array();
                     if(count($addparams)>0){
                         $CompanyGatewayID = $addparams['CompanyGatewayID'];
                         $CompanyID = $addparams['CompanyID'];
                         $ProcessID = $addparams['ProcessID'];
-                        foreach ($results1 as $temp_row) {
-                            $count = DB::table('tblAccount')->where(["AccountName" => $temp_row->name, "AccountType" => 1,"CompanyId"=>$CompanyID,"IsCustomer" => 1])->count();
+                        foreach ($results as $temp_row) {
+                            $count = Account::where(["AccountName" => $temp_row->name, "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
                             if($count==0){
                                 $tempItemData['AccountName'] = $temp_row->name;
                                 $tempItemData['FirstName'] = "";
@@ -127,33 +140,12 @@ class Streamco{
                                 $tempItemData['Phone'] = "";
                                 $tempItemData['BillingEmail'] = $temp_row->invoice_email;
                                 $tempItemData['Email'] = $temp_row->email;
+                                $tempItemData['Currency'] = array_search($temp_row->currency,$currency) ? array_search($temp_row->currency,$currency):null;
                                 $tempItemData['AccountType'] = 1;
                                 $tempItemData['CompanyId'] = $CompanyID;
-                                $tempItemData['Status'] = $temp_row->enabled == 'yes' ? 1 : 0;
-                                $tempItemData['IsCustomer'] = 1;
-                                $tempItemData['IsVendor'] = 0;
-                                $tempItemData['LeadSource'] = 'Gateway import';
-                                $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
-                                $tempItemData['ProcessID'] = $ProcessID;
-                                $tempItemData['created_at'] = $addparams['ImportDate'];
-                                $tempItemData['created_by'] = 'Imported';
-                                $batch_insert_array[] = $tempItemData;
-                            }
-                        }
-                        foreach ($results2 as $temp_row) {
-                            $count = DB::table('tblAccount')->where(["AccountName" => $temp_row->name, "AccountType" => 1,"CompanyId"=>$CompanyID,"IsVendor" => 1])->count();
-                            if($count==0){
-                                $tempItemData['AccountName'] = $temp_row->name;
-                                $tempItemData['FirstName'] = "";
-                                $tempItemData['Address1'] = $temp_row->address;
-                                $tempItemData['Phone'] = "";
-                                $tempItemData['BillingEmail'] = $temp_row->invoice_email;
-                                $tempItemData['Email'] = $temp_row->email;
-                                $tempItemData['AccountType'] = 1;
-                                $tempItemData['CompanyId'] = $CompanyID;
-                                $tempItemData['Status'] = $temp_row->enabled == 'yes' ? 1 : 0;
-                                $tempItemData['IsCustomer'] = 0;
-                                $tempItemData['IsVendor'] = 1;
+                                $tempItemData['Status'] = 1;
+                                $tempItemData['IsCustomer'] = $temp_row->IsCustomer;
+                                $tempItemData['IsVendor'] = $temp_row->IsVendor;
                                 $tempItemData['LeadSource'] = 'Gateway import';
                                 $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
                                 $tempItemData['ProcessID'] = $ProcessID;
@@ -180,6 +172,109 @@ class Streamco{
                         }
                     }
                 }
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    public static function importStreamcoTrunks($addparams=array()) {
+        $response = array();
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
+            try{
+                $dbname = 'config';
+                $totaltrunksinserted = 0;
+                $totalcustomerstrunksinserted = 0;
+                $totalvendorstrunksinserted = 0;
+                $queryo = "SELECT
+                              c.name AS AccountName,o.name AS TrunkName,IF(o.company_id,1,0) AS IsCustomer
+                          FROM
+                              ".$dbname.".companies AS c
+                          LEFT JOIN
+                              ".$dbname.".originators AS o ON o.company_id = c.id
+                          WHERE o.enabled='yes'";
+                $resultso = DB::connection('pbxmysql')->select($queryo);
+                if(count($resultso)>0){
+                    if(count($addparams)>0){
+                        $CompanyID = $addparams['CompanyID'];
+                        foreach ($resultso as $temp_row) {
+                            $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
+                            if($account->count()>0){
+                                $AccountID = $account->first()->AccountID;
+                                $Trunk = Trunk::where(["Trunk"=>$temp_row->TrunkName, "CompanyID"=>$CompanyID]);
+                                if($Trunk->count() > 0) {
+                                    $TrunkID = $Trunk->first()->TrunkID;
+                                } else {
+                                    $trunkdata['Trunk'] = $temp_row->TrunkName;
+                                    $trunkdata['CompanyID'] = $CompanyID;
+                                    $trunkdata['Status'] = 1;
+                                    $TrunkID = Trunk::insertGetId($trunkdata);
+                                    $totaltrunksinserted++;
+                                }
+                                $CustomerTrunk = CustomerTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+                                if($CustomerTrunk == 0) {
+                                    $customertrunkdata = array();
+                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+                                    $customertrunkdata['CompanyID'] = $CompanyID;
+                                    $customertrunkdata['AccountID'] = $AccountID;
+                                    $customertrunkdata['TrunkID'] = $TrunkID;
+                                    $customertrunkdata['Status'] = 1;
+                                    $customertrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    CustomerTrunk::insert($customertrunkdata);
+                                    $totalcustomerstrunksinserted++;
+                                }
+                            }
+                        }
+                    }
+                }
+                $queryt = "SELECT
+                              c.name AS AccountName,t.name AS TrunkName,IF(t.company_id,1,0) AS IsVendor
+                          FROM
+                              ".$dbname.".companies AS c
+                          LEFT JOIN
+                              ".$dbname.".terminators AS t ON t.company_id = c.id
+                          WHERE t.enabled='yes'";
+                $resultst = DB::connection('pbxmysql')->select($queryt);
+                if(count($resultst)>0){
+                    if(count($addparams)>0){
+                        $CompanyID = $addparams['CompanyID'];
+                        foreach ($resultst as $temp_row) {
+                            $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
+                            if($account->count()>0){
+                                $AccountID = $account->first()->AccountID;
+                                $Trunk = Trunk::where(["Trunk"=>$temp_row->TrunkName, "CompanyID"=>$CompanyID]);
+                                if($Trunk->count() > 0) {
+                                    $TrunkID = $Trunk->first()->TrunkID;
+                                } else {
+                                    $trunkdata['Trunk'] = $temp_row->TrunkName;
+                                    $trunkdata['CompanyID'] = $CompanyID;
+                                    $trunkdata['Status'] = 1;
+                                    $TrunkID = Trunk::insertGetId($trunkdata);
+                                    $totaltrunksinserted++;
+                                }
+                                $VendorTrunk = VendorTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+                                if($VendorTrunk == 0) {
+                                    $vendortrunkdata = array();
+                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+                                    $vendortrunkdata['CompanyID'] = $CompanyID;
+                                    $vendortrunkdata['AccountID'] = $AccountID;
+                                    $vendortrunkdata['TrunkID'] = $TrunkID;
+                                    $vendortrunkdata['Status'] = 1;
+                                    $vendortrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    VendorTrunk::insert($vendortrunkdata);
+                                    $totalvendorstrunksinserted++;
+                                }
+                            }
+                        }
+                    }
+                }
+                Log::info($totaltrunksinserted.' Trunks inserted');
+                Log::info($totalcustomerstrunksinserted.' Customer Trunks inserted');
+                Log::info($totalvendorstrunksinserted.' Vendor Trunks inserted');
             }catch(Exception $e){
                 $response['faultString'] =  $e->getMessage();
                 $response['faultCode'] =  $e->getCode();

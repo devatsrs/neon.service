@@ -79,6 +79,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ManualImportAccounts',
 		'App\Console\Commands\CallShopAccountUsage',
 		'App\Console\Commands\StreamcoAccountUsage',
+		'App\Console\Commands\StreamcoAccountImport',
 	];
 
 	/**

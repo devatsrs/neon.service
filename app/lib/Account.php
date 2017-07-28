@@ -217,4 +217,13 @@ class Account extends \Eloquent {
             }
         }
     }
+
+    public static function importStreamcoTrunks($streamco,$addparams) {
+        /*$processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
+        $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;
+        $CompanyGatewayID = isset($addparams['CompanyGatewayID']) ? $addparams['CompanyGatewayID'] : 0;*/
+        Log::info('Trunks Import Start');
+        $streamco->importStreamcoTrunks($addparams);
+        Log::info('Trunks Import End');
+    }
 }

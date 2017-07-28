@@ -105,14 +105,6 @@ class StreamcoAccountUsage extends Command {
             TempUsageDetail::applyDiscountPlan();
             $streamco = new Streamco($CompanyGatewayID);
 
-            // starts import accounts
-            $addparams['CompanyGatewayID'] = $CompanyGatewayID;
-            $addparams['CompanyID'] = $CompanyID;
-            $addparams['ProcessID'] = $processID;
-            $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
-            Account::importStreamcoAccounts($streamco,$addparams);
-            // ends import accounts
-
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
