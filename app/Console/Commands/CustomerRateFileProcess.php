@@ -119,7 +119,7 @@ class CustomerRateFileProcess extends Command {
 			UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
 			/** get pending files */
-			$filenames = UsageDownloadFiles::getVosPendingFile($CompanyGatewayID);
+			$filenames = UsageDownloadFiles::getStreamcoCustomerPendingFile($CompanyGatewayID);
 
 			/** remove last downloaded */
 			//$lastelse = array_pop($filenames);
@@ -297,6 +297,9 @@ class CustomerRateFileProcess extends Command {
 			DB::beginTransaction();
 
 					RateImportExporter::importCustomerRate($processID,$temptableName);
+
+				/** update file process to completed */
+				UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
 			DB::commit();
 
