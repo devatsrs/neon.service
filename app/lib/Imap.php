@@ -1,12 +1,12 @@
 <?php 
 namespace App\Lib;
+use App\Lib\TicketsTable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use App\Lib\User;
 use App\Lib\Lead;
 use Illuminate\Support\Facades\Log;
 use App\Lib\AccountEmailLog;
-use App\Lib\TicketsTable;
 use App\Lib\Contact;
 use Validator;
 use App\Lib\EmailMessage;
@@ -58,6 +58,7 @@ protected $server;
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
+				$overview_subject   =   isset($overview[0]->subject)?$overview[0]->subject:'';
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
 
 			
@@ -119,7 +120,7 @@ protected $server;
 
 				$logData = ['EmailFrom'=> $from,
 				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
-				'Subject'=>$overview[0]->subject,
+				'Subject'=>$overview_subject,
 				'Message'=>$message,
 				'CompanyID'=>$CompanyID,
 				"MessageID"=>$message_id,
@@ -144,7 +145,7 @@ protected $server;
 						"AccountID"=> $parent_account,
 						"Title"=>$title,
 						"MsgLoggedUserID"=>$parent_UserID,
-						"Description"=>$overview[0]->subject,
+						"Description"=>$overview_subject,
 						"MatchType"=>$MatchType,
 						"MatchID"=>$MatchID,
 						"EmailID"=>$EmailLog
@@ -493,8 +494,9 @@ protected $server;
 				$header 					= 		  imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
+				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
-
+				$msg_parent 				= 		  "";
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
 				$in_reply_tos   = explode(' ',$in_reply_to);
@@ -502,7 +504,14 @@ protected $server;
 
 					$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
 					if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
-						break;
+						$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
+						if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
+							break;
+						}
+						if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
+							$msg_parent = '';
+							break;
+						}
 					}
 				}
 				Log::info("in_reply_tos");
@@ -539,12 +548,22 @@ protected $server;
 
 
 					//Match the subject with all emails.
-					$original_plain_subject = $this->get_original_plain_subject($overview[0]->subject);
+					$original_plain_subject = $this->get_original_plain_subject($overview_subject);
 					if(!empty($original_plain_subject)){
-						$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
-						$EmailTo 		= 	$this->GetEmailtxt($overview[0]->to);
+						$EmailFrom = $EmailTo = "";
+						if(isset($overview[0]->from)){
+							$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
+						}
+						if(isset($overview[0]->to)) {
+							$EmailTo = $this->GetEmailtxt($overview[0]->to);
+						}else {
+							$EmailTo = $email;
+						}
 
 						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
+							$msg_parent = "";
+						}
 					}
 				}
 				if(!empty($msg_parent)){  		
@@ -601,7 +620,11 @@ protected $server;
 
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
-				$to 		= 	$this->GetEmailtxt($overview[0]->to);
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email;
+				}
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
@@ -626,7 +649,8 @@ protected $server;
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
 					"RequesterCC"=>$cc,
-					'Subject'=>$overview[0]->subject,
+					"RequesterBCC"=>$bcc,
+					'Subject'=>$overview_subject,
 					'Description'=>$message,
 					'CompanyID'=>$CompanyID,
 					"AttachmentPaths"=>$AttachmentPaths,
@@ -729,7 +753,7 @@ protected $server;
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
-					'Subject'=>$overview[0]->subject,
+					'Subject'=>$overview_subject,
 					'Message'=>$message,
 					'CompanyID'=>$CompanyID,
 					"MessageID"=>$message_id,

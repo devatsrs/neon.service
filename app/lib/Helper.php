@@ -323,7 +323,8 @@ class Helper{
        $replace_array['Country'] = $Account->Country;
        $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
-       $replace_array['Currency'] = Currency::getCurrencySymbol($Account->CurrencyId);
+       $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
+       $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
@@ -336,17 +337,20 @@ class Helper{
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
 		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png'); 		
+
 		
         $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'));
 		$Host		  = 	$domain_data['host'];
         $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
 
         if(!empty($result)){
-            if(!empty($result->Logo)){           
+
+		if(!empty($result->Logo)){           
 				 $path = AmazonS3::unSignedUrl($result->Logo,$Account->CompanyId);  
                         if(strpos($path, "https://") !== false){
 							$replace_array['Logo'] = $path;
                         }else{
+
                             $file = $result->Logo;           
                             $replace_array['Logo'] = MakeWebUrl($Account->CompanyId,$file); 
                         }
