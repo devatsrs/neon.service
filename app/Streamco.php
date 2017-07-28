@@ -6,7 +6,6 @@ use Collective\Remote\RemoteFacade;
 use App\Lib\GatewayAPI;
 use App\Lib\CodeDeck;
 use App\Lib\Currency;
-use App\Lib\GatewayAPI;
 use App\Lib\Account;
 use App\Lib\Trunk;
 use App\Lib\CustomerTrunk;
