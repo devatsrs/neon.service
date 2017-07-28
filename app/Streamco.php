@@ -1,6 +1,7 @@
 <?php
 namespace App;
 
+use App\Lib\NeonExcelIO;
 use Collective\Remote\RemoteFacade;
 use App\Lib\GatewayAPI;
 use Illuminate\Support\Facades\Config;
@@ -14,7 +15,7 @@ class Streamco{
     private static $timeout=0; /* 60 seconds timeout */
     private static $dbname1 = 'storage';
 
-   public function __construct($CompanyGatewayID){
+   public function __construct($CompanyGatewayID) {
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'Streamco');
        foreach((array)$setting as $configkey => $configval){
            if($configkey == 'password' ||  $configkey == 'dbpassword'){
@@ -23,6 +24,11 @@ class Streamco{
                self::$config[$configkey] = $configval;
            }
        }
+
+       self::$config['host'] = '188.227.186.98';
+       self::$config['username']  = 'root';
+       self::$config['password'] = 'KatiteDo48';
+
        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
            extract(self::$config);
            Config::set('database.connections.pbxmysql.host',$host);
@@ -38,6 +44,7 @@ class Streamco{
            Config::set('remote.connections.production.password',self::$config['password']);
        }
 
+       Log::info(self::$config);
 
    }
    public static function testConnection(){
@@ -169,4 +176,14 @@ class Streamco{
         return $status;
     }
 
+    public static function getFileContent($FilePath){
+
+        if (file_exists($FilePath)) {
+
+            $NeonExcel = new NeonExcelIO($FilePath,["Delimiter"=>",","Enclosure"=>'']);
+            return $results = $NeonExcel->read();
+        }
+        return false;
+
+    }
 }
