@@ -64,8 +64,8 @@ class VendorRateFileDownload extends Command {
 
 		$CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
 		$FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
-		$FileLocationFrom =  '/home/temp/test_files_generation'; // $cronsetting['FileLocationFrom'];
-		$FileLocationTo =  '/home/temp/test_files_generation_to' ; //$cronsetting['FileLocationTo'];
+		$FileLocationFrom =  $cronsetting['FileLocationFrom'];
+		$FileLocationTo =  $cronsetting['FileLocationTo'];
 		Log::useFiles(storage_path().'/logs/vendorratefiledownload-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
 		try {
 

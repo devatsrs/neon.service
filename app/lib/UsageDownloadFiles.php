@@ -69,6 +69,29 @@ class UsageDownloadFiles extends Model {
         return $filenames;
 
     }
+
+    /** get vos streamco customer files */
+    public static function getStreamcoCustomerPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->where('FileName','like','customer_rate%')->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
+    /** get vos streamco customer files */
+    public static function getStreamcoVendorPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->where('FileName','like','vendor_rate%')->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
     /** update file status to progress */
     public static function UpdateFileStausToProcess($UsageDownloadFilesID,$processID){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
