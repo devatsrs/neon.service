@@ -1,34 +1,26 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
-use App\Lib\Company;
-use App\Lib\CompanyConfiguration;
-use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\Service;
-use App\Lib\TempUsageDetail;
-use App\Lib\TempUsageDownloadLog;
-use App\Lib\TempVendorCDR;
 use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\RateImportExporter;
 use App\Streamco;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class VendorRateFileProcess extends Command {
+class CustomerRateFileProcess extends Command {
 
 	/**
 	 * The console command name.
 	 *
 	 * @var string
 	 */
-	protected $name = 'vendorratefileprocess';
+	protected $name = 'customerfileprocess';
 
 	/**
 	 * The console command description.
@@ -116,10 +108,9 @@ class VendorRateFileProcess extends Command {
 		$joblogdata['created_by'] = 'RMScheduler';
 		$joblogdata['Message'] = '';
 		$delete_files = array();
-		$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID);
-		//$tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
+		$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,"customer");
 
-		Log::useFiles(storage_path() . '/logs/vendorratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+		Log::useFiles(storage_path() . '/logs/customerratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
 			$start_time = date('Y-m-d H:i:s');
@@ -128,7 +119,7 @@ class VendorRateFileProcess extends Command {
 			UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
 			/** get pending files */
-			$filenames = UsageDownloadFiles::getStreamcoVendorPendingFile($CompanyGatewayID);
+			$filenames = UsageDownloadFiles::getStreamcoCustomerPendingFile($CompanyGatewayID);
 
 			/** remove last downloaded */
 			//$lastelse = array_pop($filenames);
@@ -137,7 +128,7 @@ class VendorRateFileProcess extends Command {
 			$file_count = 1;
 
 			$error = array();
-			Log::error(' ========================== Vendor Rate  Transaction start =============================');
+			Log::error(' ========================== customer Rate  Transaction start =============================');
 			CronJob::createLog($CronJobID);
 
 			$Trunks = Trunk::where(["CompanyId"=>$CompanyID])->get()->toArray();
@@ -211,7 +202,7 @@ class VendorRateFileProcess extends Command {
 										}
 
 
-										$Accounts = Account::getAccountIDList( array( 'IsVendor'=>1, 'CompanyID' => $CompanyID ) );
+										$Accounts = Account::getAccountIDList( array( 'IsCustomer'=>1, 'CompanyID' => $CompanyID ) );
 										//print_r($Accounts);
 										if( isset($row['GatewayAccountName']) ) {
 
@@ -305,10 +296,10 @@ class VendorRateFileProcess extends Command {
 
 			DB::beginTransaction();
 
-					RateImportExporter::importVendorRate($processID,$temptableName);
+					RateImportExporter::importCustomerRate($processID,$temptableName);
 
-					/** update file process to completed */
-					UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
+				/** update file process to completed */
+				UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
 			DB::commit();
 

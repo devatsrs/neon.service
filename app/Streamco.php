@@ -1,16 +1,17 @@
 <?php
 namespace App;
 
-use App\Lib\NeonExcelIO;
-use Collective\Remote\RemoteFacade;
-use App\Lib\GatewayAPI;
+use App\Lib\Account;
 use App\Lib\CodeDeck;
 use App\Lib\Currency;
-use App\Lib\GatewayAPI;
-use App\Lib\Account;
-use App\Lib\Trunk;
 use App\Lib\CustomerTrunk;
+use App\Lib\GatewayAPI;
+use App\Lib\LastPrefixNo;
+use App\Lib\NeonExcelIO;
+use App\Lib\Trunk;
 use App\Lib\VendorTrunk;
+use App\Lib\LastPrefixNo;
+use Collective\Remote\RemoteFacade;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
@@ -26,7 +27,7 @@ class Streamco{
    public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'Streamco');
        foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'dbpassword' || $configkey == 'password'){
+           if($configkey == 'dbpassword' || $configkey == 'sshpassword'){
                self::$config[$configkey] = Crypt::decrypt($configval);
            }else{
                self::$config[$configkey] = $configval;
@@ -41,10 +42,10 @@ class Streamco{
        }
 
        // ssh detail
-       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
            Config::set('remote.connections.production.host',self::$config['host']);
-           Config::set('remote.connections.production.username',self::$config['username']);
-           Config::set('remote.connections.production.password',self::$config['password']);
+           Config::set('remote.connections.production.username',self::$config['sshusername']);
+           Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
 
        Log::info(self::$config);
@@ -104,7 +105,7 @@ class Streamco{
     public function getCustomerRateFile($FileLocationFrom=''){
 
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $filename = array();
             $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
@@ -127,7 +128,7 @@ class Streamco{
     public function getVendorRateFile($FileLocationFrom=''){
 
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $filename = array();
             $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
@@ -151,7 +152,7 @@ class Streamco{
      */
     public static function downloadRemoteFile($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $downloading_path = $addparams['download_path'] .'/'. str_random(20); // basename($addparams['filename']);
             $new_path = $addparams['download_path'] .'/'. $addparams['filename'];
             $status = RemoteFacade::get($addparams['FileLocationFrom'] .'/'. $addparams['filename'], $downloading_path);
@@ -257,6 +258,8 @@ class Streamco{
                 $totaltrunksinserted = 0;
                 $totalcustomerstrunksinserted = 0;
                 $totalvendorstrunksinserted = 0;
+                $created_at = date('Y-m-d H:i:s');
+                $CreatedBy = 'auto import account';
                 $queryo = "SELECT
                               c.name AS AccountName,o.name AS TrunkName,IF(o.company_id,1,0) AS IsCustomer
                           FROM
@@ -279,6 +282,7 @@ class Streamco{
                                     $trunkdata['Trunk'] = $temp_row->TrunkName;
                                     $trunkdata['CompanyID'] = $CompanyID;
                                     $trunkdata['Status'] = 1;
+                                    $trunkdata['created_at'] = $created_at;
                                     $TrunkID = Trunk::insertGetId($trunkdata);
                                     $totaltrunksinserted++;
                                 }
@@ -290,8 +294,12 @@ class Streamco{
                                     $customertrunkdata['AccountID'] = $AccountID;
                                     $customertrunkdata['TrunkID'] = $TrunkID;
                                     $customertrunkdata['Status'] = 1;
+                                    $customertrunkdata['Prefix'] = LastPrefixNo::getLastPrefix($CompanyID);
                                     $customertrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    $customertrunkdata['created_at'] = $created_at;
+                                    $customertrunkdata['CreatedBy'] = $CreatedBy;
                                     CustomerTrunk::insert($customertrunkdata);
+                                    LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'],$CompanyID);
                                     $totalcustomerstrunksinserted++;
                                 }
                             }
@@ -320,6 +328,7 @@ class Streamco{
                                     $trunkdata['Trunk'] = $temp_row->TrunkName;
                                     $trunkdata['CompanyID'] = $CompanyID;
                                     $trunkdata['Status'] = 1;
+                                    $trunkdata['created_at'] = $created_at;
                                     $TrunkID = Trunk::insertGetId($trunkdata);
                                     $totaltrunksinserted++;
                                 }
@@ -332,6 +341,8 @@ class Streamco{
                                     $vendortrunkdata['TrunkID'] = $TrunkID;
                                     $vendortrunkdata['Status'] = 1;
                                     $vendortrunkdata['CodeDeckID'] = $CodeDeckID;
+                                    $vendortrunkdata['created_at'] = $created_at;
+                                    $vendortrunkdata['CreatedBy'] = $CreatedBy;
                                     VendorTrunk::insert($vendortrunkdata);
                                     $totalvendorstrunksinserted++;
                                 }
