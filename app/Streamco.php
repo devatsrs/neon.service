@@ -25,7 +25,7 @@ class Streamco{
    public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'Streamco');
        foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'dbpassword' || $configkey == 'password'){
+           if($configkey == 'dbpassword' || $configkey == 'sshpassword'){
                self::$config[$configkey] = Crypt::decrypt($configval);
            }else{
                self::$config[$configkey] = $configval;
@@ -40,10 +40,10 @@ class Streamco{
        }
 
        // ssh detail
-       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
            Config::set('remote.connections.production.host',self::$config['host']);
-           Config::set('remote.connections.production.username',self::$config['username']);
-           Config::set('remote.connections.production.password',self::$config['password']);
+           Config::set('remote.connections.production.username',self::$config['sshusername']);
+           Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
 
        Log::info(self::$config);
@@ -103,7 +103,7 @@ class Streamco{
     public function getCustomerRateFile($FileLocationFrom=''){
 
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $filename = array();
             $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
@@ -126,7 +126,7 @@ class Streamco{
     public function getVendorRateFile($FileLocationFrom=''){
 
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $filename = array();
             $files =  RemoteFacade::nlist($FileLocationFrom);
             foreach((array)$files as $file){
@@ -150,7 +150,7 @@ class Streamco{
      */
     public static function downloadRemoteFile($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
             $downloading_path = $addparams['download_path'] .'/'. str_random(20); // basename($addparams['filename']);
             $new_path = $addparams['download_path'] .'/'. $addparams['filename'];
             $status = RemoteFacade::get($addparams['FileLocationFrom'] .'/'. $addparams['filename'], $downloading_path);
