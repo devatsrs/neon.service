@@ -1,15 +1,15 @@
 <?php
 namespace App;
 
-use App\Lib\NeonExcelIO;
-use Collective\Remote\RemoteFacade;
-use App\Lib\GatewayAPI;
+use App\Lib\Account;
 use App\Lib\CodeDeck;
 use App\Lib\Currency;
-use App\Lib\Account;
-use App\Lib\Trunk;
 use App\Lib\CustomerTrunk;
+use App\Lib\GatewayAPI;
+use App\Lib\NeonExcelIO;
+use App\Lib\Trunk;
 use App\Lib\VendorTrunk;
+use Collective\Remote\RemoteFacade;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
