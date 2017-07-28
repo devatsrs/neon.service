@@ -128,7 +128,7 @@ class VendorRateFileProcess extends Command {
 			UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
 			/** get pending files */
-			$filenames = UsageDownloadFiles::getStreamcoVendorPendingFile($CompanyGatewayID); 
+			$filenames = UsageDownloadFiles::getStreamcoVendorPendingFile($CompanyGatewayID);
 
 			/** remove last downloaded */
 			//$lastelse = array_pop($filenames);
@@ -175,47 +175,48 @@ class VendorRateFileProcess extends Command {
 							$rows =   Streamco::getFileContent($fullpath.$filename);
 
 							//while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+						if(!empty($rows) && count($rows) > 0){
 
 							foreach($rows as $key => $row) {
 
 
 								if (!empty($row['GatewayAccountName'])) {
 
-									if($row_count==0) {
+									if ($row_count == 0) {
 
 
-										if(isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'],$TrunkArray)){
+										if (isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'], $TrunkArray)) {
 											$TrunkID = $TrunkArray[$row['GatewayTrunk']];
 										}
 
-										if(isset($row['GatewayTrunk']) && $TrunkID == 0 ) {
+										if (isset($row['GatewayTrunk']) && $TrunkID == 0) {
 
-											$TrunkID = Trunk::where(["CompanyId"=>$CompanyID,"Trunk"=>$row['GatewayTrunk'],"Status"=>1])->pluck("TrunkID");
-											if(empty($TrunkID)) {
+											$TrunkID = Trunk::where(["CompanyId" => $CompanyID, "Trunk" => $row['GatewayTrunk'], "Status" => 1])->pluck("TrunkID");
+											if (empty($TrunkID)) {
 
 												$trunk_data = array(
-													"CompanyId"=>$CompanyID,
-													"Trunk"=>$row['GatewayTrunk'],
-													"Status"=>1
+													"CompanyId" => $CompanyID,
+													"Trunk" => $row['GatewayTrunk'],
+													"Status" => 1
 												);
 												$TrunkID = Trunk::insertGetId($trunk_data);
 
 
-												$TrunkArray[$row["GatewayTrunk"]] =$TrunkID;
-												Log::error("New Trunk created " . $row['GatewayTrunk'] );
+												$TrunkArray[$row["GatewayTrunk"]] = $TrunkID;
+												Log::error("New Trunk created " . $row['GatewayTrunk']);
 
 											}
 
 										} else {
-											Log::error("Trunk Not exists in file " . $fullpath.$filename);
+											Log::error("Trunk Not exists in file " . $fullpath . $filename);
 										}
 
 
-										$Accounts = Account::getAccountIDList( array( 'IsVendor'=>1, 'CompanyID' => $CompanyID ) );
+										$Accounts = Account::getAccountIDList(array('IsVendor' => 1, 'CompanyID' => $CompanyID));
 										//print_r($Accounts);
-										if( isset($row['GatewayAccountName']) ) {
+										if (isset($row['GatewayAccountName'])) {
 
-											if( !in_array($row['GatewayAccountName'], $Accounts) ) {
+											if (!in_array($row['GatewayAccountName'], $Accounts)) {
 
 												$error[] = "Account Name '" . $row['GatewayAccountName'] . "' not found.";
 
@@ -229,7 +230,7 @@ class VendorRateFileProcess extends Command {
 										}
 
 									}
-									if ($TrunkID > 0 && $AccountID > 0 ) {
+									if ($TrunkID > 0 && $AccountID > 0) {
 
 										$uddata = array();
 										$uddata['CompanyID'] = $CompanyID;
@@ -244,7 +245,7 @@ class VendorRateFileProcess extends Command {
 										$uddata['Interval1'] = $row['Interval1'];
 										$uddata['IntervalN'] = $row['IntervalN'];
 
-										$uddata['ProcessID'] = (string) $processID;
+										$uddata['ProcessID'] = (string)$processID;
 
 										$InserData[] = $uddata;
 
@@ -259,14 +260,14 @@ class VendorRateFileProcess extends Command {
 									} else {
 
 										Log::error("Trunk & Account are not found ");
-										Log::error(print_r($row,true));
+										Log::error(print_r($row, true));
 
 									}
 								}
 								$data_count++;
 
-
 							}//loop
+							}
 
 							if(!empty($InserData)){
 								DB::table($temptableName)->insert($InserData);
