@@ -12,6 +12,10 @@ class Account extends \Eloquent {
     protected $table = "tblAccount";
     protected $primaryKey = "AccountID";
 
+    const  NOT_VERIFIED = 0;
+    //const  PENDING_VERIFICATION = 1;
+    const  VERIFIED =2;
+
     const  DETAIL_CDR = 1;
     const  SUMMARY_CDR= 2;
     const  NO_CDR = 3;
@@ -185,6 +189,19 @@ class Account extends \Eloquent {
     public static function getAccountName($AccountID){
         return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
+
+    public static function getAccountIDList($data=array()){
+
+        $data['Status'] = 1;
+        if(!isset($data['AccountType'])) {
+            $data['AccountType'] = 1;
+            $data['VerificationStatus'] = Account::VERIFIED;
+        }
+        $data['CompanyID']=$data['CompanyID'];
+        $row = Account::where($data)->select(array('AccountName', 'AccountID'))->orderBy('AccountName')->lists('AccountName', 'AccountID');
+        return $row;
+    }
+
 
     public static function importStreamcoAccounts($streamco,$addparams) {
         $processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';

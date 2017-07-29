@@ -1,15 +1,17 @@
 <?php
 namespace App;
 
+use App\Lib\Account;
 use App\Lib\CodeDeck;
 use App\Lib\Currency;
 use App\Lib\Country;
-use App\Lib\GatewayAPI;
-use App\Lib\Account;
-use App\Lib\Trunk;
 use App\Lib\CustomerTrunk;
-use App\Lib\VendorTrunk;
+use App\Lib\GatewayAPI;
 use App\Lib\LastPrefixNo;
+use App\Lib\NeonExcelIO;
+use App\Lib\Trunk;
+use App\Lib\VendorTrunk;
+use Collective\Remote\RemoteFacade;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Crypt;
@@ -25,7 +27,7 @@ class Streamco{
    public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'Streamco');
        foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'dbpassword'){
+           if($configkey == 'dbpassword' || $configkey == 'sshpassword'){
                self::$config[$configkey] = Crypt::decrypt($configval);
            }else{
                self::$config[$configkey] = $configval;
@@ -37,28 +39,19 @@ class Streamco{
            Config::set('database.connections.pbxmysql.database',self::$dbname1);
            Config::set('database.connections.pbxmysql.username',$dbusername);
            Config::set('database.connections.pbxmysql.password',$dbpassword);
+       }
 
+       // ssh detail
+       if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
+           Config::set('remote.connections.production.host',self::$config['host']);
+           Config::set('remote.connections.production.username',self::$config['sshusername']);
+           Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
-    }
-   public static function testConnection(){
-       $response = array();
-       if(count(self::$config) && isset(self::$config['api_url']) && isset(self::$config['dbpassword'])){
-           $api_url = self::$config['api_url'].'/GetCustomersShortInfo/'.self::$config['dbpassword'].'/?format=json';
-           self::$cli->get($api_url);
-           if(isset(self::$cli->response) && self::$cli->response != '') {
-                   $ResponseArray = json_decode(self::$cli->response, true);
-                   if(!empty($ResponseArray) && isset($ResponseArray['CustomerRes'])) {
-                       $response['result'] = 'OK';
-                   }
-           }else if(isset(self::$cli->error_message) && isset(self::$cli->error_code)){
-               $response['faultString'] =  self::$cli->error_message;
-               $response['faultCode'] =  self::$cli->error_code;
-           }
-       }
-       return $response;
+
+       Log::info(self::$config);
+
    }
-
-
+   
     public static function getAccountCDRs($addparams=array()){
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
@@ -106,7 +99,80 @@ class Streamco{
         return $response;
 
     }
+    /** get list of array of files
+     * @return array
+     */
+    public function getCustomerRateFile($FileLocationFrom=''){
 
+        $response = array();
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
+            $filename = array();
+            $files =  RemoteFacade::nlist($FileLocationFrom);
+            foreach((array)$files as $file){
+                if(strpos($file,'.csv') !== false && strpos($file,'customer_rate') !== false){
+                    $filename[] =$file;
+                }
+            }
+            asort($filename);
+            $filename = array_values($filename);
+            //$lastele = array_pop($filename); no pop required now
+            $response = $filename;
+        }
+        return $response;
+
+    }
+
+    /** get list of array of files
+     * @return array
+     */
+    public function getVendorRateFile($FileLocationFrom=''){
+
+        $response = array();
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
+            $filename = array();
+            $files =  RemoteFacade::nlist($FileLocationFrom);
+            foreach((array)$files as $file){
+                if(strpos($file,'.csv') !== false && strpos($file,'vendor_rate') !== false){
+                    $filename[] =$file;
+                }
+            }
+            asort($filename);
+            $filename = array_values($filename);
+            //$lastele = array_pop($filename); no pop required now
+            $response = $filename;
+        }
+        return $response;
+
+    }
+
+
+    /** download ratesheet file
+     * @param array $addparams
+     * @return bool
+     */
+    public static function downloadRemoteFile($addparams=array()){
+        $status = false;
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
+            $downloading_path = $addparams['download_path'] .'/'. str_random(20); // basename($addparams['filename']);
+            $new_path = $addparams['download_path'] .'/'. $addparams['filename'];
+            $status = RemoteFacade::get($addparams['FileLocationFrom'] .'/'. $addparams['filename'], $downloading_path);
+            if(!rename( $downloading_path , $new_path )){
+                @unlink($downloading_path);
+            }
+        }
+        return $status;
+    }
+
+    public static function getFileContent($FilePath){
+
+        if (file_exists($FilePath)) {
+
+            $NeonExcel = new NeonExcelIO($FilePath,["Delimiter"=>",","Enclosure"=>'']);
+            return $results = $NeonExcel->read();
+        }
+        return false;
+
+    }
     public static function importStreamcoAccounts($addparams=array()) {
         // same code in web/Streamco.php@getAccountsDetail()
         // if you change anything here than you also have to change there
@@ -352,6 +418,4 @@ class Streamco{
         }
         return $response;
     }
-
-
 }
