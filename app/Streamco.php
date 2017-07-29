@@ -326,6 +326,7 @@ class Streamco{
                 $resultso = DB::connection('pbxmysql')->select($queryo);
                 if(count($resultso)>0){
                     if(count($addparams)>0){
+                        Log::info('Customer Trunks insert start');
                         $CompanyID = $addparams['CompanyID'];
                         foreach ($resultso as $temp_row) {
                             $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
@@ -360,6 +361,7 @@ class Streamco{
                                 }
                             }
                         }
+                        Log::info('Customer Trunks insert end');
                     }
                 }
                 $queryt = "SELECT
@@ -372,6 +374,7 @@ class Streamco{
                 $resultst = DB::connection('pbxmysql')->select($queryt);
                 if(count($resultst)>0){
                     if(count($addparams)>0){
+                        Log::info('Vendor Trunks insert start');
                         $CompanyID = $addparams['CompanyID'];
                         foreach ($resultst as $temp_row) {
                             $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
@@ -404,6 +407,7 @@ class Streamco{
                                 }
                             }
                         }
+                        Log::info('Vendor Trunks insert end');
                     }
                 }
                 Log::info($totaltrunksinserted.' Trunks inserted');
