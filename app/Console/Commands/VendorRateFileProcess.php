@@ -321,7 +321,7 @@ class VendorRateFileProcess extends Command {
 				$joblogdata['Message'] = 'Total  ' . $file_count . ' files imported';
 
 				if(!empty($error)) {
-					$joblogdata['Message'] .= implode(',\n\r',$error) ;
+					$joblogdata['Message'] .= implode('<br>',$error) ;
 				}
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -330,7 +330,7 @@ class VendorRateFileProcess extends Command {
 
 			} else if(!empty($error)) {
 
-				$joblogdata['Message'] = implode(',\n\r',$error) ;
+				$joblogdata['Message'] = implode('<br>',$error) ;
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 
