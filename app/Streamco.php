@@ -196,7 +196,7 @@ class Streamco{
                     $batch_insert_array = array();
                     if(count($addparams)>0){
                         $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
-                        $countries = Country::lists('ISO3', 'CountryID');
+                        $countries = Country::lists('ISO3', 'Country');
                         $CompanyGatewayID = $addparams['CompanyGatewayID'];
                         $CompanyID = $addparams['CompanyID'];
                         $ProcessID = $addparams['ProcessID'];
@@ -249,7 +249,7 @@ class Streamco{
                                         $tempItemData['PostCode'] = "";
                                     }
                                     if(!isset($tempItemData['Country'])) {
-                                        $tempItemData['Country'] = 0;
+                                        $tempItemData['Country'] = "";
                                     }
                                 } else {
                                     $tempItemData['Address1'] = "";
@@ -257,7 +257,7 @@ class Streamco{
                                     $tempItemData['Address3'] = "";
                                     $tempItemData['City'] = "";
                                     $tempItemData['PostCode'] = "";
-                                    $tempItemData['Country'] = 0;
+                                    $tempItemData['Country'] = "";
                                 }
                                 $tempItemData['AccountName'] = $temp_row->name;
                                 $tempItemData['FirstName'] = "";
