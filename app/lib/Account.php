@@ -239,8 +239,17 @@ class Account extends \Eloquent {
         /*$processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
         $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;
         $CompanyGatewayID = isset($addparams['CompanyGatewayID']) ? $addparams['CompanyGatewayID'] : 0;*/
-        Log::info('Trunks Import Start');
-        $streamco->importStreamcoTrunks($addparams);
-        Log::info('Trunks Import End');
+        try {
+            Log::info('Trunks Import Start');
+            $streamco->importStreamcoTrunks($addparams);
+            Log::info('Trunks Import End');
+        }catch ( Exception $err ){
+            try{
+                DB::rollback();
+            }catch (Exception $err) {
+                Log::error($err);
+            }
+            Log::error($err);
+        }
     }
 }
