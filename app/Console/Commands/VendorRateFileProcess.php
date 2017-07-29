@@ -238,6 +238,7 @@ class VendorRateFileProcess extends Command {
 										$uddata['AccountID'] = $AccountID;
 										$uddata['TrunkID'] = $TrunkID;
 										$uddata['Code'] = $row['Code'];
+										$uddata['Description'] = $row['Description'];
 										$uddata['Rate'] = $row['Rate'];
 										$uddata['Preference'] = $row['Preference'];
 										$uddata['ConnectionFee'] = $row['ConnectionFee'];

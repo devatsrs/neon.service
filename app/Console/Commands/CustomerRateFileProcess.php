@@ -227,6 +227,7 @@ class CustomerRateFileProcess extends Command {
 										$uddata['CompanyID'] = $CompanyID;
 										$uddata['CompanyGatewayID'] = $CompanyGatewayID;
 										$uddata['AccountID'] = $AccountID;
+										$uddata['Description'] = $row['Description'];
 										$uddata['TrunkID'] = $TrunkID;
 										$uddata['Code'] = $row['Code'];
 										$uddata['Rate'] = $row['Rate'];

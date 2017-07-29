@@ -48,6 +48,7 @@ class RateImportExporter
                                     `TrunkID` INT(11) NULL DEFAULT NULL,
                                     `RateID` INT(11) NULL DEFAULT NULL,
                                     `Code` varchar(50) NULL DEFAULT NULL,
+                                    `Description` varchar(100) NULL DEFAULT NULL,
                                     `Rate` DOUBLE NULL DEFAULT NULL ,
                                     `Preference` INT(11)  NULL DEFAULT NULL ,
                                     `ConnectionFee` DOUBLE NULL DEFAULT NULL ,
