@@ -313,7 +313,7 @@ class CustomerRateFileProcess extends Command {
 				$joblogdata['Message'] = 'Total  ' . $file_count . ' files imported ';
 
 				if(!empty($error)) {
-					$joblogdata['Message'] .= print_r($error, true);
+					$joblogdata['Message'] .= implode(',\n\r',$error) ;
 				}
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -322,7 +322,7 @@ class CustomerRateFileProcess extends Command {
 
 			} else if(!empty($error)) {
 
-				$joblogdata['Message'] = print_r($error,true) ;
+				$joblogdata['Message'] = implode(',\n\r',$error) ;
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 
