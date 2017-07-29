@@ -20,7 +20,7 @@ class CustomerRateFileProcess extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'customerfileprocess';
+	protected $name = 'customerratefileprocess';
 
 	/**
 	 * The console command description.
