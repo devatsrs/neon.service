@@ -199,6 +199,8 @@ class CustomerRateFileProcess extends Command {
 											}
 
 										} else {
+
+											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
 											Log::error("Trunk Not exists in file " . $fullpath . $filename);
 										}
 
@@ -295,23 +297,46 @@ class CustomerRateFileProcess extends Command {
 			Log::error(' ========================== vos transaction end =============================');
 			//ProcessCDR
 
-			Log::info("ProcessRate($processID,$temptableName)");
+			if($row_count>0) {
 
-			DB::beginTransaction();
+				Log::info("ProcessRate($processID,$temptableName)");
 
-					RateImportExporter::importCustomerRate($processID,$temptableName);
+				DB::beginTransaction();
+
+				RateImportExporter::importCustomerRate($processID, $temptableName);
 
 				/** update file process to completed */
-				UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
+				UsageDownloadFiles::UpdateProcessToComplete($delete_files);
 
-			DB::commit();
+				DB::commit();
 
-			$joblogdata['Message'] = 'Total  ' . $file_count .' files imported';
+				$joblogdata['Message'] = 'Total  ' . $file_count . ' files imported ';
 
-			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+				if(!empty($error)) {
+					$joblogdata['Message'] .= print_r($error, true);
+				}
 
-			CronJobLog::insert($joblogdata);
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
+				CronJobLog::insert($joblogdata);
+
+			} else if(!empty($error)) {
+
+				$joblogdata['Message'] = print_r($error,true) ;
+
+				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+
+				CronJobLog::insert($joblogdata);
+
+			} else {
+
+				$joblogdata['Message'] = 'Total  0 files imported' ;
+
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+
+				CronJobLog::insert($joblogdata);
+
+			}
 			DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 		} catch (\Exception $e) {
