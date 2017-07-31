@@ -95,7 +95,7 @@ class VendorRateFileGeneration extends Command {
 
 				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan streamcoratefilegenerator vendor ";
 
-				if(empty($cronsetting["customers"])) {
+				if(empty($cronsetting["vendors"])) {
 
 					$command .=  "--type=all";
 
