@@ -108,7 +108,7 @@ class VendorRateFileProcess extends Command {
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");
 			/** get process file make them pending*/
-			UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
+			UsageDownloadFiles::UpdateProcessToPendingStreamco($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting,'vendor_rate');
 
 			/** get pending files */
 			$filenames = UsageDownloadFiles::getStreamcoVendorPendingFile($CompanyGatewayID);
