@@ -86,6 +86,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\StreamcoAccountUsage',
 		'App\Console\Commands\StreamcoAccountImport',
 		'App\Console\Commands\CustomerRateFileGeneration',
+		'App\Console\Commands\VendorRateFileGeneration',
 	];
 
 	/**
