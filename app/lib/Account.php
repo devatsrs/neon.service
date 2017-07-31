@@ -197,7 +197,7 @@ class Account extends \Eloquent {
             $data['AccountType'] = 1;
             $data['VerificationStatus'] = Account::VERIFIED;
         }
-        $data['CompanyID']=$data['CompanyID'];
+        //$data['CompanyID']=$data['CompanyID'];
         $row = Account::where($data)->select(array('AccountName', 'AccountID'))->orderBy('AccountName')->lists('AccountName', 'AccountID');
         return $row;
     }

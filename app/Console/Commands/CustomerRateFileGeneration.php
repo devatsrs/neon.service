@@ -101,7 +101,7 @@ class CustomerRateFileGeneration extends Command {
 
 				} else {
 
-					$Accounts = Account::getAccountIDList();
+					$Accounts = Account::getAccountIDList(["CompanyID"=>1]);
 					$selected = $cronsetting["customers"];
 					$selectedAccounts = [];
 					if(count($selected) > 0){
@@ -152,7 +152,7 @@ class CustomerRateFileGeneration extends Command {
 
 		} catch (\Exception $e) {
 
-			//Log::error(print_r($e,true));
+			Log::error(print_r($e->getFile() . '-' . $e->getLine(),true));
 			CronJob::deactivateCronJob($CronJob);
 
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
