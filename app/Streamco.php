@@ -426,7 +426,8 @@ class Streamco{
 
     public static function execute_remote_cmd( $command ) {
 
-        Log::info("Executing command");
+        Log::info("Executing command" );
+        Log::info($command );
         $output = array();
         RemoteFacade::run($command, function($line) use(&$output) {
             $output[]=trim($line.PHP_EOL);
