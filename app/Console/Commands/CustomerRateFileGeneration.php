@@ -99,7 +99,7 @@ class CustomerRateFileGeneration extends Command {
 
 				$joblogdata['Message'] =  "Output: " . implode("<br>", $Output);
 
-				if(!strpos("Exception" ,  implode("<br>", $Output)  )){
+				if(!empty($Output) && !strpos("Exception" ,  implode("<br>", $Output)  )){
 
 					$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
