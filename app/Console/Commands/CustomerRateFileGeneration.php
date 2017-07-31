@@ -1,9 +1,12 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CronHelper;
 use App\Lib\CronJob;
+use App\Lib\CronJobLog;
 use App\Lib\RemoteSSH;
 use App\Streamco;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -91,7 +94,7 @@ class CustomerRateFileGeneration extends Command {
 			if(isset($cronsetting["ScriptLocation"]) && !empty($cronsetting["ScriptLocation"])){
 
 				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan customer --type=all";
-				$Output = $Streamco->execute_remote_cmd($command);
+				$Output = $Streamco::execute_remote_cmd($command);
 
 				$joblogdata['Message'] =  "Output: " . $Output;
 
