@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Account;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -91,9 +92,32 @@ class CustomerRateFileGeneration extends Command {
 
 			$Output = "";
 
-			if(isset($cronsetting["ScriptLocation"]) && !empty($cronsetting["ScriptLocation"])){
+			if(isset($cronsetting["ScriptLocation"]) && !empty($cronsetting["ScriptLocation"])) {
 
-				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan streamcoratefilegenerator customer --type=all";
+				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan streamcoratefilegenerator customer ";
+				if(empty($cronsetting["customers"])){
+
+					$command .=  "--type=all";
+
+				} else {
+
+					$Accounts = Account::getAccountIDList();
+					$selected = $cronsetting["customers"];
+					$selectedAccounts = [];
+					if(count($selected) > 0){
+
+						foreach($selected as $AccountID){
+
+							if(isset($Accounts[$AccountID])){
+								$selectedAccounts[] = $Accounts[$AccountID];
+							}
+						}
+					}
+ 					if(count($selectedAccounts) > 0){
+						$command .= "--accounts=" . implode(",",$selectedAccounts);
+					}
+
+				}
 
 				$Output = Streamco::execute_remote_cmd($command);
 
