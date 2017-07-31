@@ -113,8 +113,7 @@ class VendorRateFileGeneration extends Command {
 						}
 					}
 					if(count($selectedAccounts) > 0){
-						$command .=  "--type=selected";
-						$command .= "--accounts=" . implode(",",$selectedAccounts);
+						$command .=  "--type=selected --accounts=" . implode(",",$selectedAccounts);
 					}
 
 				}
