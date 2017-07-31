@@ -1,22 +1,15 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
-use App\Lib\Company;
-use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\Service;
-use App\Lib\TempUsageDetail;
-use App\Lib\TempUsageDownloadLog;
-use App\Lib\TempVendorCDR;
 use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\RateImportExporter;
 use App\Streamco;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
@@ -63,29 +56,28 @@ class VendorRateFileProcess extends Command {
 	{
 
 
-			/**
-			get pending files to be process
+		/**
+		get pending files to be process
 
-			get/generate temptable name
+		get/generate temptable name
 
-			loop through files
-				change status of file to process
-				load data in temp table.
+		loop through files
+		change status of file to process
+		load data in temp table.
 
-			loop end
+		loop end
 
-			call procedure to import rates
-			change status of file to complete
+		call procedure to import rates
+		change status of file to complete
 
-			commit
-			 */
+		commit
+		 */
 
 
 		CronHelper::before_cronrun($this->name, $this );
 
 
 		$arguments = $this->argument();
-		$getmypid = getmypid(); // get proccess id
 		$CronJobID = $arguments["CronJobID"];
 		$CompanyID = $arguments["CompanyID"];
 		$CronJob = CronJob::find($CronJobID);
@@ -103,29 +95,20 @@ class VendorRateFileProcess extends Command {
 		$FileLocationTo =  $cronsetting['FileLocation']; //'/home/temp/test_files_generation_to' ; //
 
 
-		$dataactive['Active'] = 1;
-		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-		$dataactive['PID'] = $getmypid;
-		$CronJob->update($dataactive);
-
-		$processID = rand(11111,99999999);
-
-		$joblogdata = array();
-		$joblogdata['CronJobID'] = $CronJobID;
-		$joblogdata['created_at'] = date('Y-m-d H:i:s');
-		$joblogdata['created_by'] = 'RMScheduler';
+		CronJob::activateCronJob($CronJob);
+		$processID = CompanyGateway::getProcessID();
 		$joblogdata['Message'] = '';
 		$delete_files = array();
-		$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID);
 		//$tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
 		Log::useFiles(storage_path() . '/logs/vendorratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'vendor');
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");
 			/** get process file make them pending*/
-			UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
+			UsageDownloadFiles::UpdateProcessToPendingStreamco($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting,'vendor_rate');
 
 			/** get pending files */
 			$filenames = UsageDownloadFiles::getStreamcoVendorPendingFile($CompanyGatewayID);
@@ -162,60 +145,64 @@ class VendorRateFileProcess extends Command {
 					/** update file status to progress */
 					UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
 
-					$delete_files[] = $UsageDownloadFilesID;
+
 					$fullpath = $FileLocationTo.'/'.$CompanyGatewayID. '/' ;
 
 
 					try {
 
-							$InserData = array();
-							$TrunkID = $AccountID = 0;
-							$row_count = 0;
+						$InserData = array();
+						$TrunkID = $AccountID = 0;
+						$row_count = 0;
 
-							$rows =   Streamco::getFileContent($fullpath.$filename);
+						$rows =   Streamco::getFileContent($fullpath.$filename);
 
-							//while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+						//while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+						if(!empty($rows) && count($rows) > 0){
 
 							foreach($rows as $key => $row) {
 
 
 								if (!empty($row['GatewayAccountName'])) {
 
-									if($row_count==0) {
+									if ($row_count == 0) {
 
 
-										if(isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'],$TrunkArray)){
+										if (isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'], $TrunkArray)) {
 											$TrunkID = $TrunkArray[$row['GatewayTrunk']];
 										}
 
-										if(isset($row['GatewayTrunk']) && $TrunkID == 0 ) {
+										if (isset($row['GatewayTrunk']) && $TrunkID == 0) {
 
-											$TrunkID = Trunk::where(["CompanyId"=>$CompanyID,"Trunk"=>$row['GatewayTrunk'],"Status"=>1])->pluck("TrunkID");
-											if(empty($TrunkID)) {
+											$TrunkID = Trunk::where(["CompanyId" => $CompanyID, "Trunk" => $row['GatewayTrunk']])->pluck("TrunkID");
+											if (empty($TrunkID)) {
 
 												$trunk_data = array(
-													"CompanyId"=>$CompanyID,
-													"Trunk"=>$row['GatewayTrunk'],
-													"Status"=>1
+													"CompanyId" => $CompanyID,
+													"Trunk" => $row['GatewayTrunk'],
+													"Status" => 1
 												);
 												$TrunkID = Trunk::insertGetId($trunk_data);
 
 
-												$TrunkArray[$row["GatewayTrunk"]] =$TrunkID;
-												Log::error("New Trunk created " . $row['GatewayTrunk'] );
+												$TrunkArray[$row["GatewayTrunk"]] = $TrunkID;
+												Log::error("New Trunk created " . $row['GatewayTrunk']);
 
 											}
 
-										} else {
-											Log::error("Trunk Not exists in file " . $fullpath.$filename);
+										}
+
+										if($TrunkID == 0){
+											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
+											Log::error("Trunk Not exists in file " . $fullpath . $filename);
 										}
 
 
-										$Accounts = Account::getAccountIDList( array( 'IsVendor'=>1, 'CompanyID' => $CompanyID ) );
+										$Accounts = Account::getAccountIDList(array('IsVendor' => 1, 'CompanyID' => $CompanyID));
 										//print_r($Accounts);
-										if( isset($row['GatewayAccountName']) ) {
+										if (isset($row['GatewayAccountName'])) {
 
-											if( !in_array($row['GatewayAccountName'], $Accounts) ) {
+											if (!in_array($row['GatewayAccountName'], $Accounts)) {
 
 												$error[] = "Account Name '" . $row['GatewayAccountName'] . "' not found.";
 
@@ -227,9 +214,12 @@ class VendorRateFileProcess extends Command {
 												$AccountID = array_search($row['GatewayAccountName'], $Accounts);
 											}
 										}
+										if ($TrunkID > 0 && $AccountID > 0) {
+											$delete_files[] = $UsageDownloadFilesID;
+										}
 
 									}
-									if ($TrunkID > 0 && $AccountID > 0 ) {
+									if ($TrunkID > 0 && $AccountID > 0) {
 
 										$uddata = array();
 										$uddata['CompanyID'] = $CompanyID;
@@ -237,6 +227,7 @@ class VendorRateFileProcess extends Command {
 										$uddata['AccountID'] = $AccountID;
 										$uddata['TrunkID'] = $TrunkID;
 										$uddata['Code'] = $row['Code'];
+										$uddata['Description'] = $row['Description'];
 										$uddata['Rate'] = $row['Rate'];
 										$uddata['Preference'] = $row['Preference'];
 										$uddata['ConnectionFee'] = $row['ConnectionFee'];
@@ -244,7 +235,7 @@ class VendorRateFileProcess extends Command {
 										$uddata['Interval1'] = $row['Interval1'];
 										$uddata['IntervalN'] = $row['IntervalN'];
 
-										$uddata['ProcessID'] = (string) $processID;
+										$uddata['ProcessID'] = (string)$processID;
 
 										$InserData[] = $uddata;
 
@@ -259,18 +250,18 @@ class VendorRateFileProcess extends Command {
 									} else {
 
 										Log::error("Trunk & Account are not found ");
-										Log::error(print_r($row,true));
+										Log::error(print_r($row, true));
 
 									}
 								}
 								$data_count++;
 
-
 							}//loop
+						}
 
-							if(!empty($InserData)){
-								DB::table($temptableName)->insert($InserData);
-							}
+						if(!empty($InserData)){
+							DB::table($temptableName)->insert($InserData);
+						}
 
 					}catch(\Exception $e){
 
@@ -298,30 +289,33 @@ class VendorRateFileProcess extends Command {
 			Log::info("Loop End");
 
 
-			Log::error(' ========================== vos transaction end =============================');
-			//ProcessCDR
 
 			Log::info("ProcessRate($processID,$temptableName)");
-
 			DB::beginTransaction();
+			DB::connection('sqlsrv2')->beginTransaction();
 
-					RateImportExporter::importVendorRate($processID,$temptableName);
+			$result_data = RateImportExporter::importVendorRate($processID, $temptableName);
+			if (count($result_data)) {
+				$joblogdata['Message'] .=  implode('<br>', $result_data);
+			}
+			/** update file process to completed */
+			UsageDownloadFiles::UpdateProcessToComplete($delete_files);
 
-					/** update file process to completed */
-					UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
-
+			DB::connection('sqlsrv2')->commit();
 			DB::commit();
 
-			$joblogdata['Message'] = 'Total  ' . $file_count .' files imported';
-
-			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-
-			CronJobLog::insert($joblogdata);
+			if(!empty($error)) {
+				$joblogdata['Message'] = $joblogdata['Message'].implode('<br>',$error) ;
+				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+			} else {
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			}
 
 			DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 		} catch (\Exception $e) {
 			try {
+				DB::connection('sqlsrv2')->rollback();
 				DB::rollback();
 			} catch (\Exception $err) {
 				Log::error($err);
@@ -346,7 +340,6 @@ class VendorRateFileProcess extends Command {
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-			CronJobLog::insert($joblogdata);
 			Log::error($e);
 			if(!empty($cronsetting['ErrorEmail'])) {
 
@@ -355,9 +348,8 @@ class VendorRateFileProcess extends Command {
 				Log::error("**Email Sent message " . $result['message']);
 			}
 		}
-		$dataactive['Active'] = 0;
-		$dataactive['PID'] = '';
-		$CronJob->update($dataactive);
+		CronJobLog::createLog($CronJobID,$joblogdata);
+		CronJob::deactivateCronJob($CronJob);
 
 		if(!empty($cronsetting['SuccessEmail'])) {
 
