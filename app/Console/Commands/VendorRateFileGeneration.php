@@ -1,13 +1,12 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Account;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\RemoteSSH;
 use App\Streamco;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 class VendorRateFileGeneration extends Command {
