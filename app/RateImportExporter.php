@@ -84,13 +84,27 @@ class RateImportExporter
 
     public static function importVendorRate($processID,$tempVendortable) {
 
-        DB::statement("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
+        $result_data = array();
+        $result = DB::select("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
+        if (count($result)>0){
+            foreach($result as $result_row){
+                $result_data[]  = $result_row->Message;
+            }
+        }
+        return $result_data;
 
     }
 
     public static function importCustomerRate($processID,$tempCustomertable) {
 
-        DB::statement("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
+        $result_data = array();
+        $result = DB::select("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
+        if (count($result)>0){
+            foreach($result as $result_row){
+                $result_data[]  = $result_row->Message;
+            }
+        }
+        return $result_data;
 
     }
 

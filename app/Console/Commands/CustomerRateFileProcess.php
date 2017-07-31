@@ -302,15 +302,20 @@ class CustomerRateFileProcess extends Command {
 				Log::info("ProcessRate($processID,$temptableName)");
 
 				DB::beginTransaction();
+				DB::connection('sqlsrv2')->beginTransaction();
 
-				RateImportExporter::importCustomerRate($processID, $temptableName);
+				$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
+				if (count($result_data)) {
+					$joblogdata['Message'] .=  implode('<br>', $result_data);
+				}
 
 				/** update file process to completed */
 				UsageDownloadFiles::UpdateProcessToComplete($delete_files);
 
+				DB::connection('sqlsrv2')->commit();
 				DB::commit();
 
-				$joblogdata['Message'] = 'Total  ' . $file_count . ' files imported ';
+				//$joblogdata['Message'] = 'Total  ' . $file_count . ' files imported ';
 
 				if(!empty($error)) {
 					$joblogdata['Message'] .= implode('<br>',$error) ;
@@ -341,6 +346,7 @@ class CustomerRateFileProcess extends Command {
 
 		} catch (\Exception $e) {
 			try {
+				DB::connection('sqlsrv2')->rollback();
 				DB::rollback();
 			} catch (\Exception $err) {
 				Log::error($err);
