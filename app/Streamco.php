@@ -48,7 +48,7 @@ class Streamco{
            Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
 
-       Log::info(self::$config);
+       //Log::info(self::$config);
 
    }
    
@@ -432,6 +432,7 @@ class Streamco{
             $output[]=trim($line.PHP_EOL);
         });
         Log::info("Executing command done");
+        Log::info($output);
         return $output;
 
 
