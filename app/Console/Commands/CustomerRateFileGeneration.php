@@ -94,9 +94,10 @@ class CustomerRateFileGeneration extends Command {
 			if(isset($cronsetting["ScriptLocation"]) && !empty($cronsetting["ScriptLocation"])){
 
 				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan streamcoratefilegenerator customer --type=all";
+
 				$Output = Streamco::execute_remote_cmd($command);
 
-				$joblogdata['Message'] =  "Output: " . $Output;
+				$joblogdata['Message'] =  "Output: " . implode("<br>", $Output);
 
 				if(!strpos("Exception" ,  implode("<br>", $Output)  )){
 
@@ -127,7 +128,7 @@ class CustomerRateFileGeneration extends Command {
 
 		} catch (\Exception $e) {
 
-			Log::error(print_r($e,true));
+			//Log::error(print_r($e,true));
 			CronJob::deactivateCronJob($CronJob);
 
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
