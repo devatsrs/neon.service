@@ -95,11 +95,11 @@ class CustomerRateFileProcess extends Command {
 		$processID = CompanyGateway::getProcessID();
 		$joblogdata['Message'] = '';
 		$delete_files = array();
-		$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,"customer");
 
 		Log::useFiles(storage_path() . '/logs/customerratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,"customer");
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");
 			/** get process file make them pending*/

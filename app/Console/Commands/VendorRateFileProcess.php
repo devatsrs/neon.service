@@ -99,12 +99,12 @@ class VendorRateFileProcess extends Command {
 		$processID = CompanyGateway::getProcessID();
 		$joblogdata['Message'] = '';
 		$delete_files = array();
-		$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'vendor');
 		//$tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
 		Log::useFiles(storage_path() . '/logs/vendorratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'vendor');
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");
 			/** get process file make them pending*/
