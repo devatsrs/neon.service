@@ -35,7 +35,7 @@ class RateImportExporter
         }
 
         if(!empty($UniqueID)) {
-            $tbltemprateimport_name = self::getTablenameByUniqueID($UniqueID);
+            $tbltemprateimport_name = self::getTablenameByUniqueID($UniqueID,$extra_prefix);
 
             Log::error( $tbltemprateimport_name);
             $tbltemprateimport_name .=$extra_prefix;
@@ -48,6 +48,7 @@ class RateImportExporter
                                     `TrunkID` INT(11) NULL DEFAULT NULL,
                                     `RateID` INT(11) NULL DEFAULT NULL,
                                     `Code` varchar(50) NULL DEFAULT NULL,
+                                    `Description` varchar(100) NULL DEFAULT NULL,
                                     `Rate` DOUBLE NULL DEFAULT NULL ,
                                     `Preference` INT(11)  NULL DEFAULT NULL ,
                                     `ConnectionFee` DOUBLE NULL DEFAULT NULL ,
@@ -83,13 +84,27 @@ class RateImportExporter
 
     public static function importVendorRate($processID,$tempVendortable) {
 
-        DB::statement("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
+        $result_data = array();
+        $result = DB::select("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
+        if (count($result)>0){
+            foreach($result as $result_row){
+                $result_data[]  = $result_row->Message;
+            }
+        }
+        return $result_data;
 
     }
 
     public static function importCustomerRate($processID,$tempCustomertable) {
 
-        DB::statement("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
+        $result_data = array();
+        $result = DB::select("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
+        if (count($result)>0){
+            foreach($result as $result_row){
+                $result_data[]  = $result_row->Message;
+            }
+        }
+        return $result_data;
 
     }
 

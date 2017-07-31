@@ -4,6 +4,7 @@ namespace App;
 use App\Lib\Account;
 use App\Lib\CodeDeck;
 use App\Lib\Currency;
+use App\Lib\Country;
 use App\Lib\CustomerTrunk;
 use App\Lib\GatewayAPI;
 use App\Lib\LastPrefixNo;
@@ -48,7 +49,7 @@ class Streamco{
            Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
 
-       Log::info(self::$config);
+       //Log::info(self::$config);
 
    }
    
@@ -179,7 +180,6 @@ class Streamco{
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             try{
-                $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
                 $dbname = 'config';
                 $query = "SELECT DISTINCT
                               c.name,c.address,c.email,c.invoice_email,o.company_id,cu.name AS currency,IF(o.company_id,1,0) AS IsCustomer,IF(t.company_id,1,0) AS IsVendor
@@ -196,15 +196,72 @@ class Streamco{
                     $tempItemData = array();
                     $batch_insert_array = array();
                     if(count($addparams)>0){
+                        $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
+                        $countries = Country::lists('ISO3', 'Country');
                         $CompanyGatewayID = $addparams['CompanyGatewayID'];
                         $CompanyID = $addparams['CompanyID'];
                         $ProcessID = $addparams['ProcessID'];
                         foreach ($results as $temp_row) {
                             $count = Account::where(["AccountName" => $temp_row->name, "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
                             if($count==0){
+                                if($temp_row->address != '' && $temp_row->address != null) {
+                                    $DOM = new \DOMDocument();
+                                    $DOM->loadHTML($temp_row->address);
+                                    $items = $DOM->getElementsByTagName('p');
+                                    for ($i = 0; $i < $items->length; $i++) {
+                                        if($i==0) {
+                                            $tempItemData['Address1'] = $items->item($i)->nodeValue;
+                                        }
+                                        if($i==1) {
+                                            $tempItemData['Address2'] = $items->item($i)->nodeValue;
+                                        }
+                                        if($i==2) {
+                                            $tempItemData['Address3'] = $items->item($i)->nodeValue;
+                                        }
+                                        if($i==3) {
+                                            $tempItemData['City'] = $items->item($i)->nodeValue;
+                                        }
+                                        /*if($i==4) {
+                                            $tempItemData['State'] = $items->item($i)->nodeValue;
+                                        } else {
+                                            $tempItemData['Address'.$i+1] = "";
+                                        }*/
+                                        if($i==4) {
+                                            $tempItemData['PostCode'] = $items->item($i)->nodeValue;
+                                        }
+                                        if(array_search(strtoupper(trim($items->item($i)->nodeValue)),$countries)) {
+                                            $tempItemData['Country'] = array_search(strtoupper(trim($items->item($i)->nodeValue)),$countries);
+                                        }
+                                    }
+
+                                    if(!isset($tempItemData['Address1'])) {
+                                        $tempItemData['Address1'] = "";
+                                    }
+                                    if(!isset($tempItemData['Address2'])) {
+                                        $tempItemData['Address2'] = "";
+                                    }
+                                    if(!isset($tempItemData['Address3'])) {
+                                        $tempItemData['Address3'] = "";
+                                    }
+                                    if(!isset($tempItemData['City'])) {
+                                        $tempItemData['City'] = "";
+                                    }
+                                    if(!isset($tempItemData['PostCode'])) {
+                                        $tempItemData['PostCode'] = "";
+                                    }
+                                    if(!isset($tempItemData['Country'])) {
+                                        $tempItemData['Country'] = "";
+                                    }
+                                } else {
+                                    $tempItemData['Address1'] = "";
+                                    $tempItemData['Address2'] = "";
+                                    $tempItemData['Address3'] = "";
+                                    $tempItemData['City'] = "";
+                                    $tempItemData['PostCode'] = "";
+                                    $tempItemData['Country'] = "";
+                                }
                                 $tempItemData['AccountName'] = $temp_row->name;
                                 $tempItemData['FirstName'] = "";
-                                $tempItemData['Address1'] = $temp_row->address;
                                 $tempItemData['Phone'] = "";
                                 $tempItemData['BillingEmail'] = $temp_row->invoice_email;
                                 $tempItemData['Email'] = $temp_row->email;
@@ -270,6 +327,7 @@ class Streamco{
                 $resultso = DB::connection('pbxmysql')->select($queryo);
                 if(count($resultso)>0){
                     if(count($addparams)>0){
+                        Log::info('Customer Trunks insert start');
                         $CompanyID = $addparams['CompanyID'];
                         foreach ($resultso as $temp_row) {
                             $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
@@ -304,6 +362,7 @@ class Streamco{
                                 }
                             }
                         }
+                        Log::info('Customer Trunks insert end');
                     }
                 }
                 $queryt = "SELECT
@@ -316,6 +375,7 @@ class Streamco{
                 $resultst = DB::connection('pbxmysql')->select($queryt);
                 if(count($resultst)>0){
                     if(count($addparams)>0){
+                        Log::info('Vendor Trunks insert start');
                         $CompanyID = $addparams['CompanyID'];
                         foreach ($resultst as $temp_row) {
                             $account = Account::where(["AccountName" => $temp_row->AccountName, "AccountType" => 1,"CompanyId"=>$CompanyID]);
@@ -348,6 +408,7 @@ class Streamco{
                                 }
                             }
                         }
+                        Log::info('Vendor Trunks insert end');
                     }
                 }
                 Log::info($totaltrunksinserted.' Trunks inserted');
@@ -361,5 +422,21 @@ class Streamco{
             }
         }
         return $response;
+    }
+
+
+    public static function execute_remote_cmd( $command ) {
+
+        Log::info("Executing command" );
+        Log::info($command );
+        $output = array();
+        RemoteFacade::run($command, function($line) use(&$output) {
+            $output[]=trim($line.PHP_EOL);
+        });
+        Log::info("Executing command done");
+        Log::info($output);
+        return $output;
+
+
     }
 }
