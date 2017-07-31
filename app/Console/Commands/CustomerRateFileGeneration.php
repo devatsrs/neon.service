@@ -94,7 +94,7 @@ class CustomerRateFileGeneration extends Command {
 			if(isset($cronsetting["ScriptLocation"]) && !empty($cronsetting["ScriptLocation"])){
 
 				$command =  "php " . $cronsetting["ScriptLocation"]  . "/artisan customer --type=all";
-				$Output = $Streamco::execute_remote_cmd($command);
+				$Output = Streamco::execute_remote_cmd($command);
 
 				$joblogdata['Message'] =  "Output: " . $Output;
 
