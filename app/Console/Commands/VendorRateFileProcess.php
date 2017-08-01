@@ -1,12 +1,15 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\CodeDeck;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\LastPrefixNo;
 use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
+use App\Lib\VendorTrunk;
 use App\RateImportExporter;
 use App\Streamco;
 use Illuminate\Console\Command;
@@ -212,10 +215,31 @@ class VendorRateFileProcess extends Command {
 											} else {
 
 												$AccountID = array_search($row['GatewayAccountName'], $Accounts);
+
 											}
 										}
 										if ($TrunkID > 0 && $AccountID > 0) {
+
 											$delete_files[] = $UsageDownloadFilesID;
+
+											$VendorTrunk = VendorTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+											if($VendorTrunk == 0) {
+												$created_at = date('Y-m-d H:i:s');
+												$CreatedBy = 'Rate Import';
+
+												$vendortrunkdata = array();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$vendortrunkdata['CompanyID'] = $CompanyID;
+												$vendortrunkdata['AccountID'] = $AccountID;
+												$vendortrunkdata['TrunkID'] = $TrunkID;
+												$vendortrunkdata['Status'] = 1;
+												$vendortrunkdata['CodeDeckID'] = $CodeDeckID;
+												$vendortrunkdata['created_at'] = $created_at;
+												$vendortrunkdata['CreatedBy'] = $CreatedBy;
+												VendorTrunk::insert($vendortrunkdata);
+												Log::error("VendorTrunk created " . $row['GatewayAccountName']);
+											}
+
 										}
 
 									}

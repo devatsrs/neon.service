@@ -1,10 +1,13 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\CodeDeck;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\CustomerTrunk;
+use App\Lib\LastPrefixNo;
 use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\RateImportExporter;
@@ -211,6 +214,27 @@ class CustomerRateFileProcess extends Command {
 										}
 										if ($TrunkID > 0 && $AccountID > 0) {
 											$delete_files[] = $UsageDownloadFilesID;
+
+											$CustomerTrunk = CustomerTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+											if($CustomerTrunk == 0) {
+												$created_at = date('Y-m-d H:i:s');
+												$CreatedBy = 'Rate Import';
+
+												$customertrunkdata = array();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$customertrunkdata['CompanyID'] = $CompanyID;
+												$customertrunkdata['AccountID'] = $AccountID;
+												$customertrunkdata['TrunkID'] = $TrunkID;
+												$customertrunkdata['Status'] = 1;
+												$customertrunkdata['Prefix'] = LastPrefixNo::getLastPrefix($CompanyID);
+												$customertrunkdata['CodeDeckID'] = $CodeDeckID;
+												$customertrunkdata['created_at'] = $created_at;
+												$customertrunkdata['CreatedBy'] = $CreatedBy;
+												CustomerTrunk::insert($customertrunkdata);
+												LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'],$CompanyID);
+												Log::error("CustomerTrunk created " . $row['GatewayAccountName']);
+
+											}
 										}
 
 									}
