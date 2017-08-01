@@ -91,8 +91,6 @@ class ImportAccount extends Command {
 
         $accountimportdate = date('Y-m-d H:i:s.000');
 
-        $accountimportdate = date('Y-m-d H:i:s.000');
-
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
