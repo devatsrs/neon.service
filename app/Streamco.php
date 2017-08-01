@@ -43,7 +43,7 @@ class Streamco{
 
        // ssh detail
        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
-           Config::set('remote.connections.production.host',self::$config['host']);
+           Config::set('remote.connections.production.host',self::$config['sshhost']);
            Config::set('remote.connections.production.username',self::$config['sshusername']);
            Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
