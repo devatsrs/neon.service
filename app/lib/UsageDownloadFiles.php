@@ -69,6 +69,29 @@ class UsageDownloadFiles extends Model {
         return $filenames;
 
     }
+
+    /** get vos streamco customer files */
+    public static function getStreamcoCustomerPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->where('FileName','like','customer_rate%')->orderby('ProcessCount')->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
+    /** get vos streamco customer files */
+    public static function getStreamcoVendorPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->where('FileName','like','vendor_rate%')->orderby('ProcessCount')->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
     /** update file status to progress */
     public static function UpdateFileStausToProcess($UsageDownloadFilesID,$processID){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
@@ -108,6 +131,16 @@ class UsageDownloadFiles extends Model {
             $message = $UsageDownloadFiles->Message.$errormsg;
             $UsageDownloadFiles->update(array('Status'=>self::ERROR,'Message'=>$message));
             Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->FileName);
+        }
+    }
+
+    /** get process file make them pending*/
+    public static function UpdateProcessToPendingStreamco($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting,$type){
+        if(!empty($cronsetting['ErrorEmail'])) {
+            UsageDownloadFiles::getInProcessfile($CompanyID,$CompanyGatewayID, $cronsetting['ErrorEmail'], $CronJob->JobTitle);
+        }
+        if(UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>self::INPROGRESS))->where('FileName','like',$type.'%')->count()) {
+            UsageDownloadFiles::where(array('CompanyGatewayID' => $CompanyGatewayID, 'Status' => self::INPROGRESS))->where('FileName','like',$type.'%')->update(array('Status' => self::PENDING));
         }
     }
 

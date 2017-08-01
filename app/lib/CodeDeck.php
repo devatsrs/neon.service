@@ -11,8 +11,13 @@ class CodeDeck extends \Eloquent {
             'Description' => 'required',
             'codedeckid' => 'required',
 	];
-    protected $table = 'tblRate';
-    protected  $primaryKey = "RateID";
+    protected $table = 'tblCodeDeck';
+    protected  $primaryKey = "CodeDeckID";
     protected $fillable = [];
-    protected $guarded = ['RateID'];
+    protected $guarded = ['CodeDeckID'];
+
+    public static function getDefaultCodeDeckID()
+    {
+        return CodeDeck::where('DefaultCodedeck',1)->pluck('CodeDeckID');
+    }
 }

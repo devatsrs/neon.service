@@ -12,6 +12,10 @@ class Account extends \Eloquent {
     protected $table = "tblAccount";
     protected $primaryKey = "AccountID";
 
+    const  NOT_VERIFIED = 0;
+    //const  PENDING_VERIFICATION = 1;
+    const  VERIFIED =2;
+
     const  DETAIL_CDR = 1;
     const  SUMMARY_CDR= 2;
     const  NO_CDR = 3;
@@ -233,6 +237,69 @@ class Account extends \Eloquent {
             Log::info('Audit create end');
         }
 
+    }
+
+    public static function getAccountIDList($data=array()){
+
+        $data['Status'] = 1;
+        if(!isset($data['AccountType'])) {
+            $data['AccountType'] = 1;
+            $data['VerificationStatus'] = Account::VERIFIED;
+        }
+        //$data['CompanyID']=$data['CompanyID'];
+        $row = Account::where($data)->select(array('AccountName', 'AccountID'))->orderBy('AccountName')->lists('AccountName', 'AccountID');
+        return $row;
+    }
+
+
+    public static function importStreamcoAccounts($streamco,$addparams) {
+        $processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
+        $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;
+        $CompanyGatewayID = isset($addparams['CompanyGatewayID']) ? $addparams['CompanyGatewayID'] : 0;
+        Log::info('Accounts Import Start');
+        $account_response = $streamco->importStreamcoAccounts($addparams);
+        if(isset($account_response['result']) && $account_response['result'] == 'OK') {
+            $importoption = 1;
+            $AccountIDs = '';
+            Log::info("start CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$AccountIDs."','".$importoption."','" . $addparams['ImportDate'] . "')");
+            try {
+                DB::beginTransaction();
+                $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
+                Log::info("end CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
+                DB::commit();
+                $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                Log::info($JobStatusMessage);
+                Account::updateAccountNo($CompanyID);
+                Log::info('update account number - Done');
+                Log::info(count($JobStatusMessage));
+                Log::info('Accounts Import End');
+            }catch ( Exception $err ){
+                try{
+                    DB::rollback();
+                }catch (Exception $err) {
+                    Log::error($err);
+                }
+                Log::error($err);
+            }
+        }
+    }
+
+    public static function importStreamcoTrunks($streamco,$addparams) {
+        /*$processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
+        $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;
+        $CompanyGatewayID = isset($addparams['CompanyGatewayID']) ? $addparams['CompanyGatewayID'] : 0;*/
+        try {
+            Log::info('Trunks Import Start');
+            $streamco->importStreamcoTrunks($addparams);
+            Log::info('Trunks Import End');
+        }catch ( Exception $err ){
+            try{
+                DB::rollback();
+            }catch (Exception $err) {
+                Log::error($err);
+            }
+            Log::error($err);
+        }
     }
 
 }

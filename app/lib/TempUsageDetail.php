@@ -217,28 +217,34 @@ class TempUsageDetail extends \Eloquent {
     public static function applyDiscountPlan(){
         $today = date('Y-m-d');
         $todaytime = date('Y-m-d H:i:s');
-        $Accounts = DB::table('tblAccountBilling')
-            ->join('tblAccountDiscountPlan','tblAccountDiscountPlan.AccountID','=','tblAccountBilling.AccountID')
-            ->where('tblAccountDiscountPlan.ServiceID','=','tblAccountBilling.ServiceID')
-            ->where('EndDate','<=',$today)
-            ->where('tblAccountBilling.BillingCycleType','<>','manual')
-            ->get(['tblAccountBilling.AccountID','DiscountPlanID','tblAccountDiscountPlan.ServiceID','EndDate','tblAccountDiscountPlan.Type','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue']);
+        $Accounts = DB::table('tblAccountDiscountPlan')->where('EndDate','<=',$today)
+            ->get(['AccountID','DiscountPlanID','ServiceID','EndDate','Type']);
         foreach($Accounts as $Account){
             $ServiceID = $Account->ServiceID;
-            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID,$ServiceID);
-            if(!empty($AccountNextBilling)){
+            $Manualcount = AccountBilling::where(['AccountID'=>$Account->AccountID,'BillingCycleType'=>'manual'])->count();
+            $AccountNextBilling = AccountNextBilling::getBilling($Account->AccountID, $ServiceID);
+            $AccountBilling = AccountBilling::where(['AccountID' => $Account->AccountID, 'ServiceID' => 0])->first();
+            $AccountServiceBilling = AccountBilling::where(['AccountID' => $Account->AccountID, 'ServiceID' => $ServiceID])->first();
+            if (!empty($AccountNextBilling)) {
                 $BillingCycleType = $AccountNextBilling->BillingCycleType;
-                $BillingCycleValue =$AccountNextBilling->BillingCycleValue;
-            }else{
-                $BillingCycleType = $Account->BillingCycleType;
-                $BillingCycleValue =$Account->BillingCycleValue;
+                $BillingCycleValue = $AccountNextBilling->BillingCycleValue;
+            } else if (!empty($AccountServiceBilling) && count($AccountServiceBilling)) {
+                $BillingCycleType = $AccountServiceBilling->BillingCycleType;
+                $BillingCycleValue = $AccountServiceBilling->BillingCycleValue;
+            } else if (!empty($AccountBilling) && count($AccountBilling)) {
+                $BillingCycleType = $AccountBilling->BillingCycleType;
+                $BillingCycleValue = $AccountBilling->BillingCycleValue;
             }
-            $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue);
-            $NextInvoiceDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($Account->EndDate));
-            $getdaysdiff = getdaysdiff($NextInvoiceDate,$today);
-            $DayDiff = $getdaysdiff >0?intval($getdaysdiff):0;
-            Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
-            DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)',array($Account->AccountID,intval($Account->DiscountPlanID),intval($Account->Type),$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID));
+            if($Manualcount == 0 && !empty($BillingCycleType)) {
+                $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue);
+                $NextInvoiceDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($Account->EndDate));
+                $getdaysdiff = getdaysdiff($NextInvoiceDate, $today);
+                $DayDiff = $getdaysdiff > 0 ? intval($getdaysdiff) : 0;
+                Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
+                DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID));
+            }else{
+                Log::info("No biiling setup");
+            }
 
         }
 

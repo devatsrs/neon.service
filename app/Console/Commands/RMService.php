@@ -81,7 +81,8 @@ class RMService extends Command {
 				'ImportAccount',
                 'DialStringUpload',
                 'QuickBookInvoicePost',
-                'ImportAccountIP'
+                'ImportAccountIP',
+                'ItemUpload'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -337,6 +338,16 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." importaccountip " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " importaccountip " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            //Item Upload
+            foreach($allpending['data']['ItemUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." itemupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " itemupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

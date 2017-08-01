@@ -91,6 +91,8 @@ class ImportAccount extends Command {
 
         $accountimportdate = date('Y-m-d H:i:s.000');
 
+        $accountimportdate = date('Y-m-d H:i:s.000');
+
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
@@ -456,11 +458,11 @@ class ImportAccount extends Command {
                         }
 
                     }//csv import end
-                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
+                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."','".$accountimportdate."')");
                     try {
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
-                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
+                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
