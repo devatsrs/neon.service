@@ -126,15 +126,6 @@ class VendorRateFileProcess extends Command {
 			Log::error(' ========================== Vendor Rate  Transaction start =============================');
 			CronJob::createLog($CronJobID);
 
-			$Trunks = Trunk::where(["CompanyId"=>$CompanyID])->get()->toArray();
-			$TrunkArray = array();
-			if(count($Trunks)>0){
-
-				foreach($Trunks as $trunk){
-					$TrunkArray[$trunk["Trunk"]] =$trunk["TrunkID"];
-				}
-
-			}
 			foreach ($filenames as $UsageDownloadFilesID => $filename) {
 				Log::info("Loop Start");
 				$row_count = 0;
@@ -170,29 +161,15 @@ class VendorRateFileProcess extends Command {
 
 									if ($row_count == 0) {
 
-
-										if (isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'], $TrunkArray)) {
-											$TrunkID = $TrunkArray[$row['GatewayTrunk']];
-										}
-
-										if (isset($row['GatewayTrunk']) && $TrunkID == 0) {
-
-											$TrunkID = Trunk::where(["CompanyId" => $CompanyID, "Trunk" => $row['GatewayTrunk']])->pluck("TrunkID");
-											if (empty($TrunkID)) {
-
-												$trunk_data = array(
-													"CompanyId" => $CompanyID,
-													"Trunk" => $row['GatewayTrunk'],
-													"Status" => 1
-												);
-												$TrunkID = Trunk::insertGetId($trunk_data);
-
-
-												$TrunkArray[$row["GatewayTrunk"]] = $TrunkID;
-												Log::error("New Trunk created " . $row['GatewayTrunk']);
-
+										if (isset($row['GatewayTrunk']) ) {
+											$TrunkIDResult = DB::select("call prc_getTrunkByMaxMatch('".$CompanyID."','".$row['GatewayTrunk']."')");
+											if(isset($TrunkIDResult[0]["TrunkID"]) && $TrunkIDResult[0]["TrunkID"] > 0) {
+												$TrunkID = $TrunkIDResult[0]["TrunkID"];
 											}
-
+										} else {
+											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
+											Log::error("Trunk Not exists in file " . $fullpath . $filename);
+											break;
 										}
 
 										if($TrunkID == 0){
