@@ -251,7 +251,7 @@ class BulkAutoPaymentCapture extends Command {
                                                 }
                                             }
 
-                                            $NotificationEmails = Notification::getNotificationMail(Notification::InvoicePaidByCustomer);
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
                                             if (!empty($emailArray)) {
                                                 foreach ($emailArray as $singleemail) {
@@ -322,7 +322,7 @@ class BulkAutoPaymentCapture extends Command {
                                                 }
                                             }
 
-                                            $NotificationEmails = Notification::getNotificationMail(Notification::InvoicePaidByCustomer);
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
                                             if (!empty($emailArray)) {
                                                 foreach ($emailArray as $singleemail) {
