@@ -158,8 +158,8 @@ class CustomerRateFileProcess extends Command {
 
 										if (isset($row['GatewayTrunk']) ) {
 											$TrunkIDResult = DB::select("call prc_getTrunkByMaxMatch('".$CompanyID."','".$row['GatewayTrunk']."')");
-											if(isset($TrunkIDResult[0]["TrunkID"]) && $TrunkIDResult[0]["TrunkID"] > 0) {
-												$TrunkID = $TrunkIDResult[0]["TrunkID"];
+											if(isset($TrunkIDResult[0]->TrunkID) && $TrunkIDResult[0]->TrunkID > 0) {
+												$TrunkID = $TrunkIDResult[0]->TrunkID;
 											}
 										} else {
 											$error[] = "Trunk Not exists in file " . $fullpath . $filename;

@@ -4,12 +4,12 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit22844e484253b28f42a20fa0a733883f
+class ComposerStaticInitce1705b63ded342e97963852a6c0c424
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        '3e2471375464aac821502deb0ac64275' => __DIR__ . '/..' . '/symfony/polyfill-php54/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
+        '3e2471375464aac821502deb0ac64275' => __DIR__ . '/..' . '/symfony/polyfill-php54/bootstrap.php',
         '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
         'e40631d46120a9c38ea139981f8dab26' => __DIR__ . '/..' . '/ircmaxell/password-compat/lib/password.php',
@@ -278,10 +278,6 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
             array (
                 0 => __DIR__ . '/..' . '/filp/whoops/src',
             ),
-            'Webpatser\\Uuid' => 
-            array (
-                0 => __DIR__ . '/..' . '/webpatser/laravel-uuid/src',
-            ),
             'Way\\Generators' => 
             array (
                 0 => __DIR__ . '/..' . '/way/generators/src',
@@ -477,6 +473,8 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'AnalysisController' => __DIR__ . '/../..' . '/app/controllers/AnalysisController.php',
         'App\\Lib\\QuickBookLog' => __DIR__ . '/../..' . '/app/models/QuickBookLog.php',
         'Attribute_Translator' => __DIR__ . '/..' . '/dompdf/dompdf/include/attribute_translator.cls.php',
+        'AuditDetails' => __DIR__ . '/../..' . '/app/models/AuditDetails.php',
+        'AuditHeader' => __DIR__ . '/../..' . '/app/models/AuditHeader.php',
         'AuthenticationController' => __DIR__ . '/../..' . '/app/controllers/AuthenticationController.php',
         'AuthorizeNet' => __DIR__ . '/../..' . '/app/lib/AuthorizeNet.php',
         'AuthorizeNetAIM' => __DIR__ . '/..' . '/authorizenet/authorizenet/lib/AuthorizeNetAIM.php',
@@ -1490,7 +1488,7 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'Barryvdh\\Debugbar\\DataCollector\\ViewCollector' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/DataCollector/ViewCollector.php',
         'Barryvdh\\Debugbar\\Facade' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/Facade.php',
         'Barryvdh\\Debugbar\\JavascriptRenderer' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/JavascriptRenderer.php',
-        'Barryvdh\\Debugbar\\LaravelDebugbar' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/LaravelDebugBar.php',
+        'Barryvdh\\Debugbar\\LaravelDebugbar' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/LaravelDebugbar.php',
         'Barryvdh\\Debugbar\\Middleware\\Debugbar' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/Middleware/Debugbar.php',
         'Barryvdh\\Debugbar\\Middleware\\Stack' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/Middleware/Stack.php',
         'Barryvdh\\Debugbar\\ServiceProvider' => __DIR__ . '/..' . '/barryvdh/laravel-debugbar/src/ServiceProvider.php',
@@ -1639,6 +1637,7 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'CRMComments' => __DIR__ . '/../..' . '/app/models/CRMComments.php',
         'CSS_Color' => __DIR__ . '/..' . '/dompdf/dompdf/include/css_color.cls.php',
         'Cached_PDF_Decorator' => __DIR__ . '/..' . '/dompdf/dompdf/include/cached_pdf_decorator.cls.php',
+        'CallShop' => __DIR__ . '/../..' . '/app/lib/CallShop.php',
         'CallbackFilterIterator' => __DIR__ . '/..' . '/symfony/polyfill-php54/Resources/stubs/CallbackFilterIterator.php',
         'Canvas' => __DIR__ . '/..' . '/dompdf/dompdf/include/canvas.cls.php',
         'Canvas_Factory' => __DIR__ . '/..' . '/dompdf/dompdf/include/canvas_factory.cls.php',
@@ -1844,6 +1843,9 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'Dotenv\\Exception\\ValidationException' => __DIR__ . '/..' . '/vlucas/phpdotenv/src/Exception/ValidationException.php',
         'Dotenv\\Loader' => __DIR__ . '/..' . '/vlucas/phpdotenv/src/Loader.php',
         'Dotenv\\Validator' => __DIR__ . '/..' . '/vlucas/phpdotenv/src/Validator.php',
+        'DynamicFields' => __DIR__ . '/../..' . '/app/models/DynamicFields.php',
+        'DynamicFieldsDetail' => __DIR__ . '/../..' . '/app/models/DynamicFieldsDetail.php',
+        'DynamicFieldsValue' => __DIR__ . '/../..' . '/app/models/DynamicFieldsValue.php',
         'EasyPeasyICS' => __DIR__ . '/..' . '/phpmailer/phpmailer/extras/EasyPeasyICS.php',
         'EmailTemplate' => __DIR__ . '/../..' . '/app/models/EmailTemplate.php',
         'EmailTemplateController' => __DIR__ . '/../..' . '/app/controllers/EmailTemplateController.php',
@@ -3096,6 +3098,7 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'JMS\\Serializer\\Naming\\IdenticalPropertyNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/IdenticalPropertyNamingStrategy.php',
         'JMS\\Serializer\\Naming\\PropertyNamingStrategyInterface' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/PropertyNamingStrategyInterface.php',
         'JMS\\Serializer\\Naming\\SerializedNameAnnotationStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/SerializedNameAnnotationStrategy.php',
+        'JMS\\Serializer\\NullAwareVisitorInterface' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/NullAwareVisitorInterface.php',
         'JMS\\Serializer\\SerializationContext' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/SerializationContext.php',
         'JMS\\Serializer\\Serializer' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Serializer.php',
         'JMS\\Serializer\\SerializerBuilder' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/SerializerBuilder.php',
@@ -4073,11 +4076,13 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'ServerInfoController' => __DIR__ . '/../..' . '/app/controllers/ServerInfoController.php',
         'Service' => __DIR__ . '/../..' . '/app/models/Service.php',
         'ServicesController' => __DIR__ . '/../..' . '/app/controllers/ServicesController.php',
-        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/http-foundation/Resources/stubs/SessionHandlerInterface.php',
+        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/polyfill-php54/Resources/stubs/SessionHandlerInterface.php',
         'Sippy' => __DIR__ . '/../..' . '/app/lib/Sippy.php',
         'SiteIntegration' => __DIR__ . '/../..' . '/app/lib/SiteIntegration.php',
         'Stack\\Builder' => __DIR__ . '/..' . '/stack/builder/src/Stack/Builder.php',
         'Stack\\StackedHttpKernel' => __DIR__ . '/..' . '/stack/builder/src/Stack/StackedHttpKernel.php',
+        'Streamco' => __DIR__ . '/../..' . '/app/lib/Streamco.php',
+        'StripeACH' => __DIR__ . '/../..' . '/app/lib/StripACH.php',
         'StripeBilling' => __DIR__ . '/../..' . '/app/lib/StripBilling.php',
         'Style' => __DIR__ . '/..' . '/dompdf/dompdf/include/style.cls.php',
         'Stylesheet' => __DIR__ . '/..' . '/dompdf/dompdf/include/stylesheet.cls.php',
@@ -4919,8 +4924,6 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
         'Way\\Generators\\Syntax\\DroppedTable' => __DIR__ . '/..' . '/way/generators/src/Way/Generators/Syntax/DroppedTable.php',
         'Way\\Generators\\Syntax\\RemoveFromTable' => __DIR__ . '/..' . '/way/generators/src/Way/Generators/Syntax/RemoveFromTable.php',
         'Way\\Generators\\Syntax\\Table' => __DIR__ . '/..' . '/way/generators/src/Way/Generators/Syntax/Table.php',
-        'Webpatser\\Uuid\\Uuid' => __DIR__ . '/..' . '/webpatser/laravel-uuid/src/Webpatser/Uuid/Uuid.php',
-        'Webpatser\\Uuid\\UuidFacade' => __DIR__ . '/..' . '/webpatser/laravel-uuid/src/Webpatser/Uuid/UuidFacade.php',
         'Whoops\\Exception\\ErrorException' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Exception/ErrorException.php',
         'Whoops\\Exception\\Formatter' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Exception/Formatter.php',
         'Whoops\\Exception\\Frame' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Exception/Frame.php',
@@ -5213,10 +5216,10 @@ class ComposerStaticInit22844e484253b28f42a20fa0a733883f
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit22844e484253b28f42a20fa0a733883f::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit22844e484253b28f42a20fa0a733883f::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit22844e484253b28f42a20fa0a733883f::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit22844e484253b28f42a20fa0a733883f::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$classMap;
 
         }, null, ClassLoader::class);
     }
