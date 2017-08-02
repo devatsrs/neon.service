@@ -199,24 +199,6 @@ class VendorRateFileProcess extends Command {
 
 											$delete_files[] = $UsageDownloadFilesID;
 
-											$VendorTrunk = VendorTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
-											if($VendorTrunk == 0) {
-												$created_at = date('Y-m-d H:i:s');
-												$CreatedBy = 'Rate Import';
-
-												$vendortrunkdata = array();
-												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
-												$vendortrunkdata['CompanyID'] = $CompanyID;
-												$vendortrunkdata['AccountID'] = $AccountID;
-												$vendortrunkdata['TrunkID'] = $TrunkID;
-												$vendortrunkdata['Status'] = 1;
-												$vendortrunkdata['CodeDeckID'] = $CodeDeckID;
-												$vendortrunkdata['created_at'] = $created_at;
-												$vendortrunkdata['CreatedBy'] = $CreatedBy;
-												VendorTrunk::insert($vendortrunkdata);
-												Log::error("VendorTrunk created " . $row['GatewayAccountName']);
-											}
-
 										}
 
 									}
