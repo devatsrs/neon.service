@@ -43,12 +43,12 @@ class Streamco{
 
        // ssh detail
        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
-           Config::set('remote.connections.production.host',self::$config['host']);
+           Config::set('remote.connections.production.host',self::$config['sshhost']);
            Config::set('remote.connections.production.username',self::$config['sshusername']);
            Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
 
-       Log::info(self::$config);
+       //Log::info(self::$config);
 
    }
    
@@ -423,5 +423,21 @@ class Streamco{
             }
         }
         return $response;
+    }
+
+
+    public static function execute_remote_cmd( $command ) {
+
+        Log::info("Executing command" );
+        Log::info($command );
+        $output = array();
+        RemoteFacade::run($command, function($line) use(&$output) {
+            $output[]=trim($line.PHP_EOL);
+        });
+        Log::info("Executing command done");
+        Log::info($output);
+        return $output;
+
+
     }
 }
