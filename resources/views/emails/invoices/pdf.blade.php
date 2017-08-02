@@ -221,7 +221,6 @@
         <div id="Service">
             <h1>{{$service['name']}}</h1>
             @if(!empty($service['servicedescription']))
-                <br/>
                 {{nl2br($service['servicedescription'])}}
             @endif
         </div>
