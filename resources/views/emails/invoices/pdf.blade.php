@@ -220,6 +220,9 @@
     <header class="clearfix">
         <div id="Service">
             <h1>{{$service['name']}}</h1>
+            @if(!empty($service['servicedescription']))
+                {{nl2br($service['servicedescription'])}}
+            @endif
         </div>
     </header>
     <main>

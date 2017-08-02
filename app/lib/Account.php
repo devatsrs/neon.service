@@ -25,6 +25,17 @@ class Account extends \Eloquent {
     public static $req_cdr_detail_column_single = array('cli','cld','connect_time','disconnect_time','billed_duration_sec','cost');
     public static $req_cdr_summary_column_single = array('area_prefix','total_charges','total_duration','number_of_cdr');
 
+    static  $defaultAccountAuditFields = [
+        'AccountName'=>'AccountName',
+        'Address1'=>'Address1',
+        'Address2'=>'Address2',
+        'Address3'=>'Address3',
+        'City'=>'City',
+        'PostCode'=>'PostCode',
+        'Country'=>'Country',
+        'IsCustomer'=>'IsCustomer',
+        'IsVendor'=>'IsVendor'
+    ];
 
     // not in use
     public static function checkExcelFormat($cdr_type,$filepath,$single=0){
@@ -190,6 +201,44 @@ class Account extends \Eloquent {
         return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
 
+    public static function addAccountAudit($data=array()){
+        $UserID = $data['UserID'];
+        $CompanyID = $data['CompanyID'];
+        $AccountDate = $data['AccountDate'];
+        $IP = get_client_ip();
+        $header = ["UserID"=>$UserID,
+            "CompanyID"=>$CompanyID,
+            "ParentColumnName"=>'AccountID',
+            "Type"=>'account',
+            "IP"=>$IP,
+            "UserType"=>0
+        ];
+        $detail = array();
+        $accounts = Account::where(['CompanyID'=>1,'created_at'=>$AccountDate])->get()->toarray();
+        Log::info('account count '.count($accounts));
+        if(!empty($accounts) && count($accounts)>0){
+            foreach($accounts as $index=>$value ){
+                foreach(Account::$defaultAccountAuditFields as $AuditColumn){
+                    $data = ['OldValue'=>'',
+                        'NewValue'=>$value[$AuditColumn],
+                        'ColumnName'=>$AuditColumn,
+                        'ParentColumnID'=>$value['AccountID']
+                    ];
+                    $detail[]=$data;
+                }
+            }
+        }
+
+        Log::info('account audit detail count '.count($detail));
+
+        if(!empty($detail) && count($detail)>0){
+            Log::info('Audit create start');
+            AuditHeader::add_AuditLog($header,$detail);
+            Log::info('Audit create end');
+        }
+
+    }
+
     public static function getAccountIDList($data=array()){
 
         $data['Status'] = 1;
@@ -252,4 +301,5 @@ class Account extends \Eloquent {
             Log::error($err);
         }
     }
+
 }

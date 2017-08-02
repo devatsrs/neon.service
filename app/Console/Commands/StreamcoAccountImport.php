@@ -80,7 +80,7 @@ class StreamcoAccountImport extends Command {
             $addparams['ProcessID'] = $processID;
             $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
             Account::importStreamcoAccounts($streamco,$addparams);
-            Account::importStreamcoTrunks($streamco,$addparams);
+//            Account::importStreamcoTrunks($streamco,$addparams);
             // ends import accounts
 
         } catch (\Exception $e) {

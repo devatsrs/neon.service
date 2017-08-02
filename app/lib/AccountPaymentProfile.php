@@ -6,11 +6,15 @@ class AccountPaymentProfile extends \Eloquent {
     protected $table = 'tblAccountPaymentProfile';
     protected $primaryKey = "AccountPaymentProfileID";
 
-    public static function getActiveProfile($AccountID){
+    public static function getActiveProfile($AccountID,$PaymentGatewayID){
         $AccountPaymentProfile =array();
-        if(Account::where(array('AccountID'=>$AccountID))->pluck('Autopay') == 1) {
-            $AccountPaymentProfile = AccountPaymentProfile::where(array('AccountID' => $AccountID, 'Status' => 1, 'Blocked' => 0, 'isDefault' => 1))->first();
-        }
+        $AccountPaymentProfile = AccountPaymentProfile::where(array('AccountID' => $AccountID,'PaymentGatewayID'=>$PaymentGatewayID,'Status' => 1, 'isDefault' => 1))
+            ->Where(function($query)
+            {
+                $query->where("Blocked",'<>',1)
+                    ->orwhereNull("Blocked");
+            })
+            ->first();
         return $AccountPaymentProfile;
     }
     public static function setProfileBlock($AccountPaymentProfileID){
