@@ -247,7 +247,8 @@ class BulkAutoPaymentCapture extends Command {
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
                                                         if (!empty($customeremail_status['status'])) {
-                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $UserID, '', $JobID);
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
                                                         }
                                                         //Log::info($customeremail_status);
                                                     }
@@ -321,7 +322,8 @@ class BulkAutoPaymentCapture extends Command {
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
                                                         if (!empty($customeremail_status['status'])) {
-                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $UserID, '', $JobID);
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
                                                         }
                                                         //Log::info($customeremail_status);
                                                     }
