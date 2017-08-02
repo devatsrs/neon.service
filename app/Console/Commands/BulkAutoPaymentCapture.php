@@ -246,6 +246,9 @@ class BulkAutoPaymentCapture extends Command {
                                                             $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if ($customeremail_status['status'] == 0) {
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $UserID, '', $JobID);
+                                                        }
                                                         //Log::info($customeremail_status);
                                                     }
                                                 }
@@ -317,6 +320,9 @@ class BulkAutoPaymentCapture extends Command {
                                                             $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if ($customeremail_status['status'] == 0) {
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $UserID, '', $JobID);
+                                                        }
                                                         //Log::info($customeremail_status);
                                                     }
                                                 }
