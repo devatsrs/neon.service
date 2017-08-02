@@ -13,6 +13,8 @@ class Payment extends \Eloquent{
     protected $table = "tblPayment";
     protected $primaryKey = "PaymentID";
 
+    const AUTOINVOICETEMPLATE = "AutoInvoicePayment";
+
 
     public static function InvoicePaymentReminder($CompanyID,$ProcessID){
 

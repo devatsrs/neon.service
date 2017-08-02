@@ -79,6 +79,7 @@ class VendorRateFileGeneration extends Command {
 		$joblogdata['Message'] = '';
 
 		try {
+			CronJob::createLog($CronJobID);
 
 			Log::error(' ========================== streamco transaction start =============================');
 
@@ -131,7 +132,6 @@ class VendorRateFileGeneration extends Command {
 					$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 				}
 
-				CronJobLog::insert($joblogdata);
 
 			} else {
 
@@ -139,26 +139,24 @@ class VendorRateFileGeneration extends Command {
 
 				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 				$joblogdata['Message'] =  "No Script Location found";
-				CronJobLog::insert($joblogdata);
 
 
 			}
 
 
 
-			CronJob::deactivateCronJob($CronJob);
 
 
 		} catch (\Exception $e) {
 
 			//Log::error(print_r($e,true));
-			CronJob::deactivateCronJob($CronJob);
 
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-			CronJobLog::insert($joblogdata);
 
 		}
+		CronJobLog::createLog($CronJobID,$joblogdata);
+		CronJob::deactivateCronJob($CronJob);
 		Log::info("Streamco end");
 
 		CronHelper::after_cronrun($this->name, $this);

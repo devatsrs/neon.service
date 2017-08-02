@@ -44,7 +44,7 @@ class Streamco{
 
        // ssh detail
        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['sshusername']) && isset(self::$config['sshpassword'])){
-           Config::set('remote.connections.production.host',self::$config['host']);
+           Config::set('remote.connections.production.host',self::$config['sshhost']);
            Config::set('remote.connections.production.username',self::$config['sshusername']);
            Config::set('remote.connections.production.password',self::$config['sshpassword']);
        }
@@ -269,8 +269,10 @@ class Streamco{
                                 $tempItemData['AccountType'] = 1;
                                 $tempItemData['CompanyId'] = $CompanyID;
                                 $tempItemData['Status'] = 1;
-                                $tempItemData['IsCustomer'] = $temp_row->IsCustomer;
-                                $tempItemData['IsVendor'] = $temp_row->IsVendor;
+                                /*$tempItemData['IsCustomer'] = $temp_row->IsCustomer;
+                                $tempItemData['IsVendor'] = $temp_row->IsVendor;*/
+                                $tempItemData['IsCustomer'] = 1;
+                                $tempItemData['IsVendor'] = 1;
                                 $tempItemData['LeadSource'] = 'Gateway import';
                                 $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
                                 $tempItemData['ProcessID'] = $ProcessID;

@@ -87,6 +87,7 @@ class ImportAccount extends Command {
         $importoptions = array();
         $joboptions = array();
         $tempProcessID = '';
+        $AccData = array();
 
         $accountimportdate = date('Y-m-d H:i:s.000');
 
@@ -102,6 +103,7 @@ class ImportAccount extends Command {
                     $jobfile = JobFile::where(['JobID' => $JobID])->first();
                     $joboptions = json_decode($jobfile->Options);
                 }
+                $UserID = $job->JobLoggedUserID;
                 $CompanyGatewayID =0;
                 $tempCompanyGatewayID =0;
                 $AccountType = 0;
@@ -175,6 +177,7 @@ class ImportAccount extends Command {
 
                         $csvoption = $templateoptions->option;
                         $attrselection = $templateoptions->selection;
+
                         if (!empty($jobfile->FilePath)) {
                             $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                             if (strpos($path, "https://") !== false) {
@@ -463,6 +466,11 @@ class ImportAccount extends Command {
                         Log::info($JobStatusMessage);
                         Account::updateAccountNo($CompanyID);
                         Log::info('update account number - Done');
+                        Log::info('account import date - '.$accountimportdate);
+                        $AccData['UserID'] = $UserID;
+                        $AccData['CompanyID'] = $CompanyID;
+                        $AccData['AccountDate'] = $accountimportdate;
+                        Account::addAccountAudit($AccData);
                         Log::info(count($JobStatusMessage));
                         if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();
