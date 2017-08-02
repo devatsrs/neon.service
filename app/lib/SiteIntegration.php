@@ -28,7 +28,11 @@ class SiteIntegration{
  static    $emailtrackingSlug   =   'emailtracking';
  static    $imapSlug      		=   'imap';
  static    $QuickBookSlug		=	'quickbook';
- 
+ static    $paypalSlug			=	'paypal';
+ static    $StripeSlug			=	'stripe';
+ static    $StripeACHSlug		=	'stripeach';
+ static    $SagePaySlug			=	'sagepay';
+
  	public function __construct(){
 	
 		//$this->companyID = 	User::get_companyID();
