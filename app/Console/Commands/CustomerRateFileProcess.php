@@ -120,15 +120,6 @@ class CustomerRateFileProcess extends Command {
 			$error = array();
 			CronJob::createLog($CronJobID);
 
-			$Trunks = Trunk::where(["CompanyId"=>$CompanyID])->get()->toArray();
-			$TrunkArray = array();
-			if(count($Trunks)>0){
-
-				foreach($Trunks as $trunk){
-					$TrunkArray[$trunk["Trunk"]] =$trunk["TrunkID"];
-				}
-
-			}
 			foreach ($filenames as $UsageDownloadFilesID => $filename) {
 				Log::info("Loop Start");
 				$row_count = 0;
@@ -165,34 +156,23 @@ class CustomerRateFileProcess extends Command {
 									if ($row_count == 0) {
 
 
-										if (isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'], $TrunkArray)) {
-											$TrunkID = $TrunkArray[$row['GatewayTrunk']];
-										}
-
-										if (isset($row['GatewayTrunk']) && $TrunkID == 0) {
-
-											$TrunkID = Trunk::where(["CompanyId" => $CompanyID, "Trunk" => $row['GatewayTrunk']])->pluck("TrunkID");
-											if (empty($TrunkID)) {
-
-												$trunk_data = array(
-													"CompanyId" => $CompanyID,
-													"Trunk" => $row['GatewayTrunk'],
-													"Status" => 1
-												);
-												$TrunkID = Trunk::insertGetId($trunk_data);
-
-
-												$TrunkArray[$row["GatewayTrunk"]] = $TrunkID;
-												Log::error("New Trunk created " . $row['GatewayTrunk']);
-
+										if (isset($row['GatewayTrunk']) ) {
+											$TrunkIDResult = DB::select("call prc_getTrunkByMaxMatch('".$CompanyID."','".$row['GatewayTrunk']."')");
+											if(isset($TrunkIDResult[0]["TrunkID"]) && $TrunkIDResult[0]["TrunkID"] > 0) {
+												$TrunkID = $TrunkIDResult[0]["TrunkID"];
 											}
-
+										} else {
+											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
+											Log::error("Trunk Not exists in file " . $fullpath . $filename);
+											break;
 										}
+
 
 										if($TrunkID == 0) {
 
-											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
-											Log::error("Trunk Not exists in file " . $fullpath . $filename);
+											$error[] = "Trunk Not found " . $row['GatewayTrunk'];
+											Log::error("Trunk Not found " . $row['GatewayTrunk']);
+											break;
 										}
 
 
@@ -214,27 +194,6 @@ class CustomerRateFileProcess extends Command {
 										}
 										if ($TrunkID > 0 && $AccountID > 0) {
 											$delete_files[] = $UsageDownloadFilesID;
-
-											$CustomerTrunk = CustomerTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
-											if($CustomerTrunk == 0) {
-												$created_at = date('Y-m-d H:i:s');
-												$CreatedBy = 'Rate Import';
-
-												$customertrunkdata = array();
-												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
-												$customertrunkdata['CompanyID'] = $CompanyID;
-												$customertrunkdata['AccountID'] = $AccountID;
-												$customertrunkdata['TrunkID'] = $TrunkID;
-												$customertrunkdata['Status'] = 1;
-												$customertrunkdata['Prefix'] = LastPrefixNo::getLastPrefix($CompanyID);
-												$customertrunkdata['CodeDeckID'] = $CodeDeckID;
-												$customertrunkdata['created_at'] = $created_at;
-												$customertrunkdata['CreatedBy'] = $CreatedBy;
-												CustomerTrunk::insert($customertrunkdata);
-												LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'],$CompanyID);
-												Log::error("CustomerTrunk created " . $row['GatewayAccountName']);
-
-											}
 										}
 
 									}
