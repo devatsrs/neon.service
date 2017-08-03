@@ -307,7 +307,7 @@ BEGIN
 
 	-- select TrunkID from tmp_all_trunk_ order by RowNo desc limit 1;
 
-	select TrunkID from tmp_all_trunk_ where ( @p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
+	select TrunkID from tmp_all_trunk_ where ( p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
 
 
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
@@ -385,7 +385,7 @@ BEGIN
 
 		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_); 
 		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
-		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblCustomerTrunk WHERE tblCustomerTrunk.TrunkID = v_TrunkID_ AND tblCustomerTrunk.AccountID = v_AccountID_ AND tblCustomerTrunk.Status = 1);
+		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblCustomerTrunk WHERE tblCustomerTrunk.TrunkID = v_TrunkID_ AND tblCustomerTrunk.AccountID = v_AccountID_ /*AND tblCustomerTrunk.Status = 1*/);
 
 		IF v_codedeckid_ IS NOT NULL AND (SELECT COUNT(*) FROM tblCodeDeck WHERE CodeDeckId = v_codedeckid_)>0
 		THEN
@@ -781,7 +781,7 @@ BEGIN
 
 		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_); 
 		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
-		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblVendorTrunk WHERE tblVendorTrunk.TrunkID = v_TrunkID_ AND tblVendorTrunk.AccountID = v_AccountID_ AND tblVendorTrunk.Status = 1);
+		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblVendorTrunk WHERE tblVendorTrunk.TrunkID = v_TrunkID_ AND tblVendorTrunk.AccountID = v_AccountID_ /*AND tblVendorTrunk.Status = 1*/);
 
 		IF v_codedeckid_ IS NOT NULL AND (SELECT COUNT(*) FROM tblCodeDeck WHERE CodeDeckId = v_codedeckid_)>0
 		THEN
