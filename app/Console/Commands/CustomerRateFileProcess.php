@@ -165,7 +165,7 @@ class CustomerRateFileProcess extends Command {
 
 											$error_message = "GatewayTrunk Not exists in file.";
 
-											$error[] = $error_message;
+											//$error[] = $error_message;
 											Log::error($error_message);
 											throw  new \Exception($error_message);
 
@@ -176,7 +176,7 @@ class CustomerRateFileProcess extends Command {
 
 											$error_message = "Trunk not found for '" . $row['GatewayTrunk'];
 
-											$error[] = $error_message;
+											//$error[] = $error_message;
 											Log::error($error_message);
 											throw  new \Exception($error_message);
 
@@ -191,7 +191,7 @@ class CustomerRateFileProcess extends Command {
 
 												$error_message = "Account Name '" . $row['GatewayAccountName'] . "' not found";
 
-												$error[] = $error_message;
+												//$error[] = $error_message;
 												Log::error($error_message);
 												throw  new \Exception($error_message);
 
@@ -294,6 +294,7 @@ class CustomerRateFileProcess extends Command {
 			Log::info("Loop End");
 
 
+
 			Log::error(' ========================== vos transaction end =============================');
 			//ProcessCDR
 
@@ -303,6 +304,8 @@ class CustomerRateFileProcess extends Command {
 			$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
 			if (count($result_data)) {
 				$joblogdata['Message'] .=  implode('<br>', $result_data);
+			} else {
+				$joblogdata['Message'] .= "No data imported";
 			}
 
 			/** update file process to completed */
