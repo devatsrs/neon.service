@@ -167,14 +167,21 @@ class VendorRateFileProcess extends Command {
 												$TrunkID = $TrunkIDResult[0]->TrunkID;
 											}
 										} else {
-											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
-											Log::error("Trunk Not exists in file " . $fullpath . $filename);
-											break;
+
+											$error_message = "GatewayTrunk Not exists in file.";
+
+											$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
 										}
 
 										if($TrunkID == 0){
-											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
-											Log::error("Trunk Not exists in file " . $fullpath . $filename);
+
+											$error_message = "Trunk not found for '" . $row['GatewayTrunk'];
+
+											$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
 										}
 
 
@@ -184,11 +191,12 @@ class VendorRateFileProcess extends Command {
 
 											if (!in_array($row['GatewayAccountName'], $Accounts)) {
 
-												$error[] = "Account Name '" . $row['GatewayAccountName'] . "' not found.";
+												$error_message = "Account Name '" . $row['GatewayAccountName'] . "' not found";
 
-												UsageDownloadFiles::UpdateToPending([$UsageDownloadFilesID]);
+												$error[] = $error_message;
+												Log::error($error_message);
+												throw  new \Exception($error_message);
 
-												break;
 											} else {
 
 												$AccountID = array_search($row['GatewayAccountName'], $Accounts);
@@ -198,6 +206,25 @@ class VendorRateFileProcess extends Command {
 										if ($TrunkID > 0 && $AccountID > 0) {
 
 											$delete_files[] = $UsageDownloadFilesID;
+
+											$VendorTrunk = VendorTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+											if($VendorTrunk == 0) {
+												$created_at = date('Y-m-d H:i:s');
+												$CreatedBy = 'Rate Import';
+
+												$vendortrunkdata = array();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$vendortrunkdata['CompanyID'] = $CompanyID;
+												$vendortrunkdata['AccountID'] = $AccountID;
+												$vendortrunkdata['TrunkID'] = $TrunkID;
+												$vendortrunkdata['Status'] = 1;
+												$vendortrunkdata['CodeDeckID'] = $CodeDeckID;
+												$vendortrunkdata['created_at'] = $created_at;
+												$vendortrunkdata['CreatedBy'] = $CreatedBy;
+												VendorTrunk::insert($vendortrunkdata);
+												Log::error("VendorTrunk created " . $row['GatewayAccountName']);
+											}
+
 
 										}
 
@@ -229,11 +256,6 @@ class VendorRateFileProcess extends Command {
 										}
 
 										$row_count++;
-
-									} else {
-
-										Log::error("Trunk & Account are not found ");
-										Log::error(print_r($row, true));
 
 									}
 								}
