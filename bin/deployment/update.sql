@@ -279,6 +279,7 @@ CREATE PROCEDURE `prc_getTrunkByMaxMatch`(
 BEGIN
 
 
+
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
 
@@ -307,11 +308,10 @@ BEGIN
 
 	-- select TrunkID from tmp_all_trunk_ order by RowNo desc limit 1;
 
-	select TrunkID from tmp_all_trunk_ where ( p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
+	select TrunkID , @p_Trunk  as Trunk  from tmp_all_trunk_ where ( @p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
 
 
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-
 
 
 END|
@@ -636,7 +636,6 @@ BEGIN
 		ON tblVendorPreference.RateId = temp.RateID
 		AND tblVendorPreference.TrunkID = temp.TrunkID
 		AND tblVendorPreference.AccountId  = temp.AccountID
-		AND tblVendorPreference.EffectiveDate = temp.EffectiveDate
 	SET tblVendorPreference.Preference = temp.Interval1,created_at=NOW(),CreatedBy="SYSTEM IMPORTED"
 	WHERE tblVendorPreference.AccountId = "' , p_AccountID , '" AND tblVendorPreference.TrunkID = "' , p_TrunkID , '" AND ProcessID = "' , p_ProcessID , ' AND tblVendorPreference.Preference <> 0";
 	');
@@ -653,7 +652,6 @@ BEGIN
 		ON tblVendorPreference.RateId = temp.RateID
 		AND tblVendorPreference.TrunkID = temp.TrunkID
 		AND tblVendorPreference.AccountId  = temp.AccountID
-		AND tblVendorPreference.EffectiveDate = temp.EffectiveDate
 		AND ProcessID = "' , p_ProcessID , '"
 	WHERE VendorRateID IS NULL AND temp.AccountID = "' , p_AccountID , '" AND temp.TrunkID = "' , p_TrunkID , '" AND tblVendorPreference.Preference <> 0 AND temp.RateID IS NOT NULL;
 	');

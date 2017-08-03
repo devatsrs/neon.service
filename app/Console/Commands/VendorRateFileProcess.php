@@ -170,7 +170,7 @@ class VendorRateFileProcess extends Command {
 
 											$error_message = "GatewayTrunk Not exists in file.";
 
-											$error[] = $error_message;
+											//$error[] = $error_message;
 											Log::error($error_message);
 											throw  new \Exception($error_message);
 										}
@@ -179,7 +179,7 @@ class VendorRateFileProcess extends Command {
 
 											$error_message = "Trunk not found for '" . $row['GatewayTrunk'];
 
-											$error[] = $error_message;
+											//$error[] = $error_message;
 											Log::error($error_message);
 											throw  new \Exception($error_message);
 										}
@@ -193,7 +193,7 @@ class VendorRateFileProcess extends Command {
 
 												$error_message = "Account Name '" . $row['GatewayAccountName'] . "' not found";
 
-												$error[] = $error_message;
+												//$error[] = $error_message;
 												Log::error($error_message);
 												throw  new \Exception($error_message);
 
@@ -302,6 +302,8 @@ class VendorRateFileProcess extends Command {
 			$result_data = RateImportExporter::importVendorRate($processID, $temptableName);
 			if (count($result_data)) {
 				$joblogdata['Message'] .=  implode('<br>', $result_data);
+			} else {
+				$joblogdata['Message'] .= "No data imported";
 			}
 			/** update file process to completed */
 			UsageDownloadFiles::UpdateProcessToComplete($delete_files);
