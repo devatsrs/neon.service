@@ -24,7 +24,7 @@ class Notification extends \Eloquent {
         Notification::PendingApprovalPayment=>'Pending Approval Payment',
         Notification::BlockAccount=>'Block Account',
         Notification::RetentionDiskSpaceEmail=>'Retention Disk Space Email',
-        Notification::InvoicePaidByCustomer=>'Invoice Paid By Customer'
+        Notification::InvoicePaidByCustomer=>'Invoice Paid'
     ];
 
     public static function getNotificationMail($data){
