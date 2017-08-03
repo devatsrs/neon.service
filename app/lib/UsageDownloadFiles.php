@@ -127,10 +127,12 @@ class UsageDownloadFiles extends Model {
     /** update file status to progress */
     public static function UpdateFileStatusToError($CompanyID,$cronsetting,$JobTitle,$UsageDownloadFilesID,$errormsg){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
-        if(!empty($UsageDownloadFiles) && !empty($cronsetting['ErrorEmail'])){
+        if(!empty($UsageDownloadFiles) ){
             $message = $UsageDownloadFiles->Message.$errormsg;
             $UsageDownloadFiles->update(array('Status'=>self::ERROR,'Message'=>$message));
-            Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->FileName);
+            if(!empty($cronsetting['ErrorEmail'])){
+                Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->FileName);
+            }
         }
     }
 
