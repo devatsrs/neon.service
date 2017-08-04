@@ -137,9 +137,10 @@ class BulkAutoPaymentCapture extends Command {
                         $PaymentDueInDays=0;
                     }
                     /**  Get All UnPaid  Invoice */
-                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."' ) ");
+                    $AutoPay = 1;
+                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."', '".$AutoPay."' ) ");
 
-                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .")");
+                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
 
                     log::info('PaymentPendingInvoice Count - '.count($unPaidInvoices));
 
