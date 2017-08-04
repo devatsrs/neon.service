@@ -234,7 +234,7 @@
         @else
             <div id="Service">
                 @if(!empty($service['servicedescription']))
-                    <h1> {{nl2br($service['servicedescription'])}} </h1>
+                    <h2> {{nl2br($service['servicedescription'])}} </h2>
                 @endif
             </div>
         @endif
@@ -368,7 +368,7 @@
                     @else
                         <div id="Service">
                             @if(!empty($service['servicedescription']))
-                                <h1> {{nl2br($service['servicedescription'])}} </h1>
+                                <h2> {{nl2br($service['servicedescription'])}} </h2>
                             @endif
                         </div>
                     @endif
