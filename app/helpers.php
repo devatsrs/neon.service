@@ -263,6 +263,7 @@ function template_var_replace($EmailMessage,$replace_array){
 		"{{CompanyPostCode}}",
 		"{{CompanyCountry}}",
 		"{{Logo}}",
+        "{{TrunkPrefix}}"
     ];
 
     foreach($extra as $item){
