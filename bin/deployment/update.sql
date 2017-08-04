@@ -279,6 +279,7 @@ CREATE PROCEDURE `prc_getTrunkByMaxMatch`(
 BEGIN
 
 
+
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
 
@@ -307,11 +308,10 @@ BEGIN
 
 	-- select TrunkID from tmp_all_trunk_ order by RowNo desc limit 1;
 
-	select TrunkID from tmp_all_trunk_ where ( @p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
+	select TrunkID , @p_Trunk  as Trunk  from tmp_all_trunk_ where ( @p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
 
 
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-
 
 
 END|
@@ -321,13 +321,7 @@ DROP PROCEDURE IF EXISTS `prc_GetSingleTicket`;
 DELIMITER |	
 CREATE PROCEDURE `prc_GetSingleTicket`(
 	IN `p_TicketID` INT
-
 )
-LANGUAGE SQL
-NOT DETERMINISTIC
-CONTAINS SQL
-SQL SECURITY DEFINER
-COMMENT ''
 BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
@@ -385,7 +379,7 @@ BEGIN
 
 		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_); 
 		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
-		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblCustomerTrunk WHERE tblCustomerTrunk.TrunkID = v_TrunkID_ AND tblCustomerTrunk.AccountID = v_AccountID_ AND tblCustomerTrunk.Status = 1);
+		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblCustomerTrunk WHERE tblCustomerTrunk.TrunkID = v_TrunkID_ AND tblCustomerTrunk.AccountID = v_AccountID_ /*AND tblCustomerTrunk.Status = 1*/);
 
 		IF v_codedeckid_ IS NOT NULL AND (SELECT COUNT(*) FROM tblCodeDeck WHERE CodeDeckId = v_codedeckid_)>0
 		THEN
@@ -642,7 +636,6 @@ BEGIN
 		ON tblVendorPreference.RateId = temp.RateID
 		AND tblVendorPreference.TrunkID = temp.TrunkID
 		AND tblVendorPreference.AccountId  = temp.AccountID
-		AND tblVendorPreference.EffectiveDate = temp.EffectiveDate
 	SET tblVendorPreference.Preference = temp.Interval1,created_at=NOW(),CreatedBy="SYSTEM IMPORTED"
 	WHERE tblVendorPreference.AccountId = "' , p_AccountID , '" AND tblVendorPreference.TrunkID = "' , p_TrunkID , '" AND ProcessID = "' , p_ProcessID , ' AND tblVendorPreference.Preference <> 0";
 	');
@@ -659,7 +652,6 @@ BEGIN
 		ON tblVendorPreference.RateId = temp.RateID
 		AND tblVendorPreference.TrunkID = temp.TrunkID
 		AND tblVendorPreference.AccountId  = temp.AccountID
-		AND tblVendorPreference.EffectiveDate = temp.EffectiveDate
 		AND ProcessID = "' , p_ProcessID , '"
 	WHERE VendorRateID IS NULL AND temp.AccountID = "' , p_AccountID , '" AND temp.TrunkID = "' , p_TrunkID , '" AND tblVendorPreference.Preference <> 0 AND temp.RateID IS NOT NULL;
 	');
@@ -781,7 +773,7 @@ BEGIN
 
 		SET v_TrunkID_ = (SELECT TrunkID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_); 
 		SET v_AccountID_ = (SELECT AccountID FROM tmp_AccountTrunk_ t WHERE t.RowID = v_pointer_);
-		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblVendorTrunk WHERE tblVendorTrunk.TrunkID = v_TrunkID_ AND tblVendorTrunk.AccountID = v_AccountID_ AND tblVendorTrunk.Status = 1);
+		SET v_codedeckid_ = (SELECT CodeDeckId FROM tblVendorTrunk WHERE tblVendorTrunk.TrunkID = v_TrunkID_ AND tblVendorTrunk.AccountID = v_AccountID_ /*AND tblVendorTrunk.Status = 1*/);
 
 		IF v_codedeckid_ IS NOT NULL AND (SELECT COUNT(*) FROM tblCodeDeck WHERE CodeDeckId = v_codedeckid_)>0
 		THEN
@@ -3517,13 +3509,7 @@ CREATE PROCEDURE `prc_getProducts`(
 	IN `p_lSortCol` VARCHAR(50),
 	IN `p_SortOrder` VARCHAR(5),
 	IN `p_Export` INT
-
 )
-LANGUAGE SQL
-NOT DETERMINISTIC
-CONTAINS SQL
-SQL SECURITY DEFINER
-COMMENT ''
 BEGIN
      DECLARE v_OffSet_ int;
      SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
@@ -3614,6 +3600,142 @@ BEGIN
 END|
 DELIMITER ;
 
+USE `StagingReport`;
+
+DROP PROCEDURE IF EXISTS `prc_getDailyReport`;
+DELIMITER |
+CREATE PROCEDURE `prc_getDailyReport`(
+	IN `p_CompanyID` INT,
+	IN `p_AccountID` INT,
+	IN `p_StartDate` DATE,
+	IN `p_EndDate` DATE,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_isExport` INT
+)
+BEGIN
+	DECLARE v_OffSet_ int;
+	DECLARE v_Round_ int;
+	SET sql_mode = 'ALLOW_INVALID_DATES';	
+	SET @PreviosBalance := 0;
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SELECT fnGetRoundingPoint(p_CompanyID) INTO v_Round_;
+	
+	IF p_StartDate <> '0000-00-00'
+	THEN
+	SET @PreviosBalance := 
+	(SELECT 
+		COALESCE(SUM(Amount),0)
+	FROM RMBilling3.tblPayment 
+	WHERE CompanyID = p_CompanyID
+		AND AccountID = p_AccountID
+		AND Status = 'Approved'
+		AND Recall =0
+		AND PaymentType = 'Payment In'
+		AND PaymentDate < p_StartDate) - 
+		
+		(SELECT 
+		COALESCE(SUM(TotalCharges),0)
+	FROM tblHeader
+	INNER JOIN tblDimDate 
+		ON tblDimDate.DateID = tblHeader.DateID
+	WHERE CompanyID = p_CompanyID
+		AND AccountID = p_AccountID
+		AND date < p_StartDate);
+		
+	END IF;
+
+	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+	
+	DROP TEMPORARY TABLE IF EXISTS tmp_dates_;
+	CREATE TEMPORARY TABLE tmp_dates_  (
+		RowID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		Dates Date,
+		UNIQUE INDEX `date` (`Dates`)
+	);
+	INSERT INTO tmp_dates_ (Dates)
+	SELECT 
+		DISTINCT DATE(PaymentDate) 
+	FROM RMBilling3.tblPayment 
+	WHERE CompanyID = p_CompanyID
+		AND AccountID = p_AccountID
+		AND Status = 'Approved'
+		AND Recall =0
+		AND PaymentType = 'Payment In'
+		AND (p_StartDate = '0000-00-00' OR ( p_StartDate != '0000-00-00' AND PaymentDate >= p_StartDate) )
+		AND (p_EndDate = '0000-00-00' OR ( p_EndDate != '0000-00-00' AND PaymentDate <= p_EndDate));
+	
+	INSERT IGNORE INTO tmp_dates_ (Dates)
+	SELECT 
+		DISTINCT date 
+	FROM tblHeader
+	INNER JOIN tblDimDate 
+		ON tblDimDate.DateID = tblHeader.DateID
+	WHERE CompanyID = p_CompanyID
+		AND AccountID = p_AccountID
+		AND (p_StartDate = '0000-00-00' OR ( p_StartDate != '0000-00-00' AND date >= p_StartDate) )
+		AND (p_EndDate = '0000-00-00' OR ( p_EndDate != '0000-00-00' AND date <= p_EndDate));
+
+
+	IF p_isExport = 0
+	THEN
+
+		SELECT 
+			Dates,
+			ROUND(SUM(Amount),v_Round_),
+			ROUND(SUM(TotalCharges),v_Round_),
+			ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_),
+			@PreviosBalance:= ROUND(@PreviosBalance,v_Round_)+ ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_) AS Balance 
+		FROM tmp_dates_
+		LEFT JOIN RMBilling3.tblPayment 
+			ON date(PaymentDate) = Dates 
+			AND tblPayment.AccountID = p_AccountID
+			AND Status = 'Approved'
+			AND Recall =0
+			AND PaymentType = 'Payment In'
+		LEFT JOIN tblDimDate 
+			ON date = Dates
+		LEFT JOIN tblHeader 
+			ON tblDimDate.DateID = tblHeader.DateID 
+			AND tblHeader.AccountID = p_AccountID
+		GROUP BY Dates 
+		LIMIT p_RowspPage OFFSET v_OffSet_;
+		
+		SELECT
+			COUNT(*) AS totalcount
+		FROM tmp_dates_;
+
+	END IF;
+	
+	IF p_isExport = 1
+	THEN
+
+		SELECT 
+			Dates AS `Date`,
+			ROUND(SUM(Amount),v_Round_) AS `Payments`,
+			ROUND(SUM(TotalCharges),v_Round_) AS `Consumption`,
+			ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_) AS `Total`,
+			@PreviosBalance:= ROUND(@PreviosBalance,v_Round_)+ ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_) AS `Balance`
+		FROM tmp_dates_
+		LEFT JOIN RMBilling3.tblPayment 
+			ON date(PaymentDate) = Dates 
+			AND tblPayment.AccountID = p_AccountID
+			AND Status = 'Approved'
+			AND Recall =0
+			AND PaymentType = 'Payment In'
+		LEFT JOIN tblDimDate 
+			ON date = Dates
+		LEFT JOIN tblHeader 
+			ON tblDimDate.DateID = tblHeader.DateID 
+			AND tblHeader.AccountID = p_AccountID
+		GROUP BY Dates;
+		
+	END IF;
+
+END|
+DELIMITER ;
+
+
 USE `Ratemanagement3`;
 
 ALTER TABLE `tblAccountBilling`
@@ -3636,6 +3758,7 @@ INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, '
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_ACCOUNT_IMPORT', '{"ThresholdTime":"60","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"10","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":"25"}');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'CUSTOMER_RATE_FILE_IMPORT_CRONJOB', '{"customers":[],"ScriptLocation":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'VENDOR_RATE_FILE_IMPORT_CRONJOB', '{"vendors":[],"ScriptLocation":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'CUSTOMER_MOVEMENT_REPORT_DISPLAY', '0');
 
 INSERT INTO `tblGateway` (`GatewayID`, `Title`, `Name`, `Status`, `CreatedBy`, `created_at`, `ModifiedBy`, `updated_at`) VALUES (9, 'Locutorios', 'CallShop', 1, 'RateManagementSystem', '2017-07-14 00:00:00', NULL, NULL);
 INSERT INTO `tblGateway` (`GatewayID`, `Title`, `Name`, `Status`, `CreatedBy`, `created_at`, `ModifiedBy`, `updated_at`) VALUES (10, 'Streamco', 'Streamco', 1, 'RateManagementSystem', '2017-07-22 11:09:43', NULL, NULL);

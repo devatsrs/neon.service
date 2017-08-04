@@ -162,17 +162,24 @@ class CustomerRateFileProcess extends Command {
 												$TrunkID = $TrunkIDResult[0]->TrunkID;
 											}
 										} else {
-											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
-											Log::error("Trunk Not exists in file " . $fullpath . $filename);
-											break;
+
+											$error_message = "GatewayTrunk Not exists in file.";
+
+											//$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
+
 										}
 
 
 										if($TrunkID == 0) {
 
-											$error[] = "Trunk Not found " . $row['GatewayTrunk'];
-											Log::error("Trunk Not found " . $row['GatewayTrunk']);
-											break;
+											$error_message = "Trunk not found for '" . $row['GatewayTrunk'];
+
+											//$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
+
 										}
 
 
@@ -182,11 +189,13 @@ class CustomerRateFileProcess extends Command {
 
 											if (!in_array($row['GatewayAccountName'], $Accounts)) {
 
-												$error[] = "Account Name '" . $row['GatewayAccountName'] . "' not found.";
+												$error_message = "Account Name '" . $row['GatewayAccountName'] . "' not found";
 
-												UsageDownloadFiles::UpdateToPending([$UsageDownloadFilesID]);
+												//$error[] = $error_message;
+												Log::error($error_message);
+												throw  new \Exception($error_message);
 
-												break;
+
 											} else {
 
 												$AccountID = array_search($row['GatewayAccountName'], $Accounts);
@@ -194,6 +203,26 @@ class CustomerRateFileProcess extends Command {
 										}
 										if ($TrunkID > 0 && $AccountID > 0) {
 											$delete_files[] = $UsageDownloadFilesID;
+
+											$CustomerTrunk = CustomerTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
+											if($CustomerTrunk == 0) {
+												$created_at = date('Y-m-d H:i:s');
+												$CreatedBy = 'Rate Import';
+
+												$customertrunkdata = array();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$customertrunkdata['CompanyID'] = $CompanyID;
+												$customertrunkdata['AccountID'] = $AccountID;
+												$customertrunkdata['TrunkID'] = $TrunkID;
+												$customertrunkdata['Status'] = 1;
+												$customertrunkdata['Prefix'] = LastPrefixNo::getLastPrefix($CompanyID);
+												$customertrunkdata['CodeDeckID'] = $CodeDeckID;
+												$customertrunkdata['created_at'] = $created_at;
+												$customertrunkdata['CreatedBy'] = $CreatedBy;
+												CustomerTrunk::insert($customertrunkdata);
+												LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'], $CompanyID);
+												Log::error("CustomerTrunk created " . $row['GatewayAccountName']);
+											}
 										}
 
 									}
@@ -225,24 +254,21 @@ class CustomerRateFileProcess extends Command {
 
 										$row_count++;
 
-									} else {
-
-										Log::error("Trunk & Account are not found ");
-										Log::error(print_r($row, true));
-
 									}
 								}
 								$data_count++;
 
 
-							}
-						}//loop
+							}//rows loop
+						}
 
-							if(!empty($InserData)){
-								DB::table($temptableName)->insert($InserData);
-							}
+						if(!empty($InserData)) {
+							DB::table($temptableName)->insert($InserData);
+						}
 
 					}catch(\Exception $e){
+
+						Log::error($fullpath.$filename);
 
 						Log::error($e);
 						/** update file status to error */
@@ -268,6 +294,7 @@ class CustomerRateFileProcess extends Command {
 			Log::info("Loop End");
 
 
+
 			Log::error(' ========================== vos transaction end =============================');
 			//ProcessCDR
 
@@ -277,6 +304,8 @@ class CustomerRateFileProcess extends Command {
 			$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
 			if (count($result_data)) {
 				$joblogdata['Message'] .=  implode('<br>', $result_data);
+			} else {
+				$joblogdata['Message'] .= "No data imported";
 			}
 
 			/** update file process to completed */
