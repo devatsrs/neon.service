@@ -1,6 +1,8 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\EmailsTemplates;
+use App\Lib\AccountBilling;
 use App\Lib\AccountPaymentProfile;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -14,6 +16,8 @@ use App\Lib\Payment;
 use App\Lib\PaymentGateway;
 use App\Lib\TransactionLog;
 use App\Lib\User;
+use App\Lib\Notification;
+use App\Lib\CompanyConfiguration;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -88,12 +92,15 @@ class BulkAutoPaymentCapture extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $errors = array();
-
+        Log::useFiles(storage_path() . '/logs/bulkautopaymentcapture-' . date('Y-m-d') . '.log');
         /**  Loop through account Outstanding.*/
-        $Accounts = Account::select(["AccountID", "AccountName","CompanyId","CurrencyId"])
-                    ->where(["CompanyID" => $CompanyID, "Status" => 1, "AccountType" => 1, "Autopay" => 1])
-                    //->where(["AccountID" => 13])
-                    ->get();
+
+        $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID','tblAccountBilling.AutoPaymentSetting','tblAccount.*')
+            ->where(array('CompanyID'=>$CompanyID,'Status'=>1,'Billing'=>1,"AccountType"=>1))
+            ->whereNotNull('AutoPaymentSetting')
+            ->where('AutoPaymentSetting','<>','never')
+            ->get();
 
         /**  Create a Job */
         $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
@@ -110,88 +117,251 @@ class BulkAutoPaymentCapture extends Command {
         $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         $JobID = Job::insertGetId($jobdata);
-
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $Company=Company::find($CompanyID);
         /** ************************************************************/
         try {
             CronJob::createLog($CronJobID);
-            foreach ($Accounts as $account) {
-                $outstanamout = DB::connection('sqlsrv2')->select('CALL prc_getAccountOutstandingAmount( ' . $CompanyID . ',' . $account->AccountID .")");
-                $outstanginamount = isset($outstanamout[0]) ? $outstanamout[0]->Outstanding : 0;
+            if(!empty($Accounts) && count($Accounts)>0) {
+                foreach ($Accounts as $account) {
+                    $AccountID=$account->AccountID;
+                    $AutoPaymentSetting=$account->AutoPaymentSetting;
+                    $PaymentMethod=$account->PaymentMethod;
 
-                if ($outstanginamount > 0) {
+                    $PaymentDueInDays=1;
+                    /**
+                     * if auto payment setting is invoice day, $PaymentDueInDays=0
+                     * if auto payment setting is due date, $PaymentDueInDays=1
+                     */
+                    if($AutoPaymentSetting=='invoiceday'){
+                        $PaymentDueInDays=0;
+                    }
+                    /**  Get All UnPaid  Invoice */
+                    $AutoPay = 1;
+                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."', '".$AutoPay."' ) ");
 
-                    /**  get Default Payment Method*/
-                    $CustomerProfile = AccountPaymentProfile::getActiveProfile($account->AccountID);
-                    if(!empty($CustomerProfile)) {
-                        $PaymentGateway = PaymentGateway::getName($CustomerProfile->PaymentGatewayID);
-                        $AccountPaymentProfileID = $CustomerProfile->AccountPaymentProfileID;
-                        $options = json_decode($CustomerProfile->Options);
-                        /**  Get All UnPaid  Invoice */
-                        $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID.',' . $account->AccountID.",1)");
+                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
 
-                        /**  Start Transaction */
-                        $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account,$AccountPaymentProfileID,$CompanyID);
+                    log::info('PaymentPendingInvoice Count - '.count($unPaidInvoices));
 
-                        if (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1) {
-                            foreach ($unPaidInvoices as $Invoiceid) {
-                                /**  Update Invoice as Paid */
-                                $Invoice = Invoice::find($Invoiceid->InvoiceID);
-                                $paymentdata = array();
-                                $paymentdata['CompanyID'] = $Invoice->CompanyID;
-                                $paymentdata['AccountID'] = $Invoice->AccountID;
-                                $paymentdata['InvoiceNo'] = $Invoice->FullInvoiceNumber;
-                                $paymentdata['InvoiceID'] = (int)$Invoice->InvoiceID;
-                                $paymentdata['PaymentDate'] = date('Y-m-d');
-                                $paymentdata['PaymentMethod'] = $transactionResponse['transaction_payment_method'];
-                                $paymentdata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
-                                $paymentdata['PaymentType'] = 'Payment In';
-                                $paymentdata['Notes'] = $transactionResponse['transaction_notes'];
-                                $paymentdata['Amount'] = floatval($Invoiceid->RemaingAmount);
-                                $paymentdata['Status'] = 'Approved';
-                                $paymentdata['created_at'] = date('Y-m-d H:i:s');
-                                $paymentdata['updated_at'] = date('Y-m-d H:i:s');
-                                $paymentdata['CreatedBy'] = $CreatedBy;
-                                $paymentdata['ModifyBy'] = $CreatedBy;
-                                Payment::insert($paymentdata);
-                                $transactiondata = array();
-                                $transactiondata['CompanyID'] = $account->CompanyId;
-                                $transactiondata['AccountID'] = $account->AccountID;
-                                $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
-                                $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
-                                $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
-                                $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
-                                $transactiondata['Status'] = TransactionLog::SUCCESS;
-                                $transactiondata['created_at'] = date('Y-m-d H:i:s');
-                                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
-                                $transactiondata['CreatedBy'] = 'RMScheduler';
-                                $transactiondata['ModifyBy'] = 'RMScheduler';
-                                TransactionLog::insert($transactiondata);
-                                $Invoice->update(array('InvoiceStatus' => Invoice::PAID));
+                    if(!empty($unPaidInvoices)) {
+
+                        if (!empty($PaymentMethod)) {
+                            $PaymentGatewayID = PaymentGateway::getPaymentGatewayIDByName($PaymentMethod);
+                            if (!empty($PaymentGatewayID)) {
+                                $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
+                                if (!empty($CustomerProfile)) {
+                                    $PaymentGateway = $PaymentMethod;
+                                    $AccountPaymentProfileID = $CustomerProfile->AccountPaymentProfileID;
+                                    $options = json_decode($CustomerProfile->Options);
+
+                                    $outstanginamount = 0;
+                                    $fullnumber = '';
+                                    foreach ($unPaidInvoices as $Invoiceid) {
+                                        $outstanginamount += $Invoiceid->RemaingAmount;
+                                        $AllInvoice = Invoice::find($Invoiceid->InvoiceID);
+                                        $fullnumber .= $AllInvoice->FullInvoiceNumber . ',';
+                                    }
+                                    if ($fullnumber != '') {
+                                        $fullnumber = rtrim($fullnumber, ',');
+                                    }
+                                    $outstanginamount = number_format($outstanginamount, 2, '.', '');
+                                    $options->InvoiceNumber = $fullnumber;
+
+                                    Log::info("Outstanding Amount " . $outstanginamount);
+                                    Log::info("Invoice Full Number " . $fullnumber);
+
+                                    /**  Start Transaction */
+                                    Log::info("Transaction start");
+                                    $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account, $AccountPaymentProfileID, $CompanyID);
+                                    Log::info("Transaction end");
+                                    if (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1) {
+                                        foreach ($unPaidInvoices as $Invoiceid) {
+                                            /**  Update Invoice as Paid */
+                                            $Invoice = Invoice::find($Invoiceid->InvoiceID);
+                                            $paymentdata = array();
+                                            $paymentdata['CompanyID'] = $Invoice->CompanyID;
+                                            $paymentdata['AccountID'] = $Invoice->AccountID;
+                                            $paymentdata['InvoiceNo'] = $Invoice->FullInvoiceNumber;
+                                            $paymentdata['InvoiceID'] = (int)$Invoice->InvoiceID;
+                                            $paymentdata['PaymentDate'] = date('Y-m-d');
+                                            $paymentdata['PaymentMethod'] = $transactionResponse['transaction_payment_method'];
+                                            $paymentdata['CurrencyID'] = $account->CurrencyId;
+                                            $paymentdata['PaymentType'] = 'Payment In';
+                                            $paymentdata['Notes'] = $transactionResponse['transaction_notes'];
+                                            $paymentdata['Amount'] = floatval($Invoiceid->RemaingAmount);
+                                            $paymentdata['Status'] = 'Approved';
+                                            $paymentdata['created_at'] = date('Y-m-d H:i:s');
+                                            $paymentdata['updated_at'] = date('Y-m-d H:i:s');
+                                            $paymentdata['CreatedBy'] = $CreatedBy;
+                                            $paymentdata['ModifyBy'] = $CreatedBy;
+                                            Payment::insert($paymentdata);
+                                            $transactiondata = array();
+                                            $transactiondata['CompanyID'] = $account->CompanyId;
+                                            $transactiondata['AccountID'] = $account->AccountID;
+                                            $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
+                                            $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
+                                            $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
+                                            $transactiondata['Status'] = TransactionLog::SUCCESS;
+                                            $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                                            $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                                            $transactiondata['CreatedBy'] = 'RMScheduler';
+                                            $transactiondata['ModifyBy'] = 'RMScheduler';
+                                            TransactionLog::insert($transactiondata);
+                                            $Invoice->update(array('InvoiceStatus' => Invoice::PAID));
+
+                                            $Emaildata = array();
+                                            $CustomerEmail = '';
+                                            if ($EMAIL_TO_CUSTOMER == 1) {
+                                                $CustomerEmail = $account->BillingEmail;
+                                            }
+                                            $Emaildata['Subject'] = $fullnumber . ' Invoice Payment';
+                                            $Emaildata['CompanyID'] = $CompanyID;
+                                            $Emaildata['CompanyName'] = $Company->CompanyName;
+                                            $Emaildata['AccountName'] = $account->AccountName;
+                                            $Emaildata['Amount'] = floatval($Invoiceid->RemaingAmount);
+                                            $Emaildata['Status'] = 'Success';
+                                            $Emaildata['PaymentMethod'] = $PaymentMethod;
+                                            $Emaildata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
+                                            $Emaildata['Notes'] = $transactionResponse['transaction_notes'];
+
+                                            $CustomerEmail = explode(",", $CustomerEmail);
+                                            $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                            if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
+                                                $staticdata = array();
+                                                $staticdata['PaidAmount'] = floatval($Invoiceid->RemaingAmount);
+                                                $staticdata['PaidStatus'] = 'Success';
+                                                $staticdata['PaymentMethod'] = $PaymentMethod;
+                                                $staticdata['PaymentNotes'] = $transactionResponse['transaction_notes'];
+
+                                                foreach ($CustomerEmail as $singleemail) {
+                                                    $singleemail = trim($singleemail);
+                                                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                                        $Emaildata['EmailTo'] = $singleemail;
+                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                                                        $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
+                                                        $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
+                                                        if (!isset($Emaildata['EmailFrom'])) {
+                                                            $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                                        }
+                                                        $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if (!empty($customeremail_status['status'])) {
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
+                                                        }
+                                                        //Log::info($customeremail_status);
+                                                    }
+                                                }
+                                            }
+
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
+                                            $emailArray = explode(',', $NotificationEmails);
+                                            if (!empty($emailArray)) {
+                                                foreach ($emailArray as $singleemail) {
+                                                    $singleemail = trim($singleemail);
+                                                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                                        $Emaildata['EmailTo'] = $singleemail;
+                                                        $Emaildata['EmailToName'] = '';
+                                                        $status = Helper::sendMail('emails.AutoPaymentEmailSend', $Emaildata);
+                                                    }
+                                                }
+                                            }
+
+                                        }
+                                    } else {
+                                        foreach ($unPaidInvoices as $Invoiceid) {
+                                            $Invoice = Invoice::find($Invoiceid->InvoiceID);
+                                            $transactiondata = array();
+                                            $transactiondata['CompanyID'] = $account->CompanyId;
+                                            $transactiondata['AccountID'] = $account->AccountID;
+                                            $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
+                                            $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
+                                            $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
+                                            $transactiondata['Status'] = TransactionLog::FAILED;
+                                            $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                                            $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                                            $transactiondata['CreatedBy'] = $CreatedBy;
+                                            $transactiondata['ModifyBy'] = $CreatedBy;
+                                            TransactionLog::insert($transactiondata);
+
+                                            $Emaildata = array();
+                                            $Emaildata['Subject'] = $fullnumber . 'Invoice Payment';
+                                            $Emaildata['CompanyID'] = $CompanyID;
+                                            $Emaildata['CompanyName'] = $Company->CompanyName;
+                                            $Emaildata['AccountName'] = $account->AccountName;
+                                            $Emaildata['Amount'] = floatval($Invoiceid->RemaingAmount);;
+                                            $Emaildata['Status'] = 'Fail';
+                                            $Emaildata['PaymentMethod'] = $PaymentMethod;
+                                            $Emaildata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
+                                            $Emaildata['Notes'] = $transactionResponse['transaction_notes'];
+                                            $CustomerEmail = '';
+                                            if ($EMAIL_TO_CUSTOMER == 1) {
+                                                $CustomerEmail = $account->BillingEmail;
+                                            }
+                                            $CustomerEmail = explode(",", $CustomerEmail);
+                                            $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                            if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
+                                                $staticdata = array();
+                                                $staticdata['PaidAmount'] = floatval($Invoiceid->RemaingAmount);
+                                                $staticdata['PaidStatus'] = 'Success';
+                                                $staticdata['PaymentMethod'] = $PaymentMethod;
+                                                $staticdata['PaymentNotes'] = $transactionResponse['transaction_notes'];
+
+                                                foreach ($CustomerEmail as $singleemail) {
+                                                    $singleemail = trim($singleemail);
+                                                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                                        $Emaildata['EmailTo'] = $singleemail;
+                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                                                        $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
+                                                        $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
+                                                        if (!isset($Emaildata['EmailFrom'])) {
+                                                            $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                                        }
+                                                        $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if (!empty($customeremail_status['status'])) {
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
+                                                        }
+                                                        //Log::info($customeremail_status);
+                                                    }
+                                                }
+                                            }
+
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
+                                            $emailArray = explode(',', $NotificationEmails);
+                                            if (!empty($emailArray)) {
+                                                foreach ($emailArray as $singleemail) {
+                                                    $singleemail = trim($singleemail);
+                                                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                                        $Emaildata['EmailTo'] = $singleemail;
+                                                        $Emaildata['EmailToName'] = '';
+                                                        $status = Helper::sendMail('emails.AutoPaymentEmailSend', $Emaildata);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        $errors[] = 'Transaction Failed :' . $account->AccountName . ' Reason : ' . $transactionResponse['failed_reason'];
+                                    }
+
+                                } else {
+                                    $errors[] = 'Payment Profile Not set:' . $account->AccountName;
+                                }
+                            } else {
+                                $errors[] = 'Payment Profile Not set:' . $account->AccountName;
                             }
                         } else {
-                            foreach ($unPaidInvoices as $Invoiceid) {
-                                $Invoice = Invoice::find($Invoiceid->InvoiceID);
-                                $transactiondata = array();
-                                $transactiondata['CompanyID'] = $account->CompanyId;
-                                $transactiondata['AccountID'] = $account->AccountID;
-                                $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
-                                $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
-                                $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
-                                $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
-                                $transactiondata['Status'] = TransactionLog::FAILED;
-                                $transactiondata['created_at'] = date('Y-m-d H:i:s');
-                                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
-                                $transactiondata['CreatedBy'] = $CreatedBy;
-                                $transactiondata['ModifyBy'] = $CreatedBy;
-                                TransactionLog::insert($transactiondata);
-                            }
-                            $errors[] = 'Transaction Failed :' . $account->AccountName . ' Reason : ' . $transactionResponse['failed_reason'];
+                            $errors[] = 'Payment Method Not set:' . $account->AccountName;
                         }
-                    } else {
-                        $errors[] = 'Payment Profile Not set:' . $account->AccountName;
-                    }
-                }
-            }
+
+                    } /* account outstanding over */
+
+                } /* account loop over */
+            } /* empty account over */
+
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);

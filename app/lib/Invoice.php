@@ -1867,6 +1867,9 @@ class Invoice extends \Eloquent {
                     $service_data[$Account_ServiceID]['add_cost'] = 0;
                 }
                 $service_data[$Account_ServiceID]['name'] = AccountService::getServiceName($AccountID, $Account_ServiceID);;
+                $service_data[$Account_ServiceID]['servicedescription'] = AccountService::getServiceDescription($AccountID, $Account_ServiceID);;
+                $service_data[$Account_ServiceID]['servicedescription'] = AccountService::getServiceDescription($AccountID, $Account_ServiceID);;
+                $service_data[$Account_ServiceID]['servicetitleshow'] = AccountService::getServiceTitleShow($AccountID, $Account_ServiceID);;
             }
         }
 

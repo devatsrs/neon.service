@@ -147,6 +147,8 @@ return [
         // Excel import export
         'Maatwebsite\Excel\ExcelServiceProvider',
         'Collective\Remote\RemoteServiceProvider',
+		//stripe payment
+		'Cartalyst\Stripe\Laravel\StripeServiceProvider',
         //Zip
         'Chumper\Zipper\ZipperServiceProvider',
         //PDF
@@ -201,6 +203,7 @@ return [
         'Curl'      => '\Curl\Curl',
         'SSH'       => 'Collective\Remote\RemoteFacade',
         'Zipper' => 'Chumper\Zipper\Zipper',
+        'Stripe' => 'Cartalyst\Stripe\Laravel\Facades\Stripe',
 
 
 	],
