@@ -1,34 +1,39 @@
-<?php namespace App\Console\Commands;
+<?php
+/**
+ * Created by PhpStorm.
+ * User: srs2
+ * Date: 25/05/2015
+ * Time: 06:58 
+ */
+
+namespace App\Console\Commands;
 
 
-use App\Lib\Account;
-use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Streamco;
+use App\Lib\Customer;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
-class StreamcoAccountImport extends Command {
+class CustomerRateFileExport  extends Command {
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'streamcoaccountimport';
+    protected $name = 'customerratefileexport';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command import.';
+    protected $description = 'Command description.';
 
     /**
      * Create a new command instance.
@@ -39,7 +44,6 @@ class StreamcoAccountImport extends Command {
     {
         parent::__construct();
     }
-
     protected function getArguments()
     {
         return [
@@ -47,62 +51,50 @@ class StreamcoAccountImport extends Command {
             ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
         ];
     }
-
     /**
      * Execute the console command.
      *
      * @return mixed
      */
-    public function fire()
+    public function handle()
     {
 
         CronHelper::before_cronrun($this->name, $this );
-        ini_set('memory_limit', '-1');
+
         $arguments = $this->argument();
-        $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
-        $CronJob = CronJob::find($CronJobID);
+        $CronJobID = $arguments["CronJobID"];
+        $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-        Log::useFiles(storage_path() . '/logs/streamcoaccountimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
-        $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
-
+        Log::useFiles(storage_path() . '/logs/customerratefileexport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         try {
-            Log::error(' ========================== streamco transaction start =============================');
-            CronJob::createLog($CronJobID);
-            $streamco = new Streamco($CompanyGatewayID);
-
-            // starts import accounts
-            $addparams['CompanyGatewayID'] = $CompanyGatewayID;
-            $addparams['CompanyID'] = $CompanyID;
-            $addparams['ProcessID'] = $processID;
-            $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
-            Account::importStreamcoAccounts($streamco,$addparams);
-//            Account::importStreamcoTrunks($streamco,$addparams);
-            // ends import accounts
-
-        } catch (\Exception $e) {
-            try {
-                DB::rollback();
-            } catch (Exception $err) {
-                Log::error($err);
+            $response = Customer::generateCustomerFile($CompanyID,$cronsetting);
+            $final_array = array_merge($response['error'],$response['message']);
+            if(count($response['error'])){
+                $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                $joblogdata['Message'] = implode('<br>', fix_jobstatus_meassage($final_array));
+            }else{
+                $joblogdata['Message'] = !empty($final_array)?implode('<br>', fix_jobstatus_meassage($final_array)):'Success';
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             }
-            date_default_timezone_set(Config::get('app.timezone'));
-            $this->info('Failed:' . $e->getMessage());
-            $joblogdata['Message'] = 'Error:' . $e->getMessage();
-            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-
+        } catch (\Exception $e) {
             Log::error($e);
+            $joblogdata['Message'] ='Error:'.$e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             if(!empty($cronsetting['ErrorEmail'])) {
+
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
                 Log::error("**Email Sent Status " . $result['status']);
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
+
         CronJobLog::createLog($CronJobID,$joblogdata);
         CronJob::deactivateCronJob($CronJob);
+        Log::error(" CronJobId end" . $CronJobID);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
@@ -112,5 +104,4 @@ class StreamcoAccountImport extends Command {
         CronHelper::after_cronrun($this->name, $this);
 
     }
-
 }
