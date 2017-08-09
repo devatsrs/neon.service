@@ -129,7 +129,7 @@ class Customer extends \Eloquent {
         foreach ($accounts as $account) {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->Trunk, '');
-                $local_file = $destination . '/' . $file_name.'.csv';
+                $local_file = $destination . '/customer_' . $file_name.'.csv';
                 $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
                 if(!empty($account_name)) {
                     DB::beginTransaction();
@@ -211,7 +211,7 @@ class Customer extends \Eloquent {
         foreach ($accounts as $account) {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
-                $local_file = $destination . '/' . $file_name.'.csv';
+                $local_file = $destination . '/vendor_' . $file_name.'.csv';
                 $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
                 if(!empty($account_name)) {
                     DB::beginTransaction();
