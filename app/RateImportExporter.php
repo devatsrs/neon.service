@@ -85,11 +85,11 @@ class RateImportExporter
     public static function importVendorRate($processID,$tempVendortable) {
 
         $result_data = array();
+        Log::info("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
         $result = DB::select("CALL  prc_VendorRatesFileImport ('" . $processID . "', '".$tempVendortable."' )");
-        if (count($result)>0){
-            foreach($result as $result_row){
-                $result_data[]  = $result_row->Message;
-            }
+        Log::info("CALL  prc_VendorRatesFileImport Ends ");
+        foreach($result as $result_row){
+            $result_data[]  = $result_row->Message;
         }
         return $result_data;
 
@@ -98,7 +98,9 @@ class RateImportExporter
     public static function importCustomerRate($processID,$tempCustomertable) {
 
         $result_data = array();
+        Log::info("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
         $result = DB::select("CALL  prc_CustomerRatesFileImport ('" . $processID . "', '".$tempCustomertable."' )");
+        Log::info("CALL  prc_CustomerRatesFileImport Ends");
         if (count($result)>0){
             foreach($result as $result_row){
                 $result_data[]  = $result_row->Message;

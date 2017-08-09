@@ -137,9 +137,10 @@ class BulkAutoPaymentCapture extends Command {
                         $PaymentDueInDays=0;
                     }
                     /**  Get All UnPaid  Invoice */
-                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."' ) ");
+                    $AutoPay = 1;
+                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."', '".$AutoPay."' ) ");
 
-                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .")");
+                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
 
                     log::info('PaymentPendingInvoice Count - '.count($unPaidInvoices));
 
@@ -246,12 +247,16 @@ class BulkAutoPaymentCapture extends Command {
                                                             $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if (!empty($customeremail_status['status'])) {
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
+                                                        }
                                                         //Log::info($customeremail_status);
                                                     }
                                                 }
                                             }
 
-                                            $NotificationEmails = Notification::getNotificationMail(Notification::InvoicePaidByCustomer);
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
                                             if (!empty($emailArray)) {
                                                 foreach ($emailArray as $singleemail) {
@@ -317,12 +322,16 @@ class BulkAutoPaymentCapture extends Command {
                                                             $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        if (!empty($customeremail_status['status'])) {
+                                                            $JobLoggedUser = User::find($UserID);
+                                                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
+                                                        }
                                                         //Log::info($customeremail_status);
                                                     }
                                                 }
                                             }
 
-                                            $NotificationEmails = Notification::getNotificationMail(Notification::InvoicePaidByCustomer);
+                                            $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
                                             if (!empty($emailArray)) {
                                                 foreach ($emailArray as $singleemail) {

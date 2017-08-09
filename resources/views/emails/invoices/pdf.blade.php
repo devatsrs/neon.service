@@ -110,7 +110,13 @@
             <tbody>
             @foreach($service_data as $service)
             <tr>
-                <td class="desc">{{$service['name']}}</td>
+                <td class="desc">
+                    @if(!empty($service['servicetitleshow']))
+                        {{$service['name']}}
+                    @else
+                        {{$service['servicedescription']}}
+                    @endif
+                </td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</td>
@@ -218,13 +224,20 @@
             <br/>
         @endif
     <header class="clearfix">
+        @if(!empty($service['servicetitleshow']))
         <div id="Service">
             <h1>{{$service['name']}}</h1>
             @if(!empty($service['servicedescription']))
-                <br/>
                 {{nl2br($service['servicedescription'])}}
             @endif
         </div>
+        @else
+            <div id="Service">
+                @if(!empty($service['servicedescription']))
+                    <h2> {{nl2br($service['servicedescription'])}} </h2>
+                @endif
+            </div>
+        @endif
     </header>
     <main>
         @if($service['usage_cost'] != 0)
@@ -345,9 +358,20 @@
 
 
                 <header class="clearfix">
-                    <div id="Service">
-                        <h1>{{$service['name']}}</h1>
-                    </div>
+                    @if(!empty($service['servicetitleshow']))
+                        <div id="Service">
+                            <h1>{{$service['name']}}</h1>
+                            @if(!empty($service['servicedescription']))
+                                {{nl2br($service['servicedescription'])}}
+                            @endif
+                        </div>
+                    @else
+                        <div id="Service">
+                            @if(!empty($service['servicedescription']))
+                                <h2> {{nl2br($service['servicedescription'])}} </h2>
+                            @endif
+                        </div>
+                    @endif
                 </header>
                 <main>
                     <div class="ChargesTitle clearfix">

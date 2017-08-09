@@ -37,8 +37,8 @@
 0 2 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/uk-wholesale-backup.conf >> /dev/cron_job_uk_wholesale_backup 2>&1
 0 7 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/usa-hosted-backup.conf >> /dev/cron_job_usa_hosted_backup 2>&1
 0 2 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/uk-others-backup.conf >> /dev/cron_job_uk_others_backup 2>&1
-30 18 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/in-hosted-backup.conf >> /dev/cron_job_india_hosted_backup 2>&1
-0 11 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/nz-hosted-backup.conf >> /dev/cron_job_nz_hosted_backup 2>&1
+30 20 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/in-hosted-backup.conf >> /dev/cron_job_india_hosted_backup 2>&1
+30 14 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/nz-hosted-backup.conf >> /dev/cron_job_nz_hosted_backup 2>&1
 
 #######################################################################################################################################
 

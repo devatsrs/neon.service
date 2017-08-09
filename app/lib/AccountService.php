@@ -18,5 +18,9 @@ class AccountService extends \Eloquent {
         $ServiceDescription = AccountService::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('ServiceDescription');
         return $ServiceDescription;
     }
+    public static function getServiceTitleShow($AccountID,$ServiceID){
+        $ServiceTitleShow = AccountService::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('ServiceTitleShow');
+        return $ServiceTitleShow;
+    }
 
 }

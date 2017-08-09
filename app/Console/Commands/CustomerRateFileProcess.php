@@ -120,15 +120,6 @@ class CustomerRateFileProcess extends Command {
 			$error = array();
 			CronJob::createLog($CronJobID);
 
-			$Trunks = Trunk::where(["CompanyId"=>$CompanyID])->get()->toArray();
-			$TrunkArray = array();
-			if(count($Trunks)>0){
-
-				foreach($Trunks as $trunk){
-					$TrunkArray[$trunk["Trunk"]] =$trunk["TrunkID"];
-				}
-
-			}
 			foreach ($filenames as $UsageDownloadFilesID => $filename) {
 				Log::info("Loop Start");
 				$row_count = 0;
@@ -165,34 +156,30 @@ class CustomerRateFileProcess extends Command {
 									if ($row_count == 0) {
 
 
-										if (isset($row['GatewayTrunk']) && array_key_exists($row['GatewayTrunk'], $TrunkArray)) {
-											$TrunkID = $TrunkArray[$row['GatewayTrunk']];
-										}
-
-										if (isset($row['GatewayTrunk']) && $TrunkID == 0) {
-
-											$TrunkID = Trunk::where(["CompanyId" => $CompanyID, "Trunk" => $row['GatewayTrunk']])->pluck("TrunkID");
-											if (empty($TrunkID)) {
-
-												$trunk_data = array(
-													"CompanyId" => $CompanyID,
-													"Trunk" => $row['GatewayTrunk'],
-													"Status" => 1
-												);
-												$TrunkID = Trunk::insertGetId($trunk_data);
-
-
-												$TrunkArray[$row["GatewayTrunk"]] = $TrunkID;
-												Log::error("New Trunk created " . $row['GatewayTrunk']);
-
+										if (isset($row['GatewayTrunk']) ) {
+											$TrunkIDResult = DB::select("call prc_getTrunkByMaxMatch('".$CompanyID."','".$row['GatewayTrunk']."')");
+											if(isset($TrunkIDResult[0]->TrunkID) && $TrunkIDResult[0]->TrunkID > 0) {
+												$TrunkID = $TrunkIDResult[0]->TrunkID;
 											}
+										} else {
+
+											$error_message = "GatewayTrunk Not exists in file.";
+
+											//$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
 
 										}
+
 
 										if($TrunkID == 0) {
 
-											$error[] = "Trunk Not exists in file " . $fullpath . $filename;
-											Log::error("Trunk Not exists in file " . $fullpath . $filename);
+											$error_message = "Trunk not found for '" . $row['GatewayTrunk'];
+
+											//$error[] = $error_message;
+											Log::error($error_message);
+											throw  new \Exception($error_message);
+
 										}
 
 
@@ -202,11 +189,13 @@ class CustomerRateFileProcess extends Command {
 
 											if (!in_array($row['GatewayAccountName'], $Accounts)) {
 
-												$error[] = "Account Name '" . $row['GatewayAccountName'] . "' not found.";
+												$error_message = "Account Name '" . $row['GatewayAccountName'] . "' not found";
 
-												UsageDownloadFiles::UpdateToPending([$UsageDownloadFilesID]);
+												//$error[] = $error_message;
+												Log::error($error_message);
+												throw  new \Exception($error_message);
 
-												break;
+
 											} else {
 
 												$AccountID = array_search($row['GatewayAccountName'], $Accounts);
@@ -231,9 +220,8 @@ class CustomerRateFileProcess extends Command {
 												$customertrunkdata['created_at'] = $created_at;
 												$customertrunkdata['CreatedBy'] = $CreatedBy;
 												CustomerTrunk::insert($customertrunkdata);
-												LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'],$CompanyID);
+												LastPrefixNo::updateLastPrefixNo($customertrunkdata['Prefix'], $CompanyID);
 												Log::error("CustomerTrunk created " . $row['GatewayAccountName']);
-
 											}
 										}
 
@@ -266,24 +254,21 @@ class CustomerRateFileProcess extends Command {
 
 										$row_count++;
 
-									} else {
-
-										Log::error("Trunk & Account are not found ");
-										Log::error(print_r($row, true));
-
 									}
 								}
 								$data_count++;
 
 
-							}
-						}//loop
+							}//rows loop
+						}
 
-							if(!empty($InserData)){
-								DB::table($temptableName)->insert($InserData);
-							}
+						if(!empty($InserData)) {
+							DB::table($temptableName)->insert($InserData);
+						}
 
 					}catch(\Exception $e){
+
+						Log::error($fullpath.$filename);
 
 						Log::error($e);
 						/** update file status to error */
@@ -309,6 +294,7 @@ class CustomerRateFileProcess extends Command {
 			Log::info("Loop End");
 
 
+
 			Log::error(' ========================== vos transaction end =============================');
 			//ProcessCDR
 
@@ -318,6 +304,8 @@ class CustomerRateFileProcess extends Command {
 			$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
 			if (count($result_data)) {
 				$joblogdata['Message'] .=  implode('<br>', $result_data);
+			} else {
+				$joblogdata['Message'] .= "No data imported";
 			}
 
 			/** update file process to completed */
