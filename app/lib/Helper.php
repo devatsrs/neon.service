@@ -171,13 +171,13 @@ class Helper{
      */
     static function array_to_csv($array = array()){
         $output = "";
-        if(count($array)) {
+        if(count($array) > 0) {
             $keys = array_keys($array[0]);
-            $output .= implode(",", $keys) . PHP_EOL;
+            $output .= '"'. implode('","', $keys) .'"'. PHP_EOL;
             foreach ($array as $key => $row) {
                 $values = array_values($row);
-                if (count($values)) {
-                    $output .= implode(",", $values) . PHP_EOL;
+                if (is_array($values) && count($values) > 0 && !empty($values)) {
+                    $output .= '"'.implode('","', $values) . '"' . PHP_EOL;
                 }
 
             }
