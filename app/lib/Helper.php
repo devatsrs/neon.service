@@ -311,6 +311,7 @@ class Helper{
 
    public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
        $replace_array = array();
+       $replace_array['AccountName'] = $Account->AccountName;
        $replace_array['FirstName'] = $Account->FirstName;
        $replace_array['LastName'] = $Account->LastName;
        $replace_array['Email'] = $Account->Email;
