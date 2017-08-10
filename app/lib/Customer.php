@@ -138,7 +138,7 @@ class Customer extends \Eloquent {
         $accounts = $account->select('tblAccount.*','tblTrunk.*','tblCustomerTrunk.Prefix AS CustomerTrunkPrefix')->get();
         foreach ($accounts as $account) {
             try {
-                $file_name = Job::getfileName($account->AccountID, $account->Trunk, '');
+                $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
                 $local_file = $destination . '/customer_' . $file_name.'.csv';
                 $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'customer');
                 if(!empty($account_name['AccountName'])) {
