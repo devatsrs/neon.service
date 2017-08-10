@@ -125,7 +125,6 @@ class Customer extends \Eloquent {
                 "tblAccount.VerificationStatus" => Account::VERIFIED,
                 "tblCustomerTrunk.Status" => 1,
                 "tblTrunk.Status" => 1,
-                "tblAccount.AccountID" => 5026,
 
             ]);
         }
@@ -207,7 +206,6 @@ class Customer extends \Eloquent {
                 "tblAccount.VerificationStatus" => Account::VERIFIED,
                 "tblVendorTrunk.Status" => 1,
                 "tblTrunk.Status" => 1,
-                "tblAccount.AccountID" => 809,
             ]);
         }
 
