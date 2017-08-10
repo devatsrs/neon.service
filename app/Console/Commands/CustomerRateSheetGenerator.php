@@ -238,6 +238,7 @@ class CustomerRateSheetGenerator extends Command {
                                 $file_name .= '.xlsx';
                                 Log::info('job is merge 1 ' . $JobID);
                                 $trunk_prefix=rtrim($trunk_prefix,'-');
+                                $trunk_name=rtrim($trunk_name,'-');
                                 Log::info('trunk_prefix end ' . $trunk_prefix);
                                 $account->trunkprefix = $trunk_prefix;
                                 $account->trunk_name = $trunk_name;
