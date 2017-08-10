@@ -45,40 +45,51 @@ class Customer extends \Eloquent {
         return self::$cache['AccountAuthenticate'];
     }
 
-    public static function getName($CompanyID,$CompanyGatewayID,$AccountID,$account){
-        $AccountName = '';
-        $NameFormat = '';
+    public static function getName($CompanyID,$CompanyGatewayID,$AccountID,$account,$CV){
+        $AccountNames = array();
+        $NameFormat = $AccountName = '';
         $CompanyGatewayConfig = self::getCompanyConfig($CompanyID,$CompanyGatewayID);
         $AccountAuthenticate = self::getAccountAuthRule($CompanyID,$AccountID);
-        if(!empty($AccountAuthenticate) && count($AccountAuthenticate)){
+        if(!empty($AccountAuthenticate) && count($AccountAuthenticate) && !empty($AccountAuthenticate->CustomerAuthRule) && $CV == 'customer'){
             $NameFormat = $AccountAuthenticate->CustomerAuthRule;
             $AccountName = $AccountAuthenticate->CustomerAuthValue;
+        }elseif(!empty($AccountAuthenticate) && count($AccountAuthenticate) && !empty($AccountAuthenticate->VendorAuthRule) && $CV == 'vendor'){
+            $NameFormat = $AccountAuthenticate->VendorAuthRule;
+            $AccountName = $AccountAuthenticate->VendorAuthValue;
         }
         if(empty($NameFormat)){
             $NameFormat = $CompanyGatewayConfig['NameFormat'];
         }
+        $AccountNames['NameFormat'] = $NameFormat;
 
         switch ($NameFormat){
             case  'NAMENUB':
-                return $account->AccountName.'-'.$account->Number;
+                $AccountNames['AccountName'] =  $account->AccountName.'-'.$account->Number;
+                return $AccountNames;
                 break;
             case  'NUBNAME':
-                return $account->Number.'-'.$account->AccountName;
+                $AccountNames['AccountName'] =  $account->Number.'-'.$account->AccountName;
+                return $AccountNames;
                 break;
             case  'NAME':
-                return $account->AccountName;
+                $AccountNames['AccountName'] =  $account->AccountName;
+                return $AccountNames;
                 break;
             case  'NUB':
-                return $account->Number;
+                $AccountNames['AccountName'] =  $account->Number;
+                return $AccountNames;
                 break;
             case  'IP':
-                return $AccountName;
+                $AccountNames['AccountName'] =  $AccountName;
+                return $AccountNames;
                 break;
             case  'CLI':
-                return $AccountName;
+                $AccountNames['AccountName'] =  $AccountName;
+                return $AccountNames;
                 break;
             case  'Other':
-                return $AccountName;
+                $AccountNames['AccountName'] =  $AccountName;
+                return $AccountNames;
                 break;
         }
 
@@ -117,7 +128,6 @@ class Customer extends \Eloquent {
                 "tblAccount.VerificationStatus" => Account::VERIFIED,
                 "tblCustomerTrunk.Status" => 1,
                 "tblTrunk.Status" => 1,
-                "tblAccount.AccountID" => 5026,
 
             ]);
         }
@@ -130,11 +140,11 @@ class Customer extends \Eloquent {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->Trunk, '');
                 $local_file = $destination . '/customer_' . $file_name.'.csv';
-                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
-                if(!empty($account_name)) {
+                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'customer');
+                if(!empty($account_name['AccountName'])) {
                     DB::beginTransaction();
-                    Log::info("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
-                    $excel_data = DB::select("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
+                    Log::info("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
+                    $excel_data = DB::select("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
                     $excel_data = json_decode(json_encode($excel_data), true);
                     $output = Helper::array_to_csv($excel_data);
                     if (empty($excel_data)) {
@@ -199,7 +209,6 @@ class Customer extends \Eloquent {
                 "tblAccount.VerificationStatus" => Account::VERIFIED,
                 "tblVendorTrunk.Status" => 1,
                 "tblTrunk.Status" => 1,
-                "tblAccount.AccountID" => 809,
             ]);
         }
 
@@ -212,11 +221,11 @@ class Customer extends \Eloquent {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
                 $local_file = $destination . '/vendor_' . $file_name.'.csv';
-                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
-                if(!empty($account_name)) {
+                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'vendor');
+                if(!empty($account_name['AccountName'])) {
                     DB::beginTransaction();
-                    Log::info("CALL prc_VendorRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name."','" . $account->Trunk . "','".$account->VendorTrunkPrefix."','".$Effective."','".$DiscontinueRate."')");
-                    $excel_data = DB::select("CALL prc_VendorRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name."','" . $account->Trunk . "','".$account->VendorTrunkPrefix."','".$Effective."','".$DiscontinueRate."')");
+                    Log::info("CALL prc_VendorRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->VendorTrunkPrefix."','".$Effective."','".$DiscontinueRate."')");
+                    $excel_data = DB::select("CALL prc_VendorRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->VendorTrunkPrefix."','".$Effective."','".$DiscontinueRate."')");
                     $excel_data = json_decode(json_encode($excel_data), true);
                     $output = Helper::array_to_csv($excel_data);
                     if (empty($excel_data)) {
