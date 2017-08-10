@@ -27,7 +27,7 @@ class Customer extends \Eloquent {
             $minutes = \Carbon\Carbon::now()->addMinutes($time);
             Cache::add($CompanyGatewayConfig, array('CompanyGatewayConfig' => self::$cache['CompanyGatewayConfig']), $minutes);
         }
-        return self::$cache;
+        return self::$cache['CompanyGatewayConfig'];
     }
 
     public static function getAccountAuthRule($CompanyID,$AccountID){
