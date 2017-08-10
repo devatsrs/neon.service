@@ -234,6 +234,7 @@ return $area_prefix;
 }
 function template_var_replace($EmailMessage,$replace_array){
     $extra = [
+        '{{AccountName}}',
         '{{FirstName}}',
         '{{LastName}}',
         '{{Email}}',
@@ -263,7 +264,8 @@ function template_var_replace($EmailMessage,$replace_array){
 		"{{CompanyPostCode}}",
 		"{{CompanyCountry}}",
 		"{{Logo}}",
-        "{{TrunkPrefix}}"
+        "{{TrunkPrefix}}",
+        "{{TrunkName}}"
     ];
 
     foreach($extra as $item){

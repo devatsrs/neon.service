@@ -208,6 +208,7 @@ class CustomerRateSheetGenerator extends Command {
                             if (isset($joboptions->isMerge) && $joboptions->isMerge ==1 && isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
 
                                 $trunk_prefix = '';
+                                $trunk_name = '';
                                 foreach ($joboptions->Trunks as $trunk) {
                                     if(in_array($trunk,$trunks)) {
                                         $excel_data = array();
@@ -228,6 +229,7 @@ class CustomerRateSheetGenerator extends Command {
                                         if(!empty($customertrunkprefix)){
                                             $trunk_prefix.= $customertrunkprefix.'-';
                                         }
+                                        $trunk_name.=$trunkname.'-';
                                     }
                                 }
 
@@ -236,8 +238,10 @@ class CustomerRateSheetGenerator extends Command {
                                 $file_name .= '.xlsx';
                                 Log::info('job is merge 1 ' . $JobID);
                                 $trunk_prefix=rtrim($trunk_prefix,'-');
+                                $trunk_name=rtrim($trunk_name,'-');
                                 Log::info('trunk_prefix end ' . $trunk_prefix);
                                 $account->trunkprefix = $trunk_prefix;
+                                $account->trunk_name = $trunk_name;
                                 $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                 extract($sheetstatusupdate);
                                 if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
@@ -270,6 +274,7 @@ class CustomerRateSheetGenerator extends Command {
                                         /*Customer trunk */
                                         $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
                                         $account->trunkprefix = $customertrunkprefix;
+                                        $account->trunk_name = $trunkname;
                                         $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                         extract($sheetstatusupdate);
                                         if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
@@ -304,6 +309,7 @@ class CustomerRateSheetGenerator extends Command {
                                     /*Customer trunk */
                                     $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
                                     $account->trunkprefix = $customertrunkprefix;
+                                    $account->trunk_name = $trunkname;
                                     $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
                                     extract($sheetstatusupdate);
                                     if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
@@ -519,6 +525,7 @@ class CustomerRateSheetGenerator extends Command {
             $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
             $replace_array = Helper::create_replace_array($account,array(),$userInfo);
             $replace_array['TrunkPrefix'] = empty($account->trunkprefix)?'':$account->trunkprefix;
+            $replace_array['TrunkName'] = empty($account->trunk_name)?'':$account->trunk_name;
 
          //   $joboptions->message = template_var_replace($joboptions->message,$replace_array);
 			$message =  template_var_replace($joboptions->message,$replace_array);
