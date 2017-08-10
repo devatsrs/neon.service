@@ -45,14 +45,17 @@ class Customer extends \Eloquent {
         return self::$cache['AccountAuthenticate'];
     }
 
-    public static function getName($CompanyID,$CompanyGatewayID,$AccountID,$account){
+    public static function getName($CompanyID,$CompanyGatewayID,$AccountID,$account,$CV){
         $AccountNames = array();
         $NameFormat = $AccountName = '';
         $CompanyGatewayConfig = self::getCompanyConfig($CompanyID,$CompanyGatewayID);
         $AccountAuthenticate = self::getAccountAuthRule($CompanyID,$AccountID);
-        if(!empty($AccountAuthenticate) && count($AccountAuthenticate)){
+        if(!empty($AccountAuthenticate) && count($AccountAuthenticate) && !empty($AccountAuthenticate->CustomerAuthRule) && $CV == 'customer'){
             $NameFormat = $AccountAuthenticate->CustomerAuthRule;
             $AccountName = $AccountAuthenticate->CustomerAuthValue;
+        }elseif(!empty($AccountAuthenticate) && count($AccountAuthenticate) && !empty($AccountAuthenticate->VendorAuthRule) && $CV == 'vendor'){
+            $NameFormat = $AccountAuthenticate->VendorAuthRule;
+            $AccountName = $AccountAuthenticate->VendorAuthValue;
         }
         if(empty($NameFormat)){
             $NameFormat = $CompanyGatewayConfig['NameFormat'];
@@ -137,7 +140,7 @@ class Customer extends \Eloquent {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->Trunk, '');
                 $local_file = $destination . '/customer_' . $file_name.'.csv';
-                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
+                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'customer');
                 if(!empty($account_name['AccountName'])) {
                     DB::beginTransaction();
                     Log::info("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
@@ -218,7 +221,7 @@ class Customer extends \Eloquent {
             try {
                 $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
                 $local_file = $destination . '/vendor_' . $file_name.'.csv';
-                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account);
+                $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'vendor');
                 if(!empty($account_name['AccountName'])) {
                     DB::beginTransaction();
                     Log::info("CALL prc_VendorRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->VendorTrunkPrefix."','".$Effective."','".$DiscontinueRate."')");
