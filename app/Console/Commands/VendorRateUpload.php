@@ -170,7 +170,7 @@ class VendorRateUpload extends Command
                             unset($temp_row[0]);
 
                         }
-                        Log::info(' vishal1 = '.json_encode($attrselection)." == ".json_encode($temp_row));
+                        Log::info(' vishal12 = '.json_encode($attrselection)." == ".json_encode($temp_row));
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
