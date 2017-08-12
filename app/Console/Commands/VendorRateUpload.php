@@ -134,6 +134,13 @@ class VendorRateUpload extends Command
                         }
                     };
 
+                    if(isset($csvoption->skipRows))
+                    {
+                        $skiptRows=$csvoption->skipRows;
+                        NeonExcelIO::$start_row=$skiptRows->start_row;
+                        NeonExcelIO::$end_row=$skiptRows->end_row;
+                    }
+
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
                     $lineno = 2;
