@@ -8,6 +8,9 @@ class AccountBilling extends \Eloquent {
 
     protected $primaryKey = "AccountBillingID";
 
+    const BILLINGTYPE_PREPAID = 1;
+    const BILLINGTYPE_POSTPAID = 2;
+
     public $timestamps = false; // no created_at and updated_at
 
     public static function getBilling($AccountID,$ServiceID){

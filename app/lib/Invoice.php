@@ -1302,6 +1302,31 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
         InvoiceDetail::insert($InvoiceDetailData);
 
+        $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+        if($AccountBilling->BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+            $InvoiceStartDate = $EndDate;
+            $InvoiceEndDate = next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($EndDate));
+        }else{
+            $InvoiceStartDate = $StartDate;
+            $InvoiceEndDate = $EndDate;
+        }
+
+        $InvoiceDetailData = array();
+        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+        $InvoiceDetailData['ProductID'] = 0;
+        $InvoiceDetailData['ServiceID'] = $ServiceID;
+        $InvoiceDetailData['ProductType'] = Product::INVOICE_PERIOD;
+        $InvoiceDetailData['Description'] = 'Invoice Period';
+        $InvoiceDetailData['StartDate'] = $InvoiceStartDate;
+        $InvoiceDetailData['EndDate'] = $InvoiceEndDate;
+        $InvoiceDetailData['Price'] = 0;
+        $InvoiceDetailData['Qty'] = 0;
+        $InvoiceDetailData['Discount'] = 0;
+        $InvoiceDetailData['LineTotal'] = 0;
+        $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+        $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+        InvoiceDetail::insert($InvoiceDetailData);
+
 
         return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
 
