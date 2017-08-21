@@ -1304,8 +1304,8 @@ class Invoice extends \Eloquent {
 
         $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
         if($AccountBilling->BillingType == AccountBilling::BILLINGTYPE_PREPAID){
-            $InvoiceStartDate = $EndDate;
-            $InvoiceEndDate = next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($EndDate));
+            $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($EndDate)))));
         }else{
             $InvoiceStartDate = $StartDate;
             $InvoiceEndDate = $EndDate;
