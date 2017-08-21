@@ -2551,6 +2551,269 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_CustomerRateForExport`;
+DELIMITER |
+CREATE PROCEDURE `prc_CustomerRateForExport`(
+	IN `p_CompanyID` INT,
+	IN `p_CustomerID` INT ,
+	IN `p_TrunkID` INT,
+	IN `p_NameFormat` VARCHAR(50),
+	IN `p_Account` VARCHAR(200),
+	IN `p_Trunk` VARCHAR(200) ,
+	IN `p_TrunkPrefix` VARCHAR(50),
+	IN `p_Effective` VARCHAR(50)
+)
+BEGIN
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+	CALL prc_GetCustomerRate(p_CompanyID,p_CustomerID,p_TrunkID,null,null,null,p_Effective,1,0,0,0,'','',-1);
+
+	SELECT
+		p_NameFormat AS AuthRule, 
+		p_Account AS AccountName,
+		p_Trunk AS Trunk,
+		p_TrunkPrefix AS CustomerTrunkPrefix,
+		Code,
+		Description,
+		Rate,
+		EffectiveDate,
+		ConnectionFee,
+		Interval1,
+		IntervalN,
+		Prefix AS TrunkPrefix,
+		RatePrefix AS TrunkRatePrefix,
+		AreaPrefix AS TrunkAreaPrefix
+	FROM tmp_customerrate_;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `prc_VendorRateForExport`;
+DELIMITER |
+CREATE PROCEDURE `prc_VendorRateForExport`(
+	IN `p_CompanyID` INT,
+	IN `p_AccountID` INT ,
+	IN `p_TrunkID` INT,
+	IN `p_NameFormat` VARCHAR(50),
+	IN `p_Account` VARCHAR(200),
+	IN `p_Trunk` VARCHAR(200) ,
+	IN `p_TrunkPrefix` VARCHAR(50),
+	IN `p_Effective` VARCHAR(50),
+	IN `p_DiscontinueRate` VARCHAR(50)
+)
+BEGIN
+
+	DECLARE TrunkRatePrefix VARCHAR(50);
+	DECLARE TrunkAreaPrefix VARCHAR(50);
+	DECLARE TrunkPrefix VARCHAR(50);
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+	SELECT 
+		RatePrefix,
+		AreaPrefix,
+		Prefix
+	INTO
+		TrunkRatePrefix,
+		TrunkAreaPrefix,
+		TrunkPrefix
+	FROM tblTrunk
+	WHERE TrunkID = p_TrunkID;
+
+	DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_;
+	CREATE TEMPORARY TABLE tmp_VendorRate_ (
+		TrunkId INT,
+		RateId INT,
+		Rate DECIMAL(18,6),
+		EffectiveDate DATE,
+		Interval1 INT,
+		IntervalN INT,
+		ConnectionFee DECIMAL(18,6),
+		INDEX IX_tmp_VendorRate_ (`RateId`)
+	);
+	INSERT INTO tmp_VendorRate_
+	SELECT
+		TrunkID,
+		RateId,
+		Rate,
+		EffectiveDate,
+		Interval1,
+		IntervalN,
+		ConnectionFee
+	FROM tblVendorRate
+	WHERE tblVendorRate.AccountId = p_AccountID
+		AND tblVendorRate.TrunkId = p_TrunkID
+		AND
+		(
+			(p_Effective = 'Now' AND EffectiveDate <= NOW())
+			OR 
+			(p_Effective = 'Future' AND EffectiveDate > NOW())
+			OR 
+			(p_Effective = 'All')
+		);
+
+	DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate2_;
+	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorRate2_ AS (SELECT * from tmp_VendorRate_);
+	DELETE n1 FROM tmp_VendorRate_ n1, tmp_VendorRate2_ n2 WHERE n1.EffectiveDate < n2.EffectiveDate
+	AND n1.TrunkID = n2.TrunkID
+	AND  n1.RateId = n2.RateId
+	AND n1.EffectiveDate <= NOW()
+	AND n2.EffectiveDate <= NOW();
+
+	IF p_DiscontinueRate = 'no'
+	THEN
+
+		SELECT DISTINCT
+			p_NameFormat AS AuthRule,
+			p_Account AS AccountName,
+			p_Trunk AS Trunk,
+			p_TrunkPrefix AS VendorTrunkPrefix,
+			TrunkRatePrefix,
+			TrunkAreaPrefix,
+			TrunkPrefix,
+			tblRate.Code ,
+			tblRate.Description ,
+			CASE WHEN tblVendorRate.Interval1 IS NOT NULL
+			THEN
+				tblVendorRate.Interval1
+			ElSE
+				tblRate.Interval1
+			END AS Interval1,
+			CASE WHEN tblVendorRate.IntervalN IS NOT NULL
+			THEN
+				tblVendorRate.IntervalN
+			ELSE
+				tblRate.IntervalN
+			END  AS IntervalN ,
+			tblVendorRate.Rate,
+			tblVendorRate.EffectiveDate,
+			tblVendorRate.ConnectionFee,
+			IFNULL(Preference,5) as `Preference`,
+			CASE WHEN 
+				(blockCode.VendorBlockingId IS NOT NULL AND FIND_IN_SET(tblVendorRate.TrunkId,blockCode.TrunkId) != 0) 
+				OR
+				(blockCountry.VendorBlockingId IS NOT NULL AND FIND_IN_SET(tblVendorRate.TrunkId,blockCountry.TrunkId) != 0 ) 
+			THEN 
+				'1'
+			ELSE 
+				'0'
+			END AS `Blocked`
+		FROM    tmp_VendorRate_ AS tblVendorRate
+		INNER JOIN tblRate
+			ON tblVendorRate.RateId =tblRate.RateID
+		LEFT JOIN tblVendorBlocking AS blockCode
+			ON tblVendorRate.RateID = blockCode.RateId
+			AND blockCode.AccountId = p_AccountID
+			AND blockCode.TrunkID = p_TrunkID
+			AND tblVendorRate.TrunkID = blockCode.TrunkID
+		LEFT JOIN tblVendorBlocking AS blockCountry
+			ON tblRate.CountryID = blockCountry.CountryId
+			AND blockCountry.AccountId = p_AccountID
+			AND blockCountry.TrunkID = p_TrunkID
+			AND tblVendorRate.TrunkID = blockCountry.TrunkID
+		LEFT JOIN tblVendorPreference 
+			ON tblVendorPreference.AccountId = p_AccountID
+			AND tblVendorPreference.TrunkID = p_TrunkID
+			AND tblVendorPreference.TrunkID = tblVendorRate.TrunkID
+			AND tblVendorPreference.RateId = tblVendorRate.RateId;
+
+	ELSE
+
+
+		SELECT DISTINCT
+			p_NameFormat AS AuthRule,
+			p_Account AS AccountName,
+			p_Trunk AS Trunk,
+			p_TrunkPrefix AS VendorTrunkPrefix,
+			TrunkRatePrefix,
+			TrunkAreaPrefix,
+			TrunkPrefix,
+			tblRate.Code,
+			tblRate.Description,
+			CASE WHEN tblVendorRate.Interval1 IS NOT NULL
+			THEN
+				tblVendorRate.Interval1
+			ElSE
+				tblRate.Interval1
+			END AS Interval1,
+			CASE WHEN tblVendorRate.IntervalN IS NOT NULL
+			THEN
+				tblVendorRate.IntervalN
+			ElSE
+				tblRate.IntervalN
+			END  AS IntervalN,
+			tblVendorRate.Rate,
+			tblVendorRate.EffectiveDate,
+			tblVendorRate.ConnectionFee,
+			IFNULL(Preference,5) as `Preference`,
+			CASE WHEN 
+				(blockCode.VendorBlockingId IS NOT NULL AND FIND_IN_SET(tblVendorRate.TrunkId,blockCode.TrunkId) != 0 )
+				OR
+				(blockCountry.VendorBlockingId IS NOT NULL AND FIND_IN_SET(tblVendorRate.TrunkId,blockCountry.TrunkId) != 0	) 
+			THEN
+				'1'
+			ELSE
+				'0'
+			END AS `Blocked`,
+			'N' AS `Discontinued`
+		FROM tmp_VendorRate_ AS tblVendorRate 
+		INNER JOIN tblRate
+			ON tblVendorRate.RateId = tblRate.RateID
+		LEFT JOIN tblVendorBlocking AS blockCode
+			ON tblVendorRate.RateID = blockCode.RateId
+			AND blockCode.AccountId = p_AccountID
+			AND blockCode.TrunkID = p_TrunkID
+			AND tblVendorRate.TrunkID = blockCode.TrunkID
+		LEFT JOIN tblVendorBlocking AS blockCountry
+			ON tblRate.CountryID = blockCountry.CountryId
+			AND blockCountry.AccountId = p_AccountID
+			AND blockCountry.TrunkID = p_TrunkID
+			AND tblVendorRate.TrunkID = blockCountry.TrunkID
+		LEFT JOIN tblVendorPreference
+			ON tblVendorPreference.AccountId = p_AccountID
+			AND tblVendorPreference.TrunkID = p_TrunkID
+			AND tblVendorPreference.TrunkID = tblVendorRate.TrunkID
+			AND tblVendorPreference.RateId = tblVendorRate.RateId
+
+		UNION ALL
+
+		SELECT
+			p_NameFormat AS AuthRule,
+			p_Account AS AccountName,
+			p_Trunk AS Trunk,
+			p_TrunkPrefix AS VendorTrunkPrefix,
+			TrunkRatePrefix,
+			TrunkAreaPrefix,
+			TrunkPrefix, 
+			vrd.Code,
+			vrd.Description,
+			vrd.Interval1,
+			vrd.IntervalN,
+			vrd.Rate,
+			vrd.EffectiveDate,
+			vrd.ConnectionFee,
+			'' AS `Preference`,
+			'' AS `Forbidden`,
+			'Y' AS `Discontinued`
+		FROM tblVendorRateDiscontinued vrd
+		LEFT JOIN tblVendorRate vr
+			ON vrd.AccountId = vr.AccountId 
+			AND vrd.TrunkID = vr.TrunkID
+			AND vrd.RateId = vr.RateId
+		WHERE vrd.AccountId = p_AccountID
+		AND vrd.TrunkID = p_TrunkID
+		AND vr.VendorRateID IS NULL ;
+
+	END IF;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
+
 USE `RMBilling3`;
 DROP PROCEDURE IF EXISTS `prc_getPaymentPendingInvoice`;
 DELIMITER |
@@ -3738,6 +4001,9 @@ DELIMITER ;
 
 USE `Ratemanagement3`;
 
+ALTER TABLE `tblCronJob`
+	CHANGE COLUMN `JobTitle` `JobTitle` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci';
+	
 ALTER TABLE `tblAccountBilling`
 	ADD COLUMN `AutoPaymentSetting` VARCHAR(50) NULL DEFAULT NULL;
 
@@ -3750,15 +4016,16 @@ INSERT INTO `tblEmailTemplate` (`CompanyID`, `TemplateName`, `Subject`, `Templat
 
 
 INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'CALLSHOP_CRONJOB', '{"MaxInterval":"1440","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"error@neon-soft.com","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_DOWNLOAD_CDR_CRONJOB', '{"MaxInterval":"1440","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_CUSTOMER_RATE_FILE_GEN_CRONJOB', '{"customers":[],"CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_VENDOR_RATE_FILE_GEN_CRONJOB', '{"vendors":[],"CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_RATE_FILE_DOWNLOAD_CRONJOB', '{"gateway":"","vendors":"","FilesDownloadLimit":"","FileLocationFrom":"","FileLocationTo":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_RATE_FILE_PROCESS_CRONJOB', '{"gateway":"","FilesMaxProcess":"","FilesDownloadLimit":"","FileLocation":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'STREAMCO_ACCOUNT_IMPORT', '{"ThresholdTime":"60","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"10","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":"25"}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'CUSTOMER_RATE_FILE_IMPORT_CRONJOB', '{"customers":[],"ScriptLocation":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'VENDOR_RATE_FILE_IMPORT_CRONJOB', '{"vendors":[],"ScriptLocation":"","CdrBehindDuration":"200","CdrBehindDurationEmail":"120","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES (1, 'CUSTOMER_MOVEMENT_REPORT_DISPLAY', '0');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_DOWNLOAD_CDR_CRONJOB', '{"MaxInterval":"1440","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_CUSTOMER_RATE_FILE_GEN_CRONJOB', '{"customers":[],"FileLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":"","Effective":"Now"}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_VENDOR_RATE_FILE_GEN_CRONJOB', '{"vendors":[],"FileLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":"","Effective":"Now","AddDiscontinueRates":"no"}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_RATE_FILE_DOWNLOAD_CRONJOB', '{"gateway":"","vendors":"","FilesDownloadLimit":"","FileLocationFrom":"","FileLocationTo":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_RATE_FILE_PROCESS_CRONJOB', '{"gateway":"","FilesMaxProcess":"","FilesDownloadLimit":"","FileLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'STREAMCO_ACCOUNT_IMPORT', '{"ThresholdTime":"60","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"10","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'CUSTOMER_RATE_FILE_IMPORT_CRONJOB', '{"customers":[],"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'VENDOR_RATE_FILE_IMPORT_CRONJOB', '{"vendors":[],"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'RATE_FILE_EXPORT_CRONJOB', '{"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO `tblCompanyConfiguration` (`CompanyID`, `Key`, `Value`) VALUES ( 1, 'CUSTOMER_MOVEMENT_REPORT_DISPLAY', '0');
 
 INSERT INTO `tblGateway` (`GatewayID`, `Title`, `Name`, `Status`, `CreatedBy`, `created_at`, `ModifiedBy`, `updated_at`) VALUES (9, 'Locutorios', 'CallShop', 1, 'RateManagementSystem', '2017-07-14 00:00:00', NULL, NULL);
 INSERT INTO `tblGateway` (`GatewayID`, `Title`, `Name`, `Status`, `CreatedBy`, `created_at`, `ModifiedBy`, `updated_at`) VALUES (10, 'Streamco', 'Streamco', 1, 'RateManagementSystem', '2017-07-22 11:09:43', NULL, NULL);
@@ -3792,12 +4059,13 @@ INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Customer Rate File Process', 'customerratefileprocess', '[[{"title":"Files Max Process","type":"text","value":"","name":"FilesMaxProcess"},{"title":"File Location (Path)","type":"text","value":"","name":"FileLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Vendor Rate File Download', 'vendorratefiledownload', '[[{"title":"Max File Download Limit","type":"text","value":"","name":"FilesDownloadLimit"},{"title":"File Download From Location (Path)","type":"text","value":"","name":"FileLocationFrom"},{"title":"File Download To Location (Path)","type":"text","value":"","name":"FileLocationTo"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Customer Rate File Download', 'customerratefiledownload', '[[{"title":"Max File Download Limit","type":"text","value":"","name":"FilesDownloadLimit"},{"title":"File Download From Location (Path)","type":"text","value":"","name":"FileLocationFrom"},{"title":"File Download To Location (Path)","type":"text","value":"","name":"FileLocationTo"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
-INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Vendor Rate File Export', 'vendorratefileexport', '[[{"title":"File Generation Location (Path)","type":"text","value":"","name":"FileLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
-INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Customer Rate File Export', 'customerratefileexport', '[[{"title":"File Generation Location (Path)","type":"text","value":"","name":"FileLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
+INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Vendor Rate File Export', 'vendorratefileexport', '[[{"title":"File Generation Location (Path)","type":"text","value":"","name":"FileLocation"},{"title":"Effective","type":"select","value":{"Now":"Now","Future":"Future","All":"All"},"name":"Effective"},{"title":"Add Discontinue Rates","type":"select","value":{"no":"No","yes":"Yes"},"name":"AddDiscontinueRates"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
+INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Customer Rate File Export', 'customerratefileexport', '[[{"title":"File Generation Location (Path)","type":"text","value":"","name":"FileLocation"},{"title":"Effective","type":"select","value":{"Now":"Now","Future":"Future","All":"All"},"name":"Effective"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2015-04-21 15:11:06', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Download Streamco CDR', 'streamcoaccountusage', '[[{"title":"STREMCO Max Interval","type":"text","value":"","name":"MaxInterval"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2017-07-22 08:22:13', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Streamco Account Import', 'streamcoaccountimport', '[[{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2017-07-27 15:11:06', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Customer Rate File Generation', 'customerratefilegeneration', '[[{"title":"Script Location (Path)","type":"text","value":"","name":"ScriptLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2017-07-29 14:11:06', 'RateManagementSystem');
 INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Vendor Rate File Generation', 'vendorratefilegeneration', '[[{"title":"Script Location (Path)","type":"text","value":"","name":"ScriptLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2017-07-29 14:11:06', 'RateManagementSystem');
+INSERT INTO `tblCronJobCommand` (`CompanyID`, `GatewayID`, `Title`, `Command`, `Settings`, `Status`, `created_at`, `created_by`) VALUES (1, 10, 'Rate File Export', 'ratefileexport', '[[{"title":"Script Location (Path)","type":"text","value":"","name":"ScriptLocation"},{"title":"Threshold Time (Minute)","type":"text","value":"","name":"ThresholdTime"},{"title":"Success Email","type":"text","value":"","name":"SuccessEmail"},{"title":"Error Email","type":"text","value":"","name":"ErrorEmail"}]]', 1, '2017-07-29 14:11:06', 'RateManagementSystem');
 
 INSERT INTO `tblJobType` (`Code`, `Title`, `Description`, `CreatedDate`, `CreatedBy`, `ModifiedDate`, `ModifiedBy`) VALUES ('IU', 'Item Upload', NULL, '2017-07-04 12:25:46', 'System', NULL, NULL);
 
