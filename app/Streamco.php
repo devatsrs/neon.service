@@ -11,7 +11,6 @@ use App\Lib\LastPrefixNo;
 use App\Lib\NeonExcelIO;
 use App\Lib\Trunk;
 use App\Lib\VendorTrunk;
-use App\Lib\LastPrefixNo;
 use Collective\Remote\RemoteFacade;
 use Exception;
 use Illuminate\Support\Facades\Config;
