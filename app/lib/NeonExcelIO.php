@@ -14,6 +14,8 @@ use Box\Spout\Writer\WriterFactory;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
+
 
 class NeonExcelIO
 {
@@ -364,13 +366,7 @@ class NeonExcelIO
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      */
     public function write_ratessheet_excel_generate($data,$downloadtype){
-        if($downloadtype == 'xlsx'){
-            $writer = WriterFactory::create(Type::XLSX); // for XLSX files
-        }else{
-            $writer = WriterFactory::create(Type::CSV); // for CSV files
-        }
-
-        $writer->openToFile($this->file); // write data to a file or to a PHP stream
+        $CompanyID = $data['Company']->CompanyID;
 
         $excel_data_sheet = array();
         $header_data = array();
@@ -397,13 +393,86 @@ class NeonExcelIO
         $replace_array = Helper::create_replace_array($data['Account'],array());
         $header_data = template_var_replace($header_data,$replace_array);
 
-        if(isset($header_data)){
-            $writer->addRow($header_data);
+        $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
+        $RateSheetTemplateFile = '';
+        if($RateSheetTemplate != '') {
+            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
         }
-        if(isset($excel_data_sheet) > 0 ) {
-            $writer->addRows($excel_data_sheet); // add multiple rows at a time
+        if($RateSheetTemplateFile != '') {
+            $RateSheetHeaderSize = $RateSheetTemplate->HeaderSize != null ? (int) $RateSheetTemplate->HeaderSize : 0 ;
+            $RateSheetFooterSize = $RateSheetTemplate->FooterSize != null ? (int) $RateSheetTemplate->FooterSize : 0 ;
+            $RateSheetFooterSize = $RateSheetFooterSize+$RateSheetHeaderSize+2;
+            $objPHPExcelTemplate = \PHPExcel_IOFactory::load($RateSheetTemplateFile);
+            $objPHPExcelTemplate->getActiveSheet()->insertNewRowBefore(($RateSheetHeaderSize+1),count($excel_data_sheet)+1);
+
+            if(isset($header_data)){
+                $objPHPExcelTemplate->getActiveSheet()->fromArray($header_data, NULL, 'A'.($RateSheetHeaderSize+1));
+            }
+            $cstart = 0;
+            $rstart = ($RateSheetHeaderSize+1);
+            $input = $objPHPExcelTemplate->getActiveSheet()->getStyle('A'.($RateSheetFooterSize+count($excel_data_sheet)));
+
+            for($i=0;$i<count($excel_data_sheet)+1;$i++) {
+                $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+6) . $rstart;
+                $objPHPExcelTemplate->getActiveSheet()->duplicateStyle($input, $interval);
+                $objPHPExcelTemplate->getActiveSheet()->getRowDimension(''.$rstart.'')->setRowHeight(15);
+                $rstart++;
+
+                if($i<count($excel_data_sheet))
+                    $objPHPExcelTemplate->getActiveSheet()->fromArray($excel_data_sheet[$i], NULL, 'A'.($i+($RateSheetHeaderSize+2)));
+            }
+            $replace_array = Helper::create_replace_array($data['Account'],array());
+            $replace_array['TrunkPrefix'] = empty($data['Account']->trunkprefix)?'':$data['Account']->trunkprefix;
+            $replace_array['TrunkName'] = empty($data['Account']->trunk_name)?'':$data['Account']->trunk_name;
+
+            for($i=0;$i<$RateSheetHeaderSize;$i++) {
+                for($j=0;$j<6;$j++) {
+                    $col = $this->num2char($j);
+                    $excel_header = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
+                    $excel_header = template_var_replace($excel_header,$replace_array);
+                    $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_header);
+                }
+            }
+            for($i=($RateSheetHeaderSize+count($excel_data_sheet)+1);$i<($RateSheetFooterSize+count($excel_data_sheet)-1);$i++) {
+                for($j=0;$j<6;$j++) {
+                    $col = $this->num2char($j);
+                    $excel_footer = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
+                    $excel_footer = template_var_replace($excel_footer,$replace_array);
+                    $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_footer);
+                }
+            }
+
+            $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcelTemplate, 'Excel2007');
+            $objWriter->save($this->file);
+        } else {
+
+            if($downloadtype == 'xlsx'){
+                $writer = WriterFactory::create(Type::XLSX); // for XLSX files
+            }else{
+                $writer = WriterFactory::create(Type::CSV); // for CSV files
+            }
+
+            $writer->openToFile($this->file); // write data to a file or to a PHP stream
+
+            if(isset($header_data)){
+                $writer->addRow($header_data);
+            }
+            if(isset($excel_data_sheet) > 0 ) {
+                $writer->addRows($excel_data_sheet); // add multiple rows at a time
+            }
+            $writer->close();
         }
-        $writer->close();
+    }
+
+    public function num2char($num) {
+        $numeric = $num % 26;
+        $letter = chr(65 + $numeric);
+        $num2 = intval($num / 26);
+        if ($num2 > 0) {
+            return $this->num2char($num2 - 1) . $letter;
+        } else {
+            return $letter;
+        }
     }
 
     /**
@@ -414,74 +483,160 @@ class NeonExcelIO
      * @throws \Box\Spout\Common\Exception\UnsupportedTypeException
      */
     public function write_multi_ratessheet_excel_generate($data,$downloadtype){
-
+        $CompanyID = $data['Company']->CompanyID;
         /*if($downloadtype == 'xlsx'){
             $writer = WriterFactory::create(Type::XLSX); // for XLSX files
         }else{
             $writer = WriterFactory::create(Type::CSV); // for CSV files
         }*/
-        $writer = WriterFactory::create(Type::XLSX);
-        $writer->openToFile($this->file); // write data to a file or to a PHP stream
 
-        Log::info( " writing to... " . $this->file );
-
-
-        $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
-        if(isset($excel_data) > 0 ) {
-
-            $sheet_index = 1;
-            foreach($excel_data as $trunk => $excel_rows) {
-
-                $excel_data_sheet = array();
-                $header_data = array();
-                foreach($excel_rows as $excel_data_rr){
-                    array_shift($excel_data_rr);
-                    array_shift($excel_data_rr);
-                    array_shift($excel_data_rr);
-                    $excel_data_sheet[] = $excel_data_rr;
-                    $header_data = array_keys($excel_data_rr);
-                }
-                $header_data  = array_map('ucwords',$header_data);
-                if(count($header_data) == 0){
-                    $header_data[] = 'Destination';
-                    $header_data[] = 'Codes';
-                    $header_data[] = 'Tech Prefix';
-                    $header_data[] = 'Interval';
-                    $header_data[] = 'Rate Per Minute (usd)';
-                    $header_data[] = 'Level';
-                    $header_data[] = 'Change';
-                    $header_data[] = 'Effective Date';
-                }
-                array_walk($header_data , 'custom_replace');
-                $replace_array = Helper::create_replace_array($data['Account'],array());
-                $header_data = template_var_replace($header_data,$replace_array);
-
-                Log::info($trunk . " sheet index " . $sheet_index );
-                if($sheet_index == 1){
-
-
-                    $sheet = $writer->getCurrentSheet();
-                    $sheet_index++;
-                }else{
-
-                    $sheet = $writer->addNewSheetAndMakeItCurrent();
-                }
-
-                //$writer->setCurrentSheet($sheet);
-
-                $sheet->setName($trunk);
-
-                if(isset($header_data)){
-                    $writer->addRow($header_data);
-                }
-                $writer->addRows($excel_data_sheet); // add multiple rows at a time
-
-            }
-
-
-
+        $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
+        $RateSheetTemplateFile = '';
+        if($RateSheetTemplate != '') {
+            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
         }
-        $writer->close();
+        if($RateSheetTemplateFile != '') {
+            $RateSheetHeaderSize = $RateSheetTemplate->HeaderSize != null ? (int) $RateSheetTemplate->HeaderSize : 0 ;
+            $RateSheetFooterSize = $RateSheetTemplate->FooterSize != null ? (int) $RateSheetTemplate->FooterSize : 0 ;
+            $RateSheetFooterSize = $RateSheetFooterSize+$RateSheetHeaderSize+2;
+            $objPHPExcelTemplate = \PHPExcel_IOFactory::load($RateSheetTemplateFile);
+
+            Log::info( " writing to... " . $this->file );
+            $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
+
+            if(isset($excel_data) > 0 ) {
+                $sheet_index = 0;
+                foreach($excel_data as $trunk => $excel_rows) {
+                    $excel_data_sheet = array();
+                    $header_data = array();
+                    foreach($excel_rows as $excel_data_rr){
+                        array_shift($excel_data_rr);
+                        array_shift($excel_data_rr);
+                        array_shift($excel_data_rr);
+                        $excel_data_sheet[] = $excel_data_rr;
+                        $header_data = array_keys($excel_data_rr);
+                    }
+                    $header_data  = array_map('ucwords',$header_data);
+                    if(count($header_data) == 0){
+                        $header_data[] = 'Destination';
+                        $header_data[] = 'Codes';
+                        $header_data[] = 'Tech Prefix';
+                        $header_data[] = 'Interval';
+                        $header_data[] = 'Rate Per Minute (usd)';
+                        $header_data[] = 'Level';
+                        $header_data[] = 'Change';
+                        $header_data[] = 'Effective Date';
+                    }
+                    array_walk($header_data , 'custom_replace');
+                    $replace_array = Helper::create_replace_array($data['Account'],array());
+                    $header_data = template_var_replace($header_data,$replace_array);
+
+                    Log::info($trunk . " sheet index " . $sheet_index );
+                    if($sheet_index == 0){
+//                        $sheet = $writer->getCurrentSheet();
+                        $sheet_index++;
+                    }else{
+                        $objPHPExcelTemplateNew = \PHPExcel_IOFactory::load($RateSheetTemplateFile);
+                        $template = $objPHPExcelTemplateNew->getActiveSheet();
+                        $objPHPExcelTemplate->addExternalSheet($template);
+                        $objPHPExcelTemplate->setActiveSheetIndex($sheet_index);
+                    }
+
+                    $objPHPExcelTemplate->getActiveSheet()->setTitle($trunk);
+                    $objPHPExcelTemplate->getActiveSheet()->insertNewRowBefore(($RateSheetHeaderSize+1),count($excel_data_sheet)+1);
+
+                    if(isset($header_data)){
+                        $objPHPExcelTemplate->getActiveSheet()->fromArray($header_data, NULL, 'A'.($RateSheetHeaderSize+1));
+                    }
+                    $cstart = 0;
+                    $rstart = ($RateSheetHeaderSize+1);
+                    $input = $objPHPExcelTemplate->getActiveSheet()->getStyle('A'.($RateSheetFooterSize+count($excel_data_sheet)));
+
+                    for($i=0;$i<count($excel_data_sheet)+1;$i++) {
+                        $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+6) . $rstart;
+                        $objPHPExcelTemplate->getActiveSheet()->duplicateStyle($input, $interval);
+                        $objPHPExcelTemplate->getActiveSheet()->getRowDimension(''.$rstart.'')->setRowHeight(15);
+                        $rstart++;
+
+                        if($i<count($excel_data_sheet))
+                            $objPHPExcelTemplate->getActiveSheet()->fromArray($excel_data_sheet[$i], NULL, 'A'.($i+($RateSheetHeaderSize+2)));
+                    }
+                    $replace_array = Helper::create_replace_array($data['Account'],array());
+                    $TrunkID = DB::table('tblTrunk')->where(array('Trunk' => $trunk))->pluck('TrunkID');
+                    $trunkprefix = CustomerTrunk::where(['AccountID'=>$data['Account']->AccountID,'TrunkID'=>$TrunkID,'Status'=>1])->pluck('Prefix');
+                    $replace_array['TrunkPrefix'] = $trunkprefix;
+                    $replace_array['TrunkName'] = $trunk;
+                    for($i=0;$i<$RateSheetHeaderSize;$i++) {
+                        for($j=0;$j<6;$j++) {
+                            $col = $this->num2char($j);
+                            $excel_header = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
+                            $excel_header = template_var_replace($excel_header,$replace_array);
+                            $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_header);
+                        }
+                    }
+                    for($i=($RateSheetHeaderSize+count($excel_data_sheet)+1);$i<($RateSheetFooterSize+count($excel_data_sheet)-1);$i++) {
+                        for($j=0;$j<6;$j++) {
+                            $col = $this->num2char($j);
+                            $excel_footer = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
+                            $excel_footer = template_var_replace($excel_footer,$replace_array);
+                            $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_footer);
+                        }
+                    }
+                }
+                $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcelTemplate, 'Excel2007');
+                $objWriter->save($this->file);
+            }
+        } else {
+            $writer = WriterFactory::create(Type::XLSX);
+            $writer->openToFile($this->file); // write data to a file or to a PHP stream
+            Log::info( " writing to... " . $this->file );
+            $excel_data = isset($data['excel_data'])?$data['excel_data']:array();
+
+            if(isset($excel_data) > 0 ) {
+                $sheet_index = 1;
+                foreach($excel_data as $trunk => $excel_rows) {
+                    $excel_data_sheet = array();
+                    $header_data = array();
+                    foreach($excel_rows as $excel_data_rr){
+                        array_shift($excel_data_rr);
+                        array_shift($excel_data_rr);
+                        array_shift($excel_data_rr);
+                        $excel_data_sheet[] = $excel_data_rr;
+                        $header_data = array_keys($excel_data_rr);
+                    }
+                    $header_data  = array_map('ucwords',$header_data);
+                    if(count($header_data) == 0){
+                        $header_data[] = 'Destination';
+                        $header_data[] = 'Codes';
+                        $header_data[] = 'Tech Prefix';
+                        $header_data[] = 'Interval';
+                        $header_data[] = 'Rate Per Minute (usd)';
+                        $header_data[] = 'Level';
+                        $header_data[] = 'Change';
+                        $header_data[] = 'Effective Date';
+                    }
+                    array_walk($header_data , 'custom_replace');
+                    $replace_array = Helper::create_replace_array($data['Account'],array());
+                    $header_data = template_var_replace($header_data,$replace_array);
+
+                    Log::info($trunk . " sheet index " . $sheet_index );
+                    if($sheet_index == 1){
+                        $sheet = $writer->getCurrentSheet();
+                        $sheet_index++;
+                    }else{
+                        $sheet = $writer->addNewSheetAndMakeItCurrent();
+                    }
+
+                    $sheet->setName($trunk);
+
+                    if(isset($header_data)){
+                        $writer->addRow($header_data);
+                    }
+                    $writer->addRows($excel_data_sheet); // add multiple rows at a time
+                }
+            }
+            $writer->close();
+        }
     }
 
     /**
