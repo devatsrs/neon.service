@@ -13,6 +13,7 @@ use App\Lib\Account;
 use App\Lib\AmazonS3;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanySetting;
 use App\Lib\CustomerTrunk;
 use App\Lib\CronHelper;
 use App\Lib\Helper;
@@ -201,7 +202,7 @@ class CustomerRateSheetGenerator extends Command {
                             $data = array();
                             $data['Company'] = $Company;
                             $data['Account'] = $account;
-
+                            $replace_array = Helper::create_replace_array($account,array(),$userInfo);
 
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
 
@@ -266,13 +267,18 @@ class CustomerRateSheetGenerator extends Command {
                                         $excel_data = json_decode(json_encode($excel_data), true);
                                         $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                         $data['excel_data'] = $excel_data;
+                                        /*Customer trunk */
+                                        $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
+                                        $data['Account']->trunkprefix = $customertrunkprefix;
+                                        $data['Account']->trunk_name = $trunkname;
+
                                         $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
                                         $file_name .= '.'.$downloadtype;
                                         Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
                                         RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
                                         Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                         /*Customer trunk */
-                                        $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
+                                        //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
                                         $account->trunkprefix = $customertrunkprefix;
                                         $account->trunk_name = $trunkname;
                                         $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
@@ -301,13 +307,18 @@ class CustomerRateSheetGenerator extends Command {
                                     $excel_data = json_decode(json_encode($excel_data), true);
                                     $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
                                     $data['excel_data'] = $excel_data;
+                                    /*Customer trunk */
+                                    $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
+                                    $data['Account']->trunkprefix = $customertrunkprefix;
+                                    $data['Account']->trunk_name = $trunkname;
+
                                     $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
                                     $file_name .= '.'.$downloadtype;
                                     Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
                                     RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
                                     Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                     /*Customer trunk */
-                                    $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
+                                    //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
                                     $account->trunkprefix = $customertrunkprefix;
                                     $account->trunk_name = $trunkname;
                                     $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
@@ -378,14 +389,15 @@ class CustomerRateSheetGenerator extends Command {
 
         $emaildata['JobStatusMessage'] = $jobdata['JobStatusMessage'];
         $emaildata['Title'] = $job->Title;
-        $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+//        $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+        $emaildata['EmailTo'] = array("vasim.seta@code-desk.com");
         $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
         $emaildata['Subject'] = $job->Title;
         $emaildata['CompanyID'] = $CompanyID;
 
 
         if ($emailstatus['status'] == 0) {
-            Job::send_job_status_email($job,$CompanyID);
+//            Job::send_job_status_email($job,$CompanyID);
         }else {
             Job::where(["JobID" => $JobID])->update(array('EmailSentStatus' => $emailstatus['status'], 'EmailSentStatusMessage' => $emailstatus['message']));
             Log::info('job end ' . $JobID);
@@ -522,7 +534,8 @@ class CustomerRateSheetGenerator extends Command {
             if(!is_array($emaildata['EmailTo'])){
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
-            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
+//            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
+            $emaildata['EmailTo'] = array("vasim.seta@code-desk.com");
             $replace_array = Helper::create_replace_array($account,array(),$userInfo);
             $replace_array['TrunkPrefix'] = empty($account->trunkprefix)?'':$account->trunkprefix;
             $replace_array['TrunkName'] = empty($account->trunk_name)?'':$account->trunk_name;
@@ -551,7 +564,8 @@ class CustomerRateSheetGenerator extends Command {
             }
         }else{
             $emaildata['attach'] = $local_dir . basename($file_name);
-            $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+//            $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
+            $emaildata['EmailTo'] = array("vasim.seta@code-desk.com");
             $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
             $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
             $emaildata['CompanyName'] = $Company->CompanyName;
