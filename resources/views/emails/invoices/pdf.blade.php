@@ -61,7 +61,7 @@
     $InvoiceTo =$InvoiceFrom = '';
 
     foreach($InvoiceDetail as $ProductRow){
-        if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+        if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
@@ -85,7 +85,7 @@
             <div id="invoice">
                 <h1>Invoice No: {{$Invoice->FullInvoiceNumber}}</h1>
                 <div class="date">Invoice Date: {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                <div class="date">Due Date: {{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <div class="date">Due Date: {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
                     <div class="date">Invoice Period: {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
                 @endif

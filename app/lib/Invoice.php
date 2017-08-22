@@ -1302,6 +1302,32 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
         InvoiceDetail::insert($InvoiceDetailData);
 
+        $BillingType = AccountBilling::getBillingType($AccountID);
+        $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+        if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+            $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
+        }else{
+            $InvoiceStartDate = $StartDate;
+            $InvoiceEndDate = $EndDate;
+        }
+
+        $InvoiceDetailData = array();
+        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+        $InvoiceDetailData['ProductID'] = 0;
+        $InvoiceDetailData['ServiceID'] = $ServiceID;
+        $InvoiceDetailData['ProductType'] = Product::INVOICE_PERIOD;
+        $InvoiceDetailData['Description'] = 'Invoice Period';
+        $InvoiceDetailData['StartDate'] = $InvoiceStartDate;
+        $InvoiceDetailData['EndDate'] = $InvoiceEndDate;
+        $InvoiceDetailData['Price'] = 0;
+        $InvoiceDetailData['Qty'] = 0;
+        $InvoiceDetailData['Discount'] = 0;
+        $InvoiceDetailData['LineTotal'] = 0;
+        $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+        $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+        InvoiceDetail::insert($InvoiceDetailData);
+
 
         return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
 
