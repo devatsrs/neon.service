@@ -413,7 +413,7 @@ class NeonExcelIO
             $input = $objPHPExcelTemplate->getActiveSheet()->getStyle('A'.($RateSheetFooterSize+count($excel_data_sheet)));
 
             for($i=0;$i<count($excel_data_sheet)+1;$i++) {
-                $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+6) . $rstart;
+                $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+20) . $rstart;
                 $objPHPExcelTemplate->getActiveSheet()->duplicateStyle($input, $interval);
                 $objPHPExcelTemplate->getActiveSheet()->getRowDimension(''.$rstart.'')->setRowHeight(15);
                 $rstart++;
@@ -425,11 +425,18 @@ class NeonExcelIO
             $replace_array['TrunkPrefix'] = empty($data['Account']->trunkprefix)?'':$data['Account']->trunkprefix;
             $replace_array['TrunkName'] = empty($data['Account']->trunk_name)?'':$data['Account']->trunk_name;
 
-            for($i=0;$i<$RateSheetHeaderSize;$i++) {
+            for($i=0;$i<=$RateSheetHeaderSize;$i++) {
                 for($j=0;$j<6;$j++) {
                     $col = $this->num2char($j);
                     $excel_header = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
                     $excel_header = template_var_replace($excel_header,$replace_array);
+                    $excel_header = str_replace('{{CurrentDate}}',date('d-m-Y'),$excel_header);
+                    if(preg_match('/{{CurrentDate(.*?)}}/',$excel_header,$date_placeholder)) {
+                        $date_format = explode('|',$date_placeholder[0]);
+                        $date_format = rtrim($date_format[1],'}');
+                        $date = date($date_format);
+                        $excel_header = str_replace($date_placeholder,$date,$excel_header);
+                    }
                     $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_header);
                 }
             }
@@ -553,7 +560,7 @@ class NeonExcelIO
                     $input = $objPHPExcelTemplate->getActiveSheet()->getStyle('A'.($RateSheetFooterSize+count($excel_data_sheet)));
 
                     for($i=0;$i<count($excel_data_sheet)+1;$i++) {
-                        $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+6) . $rstart;
+                        $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+20) . $rstart;
                         $objPHPExcelTemplate->getActiveSheet()->duplicateStyle($input, $interval);
                         $objPHPExcelTemplate->getActiveSheet()->getRowDimension(''.$rstart.'')->setRowHeight(15);
                         $rstart++;
@@ -566,11 +573,18 @@ class NeonExcelIO
                     $trunkprefix = CustomerTrunk::where(['AccountID'=>$data['Account']->AccountID,'TrunkID'=>$TrunkID,'Status'=>1])->pluck('Prefix');
                     $replace_array['TrunkPrefix'] = $trunkprefix;
                     $replace_array['TrunkName'] = $trunk;
-                    for($i=0;$i<$RateSheetHeaderSize;$i++) {
+                    for($i=0;$i<=$RateSheetHeaderSize;$i++) {
                         for($j=0;$j<6;$j++) {
                             $col = $this->num2char($j);
                             $excel_header = $objPHPExcelTemplate->getActiveSheet()->getCell($col.''.$i);
                             $excel_header = template_var_replace($excel_header,$replace_array);
+                            $excel_header = str_replace('{{CurrentDate}}',date('d-m-Y'),$excel_header);
+                            if(preg_match('/{{CurrentDate(.*?)}}/',$excel_header,$date_placeholder)) {
+                                $date_format = explode('|',$date_placeholder[0]);
+                                $date_format = rtrim($date_format[1],'}');
+                                $date = date($date_format);
+                                $excel_header = str_replace($date_placeholder,$date,$excel_header);
+                            }
                             $objPHPExcelTemplate->getActiveSheet()->setCellValue($col.''.$i,$excel_header);
                         }
                     }
