@@ -137,6 +137,7 @@ class VendorRateUpload extends Command
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
                     $lineno = 2;
+                    
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
                     }
