@@ -1302,8 +1302,9 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
         InvoiceDetail::insert($InvoiceDetailData);
 
+        $BillingType = AccountBilling::getBillingType($AccountID);
         $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
-        if($AccountBilling->BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+        if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
             $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
             $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
         }else{

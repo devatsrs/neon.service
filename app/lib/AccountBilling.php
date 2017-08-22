@@ -26,6 +26,9 @@ class AccountBilling extends \Eloquent {
     public static function getSendInvoiceSetting($AccountID){
         return AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('SendInvoiceSetting');
     }
+    public static function getBillingType($AccountID){
+        return AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>0))->pluck('BillingType');
+    }
 
     public static function getBillingClass($AccountID,$ServiceID){
         $BillingClassID = (int)AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('BillingClassID');
