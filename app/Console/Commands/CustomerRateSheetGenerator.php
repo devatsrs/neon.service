@@ -202,7 +202,7 @@ class CustomerRateSheetGenerator extends Command {
                             $data = array();
                             $data['Company'] = $Company;
                             $data['Account'] = $account;
-                            $replace_array = Helper::create_replace_array($account,array(),$userInfo);
+                            //$replace_array = Helper::create_replace_array($account,array(),$userInfo);
 
                             $trunks = DB::table('tblCustomerTrunk')->join("tblTrunk","tblTrunk.TrunkID", "=","tblCustomerTrunk.TrunkID")->where(["tblCustomerTrunk.Status"=> 1])->where(["tblCustomerTrunk.AccountID"=>$account->AccountID])->where(["tblCustomerTrunk.CompanyID"=>$CompanyID])->select(array('tblCustomerTrunk.TrunkID'))->lists('TrunkID');
 
@@ -389,8 +389,7 @@ class CustomerRateSheetGenerator extends Command {
 
         $emaildata['JobStatusMessage'] = $jobdata['JobStatusMessage'];
         $emaildata['Title'] = $job->Title;
-//        $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
-        $emaildata['EmailTo'] = array("sumera@code-desk.com");
+        $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
         $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
         $emaildata['Subject'] = $job->Title;
         $emaildata['CompanyID'] = $CompanyID;
@@ -534,8 +533,7 @@ class CustomerRateSheetGenerator extends Command {
             if(!is_array($emaildata['EmailTo'])){
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
-//            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
-            $emaildata['EmailTo'] = array("sumera@code-desk.com");
+            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
             $replace_array = Helper::create_replace_array($account,array(),$userInfo);
             $replace_array['TrunkPrefix'] = empty($account->trunkprefix)?'':$account->trunkprefix;
             $replace_array['TrunkName'] = empty($account->trunk_name)?'':$account->trunk_name;
@@ -564,8 +562,7 @@ class CustomerRateSheetGenerator extends Command {
             }
         }else{
             $emaildata['attach'] = $local_dir . basename($file_name);
-//            $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
-            $emaildata['EmailTo'] = array("sumera@code-desk.com");
+            $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
             $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
             $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
             $emaildata['CompanyName'] = $Company->CompanyName;
