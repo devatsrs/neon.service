@@ -3644,7 +3644,7 @@ return array(
     'ServerInfoController' => $baseDir . '/app/controllers/ServerInfoController.php',
     'Service' => $baseDir . '/app/models/Service.php',
     'ServicesController' => $baseDir . '/app/controllers/ServicesController.php',
-    'SessionHandlerInterface' => $vendorDir . '/symfony/polyfill-php54/Resources/stubs/SessionHandlerInterface.php',
+    'SessionHandlerInterface' => $vendorDir . '/symfony/http-foundation/Resources/stubs/SessionHandlerInterface.php',
     'Sippy' => $baseDir . '/app/lib/Sippy.php',
     'SiteIntegration' => $baseDir . '/app/lib/SiteIntegration.php',
     'Stack\\Builder' => $vendorDir . '/stack/builder/src/Stack/Builder.php',
