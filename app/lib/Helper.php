@@ -254,7 +254,7 @@ class Helper{
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob has ReProcessed CDR Files';
+        $emaildata['Subject'] = 'CronJob has ReProcessed Files';
         $emaildata['JobTitle'] = $JobTitle;
         $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
         Log::info(' rename files');

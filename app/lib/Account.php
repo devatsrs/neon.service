@@ -132,7 +132,7 @@ class Account extends \Eloquent {
         }
     }
     public static function getInvoiceOutstanding($CompanyID,$AccountID,$Invoiceids,$decimal_places = 2){
-        $query = "CALL prc_getPaymentPendingInvoice('". $CompanyID  . "',  '". $AccountID  . "',0)";
+        $query = "CALL prc_getPaymentPendingInvoice('". $CompanyID  . "',  '". $AccountID  . "',0,0)";
         $InvoiceOutstandingResult = DB::connection('sqlsrv2')->select($query);
         $Outstanding = 0;
         foreach ($InvoiceOutstandingResult as $Invoiceid) {
