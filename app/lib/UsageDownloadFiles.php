@@ -139,10 +139,21 @@ class UsageDownloadFiles extends Model {
     /** get process file make them pending*/
     public static function UpdateProcessToPendingStreamco($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting,$type){
         if(!empty($cronsetting['ErrorEmail'])) {
-            UsageDownloadFiles::getInProcessfile($CompanyID,$CompanyGatewayID, $cronsetting['ErrorEmail'], $CronJob->JobTitle);
+            UsageDownloadFiles::getInProcessfileStreamco($CompanyID,$CompanyGatewayID, $cronsetting['ErrorEmail'], $CronJob->JobTitle,$type);
         }
         if(UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>self::INPROGRESS))->where('FileName','like',$type.'%')->count()) {
             UsageDownloadFiles::where(array('CompanyGatewayID' => $CompanyGatewayID, 'Status' => self::INPROGRESS))->where('FileName','like',$type.'%')->update(array('Status' => self::PENDING));
+        }
+    }
+
+    public static function getInProcessfileStreamco($CompanyID,$CompanyGatewayID,$ErrorEmail,$JobTitle,$type){
+        $UsageDownloadFiles = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>self::INPROGRESS))->where('FileName','like',$type.'%')->get(['FileName'])->toArray();
+        $renamefilenames = array();
+        foreach($UsageDownloadFiles as $UsageDownloadFilesrow){
+            $renamefilenames[] = $UsageDownloadFilesrow['FileName'];
+        }
+        if(count($renamefilenames)) {
+            Helper::EmailsendCDRFileReProcessed($CompanyID, $ErrorEmail, $JobTitle, $renamefilenames);
         }
     }
 
