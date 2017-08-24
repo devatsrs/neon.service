@@ -122,7 +122,7 @@ class MORAccountUsage extends Command {
             $data_count = $data_countv = 0;
             $insertLimit = 1000;
 
-            $response = $mor->getAccountCDRs2($param);
+            $response = $mor->getAccountCDRs($param);
             $response = json_decode(json_encode($response), true);
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));

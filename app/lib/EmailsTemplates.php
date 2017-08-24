@@ -185,6 +185,7 @@ class EmailsTemplates{
 			$array['PostCode']				=	 $AccoutData->PostCode;
 			$array['Country']				=	 $AccoutData->Country;
 			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");		
+			$array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Symbol");
 			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  Helper::get_round_decimal_places($CompanyID,$AccountID));
 			$array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($AccountID);
 			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);	
@@ -198,6 +199,66 @@ class EmailsTemplates{
 					$array['Signature']= '';	
 				}
 			return $array;
+	}
+
+	static function SendAutoPayment($InvoiceID,$type="body",$CompanyID,$singleemail,$staticdata=array(),$data = array())
+	{
+		$message = "";
+		$replace_array = $data;
+		$userID = isset($data['UserID']) ? $data['UserID'] : 0;
+		/*try{*/
+		$InvoiceData = Invoice::find($InvoiceID);
+		$AccoutData = Account::find($InvoiceData->AccountID);
+		$EmailTemplate = EmailTemplate::where(["SystemType" => Payment::AUTOINVOICETEMPLATE, "CompanyID" => $CompanyID])->first();
+		if ($type == "subject") {
+			$EmailMessage = $EmailTemplate->Subject;
+		} else {
+			$EmailMessage = $EmailTemplate->TemplateBody;
+		}
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $InvoiceData->AccountID, $userID);
+		$WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+		$replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email=' . $singleemail;
+		$replace_array['InvoiceNumber'] = $InvoiceData->FullInvoiceNumber;
+		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $InvoiceData->AccountID);
+		$replace_array['InvoiceGrandTotal'] = number_format($InvoiceData->GrandTotal, $RoundChargesAmount);
+		$replace_array['InvoiceOutstanding'] = Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID, Helper::get_round_decimal_places($CompanyID, $InvoiceData->AccountID));
+
+		$replace_array['PaidAmount'] = empty($staticdata['PaidAmount'])?'':$staticdata['PaidAmount'];
+		$replace_array['PaidStatus'] = empty($staticdata['PaidStatus'])?'':$staticdata['PaidStatus'];
+		$replace_array['PaymentMethod'] = empty($staticdata['PaymentMethod'])?'':$staticdata['PaymentMethod'];
+		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
+
+		$extraSpecific = [
+			'{{InvoiceNumber}}',
+			'{{InvoiceGrandTotal}}',
+			'{{InvoiceOutstanding}}',
+			'{{OutstandingExcludeUnbilledAmount}}',
+			'{{Signature}}',
+			'{{OutstandingIncludeUnbilledAmount}}',
+			'{{BalanceThreshold}}',
+			"{{InvoiceLink}}",
+			"{{PaidAmount}}",
+			"{{PaidStatus}}",
+			"{{PaymentMethod}}",
+			"{{PaymentNotes}}"
+		];
+
+		$extraDefault = EmailsTemplates::$fields;
+		$extra = array_merge($extraDefault, $extraSpecific);
+
+		foreach ($extra as $item) {
+			$item_name = str_replace(array('{', '}'), array('', ''), $item);
+			if (array_key_exists($item_name, $replace_array)) {
+				$EmailMessage = str_replace($item, $replace_array[$item_name], $EmailMessage);
+			}
+		}
+		return $EmailMessage;
+
+		/*	return array("error"=>"","status"=>"success","data"=>$EmailMessage,"from"=>$EmailTemplate->EmailFrom);
+        }catch (Exception $ex){
+            return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);
+        }*/
 	}
 	
 }

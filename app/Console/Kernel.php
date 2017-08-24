@@ -77,7 +77,19 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ReadEmailsTickets',
 		'App\Console\Commands\MORAccountUsage',
 		'App\Console\Commands\ManualImportAccounts',
+		'App\Console\Commands\CustomerRateFileDownload',
+		'App\Console\Commands\VendorRateFileDownload',
+		'App\Console\Commands\VendorRateFileProcess',
+		'App\Console\Commands\CustomerRateFileProcess',
 		'App\Console\Commands\ItemUpload',
+		'App\Console\Commands\CallShopAccountUsage',
+		'App\Console\Commands\StreamcoAccountUsage',
+		'App\Console\Commands\StreamcoAccountImport',
+		'App\Console\Commands\CustomerRateFileGeneration',
+		'App\Console\Commands\VendorRateFileGeneration',
+		'App\Console\Commands\CustomerRateFileExport',
+		'App\Console\Commands\VendorRateFileExport',
+		'App\Console\Commands\RateFileExport',
 	];
 
 	/**
