@@ -1,10 +1,10 @@
 ############################################# Neon DEV Service ############################################
 
 #Dev
-        #* * * * * php /var/www/html/neon-service-branch/dev-mysql/dev/artisan neonservice  >> /dev/cron_job_dev 2>&1
-        #* * * * * php /var/www/html/reports.neon.service/artisan neonservice >> /dev/cron_job_girish 2>&1
-
-#staging
+	#* * * * * php /var/www/html/neon-service-branch/dev-mysql/dev/artisan neonservice  >> /dev/cron_job_dev 2>&1
+	#* * * * * php /var/www/html/reports.neon.service/artisan neonservice >> /dev/cron_job_girish 2>&1
+	
+#staging	
 * * * * * php /var/www/html/staging.neon.service/artisan neonservice  >> /dev/cron_job_staging 2>&1
 
 #Demos
@@ -20,6 +20,7 @@
 * * * * * php /var/www/html/wavetelwholesale.neon.service/artisan neonservice >> /dev/cron_job_wavetel_wholesale 2>&1
 * * * * * php /var/www/html/usmantel.neon.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
 * * * * * php /var/www/html/familytalk.neon.service/artisan neonservice >> /dev/cron_job_familytalk 2>&1
+* * * * * php /var/www/html/sipsynergy.neon.service/artisan neonservice >> /dev/cron_job_sipsynergy 2>&1
 
 # Retail
 * * * * * sleep 20; php /var/www/html/wavetelpbx.neon.service/artisan neonservice >> /dev/cron_job_wavetel_retail 2>&1
@@ -29,6 +30,7 @@
 * * * * * sleep 20; php /var/www/html/twistvoip.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
 * * * * * sleep 30; php /var/www/html/pbxlines.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
 * * * * * sleep 10; php /var/www/html/expectel.neon.service/artisan neonservice >> /dev/cron_job_expectel 2>&1
+* * * * * sleep 20; php /var/www/html/telpeer.neon.service/artisan neonservice >> /dev/cron_job_telpeer 2>&1
 
 ############################################# Neon DB Backups ############################################
 
@@ -48,3 +50,8 @@
 
 #Hosted server files
 0 0 * * *  /home/hostedfolders/neon-hosted-files.sh >> /dev/cron_neon_hosted_files 2>&1
+
+
+
+#SSL Certificate Renew 
+0 1 10 * * /root/certbot-auto renew >/dev/certbot_renew 2>&1
