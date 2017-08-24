@@ -134,20 +134,46 @@ class VendorRateUpload extends Command
                         }
                     };
 
+                    if(isset($templateoptions->skipRows))
+                    {
+                        $skiptRows=$templateoptions->skipRows;
+                        NeonExcelIO::$start_row=$skiptRows->start_row;
+                        NeonExcelIO::$end_row=$skiptRows->end_row;
+                    }
+
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
                     $lineno = 2;
+                    $columns=array();
+
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
                     }
+                    else{
+                        $columns=$results[0];
+                    }
+
                     $error = array();
                     $batch_insert_array = [];
+                    $isFirstRow=true;
+
                     foreach ($results as $index=>$temp_row) {
+
+                        if($lineno==2 && $isFirstRow)
+                        {
+                            $isFirstRow=false;
+                            continue;
+                        }
+
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
-
                         }
+                        else
+                        {
+                            $temp_row = array_combine($columns, $temp_row);
+                        }
+
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
