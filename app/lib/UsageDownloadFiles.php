@@ -131,7 +131,8 @@ class UsageDownloadFiles extends Model {
             $message = $UsageDownloadFiles->Message.$errormsg;
             $UsageDownloadFiles->update(array('Status'=>self::ERROR,'Message'=>$message));
             if(!empty($cronsetting['ErrorEmail'])){
-                Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $UsageDownloadFiles->FileName);
+                $message = 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message;
+                Helper::errorFiles($CompanyID, $cronsetting['ErrorEmail'], $JobTitle, $message );
             }
         }
     }
