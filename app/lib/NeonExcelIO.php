@@ -400,6 +400,13 @@ class NeonExcelIO
                  $column=array_combine($column,$column);
                  array_unshift($results,$column);
             }
+
+            $tmp_results=array();
+            foreach ($results as $row) {
+                $tmp_results[]=array_values($row);
+            }
+            $results=$tmp_results;
+
             if(self::$end_row && $totalRow>0)
             {
                 $requiredRow = $totalRow - self::$end_row - self::$start_row;

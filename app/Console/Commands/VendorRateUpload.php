@@ -134,9 +134,9 @@ class VendorRateUpload extends Command
                         }
                     };
 
-                    if(isset($csvoption->skipRows))
+                    if(isset($templateoptions->skipRows))
                     {
-                        $skiptRows=$csvoption->skipRows;
+                        $skiptRows=$templateoptions->skipRows;
                         NeonExcelIO::$start_row=$skiptRows->start_row;
                         NeonExcelIO::$end_row=$skiptRows->end_row;
                     }
@@ -165,12 +165,15 @@ class VendorRateUpload extends Command
                             continue;
                         }
 
-                        $temp_row = array_combine($columns, $temp_row);
-
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
                         }
+                        else
+                        {
+                            $temp_row = array_combine($columns, $temp_row);
+                        }
+
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
