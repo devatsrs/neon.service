@@ -134,20 +134,46 @@ class VendorRateUpload extends Command
                         }
                     };
 
+                    if(isset($templateoptions->skipRows))
+                    {
+                        $skiptRows=$templateoptions->skipRows;
+                        NeonExcelIO::$start_row=$skiptRows->start_row;
+                        NeonExcelIO::$end_row=$skiptRows->end_row;
+                    }
+
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
                     $lineno = 2;
+                    $columns=array();
+
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
                     }
+                    else{
+                        $columns=$results[0];
+                    }
+
                     $error = array();
                     $batch_insert_array = [];
+                    $isFirstRow=true;
+
                     foreach ($results as $index=>$temp_row) {
+
+                        if($lineno==2 && $isFirstRow)
+                        {
+                            $isFirstRow=false;
+                            continue;
+                        }
+
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
-
                         }
+                        else
+                        {
+                            $temp_row = array_combine($columns, $temp_row);
+                        }
+
                         $tempvendordata = array();
                         $tempvendordata['codedeckid'] = $joboptions->codedeckid;
                         $tempvendordata['ProcessId'] = (string) $ProcessID;
@@ -227,6 +253,11 @@ class VendorRateUpload extends Command
                                     $tempvendordata['Forbidden'] = '';
                                 }
                             }
+                            if(!empty($DialStringId)){
+                                if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
+                                    $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                }
+                            }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
                                 $batch_insert_array[] = $tempvendordata;
                                 $counter++;
@@ -253,10 +284,12 @@ class VendorRateUpload extends Command
                         TempVendorRate::insert($batch_insert_array);
                         Log::info('insertion end');
                     }
+
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
                     Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+
                     try{
                         DB::beginTransaction();
                         $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");

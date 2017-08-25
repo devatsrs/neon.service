@@ -30,6 +30,1188 @@ CREATE TABLE `tblAuditDetails` (
 COLLATE='utf8_unicode_ci'
 ENGINE=InnoDB
 ;
+
+DROP PROCEDURE IF EXISTS `prc_GetLCRwithPrefix`;
+DELIMITER |
+CREATE PROCEDURE `prc_GetLCRwithPrefix`(
+	IN `p_companyid` INT,
+	IN `p_trunkID` INT,
+	IN `p_codedeckID` INT,
+	IN `p_CurrencyID` INT,
+	IN `p_code` VARCHAR(50),
+	IN `p_Description` VARCHAR(250),
+	IN `p_AccountIds` TEXT,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_SortOrder` VARCHAR(50),
+	IN `p_Preference` INT,
+	IN `p_Position` INT,
+	IN `p_isExport` INT
+)
+BEGIN
+
+DECLARE v_OffSet_ int;
+DECLARE v_Code VARCHAR(50) ;
+DECLARE v_pointer_ int;
+DECLARE v_rowCount_ int;
+DECLARE v_p_code VARCHAR(50);
+DECLARE v_Codlen_ int;
+DECLARE v_position int;
+DECLARE v_p_code__ VARCHAR(50);
+DECLARE v_has_null_position int ;
+DECLARE v_next_position1 VARCHAR(200) ;
+DECLARE v_CompanyCurrencyID_ INT; 	
+	
+    SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+     SET @@session.collation_connection='utf8_unicode_ci';
+     SET @@session.character_set_results='utf8';
+
+    SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+  
+DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_stage_;
+       CREATE TEMPORARY TABLE tmp_VendorRate_stage_ (
+          RowCode VARCHAR(50) ,
+          AccountId INT ,
+          AccountName VARCHAR(100) ,
+          Code VARCHAR(50) ,
+          Rate DECIMAL(18,6) ,
+          ConnectionFee DECIMAL(18,6) ,
+          EffectiveDate DATETIME ,
+          Description VARCHAR(255),
+          Preference INT,
+          MaxMatchRank int ,
+          prev_prev_RowCode VARCHAR(50),
+          prev_AccountID int
+        ) 
+  ;
+
+     DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_stage2_;
+       CREATE TEMPORARY TABLE tmp_VendorRate_stage2_ (
+          RowCode VARCHAR(50) ,
+          AccountId INT ,
+          AccountName VARCHAR(100) ,
+          Code VARCHAR(50) ,
+          Rate DECIMAL(18,6) ,
+          ConnectionFee DECIMAL(18,6) ,
+          EffectiveDate DATETIME ,
+          Description VARCHAR(255),
+          Preference INT,
+          MaxMatchRank int ,
+          prev_prev_RowCode VARCHAR(50),
+          prev_AccountID int
+        ) 
+  ;
+
+  DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_;
+  CREATE TEMPORARY TABLE tmp_VendorRate_ (
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     RowCode VARCHAR(50) 
+   ) 
+   ;
+     
+   DROP TEMPORARY TABLE IF EXISTS tmp_final_VendorRate_;
+  CREATE TEMPORARY TABLE tmp_final_VendorRate_ (
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     RowCode VARCHAR(50),
+     FinalRankNumber int
+   ) 
+  ;
+   
+
+DROP TEMPORARY TABLE IF EXISTS tmp_search_code_;
+  CREATE TEMPORARY TABLE tmp_search_code_ (
+     Code  varchar(50),
+     INDEX Index1 (Code)
+);
+
+
+DROP TEMPORARY TABLE IF EXISTS tmp_code_;
+  CREATE TEMPORARY TABLE tmp_code_ (
+     RowCode  varchar(50),
+     Code  varchar(50),
+     RowNo int,
+     INDEX Index1 (Code)
+   );
+
+
+DROP TEMPORARY TABLE IF EXISTS tmp_all_code_;
+  CREATE TEMPORARY TABLE tmp_all_code_ ( 
+     RowCode  varchar(50),
+     Code  varchar(50),
+     
+     INDEX Index2 (Code)
+   )
+   ;
+
+        
+DROP TEMPORARY TABLE IF EXISTS tmp_VendorCurrentRates_;
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorCurrentRates_(
+			AccountId int,
+         AccountName varchar(200),
+			Code varchar(50),
+			Description varchar(200),
+			Rate DECIMAL(18,6) ,
+         ConnectionFee DECIMAL(18,6) , 
+			EffectiveDate date,
+			TrunkID int,
+			CountryID int,
+			RateID int,
+			Preference int,
+			INDEX IX_Code (Code)
+	) 
+  ;
+
+     DROP TEMPORARY TABLE IF EXISTS tmp_VendorCurrentRates1_;
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorCurrentRates1_(
+			AccountId int,
+         AccountName varchar(200),
+			Code varchar(50),
+			Description varchar(200),
+			Rate DECIMAL(18,6) ,
+               ConnectionFee DECIMAL(18,6) , 
+			EffectiveDate date,
+			TrunkID int,
+			CountryID int,
+			RateID int,
+			Preference int,
+			INDEX IX_Code (Code),
+			INDEX tmp_VendorCurrentRates_AccountId (`AccountId`,`TrunkID`,`RateId`,`EffectiveDate`)
+	) 
+  ;
+
+ DROP TEMPORARY TABLE IF EXISTS tmp_VendorRateByRank_;
+  CREATE TEMPORARY TABLE tmp_VendorRateByRank_ (      
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     rankname INT,
+     INDEX IX_Code (Code,rankname)
+   )
+   ;
+
+	SELECT CurrencyId INTO v_CompanyCurrencyID_ FROM  tblCompany WHERE CompanyID = p_companyid;
+     
+     INSERT INTO tmp_VendorCurrentRates1_ 
+	  Select DISTINCT AccountId,AccountName,Code,Description, Rate,ConnectionFee,EffectiveDate,TrunkID,CountryID,RateID,Preference 
+      FROM (
+				SELECT distinct tblVendorRate.AccountId,tblAccount.AccountName, tblRate.Code, tblRate.Description, 
+				 CASE WHEN  tblAccount.CurrencyId = p_CurrencyID
+								THEN
+									   tblVendorRate.Rate
+					 WHEN  v_CompanyCurrencyID_ = p_CurrencyID  
+							 THEN
+								  (
+								   ( tblVendorRate.rate  / (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = tblAccount.CurrencyId and  CompanyID = p_companyid ) )
+								 )
+							  ELSE 
+							  (
+										
+								  (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = p_CurrencyID and  CompanyID = p_companyid )
+									* (tblVendorRate.rate  / (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = tblAccount.CurrencyId and  CompanyID = p_companyid ))
+							  )
+							 END
+								as  Rate,
+								 ConnectionFee,
+			  DATE_FORMAT (tblVendorRate.EffectiveDate, '%Y-%m-%d') AS EffectiveDate, 
+			    tblVendorRate.TrunkID, tblRate.CountryID, tblRate.RateID,IFNULL(vp.Preference, 5) AS Preference 
+			  FROM      tblVendorRate
+					 Inner join tblVendorTrunk vt on vt.CompanyID = p_companyid AND vt.AccountID = tblVendorRate.AccountID and vt.Status =  1 and vt.TrunkID =  p_trunkID
+							 
+						INNER JOIN tblAccount   ON  tblAccount.CompanyID = p_companyid AND tblVendorRate.AccountId = tblAccount.AccountID 
+						INNER JOIN tblRate ON tblRate.CompanyID = p_companyid   AND    tblVendorRate.RateId = tblRate.RateID
+						
+						
+						
+						LEFT JOIN tblVendorPreference vp
+										 ON vp.AccountId = tblVendorRate.AccountId
+										 AND vp.TrunkID = tblVendorRate.TrunkID
+										 AND vp.RateId = tblVendorRate.RateId
+						LEFT OUTER JOIN tblVendorBlocking AS blockCode   ON tblVendorRate.RateId = blockCode.RateId
+																	  AND tblVendorRate.AccountId = blockCode.AccountId
+																	  AND tblVendorRate.TrunkID = blockCode.TrunkID
+						LEFT OUTER JOIN tblVendorBlocking AS blockCountry    ON tblRate.CountryID = blockCountry.CountryId
+																	  AND tblVendorRate.AccountId = blockCountry.AccountId
+																	  AND tblVendorRate.TrunkID = blockCountry.TrunkID
+			  WHERE      
+						( CHAR_LENGTH(RTRIM(p_code)) = 0 OR tblRate.Code LIKE REPLACE(p_code,'*', '%') )  
+						AND (p_Description='' OR tblRate.Description LIKE REPLACE(p_Description,'*','%'))
+						AND (p_AccountIds='' OR FIND_IN_SET(tblAccount.AccountID,p_AccountIds) != 0 )
+						AND EffectiveDate <= NOW() 
+						AND tblAccount.IsVendor = 1
+						AND tblAccount.Status = 1
+						AND tblAccount.CurrencyId is not NULL
+						AND tblVendorRate.TrunkID = p_trunkID
+						AND blockCode.RateId IS NULL
+					   AND blockCountry.CountryId IS NULL
+			
+		) tbl
+		order by Code asc;
+         
+     
+     INSERT INTO tmp_VendorCurrentRates_ 
+	  Select AccountId,AccountName,Code,Description, Rate,ConnectionFee,EffectiveDate,TrunkID,CountryID,RateID,Preference 
+      FROM (
+			  SELECT * ,
+				@row_num := IF(@prev_AccountId = AccountID AND @prev_TrunkID = TrunkID AND @prev_RateId = RateID AND @prev_EffectiveDate >= EffectiveDate, @row_num + 1, 1) AS RowID,
+				@prev_AccountId := AccountID,
+				@prev_TrunkID := TrunkID,
+				@prev_RateId := RateID,
+				@prev_EffectiveDate := EffectiveDate
+			  FROM tmp_VendorCurrentRates1_
+			  ,(SELECT @row_num := 1,  @prev_AccountId := '',@prev_TrunkID := '', @prev_RateId := '', @prev_EffectiveDate := '') x
+           ORDER BY AccountId, TrunkID, RateId, EffectiveDate DESC	
+		) tbl
+		 WHERE RowID = 1 
+		order by Code asc;
+
+	IF p_Preference = 1 THEN
+	
+		INSERT IGNORE INTO tmp_VendorRateByRank_
+		  SELECT
+			AccountID,
+			AccountName,
+			Code,
+			Rate,
+			ConnectionFee,
+			EffectiveDate,
+			Description,
+			Preference,
+			preference_rank
+		  FROM (SELECT
+			  AccountID,
+			  AccountName,
+			  Code,
+			  Rate,
+			  ConnectionFee,
+			  EffectiveDate,
+			  Description,
+			  Preference,
+			  @preference_rank := CASE WHEN (@prev_Code     = Code AND @prev_Preference > Preference  ) THEN @preference_rank + 1 
+									   WHEN (@prev_Code     = Code AND @prev_Preference = Preference AND @prev_Rate < Rate) THEN @preference_rank + 1 
+									   WHEN (@prev_Code    = Code AND @prev_Preference = Preference AND @prev_Rate = Rate) THEN @preference_rank 
+									   ELSE 1 
+									   END AS preference_rank,
+			  @prev_Code := Code,
+			  @prev_Preference := IFNULL(Preference, 5),
+			  @prev_Rate := Rate
+			FROM tmp_VendorCurrentRates_ AS preference,
+				 (SELECT @preference_rank := 0 , @prev_Code := ''  , @prev_Preference := 5,  @prev_Rate := 0) x
+			ORDER BY preference.Code ASC, preference.Preference DESC, preference.Rate ASC,preference.AccountId ASC
+			   
+			 ) tbl
+		  WHERE preference_rank <= p_Position
+		  ORDER BY Code, preference_rank;
+
+	ELSE
+	
+		INSERT IGNORE INTO tmp_VendorRateByRank_
+		  SELECT
+			AccountID,
+			AccountName,
+			Code,
+			Rate,
+			ConnectionFee,
+			EffectiveDate,
+			Description,
+			Preference,
+			RateRank
+		  FROM (SELECT
+			  AccountID,
+			  AccountName,
+			  Code,
+			  Rate,
+			  ConnectionFee,
+			  EffectiveDate,
+			  Description,
+			  Preference,
+			  @rank := CASE WHEN (@prev_Code    = Code AND @prev_Rate < Rate) THEN @rank + 1 
+							WHEN (@prev_Code    = Code AND @prev_Rate = Rate) THEN @rank 
+							ELSE 1 
+							END AS RateRank,
+			  @prev_Code := Code,
+			  @prev_Rate := Rate
+			FROM tmp_VendorCurrentRates_ AS rank,
+				 (SELECT @rank := 0 , @prev_Code := '' , @prev_Rate := 0) f
+			ORDER BY rank.Code ASC, rank.Rate,rank.AccountId ASC) tbl
+		  WHERE RateRank <= p_Position
+		  ORDER BY Code, RateRank;
+
+	END IF;
+	
+          insert ignore into tmp_VendorRate_
+          select
+             distinct 
+				 AccountId ,
+				 AccountName ,
+				 Code ,
+				 Rate ,
+                 ConnectionFee,                                                           
+				 EffectiveDate ,
+				 Description ,
+				 Preference,
+				 Code as RowCode
+		   from tmp_VendorRateByRank_ 
+ 			  order by RowCode desc; 
+                                   
+	IF( p_Preference = 0 )
+	THEN
+			
+		insert into tmp_final_VendorRate_
+		SELECT
+			 AccountId ,
+			 AccountName ,
+			 Code ,
+			 Rate ,
+				ConnectionFee,
+			 EffectiveDate ,
+			 Description ,
+			 Preference, 
+			 RowCode,
+			 FinalRankNumber
+			from 
+			( 				
+				SELECT
+				AccountId ,
+				 AccountName ,
+				 Code ,
+				 Rate ,
+					 ConnectionFee,
+				 EffectiveDate ,
+				 Description ,
+				 Preference,
+				 RowCode,
+				 @rank := CASE WHEN ( @prev_RowCode     = RowCode AND @prev_Rate <  Rate ) THEN @rank+1
+							   WHEN ( @prev_RowCode    = RowCode AND @prev_Rate = Rate ) THEN @rank 
+					   ELSE 
+					   1
+					   END 
+					  AS FinalRankNumber,
+				@prev_RowCode  := RowCode,
+				@prev_Rate  := Rate
+				from tmp_VendorRate_ 
+				,( SELECT @rank := 0 , @prev_RowCode := '' , @prev_Rate := 0 ) x 
+				order by RowCode,Rate,AccountId ASC
+			 
+			) tbl1
+			where 
+			FinalRankNumber <= p_Position;
+			 
+	 ELSE 
+	 
+		 insert into tmp_final_VendorRate_
+		SELECT
+			AccountId ,
+			 AccountName ,
+			 Code ,
+			 Rate ,
+				ConnectionFee,
+			 EffectiveDate ,
+			 Description ,
+			 Preference, 
+			 RowCode,
+			 FinalRankNumber
+			from 
+			( 				
+				SELECT
+					AccountId ,
+					 AccountName ,
+					 Code ,
+					 Rate ,
+						 ConnectionFee,
+					 EffectiveDate ,
+					 Description ,
+					 Preference,
+					 RowCode,
+						  @preference_rank := CASE WHEN (@prev_Code     = RowCode AND @prev_Preference > Preference  )   THEN @preference_rank + 1 
+												   WHEN (@prev_Code     = RowCode AND @prev_Preference = Preference AND @prev_Rate < Rate) THEN @preference_rank + 1 
+												   WHEN (@prev_Code    = RowCode AND @prev_Preference = Preference AND @prev_Rate = Rate) THEN @preference_rank 
+												   ELSE 1 END AS FinalRankNumber,
+						  @prev_Code := RowCode,
+						  @prev_Preference := Preference,
+						  @prev_Rate := Rate
+				from tmp_VendorRate_ 
+					  ,(SELECT @preference_rank := 0 , @prev_Code := ''  , @prev_Preference := 5,  @prev_Rate := 0) x
+				 order by RowCode ASC ,Preference DESC ,Rate ASC ,AccountId ASC
+					 
+			) tbl1
+			where 
+			FinalRankNumber <= p_Position;
+	 
+	 END IF;
+          
+
+    IF (p_Position = 5)
+    THEN      
+
+		IF (p_isExport = 0)
+		THEN    	
+			
+			SELECT
+	  	      CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`
+			FROM tmp_final_VendorRate_  t
+			  GROUP BY  RowCode   
+			  ORDER BY RowCode ASC
+			LIMIT p_RowspPage OFFSET v_OffSet_ ;
+	   
+			SELECT count(distinct RowCode) as totalcount from tmp_final_VendorRate_ where ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR RowCode LIKE REPLACE(p_code,'*', '%') );
+		   
+	   ELSE 
+			SELECT
+			  CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`
+			FROM tmp_final_VendorRate_  t
+			  GROUP BY  RowCode   
+			  ORDER BY RowCode ASC;
+			
+	   END IF; 
+   
+    END IF;
+    
+    IF (p_Position = 10)
+    THEN       
+
+		IF (p_isExport = 0)
+		THEN    	
+			
+			SELECT
+				CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 6, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 6`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 7, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 7`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 8, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 8`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 9, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 9`,
+				GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 10,CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 10`
+			FROM tmp_final_VendorRate_  t
+			  GROUP BY  RowCode   
+			  ORDER BY RowCode ASC
+			LIMIT p_RowspPage OFFSET v_OffSet_ ;
+	   
+			SELECT count(distinct RowCode) as totalcount from tmp_final_VendorRate_ where    ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR RowCode LIKE REPLACE(p_code,'*', '%') );
+		   
+		ELSE 
+			SELECT
+			  CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 6, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 6`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 7, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 7`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 8, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 8`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 9, CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 9`,
+			  GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 10,CONCAT(  ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName) , '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 10`
+			FROM tmp_final_VendorRate_  t
+			  GROUP BY  RowCode   
+			  ORDER BY RowCode ASC;     	
+		END IF; 
+   
+    END IF;
+
+
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `prc_GetLCR`;
+DELIMITER |
+CREATE PROCEDURE `prc_GetLCR`(
+	IN `p_companyid` INT,
+	IN `p_trunkID` INT,
+	IN `p_codedeckID` INT,
+	IN `p_CurrencyID` INT,
+	IN `p_code` VARCHAR(50),
+	IN `p_Description` VARCHAR(250),
+	IN `p_AccountIds` TEXT,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_SortOrder` VARCHAR(50),
+	IN `p_Preference` INT,
+	IN `p_Position` INT,
+	IN `p_isExport` INT
+)
+BEGIN
+
+    
+    DECLARE v_OffSet_ int;
+
+    DECLARE v_Code VARCHAR(50) ;
+	DECLARE v_pointer_ int;
+	DECLARE v_rowCount_ int;
+	DECLARE v_p_code VARCHAR(50);
+	DECLARE v_Codlen_ int;
+	DECLARE v_position int;
+	DECLARE v_p_code__ VARCHAR(50);
+	DECLARE v_has_null_position int ;
+	DECLARE v_next_position1 VARCHAR(200) ;
+	DECLARE v_CompanyCurrencyID_ INT; 	
+	
+    SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+     SET @@session.collation_connection='utf8_unicode_ci';
+     SET @@session.character_set_results='utf8';
+
+	-- just for taking codes -  
+	 
+    SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;  
+  
+DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_stage_;
+       CREATE TEMPORARY TABLE tmp_VendorRate_stage_ (
+          RowCode VARCHAR(50) ,
+          AccountId INT ,
+          AccountName VARCHAR(100) ,
+          Code VARCHAR(50) ,
+          Rate DECIMAL(18,6) ,
+          ConnectionFee DECIMAL(18,6) ,
+          EffectiveDate DATETIME ,
+          Description VARCHAR(255),
+          Preference INT,
+          MaxMatchRank int ,
+          prev_prev_RowCode VARCHAR(50),
+          prev_AccountID int
+        ) 
+  ;
+
+     DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_stage2_;
+       CREATE TEMPORARY TABLE tmp_VendorRate_stage2_ (
+          RowCode VARCHAR(50) ,
+          AccountId INT ,
+          AccountName VARCHAR(100) ,
+          Code VARCHAR(50) ,
+          Rate DECIMAL(18,6) ,
+          ConnectionFee DECIMAL(18,6) ,
+          EffectiveDate DATETIME ,
+          Description VARCHAR(255),
+          Preference INT,
+          MaxMatchRank int ,
+          prev_prev_RowCode VARCHAR(50),
+          prev_AccountID int
+        ) 
+  ;
+
+  DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_;
+  CREATE TEMPORARY TABLE tmp_VendorRate_ (
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     RowCode VARCHAR(50) 
+   ) 
+   ;
+     
+   DROP TEMPORARY TABLE IF EXISTS tmp_final_VendorRate_;
+  CREATE TEMPORARY TABLE tmp_final_VendorRate_ (
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     RowCode VARCHAR(50),
+     FinalRankNumber int
+   ) 
+  ;
+	
+	-- Loop codes 
+
+DROP TEMPORARY TABLE IF EXISTS tmp_search_code_;
+  CREATE TEMPORARY TABLE tmp_search_code_ (
+     Code  varchar(50),
+     INDEX Index1 (Code)
+);
+
+	-- searched codes.
+
+DROP TEMPORARY TABLE IF EXISTS tmp_code_;
+  CREATE TEMPORARY TABLE tmp_code_ (
+     RowCode  varchar(50),
+     Code  varchar(50),
+     RowNo int,
+     INDEX Index1 (Code)
+   );
+
+
+DROP TEMPORARY TABLE IF EXISTS tmp_all_code_;
+  CREATE TEMPORARY TABLE tmp_all_code_ ( 
+     RowCode  varchar(50),
+     Code  varchar(50),
+     RowNo int,
+     INDEX Index2 (Code)
+   )
+   ;
+
+        
+DROP TEMPORARY TABLE IF EXISTS tmp_VendorCurrentRates_;
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorCurrentRates_(
+			AccountId int,
+         AccountName varchar(200),
+			Code varchar(50),
+			Description varchar(200),
+			Rate DECIMAL(18,6) ,
+         ConnectionFee DECIMAL(18,6) , 
+			EffectiveDate date,
+			TrunkID int,
+			CountryID int,
+			RateID int,
+			Preference int,
+			INDEX IX_Code (Code)
+	) 
+  ;
+
+     DROP TEMPORARY TABLE IF EXISTS tmp_VendorCurrentRates1_;
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorCurrentRates1_(
+			AccountId int,
+         AccountName varchar(200),
+			Code varchar(50),
+			Description varchar(200),
+			Rate DECIMAL(18,6) ,
+               ConnectionFee DECIMAL(18,6) , 
+			EffectiveDate date,
+			TrunkID int,
+			CountryID int,
+			RateID int,
+			Preference int,
+			INDEX IX_Code (Code),
+			INDEX tmp_VendorCurrentRates_AccountId (`AccountId`,`TrunkID`,`RateId`,`EffectiveDate`)
+	) 
+  ;
+
+ DROP TEMPORARY TABLE IF EXISTS tmp_VendorRateByRank_;
+  CREATE TEMPORARY TABLE tmp_VendorRateByRank_ (      
+     AccountId INT ,
+     AccountName VARCHAR(100) ,
+     Code VARCHAR(50) ,
+     Rate DECIMAL(18,6) ,
+     ConnectionFee DECIMAL(18,6) ,
+     EffectiveDate DATETIME ,
+     Description VARCHAR(255),
+     Preference INT,
+     rankname INT,
+     INDEX IX_Code (Code,rankname)
+   )
+   ;
+
+	SELECT CurrencyId INTO v_CompanyCurrencyID_ FROM  tblCompany WHERE CompanyID = p_companyid;
+	
+    -- Search code based on p_code 
+          
+          insert into tmp_search_code_
+          SELECT  DISTINCT LEFT(f.Code, x.RowNo) as loopCode FROM (
+          SELECT @RowNo  := @RowNo + 1 as RowNo
+          FROM mysql.help_category 
+          ,(SELECT @RowNo := 0 ) x
+          limit 15
+          ) x
+          INNER JOIN tblRate AS f
+          ON f.CompanyID = p_companyid  AND f.CodeDeckId = p_codedeckID
+          AND ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR f.Code LIKE REPLACE(p_code,'*', '%') )
+          AND ( p_Description = ''  OR f.Description LIKE REPLACE(p_Description,'*', '%') )
+          AND x.RowNo   <= LENGTH(f.Code) 
+          order by loopCode   desc;
+		  
+    -- distinct vendor rates	  
+     
+      INSERT INTO tmp_VendorCurrentRates1_ 
+      Select DISTINCT AccountId,AccountName,Code,Description, Rate,ConnectionFee,EffectiveDate,TrunkID,CountryID,RateID,Preference 
+      FROM (
+				SELECT distinct tblVendorRate.AccountId,tblAccount.AccountName, tblRate.Code, tblRate.Description, 
+				 CASE WHEN  tblAccount.CurrencyId = p_CurrencyID
+								THEN
+									   tblVendorRate.Rate
+					 WHEN  v_CompanyCurrencyID_ = p_CurrencyID  
+							 THEN
+								  (
+								   ( tblVendorRate.rate  / (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = tblAccount.CurrencyId and  CompanyID = p_companyid ) )
+								 )
+							  ELSE 
+							  (
+							    -- Convert to base currrncy and x by RateGenerator Exhange
+										
+								  (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = p_CurrencyID and  CompanyID = p_companyid )
+									* (tblVendorRate.rate  / (Select Value from tblCurrencyConversion where tblCurrencyConversion.CurrencyId = tblAccount.CurrencyId and  CompanyID = p_companyid ))
+							  )
+							 END 
+								as  Rate,
+								 ConnectionFee,
+                    		DATE_FORMAT (tblVendorRate.EffectiveDate, '%Y-%m-%d') AS EffectiveDate, tblVendorRate.TrunkID, tblRate.CountryID, tblRate.RateID,IFNULL(vp.Preference, 5) AS Preference 
+                    		FROM      tblVendorRate
+					     Inner join tblVendorTrunk vt on vt.CompanyID = p_companyid AND vt.AccountID = tblVendorRate.AccountID and vt.Status =  1 and vt.TrunkID =  p_trunkID
+							
+						INNER JOIN tblAccount   ON  tblAccount.CompanyID = p_companyid AND tblVendorRate.AccountId = tblAccount.AccountID and tblAccount.IsVendor = 1
+						INNER JOIN tblRate ON tblRate.CompanyID = p_companyid     AND    tblVendorRate.RateId = tblRate.RateID  
+						INNER JOIN tmp_search_code_  SplitCode   on tblRate.Code = SplitCode.Code 
+						LEFT JOIN tblVendorPreference vp
+										 ON vp.AccountId = tblVendorRate.AccountId
+										 AND vp.TrunkID = tblVendorRate.TrunkID
+										 AND vp.RateId = tblVendorRate.RateId
+						LEFT OUTER JOIN tblVendorBlocking AS blockCode   ON tblVendorRate.RateId = blockCode.RateId
+																	  AND tblVendorRate.AccountId = blockCode.AccountId
+																	  AND tblVendorRate.TrunkID = blockCode.TrunkID
+						LEFT OUTER JOIN tblVendorBlocking AS blockCountry    ON tblRate.CountryID = blockCountry.CountryId
+																	  AND tblVendorRate.AccountId = blockCountry.AccountId
+																	  AND tblVendorRate.TrunkID = blockCountry.TrunkID
+			  WHERE      
+						( EffectiveDate <= NOW() )
+						AND (p_AccountIds='' OR FIND_IN_SET(tblAccount.AccountID,p_AccountIds) != 0 )
+						AND tblAccount.IsVendor = 1
+						AND tblAccount.Status = 1
+						AND tblAccount.CurrencyId is not NULL
+						AND tblVendorRate.TrunkID = p_trunkID
+						AND blockCode.RateId IS NULL
+					   AND blockCountry.CountryId IS NULL
+			
+		) tbl
+		order by Code asc;
+		
+		
+    -- filter by Effective Dates
+         
+     
+     INSERT INTO tmp_VendorCurrentRates_ 
+	  Select AccountId,AccountName,Code,Description, Rate,ConnectionFee,EffectiveDate,TrunkID,CountryID,RateID,Preference 
+      FROM (
+			  SELECT * ,
+				@row_num := IF(@prev_AccountId = AccountID AND @prev_TrunkID = TrunkID AND @prev_RateId = RateID AND @prev_EffectiveDate >= EffectiveDate, @row_num + 1, 1) AS RowID,
+				@prev_AccountId := AccountID,
+				@prev_TrunkID := TrunkID,
+				@prev_RateId := RateID,
+				@prev_EffectiveDate := EffectiveDate
+			  FROM tmp_VendorCurrentRates1_
+			  ,(SELECT @row_num := 1,  @prev_AccountId := '',@prev_TrunkID := '', @prev_RateId := '', @prev_EffectiveDate := '') x
+           ORDER BY AccountId, TrunkID, RateId, EffectiveDate DESC	
+		) tbl
+		 WHERE RowID = 1 
+		order by Code asc;        
+
+        -- Collect Codes pressent in vendor Rates from above query.
+        /*
+                   9372     9372    1
+                   9372     937     2
+                   9372     93      3
+                   9372     9       4  
+                                                               
+        */
+	
+          
+        insert into tmp_all_code_ (RowCode,Code,RowNo)
+               select RowCode , loopCode,RowNo
+               from (
+                    select   RowCode , loopCode,
+                    @RowNo := ( CASE WHEN ( @prev_Code = tbl1.RowCode  ) THEN @RowNo + 1
+                                   ELSE 1
+                                   END
+                                
+                              )      as RowNo,
+                    @prev_Code := tbl1.RowCode
+
+                    from (
+                              SELECT distinct f.Code as RowCode, LEFT(f.Code, x.RowNo) as loopCode FROM (
+                                SELECT @RowNo  := @RowNo + 1 as RowNo
+                                FROM mysql.help_category 
+                                ,(SELECT @RowNo := 0 ) x
+                                limit 15
+                              ) x
+                              INNER JOIN tmp_search_code_ AS f
+                              ON  x.RowNo   <= LENGTH(f.Code) 
+											 AND ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR Code LIKE REPLACE(p_code,'*', '%') )
+                              order by RowCode desc,  LENGTH(loopCode) DESC 
+                    ) tbl1
+                    , ( Select @RowNo := 0 ) x
+                ) tbl order by RowCode desc,  LENGTH(loopCode) DESC ;
+          
+    
+        
+        IF (p_isExport = 0)
+        THEN
+ 			        
+					insert into tmp_code_
+                         select * from tmp_all_code_
+                         order by RowCode	LIMIT p_RowspPage OFFSET v_OffSet_ ;
+		
+		ELSE
+
+     					insert into tmp_code_
+                              select * from tmp_all_code_
+                              order by RowCode	  ;
+			
+		END IF;
+
+
+IF p_Preference = 1 THEN
+
+    -- Sort by Preference 
+	
+	INSERT IGNORE INTO tmp_VendorRateByRank_
+	  SELECT
+		AccountID,
+		AccountName,
+		Code,
+		Rate,
+		ConnectionFee,
+		EffectiveDate,
+		Description,
+		Preference,
+		preference_rank
+	  FROM (SELECT
+		  AccountID,
+		  AccountName,
+		  Code,
+		  Rate,
+		  ConnectionFee,
+		  EffectiveDate,
+		  Description,
+		  Preference,
+		  @preference_rank := CASE WHEN (@prev_Code     = Code AND @prev_Preference > Preference  ) THEN @preference_rank + 1 
+								   WHEN (@prev_Code     = Code AND @prev_Preference = Preference AND @prev_Rate < Rate) THEN @preference_rank + 1 
+								   WHEN (@prev_Code    = Code AND @prev_Preference = Preference AND @prev_Rate = Rate) THEN @preference_rank 
+								   ELSE 1 
+								   END AS preference_rank,
+		  @prev_Code := Code,
+		  @prev_Preference := IFNULL(Preference, 5),
+		  @prev_Rate := Rate
+		FROM tmp_VendorCurrentRates_ AS preference,
+			 (SELECT @preference_rank := 0 , @prev_Code := ''  , @prev_Preference := 5,  @prev_Rate := 0) x
+		ORDER BY preference.Code ASC, preference.Preference DESC, preference.Rate ASC,preference.AccountId ASC
+		   
+		 ) tbl
+	  WHERE preference_rank <= p_Position
+	  ORDER BY Code, preference_rank;
+
+	ELSE
+
+    -- Sort by Rate 
+	
+	INSERT IGNORE INTO tmp_VendorRateByRank_
+	  SELECT
+		AccountID,
+		AccountName,
+		Code,
+		Rate,
+		ConnectionFee,
+		EffectiveDate,
+		Description,
+		Preference,
+		RateRank
+	  FROM (SELECT
+		  AccountID,
+		  AccountName,
+		  Code,
+		  Rate,
+		  ConnectionFee,
+		  EffectiveDate,
+		  Description,
+		  Preference,
+		  @rank := CASE WHEN (@prev_Code    = Code AND @prev_Rate < Rate) THEN @rank + 1 
+						WHEN (@prev_Code    = Code AND @prev_Rate = Rate) THEN @rank 
+						ELSE 1 
+						END AS RateRank,
+		  @prev_Code := Code,
+		  @prev_Rate := Rate
+		FROM tmp_VendorCurrentRates_ AS rank,
+			 (SELECT @rank := 0 , @prev_Code := '' , @prev_Rate := 0) f
+		ORDER BY rank.Code ASC, rank.Rate,rank.AccountId ASC) tbl
+	  WHERE RateRank <= p_Position
+	  ORDER BY Code, RateRank;
+
+	END IF;
+
+	-- --------- Split Logic ----------
+	/* DESC             MaxMatchRank 1  MaxMatchRank 2
+	923 Pakistan :       *923 V1          92 V1
+	923 Pakistan :       *92 V2            -
+
+	now take only where  MaxMatchRank =  1                                                        
+	*/             
+
+ 
+DROP TEMPORARY TABLE IF EXISTS tmp_VendorRate_stage_1;
+ CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorRate_stage_1 as (select * from tmp_VendorRate_stage_);
+
+ insert ignore into tmp_VendorRate_stage_1 (
+   	     RowCode,
+     	AccountId ,
+     	AccountName ,
+     	Code ,
+     	Rate ,
+     	ConnectionFee,                                                           
+     	EffectiveDate , 
+     	Description ,
+     	Preference
+)
+          SELECT  
+          distinct                                
+     	RowCode,
+     	v.AccountId ,
+     	v.AccountName ,
+     	v.Code ,
+     	v.Rate ,
+     	v.ConnectionFee,                                                           
+     	v.EffectiveDate , 
+     	v.Description ,
+     	v.Preference
+          FROM tmp_VendorRateByRank_ v  
+          left join  tmp_all_code_
+			SplitCode   on v.Code = SplitCode.Code 
+         where  SplitCode.Code is not null and rankname <= p_Position 
+         order by AccountID,SplitCode.RowCode desc ,LENGTH(SplitCode.RowCode), v.Code desc, LENGTH(v.Code)  desc;
+       
+
+     insert ignore into tmp_VendorRate_stage_
+          SELECT  
+          distinct                                
+     	RowCode,
+     	v.AccountId ,
+     	v.AccountName ,
+     	v.Code ,
+     	v.Rate ,
+     	v.ConnectionFee,                                                           
+     	v.EffectiveDate , 
+     	v.Description ,
+     	v.Preference, 
+     	@rank := ( CASE WHEN( @prev_AccountID = v.AccountId  and @prev_RowCode     = RowCode   ) 
+                                   THEN  @rank + 1 
+                                   ELSE 1 
+                              END 
+          ) AS MaxMatchRank,
+	     @prev_RowCode := RowCode	 ,															
+          @prev_AccountID := v.AccountId   
+          FROM tmp_VendorRate_stage_1 v  
+          , (SELECT  @prev_RowCode := '',  @rank := 0 , @prev_Code := '' , @prev_AccountID := Null) f
+          order by AccountID,RowCode desc ; 
+         
+    
+    
+
+              insert ignore into tmp_VendorRate_
+              select
+                    distinct 
+				 AccountId ,
+				 AccountName ,
+				 Code ,
+				 Rate ,
+                    ConnectionFee,                                                           
+				 EffectiveDate ,
+				 Description ,
+				 Preference,
+				 RowCode
+		   from tmp_VendorRate_stage_ 
+           where MaxMatchRank = 1 
+          
+			  			  order by RowCode desc; 
+
+
+     
+                                   
+		IF( p_Preference = 0 )
+     	THEN
+     			
+			insert into tmp_final_VendorRate_
+			SELECT
+			     AccountId ,
+			     AccountName ,
+			     Code ,
+			     Rate ,
+                    ConnectionFee,
+			     EffectiveDate ,
+			     Description ,
+			     Preference, 
+			     RowCode,
+	  		     FinalRankNumber
+				from 
+				( 				
+					SELECT
+					AccountId ,
+				     AccountName ,
+				     Code ,
+				     Rate ,
+                         ConnectionFee,
+				     EffectiveDate ,
+				     Description ,
+				     Preference,
+				     RowCode,
+   			         @rank := CASE WHEN ( @prev_RowCode     = RowCode AND @prev_Rate <  Rate ) THEN @rank+1
+                                   WHEN ( @prev_RowCode    = RowCode AND @prev_Rate = Rate ) THEN @rank 
+						   ELSE 
+						   1
+						   END 
+				  		  AS FinalRankNumber,
+				  	@prev_RowCode  := RowCode,
+					@prev_Rate  := Rate
+					from tmp_VendorRate_ 
+					,( SELECT @rank := 0 , @prev_RowCode := '' , @prev_Rate := 0 ) x 
+				 	order by RowCode,Rate,AccountId ASC
+				 
+				) tbl1
+				where 
+				FinalRankNumber <= p_Position;
+				 
+		 ELSE 
+		 
+		 	 insert into tmp_final_VendorRate_
+			SELECT
+				AccountId ,
+			     AccountName ,
+			     Code ,
+			     Rate ,
+                    ConnectionFee,
+			     EffectiveDate ,
+			     Description ,
+			     Preference, 
+			     RowCode,
+	  		     FinalRankNumber
+				from 
+				( 				
+					SELECT
+     					AccountId ,
+     				     AccountName ,
+     				     Code ,
+     				     Rate ,
+                             ConnectionFee,
+     				     EffectiveDate ,
+     				     Description ,
+     				     Preference,
+     				     RowCode,
+                              @preference_rank := CASE WHEN (@prev_Code     = RowCode AND @prev_Preference > Preference  )   THEN @preference_rank + 1 
+                                                       WHEN (@prev_Code     = RowCode AND @prev_Preference = Preference AND @prev_Rate < Rate) THEN @preference_rank + 1 
+                                                       WHEN (@prev_Code    = RowCode AND @prev_Preference = Preference AND @prev_Rate = Rate) THEN @preference_rank 
+                                                       ELSE 1 END AS FinalRankNumber,
+                              @prev_Code := RowCode,
+                              @prev_Preference := Preference,
+                              @prev_Rate := Rate
+					from tmp_VendorRate_ 
+                          ,(SELECT @preference_rank := 0 , @prev_Code := ''  , @prev_Preference := 5,  @prev_Rate := 0) x
+     			 	 order by RowCode ASC ,Preference DESC ,Rate ASC ,AccountId ASC
+                         
+				) tbl1
+				where 
+				FinalRankNumber <= p_Position;
+		 
+		 END IF;
+
+   IF (p_Position = 5)
+THEN
+	IF (p_isExport = 0)
+    THEN     
+    	SELECT
+          CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`
+        FROM tmp_final_VendorRate_  t
+          GROUP BY  RowCode   
+          ORDER BY RowCode ASC
+     	LIMIT p_RowspPage OFFSET v_OffSet_ ;
+
+        SELECT count(distinct RowCode) as totalcount from tmp_final_VendorRate_ 
+		 	WHERE  ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR RowCode LIKE REPLACE(p_code,'*', '%') ) ;
+	END IF; 
+   
+   IF p_isExport = 1
+    THEN
+		SELECT
+          CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`
+        FROM tmp_final_VendorRate_  t
+          GROUP BY  RowCode   
+          ORDER BY RowCode ASC;
+	END IF;				
+END IF;
+
+IF (p_Position = 10)
+THEN
+	IF (p_isExport = 0)
+    THEN     
+    	SELECT
+          CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 6,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 6`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 7,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 7`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 8,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 8`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 9,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 9`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 10, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 10`
+        FROM tmp_final_VendorRate_  t
+          GROUP BY  RowCode   
+          ORDER BY RowCode ASC
+     	LIMIT p_RowspPage OFFSET v_OffSet_ ;
+
+        SELECT count(distinct RowCode) as totalcount from tmp_final_VendorRate_ 
+		 	WHERE  ( CHAR_LENGTH(RTRIM(p_code)) = 0  OR RowCode LIKE REPLACE(p_code,'*', '%') ) ;
+	END IF; 
+   
+   IF p_isExport = 1
+    THEN
+		SELECT
+          CONCAT(ANY_VALUE(t.RowCode) , ' : ' , ANY_VALUE(t.Description)) as Destination,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 1,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 1`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 2,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 2`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 3,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 3`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 4,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 4`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 5,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 5`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 6,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 6`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 7,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 7`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 8,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 8`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 9,  CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 9`,
+          GROUP_CONCAT(if(ANY_VALUE(FinalRankNumber) = 10, CONCAT(ANY_VALUE(t.Code), '<br>', ANY_VALUE(t.Rate), '<br>', ANY_VALUE(t.AccountName), '<br>', DATE_FORMAT (ANY_VALUE(t.EffectiveDate), '%d/%m/%Y'),'<br>'), NULL))AS `POSITION 10`
+        FROM tmp_final_VendorRate_  t
+          GROUP BY  RowCode   
+          ORDER BY RowCode ASC;
+	END IF;
+END IF;
+
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
 	
 DROP PROCEDURE IF EXISTS `prc_GetAccounts`;
 DELIMITER |	
@@ -2820,11 +4002,15 @@ DELIMITER |
 CREATE PROCEDURE `prc_getPaymentPendingInvoice`(
 	IN `p_CompanyID` INT,
 	IN `p_AccountID` INT,
-	IN `p_PaymentDueInDays` INT 
+	IN `p_PaymentDueInDays` INT,
+	IN `p_AutoPay` INT
 )
 BEGIN
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
+	IF p_AutoPay=1
+	THEN
+	
 	SELECT
 		MAX(i.InvoiceID) AS InvoiceID,
 		(IFNULL(MAX(i.GrandTotal), 0) - IFNULL(SUM(p.Amount), 0)) AS RemaingAmount
@@ -2841,7 +4027,7 @@ BEGIN
 		AND p.Status = 'Approved'
 		AND p.Recall = 0
 	WHERE i.CompanyID = p_CompanyID
-	AND i.InvoiceStatus NOT IN ( 'cancel' , 'draft' , 'paid','post')
+	AND i.InvoiceStatus NOT IN ( 'awaiting','cancel' , 'draft' , 'paid','post')
 	AND ( (i.ItemInvoice IS NULL) OR (i.ItemInvoice=1 AND i.RecurringInvoiceID IS NOT NULL))
 	AND i.InvoiceType =1
 	AND i.AccountID = p_AccountID
@@ -2850,6 +4036,37 @@ BEGIN
 	GROUP BY i.InvoiceID,
 			 p.AccountID
 	HAVING (IFNULL(MAX(i.GrandTotal), 0) - IFNULL(SUM(p.Amount), 0)) > 0;
+	
+	END IF;
+	
+	IF p_AutoPay =0
+	THEN
+	
+	SELECT
+		MAX(i.InvoiceID) AS InvoiceID,
+		(IFNULL(MAX(i.GrandTotal), 0) - IFNULL(SUM(p.Amount), 0)) AS RemaingAmount
+	FROM tblInvoice i
+	INNER JOIN Ratemanagement3.tblAccount a
+		ON i.AccountID = a.AccountID
+	INNER JOIN Ratemanagement3.tblAccountBilling ab 
+		ON ab.AccountID = a.AccountID AND ab.ServiceID = i.ServiceID
+	INNER JOIN Ratemanagement3.tblBillingClass b
+		ON b.BillingClassID = ab.BillingClassID
+	LEFT JOIN tblPayment p
+		ON p.AccountID = i.AccountID
+		AND p.InvoiceID = i.InvoiceID AND p.Status = 'Approved' AND p.AccountID = i.AccountID
+		AND p.Status = 'Approved'
+		AND p.Recall = 0
+	WHERE i.CompanyID = p_CompanyID
+	AND i.InvoiceStatus != 'cancel'
+	AND i.AccountID = p_AccountID
+	AND (p_PaymentDueInDays =0  OR (p_PaymentDueInDays =1 AND TIMESTAMPDIFF(DAY, i.IssueDate, NOW()) >= IFNULL(b.PaymentDueInDays,0) ) )
+
+	GROUP BY i.InvoiceID,
+			 p.AccountID
+	HAVING (IFNULL(MAX(i.GrandTotal), 0) - IFNULL(SUM(p.Amount), 0)) > 0;
+	
+	END IF;
 	
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 END|
@@ -3863,6 +5080,308 @@ BEGIN
 END|
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_getInvoice`;
+DELIMITER |
+CREATE PROCEDURE `prc_getInvoice`(
+	IN `p_CompanyID` INT,
+	IN `p_AccountID` INT,
+	IN `p_InvoiceNumber` VARCHAR(50),
+	IN `p_IssueDateStart` DATETIME,
+	IN `p_IssueDateEnd` DATETIME,
+	IN `p_InvoiceType` INT,
+	IN `p_InvoiceStatus` VARCHAR(50),
+	IN `p_IsOverdue` INT,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_lSortCol` VARCHAR(50),
+	IN `p_SortOrder` VARCHAR(5),
+	IN `p_CurrencyID` INT,
+	IN `p_isExport` INT,
+	IN `p_sageExport` INT,
+	IN `p_zerovalueinvoice` INT,
+	IN `p_InvoiceID` LONGTEXT
+)
+BEGIN
+	DECLARE v_OffSet_ int;
+	DECLARE v_Round_ int;
+	DECLARE v_CurrencyCode_ VARCHAR(50);
+	DECLARE v_TotalCount int;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET  sql_mode='ONLY_FULL_GROUP_BY,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+	SELECT cr.Symbol INTO v_CurrencyCode_ from Ratemanagement3.tblCurrency cr where cr.CurrencyId =p_CurrencyID;
+	SELECT fnGetRoundingPoint(p_CompanyID) INTO v_Round_;
+
+	DROP TEMPORARY TABLE IF EXISTS tmp_Invoices_;
+	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_Invoices_(
+		InvoiceType tinyint(1),
+		AccountName varchar(100),
+		InvoiceNumber varchar(100),
+		IssueDate datetime,
+		InvoicePeriod varchar(100),
+		CurrencySymbol varchar(5),
+		GrandTotal decimal(18,6),
+		TotalPayment decimal(18,6),
+		PendingAmount decimal(18,6),
+		InvoiceStatus varchar(50),
+		InvoiceID int,
+		Description varchar(500),
+		Attachment varchar(255),
+		AccountID int,
+		ItemInvoice tinyint(1),
+		BillingEmail varchar(255),
+		AccountNumber varchar(100),
+		PaymentDueInDays int,
+		PaymentDate datetime,
+		SubTotal decimal(18,6),
+		TotalTax decimal(18,6),
+		NominalAnalysisNominalAccountNumber varchar(100)
+	);
+
+		INSERT INTO tmp_Invoices_
+		SELECT inv.InvoiceType ,
+			ac.AccountName,
+			FullInvoiceNumber as InvoiceNumber,
+			inv.IssueDate,
+			IF(invd.StartDate IS NULL ,'',CONCAT('From ',date(invd.StartDate) ,'<br> To ',date(invd.EndDate))) as InvoicePeriod,
+			IFNULL(cr.Symbol,'') as CurrencySymbol,
+			inv.GrandTotal as GrandTotal,
+			(SELECT IFNULL(sum(p.Amount),0) FROM tblPayment p WHERE p.InvoiceID = inv.InvoiceID AND p.Status = 'Approved' AND p.AccountID = inv.AccountID AND p.Recall =0) as TotalPayment,
+			(inv.GrandTotal -  (SELECT IFNULL(sum(p.Amount),0) FROM tblPayment p WHERE p.InvoiceID = inv.InvoiceID AND p.Status = 'Approved' AND p.AccountID = inv.AccountID AND p.Recall =0) ) as `PendingAmount`,
+			inv.InvoiceStatus,
+			inv.InvoiceID,
+			inv.Description,
+			inv.Attachment,
+			inv.AccountID,
+			inv.ItemInvoice,
+			IFNULL(ac.BillingEmail,'') as BillingEmail,
+			ac.Number,
+			(SELECT IFNULL(b.PaymentDueInDays,0) FROM Ratemanagement3.tblAccountBilling ab INNER JOIN Ratemanagement3.tblBillingClass b ON b.BillingClassID =ab.BillingClassID WHERE ab.AccountID = ac.AccountID AND ab.ServiceID = inv.ServiceID LIMIT 1) as PaymentDueInDays,
+			(SELECT PaymentDate FROM tblPayment p WHERE p.InvoiceID = inv.InvoiceID AND p.Status = 'Approved' AND p.Recall =0 AND p.AccountID = inv.AccountID ORDER BY PaymentID DESC LIMIT 1) AS PaymentDate,
+			inv.SubTotal,
+			inv.TotalTax,
+			ac.NominalAnalysisNominalAccountNumber
+			FROM tblInvoice inv
+			INNER JOIN Ratemanagement3.tblAccount ac ON ac.AccountID = inv.AccountID
+			LEFT JOIN tblInvoiceDetail invd ON invd.InvoiceID = inv.InvoiceID AND (invd.ProductType = 5 OR inv.InvoiceType = 2)
+			LEFT JOIN Ratemanagement3.tblCurrency cr ON inv.CurrencyID   = cr.CurrencyId
+			WHERE ac.CompanyID = p_CompanyID
+			AND (p_AccountID = 0 OR ( p_AccountID != 0 AND inv.AccountID = p_AccountID))
+			AND (p_InvoiceNumber = '' OR (inv.FullInvoiceNumber like Concat('%',p_InvoiceNumber,'%')))
+			AND (p_IssueDateStart = '0000-00-00 00:00:00' OR ( p_IssueDateStart != '0000-00-00 00:00:00' AND inv.IssueDate >= p_IssueDateStart))
+			AND (p_IssueDateEnd = '0000-00-00 00:00:00' OR ( p_IssueDateEnd != '0000-00-00 00:00:00' AND inv.IssueDate <= p_IssueDateEnd))
+			AND (p_InvoiceType = 0 OR ( p_InvoiceType != 0 AND inv.InvoiceType = p_InvoiceType))
+			AND (p_InvoiceStatus = '' OR ( p_InvoiceStatus != '' AND FIND_IN_SET(inv.InvoiceStatus,p_InvoiceStatus) ))
+			AND (p_zerovalueinvoice = 0 OR ( p_zerovalueinvoice = 1 AND inv.GrandTotal != 0))
+			AND (p_InvoiceID = '' OR (p_InvoiceID !='' AND FIND_IN_SET (inv.InvoiceID,p_InvoiceID)!= 0 ))
+			AND (p_CurrencyID = '' OR ( p_CurrencyID != '' AND inv.CurrencyID = p_CurrencyID));
+
+	IF p_isExport = 0 and p_sageExport = 0
+	THEN
+
+		SELECT
+			InvoiceType ,
+			AccountName,
+			InvoiceNumber,
+			IssueDate,
+			InvoicePeriod,
+			CONCAT(CurrencySymbol, ROUND(GrandTotal,v_Round_)) as GrandTotal2,
+			CONCAT(CurrencySymbol,ROUND(TotalPayment,v_Round_),'/',ROUND(PendingAmount,v_Round_)) as `PendingAmount`,
+			InvoiceStatus,
+			InvoiceID,
+			Description,
+			Attachment,
+			AccountID,
+			PendingAmount as OutstandingAmount,
+			ItemInvoice,
+			BillingEmail,
+			GrandTotal
+		FROM tmp_Invoices_
+		WHERE (p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				)
+		ORDER BY
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'AccountNameDESC') THEN AccountName
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'AccountNameASC') THEN AccountName
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceTypeDESC') THEN InvoiceType
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceTypeASC') THEN InvoiceType
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceStatusDESC') THEN InvoiceStatus
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceStatusASC') THEN InvoiceStatus
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceNumberASC') THEN InvoiceNumber
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceNumberDESC') THEN InvoiceNumber
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'IssueDateASC') THEN IssueDate
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'IssueDateDESC') THEN IssueDate
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoicePeriodASC') THEN InvoicePeriod
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoicePeriodDESC') THEN InvoicePeriod
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'GrandTotalDESC') THEN GrandTotal
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'GrandTotalASC') THEN GrandTotal
+				END ASC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceIDDESC') THEN InvoiceID
+				END DESC,
+			CASE WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'InvoiceIDASC') THEN InvoiceID
+				END ASC
+		LIMIT p_RowspPage OFFSET v_OffSet_;
+
+		SELECT COUNT(*) INTO v_TotalCount
+		FROM tmp_Invoices_
+		WHERE (p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				);
+
+		SELECT
+			v_TotalCount AS totalcount,
+			ROUND(sum(GrandTotal),v_Round_) as total_grand,
+			ROUND(sum(TotalPayment),v_Round_) as `TotalPayment`,
+			ROUND(sum(PendingAmount),v_Round_) as `TotalPendingAmount`,
+			v_CurrencyCode_ as currency_symbol
+		FROM tmp_Invoices_
+			WHERE ((InvoiceStatus IS NULL) OR (InvoiceStatus NOT IN('draft','Cancel')))
+			AND (p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				);
+
+	END IF;
+	IF p_isExport = 1
+	THEN
+
+		SELECT
+			AccountName ,
+			InvoiceNumber,
+			IssueDate,
+			REPLACE(InvoicePeriod, '<br>', '') as InvoicePeriod,
+			CONCAT(CurrencySymbol, ROUND(GrandTotal,v_Round_)) as GrandTotal,
+			CONCAT(CurrencySymbol,ROUND(TotalPayment,v_Round_),'/',ROUND(PendingAmount,v_Round_)) as `Paid/OS`,
+			InvoiceStatus,
+			InvoiceType,
+			ItemInvoice
+		FROM tmp_Invoices_
+		WHERE
+				(p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				);
+		END IF;
+	IF p_isExport = 2
+	THEN
+
+		
+
+		SELECT
+			AccountName ,
+			InvoiceNumber,
+			IssueDate,
+			REPLACE(InvoicePeriod, '<br>', '') as InvoicePeriod,
+			CONCAT(CurrencySymbol, ROUND(GrandTotal,v_Round_)) as GrandTotal,
+			CONCAT(CurrencySymbol,ROUND(TotalPayment,v_Round_),'/',ROUND(PendingAmount,v_Round_)) as `Paid/OS`,
+			InvoiceStatus,
+			InvoiceType,
+			ItemInvoice,
+			InvoiceID
+		FROM tmp_Invoices_
+		WHERE
+				(p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				);
+
+	END IF;
+
+	IF p_sageExport =1 OR p_sageExport =2
+	THEN
+			
+
+		IF p_sageExport = 2
+		THEN
+			UPDATE tblInvoice  inv
+			INNER JOIN Ratemanagement3.tblAccount ac
+				ON ac.AccountID = inv.AccountID
+			INNER JOIN Ratemanagement3.tblAccountBilling ab
+				ON ab.AccountID = ac.AccountID AND ab.ServiceID = inv.ServiceID
+			INNER JOIN Ratemanagement3.tblBillingClass b
+				ON ab.BillingClassID = b.BillingClassID
+			INNER JOIN Ratemanagement3.tblCurrency c
+				ON c.CurrencyId = ac.CurrencyId
+			SET InvoiceStatus = 'paid'
+			WHERE ac.CompanyID = p_CompanyID
+				AND (p_AccountID = 0 OR ( p_AccountID != 0 AND inv.AccountID = p_AccountID))
+				AND (p_InvoiceNumber = '' OR (inv.FullInvoiceNumber like Concat('%',p_InvoiceNumber,'%')))
+				AND (p_IssueDateStart = '0000-00-00 00:00:00' OR ( p_IssueDateStart != '0000-00-00 00:00:00' AND inv.IssueDate >= p_IssueDateStart))
+				AND (p_IssueDateEnd = '0000-00-00 00:00:00' OR ( p_IssueDateEnd != '0000-00-00 00:00:00' AND inv.IssueDate <= p_IssueDateEnd))
+				AND (p_InvoiceType = 0 OR ( p_InvoiceType != 0 AND inv.InvoiceType = p_InvoiceType))
+				AND (p_InvoiceStatus = '' OR ( p_InvoiceStatus != '' AND FIND_IN_SET(inv.InvoiceStatus,p_InvoiceStatus) ))
+				AND (p_zerovalueinvoice = 0 OR ( p_zerovalueinvoice = 1 AND inv.GrandTotal != 0))
+				AND (p_InvoiceID = '' OR (p_InvoiceID !='' AND FIND_IN_SET (inv.InvoiceID,p_InvoiceID)!= 0 ))
+				AND (p_CurrencyID = '' OR ( p_CurrencyID != '' AND inv.CurrencyID = p_CurrencyID))
+				AND (p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > IFNULL(b.PaymentDueInDays,0)
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND((inv.GrandTotal -  (select IFNULL(sum(p.Amount),0) from tblPayment p where p.InvoiceID = inv.InvoiceID AND p.Status = 'Approved' AND p.AccountID = inv.AccountID AND p.Recall =0) )>0)
+						)
+				);
+		END IF;
+		SELECT
+			AccountNumber,
+			DATE_FORMAT(DATE_ADD(IssueDate,INTERVAL PaymentDueInDays DAY), '%Y-%m-%d') AS DueDate,
+			GrandTotal AS GoodsValueInAccountCurrency,
+			GrandTotal AS SalControlValueInBaseCurrency,
+			1 AS DocumentToBaseCurrencyRate,
+			1 AS DocumentToAccountCurrencyRate,
+			DATE_FORMAT(IssueDate, '%Y-%m-%d') AS PostedDate,
+			InvoiceNumber AS TransactionReference,
+			'' AS SecondReference,
+			'' AS Source,
+			4 AS SYSTraderTranType, 
+			DATE_FORMAT(PaymentDate ,'%Y-%m-%d') AS TransactionDate,
+			TotalTax AS TaxValue,
+			SubTotal AS `NominalAnalysisTransactionValue/1`,
+			NominalAnalysisNominalAccountNumber AS `NominalAnalysisNominalAccountNumber/1`,
+			'NEON' AS `NominalAnalysisNominalAnalysisNarrative/1`,
+			'' AS `NominalAnalysisTransactionAnalysisCode/1`,
+			1 AS `TaxAnalysisTaxRate/1`,
+			SubTotal AS `TaxAnalysisGoodsValueBeforeDiscount/1`,
+			TotalTax as   `TaxAnalysisTaxOnGoodsValue/1`
+		FROM tmp_Invoices_
+		WHERE
+				(p_IsOverdue = 0
+					OR ((To_days(NOW()) - To_days(IssueDate)) > PaymentDueInDays
+							AND(InvoiceStatus NOT IN('awaiting','draft','Cancel'))
+							AND(PendingAmount>0)
+						)
+				);
+
+	END IF;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+END|
+DELIMITER ;
+
 USE `StagingReport`;
 
 DROP PROCEDURE IF EXISTS `prc_getDailyReport`;
@@ -3879,13 +5398,15 @@ CREATE PROCEDURE `prc_getDailyReport`(
 BEGIN
 	DECLARE v_OffSet_ int;
 	DECLARE v_Round_ int;
-	SET sql_mode = 'ALLOW_INVALID_DATES';	
+	SET sql_mode = 'ALLOW_INVALID_DATES';
 	SET @PreviosBalance := 0;
+	SET @TotalPreviosBalance := 0;
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 	SELECT fnGetRoundingPoint(p_CompanyID) INTO v_Round_;
-	
+
 	IF p_StartDate <> '0000-00-00'
 	THEN
+
 	SET @PreviosBalance := 
 	(SELECT 
 		COALESCE(SUM(Amount),0)
@@ -3905,7 +5426,9 @@ BEGIN
 	WHERE CompanyID = p_CompanyID
 		AND AccountID = p_AccountID
 		AND date < p_StartDate);
-		
+	
+	SET @TotalPreviosBalance := @PreviosBalance;
+
 	END IF;
 
 	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
@@ -3927,7 +5450,7 @@ BEGIN
 		AND PaymentType = 'Payment In'
 		AND (p_StartDate = '0000-00-00' OR ( p_StartDate != '0000-00-00' AND PaymentDate >= p_StartDate) )
 		AND (p_EndDate = '0000-00-00' OR ( p_EndDate != '0000-00-00' AND PaymentDate <= p_EndDate));
-	
+
 	INSERT IGNORE INTO tmp_dates_ (Dates)
 	SELECT 
 		DISTINCT date 
@@ -3938,7 +5461,6 @@ BEGIN
 		AND AccountID = p_AccountID
 		AND (p_StartDate = '0000-00-00' OR ( p_StartDate != '0000-00-00' AND date >= p_StartDate) )
 		AND (p_EndDate = '0000-00-00' OR ( p_EndDate != '0000-00-00' AND date <= p_EndDate));
-
 
 	IF p_isExport = 0
 	THEN
@@ -3963,13 +5485,28 @@ BEGIN
 			AND tblHeader.AccountID = p_AccountID
 		GROUP BY Dates 
 		LIMIT p_RowspPage OFFSET v_OffSet_;
-		
+
 		SELECT
-			COUNT(*) AS totalcount
-		FROM tmp_dates_;
+			COUNT(DISTINCT Dates) AS totalcount,
+			ROUND(COALESCE(SUM(Amount),0),v_Round_) AS TotalPayment,
+			ROUND(COALESCE(SUM(TotalCharges),0),v_Round_) AS TotalCharge,
+			ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_) AS Total,
+			ROUND(@TotalPreviosBalance,v_Round_)+ ROUND(COALESCE(SUM(Amount),0)-COALESCE(SUM(TotalCharges),0),v_Round_) AS Balance 
+		FROM tmp_dates_
+		LEFT JOIN RMBilling3.tblPayment 
+			ON date(PaymentDate) = Dates 
+			AND tblPayment.AccountID = p_AccountID
+			AND Status = 'Approved'
+			AND Recall =0
+			AND PaymentType = 'Payment In'
+		LEFT JOIN tblDimDate 
+			ON date = Dates
+		LEFT JOIN tblHeader 
+			ON tblDimDate.DateID = tblHeader.DateID 
+			AND tblHeader.AccountID = p_AccountID;
 
 	END IF;
-	
+
 	IF p_isExport = 1
 	THEN
 
@@ -3992,23 +5529,330 @@ BEGIN
 			ON tblDimDate.DateID = tblHeader.DateID 
 			AND tblHeader.AccountID = p_AccountID
 		GROUP BY Dates;
-		
+
 	END IF;
 
 END|
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `prc_getDescReportAll`;
+DELIMITER |
+CREATE PROCEDURE `prc_getDescReportAll`(
+	IN `p_CompanyID` INT,
+	IN `p_CompanyGatewayID` INT,
+	IN `p_AccountID` INT,
+	IN `p_CurrencyID` INT,
+	IN `p_StartDate` DATETIME,
+	IN `p_EndDate` DATETIME,
+	IN `p_AreaPrefix` VARCHAR(50),
+	IN `p_Trunk` VARCHAR(50),
+	IN `p_CountryID` INT,
+	IN `p_UserID` INT,
+	IN `p_isAdmin` INT,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_lSortCol` VARCHAR(50),
+	IN `p_SortOrder` VARCHAR(5),
+	IN `p_isExport` INT
+)
+BEGIN
+
+	DECLARE v_Round_ INT;
+	DECLARE v_OffSet_ INT;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+
+	SELECT fnGetRoundingPoint(p_CompanyID) INTO v_Round_;
+
+	CALL fngetDefaultCodes(p_CompanyID);
+
+	CALL fnUsageSummary(p_CompanyID,p_CompanyGatewayID,p_AccountID,p_CurrencyID,p_StartDate,p_EndDate,p_AreaPrefix,p_Trunk,p_CountryID,p_UserID,p_isAdmin,2);
+
+	/* grid display*/
+	IF p_isExport = 0
+	THEN
+
+		/* Description by call count */	
+		SELECT IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , IF(SUM(NoOfCalls)>0,ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_),0) AS ASR
+		FROM tmp_tblUsageSummary_ us
+		LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY c.Description
+		ORDER BY
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'CallCountDESC') THEN SUM(NoOfCalls)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'CallCountASC') THEN SUM(NoOfCalls)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalMinutesDESC') THEN COALESCE(SUM(TotalBilledDuration),0)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalMinutesASC') THEN COALESCE(SUM(TotalBilledDuration),0)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'DescriptionDESC') THEN Description
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'DescriptionASC') THEN Description
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalCostDESC') THEN ROUND(COALESCE(SUM(TotalCharges),0), v_Round_)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalCostASC') THEN ROUND(COALESCE(SUM(TotalCharges),0), v_Round_)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ACDDESC') THEN (COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls))
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ACDASC') THEN (COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls))
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ASRDESC') THEN SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ASRASC') THEN SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100
+		END ASC
+		LIMIT p_RowspPage OFFSET v_OffSet_;
+
+		SELECT COUNT(*) AS totalcount,SUM(CallCount) AS TotalCall,SUM(TotalSeconds) AS TotalDuration,SUM(TotalCost) AS TotalCost FROM(
+			SELECT IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , IF(SUM(NoOfCalls)>0,ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_),0) AS ASR
+			FROM tmp_tblUsageSummary_ us
+			LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+			GROUP BY c.Description
+		)tbl;
+
+	END IF;
+
+	/* export data*/
+	IF p_isExport = 1
+	THEN
+
+		SELECT SQL_CALC_FOUND_ROWS IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageSummary_ us
+		LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description;
+
+	END IF;
+
+	/* chart display*/
+	IF p_isExport = 2
+	THEN
+
+		/* top 10 Description by call count */
+		SELECT Description AS ChartVal ,SUM(NoOfCalls) AS CallCount,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(NoOfCalls) > 0 ORDER BY CallCount DESC LIMIT 10;
+
+		/* top 10 Description by call cost */
+		SELECT Description AS ChartVal,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(TotalCharges) > 0 ORDER BY TotalCost DESC LIMIT 10;
+
+		/* top 10 Description by call minutes */
+		SELECT Description AS ChartVal,ROUND(COALESCE(SUM(TotalBilledDuration),0)/ 60,0) AS TotalMinutes,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(TotalBilledDuration) > 0  ORDER BY TotalMinutes DESC LIMIT 10;
+
+	END IF;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS `prc_getVendorDescReportAll`;
+DELIMITER |
+CREATE PROCEDURE `prc_getVendorDescReportAll`(
+	IN `p_CompanyID` INT,
+	IN `p_CompanyGatewayID` INT,
+	IN `p_AccountID` INT,
+	IN `p_CurrencyID` INT,
+	IN `p_StartDate` DATETIME,
+	IN `p_EndDate` DATETIME,
+	IN `p_AreaPrefix` VARCHAR(50),
+	IN `p_Trunk` VARCHAR(50),
+	IN `p_CountryID` INT,
+	IN `p_UserID` INT,
+	IN `p_isAdmin` INT,
+	IN `p_PageNumber` INT,
+	IN `p_RowspPage` INT,
+	IN `p_lSortCol` VARCHAR(50),
+	IN `p_SortOrder` VARCHAR(5),
+	IN `p_isExport` INT
+)
+BEGIN
+
+	DECLARE v_Round_ INT;
+	DECLARE v_OffSet_ INT;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+
+	SELECT fnGetRoundingPoint(p_CompanyID) INTO v_Round_;
+
+	CALL fngetDefaultCodes(p_CompanyID);
+
+	CALL fnUsageVendorSummary(p_CompanyID,p_CompanyGatewayID,p_AccountID,p_CurrencyID,p_StartDate,p_EndDate,p_AreaPrefix,p_Trunk,p_CountryID,p_UserID,p_isAdmin,2);
+
+	/* grid display*/
+	IF p_isExport = 0
+	THEN
+
+		/* Description by call count */	
+		SELECT IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , IF(SUM(NoOfCalls)>0,ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_),0) AS ASR
+		FROM tmp_tblUsageVendorSummary_ us
+		LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY c.Description   
+		ORDER BY
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'CallCountDESC') THEN SUM(NoOfCalls)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'CallCountASC') THEN SUM(NoOfCalls)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalMinutesDESC') THEN COALESCE(SUM(TotalBilledDuration),0)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalMinutesASC') THEN COALESCE(SUM(TotalBilledDuration),0)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'DescriptionDESC') THEN Description
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'DescriptionASC') THEN Description
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalCostDESC') THEN ROUND(COALESCE(SUM(TotalCharges),0), v_Round_)
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'TotalCostASC') THEN ROUND(COALESCE(SUM(TotalCharges),0), v_Round_)
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ACDDESC') THEN (COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls))
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ACDASC') THEN (COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls))
+		END ASC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ASRDESC') THEN SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100
+		END DESC,
+		CASE
+			WHEN (CONCAT(p_lSortCol,p_SortOrder) = 'ASRASC') THEN SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100
+		END ASC
+		LIMIT p_RowspPage OFFSET v_OffSet_;
+
+		SELECT COUNT(*) AS totalcount,SUM(CallCount) AS TotalCall,SUM(TotalSeconds) AS TotalDuration,SUM(TotalCost) AS TotalCost FROM (
+			SELECT IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , IF(SUM(NoOfCalls)>0,ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_),0) AS ASR
+			FROM tmp_tblUsageVendorSummary_ us
+			LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+			GROUP BY c.Description
+		)tbl;
+
+	END IF;
+
+	/* export data*/
+	IF p_isExport = 1
+	THEN
+
+		SELECT SQL_CALC_FOUND_ROWS IFNULL(Description,'Other') AS Description ,SUM(NoOfCalls) AS CallCount,COALESCE(SUM(TotalBilledDuration),0) AS TotalSeconds,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageVendorSummary_ us
+		LEFT JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description;
+
+	END IF;
+
+	/* chart display*/
+	IF p_isExport = 2
+	THEN
+
+		/* top 10 Description by call count */
+		SELECT Description AS ChartVal ,SUM(NoOfCalls) AS CallCount,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageVendorSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(NoOfCalls) > 0 ORDER BY CallCount DESC LIMIT 10;
+
+		/* top 10 Description by call cost */
+		SELECT Description AS ChartVal,ROUND(COALESCE(SUM(TotalCharges),0), v_Round_) AS TotalCost,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageVendorSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(TotalCharges) > 0 ORDER BY TotalCost DESC LIMIT 10;
+
+		/* top 10 Description by call minutes */
+		SELECT Description AS ChartVal,ROUND(COALESCE(SUM(TotalBilledDuration),0)/ 60,0) AS TotalMinutes,IF(SUM(NoOfCalls)>0,fnDurationmmss(COALESCE(SUM(TotalBilledDuration),0)/SUM(NoOfCalls)),0) AS ACD , ROUND(SUM(NoOfCalls)/(SUM(NoOfCalls)+SUM(NoOfFailCalls))*100,v_Round_) AS ASR
+		FROM tmp_tblUsageVendorSummary_ us
+		INNER JOIN tmp_codes_ c ON c.Code = us.AreaPrefix
+		GROUP BY Description HAVING SUM(TotalBilledDuration) > 0  ORDER BY TotalMinutes DESC LIMIT 10;
+
+	END IF;
+
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+END|
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `fngetDefaultCodes`;
+DELIMITER |
+CREATE PROCEDURE `fngetDefaultCodes`(
+	IN `p_CompanyID` INT
+)
+BEGIN
+	
+	DROP TEMPORARY TABLE IF EXISTS tmp_codes_;
+	CREATE TEMPORARY TABLE tmp_codes_ (
+		CountryID INT,
+		Code VARCHAR(50),
+		Description VARCHAR(200),
+		INDEX tmp_codes_CountryID (`CountryID`),
+		INDEX tmp_codes_Code (`Code`)
+	);
+
+	INSERT INTO tmp_codes_
+	SELECT
+	DISTINCT
+		tblRate.CountryID,
+		tblRate.Code,
+		tblRate.Description
+	FROM Ratemanagement3.tblRate
+	INNER JOIN Ratemanagement3.tblCodeDeck
+		ON tblCodeDeck.CodeDeckId = tblRate.CodeDeckId
+	WHERE tblCodeDeck.CompanyId = p_CompanyID
+	AND tblCodeDeck.DefaultCodedeck = 1 ;
+	
+END|
+DELIMITER ;
+
 
 
 USE `Ratemanagement3`;
 
 ALTER TABLE `tblCronJob`
 	CHANGE COLUMN `JobTitle` `JobTitle` VARCHAR(200) NULL DEFAULT NULL COLLATE 'utf8_unicode_ci';
+
+ALTER TABLE `tblAccountAuthenticate`
+	CHANGE COLUMN `CustomerAuthValue` `CustomerAuthValue` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci',
+	CHANGE COLUMN `VendorAuthValue` `VendorAuthValue` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci';	
 	
 ALTER TABLE `tblAccountBilling`
 	ADD COLUMN `AutoPaymentSetting` VARCHAR(50) NULL DEFAULT NULL;
 
 ALTER TABLE `tblAccountService`
 	ADD COLUMN `ServiceDescription` TEXT NULL DEFAULT NULL;
+	
+ALTER TABLE `tblAccountService`
+	ADD COLUMN `ServiceTitleShow` INT NOT NULL DEFAULT '1';	
+
+ALTER TABLE `tblAccount`
+	ADD COLUMN `ShowAllPaymentMethod` INT NULL DEFAULT '1';	
 
 INSERT INTO `tblIntegration` (`IntegrationID`, `CompanyId`, `Title`, `Slug`, `ParentID`, `MultiOption`) VALUES (20, 1, 'Stripe ACH', 'stripeach', 4, 'N');
 	
@@ -4076,3 +5920,8 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Create
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.getProductByBarCode', 'ProductsController.getProductByBarCode', 1, 'System', NULL, '2017-07-18 16:45:53.000', '2017-07-18 16:45:53.000', 36);
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.getProductByBarCode', 'ProductsController.getProductByBarCode', 1, 'System', NULL, '2017-07-18 16:45:53.000', '2017-07-18 16:45:53.000', 41);
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.download_sample_excel_file', 'ProductsController.download_sample_excel_file', 1, 'System', NULL, '2017-07-18 16:45:54.000', '2017-07-18 16:45:54.000', 53)
+
+USE `RMBilling3`;
+
+INSERT INTO tblInvoiceDetail (InvoiceID,ProductID,Description,StartDate,EndDate,Price,Qty,Discount,TaxAmount,LineTotal,CreatedBy,created_at,ProductType,ServiceID)
+SELECT InvoiceID,0,'Invoice Period',StartDate,EndDate,0,0,0,0,0,CreatedBy,created_at,5,ServiceID FROM tblInvoiceDetail WHERE ProductType = 2;

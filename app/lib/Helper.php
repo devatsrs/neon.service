@@ -254,25 +254,25 @@ class Helper{
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob has ReProcessed CDR Files';
+        $emaildata['Subject'] = 'CronJob has ReProcessed Files';
         $emaildata['JobTitle'] = $JobTitle;
         $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
         Log::info(' rename files');
         Log::info($renamefilenames);
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
-    public static function errorFiles($CompanyID,$ErrorEmail,$JobTitle,$errorfilenames){
+    public static function errorFiles($CompanyID,$ErrorEmail,$JobTitle,$message){
         $ComanyName = Company::getName($CompanyID);
         $emaildata['CompanyID'] = $CompanyID;
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob File Has Errors while Reading';
+        $emaildata['Subject'] =  'Cron Job ['. $JobTitle . '] got error';
         $emaildata['JobTitle'] = $JobTitle;
-        $emaildata['Message'] = 'Please check this file has error <br>'.$errorfilenames;
-        Log::info(' error files');
-        Log::info($errorfilenames);
-        $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
+        $emaildata['Message'] = $message;
+        Log::info('function errorFiles');
+        Log::info($message);
+        return $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
     public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0,$ServiceID=0) {
