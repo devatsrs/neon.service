@@ -56,10 +56,9 @@ class FusionPBX{
         if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
             try {
 
-                $query = "select u.username,c.originator_ip,c.terminator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.billsec as billed_second,user_price as cost,provider_price,disposition,prefix
-                    from calls c
-                    inner join users u on c.user_id = u.id
-                    where `calldate` >= '" . $addparams['start_date_ymd'] . "' and `calldate` < '" . $addparams['end_date_ymd'] . "'";
+                $query = "select c.domain_name as username,direction as userfield,accountcode,caller_id_name,c.caller_id_number as cli,c.destination_number as cld, c.uuid as ID ,c.start_stamp as connect_time,c.end_stamp as disconnect_time,c.duration,c.billsec as billed_second,0 as cost,hangup_cause as disposition
+                    from v_xml_cdr c
+                    where `end_stamp` >= '" . $addparams['start_date_ymd'] . "' and `end_stamp` < '" . $addparams['end_date_ymd'] . "'";
 
                 Log::info($query);
                 $response = DB::connection('pgsql')->select($query);
