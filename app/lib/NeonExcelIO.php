@@ -322,7 +322,7 @@ class NeonExcelIO
                         continue;
                     }
 
-                    if ($this->row_cnt == 0 && $this->first_row == self::$COLUMN_NAMES && self::$start_row>0) {
+                    if ($this->row_cnt == 0 && $this->first_row == self::$COLUMN_NAMES) {
                         $first_row = $row;
                         $this->set_columns($first_row);
                         $this->row_cnt++;
