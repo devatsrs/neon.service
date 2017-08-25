@@ -282,7 +282,6 @@ class NeonExcelIO
         }
 
         $this->reader->close();
-
         return $result;
 
     }
@@ -402,12 +401,6 @@ class NeonExcelIO
 					$reader->noHeading();
 				}
 			})->take($limit)->toArray();
-
-            $tmp_results=array();
-            foreach ($results as $row) {
-                $tmp_results[]=array_values($row);
-            }
-            $results=$tmp_results;
 
             if(self::$start_row>0)
             {
