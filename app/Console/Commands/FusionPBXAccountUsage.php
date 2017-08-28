@@ -145,6 +145,7 @@ class FusionPBXAccountUsage extends Command {
                     $data['billed_second'] = $row_account['billed_second'];
                     $data['duration'] = $row_account['duration'];
                     $data['trunk'] = 'Other';
+                    $data['area_prefix'] = 'Other';
                     $data['userfield'] = $row_account['userfield'];
                     $data['is_inbound'] = $row_account['userfield'] == 'inbound'?1:0;
                     //$data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
