@@ -120,8 +120,14 @@ class TempUsageDetail extends \Eloquent {
             'SentStatus' => 0
         ))
             ->where('RateDate', '<', date("Y-m-d"))
+            ->where('MessageType', '<>', 4)
             ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
         $error_msg = array();
+        $error_msg[] = '<br>
+
+Please check below error messages while re-rating cdrs.
+
+<br>';
         $PrevMessageType=0;
         foreach ($Messages as $Messagesrow) {
             if($PrevMessageType != $Messagesrow->MessageType){
@@ -258,5 +264,46 @@ class TempUsageDetail extends \Eloquent {
             $ProcessIDs[] =  $UsageHeader->ProcessID;
         }
         TempUsageDownloadLog::whereIn('ProcessID',$ProcessIDs)->update(array('PostProcessStatus'=>1));
+    }
+
+    public static function AutoAddIPLog($CompanyID,$CompanyGatewayID){
+
+        $Messages = DB::table('tblTempRateLog')->where(array(
+            'CompanyID' => $CompanyID,
+            'CompanyGatewayID' => $CompanyGatewayID,
+            'SentStatus' => 0,
+            'MessageType' => 4,
+        ))
+            ->where('RateDate', '<', date("Y-m-d"))
+            ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
+        $error_msg = array();
+        $error_msg[] = '<br>
+
+Please check below ip auto added.
+
+<br>';
+        foreach ($Messages as $Messagesrow) {
+            $error_msg[] = '<br/><b>New IP Added</b><br/>';
+            $error_msg[] = $Messagesrow->Message;
+        }
+        $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
+        //$IPEmail = empty($IPEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
+        $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
+        if (!empty($IPEmail) && !empty($error_msg)) {
+            $emaildata['CompanyID'] = $CompanyID;
+            $emaildata['EmailTo'] = explode(',',$IPEmail);
+            $emaildata['EmailToName'] = '';
+            $emaildata['Message'] = implode('<br>', $error_msg);
+            $emaildata['Subject'] = $CompanyGatewayName . ' New IP Added ';
+            $result = Helper::sendMail('emails.usagelog', $emaildata);
+            if ($result['status'] == 1) {
+                DB::table('tblTempRateLog')->where(array(
+                    'CompanyID' => $CompanyID,
+                    'CompanyGatewayID' => $CompanyGatewayID,
+                    'SentStatus' => 0,
+                    'MessageType' => 4,
+                ))->where('RateDate', '<', date("Y-m-d"))->update(array('SentStatus' => 1));
+            }
+        }
     }
 }

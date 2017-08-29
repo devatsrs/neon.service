@@ -82,7 +82,7 @@ class MORAccountUsage extends Command {
             Log::error(' ========================== mor transaction start =============================');
             CronJob::createLog($CronJobID);
             $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
+            $RateCDR = $AutoAddIP = 0;
 
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
@@ -99,6 +99,9 @@ class MORAccountUsage extends Command {
             }
             if(!empty($companysetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
+            }
+            if(isset($companysetting->AutoAddIP) && $companysetting->AutoAddIP){
+                $AutoAddIP = $companysetting->AutoAddIP;
             }
             TempUsageDetail::applyDiscountPlan();
             $mor = new MOR($CompanyGatewayID);
@@ -260,6 +263,9 @@ class MORAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
+            if($AutoAddIP == 1) {
+                TempUsageDetail::AutoAddIPLog($CompanyID, $CompanyGatewayID);
+            }
 
         } catch (\Exception $e) {
             try {
