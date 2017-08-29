@@ -144,11 +144,11 @@ class TempUsageDetail extends \Eloquent {
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {
-            $error_msg = array_merge(array('<br>
+            $error_msg = array_unshift($error_msg,array('<br>
 
 Please check below error messages while re-rating cdrs.
 
-<br>'),$error_msg);
+<br>'));
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$ReRateEmail);
             $emaildata['EmailToName'] = '';
@@ -290,11 +290,11 @@ Please check below error messages while re-rating cdrs.
         //$IPEmail = empty($IPEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($IPEmail) && !empty($error_msg)) {
-            $error_msg = array_merge(array('<br>
+            $error_msg = array_unshift($error_msg,array('<br>
 
 Please check below ip auto added.
 
-<br>'),$error_msg);
+<br>'));
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$IPEmail);
             $emaildata['EmailToName'] = '';
