@@ -160,7 +160,8 @@ Please check below error messages while re-rating cdrs.
                     'CompanyID' => $CompanyID,
                     'CompanyGatewayID' => $CompanyGatewayID,
                     'SentStatus' => 0
-                ))->where('RateDate', '<', date("Y-m-d"))->update(array('SentStatus' => 1));
+                ))->where('RateDate', '<', date("Y-m-d"))
+                    ->where('MessageType', '<>', 4)->update(array('SentStatus' => 1));
             }
         }
     }
