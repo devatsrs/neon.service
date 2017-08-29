@@ -123,11 +123,7 @@ class TempUsageDetail extends \Eloquent {
             ->where('MessageType', '<>', 4)
             ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
         $error_msg = array();
-        $error_msg[] = '<br>
 
-Please check below error messages while re-rating cdrs.
-
-<br>';
         $PrevMessageType=0;
         foreach ($Messages as $Messagesrow) {
             if($PrevMessageType != $Messagesrow->MessageType){
@@ -148,6 +144,11 @@ Please check below error messages while re-rating cdrs.
         $ReRateEmail = empty($ReRateEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($ReRateEmail) && !empty($error_msg)) {
+            $error_msg = array('<br>
+
+Please check below error messages while re-rating cdrs.
+
+<br>')+$error_msg;
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$ReRateEmail);
             $emaildata['EmailToName'] = '';
@@ -277,11 +278,7 @@ Please check below error messages while re-rating cdrs.
             ->where('RateDate', '<', date("Y-m-d"))
             ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
         $error_msg = array();
-        $error_msg[] = '<br>
 
-Please check below ip auto added.
-
-<br>';
         foreach ($Messages as $Messagesrow) {
             $error_msg[] = '<br/><b>New IP Added</b><br/>';
             $error_msg[] = $Messagesrow->Message;
@@ -290,6 +287,11 @@ Please check below ip auto added.
         //$IPEmail = empty($IPEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($IPEmail) && !empty($error_msg)) {
+            $error_msg = array('<br>
+
+Please check below ip auto added.
+
+<br>')+$error_msg;
             $emaildata['CompanyID'] = $CompanyID;
             $emaildata['EmailTo'] = explode(',',$IPEmail);
             $emaildata['EmailToName'] = '';
