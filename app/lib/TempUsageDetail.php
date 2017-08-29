@@ -278,9 +278,12 @@ Please check below error messages while re-rating cdrs.
             ->where('RateDate', '<', date("Y-m-d"))
             ->orderby('MessageType')->distinct()->get(['Message','MessageType']);
         $error_msg = array();
-
+        $header_message = '';
         foreach ($Messages as $Messagesrow) {
-            $error_msg[] = '<br/><b>New IP Added</b><br/>';
+            if($header_message == '') {
+                $header_message = '<br/><b>New IP Added</b><br/>';
+                $error_msg[] = $header_message;
+            }
             $error_msg[] = $Messagesrow->Message;
         }
         $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
