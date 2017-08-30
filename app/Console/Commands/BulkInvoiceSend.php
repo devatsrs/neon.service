@@ -92,7 +92,7 @@ class BulkInvoiceSend extends Command {
         $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
-        $InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;
+        //$InvoiceCopyEmail_main = empty($InvoiceCopyEmail_main)?$Company->Email:$InvoiceCopyEmail_main;
         if(!empty($job)){
             $JobLoggedUser = User::find($job->JobLoggedUserID);
             $joboptions = json_decode($job->Options);
@@ -140,19 +140,14 @@ class BulkInvoiceSend extends Command {
 								$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
 								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
 								if(!isset($emaildata['EmailFrom'])){
-										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
+										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 								}
                         	    $status = Helper::sendMail($body, $emaildata,0);
 								}else{$status  = array();}
 								
                             }
                     }
-
-                    if ($EMAIL_TO_CUSTOMER == 1) {
-                        $CustomerEmail = $Account->BillingEmail;
-                    } else {
-                        $CustomerEmail = Company::getEmail($CompanyID);;
-                    }
+					$CustomerEmail = $Account->BillingEmail;
                     $CustomerEmail = explode(",", $CustomerEmail);
                     $customeremail_status['status'] = 0;
                     $customeremail_status['message'] = '';
@@ -167,7 +162,7 @@ class BulkInvoiceSend extends Command {
                              	$body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail);
 								$emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail);
 								if(!isset($emaildata['EmailFrom'])){
-								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID,$singleemail);
+								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 								}
                           	  $customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
                             }
