@@ -87,6 +87,9 @@ class ImportAccount extends Command {
         $importoptions = array();
         $joboptions = array();
         $tempProcessID = '';
+        $AccData = array();
+
+        $accountimportdate = date('Y-m-d H:i:s.000');
 
         Log::useFiles(storage_path().'/logs/importaccount-'.$JobID.'-'.date('Y-m-d').'.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
@@ -100,6 +103,7 @@ class ImportAccount extends Command {
                     $jobfile = JobFile::where(['JobID' => $JobID])->first();
                     $joboptions = json_decode($jobfile->Options);
                 }
+                $UserID = $job->JobLoggedUserID;
                 $CompanyGatewayID =0;
                 $tempCompanyGatewayID =0;
                 $AccountType = 0;
@@ -173,6 +177,7 @@ class ImportAccount extends Command {
 
                         $csvoption = $templateoptions->option;
                         $attrselection = $templateoptions->selection;
+
                         if (!empty($jobfile->FilePath)) {
                             $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                             if (strpos($path, "https://") !== false) {
@@ -409,7 +414,7 @@ class ImportAccount extends Command {
                                             $tempItemData['CompanyId'] = $CompanyID;
                                             $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
                                             $tempItemData['ProcessID'] = $ProcessID;
-                                            $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
+                                            $tempItemData['created_at'] = $accountimportdate;
                                             $tempItemData['created_by'] = 'Imported';
                                             $batch_insert_array[] = $tempItemData;
                                             $counter++;
@@ -421,7 +426,7 @@ class ImportAccount extends Command {
                                             $tempItemData['CompanyId'] = $CompanyID;
                                             $tempItemData['CompanyGatewayID'] = $CompanyGatewayID;
                                             $tempItemData['ProcessID'] = $ProcessID;
-                                            $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
+                                            $tempItemData['created_at'] = $accountimportdate;
                                             $tempItemData['created_by'] = 'Imported';
                                             $batch_insert_array[] = $tempItemData;
                                             $counter++;
@@ -451,16 +456,21 @@ class ImportAccount extends Command {
                         }
 
                     }//csv import end
-                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."')");
+                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."','".$accountimportdate."')");
                     try {
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
-                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
+                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
                         Account::updateAccountNo($CompanyID);
                         Log::info('update account number - Done');
+                        Log::info('account import date - '.$accountimportdate);
+                        $AccData['UserID'] = $UserID;
+                        $AccData['CompanyID'] = $CompanyID;
+                        $AccData['AccountDate'] = $accountimportdate;
+                        Account::addAccountAudit($AccData);
                         Log::info(count($JobStatusMessage));
                         if(!empty($error) || count($JobStatusMessage) > 1){
                             $prc_error = array();

@@ -61,7 +61,7 @@
     $InvoiceTo =$InvoiceFrom = '';
 
     foreach($InvoiceDetail as $ProductRow){
-        if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+        if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
@@ -85,7 +85,7 @@
             <div id="invoice">
                 <h1>Invoice No: {{$Invoice->FullInvoiceNumber}}</h1>
                 <div class="date">Invoice Date: {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                <div class="date">Due Date: {{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <div class="date">Due Date: {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
                     <div class="date">Invoice Period: {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
                 @endif
@@ -110,7 +110,13 @@
             <tbody>
             @foreach($service_data as $service)
             <tr>
-                <td class="desc">{{$service['name']}}</td>
+                <td class="desc">
+                    @if(!empty($service['servicetitleshow']))
+                        {{$service['name']}}
+                    @else
+                        {{$service['servicedescription']}}
+                    @endif
+                </td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['sub_cost'],$RoundChargesAmount)}}</td>
                 <td class="desc">{{$CurrencySymbol}}{{number_format($service['add_cost'],$RoundChargesAmount)}}</td>
@@ -218,9 +224,20 @@
             <br/>
         @endif
     <header class="clearfix">
+        @if(!empty($service['servicetitleshow']))
         <div id="Service">
             <h1>{{$service['name']}}</h1>
+            @if(!empty($service['servicedescription']))
+                {{nl2br($service['servicedescription'])}}
+            @endif
         </div>
+        @else
+            <div id="Service">
+                @if(!empty($service['servicedescription']))
+                    <h2> {{nl2br($service['servicedescription'])}} </h2>
+                @endif
+            </div>
+        @endif
     </header>
     <main>
         @if($service['usage_cost'] != 0)
@@ -341,9 +358,20 @@
 
 
                 <header class="clearfix">
-                    <div id="Service">
-                        <h1>{{$service['name']}}</h1>
-                    </div>
+                    @if(!empty($service['servicetitleshow']))
+                        <div id="Service">
+                            <h1>{{$service['name']}}</h1>
+                            @if(!empty($service['servicedescription']))
+                                {{nl2br($service['servicedescription'])}}
+                            @endif
+                        </div>
+                    @else
+                        <div id="Service">
+                            @if(!empty($service['servicedescription']))
+                                <h2> {{nl2br($service['servicedescription'])}} </h2>
+                            @endif
+                        </div>
+                    @endif
                 </header>
                 <main>
                     <div class="ChargesTitle clearfix">

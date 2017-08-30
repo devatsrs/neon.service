@@ -189,9 +189,9 @@ class CompanyGateway extends \Eloquent {
     }
 
     public static function dropTableForNewColumn($tbltempusagedetail_name){
-        if(!Schema::hasColumn($tbltempusagedetail_name, 'userfield')) ; //check whether users table has email column
+        if(!Schema::connection('sqlsrvcdr')->hasColumn($tbltempusagedetail_name, 'userfield')) ; //check whether users table has email column
         {
-            DB::connection('sqlsrvcdr')->statement('DROP TABLE IF EXISTS `'.$tbltempusagedetail_name.'`');
+            Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
 
         }
     }

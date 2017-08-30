@@ -171,13 +171,13 @@ class Helper{
      */
     static function array_to_csv($array = array()){
         $output = "";
-        if(count($array)) {
+        if(count($array) > 0) {
             $keys = array_keys($array[0]);
-            $output .= implode(",", $keys) . PHP_EOL;
+            $output .= '"'. implode('","', $keys) .'"'. PHP_EOL;
             foreach ($array as $key => $row) {
                 $values = array_values($row);
-                if (count($values)) {
-                    $output .= implode(",", $values) . PHP_EOL;
+                if (is_array($values) && count($values) > 0 && !empty($values)) {
+                    $output .= '"'.implode('","', $values) . '"' . PHP_EOL;
                 }
 
             }
@@ -254,25 +254,25 @@ class Helper{
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob has ReProcessed CDR Files';
+        $emaildata['Subject'] = 'CronJob has ReProcessed Files';
         $emaildata['JobTitle'] = $JobTitle;
         $emaildata['Message'] = 'Please check this files are reprocess <br>'.implode('<br>',$renamefilenames);
         Log::info(' rename files');
         Log::info($renamefilenames);
         $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
-    public static function errorFiles($CompanyID,$ErrorEmail,$JobTitle,$errorfilenames){
+    public static function errorFiles($CompanyID,$ErrorEmail,$JobTitle,$message){
         $ComanyName = Company::getName($CompanyID);
         $emaildata['CompanyID'] = $CompanyID;
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $ErrorEmail;
         $emaildata['EmailToName'] = '';
-        $emaildata['Subject'] = 'CronJob File Has Errors while Reading';
+        $emaildata['Subject'] =  'Cron Job ['. $JobTitle . '] got error';
         $emaildata['JobTitle'] = $JobTitle;
-        $emaildata['Message'] = 'Please check this file has error <br>'.$errorfilenames;
-        Log::info(' error files');
-        Log::info($errorfilenames);
-        $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
+        $emaildata['Message'] = $message;
+        Log::info('function errorFiles');
+        Log::info($message);
+        return $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
     public static function get_round_decimal_places($CompanyID = 0,$AccountID = 0,$ServiceID=0) {
@@ -311,6 +311,7 @@ class Helper{
 
    public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
        $replace_array = array();
+       $replace_array['AccountName'] = $Account->AccountName;
        $replace_array['FirstName'] = $Account->FirstName;
        $replace_array['LastName'] = $Account->LastName;
        $replace_array['Email'] = $Account->Email;
