@@ -201,8 +201,6 @@ class BulkLeadMailSend extends Command {
                                     if (!empty($account->Email)) {
                                         if($EMAIL_TO_CUSTOMER == 1){
                                             $emaildata['EmailTo'] = $account->Email;//$account->Email;
-                                        }else{
-                                            $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
                                         }
 
                                         if(!empty($joboptions->attachment)){

@@ -147,12 +147,7 @@ class BulkInvoiceSend extends Command {
 								
                             }
                     }
-
-                    if ($EMAIL_TO_CUSTOMER == 1) {
-                        $CustomerEmail = $Account->BillingEmail;
-                    } else {
-                        $CustomerEmail = Company::getEmail($CompanyID);;
-                    }
+					$CustomerEmail = $Account->BillingEmail;
                     $CustomerEmail = explode(",", $CustomerEmail);
                     $customeremail_status['status'] = 0;
                     $customeremail_status['message'] = '';

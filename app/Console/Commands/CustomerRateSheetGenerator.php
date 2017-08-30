@@ -527,9 +527,8 @@ class CustomerRateSheetGenerator extends Command {
             } else if($EMAIL_TO_CUSTOMER == 1){
                 $emaildata['EmailTo'] = $account->Email;
                 $emaildata['EmailToName'] = $account->FirstName . ' ' . $account->LastName;
-            }else{
-                $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$account->Email;
             }
+
             if(!is_array($emaildata['EmailTo'])){
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
