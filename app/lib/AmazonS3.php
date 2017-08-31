@@ -155,47 +155,46 @@ class AmazonS3 {
     static function preSignedUrl($key='',$CompanyID){
 
         $s3 = self::getS3Client($CompanyID);
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+        $Uploadpath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH') . '/' .$key;
         //When no amazon ;
-        if($s3 == 'NoAmazon'){
-            $Uploadpath = $UPLOADPATH . '/' .$key;
-            if ( file_exists($Uploadpath) ) {
-               return $Uploadpath; ;
-            } else {
-              return "";
-            }
+
+        if ( file_exists($Uploadpath) ) {
+            return $Uploadpath;
         }
+        elseif(self::$isAmazonS3=='Amazon')
+        {
+            $bucket = self::getBucket($CompanyID);
 
+            // Get a command object from the client and pass in any options
+            // available in the GetObject command (e.g. ResponseContentDisposition)
+            $command = $s3->getCommand('GetObject', array(
+                'Bucket' => $bucket,
+                'Key' => $key,
+                'ResponseContentDisposition' => 'attachment; filename="'. basename($key) . '"'
+            ));
 
-        $bucket = self::getBucket($CompanyID);
-
-        // Get a command object from the client and pass in any options
-        // available in the GetObject command (e.g. ResponseContentDisposition)
-        $command = $s3->getCommand('GetObject', array(
-            'Bucket' => $bucket,
-            'Key' => $key,
-            'ResponseContentDisposition' => 'attachment; filename="'. basename($key) . '"'
-        ));
-
-        // Create a signed URL from the command object that will last for
-        // 10 minutes from the current time
-        $signedUrl = $command->createPresignedUrl('+10 minutes');
-        return $signedUrl;
-
+            // Create a signed URL from the command object that will last for
+            // 10 minutes from the current time
+            return $command->createPresignedUrl('+10 minutes');
+        }
+        else
+        {
+            return "";
+        }
     }
 
     static function unSignedUrl($key='',$CompanyID){
 
-        $s3 = self::getS3Client($CompanyID);
-		
-        //When no amazon ;
-        if($s3 == 'NoAmazon'){
-            return  self::preSignedUrl($key,$CompanyID);
-        }
+//        $s3 = self::getS3Client($CompanyID);
 
-        $bucket = self::getBucket($CompanyID);
+        //When no amazon ;
+//        if($s3 == 'NoAmazon'){
+            return self::preSignedUrl($key,$CompanyID);
+//        }
+
+        /*$bucket = self::getBucket($CompanyID);
         $unsignedUrl = $s3->getObjectUrl($bucket, $key);
-        return $unsignedUrl;
+        return $unsignedUrl;*/
 
     }
     static function delete($file,$CompanyID){
