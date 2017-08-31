@@ -566,6 +566,7 @@ class NeonExcelIO
             }
 
             $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcelTemplate, 'Excel2007');
+            $this->file = substr($this->file, 0, strrpos($this->file,".")).'.xlx';
             $objWriter->save($this->file);
         } else {
 
@@ -612,6 +613,7 @@ class NeonExcelIO
         }else{
             $writer = WriterFactory::create(Type::CSV); // for CSV files
         }*/
+        $this->file = substr($this->file, 0, strrpos($this->file,".")).'.xlsx';
 
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
