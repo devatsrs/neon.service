@@ -566,7 +566,7 @@ class NeonExcelIO
             }
 
             $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcelTemplate, 'Excel2007');
-            $this->file = substr($this->file, 0, strrpos($this->file,".")).'.xls';
+            $this->file = substr($this->file, 0, strrpos($this->file,".")).'.xlsx';
             $objWriter->save($this->file);
         } else {
 
