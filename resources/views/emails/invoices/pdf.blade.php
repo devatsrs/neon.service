@@ -61,7 +61,7 @@
     $InvoiceTo =$InvoiceFrom = '';
 
     foreach($InvoiceDetail as $ProductRow){
-        if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+        if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
         }
@@ -85,7 +85,7 @@
             <div id="invoice">
                 <h1>Invoice No: {{$Invoice->FullInvoiceNumber}}</h1>
                 <div class="date">Invoice Date: {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                <div class="date">Due Date: {{date('d-m-Y',strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <div class="date">Due Date: {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
                     <div class="date">Invoice Period: {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
                 @endif
@@ -419,7 +419,7 @@
                                 @if($table_h_row['Title'] == 'ChargedAmount')
                                     <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                 @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount) : 0}}</td>
                                 @else
                                     <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                 @endif

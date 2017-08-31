@@ -1302,6 +1302,32 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
         InvoiceDetail::insert($InvoiceDetailData);
 
+        $BillingType = AccountBilling::getBillingType($AccountID);
+        $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+        if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+            $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
+        }else{
+            $InvoiceStartDate = $StartDate;
+            $InvoiceEndDate = $EndDate;
+        }
+
+        $InvoiceDetailData = array();
+        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+        $InvoiceDetailData['ProductID'] = 0;
+        $InvoiceDetailData['ServiceID'] = $ServiceID;
+        $InvoiceDetailData['ProductType'] = Product::INVOICE_PERIOD;
+        $InvoiceDetailData['Description'] = 'Invoice Period';
+        $InvoiceDetailData['StartDate'] = $InvoiceStartDate;
+        $InvoiceDetailData['EndDate'] = $InvoiceEndDate;
+        $InvoiceDetailData['Price'] = 0;
+        $InvoiceDetailData['Qty'] = 0;
+        $InvoiceDetailData['Discount'] = 0;
+        $InvoiceDetailData['LineTotal'] = 0;
+        $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+        $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+        InvoiceDetail::insert($InvoiceDetailData);
+
 
         return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
 
@@ -1721,10 +1747,18 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
-						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
+                        if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                        }else{
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
+                        }
                     } else {
                         $usage_data[$key_col_comb] = $result_row;
-						$usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount']/$usage_data[$key_col_comb]['BillDurationInSec'])*60,6);
+                        if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                        }else{
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
+                        }
                     }
                 } else {
                     $usage_data[] = $result_row;
@@ -1913,7 +1947,11 @@ class Invoice extends \Eloquent {
             $usage_data_table['order']=$order;
             foreach($usage_data as $row_key =>$usage_data_row){
                 if (isset($usage_data_row['AreaPrefix'])) {
-                    $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount']/$usage_data_row['BillDurationInSec'])*60,6);
+                    if($usage_data_row['BillDurationInSec'] != 0) {
+                        $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount'] / $usage_data_row['BillDurationInSec']) * 60, 6);
+                    }else{
+                        $usage_data_row['AvgRatePerMin'] = 0;
+                    }
                 }
                 $usage_data[$row_key] = array_replace(array_flip($order), $usage_data_row);
                 $ServiceID = $usage_data[$row_key]['ServiceID'];

@@ -137,6 +137,7 @@ class DialStringUpload extends Command
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->DialString) && !empty($attrselection->DialString) && !empty($temp_row[$attrselection->DialString])) {
                                 $tempdialstringdata['DialString'] = trim($temp_row[$attrselection->DialString]);
+                                $tempdialstringdata['DialString'] = preg_replace('/\s+/', '', $tempdialstringdata['DialString']);
                             }else{
                                 $error[] = 'Prefix is blank at line no:'.$lineno;
                             }

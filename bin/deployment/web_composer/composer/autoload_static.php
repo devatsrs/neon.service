@@ -8,9 +8,9 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
         '3e2471375464aac821502deb0ac64275' => __DIR__ . '/..' . '/symfony/polyfill-php54/bootstrap.php',
         '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
+        '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
         'e40631d46120a9c38ea139981f8dab26' => __DIR__ . '/..' . '/ircmaxell/password-compat/lib/password.php',
         '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
@@ -4076,7 +4076,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'ServerInfoController' => __DIR__ . '/../..' . '/app/controllers/ServerInfoController.php',
         'Service' => __DIR__ . '/../..' . '/app/models/Service.php',
         'ServicesController' => __DIR__ . '/../..' . '/app/controllers/ServicesController.php',
-        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/polyfill-php54/Resources/stubs/SessionHandlerInterface.php',
+        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/http-foundation/Resources/stubs/SessionHandlerInterface.php',
         'Sippy' => __DIR__ . '/../..' . '/app/lib/Sippy.php',
         'SiteIntegration' => __DIR__ . '/../..' . '/app/lib/SiteIntegration.php',
         'Stack\\Builder' => __DIR__ . '/..' . '/stack/builder/src/Stack/Builder.php',
