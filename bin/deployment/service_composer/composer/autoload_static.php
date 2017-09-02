@@ -326,6 +326,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
             'PHPExcel' => 
             array (
                 0 => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes',
+                1 => __DIR__ . '/..' . '/phpexcel/phpexcel/Classes',
             ),
         ),
         'N' => 
@@ -3394,6 +3395,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'PHPExcel_Style_NumberFormat' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/NumberFormat.php',
         'PHPExcel_Style_Protection' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/Protection.php',
         'PHPExcel_Style_Supervisor' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/Supervisor.php',
+        'PHPExcel_Token_Stack' => __DIR__ . '/..' . '/phpexcel/phpexcel/Classes/PHPExcel/Calculation.php',
         'PHPExcel_Worksheet' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Worksheet.php',
         'PHPExcel_WorksheetIterator' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/WorksheetIterator.php',
         'PHPExcel_Worksheet_AutoFilter' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Worksheet/AutoFilter.php',
