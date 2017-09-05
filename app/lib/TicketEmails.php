@@ -183,6 +183,7 @@ class TicketEmails{
 		$emailData['CompanyName'] 	= 		$this->Group->GroupName;
 		$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 		$emailData['TicketID'] 		= 		$this->TicketID;
+		$emailData['Auto-Submitted']= 		"auto-generated";
 		$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 	
 		if($status['status']){
@@ -568,6 +569,7 @@ class TicketEmails{
 			$emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 			$emailData['TicketID'] 		= 		$this->TicketID;
+			$emailData['Auto-Submitted']= 		"auto-generated";
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 
 			if($status['status']){
