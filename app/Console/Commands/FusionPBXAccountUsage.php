@@ -152,7 +152,7 @@ class FusionPBXAccountUsage extends Command {
                     $data['ProcessID'] = $processID;
                     $data['ServiceID'] = $ServiceID;
                     $data['disposition'] = $row_account['disposition'];
-                    $data['ID'] = $row_account['ID'];
+                    $data['ID'] = $row_account['id'];
                     $InserData[] = $data;
                     $data_count++;
                     if ($data_count > $insertLimit && !empty($InserData)) {
