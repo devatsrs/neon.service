@@ -126,39 +126,41 @@ class FusionPBXAccountUsage extends Command {
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
                 foreach ((array)$response as $row_account) {
-                    $data = array();
-                    $data['CompanyGatewayID'] = $CompanyGatewayID;
-                    $data['CompanyID'] = $CompanyID;
-                    if ($companysetting->NameFormat == 'NUB') {
-                        $data['GatewayAccountID'] = $row_account['username'];
-                    }
-                    $data['AccountIP'] = '';
-                    $data['AccountName'] = '';
-                    $data['AccountNumber'] = $row_account['username'];
-                    $data['AccountCLI'] = '';
-                    $data['connect_time'] = $row_account['connect_time'];
-                    $data['disconnect_time'] = $row_account['disconnect_time'];
-                    $data['cost'] = (float)$row_account['cost'];
-                    $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
-                    $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
-                    $data['billed_duration'] = $row_account['billed_second'];
-                    $data['billed_second'] = $row_account['billed_second'];
-                    $data['duration'] = $row_account['duration'];
-                    $data['trunk'] = 'Other';
-                    $data['area_prefix'] = 'Other';
-                    $data['userfield'] = $row_account['userfield'];
-                    $data['is_inbound'] = $row_account['userfield'] == 'inbound'?1:0;
-                    //$data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
-                    $data['ProcessID'] = $processID;
-                    $data['ServiceID'] = $ServiceID;
-                    $data['disposition'] = $row_account['disposition'];
-                    $data['ID'] = $row_account['id'];
-                    $InserData[] = $data;
-                    $data_count++;
-                    if ($data_count > $insertLimit && !empty($InserData)) {
-                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                        $InserData = array();
-                        $data_count = 0;
+                    if(!empty($row_account['username'])) {
+                        $data = array();
+                        $data['CompanyGatewayID'] = $CompanyGatewayID;
+                        $data['CompanyID'] = $CompanyID;
+                        if ($companysetting->NameFormat == 'NUB') {
+                            $data['GatewayAccountID'] = $row_account['username'];
+                        }
+                        $data['AccountIP'] = '';
+                        $data['AccountName'] = '';
+                        $data['AccountNumber'] = $row_account['username'];
+                        $data['AccountCLI'] = '';
+                        $data['connect_time'] = $row_account['connect_time'];
+                        $data['disconnect_time'] = $row_account['disconnect_time'];
+                        $data['cost'] = (float)$row_account['cost'];
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
+                        $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                        $data['billed_duration'] = $row_account['billed_second'];
+                        $data['billed_second'] = $row_account['billed_second'];
+                        $data['duration'] = $row_account['duration'];
+                        $data['trunk'] = 'Other';
+                        $data['area_prefix'] = 'Other';
+                        $data['userfield'] = $row_account['userfield'];
+                        $data['is_inbound'] = $row_account['userfield'] == 'inbound' ? 1 : 0;
+                        //$data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
+                        $data['ProcessID'] = $processID;
+                        $data['ServiceID'] = $ServiceID;
+                        $data['disposition'] = $row_account['disposition'];
+                        $data['ID'] = $row_account['id'];
+                        $InserData[] = $data;
+                        $data_count++;
+                        if ($data_count > $insertLimit && !empty($InserData)) {
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                            $InserData = array();
+                            $data_count = 0;
+                        }
                     }
                 }// loop
                 if (!empty($InserData)) {
