@@ -196,5 +196,13 @@ class CompanyGateway extends \Eloquent {
         }
     }
 
+    public static function getCallID($UUID){
+        if($UID = DB::connection('sqlsrvcdr')->table('tblUCall')->where('UUID',$UUID)->pluck('UID') > 0){
+            return $UID;
+        }else{
+            return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array('UUID'=>$UUID));
+        }
+    }
+
 
 }

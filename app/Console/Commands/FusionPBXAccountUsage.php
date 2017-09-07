@@ -128,6 +128,7 @@ class FusionPBXAccountUsage extends Command {
                 foreach ((array)$response as $row_account) {
                     if(!empty($row_account['username'])) {
                         $data = array();
+                        $CallID = CompanyGateway::getCallID($row_account['id']);
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
                         $data['CompanyID'] = $CompanyID;
                         if ($companysetting->NameFormat == 'NUB') {
@@ -153,7 +154,7 @@ class FusionPBXAccountUsage extends Command {
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
                         $data['disposition'] = $row_account['disposition'];
-                        $data['ID'] = $row_account['id'];
+                        $data['ID'] = $CallID;
                         $InserData[] = $data;
                         $data_count++;
                         if ($data_count > $insertLimit && !empty($InserData)) {
