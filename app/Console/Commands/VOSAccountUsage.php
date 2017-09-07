@@ -125,7 +125,7 @@ class VOSAccountUsage extends Command
             Log::error('   vos File Count ' . count($filenames));
             $file_count = 1;
             $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
+            $RateCDR = $AutoAddIP = 0;
 
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
@@ -142,6 +142,9 @@ class VOSAccountUsage extends Command
             }
             if(!empty($companysetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
+            }
+            if(isset($companysetting->AutoAddIP) && $companysetting->AutoAddIP){
+                $AutoAddIP = $companysetting->AutoAddIP;
             }
             TempUsageDetail::applyDiscountPlan();
             Log::error(' ========================== vos transaction start =============================');
@@ -346,6 +349,9 @@ class VOSAccountUsage extends Command
 
                 //Only for CDR Rerate ON.
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
+                if($AutoAddIP == 1) {
+                    TempUsageDetail::AutoAddIPLog($CompanyID, $CompanyGatewayID);
+                }
             }catch(Exception $e){
                 Log::error($e);
             }
@@ -397,9 +403,6 @@ class VOSAccountUsage extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
 
-        DB::disconnect('sqlsrv');
-        DB::disconnect('sqlsrv2');
-        DB::disconnect('sqlsrvcdr');
 
         CronHelper::after_cronrun($this->name, $this);
 
