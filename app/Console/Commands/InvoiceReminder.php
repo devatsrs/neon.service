@@ -149,8 +149,6 @@ class InvoiceReminder extends Command
                                     $emaildata['EmailTo'] = $joboptions->testEmail;
                                 }else if ($EMAIL_TO_CUSTOMER == 1) {
                                     $emaildata['EmailTo'] = $Account->Email;//$invoice->Email;
-                                } else {
-                                    $emaildata['EmailTo'] = Company::getEmail($CompanyID);//$invoice->Email;
                                 }
 
                                 if (!empty($joboptions->attachment)) {

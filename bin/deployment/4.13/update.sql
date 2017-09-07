@@ -1,5 +1,5 @@
 USE `Ratemanagement3`;
-CREATE TABLE `tblAuditHeader` (
+CREATE TABLE IF NOT EXISTS `tblAuditHeader` (
 	`AuditHeaderID` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
 	`UserID` INT(11) NOT NULL,
 	`CompanyID` INT(11) NOT NULL,
@@ -16,7 +16,7 @@ ENGINE=InnoDB
 ;
 
 
-CREATE TABLE `tblAuditDetails` (
+CREATE TABLE IF NOT EXISTS `tblAuditDetails` (
 	`AuditDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
 	`AuditHeaderID` INT(11) UNSIGNED NOT NULL,
 	`ColumnName` VARCHAR(255) NOT NULL COLLATE 'utf8_unicode_ci',
@@ -2398,34 +2398,7 @@ BEGIN
 
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
-
-	DROP TEMPORARY TABLE IF EXISTS tmp_all_trunk_;
-   CREATE TEMPORARY TABLE tmp_all_trunk_ (
-     RowTrunk  varchar(50),
-     TrunkID INT,
-     Trunk  varchar(50),
-     RowNo int
-   );
-
-
-
- insert into tmp_all_trunk_
-  SELECT  distinct t.Trunk , t.TrunkID , RIGHT(t.Trunk, x.RowNo) as loopCode , RowNo
-			 FROM (
-		          SELECT @RowNo  := @RowNo + 1 as RowNo
-		          FROM mysql.help_category
-		          ,(SELECT @RowNo := 0 ) x
-		          limit 20
-          ) x
-          INNER JOIN tblTrunk AS t
-          ON t.CompanyId = p_CompanyID and x.RowNo   <= LENGTH(t.Trunk)
-          and ( p_Trunk like concat('%' , t.Trunk ) )
-          order by LENGTH(t.Trunk) desc , RowNo desc ;
-
-	-- select TrunkID from tmp_all_trunk_ order by RowNo desc limit 1;
-
-	select TrunkID , @p_Trunk  as Trunk  from tmp_all_trunk_ where ( @p_Trunk like concat('%' , Trunk ) ) order by  RowNo desc limit 1;
-
+	select TrunkID , p_Trunk  as Trunk   from tblTrunk where ( p_Trunk like concat('%' , Trunk  ) ) order by length(Trunk) desc limit 1;
 
 	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
@@ -6856,7 +6829,7 @@ INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `Create
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.storeTemplate', 'ProductsController.storeTemplate', 1, 'System', NULL, '2017-07-18 16:45:53.000', '2017-07-18 16:45:53.000', 53);
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.getProductByBarCode', 'ProductsController.getProductByBarCode', 1, 'System', NULL, '2017-07-18 16:45:53.000', '2017-07-18 16:45:53.000', 36);
 INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.getProductByBarCode', 'ProductsController.getProductByBarCode', 1, 'System', NULL, '2017-07-18 16:45:53.000', '2017-07-18 16:45:53.000', 41);
-INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.download_sample_excel_file', 'ProductsController.download_sample_excel_file', 1, 'System', NULL, '2017-07-18 16:45:54.000', '2017-07-18 16:45:54.000', 53)
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Products.download_sample_excel_file', 'ProductsController.download_sample_excel_file', 1, 'System', NULL, '2017-07-18 16:45:54.000', '2017-07-18 16:45:54.000', 53);
 
 USE `RMBilling3`;
 

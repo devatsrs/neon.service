@@ -378,7 +378,7 @@
                                         @if($table_h_row['Title'] == 'ChargedAmount')
                                             <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
                                         @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                            <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount)}}</td>
+											<td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount) : 0}}</td>
                                         @else
                                             <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                         @endif
