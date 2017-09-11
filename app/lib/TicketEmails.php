@@ -172,7 +172,7 @@ class TicketEmails{
 			return $this->Error;
 		}
 		$Requester = explode(",",$this->TicketData->Requester);
-		$Requester = self::remove_group_emails_from_array($Requester);
+		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
 
 		$replace_array				= 		$this->ReplaceArray($this->TicketData); 
 		$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -333,7 +333,7 @@ class TicketEmails{
 				$sendemails= array_unique($sendemails);
 			}
 
-			$sendemails = self::remove_group_emails_from_array($sendemails);
+			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
 			if(count($sendemails) > 0) {
 
@@ -423,7 +423,7 @@ class TicketEmails{
 					$sendemails= array_unique($sendemails);
 				}
 
-			$sendemails = self::remove_group_emails_from_array($sendemails);
+			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
 			if(count($sendemails)<1){return 0;}
 			
@@ -570,7 +570,7 @@ class TicketEmails{
 			    unset($emailto[$key]);
 		}
 
-		$emailto = self::remove_group_emails_from_array($emailto);
+		$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
 		if(count($emailto)>0){
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -614,7 +614,7 @@ class TicketEmails{
 		}
 		$emailto = array_merge($emailtoCc,$emailtoCc);
 
-		$emailto = self::remove_group_emails_from_array($emailto);
+		$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
 		if(count($emailto)>0){
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
