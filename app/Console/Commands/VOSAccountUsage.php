@@ -192,8 +192,8 @@ class VOSAccountUsage extends Command
                                 $uddata['cost'] = (float)$excelrow['26'];
                                 $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
                                 $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
-                                $uddata['billed_duration'] = $excelrow['23'];
-                                $uddata['billed_second'] = $excelrow['23'];
+                                $uddata['billed_duration'] = (int)$excelrow['25'];
+                                $uddata['billed_second'] = (int)$excelrow['25'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
@@ -221,9 +221,9 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['AccountName'] = $excelrow['40'];
                                 $vendorcdrdata['AccountNumber'] = '';
                                 $vendorcdrdata['AccountCLI'] = '';
-                                $vendorcdrdata['billed_duration'] = $excelrow['23'];
+                                $vendorcdrdata['billed_duration'] = (int)$excelrow['18'];
+                                $vendorcdrdata['billed_second'] = (int)$excelrow['18'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
-                                $vendorcdrdata['billed_second'] = $excelrow['23'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
