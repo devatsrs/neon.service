@@ -642,6 +642,7 @@ class TicketEmails{
 
 	public static function remove_group_emails_from_array($CompanyID,$email_array) {
 
+
 		$GroupEmailAddress 	=	TicketGroups::where(array("CompanyID"=>$CompanyID,"GroupEmailStatus"=>1))->get(["GroupEmailAddress"])->toArray();
 
 		$group_emails = [];
@@ -649,9 +650,10 @@ class TicketEmails{
 			$group_emails[]  = $GEmailAddress["GroupEmailAddress"];
 		}
 
+
 		//$GroupEmailAddress 	=	TicketGroups::get(["GroupEmailAddress"])->lists('GroupEmailAddress');
 
-		return array_diff($email_array,$group_emails);
+		return array_diff((array) $email_array,$group_emails);
 
 	}
 
