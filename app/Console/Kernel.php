@@ -90,6 +90,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\CustomerRateFileExport',
 		'App\Console\Commands\VendorRateFileExport',
 		'App\Console\Commands\RateFileExport',
+		'App\Console\Commands\RateExportToVos',
 	];
 
 	/**
