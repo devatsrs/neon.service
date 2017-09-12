@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Log;
 use Prophecy\Exception\Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use Illuminate\Support\Facades\Config;
-use App\Lib\VosServerRestartCommand;
 
 class RateExportToVos extends Command {
 
@@ -257,8 +256,6 @@ class RateExportToVos extends Command {
 		Log::info(' ========================== rate export to vos transaction end =============================');
 
 		CronHelper::after_cronrun($this->name, $this);
-
-		//VosServerRestartCommand::restartVosServer($config);
 	}
 
 }
