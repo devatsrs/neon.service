@@ -333,9 +333,11 @@ class TicketEmails{
 				$sendemails= array_unique($sendemails);
 			}
 
-			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
+
 
 			if(count($sendemails) > 0) {
+
+				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
 				$this->EmailTemplate = EmailTemplate::where(["SystemType" => $this->slug])->first();
 				$replace_array = $this->ReplaceArray($this->TicketData);
@@ -423,10 +425,12 @@ class TicketEmails{
 					$sendemails= array_unique($sendemails);
 				}
 
-			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
+
 
 			if(count($sendemails)<1){return 0;}
-			
+
+			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
+
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -570,9 +574,12 @@ class TicketEmails{
 			    unset($emailto[$key]);
 		}
 
-		$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 
 		if(count($emailto)>0){
+
+			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
 			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
@@ -614,9 +621,12 @@ class TicketEmails{
 		}
 		$emailto = array_merge($emailtoCc,$emailtoCc);
 
-		$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 
 		if(count($emailto)>0){
+
+			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
 			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
@@ -640,7 +650,7 @@ class TicketEmails{
 		}
 	}
 
-	public static function remove_group_emails_from_array($CompanyID,$email_array) {
+	public static function remove_group_emails_from_array($CompanyID,$email_array = array()) {
 
 
 		$GroupEmailAddress 	=	TicketGroups::where(array("CompanyID"=>$CompanyID,"GroupEmailStatus"=>1))->get(["GroupEmailAddress"])->toArray();
