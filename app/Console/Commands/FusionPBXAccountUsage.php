@@ -153,7 +153,7 @@ class FusionPBXAccountUsage extends Command {
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
                         $data['disposition'] = $row_account['disposition'];
-                        $data['ID'] = $row_account['id'];
+                        $data['UUID'] = $row_account['id'];
                         $InserData[] = $data;
                         $data_count++;
                         if ($data_count > $insertLimit && !empty($InserData)) {
@@ -171,6 +171,11 @@ class FusionPBXAccountUsage extends Command {
 
 
             date_default_timezone_set(Config::get('app.timezone'));
+            /** insert unique uuid*/
+            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");

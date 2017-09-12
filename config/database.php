@@ -135,6 +135,18 @@ return [
 			]
 		],
 
+		'vosmysql' => [
+			'driver'   => 'mysql',
+			'host'     => env('DB_HOSTVOS', 'localhost'),
+			'database' => env('DB_DATABASEVOS', 'forge'),
+			'username' => env('DB_USERNAMEVOS', 'forge'),
+			'password' => substr(env('DB_PASSWORDVOS', ''),5),
+			'charset'   => 'utf8',
+			'collation' => 'utf8_unicode_ci',
+			'prefix'    => '',
+			'strict'    => false,
+		],
+
 	],
 
 	/*
