@@ -115,10 +115,10 @@ class RateExportToVos extends Command {
 					Log::info('========================== rate export to vos transaction start =============================');
 					$start_time = date('Y-m-d H:i:s');
 					$rate_file_path = getenv("DOWNLOAD_FILE_LOCATION");
-					$files = scandir($rate_file_path);
-					$filenames = array();
 					//			echo "<pre>";print_r($rate_file_path);exit();
 					if(is_dir($rate_file_path.'/'.$CompanyGatewayID)){
+						$files = scandir($rate_file_path.'/'.$CompanyGatewayID);
+						$filenames = array();
 						if (count($files) > 2) {
 							foreach ($files as $file) {
 								if (is_file($rate_file_path.'/'.$CompanyGatewayID.'/'.$file) && strpos($file, '.csv') !== false) {
