@@ -115,10 +115,10 @@ class RateExportToVos extends Command {
 					Log::info('========================== rate export to vos transaction start =============================');
 					$start_time = date('Y-m-d H:i:s');
 					$rate_file_path = getenv("DOWNLOAD_FILE_LOCATION");
-					$files = scandir($rate_file_path);
-					$filenames = array();
 					//			echo "<pre>";print_r($rate_file_path);exit();
 					if(is_dir($rate_file_path.'/'.$CompanyGatewayID)){
+						$files = scandir($rate_file_path.'/'.$CompanyGatewayID);
+						$filenames = array();
 						if (count($files) > 2) {
 							foreach ($files as $file) {
 								if (is_file($rate_file_path.'/'.$CompanyGatewayID.'/'.$file) && strpos($file, '.csv') !== false) {
@@ -191,44 +191,46 @@ class RateExportToVos extends Command {
 							Log::info($count . " Records Inserted into temp table.");
 							$joblogdata['Message'] .= '<br/>' . " Records Inserted into temp table : " . $count;
 
-							try {
-								//connect to vos server and run script to transfer data from temp table to main table
-								if (!empty($sshhost) && !empty($sshuser) && !empty($sshpass)) {
-									$config = array(
-										"host" => $sshhost,
-										"username" => $sshuser,
-										"password" => $sshpass
-									);
-									RemoteSSH::setManualConfig($config);
+							if($count > 0) {
+								try {
+									//connect to vos server and run script to transfer data from temp table to main table
+									if (!empty($sshhost) && !empty($sshuser) && !empty($sshpass)) {
+										$config = array(
+											"host" => $sshhost,
+											"username" => $sshuser,
+											"password" => $sshpass
+										);
+										RemoteSSH::setManualConfig($config);
 
-									$command = 'perl vos_import/rateimporttovos.pl --ProcessID ' . $ProcessID;
-									Log::info($command);
+										$command = 'perl vos_import/rateimporttovos.pl --ProcessID ' . $ProcessID;
+										Log::info($command);
 
-									$response = RemoteSSH::manualRun([$command]);
-									Log::error('Here is response from command : ' . $response[0]);
+										$response = RemoteSSH::manualRun([$command]);
+										Log::error('Here is response from command : ' . $response[0]);
 
-									$response = explode(":", trim($response[0]));
-									Log::error('Total Inserted Rates : ' . $response[0]);
-									Log::error('Total Updated Rates : ' . $response[1]);
+										$response = explode(":", trim($response[0]));
+										Log::error('Total Inserted Rates : ' . $response[0]);
+										Log::error('Total Updated Rates : ' . $response[1]);
 
-									$joblogdata['Message'] .= '<br/>' . " Total Inserted Rates : " . $response[0];
-									$joblogdata['Message'] .= '<br/>' . " Total Updated Rates : " . $response[1];
+										$joblogdata['Message'] .= '<br/>' . " Total Inserted Rates : " . $response[0];
+										$joblogdata['Message'] .= '<br/>' . " Total Updated Rates : " . $response[1];
 
-									/*if($response == 1) {
-										Log::error('Script successfully ran on vos server');
+										/*if($response == 1) {
+                                            Log::error('Script successfully ran on vos server');
+                                        } else {
+                                            Log::error('Script not found or some error occurred in script on vos server');
+                                            Log::error('Here is response from command : '. $response);
+                                        }*/
 									} else {
-										Log::error('Script not found or some error occurred in script on vos server');
-										Log::error('Here is response from command : '. $response);
-									}*/
-								} else {
-									$joblogdata['Message'] .= '<br/>' . " Not able to connect to VOS server because SSH details are not set in gateway.";
-									Log::error('Not able to connect to VOS server because SSH details are not set in gateway.');
+										$joblogdata['Message'] .= '<br/>' . " Not able to connect to VOS server because SSH details are not set in gateway.";
+										Log::error('Not able to connect to VOS server because SSH details are not set in gateway.');
+									}
+								} catch (\Exception $e) {
+									Log::error(print_r($e, true));
+									$joblogdata['Message'] = '<br/>' . 'Error:' . $e->getMessage();
+									$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+									CronJobLog::insert($joblogdata);
 								}
-							} catch (\Exception $e) {
-								Log::error(print_r($e, true));
-								$joblogdata['Message'] = '<br/>' . 'Error:' . $e->getMessage();
-								$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-								CronJobLog::insert($joblogdata);
 							}
 
 							$end_time = date('Y-m-d H:i:s');
