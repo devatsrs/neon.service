@@ -118,116 +118,126 @@ class RateExportToVos extends Command {
 					$files = scandir($rate_file_path);
 					$filenames = array();
 					//			echo "<pre>";print_r($rate_file_path);exit();
-					if (count($files) > 2) {
-						foreach ($files as $file) {
-							if (is_file($rate_file_path . '/' . $file) && strpos($file, '.csv') !== false) {
-								$processed_path = getenv("PROCESSED_FILE_LOCATION") . '/' . basename($file);
-								$error_path = getenv("ERROR_FILE_LOCATION") . '/' . basename($file);
-								if (!file_exists($processed_path) && !file_exists($error_path)) {
-									$filenames[] = $rate_file_path . '/' . $file;
-								}
-							}
-						}
-
-						Log::info('Total files found : ' . count($filenames));
-						$joblogdata['Message'] .= ' <br/> Total files found : ' . count($filenames);
-
-						foreach ($filenames as $filename) {
-							$NeonExcel = new NeonExcelIO($filename, []);
-							$results = $NeonExcel->read();
-
-							if (count($results) == 0) {
-								Log::error('No Data in Rate File : ' . $filename);
-								$joblogdata['Message'] .= ' <br/> No Data in Rate File : ' . $filename;
-							}
-
-							foreach ($results as $index => $row) {
-								try {
-									$rate_data = array();
-
-									$rate_data['Code'] = $row['Code'];
-									$rate_data['AccountName'] = $row['AccountName'];
-									$rate_data['Description'] = $row['Description'];
-									$rate_data['EffectiveDate'] = $row['EffectiveDate'];
-									$rate_data['Preference'] = isset($row['Preference']) ? $row['Preference'] : 0;
-									$rate_data['ConnectionFee'] = $row['ConnectionFee'];
-									$rate_data['Rate'] = $row['Rate'];
-									$rate_data['Interval1'] = $row['Interval1'];
-									$rate_data['IntervalN'] = $row['IntervalN'];
-									$rate_data['Blocked'] = isset($row['Blocked']) ? $row['Blocked'] : 0;
-									$rate_data['ProcessID'] = $ProcessID;
-									$rate_data['isCustomer'] = isset($row['CustomerTrunkPrefix']) ? 1 : 0;
-									$rate_data['isVendor'] = isset($row['VendorTrunkPrefix']) ? 1 : 0;
-
-									$InsertData[] = $rate_data;
-									if ($data_count > $insertLimit && !empty($InsertData)) {
-										DB::connection('vosmysql')->table($temptableName)->insert($InsertData);
-										$InsertData = array();
-										$data_count = 0;
+					if(is_dir($rate_file_path.'/'.$CompanyGatewayID)){
+						if (count($files) > 2) {
+							foreach ($files as $file) {
+								if (is_file($rate_file_path.'/'.$CompanyGatewayID.'/'.$file) && strpos($file, '.csv') !== false) {
+									$processed_path = getenv("PROCESSED_FILE_LOCATION") . '/' . basename($file);
+									$error_path = getenv("ERROR_FILE_LOCATION") . '/' . basename($file);
+									if (!file_exists($processed_path) && !file_exists($error_path)) {
+										$filenames[] = $rate_file_path.'/'.$CompanyGatewayID.'/'.$file;
 									}
-									$data_count++;
-
-								} catch (\Exception $ex) {
-									rename(getenv("DOWNLOAD_FILE_LOCATION") . '/' . basename($filename), getenv("ERROR_FILE_LOCATION") . '/' . basename($filename));
-									Log::error(print_r($ex, true));
-									//throw $ex;
 								}
 							}
-							//rename(getenv("DOWNLOAD_FILE_LOCATION") . '/'. basename($filename),getenv("PROCESSED_FILE_LOCATION") . '/'. basename($filename));
-						}
 
-						if (!empty($InsertData)) {
-							DB::connection('vosmysql')->table($temptableName)->insert($InsertData);
-						}
+							Log::info('Total files found : ' . count($filenames));
+							$joblogdata['Message'] .= ' <br/> Total files found : ' . count($filenames);
 
-						$count = DB::connection('vosmysql')->table($temptableName)->where('ProcessID', $ProcessID)->count();
-						Log::info($count . " Records Inserted into temp table.");
-						$joblogdata['Message'] .= '<br/>' . " Records Inserted into temp table : " . $count;
+							foreach ($filenames as $filename) {
+								$NeonExcel = new NeonExcelIO($filename, []);
+								$results = $NeonExcel->read();
 
-						try {
-							//connect to vos server and run script to transfer data from temp table to main table
-							if (!empty($sshhost) && !empty($sshuser) && !empty($sshpass)) {
-								$config = array(
-									"host" => $sshhost,
-									"username" => $sshuser,
-									"password" => $sshpass
-								);
-								RemoteSSH::setManualConfig($config);
+								if (count($results) == 0) {
+									Log::error('No Data in Rate File : ' . $filename);
+									$joblogdata['Message'] .= ' <br/> No Data in Rate File : ' . $filename;
+								}
 
-								$command = 'perl vos_import/rateimporttovos.pl --ProcessID ' . $ProcessID;
-								Log::info($command);
+								foreach ($results as $index => $row) {
+									try {
+										$rate_data = array();
 
-								$response = RemoteSSH::manualRun([$command]);
-								Log::error('Here is response from command : ' . $response[0]);
+										$rate_data['Code'] = $row['Code'];
+										$rate_data['AccountName'] = $row['AccountName'];
+										$rate_data['Description'] = $row['Description'];
+										$rate_data['EffectiveDate'] = $row['EffectiveDate'];
+										$rate_data['Preference'] = isset($row['Preference']) ? $row['Preference'] : 0;
+										$rate_data['ConnectionFee'] = $row['ConnectionFee'];
+										$rate_data['Rate'] = $row['Rate'];
+										$rate_data['Interval1'] = $row['Interval1'];
+										$rate_data['IntervalN'] = $row['IntervalN'];
+										$rate_data['Blocked'] = isset($row['Blocked']) ? $row['Blocked'] : 0;
+										$rate_data['ProcessID'] = $ProcessID;
+										$rate_data['isCustomer'] = isset($row['CustomerTrunkPrefix']) ? 1 : 0;
+										$rate_data['isVendor'] = isset($row['VendorTrunkPrefix']) ? 1 : 0;
 
-								$response = explode(":", trim($response[0]));
-								Log::error('Total Inserted Rates : ' . $response[0]);
-								Log::error('Total Updated Rates : ' . $response[1]);
+										$InsertData[] = $rate_data;
+										if ($data_count > $insertLimit && !empty($InsertData)) {
+											DB::connection('vosmysql')->table($temptableName)->insert($InsertData);
+											$InsertData = array();
+											$data_count = 0;
+										}
+										$data_count++;
 
-								$joblogdata['Message'] .= '<br/>' . " Total Inserted Rates : " . $response[0];
-								$joblogdata['Message'] .= '<br/>' . " Total Updated Rates : " . $response[1];
-
-								/*if($response == 1) {
-									Log::error('Script successfully ran on vos server');
-								} else {
-									Log::error('Script not found or some error occurred in script on vos server');
-									Log::error('Here is response from command : '. $response);
-								}*/
-							} else {
-								$joblogdata['Message'] .= '<br/>' . " Not able to connect to VOS server because SSH details are not set in gateway.";
-								Log::error('Not able to connect to VOS server because SSH details are not set in gateway.');
+									} catch (\Exception $ex) {
+										if(!is_dir(getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID)){
+											mkdir(getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID);
+										}
+										rename(getenv("DOWNLOAD_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.basename($filename), getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.basename($filename));
+										Log::error(print_r($ex, true));
+										//throw $ex;
+									}
+								}
+								if(!is_dir(getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID)){
+									mkdir(getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID);
+								}
+								rename(getenv("DOWNLOAD_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.basename($filename),getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.basename($filename));
 							}
-						} catch (\Exception $e) {
-							Log::error(print_r($e, true));
-							$joblogdata['Message'] = '<br/>' . 'Error:' . $e->getMessage();
-							$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-							CronJobLog::insert($joblogdata);
-						}
 
-						$end_time = date('Y-m-d H:i:s');
-						$joblogdata['Message'] .= '<br/>' . time_elapsed($start_time, $end_time);
-						$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-						CronJobLog::insert($joblogdata);
+							if (!empty($InsertData)) {
+								DB::connection('vosmysql')->table($temptableName)->insert($InsertData);
+							}
+
+							$count = DB::connection('vosmysql')->table($temptableName)->where('ProcessID', $ProcessID)->count();
+							Log::info($count . " Records Inserted into temp table.");
+							$joblogdata['Message'] .= '<br/>' . " Records Inserted into temp table : " . $count;
+
+							try {
+								//connect to vos server and run script to transfer data from temp table to main table
+								if (!empty($sshhost) && !empty($sshuser) && !empty($sshpass)) {
+									$config = array(
+										"host" => $sshhost,
+										"username" => $sshuser,
+										"password" => $sshpass
+									);
+									RemoteSSH::setManualConfig($config);
+
+									$command = 'perl vos_import/rateimporttovos.pl --ProcessID ' . $ProcessID;
+									Log::info($command);
+
+									$response = RemoteSSH::manualRun([$command]);
+									Log::error('Here is response from command : ' . $response[0]);
+
+									$response = explode(":", trim($response[0]));
+									Log::error('Total Inserted Rates : ' . $response[0]);
+									Log::error('Total Updated Rates : ' . $response[1]);
+
+									$joblogdata['Message'] .= '<br/>' . " Total Inserted Rates : " . $response[0];
+									$joblogdata['Message'] .= '<br/>' . " Total Updated Rates : " . $response[1];
+
+									/*if($response == 1) {
+										Log::error('Script successfully ran on vos server');
+									} else {
+										Log::error('Script not found or some error occurred in script on vos server');
+										Log::error('Here is response from command : '. $response);
+									}*/
+								} else {
+									$joblogdata['Message'] .= '<br/>' . " Not able to connect to VOS server because SSH details are not set in gateway.";
+									Log::error('Not able to connect to VOS server because SSH details are not set in gateway.');
+								}
+							} catch (\Exception $e) {
+								Log::error(print_r($e, true));
+								$joblogdata['Message'] = '<br/>' . 'Error:' . $e->getMessage();
+								$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+								CronJobLog::insert($joblogdata);
+							}
+
+							$end_time = date('Y-m-d H:i:s');
+							$joblogdata['Message'] .= '<br/>' . time_elapsed($start_time, $end_time);
+							$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+							CronJobLog::insert($joblogdata);
+						} else {
+							Log::info('No Rate Files to Export!');
+						}
 					} else {
 						Log::info('No Rate Files to Export!');
 					}
