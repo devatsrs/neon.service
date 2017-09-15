@@ -98,7 +98,7 @@ class RateExportToVos extends Command {
 						"password" => $sshpass
 					);
 					RemoteSSH::setManualConfig($config);
-					$remote_path = '/root/vos_import/rate_files/';
+					$remote_path = '/root/vos_import/rate_files/DOWNLOAD_FILE_LOCATION/';
 
 					foreach ($files as $file) {
 						$file = basename($file);
