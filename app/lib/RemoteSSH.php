@@ -75,4 +75,12 @@ class RemoteSSH{
 
         return $output;
     }
+
+    /** Upload local file to remote location
+     * @param array $commands
+     * @return array
+     */
+    public static function put($localpath,$remotepath){
+        RemoteFacade::put($localpath,$remotepath);
+    }
 }
