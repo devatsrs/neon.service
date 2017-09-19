@@ -125,7 +125,7 @@ class VOSAccountUsage extends Command
             Log::error('   vos File Count ' . count($filenames));
             $file_count = 1;
             $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
+            $RateCDR = $AutoAddIP = 0;
 
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
@@ -142,6 +142,9 @@ class VOSAccountUsage extends Command
             }
             if(!empty($companysetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
+            }
+            if(isset($companysetting->AutoAddIP) && $companysetting->AutoAddIP){
+                $AutoAddIP = $companysetting->AutoAddIP;
             }
             TempUsageDetail::applyDiscountPlan();
             Log::error(' ========================== vos transaction start =============================');
@@ -189,8 +192,8 @@ class VOSAccountUsage extends Command
                                 $uddata['cost'] = (float)$excelrow['26'];
                                 $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
                                 $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
-                                $uddata['billed_duration'] = $excelrow['23'];
-                                $uddata['billed_second'] = $excelrow['23'];
+                                $uddata['billed_duration'] = (int)$excelrow['25'];
+                                $uddata['billed_second'] = (int)$excelrow['25'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
@@ -218,9 +221,9 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['AccountName'] = $excelrow['40'];
                                 $vendorcdrdata['AccountNumber'] = '';
                                 $vendorcdrdata['AccountCLI'] = '';
-                                $vendorcdrdata['billed_duration'] = $excelrow['23'];
+                                $vendorcdrdata['billed_duration'] = (int)$excelrow['18'];
+                                $vendorcdrdata['billed_second'] = (int)$excelrow['18'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
-                                $vendorcdrdata['billed_second'] = $excelrow['23'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
@@ -346,6 +349,9 @@ class VOSAccountUsage extends Command
 
                 //Only for CDR Rerate ON.
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
+                if($AutoAddIP == 1) {
+                    TempUsageDetail::AutoAddIPLog($CompanyID, $CompanyGatewayID);
+                }
             }catch(Exception $e){
                 Log::error($e);
             }
@@ -397,9 +403,6 @@ class VOSAccountUsage extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
 
-        DB::disconnect('sqlsrv');
-        DB::disconnect('sqlsrv2');
-        DB::disconnect('sqlsrvcdr');
 
         CronHelper::after_cronrun($this->name, $this);
 

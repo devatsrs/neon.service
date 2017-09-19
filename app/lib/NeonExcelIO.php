@@ -282,7 +282,6 @@ class NeonExcelIO
         }
 
         $this->reader->close();
-
         return $result;
 
     }

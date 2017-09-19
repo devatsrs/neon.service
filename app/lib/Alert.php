@@ -122,7 +122,7 @@ class Alert extends \Eloquent{
             Log::info($Alert->AlertType.' start');
             if ($Alert->AlertType == 'call_duration' && intval($settings['Duration']) > 0) {
                 self::CallDurationAlerts($CompanyID,$Alert,$settings);
-            } else if ($Alert->AlertType == 'call_cost' && intval($settings['Cost']) > 0) {
+            } else if ($Alert->AlertType == 'call_cost' && doubleval($settings['Cost']) > 0) {
                 self::CallCostAlerts($CompanyID,$Alert,$settings);
             } else if ($Alert->AlertType == 'call_after_office' && !empty($settings['OpenTime']) && !empty($settings['CloseTime'])) {
                 self::CallOfficeAlert($CompanyID,$Alert,$settings);
@@ -158,8 +158,8 @@ class Alert extends \Eloquent{
             $settings['AccountID'] = $settings['AccountIDs'];
             self::CallCostAlert($CompanyID,$Alert,$settings);
         }else if($settings['AccountIDs'] == -1){
-            $call_costs = CDRPostProcess::where('cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
-            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', intval($settings['Cost']))->distinct()->get(['AccountID']);
+            $call_costs = CDRPostProcess::where('cost', '>', doubleval($settings['Cost']))->distinct()->get(['AccountID']);
+            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', doubleval($settings['Cost']))->distinct()->get(['AccountID']);
             foreach($call_costs as $call_cost){
                 $settings['AccountID'] = $call_cost->AccountID;
                 self::CallCostAlert($CompanyID,$Alert,$settings);
@@ -204,10 +204,10 @@ class Alert extends \Eloquent{
     public static function CallCostAlert($CompanyID,$Alert,$settings)
     {
         $call_cost_count = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
-            ->where('cost', '>', intval($settings['Cost']))
+            ->where('cost', '>', doubleval($settings['Cost']))
             ->count();
         $vcall_cost_count = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
-            ->where('buying_cost', '>', intval($settings['Cost']))
+            ->where('buying_cost', '>', doubleval($settings['Cost']))
             ->count();
 
         if ($call_cost_count > 0 || $vcall_cost_count>0) {
@@ -215,10 +215,10 @@ class Alert extends \Eloquent{
             $Account = Account::find($settings['AccountID']);
 
             $call_cost = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
-                ->where('cost', '>', intval($settings['Cost']))
+                ->where('cost', '>', doubleval($settings['Cost']))
                 ->get();
             $vcall_cost = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
-                ->where('buying_cost', '>', intval($settings['Cost']))
+                ->where('buying_cost', '>', doubleval($settings['Cost']))
                 ->get();
             $settings['EmailMessage'] = View::make('emails.call_cost_alert',compact('call_cost','vcall_cost','settings'))->render();
             $settings['EmailType'] = AccountEmailLog::CallCostAlert;

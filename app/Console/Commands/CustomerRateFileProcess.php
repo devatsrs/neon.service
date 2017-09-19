@@ -369,7 +369,7 @@ class CustomerRateFileProcess extends Command {
 
 		}
 
-		DB::disconnect();
+
 
 		CronHelper::after_cronrun($this->name, $this);
 
