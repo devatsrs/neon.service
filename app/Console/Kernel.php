@@ -91,6 +91,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\VendorRateFileExport',
 		'App\Console\Commands\RateFileExport',
 		'App\Console\Commands\FusionPBXAccountUsage',
+		'App\Console\Commands\RateExportToVos',
 	];
 
 	/**

@@ -90,7 +90,7 @@ class ReadEmailsTickets extends Command
         $joblogdata['created_by'] = 'RMScheduler';
         try
 		{
-			$Ticketgroups 	=	TicketGroups::where(array("GroupEmailStatus"=>1))->get(); 
+			$Ticketgroups 	=	TicketGroups::where(array("CompanyID"=>$CompanyID, "GroupEmailStatus"=>1))->get();
 			foreach ($Ticketgroups as $TicketgroupData) { 
 				if(!empty($TicketgroupData->GroupEmailAddress) && !empty($TicketgroupData->GroupEmailServer) && !empty($TicketgroupData->GroupEmailPassword) && $TicketgroupData->GroupEmailStatus==1 ){							
 					

@@ -171,14 +171,16 @@ class TicketEmails{
 		{ Log::info($this->Error);
 			return $this->Error;
 		}
-		
+		$Requester = explode(",",$this->TicketData->Requester);
+		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
+
 		$replace_array				= 		$this->ReplaceArray($this->TicketData); 
 		$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 		$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
 		$emailData['Subject']		=		$finalSubject;
 		$emailData['Message'] 		= 		$finalBody;
 		$emailData['CompanyID'] 	= 		$this->CompanyID;
-		$emailData['EmailTo'] 		= 		$this->TicketData->Requester;
+		$emailData['EmailTo'] 		= 		$Requester;
 		$emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
 		$emailData['CompanyName'] 	= 		$this->Group->GroupName;
 		$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
@@ -217,6 +219,7 @@ class TicketEmails{
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 			$emailData['Comment']		=		$this->Comment;
 			$emailData['TicketID'] 		= 		$this->TicketID;
+			$emailData['Auto-Submitted']= 		"auto-generated";
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['UserID']		=		User::getUserIDByUserName($this->CompanyID,$this->TicketData->created_by);
 			if($status['status']){
@@ -244,6 +247,7 @@ class TicketEmails{
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['Auto-Submitted']= 		"auto-generated";
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
@@ -326,29 +330,37 @@ class TicketEmails{
 				} 
 			}
 			if(is_array($sendemails)){
-			$sendemails= array_unique($sendemails);
+				$sendemails= array_unique($sendemails);
 			}
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
-		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
-			$emailData['Subject']		=		$finalSubject;
-            $emailData['Message'] 		= 		$finalBody;
-            $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$sendemails;
-            $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
-            $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
-			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
-			$emailData['TicketID'] 		= 		$this->TicketID;
-			
-			if($status['status']){
-				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);				
-				TicketsTable::where(["TicketID"=>$this->TicketData->TicketID])->update(array("RespondSlaPolicyVoilationEmailStatus"=>1));		
-				return 1;
-			}else{
-				$this->SetError($status['message']);
-			}						
+
+
+
+			if(count($sendemails) > 0) {
+
+				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
+
+				$this->EmailTemplate = EmailTemplate::where(["SystemType" => $this->slug])->first();
+				$replace_array = $this->ReplaceArray($this->TicketData);
+				$finalBody = $this->template_var_replace($this->EmailTemplate->TemplateBody, $replace_array);
+				$finalSubject = $this->template_var_replace($this->EmailTemplate->Subject, $replace_array);
+				$emailData['Subject'] = $finalSubject;
+				$emailData['Message'] = $finalBody;
+				$emailData['CompanyID'] = $this->CompanyID;
+				$emailData['EmailTo'] = $sendemails;
+				$emailData['EmailFrom'] = $this->Group->GroupEmailAddress;
+				$emailData['CompanyName'] = $this->Group->GroupName;
+				$emailData['In-Reply-To'] = isset($this->Group->GroupReplyAddress) ? $this->Group->GroupReplyAddress : $this->Group->GroupEmailAddress;
+				$status = Helper::sendMail($finalBody, $emailData, 0);
+				$emailData['TicketID'] = $this->TicketID;
+
+				if ($status['status']) {
+					//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);
+					TicketsTable::where(["TicketID" => $this->TicketData->TicketID])->update(array("RespondSlaPolicyVoilationEmailStatus" => 1));
+					return 1;
+				} else {
+					$this->SetError($status['message']);
+				}
+			}
 	}
 	
 	protected function AgentResolveSlaVoilation()
@@ -412,8 +424,13 @@ class TicketEmails{
 				if(is_array($sendemails)){
 					$sendemails= array_unique($sendemails);
 				}
-				if(count($sendarray)<1){return 0;}
-			
+
+
+
+			if(count($sendemails)<1){return 0;}
+
+			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
+
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -555,9 +572,14 @@ class TicketEmails{
 		
 		if (($key = array_search($this->Group->GroupEmailAddress, $emailto)) !== false){			
 			    unset($emailto[$key]);
-		}	
-		
+		}
+
+
+
 		if(count($emailto)>0){
+
+			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
 			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
@@ -598,8 +620,13 @@ class TicketEmails{
 			$emailtoBcc = explode(",",$this->TicketEmailData->Bcc);
 		}
 		$emailto = array_merge($emailtoCc,$emailtoCc);
-			
+
+
+
 		if(count($emailto)>0){
+
+			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
+
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
 			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
@@ -621,6 +648,23 @@ class TicketEmails{
 				$this->SetError($status['message']);
 			}
 		}
+	}
+
+	public static function remove_group_emails_from_array($CompanyID,$email_array = array()) {
+
+
+		$GroupEmailAddress 	=	TicketGroups::where(array("CompanyID"=>$CompanyID,"GroupEmailStatus"=>1))->get(["GroupEmailAddress"])->toArray();
+
+		$group_emails = [];
+		foreach($GroupEmailAddress as $GEmailAddress){
+			$group_emails[]  = $GEmailAddress["GroupEmailAddress"];
+		}
+
+
+		//$GroupEmailAddress 	=	TicketGroups::get(["GroupEmailAddress"])->lists('GroupEmailAddress');
+
+		return array_diff((array) $email_array,$group_emails);
+
 	}
 
 }
