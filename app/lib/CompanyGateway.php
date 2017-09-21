@@ -96,6 +96,7 @@ class CompanyGateway extends \Eloquent {
                                     `cost` DOUBLE NULL DEFAULT NULL,
                                     `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                                     `ID` INT(11) NULL DEFAULT NULL,
+                                    `UUID` VARCHAR(200) NULL DEFAULT NULL ,
                                     `ServiceID` INT(11) NULL DEFAULT NULL,
                                     `remote_ip` VARCHAR(100) NULL DEFAULT NULL ,
                                     `duration` INT(11) NULL DEFAULT NULL,
@@ -189,7 +190,7 @@ class CompanyGateway extends \Eloquent {
     }
 
     public static function dropTableForNewColumn($tbltempusagedetail_name){
-        if(!Schema::connection('sqlsrvcdr')->hasColumn($tbltempusagedetail_name, 'userfield')) ; //check whether users table has email column
+        if(!Schema::connection('sqlsrvcdr')->hasColumn($tbltempusagedetail_name, 'UUID'))  //check whether users table has email column
         {
             Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
 

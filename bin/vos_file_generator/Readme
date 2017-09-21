@@ -11,7 +11,7 @@ exit
 
 -------------------------------------
 
-useradd -c webcdr -d /home/webcdr -m -s /bin/bash webcdr
+useradd -g kunshi webcdr
 passwd webcdr
 https://lastpass.com/generatepassword.php
 19I7Pbwr0n24
@@ -19,8 +19,8 @@ https://lastpass.com/generatepassword.php
 su webcdr
 mkdir ~webcdr/bin
 mkdir ~webcdr/cdr_data
-chown -R webcdr ~webcdr
-chmod -R 0755 ~webcdr/
+#chown -R webcdr ~webcdr
+#chmod -R 0755 ~webcdr/
 
 -----------------------
 
@@ -35,7 +35,7 @@ mysql
 exit
 
 #permission on /home/webcdr/.my.cnf
-chown webcdr /home/webcdr/.my.cnf ;chmod 600 /home/webcdr/.my.cnf
+#chown webcdr /home/webcdr/.my.cnf ;chmod 600 /home/webcdr/.my.cnf
 
 ---------------------------------
 
@@ -48,6 +48,8 @@ we need to make sure they are same or not , otherwise we need to set offset on e
 
 #copy extract_vos3000_data code and past after cat command
 cat > /home/webcdr/bin/extract_vos3000_data
+
+chmod 777 /home/webcdr/bin/extract_vos3000_data
 
 #check if done
 cat /home/webcdr/bin/extract_vos3000_data | more
