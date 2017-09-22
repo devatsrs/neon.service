@@ -247,9 +247,9 @@ class StreamcoAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('streamco prc_insertCDR end');
 
-            Log::error('sippy prc_linkCDR end');
+            Log::error('streamco prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('sippy prc_linkCDR end');
+            Log::error('streamco prc_linkCDR end');
 
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;

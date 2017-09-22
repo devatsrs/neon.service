@@ -320,9 +320,9 @@ class VOSAccountUsage extends Command
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 
-            Log::error('sippy prc_linkCDR end');
+            Log::error('vos prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('sippy prc_linkCDR end');
+            Log::error('vos prc_linkCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
