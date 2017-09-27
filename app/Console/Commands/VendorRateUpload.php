@@ -244,6 +244,8 @@ class VendorRateUpload extends Command
                             if(!empty($DialStringId)){
                                 if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
                                     $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                } else {
+                                    $tempvendordata['DialStringPrefix'] = '';
                                 }
                             }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
