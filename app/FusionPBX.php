@@ -61,7 +61,7 @@ class FusionPBX{
                     where end_stamp >= '" . $addparams['start_date_ymd'] . "' and end_stamp < '" . $addparams['end_date_ymd'] . "'
                     AND (
                                direction like '%outbound%'
-                            or direction like '%inbound%'
+                            or ( direction like '%inbound%' AND ( last_app = 'ivr' or last_app IS NULL))
                             or (direction = 'local' AND  LENGTH(destination_number) > 4 )
                             or direction is null
                         )
