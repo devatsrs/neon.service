@@ -186,10 +186,11 @@ class TicketEmails{
 		$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 		$emailData['TicketID'] 		= 		$this->TicketID;
 		$emailData['Auto-Submitted']= 		"auto-generated";
+		$emailData['Message-ID']	= 		$this->TicketID;
 		$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 	
 		if($status['status']){
-		//	Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+			Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);
 		}else{
 			$this->SetError($status['message']);
 		}		
@@ -220,6 +221,7 @@ class TicketEmails{
 			$emailData['Comment']		=		$this->Comment;
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Auto-Submitted']= 		"auto-generated";
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['UserID']		=		User::getUserIDByUserName($this->CompanyID,$this->TicketData->created_by);
 			if($status['status']){
@@ -248,6 +250,7 @@ class TicketEmails{
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 			$emailData['Auto-Submitted']= 		"auto-generated";
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
@@ -276,6 +279,7 @@ class TicketEmails{
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
@@ -350,6 +354,7 @@ class TicketEmails{
 				$emailData['EmailFrom'] = $this->Group->GroupEmailAddress;
 				$emailData['CompanyName'] = $this->Group->GroupName;
 				$emailData['In-Reply-To'] = isset($this->Group->GroupReplyAddress) ? $this->Group->GroupReplyAddress : $this->Group->GroupEmailAddress;
+				$emailData['Message-ID']	= 		$this->TicketID;
 				$status = Helper::sendMail($finalBody, $emailData, 0);
 				$emailData['TicketID'] = $this->TicketID;
 
@@ -442,6 +447,7 @@ class TicketEmails{
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
@@ -474,7 +480,7 @@ class TicketEmails{
             $emailData['EmailTo'] 		= 		$EscalationUser->EmailAddress;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
@@ -592,10 +598,11 @@ class TicketEmails{
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Auto-Submitted']= 		"auto-generated";
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 
 			if($status['status']){
-				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);
 			}else{
 				$this->SetError($status['message']);
 			}
@@ -640,10 +647,11 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Comment'] 		= 		$this->Comment;
 			$emailData['NoteUser'] 		= 		$this->NoteUser;
+			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 
 			if($status['status']){
-				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
+				Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);
 			}else{
 				$this->SetError($status['message']);
 			}
