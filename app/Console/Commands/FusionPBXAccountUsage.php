@@ -290,7 +290,7 @@ class FusionPBXAccountUsage extends Command {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
-            $endtime = date('Y-m-1 00:00:00');
+            $endtime = date('Y-m-01 00:00:00');
         }
         return $endtime;
     }
