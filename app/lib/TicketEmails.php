@@ -626,7 +626,7 @@ class TicketEmails{
 		
 		if(!$this->CheckBasicRequirments())
 		{
-			//return $this->Error;
+			return $this->Error;
 		} 
 		if(isset($this->TicketEmailData->Cc) && !empty($this->TicketEmailData->Cc)){
 			$emailtoCc = explode(",",$this->TicketEmailData->Cc);
