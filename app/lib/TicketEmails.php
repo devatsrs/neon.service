@@ -96,8 +96,13 @@ class TicketEmails{
 			$replace_array['Type'] 				 = 		isset($Ticketdata->Type)?TicketsTable::getTicketTypeByID($Ticketdata->Type):'';
 			$replace_array['Date']				 = 		$Ticketdata->created_at;
 			//$replace_array['helpdesk_name']		 = 		isset($Ticketdata->Group)?TicketGroups::where(['GroupID'=>$Ticketdata->Group])->pluck("GroupName"):'';
-			$replace_array['Comment']			 =		$this->Comment;
-		}    
+			if(isset($this->Comment)) {
+				$replace_array['Comment']			 =		$this->Comment;
+			}
+			if(isset($this->NoteUser)) {
+				$replace_array['NoteUser']			 =		$this->NoteUser;
+			}
+		}
         return $replace_array;
     }	
 	
@@ -120,6 +125,7 @@ class TicketEmails{
 			'{{AgentName}}',
 			'{{AgentEmail}}',
 			'{{Notebody}}',
+			'{{NoteUser}}',
 			'{{Comment}}',
 			'{{CompanyName}}',
 			"{{CompanyVAT}}",

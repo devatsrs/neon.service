@@ -470,6 +470,8 @@ protected $server;
 			throw $ex;
 		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails   = imap_search($inbox, 'SUBJECT "Re: Test Mail Added as CC - [#136] Dev Ticketing Testing 1 - Ignore"');
+
 		Log::info("connectiong:".$email);
 		if($emails){
 			
@@ -711,6 +713,7 @@ protected $server;
 				{
 					
 					$ticketData  = TicketsTable::find($parentTicket);
+
 
 					// --------------- check for TicketImportRule ----------------
 					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
