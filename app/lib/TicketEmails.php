@@ -555,7 +555,7 @@ class TicketEmails{
 			$this->SetError("Email template status disabled");				
 		}
 		
-		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->first();
+		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->orderBy('AccountEmailLogID', 'DESC')->first();
 		
 		if($this->GetError()){
 			return false;
@@ -619,7 +619,9 @@ class TicketEmails{
 	{	
 		$emailtoCc					=		array();
 		$emailtoBcc					=		array();
-		$emailto					=		array();
+		$emailtoCc2					=		array();
+		$emailtoBcc2					=		array();
+		//$emailto					=		array();
 		$this->slug					=		"CCNoteaddedtoticket";
 		
 		if(!$this->CheckBasicRequirments())
@@ -632,7 +634,21 @@ class TicketEmails{
 		if(isset($this->TicketEmailData->Bcc) && !empty($this->TicketEmailData->Bcc)){
 			$emailtoBcc = explode(",",$this->TicketEmailData->Bcc);
 		}
-		$emailto = array_merge($emailtoCc,$emailtoCc);
+
+		if(isset($this->TicketData->RequesterCC) && !empty($this->TicketData->RequesterCC)){
+			$emailtoCc2 = explode(",",$this->TicketData->RequesterCC);
+		}
+		if(isset($this->TicketData->Bcc) && !empty($this->TicketData->Bcc)){
+			$emailtoBcc2 = explode(",",$this->TicketData->Bcc);
+		}
+
+
+		$emailto =   array_merge($emailtoCc,$emailtoBcc,$emailtoCc2,$emailtoBcc2);
+
+		//exclude email address who commented on email.
+		if(isset($this->TicketEmailData->Emailfrom) && !empty($this->TicketEmailData->Emailfrom)){
+			$emailto =   array_diff($emailto,[$this->TicketEmailData->Emailfrom]);
+		}
 
 
 
