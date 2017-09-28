@@ -67,6 +67,9 @@ class PHPMAILERIntegtration{
 		if(isset($data["Auto-Submitted"])){
 			$mail->addCustomHeader("Auto-Submitted","auto-generated");
 		}
+		//if(isset($data["Auto-Submitted"])){
+			$mail->addCustomHeader("Auto-Submitted","auto-generated");
+		//}
 		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug,$companyID))
 		{
 			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$companyID);

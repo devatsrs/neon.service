@@ -823,7 +823,25 @@ protected $server;
 							 if($ContactID){
 								  $ContactData =		Contact::select('FirstName','LastName')->where("ContactID", '=', $ContactID)->first();
 								$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$ContactID,"CreatedBy" => $ContactData->FirstName.' '.$ContactData->LastName));					
-							  }
+							  }else {
+
+								 // Add contact
+								 $FromNameArray	   =  explode(" ",$FromName);
+								 $ContactFirstName  =  $FromNameArray[0];
+
+								 if(count($FromNameArray)>1)
+								 {
+									 unset($FromNameArray[0]);
+									 $ContactLastName  = implode(" ",$FromNameArray);
+								 }else{
+									 $ContactLastName  = '';
+								 }
+
+								 $ContactData = array("FirstName"=>$ContactFirstName,"LastName"=>$ContactLastName,"Email"=>$from,"CompanyId"=>$CompanyID);
+								 $contactID =  Contact::insertGetId($ContactData);
+								 TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
+
+							 }
 						}
 					}
 				}
@@ -942,13 +960,16 @@ protected $server;
 
 		$find = [
 			"/^RE:/",
+			"/^Re:/",
 			"/^FWD:/",
-			"/^Test Mail/", // to test in staging
+			"/Test Mail/", // to test in staging
+			"/Added as CC - [#[0-9]+]/",
 		];
 
-		$replace = 1; // replace first occurrence
+		$occurance = 1; // replace first occurrence
 
-		return trim(preg_replace($find,"",$subject,$replace));
+		return trim(preg_replace($find,"",$subject,$occurance));
+
 	}
 
 	/**
