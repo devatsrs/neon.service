@@ -1084,21 +1084,19 @@ protected $server;
 	public function get_forwarded_email($message){
 
 		$from_name = "";
-		preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
 		Log::info("message: " . $message);
-		Log::info("email_matches");
+		$start = strpos($message,"<") +1;
+		$end = strpos($message,">")  ;
+		$from = trim(substr($message, $start, $end-$start));
 
-		if(isset($email_matches[0]) && isset($email_matches[0][0])){
-			$email_matches=$email_matches[0];
-
-			$from = trim($email_matches[0]);
+		if(!empty($from)){
 
 			$start = strpos($message,"From: ") + 6;
-			$end = strpos($message,$from)  -1 ;
+			$end = strpos($message,"<");
 
 			$from_name = trim(substr($message, $start, $end-$start));
 		}
-		Log::info($email_matches);
 		return ["from" => $from , "from_name" => $from_name];
 	}
 }
