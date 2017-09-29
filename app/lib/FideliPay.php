@@ -26,7 +26,7 @@ class FideliPay{
 			$this->SourceKey 	            = 	$FideliPayObj->SourceKey;
 			$this->Pin						= 	$FideliPayObj->Pin;
 			$FideliPayUrl				    = CompanyConfiguration::get($CompanyID,'FIDELIPAY_WSDL_URL');
-			$this->FideliPayUrl				= 	$FideliPayObj->FideliPayUrl;
+			$this->FideliPayUrl				= 	$FideliPayUrl;
 
 			$this->status = true;;
 		}else{
