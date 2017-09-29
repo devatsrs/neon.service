@@ -96,8 +96,13 @@ class TicketEmails{
 			$replace_array['Type'] 				 = 		isset($Ticketdata->Type)?TicketsTable::getTicketTypeByID($Ticketdata->Type):'';
 			$replace_array['Date']				 = 		$Ticketdata->created_at;
 			//$replace_array['helpdesk_name']		 = 		isset($Ticketdata->Group)?TicketGroups::where(['GroupID'=>$Ticketdata->Group])->pluck("GroupName"):'';
-			$replace_array['Comment']			 =		$this->Comment;
-		}    
+			if(isset($this->Comment)) {
+				$replace_array['Comment']			 =		$this->Comment;
+			}
+			if(isset($this->NoteUser)) {
+				$replace_array['NoteUser']			 =		$this->NoteUser;
+			}
+		}
         return $replace_array;
     }	
 	
@@ -120,6 +125,7 @@ class TicketEmails{
 			'{{AgentName}}',
 			'{{AgentEmail}}',
 			'{{Notebody}}',
+			'{{NoteUser}}',
 			'{{Comment}}',
 			'{{CompanyName}}',
 			"{{CompanyVAT}}",
@@ -549,7 +555,7 @@ class TicketEmails{
 			$this->SetError("Email template status disabled");				
 		}
 		
-		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->first();
+		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->orderBy('AccountEmailLogID', 'DESC')->first();
 		
 		if($this->GetError()){
 			return false;
@@ -613,12 +619,14 @@ class TicketEmails{
 	{	
 		$emailtoCc					=		array();
 		$emailtoBcc					=		array();
-		$emailto					=		array();
+		$emailtoCc2					=		array();
+		$emailtoBcc2					=		array();
+		//$emailto					=		array();
 		$this->slug					=		"CCNoteaddedtoticket";
 		
 		if(!$this->CheckBasicRequirments())
 		{
-			//return $this->Error;
+			return $this->Error;
 		} 
 		if(isset($this->TicketEmailData->Cc) && !empty($this->TicketEmailData->Cc)){
 			$emailtoCc = explode(",",$this->TicketEmailData->Cc);
@@ -626,7 +634,21 @@ class TicketEmails{
 		if(isset($this->TicketEmailData->Bcc) && !empty($this->TicketEmailData->Bcc)){
 			$emailtoBcc = explode(",",$this->TicketEmailData->Bcc);
 		}
-		$emailto = array_merge($emailtoCc,$emailtoCc);
+
+		if(isset($this->TicketData->RequesterCC) && !empty($this->TicketData->RequesterCC)){
+			$emailtoCc2 = explode(",",$this->TicketData->RequesterCC);
+		}
+		if(isset($this->TicketData->Bcc) && !empty($this->TicketData->Bcc)){
+			$emailtoBcc2 = explode(",",$this->TicketData->Bcc);
+		}
+
+
+		$emailto =   array_merge($emailtoCc,$emailtoBcc,$emailtoCc2,$emailtoBcc2);
+
+		//exclude email address who commented on email.
+		if(isset($this->TicketEmailData->Emailfrom) && !empty($this->TicketEmailData->Emailfrom)){
+			$emailto =   array_diff($emailto,[$this->TicketEmailData->Emailfrom]);
+		}
 
 
 

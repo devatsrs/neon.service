@@ -470,6 +470,8 @@ protected $server;
 			throw $ex;
 		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails   = imap_search($inbox, 'SUBJECT "Re: Test Mail Added as CC - [#136] Dev Ticketing Testing 1 - Ignore"');
+
 		Log::info("connectiong:".$email);
 		if($emails){
 			
@@ -698,19 +700,22 @@ protected $server;
 
 					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
 
+					/* moved bellow
+
 					if(!$skip_email_notification) {
 						if ($GroupID) {
 							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
 						}
 						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
 						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}
+					}*/
 					
 				}
 				else //reopen ticket if ticket status closed 
 				{
 					
 					$ticketData  = TicketsTable::find($parentTicket);
+
 
 					// --------------- check for TicketImportRule ----------------
 					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
@@ -728,9 +733,12 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
+					$ticketID		=	$ticketData->TicketID;
 					// -------------------------------
 
-					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+					/*
+					 * moved bellow
+					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
 						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
 						if(!$skip_email_notification) {
 							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
@@ -745,11 +753,10 @@ protected $server;
 							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
 						}
 					}
-					$ticketID		=	$ticketData->TicketID;
 					if(!$skip_email_notification) {
 						//Email to all cc emails from main ticket.
 						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}
+					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -845,7 +852,41 @@ protected $server;
 						}
 					}
 				}
-				
+
+
+				//Send Notification Emails
+				if(!$parentTicket){
+
+					if(!$skip_email_notification) {
+						if ($GroupID) {
+							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
+						}
+						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
+					}
+				}
+				else //reopen ticket if ticket status closed
+				{
+					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
+						if(!$skip_email_notification) {
+							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
+						}
+					}
+					if(isset($ticketData->Requester)){
+						if($from==$ticketData->Requester){
+							if(!$skip_email_notification) {
+								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
+							}
+							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
+						}
+					}
+					if(!$skip_email_notification) {
+						//Email to all cc emails from main ticket.
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
+					}
+				}
+				///*-------------
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
