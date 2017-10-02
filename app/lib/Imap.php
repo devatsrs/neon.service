@@ -634,15 +634,15 @@ protected $server;
 
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
-				if(isset($overview[0]->to)) {
-					$to = $this->GetEmailtxt($overview[0]->to);
-				}else {
-					$to = $email;
-				}
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
-								
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email; //when to  is blank
+					$cc = TicketEmails::remove_group_emails_from_array($CompanyID,$cc);
+				}
 				$cc 		=	$this->GetCC($cc);
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
