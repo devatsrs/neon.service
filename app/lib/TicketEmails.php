@@ -210,7 +210,7 @@ class TicketEmails{
 				throw new \Exception($this->Error);
 			}
 			if(!isset($this->Agent->EmailAddress)){
-				throw new \Exception("Agent Email is blank");
+				//throw new \Exception("Agent Email is blank");
 			}
 			
 			
@@ -220,7 +220,11 @@ class TicketEmails{
             $emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+        	if(isset($this->Agent->EmailAddress)){
+				$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+			}else {
+				$emailData['EmailTo'] 		= 		$this->Group->GroupEmailAddress;
+			}
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
@@ -281,7 +285,11 @@ class TicketEmails{
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+			if(isset($this->Agent->EmailAddress)){
+				$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+			}else {
+				$emailData['EmailTo'] 		= 		$this->Group->GroupEmailAddress;
+			}
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
