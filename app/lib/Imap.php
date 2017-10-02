@@ -470,7 +470,7 @@ protected $server;
 			throw $ex;
 		}
 		$emails 	= 	imap_search($inbox,'UNSEEN');
-		//$emails   = imap_search($inbox, 'SUBJECT "Re: Test Mail Added as CC - [#136] Dev Ticketing Testing 1 - Ignore"');
+		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
 
 		Log::info("connectiong:".$email);
 		if($emails){
@@ -523,8 +523,17 @@ protected $server;
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
-		
-				foreach ( $h_array as $h ) {				
+
+				/*Log::info("h_array");
+				Log::info(print_r($h_array,true));
+
+				Log::info("body");
+				$message = 	($this->getBody($inbox,$email_number));  //get body from email
+				Log::info($message);
+
+				$message = imap_fetchbody($inbox,$email_number,1);
+				Log::info($message);*/
+ 				foreach ( $h_array as $h ) {
 					// Check if row start with a char
 						if ( preg_match("/^[A-Z]/i", $h )) {				
 						$tmp 					= 	explode(":",$h);
@@ -568,6 +577,9 @@ protected $server;
 						}
 					}
 				}
+
+
+
 				if(!empty($msg_parent)){  		
 						if($msg_parent->EmailParent==0){
 							$parent = $msg_parent->AccountEmailLogID;                        
@@ -646,7 +658,18 @@ protected $server;
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
 				}
-				
+				///Check if agent forwarded email.
+				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
+				if(in_array($from,$group_agents)) {
+					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
+					$from_array = $this->get_forwarded_email($_tmp_message);
+					Log::info($from_array);
+					if (!empty($from_array) && !empty($from_array["from"])) {
+						$from = $from_array["from"];
+						$FromName = $from_array["from_name"];
+					}
+				}
+
 				$logData = [
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
@@ -1056,6 +1079,25 @@ protected $server;
 		$message = html_entity_decode($message);
 		return $message ;
 
+	}
+
+	public function get_forwarded_email($message){
+
+		$from_name = "";
+		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		Log::info("message: " . $message);
+		$start = strpos($message,"<") +1;
+		$end = strpos($message,">")  ;
+		$from = trim(substr($message, $start, $end-$start));
+
+		if(!empty($from)){
+
+			$start = strpos($message,"From: ") + 6;
+			$end = strpos($message,"<");
+
+			$from_name = trim(substr($message, $start, $end-$start));
+		}
+		return ["from" => $from , "from_name" => $from_name];
 	}
 }
 ?>
