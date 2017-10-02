@@ -296,7 +296,7 @@ class TicketEmails{
 			}			
 	}
 	
-	protected function AgentResponseSlaVoilation(){		 
+	protected function AgentResponseSlaVoilation(){
 			$this->slug					=		"AgentResponseSlaVoilation";
 			$send 						=		0;
 			$sendemails					=		'';
@@ -307,7 +307,9 @@ class TicketEmails{
 			
 			$RespondedVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$RespondedVoilationType])->select(['Time','Value'])->first();
 			
-			if(count($RespondedVoilation)<1){return 0;}			
+			if(count($RespondedVoilation) == 0 ) {
+				return 0;
+			}
 			if($RespondedVoilation->Time=='immediately')
 			{
 				$send = 1;
@@ -320,7 +322,9 @@ class TicketEmails{
 				}
 			}
 			
-			if(!$send)	{return 0;}
+			if(!$send)	{
+				return 0;
+			}
 			
 			$sendto						=	   $RespondedVoilation->Value; 
 			if($RespondedVoilation->Value =='0'){
@@ -330,7 +334,12 @@ class TicketEmails{
 				
 				foreach($sendids as $agentsID){ 
 					if($agentsID==0){
-						$sendemails[] =	isset($this->Agent->EmailAddress)?$this->Agent->EmailAddress:'';	
+
+						if(isset($this->Agent->EmailAddress)){
+							$sendemails[] =	$this->Agent->EmailAddress;
+						} else {
+							Log::info("No Email Address found . this->Agent->EmailAddress - ");
+						}
 						continue;
 					}
 					$userdata = 	User::find($agentsID);
@@ -505,33 +514,32 @@ class TicketEmails{
 	}
 	
 	protected function CheckBasicRequirments(){
-				
-		if(!isset($this->TicketData->Agent)){
-		//	$this->SetError("No Agent Found");				
-		}
-		else
-		{
+
+		if(!isset($this->TicketData->Agent)) {
+			Log::info("No Agent Found");
+
+		} else if(isset($this->TicketData->Agent) && $this->TicketData->Agent > 0 ) {
 			$agent =  User::find($this->TicketData->Agent);
-			if(!$agent)
-			{
-		//		$this->SetError("Invalid Agent");					
+			if(!$agent) {
+				Log::info("Invalid Agent");
 			}
-			$this->Agent = $agent;				
+			$this->Agent = $agent;
+		} else {
+			Log::info("Incorrect Agent2");
 		}
-		
+
 		if(!isset($this->EmailFrom) || empty($this->EmailFrom))
 		{
 			if(!isset($this->TicketData->Group))
 			{
-			//	$this->SetError("No group Found");		
-				
+				Log::info("No group Found");
 			}
 			else
 			{
 				$group =  TicketGroups::find($this->TicketData->Group);
 				if(!$group)
 				{
-				//	$this->SetError("Invalid Group");						
+					Log::info("Invalid Group");
 				}
 				$this->Group = $group;
 			}
@@ -539,28 +547,26 @@ class TicketEmails{
 		else
 		{
 			$group  = 	TicketGroups::where(["GroupEmailAddress"=>$this->EmailFrom])->first();
-			if(!$group)
-			{
-				//$this->SetError("Invalid Group");				
+			if(!$group) {
+				Log::info("Invalid Group");
 			}
 			$this->Group = $group;
 		}
-		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
 		if(!$this->EmailTemplate){
 			$this->SetError("No email template found.");
 		}
-		
+
 		if(!$this->EmailTemplate->Status){
-			//$this->SetError("Email template status disabled");
 			Log::error("Email template is disabled");
 			return;
 		}
-		
+
 		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->orderBy('AccountEmailLogID', 'DESC')->first();
-		
+
 		if($this->GetError()){
 			throw new \Exception($this->Error);
-		}		
+		}
 		return true;
 	}
 	
