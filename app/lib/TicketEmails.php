@@ -174,8 +174,8 @@ class TicketEmails{
 	protected function  RequesterNewTicketCreated(){
 		$this->slug					=		"RequesterNewTicketCreated";
 		if(!$this->CheckBasicRequirments())
-		{ Log::info($this->Error);
-			return $this->Error;
+		{
+			throw new \Exception($this->Error);
 		}
 		$Requester = explode(",",$this->TicketData->Requester);
 		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
@@ -207,10 +207,10 @@ class TicketEmails{
 			$this->slug					=		"RequesterRepliestoTicket";
 			if(!$this->CheckBasicRequirments())
 			{
-				return $this->Error;
+				throw new \Exception($this->Error);
 			}
 			if(!isset($this->Agent->EmailAddress)){
-				return;
+				throw new \Exception("Agent Email is blank");
 			}
 			
 			
@@ -241,7 +241,7 @@ class TicketEmails{
 			$this->slug					=		"AgentAssignedGroup";
 			if(!$this->CheckBasicRequirments())
 			{
-				return $this->Error;
+				throw new \Exception($this->Error);
 			}			
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -271,7 +271,7 @@ class TicketEmails{
 			$this->slug					=		"AgentTicketReopened";
 			if(!$this->CheckBasicRequirments())
 			{
-				return $this->Error;
+				throw new \Exception($this->Error);
 			}			
 			
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
@@ -302,7 +302,7 @@ class TicketEmails{
 			$sendemails					=		'';
 			if(!$this->CheckBasicRequirments())
 			{
-				return $this->Error;
+				throw new \Exception($this->Error);
 			}	
 			
 			$RespondedVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$RespondedVoilationType])->select(['Time','Value'])->first();
@@ -383,8 +383,8 @@ class TicketEmails{
 			
 			if(!$this->CheckBasicRequirments())
 			{
-				return $this->Error;
-			}			
+				throw new \Exception($this->Error);
+			}
 			
 			$ResolveVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$ResolvedVoilationType])->select(['Time','Value'])->get();	
 			
@@ -458,11 +458,10 @@ class TicketEmails{
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			
 			if($status['status']){ 
-			TicketsTable::where(["TicketID"=>$this->TicketData->TicketID])->update(array("ResolveSlaPolicyVoilationEmailStatus"=>1));
-					return 1;
+				TicketsTable::where(["TicketID"=>$this->TicketData->TicketID])->update(array("ResolveSlaPolicyVoilationEmailStatus"=>1));
+				return 1;
 				//Helper::email_log_data_Ticket($emailData,'',$status,$this->CompanyID);						
 			}else{ 
-				return 0;
 				$this->SetError($status['message']);
 			}			
 	}
@@ -548,17 +547,19 @@ class TicketEmails{
 		}
 		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		if(!$this->EmailTemplate){
-			$this->SetError("No email template found.");				
-		} 
+			$this->SetError("No email template found.");
+		}
 		
 		if(!$this->EmailTemplate->Status){
-			$this->SetError("Email template status disabled");				
+			//$this->SetError("Email template status disabled");
+			Log::error("Email template is disabled");
+			return;
 		}
 		
 		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->orderBy('AccountEmailLogID', 'DESC')->first();
 		
 		if($this->GetError()){
-			return false;
+			throw new \Exception($this->Error);
 		}		
 		return true;
 	}
@@ -570,7 +571,7 @@ class TicketEmails{
 		
 		if(!$this->CheckBasicRequirments())
 		{
-			return $this->Error;
+			throw new \Exception($this->Error);
 		} 
 		if(isset($this->TicketData->RequesterCC) && !empty($this->TicketData->RequesterCC)){
 			$emailto = explode(",",$this->TicketData->RequesterCC);
@@ -626,7 +627,7 @@ class TicketEmails{
 		
 		if(!$this->CheckBasicRequirments())
 		{
-			return $this->Error;
+			throw new \Exception($this->Error);
 		} 
 		if(isset($this->TicketEmailData->Cc) && !empty($this->TicketEmailData->Cc)){
 			$emailtoCc = explode(",",$this->TicketEmailData->Cc);
