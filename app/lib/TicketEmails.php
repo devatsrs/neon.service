@@ -65,7 +65,7 @@ class TicketEmails{
 		{
 			Log::error("could not Trigger");
 			Log::error($ex);		
-			return $ex;
+			throw $ex;
 		}
 	 }	
 	 
