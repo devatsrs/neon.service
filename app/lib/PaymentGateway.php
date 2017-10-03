@@ -13,7 +13,10 @@ class PaymentGateway extends \Eloquent {
     const  AuthorizeNet	= 	1;
     const  Stripe		=	2;
     const  StripeACH	=	3;
-    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH');
+    const  SagePayDirectDebit	=	4;
+    const  FideliPay	=	5;
+
+    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH',self::FideliPay=>'FideliPay');
 
     public static function getName($PaymentGatewayID)
     {
@@ -133,6 +136,56 @@ class PaymentGateway extends \Eloquent {
                     $transactionResponse['response_code'] = $transaction['response_code'];
                 }
                 $transactionResponse['transaction_payment_method'] = 'BANK TRANSFER';
+                $transactionResponse['failed_reason'] = $Notes;
+                if(!empty($transaction['id'])) {
+                    $transactionResponse['transaction_id'] = $transaction['id'];
+                }
+                $transactiondata = array();
+                $transactiondata['CompanyID'] = $account->CompanyId;
+                $transactiondata['AccountID'] = $account->AccountID;
+                if(!empty($transaction['id'])) {
+                    $transactiondata['Transaction'] = $transaction['id'];
+                }
+                $transactiondata['Notes'] = $Notes;
+                if(!empty($transaction['amount'])) {
+                    $transactiondata['Amount'] = floatval($transaction['amount']);
+                }
+                $transactiondata['Status'] = $Status;
+                $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                $transactiondata['CreatedBy'] = "RMScheduler";
+                $transactiondata['ModifyBy'] = "RMScheduler";
+                $transactiondata['Response'] = json_encode($transaction);
+                TransactionLog::insert($transactiondata);
+                return $transactionResponse;
+
+            case 'FideliPay':
+
+                $Fidelipaydata = array();
+                $Fidelipaydata['Amount'] = $amount;
+                $Fidelipaydata['Invoice'] = $options->InvoiceNumber;
+                $Fidelipaydata['Description'] = $options->InvoiceNumber.' (Invoice) Payment';
+                $Fidelipaydata['CustomerNumber'] = $options->CustomerNumber;
+
+                $transactionResponse = array();
+
+                $fidelipaypayment = new FideliPay($CompanyID);
+                $transaction = $fidelipaypayment->createchargebycustomer($Fidelipaydata);
+
+                $Notes = '';
+                if(!empty($transaction['response_code']) && $transaction['response_code'] == 1) {
+                    $Notes = 'FideliPay transaction_id ' . $transaction['id'];
+                    $Status = TransactionLog::SUCCESS;
+                }else{
+                    $Status = TransactionLog::FAILED;
+                    $Notes = empty($transaction['error']) ? '' : $transaction['error'];
+                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
+                }
+                $transactionResponse['transaction_notes'] =$Notes;
+                if(!empty($transaction['response_code'])) {
+                    $transactionResponse['response_code'] = $transaction['response_code'];
+                }
+                $transactionResponse['transaction_payment_method'] = 'CREDIT CARD';
                 $transactionResponse['failed_reason'] = $Notes;
                 if(!empty($transaction['id'])) {
                     $transactionResponse['transaction_id'] = $transaction['id'];
