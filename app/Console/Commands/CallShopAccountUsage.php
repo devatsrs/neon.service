@@ -75,6 +75,7 @@ class CallShopAccountUsage extends Command {
         Log::useFiles(storage_path() . '/logs/callshopaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
+        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
 
@@ -159,12 +160,6 @@ class CallShopAccountUsage extends Command {
                             $data_count = 0;
                         }
                     }
-                }// loop
-                if (!empty($InserData)) {
-                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                }
-
-                foreach ((array)$response as $row_account) {
                     if (!empty($row_account['providername'])) {
                         $vendorcdrdata = array();
                         $vendorcdrdata['AccountIP'] = '';
@@ -198,6 +193,10 @@ class CallShopAccountUsage extends Command {
                         }
                     }
                 }// loop
+                if (!empty($InserData)) {
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                }
+
                 if (!empty($InserVData)) {
                     DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                 }
@@ -238,6 +237,11 @@ class CallShopAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('call shop prc_insertCDR end');
+
+            Log::error('call shop prc_linkCDR end');
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
+            Log::error('call shop prc_linkCDR end');
+
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
             $logdata['start_time'] = $param['start_date_ymd'];
