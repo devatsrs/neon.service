@@ -506,21 +506,15 @@ class Invoice extends \Eloquent {
 
             $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
 
-
+            $InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->get();
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
-            $file_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.pdf';
-            $htmlfile_name = 'Invoice--' . date($InvoiceTemplate->DateFormat) . '.html';
-            if($InvoiceTemplate->InvoicePages == 'single_with_detail' && empty($Invoice->RecurringInvoiceID)) {
-                foreach ($InvoiceDetail as $Detail) {
-                    if (isset($Detail->StartDate) && isset($Detail->EndDate) && $Detail->StartDate != '1900-01-01' && $Detail->EndDate != '1900-01-01') {
-                        $start_date = $Detail->StartDate;
-                        $end_date = $Detail->EndDate;
-                        $file_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.pdf';
-                        $htmlfile_name =  'Invoice-From-' . Str::slug($start_date) . '-To-' . Str::slug($end_date) . '.html';
-                        break;
-                    }
-                }
+            if(empty($Invoice->RecurringInvoiceID) && !empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate) && isset($InvoiceDetailPeriod->EndDate) && $InvoiceDetailPeriod->StartDate != '1900-01-01' && $InvoiceDetailPeriod->EndDate != '1900-01-01') {
+                $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-From-' . date($InvoiceTemplate->DateFormat, strtotime($InvoiceDetailPeriod->StartDate)) .'-To-'.date($InvoiceTemplate->DateFormat, strtotime($InvoiceDetailPeriod->EndDate)). '-' . $InvoiceID);
+            }else{
+                $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-' . date($InvoiceTemplate->DateFormat, strtotime($Invoice->IssueDate)) . '-' . $InvoiceID);
             }
+            $file_name = 'Invoice-' . $common_name . '.pdf';
+            $htmlfile_name = 'Invoice-' . $common_name . '.html';
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
 
             if(!empty($Invoice->RecurringInvoiceID)) {
@@ -542,15 +536,13 @@ class Invoice extends \Eloquent {
             if (!file_exists($destination_dir)) {
                 mkdir($destination_dir, 0777, true);
             }
-            $file_name = Uuid::generate() .'-'. $file_name;
-            $htmlfile_name = Uuid::generate() .'-'. $htmlfile_name;
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
             file_put_contents($local_htmlfile,$body);
-            $footer_name = 'footer-'. Uuid::generate() .'.html';
+            $footer_name = 'footer-'. $common_name .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
-            $header_name = 'header-'. Uuid::generate() .'.html';
+            $header_name = 'header-'. $common_name .'.html';
             $header_html = $destination_dir.$header_name;
             file_put_contents($header_html,$header);
             $output= "";
