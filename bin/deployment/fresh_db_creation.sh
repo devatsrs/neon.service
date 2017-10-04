@@ -84,6 +84,8 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUST
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VENDOR_RATE_FILE_IMPORT_CRONJOB', '{"vendors":[],"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"DAILY","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'RATE_FILE_EXPORT_CRONJOB', '{"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_MOVEMENT_REPORT_DISPLAY', '0');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FUSION_PBX_CRONJOB', '{"MaxInterval":"1440","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FIDELIPAY_WSDL_URL', 'https://sandbox.fidelipay.com/soap/gate/STG4PDAE/usaepay.wsdl');
 
 
 INSERT INTO tblCompany (CompanyID, CompanyName,  CustomerAccountPrefix, FirstName, LastName, Email, Phone,  Status, TimeZone, created_at, created_by)
