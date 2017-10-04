@@ -34,11 +34,15 @@ class TicketEmails{
 	
 
 	 public function __construct($data = array()){
-		
-		 foreach($data as $key => $value){
-			 $this->$key = $value;
-		 }		 		 
-		 $this->TriggerEmail();
+
+		 if(!empty($data)) {
+
+			 foreach ($data as $key => $value) {
+				 $this->$key = $value;
+			 }
+			 $this->TriggerEmail();
+
+		 }
 	 }
 	 
 	 public function TriggerEmail(){
@@ -210,7 +214,10 @@ class TicketEmails{
 				throw new \Exception($this->Error);
 			}
 			if(!isset($this->Agent->EmailAddress)){
-				throw new \Exception("Agent Email is blank");
+
+				Log::info("RequesterRepliestoTicket: Agent Email is blank");
+				return false;
+				//throw new \Exception("Agent Email is blank");
 			}
 			
 			
@@ -220,7 +227,7 @@ class TicketEmails{
             $emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+			$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
@@ -272,16 +279,22 @@ class TicketEmails{
 			if(!$this->CheckBasicRequirments())
 			{
 				throw new \Exception($this->Error);
-			}			
-			
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+			}
+			if(!isset($this->Agent->EmailAddress)) {
+
+				Log::info("AgentTicketReopened: Agent Email is blank");
+				return false;
+				//throw new \Exception("Agent Email is blank");
+			}
+
+		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
-            $emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
+			$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupEmailAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
 			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
