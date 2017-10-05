@@ -104,10 +104,20 @@ class CustomerRateSheetGenerator extends Command {
                 if (!empty($joboptions->criteria)) {
                     $criteria = json_decode($joboptions->criteria);
                 }
-                if(!empty($joboptions->downloadtype)){
-                    $downloadtype = $joboptions->downloadtype;
-                }else{
-                    $downloadtype = 'csv';
+
+                $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
+                $RateSheetTemplateFile = '';
+                if($RateSheetTemplate != '') {
+                    $RateSheetTemplateFile = $RateSheetTemplate->Excel;
+                }
+                if($RateSheetTemplateFile != '') {
+                    $downloadtype = 'xlsx';
+                } else {
+                    if(!empty($joboptions->downloadtype)){
+                        $downloadtype = $joboptions->downloadtype;
+                    }else{
+                        $downloadtype = 'csv';
+                    }
                 }
                 $count = 0;
                 Log::useFiles(storage_path() . '/logs/customerratesheet-' . $JobID . '-' . date('Y-m-d') . '.log');

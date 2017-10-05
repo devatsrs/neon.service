@@ -32,6 +32,7 @@ class SiteIntegration{
  static    $StripeSlug			=	'stripe';
  static    $StripeACHSlug		=	'stripeach';
  static    $SagePaySlug			=	'sagepay';
+ static    $FideliPaySlug       =	'fidelipay';
 
  	public function __construct(){
 	
