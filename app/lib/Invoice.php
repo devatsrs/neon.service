@@ -506,7 +506,7 @@ class Invoice extends \Eloquent {
 
             $service_data = self::getServiceData($Invoice->AccountID,$ServiceID,$usage_data,$InvoiceDetail);
 
-            $InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->get();
+            $InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
             $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
             if(empty($Invoice->RecurringInvoiceID) && !empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate) && isset($InvoiceDetailPeriod->EndDate) && $InvoiceDetailPeriod->StartDate != '1900-01-01' && $InvoiceDetailPeriod->EndDate != '1900-01-01') {
                 $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-From-' . date($InvoiceTemplate->DateFormat, strtotime($InvoiceDetailPeriod->StartDate)) .'-To-'.date($InvoiceTemplate->DateFormat, strtotime($InvoiceDetailPeriod->EndDate)). '-' . $InvoiceID);
