@@ -145,7 +145,7 @@ class AmazonS3 {
         try {
             $resource = fopen($file, 'r');
             $s3->upload($bucket, $dir.basename($file), $resource, 'public-read');
-//            @unlink($file); // check first file in local
+            @unlink($file); // remove from local
             return true;
         } catch (S3Exception $e) {
             return false ; //"There was an error uploading the file.\n";
@@ -197,17 +197,18 @@ class AmazonS3 {
         return $unsignedUrl;*/
 
     }
+
+    // 
     static function delete($file,$CompanyID){
         $return=false;
-
         if(strlen($file)>0) {
             // Instantiate an S3 client
             $s3 = self::getS3Client($CompanyID);
 
             //When no amazon ;
 
-            $Uploadpath = "/uploads/".$file;
-            if ( file_exists(public_path() . $Uploadpath) ) {
+            $Uploadpath = CompanyConfiguration::get('UPLOAD_PATH') . "/"."".$file;
+            if ( file_exists($Uploadpath) ) {
                 @unlink($Uploadpath);
                 if(self::$isAmazonS3=="NoAmazon")
                 {
@@ -217,19 +218,19 @@ class AmazonS3 {
 
             if(self::$isAmazonS3=="Amazon")
             {
-                $bucket = self::getBucket($CompanyID);
+                $AmazonSettings  = self::getAmazonSettings($CompanyID);
+                $bucket 		 = $AmazonSettings['AWS_BUCKET'];
                 // Upload a publicly accessible file. The file size, file type, and MD5 hash
                 // are automatically calculated by the SDK.
                 try {
-                    $result = $s3->deleteObject(array('Bucket' => $bucket, 'Key' => $file));
+                    $s3->deleteObject(array('Bucket' => $bucket, 'Key' => $file));
                     $return=true;
                 } catch (S3Exception $e) {
                     $return=false; //"There was an error uploading the file.\n";
                 }
             }
-        }else{
-            $return=false;
         }
+
         return $return;
     }
 

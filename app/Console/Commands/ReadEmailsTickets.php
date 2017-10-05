@@ -164,11 +164,12 @@ class ReadEmailsTickets extends Command
 		foreach ($tickets as $ticket)
 		{
 			if($ticket->EscalationEmail==1 && $ticket->IsRespondedVoilation==1){
-			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>array("AgentResponseSlaVoilation")));					
+
+					new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>"AgentResponseSlaVoilation"));
 			}
 			
 			if($ticket->EscalationEmail==1 && $ticket->IsResolvedVoilation==1){
-			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>array("AgentResolveSlaVoilation")));					
+				new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>"AgentResolveSlaVoilation"));
 			}						
 		}		
 	}
