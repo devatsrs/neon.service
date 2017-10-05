@@ -85,7 +85,7 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VEND
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'RATE_FILE_EXPORT_CRONJOB', '{"ScriptLocation":"","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_MOVEMENT_REPORT_DISPLAY', '0');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FUSION_PBX_CRONJOB', '{"MaxInterval":"1440","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
-INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FIDELIPAY_WSDL_URL', 'https://sandbox.fidelipay.com/soap/gate/STG4PDAE/usaepay.wsdl');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'FIDELIPAY_WSDL_URL', 'https://usaepay.com/soap/gate/STG4PDAE/usaepay.wsdl');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_DASHBOARD_DISPLAY', '1');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_NOTICEBOARD_DISPLAY', '1');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'CUSTOMER_TICKET_DISPLAY', '1');
