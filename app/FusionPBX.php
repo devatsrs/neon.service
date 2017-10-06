@@ -56,9 +56,16 @@ class FusionPBX{
         if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
             try {
 
-                $query = "select c.domain_name as username,direction as userfield,accountcode,caller_id_name,c.caller_id_number as cli,c.destination_number as cld, c.uuid as id ,c.start_stamp as connect_time,c.end_stamp as disconnect_time,c.duration,c.billsec as billed_second,0 as cost,hangup_cause as disposition
+                $query = "select c.domain_name as username,direction as userfield,accountcode,caller_id_name,c.caller_id_number as cli,c.destination_number as cld, c.uuid as id ,c.start_stamp as connect_time,c.end_stamp as disconnect_time,c.duration,c.billsec as billed_second,0 as cost,hangup_cause as disposition,json
                     from v_xml_cdr c
-                    where end_stamp >= '" . $addparams['start_date_ymd'] . "' and end_stamp < '" . $addparams['end_date_ymd'] . "'";
+                    where end_stamp >= '" . $addparams['start_date_ymd'] . "' and end_stamp < '" . $addparams['end_date_ymd'] . "'
+                    AND (
+                               direction like '%outbound%'
+                            or direction like '%inbound%'
+                            or (direction = 'local' AND  LENGTH(destination_number) > 4 )
+                            or direction is null
+                        )
+                    ";
 
                 Log::info($query);
                 $response = DB::connection('pgsql')->select($query);

@@ -128,6 +128,12 @@ class FusionPBXAccountUsage extends Command {
                 foreach ((array)$response as $row_account) {
                     if(!empty($row_account['username'])) {
                         $data = array();
+                        $json = json_decode($row_account['json'],true);
+                        if($row_account['userfield'] == 'inbound' && !empty($json['callflow'][count($json['callflow']) -1]['caller_profile']['destination_number'])){
+                           $destination_number =  $json['callflow'][count($json['callflow']) -1]['caller_profile']['destination_number'];
+                        }else{
+                            $destination_number = $row_account['cld'];
+                        }
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
                         $data['CompanyID'] = $CompanyID;
                         if ($companysetting->NameFormat == 'NUB') {
@@ -140,7 +146,7 @@ class FusionPBXAccountUsage extends Command {
                         $data['connect_time'] = $row_account['connect_time'];
                         $data['disconnect_time'] = $row_account['disconnect_time'];
                         $data['cost'] = (float)$row_account['cost'];
-                        $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule, $destination_number);
                         $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
                         $data['billed_duration'] = $row_account['billed_second'];
                         $data['billed_second'] = $row_account['billed_second'];
@@ -153,7 +159,7 @@ class FusionPBXAccountUsage extends Command {
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
                         $data['disposition'] = $row_account['disposition'];
-                        $data['ID'] = $row_account['id'];
+                        $data['UUID'] = $row_account['id'];
                         $InserData[] = $data;
                         $data_count++;
                         if ($data_count > $insertLimit && !empty($InserData)) {
@@ -171,6 +177,11 @@ class FusionPBXAccountUsage extends Command {
 
 
             date_default_timezone_set(Config::get('app.timezone'));
+            /** insert unique uuid*/
+            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
@@ -285,7 +296,7 @@ class FusionPBXAccountUsage extends Command {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
         if (empty($endtime)) {
-            $endtime = date('Y-m-1 00:00:00');
+            $endtime = date('Y-m-01 00:00:00');
         }
         return $endtime;
     }

@@ -29,8 +29,8 @@ class Payment extends \Eloquent{
                 foreach ($Invoices as $Invoice) {
                     if (Account::getAccountEmailCount($Invoice->AccountID, AccountEmailLog::InvoicePaymentReminder) == 0) {
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
-                        $settings['InvoiceGrandTotal'] = $Invoice->GrandTotal;
-                        $settings['InvoiceOutstanding'] = $Invoice->InvoiceOutStanding;
+                        $settings['InvoiceGrandTotal'] = number_format($Invoice->GrandTotal,Helper::get_round_decimal_places($CompanyID,$Invoice->AccountID));
+                        $settings['InvoiceOutstanding'] = number_format($Invoice->InvoiceOutStanding,Helper::get_round_decimal_places($CompanyID,$Invoice->AccountID));
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);

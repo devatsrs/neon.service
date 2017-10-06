@@ -74,7 +74,7 @@ class VOSAccountUsage extends Command
 
 
         $arguments = $this->argument();
-        $getmypid = getmypid(); // get proccess id
+
         $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
         $CronJob = CronJob::find($CronJobID);
@@ -92,11 +92,10 @@ class VOSAccountUsage extends Command
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
+        Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
-        $dataactive['Active'] = 1;
-        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-        $dataactive['PID'] = $getmypid;
-        $CronJob->update($dataactive);
+        CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
@@ -106,8 +105,9 @@ class VOSAccountUsage extends Command
         $delete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
+        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
-        Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+
         $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
@@ -119,7 +119,7 @@ class VOSAccountUsage extends Command
             $filenames = UsageDownloadFiles::getVosPendingFile($CompanyGatewayID);
 
             /** remove last downloaded */
-            $lastelse = array_pop($filenames);
+            //$lastelse = array_pop($filenames);
 
             Log::info("Files Names Collected");
             Log::error('   vos File Count ' . count($filenames));
@@ -174,6 +174,7 @@ class VOSAccountUsage extends Command
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
                         while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                            $CallID = CompanyGateway::getCallID();
                             if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -192,14 +193,15 @@ class VOSAccountUsage extends Command
                                 $uddata['cost'] = (float)$excelrow['26'];
                                 $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
                                 $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
-                                $uddata['billed_duration'] = $excelrow['23'];
-                                $uddata['billed_second'] = $excelrow['23'];
+                                $uddata['billed_duration'] = (int)$excelrow['25'];
+                                $uddata['billed_second'] = (int)$excelrow['25'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
                                 $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
+                                $uddata['ID'] = $CallID;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -221,9 +223,9 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['AccountName'] = $excelrow['40'];
                                 $vendorcdrdata['AccountNumber'] = '';
                                 $vendorcdrdata['AccountCLI'] = '';
-                                $vendorcdrdata['billed_duration'] = $excelrow['23'];
+                                $vendorcdrdata['billed_duration'] = (int)$excelrow['18'];
+                                $vendorcdrdata['billed_second'] = (int)$excelrow['18'];
                                 $vendorcdrdata['duration'] = $excelrow['23'];
-                                $vendorcdrdata['billed_second'] = $excelrow['23'];
                                 $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
                                 $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
                                 $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
@@ -235,6 +237,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;
+                                $vendorcdrdata['ID'] = $CallID;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){
@@ -317,6 +320,9 @@ class VOSAccountUsage extends Command
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 
+            Log::error('vos prc_linkCDR end');
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
+            Log::error('vos prc_linkCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
@@ -340,7 +346,7 @@ class VOSAccountUsage extends Command
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-                CronJobLog::insert($joblogdata);
+
 
                 Log::error('vos delete file count ' . count($delete_files));
 
@@ -385,7 +391,7 @@ class VOSAccountUsage extends Command
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-            CronJobLog::insert($joblogdata);
+
             Log::error($e);
             if(!empty($cronsetting['ErrorEmail'])) {
 
@@ -394,9 +400,8 @@ class VOSAccountUsage extends Command
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+        CronJobLog::createLog($CronJobID,$joblogdata);
+        CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
