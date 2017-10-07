@@ -16,6 +16,8 @@ use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
+use App\Lib\Currency;
+use App\Lib\Company;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
@@ -123,6 +125,23 @@ class VendorRateUpload extends Command
                     }else{
                         $dialcode_separator = 'null';
                     }
+
+                    if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
+                        $CurrencyConversion = 1;
+                        $FromCurrency = Currency::find($attrselection->FromCurrency);
+                        $CID = Company::find($CompanyID)->pluck('CurrencyId');
+                        if(!empty($CID) && $CID != 0)
+                            $ToCurrency = Currency::find($CID);
+                        else
+                            $CurrencyConversion = 0;
+                    }else{
+                        $CurrencyConversion = 0;
+                    }
+                    if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                        Log::info('From Currency : ' . $FromCurrency->Code);
+                        Log::info('To Currency : ' . $ToCurrency->Code);
+                    }
+
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
@@ -181,7 +200,11 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
                                 if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                    $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                                        $tempvendordata['Rate'] = Currency::convertCurrency($CompanyID, $FromCurrency->CurrencyId, $ToCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                    } else {
+                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    }
                                 }else{
                                     $error[] = 'Rate is not numeric at line no:'.$lineno;
                                 }
@@ -220,7 +243,11 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                                    $tempvendordata['ConnectionFee'] = Currency::convertCurrency($CompanyID, $FromCurrency->CurrencyId, $ToCurrency->CurrencyId, trim($temp_row[$attrselection->ConnectionFee]));
+                                } else {
+                                    $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                }
                             }
                             if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
                                 $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
@@ -244,6 +271,8 @@ class VendorRateUpload extends Command
                             if(!empty($DialStringId)){
                                 if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
                                     $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                } else {
+                                    $tempvendordata['DialStringPrefix'] = '';
                                 }
                             }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
