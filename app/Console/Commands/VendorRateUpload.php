@@ -244,7 +244,7 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                if($CurrencyConversion == 1 && !empty(trim($temp_row[$attrselection->ConnectionFee]))) {
+                                if($CurrencyConversion == 1 && !empty($temp_row[$attrselection->ConnectionFee])) {
                                     $RateConversionConnectionFee = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
                                     if($RateConversionConnectionFee != 'failed') {
                                         $tempvendordata['ConnectionFee'] = $RateConversionConnectionFee;
