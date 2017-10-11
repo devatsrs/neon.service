@@ -938,8 +938,10 @@ protected $server;
 				///*-------------
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				//imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
-				TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> $email_received_date ]);
+				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+				Log::info("Updating last email_received_date "  . date("Y-m-d H:i:s",strtotime($email_received_date)));
+				TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date)) ]);
+
 
 
 				try {
