@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class AmazonS3 {
 
+    public static $isAmazonS3;
     public static $dir = array(
         'CODEDECK_UPLOAD' =>  'CodedecksUploads',
         'VENDOR_UPLOAD' =>  'VendorUploads',
@@ -31,8 +32,10 @@ class AmazonS3 {
 
 	$AmazonData			=	\App\Lib\SiteIntegration::CheckIntegrationConfiguration(true,\App\Lib\SiteIntegration::$AmazoneSlug,$CompanyID);
 	if(!$AmazonData){
+        self::$isAmazonS3='NoAmazon';
 		return 'NoAmazon';
 	}else{
+        self::$isAmazonS3='Amazon';
 		return $s3Client = S3Client::factory(array(
 			'region' => $AmazonData->AmazonAwsRegion,
 			'credentials' => array(
@@ -142,7 +145,7 @@ class AmazonS3 {
         try {
             $resource = fopen($file, 'r');
             $s3->upload($bucket, $dir.basename($file), $resource, 'public-read');
-            @unlink($file);
+            @unlink($file); // remove from local
             return true;
         } catch (S3Exception $e) {
             return false ; //"There was an error uploading the file.\n";
@@ -152,78 +155,82 @@ class AmazonS3 {
     static function preSignedUrl($key='',$CompanyID){
 
         $s3 = self::getS3Client($CompanyID);
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+        $Uploadpath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH') . '/' .$key;
         //When no amazon ;
-        if($s3 == 'NoAmazon'){
-            $Uploadpath = $UPLOADPATH . '/' .$key;
-            if ( file_exists($Uploadpath) ) {
-               return $Uploadpath; ;
-            } else {
-              return "";
-            }
+
+        if ( file_exists($Uploadpath) ) {
+            return $Uploadpath;
         }
+        elseif(self::$isAmazonS3=='Amazon')
+        {
+            $bucket = self::getBucket($CompanyID);
 
+            // Get a command object from the client and pass in any options
+            // available in the GetObject command (e.g. ResponseContentDisposition)
+            $command = $s3->getCommand('GetObject', array(
+                'Bucket' => $bucket,
+                'Key' => $key,
+                'ResponseContentDisposition' => 'attachment; filename="'. basename($key) . '"'
+            ));
 
-        $bucket = self::getBucket($CompanyID);
-
-        // Get a command object from the client and pass in any options
-        // available in the GetObject command (e.g. ResponseContentDisposition)
-        $command = $s3->getCommand('GetObject', array(
-            'Bucket' => $bucket,
-            'Key' => $key,
-            'ResponseContentDisposition' => 'attachment; filename="'. basename($key) . '"'
-        ));
-
-        // Create a signed URL from the command object that will last for
-        // 10 minutes from the current time
-        $signedUrl = $command->createPresignedUrl('+10 minutes');
-        return $signedUrl;
-
+            // Create a signed URL from the command object that will last for
+            // 10 minutes from the current time
+            return $command->createPresignedUrl('+10 minutes');
+        }
+        else
+        {
+            return "";
+        }
     }
 
     static function unSignedUrl($key='',$CompanyID){
-
         $s3 = self::getS3Client($CompanyID);
-		
-        //When no amazon ;
-        if($s3 == 'NoAmazon'){
-            return  self::preSignedUrl($key,$CompanyID);
-        }
+		$Uploadpath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH') . '/' .$key;
 
-        $bucket = self::getBucket($CompanyID);
-        $unsignedUrl = $s3->getObjectUrl($bucket, $key);
-        return $unsignedUrl;
-
+        if ( file_exists($Uploadpath) ) {
+            return $Uploadpath;
+        } elseif(self::$isAmazonS3=='Amazon') {
+            $bucket = self::getBucket($CompanyID);
+			$unsignedUrl = $s3->getObjectUrl($bucket, $key);
+			return $unsignedUrl;
+        } else {
+			return "";
+		}
     }
-    static function delete($file,$CompanyID){
 
+    static function delete($file,$CompanyID){
+        $return=false;
         if(strlen($file)>0) {
             // Instantiate an S3 client
             $s3 = self::getS3Client($CompanyID);
 
             //When no amazon ;
-            if($s3 == 'NoAmazon'){
-                $Uploadpath = "/uploads/".$file;
-                if ( file_exists(public_path() . $Uploadpath) ) {
-                    @unlink($Uploadpath);
-                    return true;
-                } else {
-                    return false;
+
+            $Uploadpath = CompanyConfiguration::get('UPLOAD_PATH') . "/"."".$file;
+            if ( file_exists($Uploadpath) ) {
+                @unlink($Uploadpath);
+                if(self::$isAmazonS3=="NoAmazon")
+                {
+                    $return=true;
                 }
             }
 
-            $bucket = self::getBucket($CompanyID);
-            // Upload a publicly accessible file. The file size, file type, and MD5 hash
-            // are automatically calculated by the SDK.
-            try {
-                $result = $s3->deleteObject(array('Bucket' => $bucket, 'Key' => $file));
-                return true;
-            } catch (S3Exception $e) {
-                return false; //"There was an error uploading the file.\n";
+            if(self::$isAmazonS3=="Amazon")
+            {
+                $AmazonSettings  = self::getAmazonSettings($CompanyID);
+                $bucket 		 = $AmazonSettings['AWS_BUCKET'];
+                // Upload a publicly accessible file. The file size, file type, and MD5 hash
+                // are automatically calculated by the SDK.
+                try {
+                    $s3->deleteObject(array('Bucket' => $bucket, 'Key' => $file));
+                    $return=true;
+                } catch (S3Exception $e) {
+                    $return=false; //"There was an error uploading the file.\n";
+                }
             }
-        }else{
-            return false;
         }
+
+        return $return;
     }
 
 } 

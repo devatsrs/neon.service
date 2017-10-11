@@ -16,6 +16,9 @@ use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
+use App\Lib\Currency;
+use App\Lib\Company;
+use App\Lib\Account;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
@@ -123,6 +126,20 @@ class VendorRateUpload extends Command
                     }else{
                         $dialcode_separator = 'null';
                     }
+
+                    if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
+                        $CurrencyConversion = 1;
+                        $FromCurrency = Currency::find($attrselection->FromCurrency);
+                        $AccountCurrency = Currency::find(Account::find($job->AccountID)->CurrencyId);
+                        $CompanyCurrency = Currency::find(Company::find($CompanyID)->CurrencyId);
+                    }else{
+                        $CurrencyConversion = 0;
+                    }
+                    /*if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                        Log::info('From Currency : ' . $FromCurrency->Code);
+                        Log::info('To Currency : ' . $ToCurrency->Code);
+                    }*/
+
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
@@ -144,34 +161,19 @@ class VendorRateUpload extends Command
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
                     $results = $NeonExcel->read();
                     $lineno = 2;
-                    $columns=array();
 
                     if ($csvoption->Firstrow == 'data') {
                         $lineno = 1;
                     }
-                    else{
-                        $columns=$results[0];
-                    }
 
                     $error = array();
                     $batch_insert_array = [];
-                    $isFirstRow=true;
 
                     foreach ($results as $index=>$temp_row) {
-
-                        if($lineno==2 && $isFirstRow)
-                        {
-                            $isFirstRow=false;
-                            continue;
-                        }
 
                         if ($csvoption->Firstrow == 'data') {
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
-                        }
-                        else
-                        {
-                            $temp_row = array_combine($columns, $temp_row);
                         }
 
                         $tempvendordata = array();
@@ -181,6 +183,9 @@ class VendorRateUpload extends Command
                         //check empty row
                         $checkemptyrow = array_filter(array_values($temp_row));
                         if(!empty($checkemptyrow)){
+                            if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
+                                $tempvendordata['CountryCode'] = trim($temp_row[$attrselection->CountryCode]);
+                            }
                             if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
                                 $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
                             }else{
@@ -193,7 +198,14 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
                                 if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                    $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    if($CurrencyConversion == 1) {
+                                        $RateConversionRate = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                        if($RateConversionRate != 'failed') {
+                                            $tempvendordata['Rate'] = $RateConversionRate;
+                                        }
+                                    } else {
+                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    }
                                 }else{
                                     $error[] = 'Rate is not numeric at line no:'.$lineno;
                                 }
@@ -232,7 +244,14 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                if($CurrencyConversion == 1 && !empty($temp_row[$attrselection->ConnectionFee])) {
+                                    $RateConversionConnectionFee = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                    if($RateConversionConnectionFee != 'failed') {
+                                        $tempvendordata['ConnectionFee'] = $RateConversionConnectionFee;
+                                    }
+                                } else {
+                                    $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                }
                             }
                             if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
                                 $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
@@ -256,6 +275,8 @@ class VendorRateUpload extends Command
                             if(!empty($DialStringId)){
                                 if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
                                     $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                } else {
+                                    $tempvendordata['DialStringPrefix'] = '';
                                 }
                             }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){

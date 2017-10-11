@@ -109,9 +109,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
     public static $prefixDirsPsr4 = array (
         'phpDocumentor\\Reflection\\' => 
         array (
-            0 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
-            1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
-            2 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
+            0 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
+            1 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
+            2 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
         ),
         'XdgBaseDir\\' => 
         array (
@@ -326,6 +326,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
             'PHPExcel' => 
             array (
                 0 => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes',
+                1 => __DIR__ . '/..' . '/phpexcel/phpexcel/Classes',
             ),
         ),
         'N' => 
@@ -479,6 +480,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Commands\\DialStringUpload' => __DIR__ . '/../..' . '/app/Console/Commands/DialStringUpload.php',
         'App\\Console\\Commands\\FTPAccountUsage' => __DIR__ . '/../..' . '/app/Console/Commands/FTPAccountUsage.php',
         'App\\Console\\Commands\\FTPDownloadCDR' => __DIR__ . '/../..' . '/app/Console/Commands/FTPDownloadCDR.php',
+        'App\\Console\\Commands\\FusionPBXAccountUsage' => __DIR__ . '/../..' . '/app/Console/Commands/FusionPBXAccountUsage.php',
         'App\\Console\\Commands\\GenerateCustomerRateUpdateFile' => __DIR__ . '/../..' . '/app/Console/Commands/GenerateCustomerRateUpdateFile.php',
         'App\\Console\\Commands\\GenerateVendorRateUpdateFile' => __DIR__ . '/../..' . '/app/Console/Commands/GenerateVendorRateUpdateFile.php',
         'App\\Console\\Commands\\ImportAccount' => __DIR__ . '/../..' . '/app/Console/Commands/ImportAccount.php',
@@ -505,6 +507,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Commands\\PortaVendorSheet' => __DIR__ . '/../..' . '/app/Console/Commands/PortaVendorSheet.php',
         'App\\Console\\Commands\\QuickBookInvoicePost' => __DIR__ . '/../..' . '/app/Console/Commands/QuickBookInvoicePost.php',
         'App\\Console\\Commands\\RMService' => __DIR__ . '/../..' . '/app/Console/Commands/RMService.php',
+        'App\\Console\\Commands\\RateExportToVos' => __DIR__ . '/../..' . '/app/Console/Commands/RateExportToVos.php',
         'App\\Console\\Commands\\RateFileExport' => __DIR__ . '/../..' . '/app/Console/Commands/RateFileExport.php',
         'App\\Console\\Commands\\RateGenerator' => __DIR__ . '/../..' . '/app/Console/Commands/RateGenerator.php',
         'App\\Console\\Commands\\RateTableGenerator' => __DIR__ . '/../..' . '/app/Console/Commands/RateTableGenerator.php',
@@ -533,6 +536,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Kernel' => __DIR__ . '/../..' . '/app/Console/Kernel.php',
         'App\\Events\\Event' => __DIR__ . '/../..' . '/app/Events/Event.php',
         'App\\Exceptions\\Handler' => __DIR__ . '/../..' . '/app/Exceptions/Handler.php',
+        'App\\FusionPBX' => __DIR__ . '/../..' . '/app/FusionPBX.php',
         'App\\Http\\Controllers\\Auth\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/AuthController.php',
         'App\\Http\\Controllers\\Auth\\PasswordController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/PasswordController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
@@ -583,6 +587,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\EmailMessage' => __DIR__ . '/../..' . '/app/lib/EmailMessage.php',
         'App\\Lib\\EmailTemplate' => __DIR__ . '/../..' . '/app/lib/EmailTemplate.php',
         'App\\Lib\\EmailsTemplates' => __DIR__ . '/../..' . '/app/lib/EmailsTemplates.php',
+        'App\\Lib\\FideliPay' => __DIR__ . '/../..' . '/app/lib/FideliPay.php',
         'App\\Lib\\FileUploadTemplate' => __DIR__ . '/../..' . '/app/lib/FileUploadTemplate.php',
         'App\\Lib\\Gateway' => __DIR__ . '/../..' . '/app/lib/Gateway.php',
         'App\\Lib\\GatewayAPI' => __DIR__ . '/../..' . '/app/lib/GatewayAPI.php',
@@ -1712,6 +1717,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Box\\Spout\\Reader\\Exception\\XMLProcessingException' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/Exception/XMLProcessingException.php',
         'Box\\Spout\\Reader\\IteratorInterface' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/IteratorInterface.php',
         'Box\\Spout\\Reader\\ODS\\Helper\\CellValueFormatter' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ODS/Helper/CellValueFormatter.php',
+        'Box\\Spout\\Reader\\ODS\\Helper\\SettingsHelper' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ODS/Helper/SettingsHelper.php',
         'Box\\Spout\\Reader\\ODS\\Reader' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ODS/Reader.php',
         'Box\\Spout\\Reader\\ODS\\ReaderOptions' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ODS/ReaderOptions.php',
         'Box\\Spout\\Reader\\ODS\\RowIterator' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ODS/RowIterator.php',
@@ -1720,7 +1726,6 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Box\\Spout\\Reader\\ReaderFactory' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ReaderFactory.php',
         'Box\\Spout\\Reader\\ReaderInterface' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/ReaderInterface.php',
         'Box\\Spout\\Reader\\SheetInterface' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/SheetInterface.php',
-        'Box\\Spout\\Reader\\Wrapper\\SimpleXMLElement' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/Wrapper/SimpleXMLElement.php',
         'Box\\Spout\\Reader\\Wrapper\\XMLInternalErrorsHelper' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/Wrapper/XMLInternalErrorsHelper.php',
         'Box\\Spout\\Reader\\Wrapper\\XMLReader' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/Wrapper/XMLReader.php',
         'Box\\Spout\\Reader\\XLSX\\Helper\\CellHelper' => __DIR__ . '/..' . '/box/spout/src/Spout/Reader/XLSX/Helper/CellHelper.php',
@@ -3039,6 +3044,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'JMS\\Serializer\\Metadata\\Driver\\AnnotationDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/AnnotationDriver.php',
         'JMS\\Serializer\\Metadata\\Driver\\DoctrinePHPCRTypeDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/DoctrinePHPCRTypeDriver.php',
         'JMS\\Serializer\\Metadata\\Driver\\DoctrineTypeDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/DoctrineTypeDriver.php',
+        'JMS\\Serializer\\Metadata\\Driver\\NullDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/NullDriver.php',
         'JMS\\Serializer\\Metadata\\Driver\\PhpDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/PhpDriver.php',
         'JMS\\Serializer\\Metadata\\Driver\\XmlDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/XmlDriver.php',
         'JMS\\Serializer\\Metadata\\Driver\\YamlDriver' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/Driver/YamlDriver.php',
@@ -3394,6 +3400,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'PHPExcel_Style_NumberFormat' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/NumberFormat.php',
         'PHPExcel_Style_Protection' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/Protection.php',
         'PHPExcel_Style_Supervisor' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Style/Supervisor.php',
+        'PHPExcel_Token_Stack' => __DIR__ . '/..' . '/phpexcel/phpexcel/Classes/PHPExcel/Calculation.php',
         'PHPExcel_Worksheet' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Worksheet.php',
         'PHPExcel_WorksheetIterator' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/WorksheetIterator.php',
         'PHPExcel_Worksheet_AutoFilter' => __DIR__ . '/..' . '/phpoffice/phpexcel/Classes/PHPExcel/Worksheet/AutoFilter.php',

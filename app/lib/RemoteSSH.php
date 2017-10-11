@@ -52,4 +52,35 @@ class RemoteSSH{
         }*/
 
     }
+
+    public static function setManualConfig($Configuration){
+
+        if(!empty($Configuration)){
+            self::$config = $Configuration;
+        }
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            Config::set('remote.connections.production',self::$config);
+        }
+    }
+
+    /** Execute command and return output
+     * @param array $commands
+     * @return array
+     */
+    public static function manualRun($commands = array()){
+        $output = array();
+        RemoteFacade::run($commands, function($line) use(&$output) {
+            $output[]=trim($line.PHP_EOL);
+        });
+
+        return $output;
+    }
+
+    /** Upload local file to remote location
+     * @param array $commands
+     * @return array
+     */
+    public static function put($localpath,$remotepath){
+        RemoteFacade::put($localpath,$remotepath);
+    }
 }

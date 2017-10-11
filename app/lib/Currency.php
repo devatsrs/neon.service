@@ -1,6 +1,8 @@
 <?php
 namespace App\Lib;
 use Symfony\Component\Intl\Intl;
+use App\Lib\CurrencyConversion;
+
 class Currency extends \Eloquent {
 
     protected $fillable = [];
@@ -33,4 +35,27 @@ class Currency extends \Eloquent {
         return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
+    public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
+
+        if($FileCurrency == $AccountCurrency) {
+            $NewRate = $Rate;
+        } else if($FileCurrency == $CompanyCurrency) {
+            $ConversionRate = CurrencyConversion::where('CurrencyID',$AccountCurrency)->pluck('Value');
+            if($ConversionRate)
+                $NewRate = ($Rate / $ConversionRate);
+            else
+                $NewRate = 'failed';
+        } else {
+            $ACConversionRate = CurrencyConversion::where('CurrencyID',$AccountCurrency)->pluck('Value');
+            $FCConversionRate = CurrencyConversion::where('CurrencyID',$FileCurrency)->pluck('Value');
+
+            if($ACConversionRate && $FCConversionRate)
+                $NewRate = ($FCConversionRate) * ($Rate/$ACConversionRate);
+            else
+                $NewRate = 'failed';
+        }
+
+        return $NewRate;
+
+    }
 }

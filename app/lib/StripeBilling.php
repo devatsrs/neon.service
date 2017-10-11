@@ -21,7 +21,7 @@ class StripeBilling {
 
 
 	function __Construct($CompanyID){
-		$is_stripe = SiteIntegration::CheckIntegrationConfiguration(true, SiteIntegration::$StripeACHSlug,$CompanyID);
+		$is_stripe = SiteIntegration::CheckIntegrationConfiguration(true, SiteIntegration::$StripeSlug,$CompanyID);
 		if(!empty($is_stripe)){
 			$this->stripe_secret_key = $is_stripe->SecretKey;
 			$this->stripe_publishable_key = $is_stripe->PublishableKey;
