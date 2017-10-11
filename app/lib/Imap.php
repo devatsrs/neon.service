@@ -24,12 +24,12 @@ protected $server;
 		 }
 	 }
 	 
-	 function ReadEmails($CompanyID){
+	 function ReadEmails($CompanyID) {
 		 
 		$email 		= 	$this->email;
 		$password 	= 	$this->password;		
 		$server		=	$this->server;
-		try{
+		try {
 			$inbox  	= 	imap_open("{".$server."}", $email, $password);
 		} catch (\Exception $e) {
 			throw $e;
@@ -469,8 +469,24 @@ protected $server;
 		} catch (\Exception $ex) {
 			throw $ex;
 		}
-		$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails 	= 	imap_search($inbox,'UNSEEN');
 		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
+
+		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+
+		if(!empty($LastEmailReadDateTime)){
+
+			$LastEmailReadDateTime = date("d F Y H:i:s", strtotime($LastEmailReadDateTime));	//$some   = imap_search($conn, 'SUBJECT "HOWTO be Awesome" SINCE "8 August 2008"', SE_UID);
+
+			Log::info("LastEmailReadDateTime - " . $LastEmailReadDateTime);
+			Log::info("LastEmailReadDateTime - " . date("d F Y H:i:s",strtotime($LastEmailReadDateTime)));
+
+			$emails   = imap_search($inbox, 'SINCE "'.$LastEmailReadDateTime.'"');
+
+		} else {
+
+			$emails 	= 	imap_search($inbox,'UNSEEN');
+		}
 
 		Log::info("connectiong:".$email);
 		if($emails){
@@ -499,6 +515,15 @@ protected $server;
 				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
+				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
+
+				Log::info("Subject -  " . $overview_subject);
+				Log::info("overview -  " . print_r($overview,true));
+				Log::info("email_received_date - " . $email_received_date);
+				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
+
+				//continue;
+
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
 				$in_reply_tos   = explode(' ',$in_reply_to);
@@ -665,7 +690,7 @@ protected $server;
 					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
 					$from_array = $this->get_forwarded_email($_tmp_message);
 					Log::info($from_array);
-					if (!empty($from_array) && !empty($from_array["from"])) {
+					if (!empty($from_array) && !empty($from_array["from"]) && filter_var($from_array["from"], FILTER_VALIDATE_EMAIL)) {
 						$from = $from_array["from"];
 						$FromName = $from_array["from_name"];
 					}
@@ -913,7 +938,9 @@ protected $server;
 				///*-------------
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+				//imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+				TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> $email_received_date ]);
+
 
 				try {
 					if(isset($ticketID)){
