@@ -680,10 +680,12 @@ protected $server;
 					continue;
 				}
 				
-				$CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first(); 
+				/*
+				 * Commeted Reason: GroupID will be group email we are reading in. no need to match with to
+				 * $CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first();
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
-				}
+				}*/
 				///Check if agent forwarded email.
 				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
 				if(in_array($from,$group_agents)) {
