@@ -517,12 +517,14 @@ protected $server;
 				$msg_parent 				= 		  "";
 				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
 
+				$headerdata					=		  imap_headerinfo($inbox, $email_number);
+
+				$Extra = array_merge((array) $overview,(array) $headerdata);
+
 				Log::info("Subject -  " . $overview_subject);
 				Log::info("overview -  " . print_r($overview,true));
 				Log::info("email_received_date - " . $email_received_date);
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
-
-				//continue;
 
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
@@ -544,7 +546,6 @@ protected $server;
 				Log::info("in_reply_tos");
 				Log::info($in_reply_tos);
 
-				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -674,6 +675,26 @@ protected $server;
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
+
+					$logData = [
+						'CompanyID'=>$CompanyID,
+						'From'=> $from,
+						"FromName"=>$FromName,
+						"EmailTo"=>$to,
+						"Cc"=>$cc,
+						'Subject'=>$overview_subject,
+						'Message'=>$message,
+						"MessageID"=>$message_id,
+						"EmailParent" => $parent,
+						"AttachmentPaths"=>$AttachmentPaths,
+						"created_at"=>date('Y-m-d H:i:s'),
+						"CreatedBy"=> 'RMScheduler : AutoResponse Detected',
+						//"TicketID"=>$ticketID,
+						"Extra"=> json_encode($Extra),
+					];
+					$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+					Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
@@ -737,6 +758,27 @@ protected $server;
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"CreatedBy"=> 'RMScheduler : TicketImportRuleActionType::DELETE_TICKET',
+								"TicketID"=>$ticketID,
+								"Extra"=> json_encode($Extra),
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
+
 							Log::info("TicketImportRuleAction TicketDeleted");
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
@@ -770,10 +812,39 @@ protected $server;
 
 					// --------------- check for TicketImportRule ----------------
 					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
-					$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					try{
+						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					} catch ( \Exception $ex){
+
+						Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
+						Log::error("TicketRuleData");
+						Log::error($ticketRuleData);
+						Log::error(print_r($ex,true));
+					}
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"CreatedBy"=> 'RMScheduler : TicketImportRule TicketImportRuleActionType::DELETE_TICKET',
+								"TicketID"=>$ticketID,
+								"Extra"=> json_encode($Extra),
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
 							Log::info("TicketImportRuleAction TicketDeleted");
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
