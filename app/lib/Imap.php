@@ -487,6 +487,7 @@ protected $server;
 
 			$emails 	= 	imap_search($inbox,'UNSEEN');
 		}
+		//$emails   = imap_search($inbox, 'SUBJECT "Dev Test 3"');
 
 		Log::info("connectiong:".$email);
 		if($emails){
@@ -687,10 +688,10 @@ protected $server;
 						"MessageID"=>$message_id,
 						"EmailParent" => $parent,
 						"AttachmentPaths"=>$AttachmentPaths,
-						"created_at"=>date('Y-m-d H:i:s'),
-						"CreatedBy"=> 'RMScheduler : AutoResponse Detected',
-						//"TicketID"=>$ticketID,
 						"Extra"=> json_encode($Extra),
+						//"TicketID"=>$ticketID,
+						"created_at"=>date('Y-m-d H:i:s'),
+						"created_by"=> 'RMScheduler : AutoResponse Detected',
 					];
 					$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
 					Log::info("Junk Ticket Email " . $JunkTicketEmailID);
@@ -770,10 +771,10 @@ protected $server;
 								"MessageID"=>$message_id,
 								"EmailParent" => $parent,
 								"AttachmentPaths"=>$AttachmentPaths,
-								"created_at"=>date('Y-m-d H:i:s'),
-								"CreatedBy"=> 'RMScheduler : TicketImportRuleActionType::DELETE_TICKET',
-								"TicketID"=>$ticketID,
 								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRuleActionType::DELETE_TICKET',
 							];
 							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
 							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
@@ -837,10 +838,10 @@ protected $server;
 								"MessageID"=>$message_id,
 								"EmailParent" => $parent,
 								"AttachmentPaths"=>$AttachmentPaths,
-								"created_at"=>date('Y-m-d H:i:s'),
-								"CreatedBy"=> 'RMScheduler : TicketImportRule TicketImportRuleActionType::DELETE_TICKET',
-								"TicketID"=>$ticketID,
 								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketData->TicketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRule TicketImportRuleActionType::DELETE_TICKET',
 							];
 							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
 							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
