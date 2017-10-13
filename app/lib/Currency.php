@@ -35,29 +35,24 @@ class Currency extends \Eloquent {
         return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
-    public static function convertCurrency($CompanyID=0, $FromCurrency=0, $ToCurrency=0, $Rate=0) {
+    public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
 
-        if($FromCurrency && $ToCurrency && $FromCurrency != $ToCurrency) {
-            $FromCurrencyCode = Currency::find($FromCurrency)->pluck('Code');
-            $ToCurrencyCode = Currency::find($ToCurrency)->pluck('Code');
-
-            if($FromCurrencyCode == 'USD' || $ToCurrencyCode == 'USD') {
-                $FromRate = CurrencyConversion::where(['CurrencyID' => $FromCurrency, 'CompanyID' => $CompanyID])->pluck('Value');
-                $ToRate = CurrencyConversion::where(['CurrencyID' => $ToCurrency, 'CompanyID' => $CompanyID])->pluck('Value');
-
-                $NewRate = (($ToRate / $FromRate) * $Rate);
-            } else {
-                $USDRateID = Currency::where(['Code' => 'USD', 'CompanyID' => $CompanyID])->pluck('CurrencyId');
-                $USDRate = CurrencyConversion::where(['CurrencyID' => $USDRateID, 'CompanyID' => $CompanyID])->pluck('Value');
-                $FromRate = CurrencyConversion::where(['CurrencyID' => $FromCurrency, 'CompanyID' => $CompanyID])->pluck('Value');
-                $ToRate = CurrencyConversion::where(['CurrencyID' => $ToCurrency, 'CompanyID' => $CompanyID])->pluck('Value');
-
-                $NewRate = (($USDRate / $FromRate) * $Rate);
-                $NewRate = (($ToRate / $USDRate) * $NewRate);
-            }
-
-        } else {
+        if($FileCurrency == $AccountCurrency) {
             $NewRate = $Rate;
+        } else if($FileCurrency == $CompanyCurrency) {
+            $ConversionRate = CurrencyConversion::where('CurrencyID',$AccountCurrency)->pluck('Value');
+            if($ConversionRate)
+                $NewRate = ($Rate / $ConversionRate);
+            else
+                $NewRate = 'failed';
+        } else {
+            $ACConversionRate = CurrencyConversion::where('CurrencyID',$AccountCurrency)->pluck('Value');
+            $FCConversionRate = CurrencyConversion::where('CurrencyID',$FileCurrency)->pluck('Value');
+
+            if($ACConversionRate && $FCConversionRate)
+                $NewRate = ($FCConversionRate) * ($Rate/$ACConversionRate);
+            else
+                $NewRate = 'failed';
         }
 
         return $NewRate;

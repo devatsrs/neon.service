@@ -24,12 +24,12 @@ protected $server;
 		 }
 	 }
 	 
-	 function ReadEmails($CompanyID){
+	 function ReadEmails($CompanyID) {
 		 
 		$email 		= 	$this->email;
 		$password 	= 	$this->password;		
 		$server		=	$this->server;
-		try{
+		try {
 			$inbox  	= 	imap_open("{".$server."}", $email, $password);
 		} catch (\Exception $e) {
 			throw $e;
@@ -469,8 +469,25 @@ protected $server;
 		} catch (\Exception $ex) {
 			throw $ex;
 		}
-		$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails 	= 	imap_search($inbox,'UNSEEN');
 		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
+
+		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+
+		if(!empty($LastEmailReadDateTime)){
+
+			$LastEmailReadDateTime = date("d F Y H:i:s", strtotime($LastEmailReadDateTime));	//$some   = imap_search($conn, 'SUBJECT "HOWTO be Awesome" SINCE "8 August 2008"', SE_UID);
+
+			Log::info("LastEmailReadDateTime - " . $LastEmailReadDateTime);
+			Log::info("LastEmailReadDateTime - " . date("d F Y H:i:s",strtotime($LastEmailReadDateTime)));
+
+			$emails   = imap_search($inbox, 'SINCE "'.$LastEmailReadDateTime.'"');
+
+		} else {
+
+			$emails 	= 	imap_search($inbox,'UNSEEN');
+		}
+		//$emails   = imap_search($inbox, 'SUBJECT "Dev Test 3"');
 
 		Log::info("connectiong:".$email);
 		if($emails){
@@ -499,6 +516,17 @@ protected $server;
 				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
+				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
+
+				$headerdata					=		  imap_headerinfo($inbox, $email_number);
+
+				$Extra = array_merge((array) $overview,(array) $headerdata);
+
+				Log::info("Subject -  " . $overview_subject);
+				Log::info("overview -  " . print_r($overview,true));
+				Log::info("email_received_date - " . $email_received_date);
+				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
+
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
 				$in_reply_tos   = explode(' ',$in_reply_to);
@@ -519,7 +547,6 @@ protected $server;
 				Log::info("in_reply_tos");
 				Log::info($in_reply_tos);
 
-				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
@@ -649,23 +676,45 @@ protected $server;
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
+
+					$logData = [
+						'CompanyID'=>$CompanyID,
+						'From'=> $from,
+						"FromName"=>$FromName,
+						"EmailTo"=>$to,
+						"Cc"=>$cc,
+						'Subject'=>$overview_subject,
+						'Message'=>$message,
+						"MessageID"=>$message_id,
+						"EmailParent" => $parent,
+						"AttachmentPaths"=>$AttachmentPaths,
+						"Extra"=> json_encode($Extra),
+						//"TicketID"=>$ticketID,
+						"created_at"=>date('Y-m-d H:i:s'),
+						"created_by"=> 'RMScheduler : AutoResponse Detected',
+					];
+					$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+					Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
 					continue;
 				}
 				
-				$CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first(); 
+				/*
+				 * Commeted Reason: GroupID will be group email we are reading in. no need to match with to
+				 * $CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first();
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
-				}
+				}*/
 				///Check if agent forwarded email.
 				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
 				if(in_array($from,$group_agents)) {
 					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
 					$from_array = $this->get_forwarded_email($_tmp_message);
 					Log::info($from_array);
-					if (!empty($from_array) && !empty($from_array["from"])) {
+					if (!empty($from_array) && !empty($from_array["from"]) && filter_var($from_array["from"], FILTER_VALIDATE_EMAIL)) {
 						$from = $from_array["from"];
 						$FromName = $from_array["from_name"];
 					}
@@ -710,6 +759,27 @@ protected $server;
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRuleActionType::DELETE_TICKET',
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
+
 							Log::info("TicketImportRuleAction TicketDeleted");
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
@@ -743,10 +813,39 @@ protected $server;
 
 					// --------------- check for TicketImportRule ----------------
 					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
-					$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					try{
+						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					} catch ( \Exception $ex){
+
+						Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
+						Log::error("TicketRuleData");
+						Log::error($ticketRuleData);
+						Log::error(print_r($ex,true));
+					}
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketData->TicketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRule TicketImportRuleActionType::DELETE_TICKET',
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
 							Log::info("TicketImportRuleAction TicketDeleted");
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
@@ -914,6 +1013,10 @@ protected $server;
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+				Log::info("Updating last email_received_date "  . date("Y-m-d H:i:s",strtotime($email_received_date)));
+				TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date)) ]);
+
+
 
 				try {
 					if(isset($ticketID)){

@@ -18,6 +18,7 @@ use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
 use App\Lib\Currency;
 use App\Lib\Company;
+use App\Lib\Account;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
@@ -129,18 +130,15 @@ class VendorRateUpload extends Command
                     if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
                         $CurrencyConversion = 1;
                         $FromCurrency = Currency::find($attrselection->FromCurrency);
-                        $CID = Company::find($CompanyID)->pluck('CurrencyId');
-                        if(!empty($CID) && $CID != 0)
-                            $ToCurrency = Currency::find($CID);
-                        else
-                            $CurrencyConversion = 0;
+                        $AccountCurrency = Currency::find(Account::find($job->AccountID)->CurrencyId);
+                        $CompanyCurrency = Currency::find(Company::find($CompanyID)->CurrencyId);
                     }else{
                         $CurrencyConversion = 0;
                     }
-                    if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                    /*if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
                         Log::info('From Currency : ' . $FromCurrency->Code);
                         Log::info('To Currency : ' . $ToCurrency->Code);
-                    }
+                    }*/
 
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
@@ -200,8 +198,11 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
                                 if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                    if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
-                                        $tempvendordata['Rate'] = Currency::convertCurrency($CompanyID, $FromCurrency->CurrencyId, $ToCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                    if($CurrencyConversion == 1) {
+                                        $RateConversionRate = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                        if($RateConversionRate != 'failed') {
+                                            $tempvendordata['Rate'] = $RateConversionRate;
+                                        }
                                     } else {
                                         $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                     }
@@ -243,8 +244,11 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
-                                    $tempvendordata['ConnectionFee'] = Currency::convertCurrency($CompanyID, $FromCurrency->CurrencyId, $ToCurrency->CurrencyId, trim($temp_row[$attrselection->ConnectionFee]));
+                                if($CurrencyConversion == 1 && !empty($temp_row[$attrselection->ConnectionFee])) {
+                                    $RateConversionConnectionFee = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
+                                    if($RateConversionConnectionFee != 'failed') {
+                                        $tempvendordata['ConnectionFee'] = $RateConversionConnectionFee;
+                                    }
                                 } else {
                                     $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
                                 }
