@@ -166,12 +166,12 @@ class M2AccountUsage extends Command {
                     if(!empty($row_account['terminator_ip']) || !empty($row_account['providername'])) {
                         $vendorcdrdata = array();
                         if ($companysetting->NameFormat == 'NAME') {
-                            $vendorcdrdata['GatewayAccountID'] = $row_account['providername'];
+                            $vendorcdrdata['GatewayAccountID'] = !empty($row_account['providername']) ? $row_account['providername'] : '';
                         } else if ($companysetting->NameFormat == 'IP') {
                             $vendorcdrdata['GatewayAccountID'] = $row_account['terminator_ip'];
                         }
                         $vendorcdrdata['AccountIP'] = $row_account['terminator_ip'];
-                        $vendorcdrdata['AccountName'] = $row_account['providername'];
+                        $vendorcdrdata['AccountName'] = !empty($row_account['providername']) ? $row_account['providername'] : '';
                         $vendorcdrdata['AccountNumber'] = '';
                         $vendorcdrdata['AccountCLI'] = '';
                         $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -208,7 +208,7 @@ class M2AccountUsage extends Command {
                 }
             }
 
-
+//exit;
             date_default_timezone_set(Config::get('app.timezone'));
             /** delete duplicate id*/
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");

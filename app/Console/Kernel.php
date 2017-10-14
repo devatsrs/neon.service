@@ -92,7 +92,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\RateFileExport',
 		'App\Console\Commands\FusionPBXAccountUsage',
 		'App\Console\Commands\RateExportToVos',
-		'App\Console\Commands\m2accountusage',
+		'App\Console\Commands\M2AccountUsage',
 	];
 
 	/**
