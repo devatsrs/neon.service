@@ -37,7 +37,7 @@ class M2{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select u.username,p.name as providername,c.originator_ip,c.terminator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.user_billsec as billed_second,user_price as cost,provider_price,disposition,prefix,c.provider_billsec as provider_billed_second
+                $query = "select u.username,p.username as providername,c.originator_ip,c.terminator_ip,c.src as cli,c.dst as cld, c.ID as ID ,c.calldate as connect_time ,c.duration,c.user_billsec as billed_second,user_price as cost,provider_price,disposition,prefix,c.provider_billsec as provider_billed_second
                     from calls c
                     LEFT JOIN users u on c.user_id = u.id
                     LEFT JOIN users p on c.provider_id =  p.id
