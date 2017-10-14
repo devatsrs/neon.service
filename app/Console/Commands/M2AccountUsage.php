@@ -182,8 +182,8 @@ class M2AccountUsage extends Command {
                         $vendorcdrdata['selling_cost'] = (float)$row_account['cost'];
                         $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
                         $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
-                        $vendorcdrdata['billed_duration'] = $row_account['billed_second'];
-                        $vendorcdrdata['billed_second'] = $row_account['billed_second'];
+                        $vendorcdrdata['billed_duration'] = $row_account['provider_billed_second'];
+                        $vendorcdrdata['billed_second'] = $row_account['provider_billed_second'];
                         $vendorcdrdata['duration'] = $row_account['duration'];
                         $vendorcdrdata['trunk'] = 'Other';
                         $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
