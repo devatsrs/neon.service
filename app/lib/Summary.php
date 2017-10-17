@@ -20,7 +20,6 @@ class Summary extends \Eloquent {
 
             $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
-            self::deleteOldTempTable($CompanyID,'customer');
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
             while ($start <= $enddate) {
@@ -43,6 +42,7 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
+            self::deleteOldTempTable($CompanyID,'customer');
         }
     }
 
@@ -65,7 +65,6 @@ class Summary extends \Eloquent {
 
             $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
-            self::deleteOldTempTable($CompanyID,'vendor');
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
             while ($start <= $enddate) {
@@ -88,6 +87,7 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
+            self::deleteOldTempTable($CompanyID,'vendor');
         }
     }
 
