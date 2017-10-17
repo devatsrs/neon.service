@@ -271,7 +271,7 @@ class Summary extends \Eloquent {
 
     public static function deleteOldTempTable($CompanyID,$deletedate){
         $tables = DB::connection('neon_report')->select('SHOW TABLES');
-        $deletedate = date('Ymd',strtotime($deletedate));
+        $deletedate = date('Ymd',strtotime('-1 day'));
         foreach($tables as $table)
         {
             foreach($table as $Tables_in_db_name=>$tablename) {
