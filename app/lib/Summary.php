@@ -20,7 +20,7 @@ class Summary extends \Eloquent {
 
             $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
-            self::deleteOldTempTable($CompanyID,$startdate);
+            self::deleteOldTempTable($CompanyID,'customer');
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
             while ($start <= $enddate) {
@@ -65,7 +65,7 @@ class Summary extends \Eloquent {
 
             $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
-            self::deleteOldTempTable($CompanyID,$startdate);
+            self::deleteOldTempTable($CompanyID,'vendor');
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
             while ($start <= $enddate) {
@@ -269,32 +269,32 @@ class Summary extends \Eloquent {
         }
     }
 
-    public static function deleteOldTempTable($CompanyID,$deletedate){
+    public static function deleteOldTempTable($CompanyID,$CS){
         $tables = DB::connection('neon_report')->select('SHOW TABLES');
         $deletedate = date('Ymd',strtotime('-1 day'));
         foreach($tables as $table)
         {
             foreach($table as $Tables_in_db_name=>$tablename) {
 
-                if(strpos($tablename,'tmp_tblUsageDetailsReport_'.$CompanyID) !== false){
+                if(strpos($tablename,'tmp_tblUsageDetailsReport_'.$CompanyID) !== false && $CS == 'customer'){
                     if(str_replace(array('tmp_tblUsageDetailsReport_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
                     }
                 }
-                if(strpos($tablename,'tmp_tblVendorUsageDetailsReport_'.$CompanyID) !== false){
+                if(strpos($tablename,'tmp_tblVendorUsageDetailsReport_'.$CompanyID) !== false && $CS == 'vendor'){
                     if(str_replace(array('tmp_tblVendorUsageDetailsReport_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
                     }
                 }
 
-                if(strpos($tablename,'tblTempCallDetail_1_'.$CompanyID) !== false){
+                if(strpos($tablename,'tblTempCallDetail_1_'.$CompanyID) !== false && $CS == 'customer'){
                     if(str_replace(array('tblTempCallDetail_1_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
                     }
                 }
-                if(strpos($tablename,'tblTempCallDetail_2_'.$CompanyID) !== false){
+                if(strpos($tablename,'tblTempCallDetail_2_'.$CompanyID) !== false && $CS == 'vendor'){
                     if(str_replace(array('tblTempCallDetail_2_'.$CompanyID,'Live'),'',$tablename)<$deletedate){
                         Schema::connection('neon_report')->dropIfExists($tablename);
 
