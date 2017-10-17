@@ -527,6 +527,17 @@ protected $server;
 				Log::info("email_received_date - " . $email_received_date);
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
+
+				if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
+					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
+					continue;
+				} else if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
+					Log::info("Email Already Exists");
+					continue;
+				}
+				Log::info("NEW Subject -  " . $overview_subject);
+
+
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
 				$in_reply_tos   = explode(' ',$in_reply_to);
@@ -699,6 +710,8 @@ protected $server;
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
+
+					TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 					continue;
 				}
 				
@@ -781,6 +794,8 @@ protected $server;
 
 
 							Log::info("TicketImportRuleAction TicketDeleted");
+
+							TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
 							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
@@ -847,6 +862,7 @@ protected $server;
 							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
 
 							Log::info("TicketImportRuleAction TicketDeleted");
+							TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
 							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");

@@ -358,9 +358,7 @@ class FTPAccountUsage extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
 
-        DB::disconnect('sqlsrv');
-        DB::disconnect('sqlsrv2');
-
+        
         CronHelper::after_cronrun($this->name, $this);
 
     }
