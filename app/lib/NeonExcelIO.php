@@ -489,11 +489,22 @@ class NeonExcelIO
         $excel_data_sheet = array();
         $header_data = array();
         $excel_data = $data['excel_data'];
+        $max_increase_date = '0000-00-00';
+        $max_decrease_date = '0000-00-00';
         foreach($excel_data as $excel_data_rr){
             array_shift($excel_data_rr);
             array_shift($excel_data_rr);
             array_shift($excel_data_rr);
             $excel_data_sheet[] = $excel_data_rr;
+
+            if($excel_data_rr['change'] == 'increase') {
+                if($excel_data_rr['effective date'] > $max_increase_date)
+                    $max_increase_date = $excel_data_rr['effective date'];
+            }
+            if($excel_data_rr['change'] == 'decrease') {
+                if($excel_data_rr['effective date'] > $max_decrease_date)
+                    $max_decrease_date = $excel_data_rr['effective date'];
+            }
             $header_data = array_keys($excel_data_rr);
         }
         $header_data  = array_map('ucwords',$header_data);
@@ -626,6 +637,12 @@ class NeonExcelIO
                         $date_format = rtrim($date_format[1],'}');
                         $date = date($date_format);
                         $excel_header = str_replace($date_placeholder,$date,$excel_header);
+                    }
+                    if($excel_header == '{{increase_max_date}}') {
+                        $excel_header = str_replace('{{increase_max_date}}',$max_increase_date,$excel_header);
+                    }
+                    if($excel_header == '{{decrease_max_date}}') {
+                        $excel_header = str_replace('{{decrease_max_date}}',$max_decrease_date,$excel_header);
                     }
                     $ActiveSheetTemplate->setCellValue($col.''.$i,$excel_header);
                 }
