@@ -500,14 +500,20 @@ class NeonExcelIO
 
             $excel_data_sheet[] = $excel_data_rr;
 
-            if($excel_data_rr['change'] == 'increase') {
+            if(strtolower($excel_data_rr['change']) == 'increase') {
                 if($excel_data_rr['effective date'] > $max_increase_date)
                     $max_increase_date = $excel_data_rr['effective date'];
             }
-            if($excel_data_rr['change'] == 'decrease') {
+            if(strtolower($excel_data_rr['change']) == 'decrease') {
                 if($excel_data_rr['effective date'] > $max_decrease_date)
                     $max_decrease_date = $excel_data_rr['effective date'];
             }
+
+            if($max_increase_date == '0000-00-00')
+                $max_increase_date = "";
+            if($max_decrease_date == '0000-00-00')
+                $max_decrease_date = "";
+
             $header_data = array_keys($excel_data_rr);
         }
         $header_data  = array_map('ucwords',$header_data);
