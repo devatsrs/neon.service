@@ -23,6 +23,11 @@ class RateSheetDetails extends \Eloquent {
         $ratesheetdata['FileName'] = $file_name;
         $ratesheetdata['Level'] = $trunkname;
         $RateSheetID = RateSheet::insertGetId($ratesheetdata);
+
+        $InserData = array();
+        $insertLimit = 1000;
+        $data_count = 0;
+
         foreach ($excel_data as $excel_data_row) {
             $ratesheetdetaildata = array();
             $ratesheetdetaildata['RateID'] = $excel_data_row['rateid'];
@@ -34,8 +39,22 @@ class RateSheetDetails extends \Eloquent {
             $ratesheetdetaildata['EffectiveDate'] = $excel_data_row['effective date'];
             $ratesheetdetaildata['Interval1'] = $excel_data_row['interval1'];
             $ratesheetdetaildata['IntervalN'] = $excel_data_row['intervaln'];
-            RateSheetDetails::insert($ratesheetdetaildata);
+
+            $InserData[] = $ratesheetdetaildata;
+
+            if( $data_count > $insertLimit &&  !empty($InserData) ) {
+                RateSheetDetails::insert($InserData);
+                $InserData = array();
+                $data_count = 0;
+            }
+            $data_count++;
         }
-       return $RateSheetID;
+
+        if( !empty($InserData) ) {
+            RateSheetDetails::insert($InserData);
+        }
+
+        return $RateSheetID;
+
     }
 }
