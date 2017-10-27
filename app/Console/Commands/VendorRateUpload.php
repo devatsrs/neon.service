@@ -129,11 +129,13 @@ class VendorRateUpload extends Command
 
                     if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
                         $CurrencyConversion = 1;
-                        $FromCurrency = Currency::find($attrselection->FromCurrency);
+                        $CurrencyID = $attrselection->FromCurrency;
+                        /*$FromCurrency = Currency::find($attrselection->FromCurrency);
                         $AccountCurrency = Currency::find(Account::find($job->AccountID)->CurrencyId);
-                        $CompanyCurrency = Currency::find(Company::find($CompanyID)->CurrencyId);
+                        $CompanyCurrency = Currency::find(Company::find($CompanyID)->CurrencyId);*/
                     }else{
                         $CurrencyConversion = 0;
+                        $CurrencyID = 0;
                     }
                     /*if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
                         Log::info('From Currency : ' . $FromCurrency->Code);
@@ -198,20 +200,16 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
                                 if(is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                    if($CurrencyConversion == 1) {
-                                        $RateConversionRate = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
-                                        if($RateConversionRate != 'failed') {
-                                            $tempvendordata['Rate'] = $RateConversionRate;
-                                        }
-                                    } else {
-                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
-                                    }
+                                    $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                 }else{
                                     $error[] = 'Rate is not numeric at line no:'.$lineno;
                                 }
                             }else{
                                 $error[] = 'Rate is blank at line no:'.$lineno;
                             }
+                            /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
+                                $tempvendordata['CurrencyID'] = $attrselection->FromCurrency;
+                            }*/
                             if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
                                 try {
                                     $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
@@ -244,14 +242,7 @@ class VendorRateUpload extends Command
                             }
 
                             if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                if($CurrencyConversion == 1 && !empty($temp_row[$attrselection->ConnectionFee])) {
-                                    $RateConversionConnectionFee = Currency::convertCurrency($CompanyCurrency->CurrencyId, $AccountCurrency->CurrencyId, $FromCurrency->CurrencyId, trim($temp_row[$attrselection->Rate]));
-                                    if($RateConversionConnectionFee != 'failed') {
-                                        $tempvendordata['ConnectionFee'] = $RateConversionConnectionFee;
-                                    }
-                                } else {
-                                    $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
-                                }
+                                $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
                             }
                             if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
                                 $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
@@ -309,12 +300,12 @@ class VendorRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
 
                     try{
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
-                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
                         DB::commit();
 
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
