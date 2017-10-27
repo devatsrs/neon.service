@@ -190,7 +190,9 @@ class VendorRateUpload extends Command
                             }
                             if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
                                 $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
-                            }else{
+                            }else if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
+                                $tempvendordata['Code'] = "";
+                            } else {
                                 $error[] = 'Code is blank at line no:'.$lineno;
                             }
                             if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
