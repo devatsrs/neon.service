@@ -187,6 +187,8 @@ class VendorRateUpload extends Command
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
                                 $tempvendordata['CountryCode'] = trim($temp_row[$attrselection->CountryCode]);
+                            }else{
+                                $tempvendordata['CountryCode'] = '';
                             }
 
                             if (isset($attrselection->Code) && !empty($attrselection->Code) && trim($temp_row[$attrselection->Code]) != '') {
