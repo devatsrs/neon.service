@@ -688,25 +688,30 @@ protected $server;
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
 
-					$logData = [
-						'CompanyID'=>$CompanyID,
-						'From'=> $from,
-						"FromName"=>$FromName,
-						"EmailTo"=>$to,
-						"Cc"=>$cc,
-						'Subject'=>$overview_subject,
-						'Message'=>$message,
-						"MessageID"=>$message_id,
-						"EmailParent" => $parent,
-						"AttachmentPaths"=>$AttachmentPaths,
-						"Extra"=> json_encode($Extra),
-						//"TicketID"=>$ticketID,
-						"created_at"=>date('Y-m-d H:i:s'),
-						"created_by"=> 'RMScheduler : AutoResponse Detected',
-					];
-					$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
-					Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+					$AlreadyJunk  = JunkTicketEmail::where(["CompanyID"=>$CompanyID , "MessageID" => $message_id])->count();
+					if($AlreadyJunk > 0 ) {
+						$logData = [
+							'CompanyID' => $CompanyID,
+							'From' => $from,
+							"FromName" => $FromName,
+							"EmailTo" => $to,
+							"Cc" => $cc,
+							'Subject' => $overview_subject,
+							'Message' => $message,
+							"MessageID" => $message_id,
+							"EmailParent" => $parent,
+							"AttachmentPaths" => $AttachmentPaths,
+							"Extra" => json_encode($Extra),
+							//"TicketID"=>$ticketID,
+							"created_at" => date('Y-m-d H:i:s'),
+							"created_by" => 'RMScheduler : AutoResponse Detected',
+						];
+						$JunkTicketEmailID = JunkTicketEmail::add($logData);
+						Log::info("Junk Ticket Email " . $JunkTicketEmailID);
 
+					} else {
+						Log::info("Junk Ticket Email Already Exists with MessageID - " . $message_id);
+					}
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
