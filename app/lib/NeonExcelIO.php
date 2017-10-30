@@ -548,8 +548,15 @@ class NeonExcelIO
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
         if($RateSheetTemplate != '') {
-            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = $temp_file = $RateSheetTemplate->Excel;
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
+
+            if(is_amazon($CompanyID) == true) {
+                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
+                file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
+                $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
+            }
         }
         if($RateSheetTemplateFile != '') {
             $writer = WriterFactory::create(Type::XLSX);
@@ -691,8 +698,15 @@ class NeonExcelIO
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
         if($RateSheetTemplate != '') {
-            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = $temp_file = $RateSheetTemplate->Excel;
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
+
+            if(is_amazon($CompanyID) == true) {
+                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
+                file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
+                $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
+            }
         }
         if($RateSheetTemplateFile != '') {
             $writer = WriterFactory::create(Type::XLSX);
