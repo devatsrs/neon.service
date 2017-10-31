@@ -15,3 +15,5 @@
 /usr/bin/s3cmd put --recursive /home/hostedfolders/telpeer/tmp/1 s3://neon.hosted.files/telpeer/
 /usr/bin/s3cmd put --recursive /home/hostedfolders/associatesmarketing/tmp/1 s3://neon.hosted.files/associatesmarketing/
 /usr/bin/s3cmd put --recursive /home/hostedfolders/imedia/tmp/1 s3://neon.hosted.files/imedia/
+/usr/bin/s3cmd put --recursive /home/hostedfolders/jelltel/tmp/1 s3://neon.hosted.files/jelltel/
+/usr/bin/s3cmd put --recursive /home/hostedfolders/1worldtec/tmp/1 s3://neon.hosted.files/1worldtec/
