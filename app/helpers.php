@@ -265,7 +265,10 @@ function template_var_replace($EmailMessage,$replace_array){
 		"{{CompanyCountry}}",
 		"{{Logo}}",
         "{{TrunkPrefix}}",
-        "{{TrunkName}}"
+        "{{TrunkName}}",
+        "{{CurrencyCode}}",
+        "{{CurrencyDescription}}",
+        "{{CurrencySymbol}}"
     ];
 
     foreach($extra as $item){
