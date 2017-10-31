@@ -138,6 +138,7 @@ return array(
     'App\\Lib\\CronJob' => $baseDir . '/app/lib/CronJob.php',
     'App\\Lib\\CronJobLog' => $baseDir . '/app/lib/CronJobLog.php',
     'App\\Lib\\Currency' => $baseDir . '/app/lib/Currency.php',
+	'App\\Lib\\CurrencyConversion' => $baseDir . '/app/lib/CurrencyConversion.php',
     'App\\Lib\\Customer' => $baseDir . '/app/lib/Customer.php',
     'App\\Lib\\CustomerRateUpdateHistory' => $baseDir . '/app/lib/CustomerRateUpdateHistory.php',
     'App\\Lib\\CustomerRateUpdateHistoryWithData' => $baseDir . '/app/lib/CustomerRateUpdateHistoryWithData.php',
