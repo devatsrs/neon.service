@@ -24,12 +24,12 @@ protected $server;
 		 }
 	 }
 	 
-	 function ReadEmails($CompanyID){
+	 function ReadEmails($CompanyID) {
 		 
 		$email 		= 	$this->email;
 		$password 	= 	$this->password;		
 		$server		=	$this->server;
-		try{
+		try {
 			$inbox  	= 	imap_open("{".$server."}", $email, $password);
 		} catch (\Exception $e) {
 			throw $e;
@@ -469,7 +469,26 @@ protected $server;
 		} catch (\Exception $ex) {
 			throw $ex;
 		}
-		$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails 	= 	imap_search($inbox,'UNSEEN');
+		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
+
+		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+
+		if(!empty($LastEmailReadDateTime)){
+
+			$LastEmailReadDateTime = date("d F Y H:i:s", strtotime($LastEmailReadDateTime));	//$some   = imap_search($conn, 'SUBJECT "HOWTO be Awesome" SINCE "8 August 2008"', SE_UID);
+
+			Log::info("LastEmailReadDateTime - " . $LastEmailReadDateTime);
+			Log::info("LastEmailReadDateTime - " . date("d F Y H:i:s",strtotime($LastEmailReadDateTime)));
+
+			$emails   = imap_search($inbox, 'SINCE "'.$LastEmailReadDateTime.'"');
+
+		} else {
+
+			$emails 	= 	imap_search($inbox,'UNSEEN');
+		}
+		//$emails   = imap_search($inbox, 'SUBJECT "Dev Test 3"');
+
 		Log::info("connectiong:".$email);
 		if($emails){
 			
@@ -497,6 +516,28 @@ protected $server;
 				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
+				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
+
+				$headerdata					=		  imap_headerinfo($inbox, $email_number);
+
+				$Extra = array_merge((array) $overview,(array) $headerdata);
+
+				Log::info("Subject -  " . $overview_subject);
+				Log::info("overview -  " . print_r($overview,true));
+				Log::info("email_received_date - " . $email_received_date);
+				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
+
+
+				if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
+					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
+					continue;
+				} else if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
+					Log::info("Email Already Exists");
+					continue;
+				}
+				Log::info("NEW Subject -  " . $overview_subject);
+
+
 				//-- check in reply to with previous email
 				// if exists then don't check for auto reply
 				$in_reply_tos   = explode(' ',$in_reply_to);
@@ -517,12 +558,20 @@ protected $server;
 				Log::info("in_reply_tos");
 				Log::info($in_reply_tos);
 
-				$headerdata					=		  imap_headerinfo($inbox, $email_number);		
 				//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 				// Split on \n  for priority 
 				$h_array					=		  explode("\n",$header);
-		
-				foreach ( $h_array as $h ) {				
+
+				/*Log::info("h_array");
+				Log::info(print_r($h_array,true));
+
+				Log::info("body");
+				$message = 	($this->getBody($inbox,$email_number));  //get body from email
+				Log::info($message);
+
+				$message = imap_fetchbody($inbox,$email_number,1);
+				Log::info($message);*/
+ 				foreach ( $h_array as $h ) {
 					// Check if row start with a char
 						if ( preg_match("/^[A-Z]/i", $h )) {				
 						$tmp 					= 	explode(":",$h);
@@ -566,6 +615,9 @@ protected $server;
 						}
 					}
 				}
+
+
+
 				if(!empty($msg_parent)){  		
 						if($msg_parent->EmailParent==0){
 							$parent = $msg_parent->AccountEmailLogID;                        
@@ -620,31 +672,72 @@ protected $server;
 
 
 				$from   	= 	$this->GetEmailtxt($overview[0]->from);
-				if(isset($overview[0]->to)) {
-					$to = $this->GetEmailtxt($overview[0]->to);
-				}else {
-					$to = $email;
-				}
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
-								
 				$cc 		=	$this->GetCC($cc);
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email; //when to  is blank
+					$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
+					$cc  = implode(",",$cc_);
+				}
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
+
+					$AlreadyJunk  = JunkTicketEmail::where(["CompanyID"=>$CompanyID , "MessageID" => $message_id])->count();
+					if($AlreadyJunk > 0 ) {
+						$logData = [
+							'CompanyID' => $CompanyID,
+							'From' => $from,
+							"FromName" => $FromName,
+							"EmailTo" => $to,
+							"Cc" => $cc,
+							'Subject' => $overview_subject,
+							'Message' => $message,
+							"MessageID" => $message_id,
+							"EmailParent" => $parent,
+							"AttachmentPaths" => $AttachmentPaths,
+							"Extra" => json_encode($Extra),
+							//"TicketID"=>$ticketID,
+							"created_at" => date('Y-m-d H:i:s'),
+							"created_by" => 'RMScheduler : AutoResponse Detected',
+						];
+						$JunkTicketEmailID = JunkTicketEmail::add($logData);
+						Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
+					} else {
+						Log::info("Junk Ticket Email Already Exists with MessageID - " . $message_id);
+					}
 					Log::info("Auto Responder Detected :");
 					Log::info("header");
 					Log::info($header);
+
+					TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 					continue;
 				}
 				
-				$CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first(); 
+				/*
+				 * Commeted Reason: GroupID will be group email we are reading in. no need to match with to
+				 * $CheckInboxGroup 	=	TicketGroups::where(["CompanyID"=>$CompanyID,"GroupEmailAddress"=>$to])->first();
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
+				}*/
+				///Check if agent forwarded email.
+				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
+				if(in_array($from,$group_agents)) {
+					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
+					$from_array = $this->get_forwarded_email($_tmp_message);
+					Log::info($from_array);
+					if (!empty($from_array) && !empty($from_array["from"]) && filter_var($from_array["from"], FILTER_VALIDATE_EMAIL)) {
+						$from = $from_array["from"];
+						$FromName = $from_array["from_name"];
+					}
 				}
-				
+
 				$logData = [
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
@@ -684,7 +777,30 @@ protected $server;
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRuleActionType::DELETE_TICKET',
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
+
 							Log::info("TicketImportRuleAction TicketDeleted");
+
+							TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
 							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
@@ -698,13 +814,15 @@ protected $server;
 
 					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
 
+					/* moved bellow
+
 					if(!$skip_email_notification) {
 						if ($GroupID) {
 							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
 						}
 						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
 						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}
+					}*/
 					
 				}
 				else //reopen ticket if ticket status closed 
@@ -712,13 +830,44 @@ protected $server;
 					
 					$ticketData  = TicketsTable::find($parentTicket);
 
+
 					// --------------- check for TicketImportRule ----------------
 					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
-					$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					try{
+						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
+					} catch ( \Exception $ex){
+
+						Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
+						Log::error("TicketRuleData");
+						Log::error($ticketRuleData);
+						Log::error(print_r($ex,true));
+					}
 
 					if(is_array($TicketImportRuleResult)) {
 						if (in_array(TicketImportRuleActionType::DELETE_TICKET,$TicketImportRuleResult)) {
+
+
+							$logData = [
+								'CompanyID'=>$CompanyID,
+								'From'=> $from,
+								"FromName"=>$FromName,
+								"EmailTo"=>$to,
+								"Cc"=>$cc,
+								'Subject'=>$overview_subject,
+								'Message'=>$message,
+								"MessageID"=>$message_id,
+								"EmailParent" => $parent,
+								"AttachmentPaths"=>$AttachmentPaths,
+								"Extra"=> json_encode($Extra),
+								"TicketID"=>$ticketData->TicketID,
+								"created_at"=>date('Y-m-d H:i:s'),
+								"created_by"=> 'RMScheduler : TicketImportRule TicketImportRuleActionType::DELETE_TICKET',
+							];
+							$JunkTicketEmailID   =  JunkTicketEmail::add($logData);
+							Log::info("Junk Ticket Email " . $JunkTicketEmailID);
+
 							Log::info("TicketImportRuleAction TicketDeleted");
+							TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date))]);
 							continue;
 						} else if (in_array(TicketImportRuleActionType::SKIP_NOTIFICATION, $TicketImportRuleResult)) {
 							Log::info("TicketImportRuleAction SKIP_NOTIFICATION");
@@ -728,9 +877,12 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
+					$ticketID		=	$ticketData->TicketID;
 					// -------------------------------
 
-					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+					/*
+					 * moved bellow
+					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
 						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
 						if(!$skip_email_notification) {
 							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
@@ -745,11 +897,10 @@ protected $server;
 							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
 						}
 					}
-					$ticketID		=	$ticketData->TicketID;
 					if(!$skip_email_notification) {
 						//Email to all cc emails from main ticket.
 						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}
+					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -823,14 +974,70 @@ protected $server;
 							 if($ContactID){
 								  $ContactData =		Contact::select('FirstName','LastName')->where("ContactID", '=', $ContactID)->first();
 								$EmailLogObj->update(array("UserType"=>Messages::UserTypeContact,"ContactID"=>$ContactID,"CreatedBy" => $ContactData->FirstName.' '.$ContactData->LastName));					
-							  }
+							  }else {
+
+								 // Add contact
+								 $FromNameArray	   =  explode(" ",$FromName);
+								 $ContactFirstName  =  $FromNameArray[0];
+
+								 if(count($FromNameArray)>1)
+								 {
+									 unset($FromNameArray[0]);
+									 $ContactLastName  = implode(" ",$FromNameArray);
+								 }else{
+									 $ContactLastName  = '';
+								 }
+
+								 $ContactData = array("FirstName"=>$ContactFirstName,"LastName"=>$ContactLastName,"Email"=>$from,"CompanyId"=>$CompanyID);
+								 $contactID =  Contact::insertGetId($ContactData);
+								 TicketsTable::find($ticketID)->update(array("ContactID"=>$contactID));
+
+							 }
 						}
 					}
 				}
-				
+
+
+				//Send Notification Emails
+				if(!$parentTicket){
+
+					if(!$skip_email_notification) {
+						if ($GroupID) {
+							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
+						}
+						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
+					}
+				}
+				else //reopen ticket if ticket status closed
+				{
+					if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
+						if(!$skip_email_notification) {
+							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
+						}
+					}
+					if(isset($ticketData->Requester)){
+						if($from==$ticketData->Requester){
+							if(!$skip_email_notification) {
+								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
+							}
+							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
+						}
+					}
+					if(!$skip_email_notification) {
+						//Email to all cc emails from main ticket.
+						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
+					}
+				}
+				///*-------------
 				
 				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
 				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
+				Log::info("Updating last email_received_date "  . date("Y-m-d H:i:s",strtotime($email_received_date)));
+				TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->update(["LastEmailReadDateTime"=> date("Y-m-d H:i:s",strtotime($email_received_date)) ]);
+
+
 
 				try {
 					if(isset($ticketID)){
@@ -942,13 +1149,16 @@ protected $server;
 
 		$find = [
 			"/^RE:/",
+			"/^Re:/",
 			"/^FWD:/",
-			"/^Test Mail/", // to test in staging
+			"/Test Mail/", // to test in staging
+			"/Added as CC - [#[0-9]+]/",
 		];
 
-		$replace = 1; // replace first occurrence
+		$occurance = 1; // replace first occurrence
 
-		return trim(preg_replace($find,"",$subject,$replace));
+		return trim(preg_replace($find,"",$subject,$occurance));
+
 	}
 
 	/**
@@ -966,6 +1176,7 @@ protected $server;
 			"Delivery to the following recipient failed permanently:",
 			"Delivery to the following recipients failed permanently:",
 			"This message was created automatically by mail delivery software",
+			"Delivery has failed to these recipients or groups", 
 		];
 
 
@@ -994,6 +1205,25 @@ protected $server;
 		$message = html_entity_decode($message);
 		return $message ;
 
+	}
+
+	public function get_forwarded_email($message){
+
+		$from_name = "";
+		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		Log::info("message: " . $message);
+		$start = strpos($message,"<") +1;
+		$end = strpos($message,">")  ;
+		$from = trim(substr($message, $start, $end-$start));
+
+		if(!empty($from)){
+
+			$start = strpos($message,"From: ") + 6;
+			$end = strpos($message,"<");
+
+			$from_name = trim(substr($message, $start, $end-$start));
+		}
+		return ["from" => $from , "from_name" => $from_name];
 	}
 }
 ?>

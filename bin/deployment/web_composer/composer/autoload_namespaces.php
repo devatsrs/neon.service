@@ -34,6 +34,7 @@ return array(
     'Curl' => array($vendorDir . '/curl/curl/src'),
     'Crypt' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'ClassPreloader' => array($vendorDir . '/classpreloader/classpreloader/src'),
+    'Chumper\\Zipper' => array($vendorDir . '/chumper/zipper/src'),
     'Boris' => array($vendorDir . '/d11wtq/boris/lib'),
     'Bllim\\Datatables' => array($vendorDir . '/bllim/datatables/src'),
     'Aws' => array($vendorDir . '/aws/aws-sdk-php/src'),

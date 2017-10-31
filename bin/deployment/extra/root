@@ -11,6 +11,7 @@
 #* * * * * php /var/www/html/release.neon.service/artisan neonservice >> /dev/cron_job_release 2>&1
 * * * * * php /var/www/html/demo.neon.service/artisan neonservice >> /dev/cron_job_demo 2>&1
 #* * * * * php /var/www/html/wt_wholesale_demo.neon.service/artisan neonservice >> /dev/cron_job_wt_wholesale_demo 2>&1
+* * * * * php /var/www/html/associatesmarketing.neon.service/artisan neonservice >> /dev/cron_job_associatesmarketing 2>&1
 
 
 ############################################# Neon Service ############################################
@@ -21,16 +22,19 @@
 * * * * * php /var/www/html/usmantel.neon.service/artisan neonservice >> /dev/cron_job_tek185 2>&1
 * * * * * php /var/www/html/familytalk.neon.service/artisan neonservice >> /dev/cron_job_familytalk 2>&1
 * * * * * php /var/www/html/sipsynergy.neon.service/artisan neonservice >> /dev/cron_job_sipsynergy 2>&1
+* * * * * php /var/www/html/imedia.neon.service/artisan neonservice >> /dev/cron_job_imedia 2>&1
+* * * * * php /var/www/html/1worldtec.neon.service/artisan neonservice >> /dev/cron_job_1worldtec 2>&1
 
 # Retail
 * * * * * sleep 20; php /var/www/html/wavetelpbx.neon.service/artisan neonservice >> /dev/cron_job_wavetel_retail 2>&1
 * * * * * sleep 30; php /var/www/html/codedesk.neon.service/artisan neonservice >> /dev/cron_job_codedesk 2>&1
 * * * * * sleep 10; php /var/www/html/covercommunication.neon.service/artisan neonservice >> /dev/cron_job_covercommunication 2>&1
-* * * * * sleep 10; php /var/www/html/shaztech.neon.service/artisan neonservice >> /dev/cron_job_shaztech 2>&1
+#* * * * * sleep 10; php /var/www/html/shaztech.neon.service/artisan neonservice >> /dev/cron_job_shaztech 2>&1
 * * * * * sleep 20; php /var/www/html/twistvoip.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
 * * * * * sleep 30; php /var/www/html/pbxlines.neon.service/artisan neonservice >> /dev/cron_job_twistvoip 2>&1
 * * * * * sleep 10; php /var/www/html/expectel.neon.service/artisan neonservice >> /dev/cron_job_expectel 2>&1
 * * * * * sleep 20; php /var/www/html/telpeer.neon.service/artisan neonservice >> /dev/cron_job_telpeer 2>&1
+* * * * * sleep 20; php /var/www/html/jelltel.neon.service/artisan neonservice >> /dev/cron_job_jelltel 2>&1
 
 ############################################# Neon DB Backups ############################################
 
@@ -39,7 +43,8 @@
 0 2 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/uk-wholesale-backup.conf >> /dev/cron_job_uk_wholesale_backup 2>&1
 0 7 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/usa-hosted-backup.conf >> /dev/cron_job_usa_hosted_backup 2>&1
 0 2 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/uk-others-backup.conf >> /dev/cron_job_uk_others_backup 2>&1
-30 20 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/in-hosted-backup.conf >> /dev/cron_job_india_hosted_backup 2>&1
+#no backup for shaztech
+#30 20 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/in-hosted-backup.conf >> /dev/cron_job_india_hosted_backup 2>&1
 30 14 * * * php /var/www/html/wavetelwholesale.neon.service/artisan dbbackup /home/automysqlbackup/nz-hosted-backup.conf >> /dev/cron_job_nz_hosted_backup 2>&1
 
 #######################################################################################################################################

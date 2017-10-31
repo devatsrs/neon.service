@@ -144,12 +144,12 @@ class ReadEmailsTickets extends Command
 			$datetime_from 		=    date("Y-m-d H:i:s", strtotime("-".$minutes." minutes"));	
 			
 			if($GroupAssignEmail){		
-				$Tickets 			= 	TicketsTable::select(['TicketID'])->where(["CompanyID"=>$CompanyID])->where(["Agent"=>0])->where(['EscalationEmail'=>0])->WhereRaw('created_at <= "'.$datetime_from.'"')->get();
+				$Tickets 			= 	TicketsTable::select(['TicketID'])->where(["CompanyID"=>$CompanyID,"Group"=>$GroupID])->where(["Agent"=>0])->where(['EscalationEmail'=>0])->WhereRaw('created_at <= "'.$datetime_from.'"')->get();
 				 Log::error("**Escalation check for " .$GroupData->GroupName);
 				 Log::error("**Escalation Tickets:".count($Tickets)."Found");
 				foreach($Tickets as $TicketsData){
 					
-						$TicketEmails 	=  new TicketEmails(array("TicketID"=>$TicketsData->TicketID,"TriggerType"=>"AgentEscalationRule","CompanyID"=>$CompanyID,"EscalationAgent"=>$GroupAssignEmail));
+						new TicketEmails(array("TicketID"=>$TicketsData->TicketID,"TriggerType"=>"AgentEscalationRule","CompanyID"=>$CompanyID,"EscalationAgent"=>$GroupAssignEmail));
 						TicketsTable::where(["TicketID"=>$TicketsData->TicketID])->update(array("EscalationEmail"=>1));						
 				}
 			}
@@ -164,11 +164,12 @@ class ReadEmailsTickets extends Command
 		foreach ($tickets as $ticket)
 		{
 			if($ticket->EscalationEmail==1 && $ticket->IsRespondedVoilation==1){
-			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>array("AgentResponseSlaVoilation")));					
+
+					new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"RespondTime"=>$ticket->RespondTime,"TriggerType"=>"AgentResponseSlaVoilation"));
 			}
 			
 			if($ticket->EscalationEmail==1 && $ticket->IsResolvedVoilation==1){
-			$send = new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>array("AgentResolveSlaVoilation")));					
+				new	TicketEmails(array("TicketID"=>$ticket->TicketID,"CompanyID"=>$CompanyID,"ResolveTime"=>$ticket->ResolveTime,"TriggerType"=>"AgentResolveSlaVoilation"));
 			}						
 		}		
 	}
