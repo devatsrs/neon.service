@@ -548,64 +548,17 @@ class NeonExcelIO
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
         if($RateSheetTemplate != '') {
-            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = $temp_file = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
+
+            if(is_amazon($CompanyID) == true) {
+                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
+                file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
+                $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
+            }
         }
         if($RateSheetTemplateFile != '') {
-            /*$RateSheetHeaderSize = $RateSheetTemplate->HeaderSize != null ? (int) $RateSheetTemplate->HeaderSize : 0 ;
-            $RateSheetFooterSize = $RateSheetTemplate->FooterSize != null ? (int) $RateSheetTemplate->FooterSize : 0 ;
-            $RateSheetFooterSize = $RateSheetFooterSize+$RateSheetHeaderSize+2;
-            $objPHPExcelTemplate = \PHPExcel_IOFactory::load($RateSheetTemplateFile);
-            $ActiveSheet = $objPHPExcelTemplate->getActiveSheet();
-            $ActiveSheet->insertNewRowBefore(($RateSheetHeaderSize+1),count($excel_data_sheet)+1);
-
-            if(isset($header_data)){
-                $ActiveSheet->fromArray($header_data, NULL, 'A'.($RateSheetHeaderSize+1));
-            }
-            $cstart = 0;
-            $rstart = ($RateSheetHeaderSize+1);
-            $input = $ActiveSheet->getStyle('A'.($RateSheetFooterSize+count($excel_data_sheet)));
-
-            for($i=0;$i<count($excel_data_sheet)+1;$i++) {
-                $interval = $this->num2char($cstart) . $rstart . ':' . $this->num2char($cstart+20) . $rstart;
-                $ActiveSheet->duplicateStyle($input, $interval);
-                $ActiveSheet->getRowDimension(''.$rstart.'')->setRowHeight(15);
-                $rstart++;
-
-                if($i<count($excel_data_sheet))
-                    $ActiveSheet->fromArray($excel_data_sheet[$i], NULL, 'A'.($i+($RateSheetHeaderSize+2)));
-            }
-            $replace_array = Helper::create_replace_array($data['Account'],array());
-            $replace_array['TrunkPrefix'] = empty($data['Account']->trunkprefix)?'':$data['Account']->trunkprefix;
-            $replace_array['TrunkName'] = empty($data['Account']->trunk_name)?'':$data['Account']->trunk_name;
-
-            for($i=0;$i<=$RateSheetHeaderSize;$i++) {
-                for($j=0;$j<6;$j++) {
-                    $col = $this->num2char($j);
-                    $excel_header = $ActiveSheet->getCell($col.''.$i);
-                    $excel_header = template_var_replace($excel_header,$replace_array);
-                    $excel_header = str_replace('{{CurrentDate}}',date('d-m-Y'),$excel_header);
-                    if(preg_match('/{{CurrentDate(.*?)}}/',$excel_header,$date_placeholder)) {
-                        $date_format = explode('|',$date_placeholder[0]);
-                        $date_format = rtrim($date_format[1],'}');
-                        $date = date($date_format);
-                        $excel_header = str_replace($date_placeholder,$date,$excel_header);
-                    }
-                    $ActiveSheet->setCellValue($col.''.$i,$excel_header);
-                }
-            }
-            for($i=($RateSheetHeaderSize+count($excel_data_sheet)+1);$i<($RateSheetFooterSize+count($excel_data_sheet)-1);$i++) {
-                for($j=0;$j<6;$j++) {
-                    $col = $this->num2char($j);
-                    $excel_footer = $ActiveSheet->getCell($col.''.$i);
-                    $excel_footer = template_var_replace($excel_footer,$replace_array);
-                    $ActiveSheet->setCellValue($col.''.$i,$excel_footer);
-                }
-            }
-
-            $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcelTemplate, 'Excel2007');
-            $this->file = substr($this->file, 0, strrpos($this->file,".")).'.xlsx';
-            $objWriter->save($this->file);*/
-
             $writer = WriterFactory::create(Type::XLSX);
             $writer->openToFile($this->file);
 
@@ -745,7 +698,15 @@ class NeonExcelIO
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
         if($RateSheetTemplate != '') {
-            $RateSheetTemplateFile = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = $temp_file = $RateSheetTemplate->Excel;
+            $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
+
+            if(is_amazon($CompanyID) == true) {
+                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
+                file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
+                $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
+            }
         }
         if($RateSheetTemplateFile != '') {
             $writer = WriterFactory::create(Type::XLSX);
