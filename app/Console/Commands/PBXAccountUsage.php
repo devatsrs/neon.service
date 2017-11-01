@@ -299,9 +299,9 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("PBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("PBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('pbx prc_insertCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");

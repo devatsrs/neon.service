@@ -311,9 +311,9 @@ class VOSAccountUsage extends Command
             }
 
 
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("VOS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("Vos CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('vos prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
