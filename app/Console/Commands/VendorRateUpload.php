@@ -16,6 +16,9 @@ use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
 use App\Lib\VendorFileUploadTemplate;
+use App\Lib\Currency;
+use App\Lib\Company;
+use App\Lib\Account;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
@@ -123,6 +126,22 @@ class VendorRateUpload extends Command
                     }else{
                         $dialcode_separator = 'null';
                     }
+
+                    if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
+                        $CurrencyConversion = 1;
+                        $CurrencyID = $attrselection->FromCurrency;
+                        /*$FromCurrency = Currency::find($attrselection->FromCurrency);
+                        $AccountCurrency = Currency::find(Account::find($job->AccountID)->CurrencyId);
+                        $CompanyCurrency = Currency::find(Company::find($CompanyID)->CurrencyId);*/
+                    }else{
+                        $CurrencyConversion = 0;
+                        $CurrencyID = 0;
+                    }
+                    /*if($CurrencyConversion == 1 && $FromCurrency && $ToCurrency && $FromCurrency->CurrencyId != $ToCurrency->CurrencyId) {
+                        Log::info('From Currency : ' . $FromCurrency->Code);
+                        Log::info('To Currency : ' . $ToCurrency->Code);
+                    }*/
+
                     if ($jobfile->FilePath) {
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
                         if (strpos($path, "https://") !== false) {
@@ -168,12 +187,18 @@ class VendorRateUpload extends Command
                         if(!empty($checkemptyrow)){
                             if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
                                 $tempvendordata['CountryCode'] = trim($temp_row[$attrselection->CountryCode]);
-                            }
-                            if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                                $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
                             }else{
+                                $tempvendordata['CountryCode'] = '';
+                            }
+
+                            if (isset($attrselection->Code) && !empty($attrselection->Code) && trim($temp_row[$attrselection->Code]) != '') {
+                                $tempvendordata['Code'] = trim($temp_row[$attrselection->Code]);
+                            }else if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
+                                $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                            } else {
                                 $error[] = 'Code is blank at line no:'.$lineno;
                             }
+
                             if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
                                 $tempvendordata['Description'] = $temp_row[$attrselection->Description];
                             }else{
@@ -188,6 +213,9 @@ class VendorRateUpload extends Command
                             }else{
                                 $error[] = 'Rate is blank at line no:'.$lineno;
                             }
+                            /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
+                                $tempvendordata['CurrencyID'] = $attrselection->FromCurrency;
+                            }*/
                             if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
                                 try {
                                     $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
@@ -244,6 +272,8 @@ class VendorRateUpload extends Command
                             if(!empty($DialStringId)){
                                 if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
                                     $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                } else {
+                                    $tempvendordata['DialStringPrefix'] = '';
                                 }
                             }
                             if(isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])){
@@ -276,12 +306,12 @@ class VendorRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+                    Log::info("start CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
 
                     try{
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
-                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
+                        Log::info("end CALL  prc_WSProcessVendorRate ('" . $job->AccountID . "','" . $joboptions->Trunk . "'," . $joboptions->checkbox_replace_all . ",'" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.")");
                         DB::commit();
 
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));

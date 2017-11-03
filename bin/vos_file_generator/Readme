@@ -66,3 +66,11 @@ crontab -e
 0 0 * * * find /home/webcdr/cdr_data -maxdepth 1 -mtime +15 -exec rm {} \;
 
 
+------------
+FOR Licenced VOS 3000
+
+useradd -g kunshi webcdr -d /home/kunshi/vos3000/cdrs -m -s /bin/bash
+passwd webcdr
+
+
+cat echo "sshd: 193.70.97.246" >> /etc/hosts.allow

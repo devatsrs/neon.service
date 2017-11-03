@@ -70,4 +70,13 @@ class TicketGroups extends \Eloquent {
 		} 
 		return $Groupagents;
 	}
+
+	static function getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID) {
+
+		$LastEmailReadDateTime = TicketGroups::where(["GroupID"=>$GroupID, "CompanyID" => $CompanyID])->first()->pluck("LastEmailReadDateTime");
+
+		return $LastEmailReadDateTime;
+
+	}
+
 }

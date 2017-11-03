@@ -109,6 +109,7 @@ class ImportAccount extends Command {
                 $AccountType = 0;
                 $TempAccountIDs = '';
                 $importoption = 0;
+                $gateway = "";
                 $error = array();
                 $JobStatusMessage =array();
                 $batch_insert_array = [];
@@ -145,6 +146,9 @@ class ImportAccount extends Command {
                             }else{
                                 $TempAccountIDs = $importoptions['TempAccountIDs'];
                                 $importoption = 1;
+                            }
+                            if(isset($importoptions['gateway']) && !empty($importoptions['gateway'])){
+                                $gateway = $importoptions['gateway'];
                             }
                             if(!empty($importoptions['importprocessid'])){
                                 $tempProcessID = $importoptions['importprocessid'];
@@ -456,11 +460,11 @@ class ImportAccount extends Command {
                         }
 
                     }//csv import end
-                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."','".$accountimportdate."')");
+                    Log::info("start CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','".$tempCompanyGatewayID."','".$TempAccountIDs."','".$importoption."','".$accountimportdate."','".$gateway."')");
                     try {
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
-                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."')");
+                        $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."','".$gateway."')");
+                        Log::info("end CALL  prc_WSProcessImportAccount ('" . $tempProcessID . "','" . $CompanyID . "','" . $tempCompanyGatewayID . "','" . $TempAccountIDs . "','" . $importoption . "','".$accountimportdate."','".$gateway."')");
                         DB::commit();
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                         Log::info($JobStatusMessage);
