@@ -200,7 +200,7 @@ class CompanyGateway extends \Eloquent {
         return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array());
     }
 
-
+    /** function not in use*/
     public static function CreateTempLinkTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
 
         $UniqueID = self::getUniqueID($CompanyGatewayID);

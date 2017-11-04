@@ -105,7 +105,7 @@ class VOSAccountUsage extends Command
         $delete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
+        //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
 
         $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
@@ -320,9 +320,9 @@ class VOSAccountUsage extends Command
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 
-            Log::error('vos prc_linkCDR end');
+            /*Log::error('vos prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('vos prc_linkCDR end');
+            Log::error('vos prc_linkCDR end');*/
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 

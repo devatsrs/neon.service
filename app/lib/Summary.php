@@ -107,7 +107,7 @@ class Summary extends \Eloquent {
 
             $temp_table1 = 'tmp_tblUsageDetailsReport_'.$UniqueID;
 
-
+            self::dropTableForNewColumn($temp_table1);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $temp_table1 . '` (
                                     `UsageDetailsReportID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
                                     `UsageDetailID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
@@ -131,11 +131,13 @@ class Summary extends \Eloquent {
                                     `userfield` VARCHAR(255) NULL DEFAULT NULL ,
                                     `pincode` VARCHAR(50) NULL DEFAULT NULL ,
 	                                `extension` VARCHAR(50) NULL DEFAULT NULL ,
+                                    `ID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
                                     PRIMARY KEY (`UsageDetailsReportID`),
                                     UNIQUE INDEX `UK` (`UsageDetailID`, `call_status`),
                                     INDEX `temp_connect_time` (`connect_time`, `connect_date`),
                                     INDEX `IX_CompanyID` (`CompanyID`),
-                                    INDEX `IX_UsageDetailID` (`UsageDetailID`)
+                                    INDEX `IX_UsageDetailID` (`UsageDetailID`),
+                                    INDEX `IX_GCID` (`CompanyGatewayID`,`ID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
@@ -143,7 +145,7 @@ class Summary extends \Eloquent {
 
             Log::error($temp_table1 . ' done ');
 
-            $link_table1 = 'tblTempCallDetail_1_'.$UniqueID;
+            /*$link_table1 = 'tblTempCallDetail_1_'.$UniqueID;
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table1 . '` (
                                     `CallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -165,17 +167,17 @@ class Summary extends \Eloquent {
                                     INDEX `IX_VCID` (`VCID`)
                                 )
                                 ENGINE=InnoDB ; ';
-            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement($sql_create_table);*/
             if($RateCDR >0 || empty($extra_prefix)) {
                 Log::error(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->table($temp_table1)->truncate();
-                DB::connection('neon_report')->table($link_table1)->truncate();
+                //DB::connection('neon_report')->table($link_table1)->truncate();
             }else{
                 Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Customer')");
                 DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Customer'));
             }
 
-            Log::error($link_table1 . ' done ');
+            //Log::error($link_table1 . ' done ');
 
             return $UniqueID;
         }
@@ -197,6 +199,7 @@ class Summary extends \Eloquent {
 
 
             $temp_table1 = 'tmp_tblVendorUsageDetailsReport_'.$UniqueID;
+            self::dropTableForNewColumn($temp_table1);
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $temp_table1 . '` (
                                    	`VendorUsageDetailsReportID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -218,11 +221,13 @@ class Summary extends \Eloquent {
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL,
                                     `call_status` TINYINT(4) NULL DEFAULT NULL,
                                     `call_status_v` TINYINT(4) NULL DEFAULT NULL,
+                                    `ID` BIGINT(20) UNSIGNED NULL DEFAULT NULL,
                                     PRIMARY KEY (`VendorUsageDetailsReportID`),
                                     UNIQUE INDEX `UK` (`VendorCDRID`, `call_status_v`),
                                     INDEX `temp_connect_time` (`connect_time`, `connect_date`),
                                     INDEX `IX_CompanyID` (`CompanyID`),
-                                    INDEX `IX_VendorCDRID` (`VendorCDRID`)
+                                    INDEX `IX_VendorCDRID` (`VendorCDRID`),
+                                    INDEX `IX_GCID` (`CompanyGatewayID`,`ID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('neon_report')->statement($sql_create_table);
@@ -230,7 +235,7 @@ class Summary extends \Eloquent {
 
             Log::error($temp_table1 .' done ');
 
-            $link_table1 = 'tblTempCallDetail_2_'.$UniqueID;
+            /*$link_table1 = 'tblTempCallDetail_2_'.$UniqueID;
 
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $link_table1 . '` (
                                     `CallDetailID` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -252,18 +257,18 @@ class Summary extends \Eloquent {
                                     INDEX `IX_VCID` (`VCID`)
                                 )
                                 ENGINE=InnoDB ; ';
-            DB::connection('neon_report')->statement($sql_create_table);
+            DB::connection('neon_report')->statement($sql_create_table);*/
             if($RateCDR >0 || empty($extra_prefix)) {
                 Log::error(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->table($temp_table1)->truncate();
-                DB::connection('neon_report')->table($link_table1)->truncate();
+                //DB::connection('neon_report')->table($link_table1)->truncate();
             }else{
                 Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Vendor')");
                 DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Vendor'));
             }
 
 
-            Log::error($link_table1 . ' done ');
+            //Log::error($link_table1 . ' done ');
 
             return $UniqueID;
         }
@@ -301,6 +306,14 @@ class Summary extends \Eloquent {
                     }
                 }
             }
+        }
+    }
+
+    public static function dropTableForNewColumn($tbltempusagedetail_name){
+        if(!Schema::connection('neon_report')->hasColumn($tbltempusagedetail_name, 'ID'))  //check whether users table has email column
+        {
+            Schema::connection('neon_report')->dropIfExists($tbltempusagedetail_name);
+
         }
     }
 

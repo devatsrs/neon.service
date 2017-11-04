@@ -75,7 +75,7 @@ class CallShopAccountUsage extends Command {
         Log::useFiles(storage_path() . '/logs/callshopaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
+        //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
 
@@ -238,9 +238,9 @@ class CallShopAccountUsage extends Command {
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('call shop prc_insertCDR end');
 
-            Log::error('call shop prc_linkCDR end');
+            /*Log::error('call shop prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('call shop prc_linkCDR end');
+            Log::error('call shop prc_linkCDR end');*/
 
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
