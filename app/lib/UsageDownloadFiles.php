@@ -62,6 +62,7 @@ class UsageDownloadFiles extends Model {
     /** get sippy pending files */
     public static function getSippyPendingFile($CompanyGatewayID,$FilesMaxProccess){
         $tempfilenames = array();
+        $old_tempfilenames = array();
         $filenames = array();
         $customercdrfiles = array();
 
@@ -81,9 +82,29 @@ class UsageDownloadFiles extends Model {
                 }
             }
         }
+        $yesterday = date("Y-m-d", strtotime("-1 Day"));
+        $old_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))
+            ->where('created_at','<=',$yesterday)
+            ->orderby('created_at')->get();
         $file_count = 1;
+        foreach ($old_filenames as $file) {
+            $customercdrarray = explode(SippySSH::$customer_cdr_file_name, $file->FileName);
+            $vendorcdrarray = explode(SippySSH::$vendor_cdr_file_name, $file->FileName);
+            if (isset($customercdrarray[1])) {
+                $old_tempfilenames[$customercdrarray[1]][$file->UsageDownloadFilesID] = $file->FileName;
+            }
+            if (isset($vendorcdrarray[1])) {
+                $old_tempfilenames[$vendorcdrarray[1]][$file->UsageDownloadFilesID] = $file->FileName;
+            }
+        }
         foreach($tempfilenames as $time_key => $files){
             if(count($files) == 2 && $file_count <= $FilesMaxProccess){
+                $filenames[$time_key] = $files;
+                $file_count++;
+            }
+        }
+        foreach($old_tempfilenames as $time_key => $files){
+            if(count($files) == 1 && $file_count <= $FilesMaxProccess){
                 $filenames[$time_key] = $files;
                 $file_count++;
             }
