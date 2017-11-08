@@ -123,6 +123,7 @@ class Summary extends \Eloquent {
                                     `billed_duration` INT(11) NULL DEFAULT NULL,
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
                                     `cost` DECIMAL(18,6) NULL DEFAULT NULL,
+                                    `buying_cost` DECIMAL(18,6) NULL DEFAULT NULL,
                                     `duration` INT(11) NULL DEFAULT NULL,
                                     `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                                     `call_status` TINYINT(4) NULL DEFAULT NULL,
