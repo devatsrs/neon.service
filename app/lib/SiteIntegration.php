@@ -33,6 +33,7 @@ class SiteIntegration{
  static    $StripeACHSlug		=	'stripeach';
  static    $SagePaySlug			=	'sagepay';
  static    $FideliPaySlug       =	'fidelipay';
+ static    $XeroSlug	        =	'xero';
 
  	public function __construct(){
 	

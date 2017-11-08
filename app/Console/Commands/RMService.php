@@ -84,7 +84,8 @@ class RMService extends Command {
                 'ImportAccountIP',
                 'ItemUpload',
                 'CustomerMorSheetDownload',
-                'VendorMorSheetDownload'
+                'VendorMorSheetDownload',
+                'XeroInvoicePost'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -370,6 +371,17 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendormorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendormorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+            //Xero Invoice Post
+            foreach($allpending['data']['XeroInvoicePost'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." xeroinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " xeroinvoicepost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
