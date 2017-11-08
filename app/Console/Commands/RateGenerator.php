@@ -86,10 +86,10 @@ class RateGenerator extends Command {
             $data['RateGeneratorId']=$cronsetting->rateGeneratorID;
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
 
-            if($cronsetting->IncreaseEffectiveDate) {
+            if(isset($cronsetting->IncreaseEffectiveDate) && !empty($cronsetting->IncreaseEffectiveDate)) {
                 $data['IncreaseEffectiveDate'] = date('Y-m-d',strtotime('+'.$cronsetting->IncreaseEffectiveDate.' days'));
             }
-            if($cronsetting->DecreaseEffectiveDate) {
+            if(isset($cronsetting->DecreaseEffectiveDate) && !empty($cronsetting->DecreaseEffectiveDate)) {
                 $data['DecreaseEffectiveDate'] = date('Y-m-d',strtotime('+'.$cronsetting->DecreaseEffectiveDate.' days'));
             }
 
