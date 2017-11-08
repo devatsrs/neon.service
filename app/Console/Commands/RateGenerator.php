@@ -85,20 +85,28 @@ class RateGenerator extends Command {
             $CompanyID = $arguments["CompanyID"];
             $data['RateGeneratorId']=$cronsetting->rateGeneratorID;
             $data['EffectiveDate'] = date('Y-m-d',strtotime('+'.$EffectiveDay.' days'));
+
+            if(isset($cronsetting->IncreaseEffectiveDate) && !empty($cronsetting->IncreaseEffectiveDate)) {
+                $data['IncreaseEffectiveDate'] = $cronsetting->IncreaseEffectiveDate;
+            }
+            if(isset($cronsetting->DecreaseEffectiveDate) && !empty($cronsetting->DecreaseEffectiveDate)) {
+                $data['DecreaseEffectiveDate'] = $cronsetting->DecreaseEffectiveDate;
+            }
+
             $data['RateTableId']= $cronsetting->rateTableID;
-			
-			if(isset($cronsetting->replace_rate)){
-					$data['replace_rate']= $cronsetting->replace_rate;	
-			}else{
-				$data['replace_rate']= 0;
-			}
-			
-			if(isset($cronsetting->EffectiveRate)){
-					$data['EffectiveRate']= $cronsetting->EffectiveRate;	
-			}else{
-				$data['EffectiveRate']= 'now';
-			}
-						
+
+            if(isset($cronsetting->replace_rate)){
+                $data['replace_rate']= $cronsetting->replace_rate;
+            }else{
+                $data['replace_rate']= 0;
+            }
+
+            if(isset($cronsetting->EffectiveRate)){
+                $data['EffectiveRate']= $cronsetting->EffectiveRate;
+            }else{
+                $data['EffectiveRate']= 'now';
+            }
+
             if(!empty($data['RateTableId'])){
                 $data['ratetablename'] = DB::table('tblRateTable')->where(array('RateTableId'=>$data['RateTableId']))->pluck('RateTableName');
             }else{

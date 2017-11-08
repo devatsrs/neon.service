@@ -139,7 +139,7 @@ class CustomerVOSSheetGeneration extends Command {
             }*/
 
             $file_content = file_get_contents($file_path);
-            $file_content = str_replace(","," | ",$file_content);
+            //$file_content = str_replace(","," | ",$file_content);
             $file_content = str_replace("|"," | ",$file_content);
             $file_content = str_replace("\n","\r\n",$file_content);
             $file_content = str_replace("  "," ",$file_content);

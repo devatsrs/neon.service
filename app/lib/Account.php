@@ -261,11 +261,12 @@ class Account extends \Eloquent {
         if(isset($account_response['result']) && $account_response['result'] == 'OK') {
             $importoption = 1;
             $AccountIDs = '';
-            Log::info("start CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$AccountIDs."','".$importoption."','" . $addparams['ImportDate'] . "')");
+            $gateway = '';
+            Log::info("start CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','".$CompanyGatewayID."','".$AccountIDs."','".$importoption."','" . $addparams['ImportDate'] . "','".$gateway."')");
             try {
                 DB::beginTransaction();
-                $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
-                Log::info("end CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "')");
+                $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "','".$gateway."')");
+                Log::info("end CALL  prc_WSProcessImportAccount ('" . $processID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $importoption . "','" . $addparams['ImportDate'] . "','".$gateway."')");
                 DB::commit();
                 $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                 Log::info($JobStatusMessage);

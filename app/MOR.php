@@ -117,6 +117,39 @@ class MOR{
 
     }
 
+    public static function getRates($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::purge('pbxmysql');
+                $mor_rates = DB::connection('pbxmysql')->table('users')
+                    ->join('tariffs','tariff_id','=','tariffs.id')
+                    ->join('rates','rates.tariff_id','=','tariffs.id')
+                    ->join('destinations','destination_id','=','destinations.id')
+                    ->join('ratedetails','rates.id','=','rate_id')
+                    ->select('destinations.name','destinations.prefix','tariffs.purpose','rates.effective_from','rate','connection_fee','increment_s','min_time') //,'start_time','end_time','daytype'
+                    ->where("username", $addparams['username']);
+                if(isset($addparams['Prefix']) && trim($addparams['Prefix']) != '') {
+                    $mor_rates->where('destinations.prefix', 'like','%' .trim($addparams['Prefix']). '%');
+                }
+                if(isset($addparams['Description']) && trim($addparams['Description']) != '') {
+                    $mor_rates->where('destinations.name', 'like','%' .trim($addparams['Description']). '%');
+                }
+                $mor_rates = $mor_rates->get();
+                $mor_rates = json_decode(json_encode($mor_rates), true);
 
+                $response['success'] = 1;
+                $response['rates'] = $mor_rates;
+
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
 
 }
