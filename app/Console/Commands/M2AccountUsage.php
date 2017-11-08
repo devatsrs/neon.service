@@ -74,7 +74,7 @@ class M2AccountUsage extends Command {
         Log::useFiles(storage_path() . '/logs/m2accountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
+        //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
 
@@ -243,9 +243,9 @@ class M2AccountUsage extends Command {
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('M2 prc_insertCDR end');
 
-            Log::error('M2 prc_linkCDR start');
+            /*Log::error('M2 prc_linkCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('M2 prc_linkCDR end');
+            Log::error('M2 prc_linkCDR end');*/
 
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
