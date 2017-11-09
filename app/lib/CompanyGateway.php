@@ -68,7 +68,7 @@ class CompanyGateway extends \Eloquent {
             $tbltempusagedetail_name .=$extra_prefix;
 
             //self::dropTableForNewColumn($tbltempusagedetail_name);
-
+            Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
                                     `CompanyID` INT(11) NULL DEFAULT NULL,
@@ -106,7 +106,8 @@ class CompanyGateway extends \Eloquent {
                                     `userfield` VARCHAR(255) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
-                                    INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
+                                    INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
+                                    INDEX `IX_ID` (`ID`)
                                 )
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
@@ -140,7 +141,7 @@ class CompanyGateway extends \Eloquent {
 
             $tbltempusagedetail_name .=$extra_prefix;
             Log::error($tbltempusagedetail_name);
-
+            Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
             	`TempVendorCDRID` INT(11) NOT NULL AUTO_INCREMENT,
                 `CompanyID` INT(11) NULL DEFAULT NULL,
@@ -173,7 +174,8 @@ class CompanyGateway extends \Eloquent {
                 `is_rerated` TINYINT(1) NULL DEFAULT 0,
                  PRIMARY KEY (`TempVendorCDRID`),
                  INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
-                 INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`)
+                 INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
+                 INDEX `IX_ID` (`ID`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
 
@@ -200,7 +202,7 @@ class CompanyGateway extends \Eloquent {
         return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array());
     }
 
-
+    /** function not in use*/
     public static function CreateTempLinkTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
 
         $UniqueID = self::getUniqueID($CompanyGatewayID);

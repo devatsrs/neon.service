@@ -105,7 +105,7 @@ class VOSAccountUsage extends Command
         $delete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-        //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
+        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
 
         $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
@@ -171,96 +171,96 @@ class VOSAccountUsage extends Command
                     $delete_files[] = $UsageDownloadFilesID;
                     $fullpath = $VOS_LOCATION.'/'.$CompanyGatewayID. '/' ;
                     try{
-                    if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
-                        $InserData = $InserVData = array();
-                        while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                            $CallID = CompanyGateway::getCallID();
-                            if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
-                                $uddata = array();
-                                $uddata['CompanyGatewayID'] = $CompanyGatewayID;
-                                $uddata['CompanyID'] = $CompanyID;
-                                if($IpBased){
-                                    $uddata['GatewayAccountID'] = $excelrow['4'];
-                                }else{
-                                    $uddata['GatewayAccountID'] = $excelrow['33'];
-                                }
-                                $uddata['AccountIP'] = $excelrow['4'];
-                                $uddata['AccountName'] = $excelrow['33'];
-                                $uddata['AccountNumber'] = '';
-                                $uddata['AccountCLI'] = '';
-                                $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
-                                $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
-                                $uddata['cost'] = (float)$excelrow['26'];
-                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
-                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
-                                $uddata['billed_duration'] = (int)$excelrow['25'];
-                                $uddata['billed_second'] = (int)$excelrow['25'];
-                                $uddata['duration'] = $excelrow['23'];
-                                $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
-                                $uddata['remote_ip'] = $excelrow['4'];
-                                $uddata['ProcessID'] = $processID;
-                                $uddata['ServiceID'] = $ServiceID;
-                                $uddata['ID'] = $CallID;
+                        if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
+                            $InserData = $InserVData = array();
+                            while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                                $CallID = CompanyGateway::getCallID();
+                                if ( ($IpBased == 0 && !empty($excelrow['29']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
+                                    $uddata = array();
+                                    $uddata['CompanyGatewayID'] = $CompanyGatewayID;
+                                    $uddata['CompanyID'] = $CompanyID;
+                                    if($IpBased){
+                                        $uddata['GatewayAccountID'] = $excelrow['4'];
+                                    }else{
+                                        $uddata['GatewayAccountID'] = $excelrow['29'];
+                                    }
+                                    $uddata['AccountIP'] = $excelrow['4'];
+                                    $uddata['AccountName'] = $excelrow['29'];
+                                    $uddata['AccountNumber'] = '';
+                                    $uddata['AccountCLI'] = '';
+                                    $uddata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['17']) / 1000);
+                                    $uddata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['18']) / 1000);
+                                    $uddata['cost'] = (float)$excelrow['24'];
+                                    $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['3']);
+                                    $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
+                                    $uddata['billed_duration'] = (int)$excelrow['23'];
+                                    $uddata['billed_second'] = (int)$excelrow['23'];
+                                    $uddata['duration'] = $excelrow['21'];
+                                    $uddata['trunk'] = 'Other';
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['30']),$RateCDR);
+                                    $uddata['remote_ip'] = $excelrow['4'];
+                                    $uddata['ProcessID'] = $processID;
+                                    $uddata['ServiceID'] = $ServiceID;
+                                    $uddata['ID'] = $CallID;
 
-                                $InserData[] = $uddata;
-                                if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                                    $InserData = array();
-                                    $data_count = 0;
+                                    $InserData[] = $uddata;
+                                    if($data_count > $insertLimit &&  !empty($InserData)){
+                                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                                        $InserData = array();
+                                        $data_count = 0;
+                                    }
                                 }
+                                if (($IpBased == 0 &&  !empty($excelrow['35']) ) || ($IpBased ==1 && !empty($excelrow['9']))) {
+                                    $vendorcdrdata = array();
+                                    $vendorcdrdata['CompanyID'] = $CompanyID;
+                                    $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
+                                    if($IpBased){
+                                        $vendorcdrdata['GatewayAccountID'] = $excelrow['9'];
+                                    }else{
+                                        $vendorcdrdata['GatewayAccountID'] = $excelrow['35'];
+                                    }
+                                    $vendorcdrdata['AccountIP'] = $excelrow['9'];
+                                    $vendorcdrdata['AccountName'] = $excelrow['35'];
+                                    $vendorcdrdata['AccountNumber'] = '';
+                                    $vendorcdrdata['AccountCLI'] = '';
+                                    $vendorcdrdata['billed_duration'] = (int)$excelrow['16'];
+                                    $vendorcdrdata['billed_second'] = (int)$excelrow['16'];
+                                    $vendorcdrdata['duration'] = $excelrow['21'];
+                                    $vendorcdrdata['buying_cost'] = (float)$excelrow['31'];
+                                    $vendorcdrdata['selling_cost'] = (float)$excelrow['24'];
+                                    $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['17']) / 1000);
+                                    $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['18']) / 1000);
+                                    $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
+                                    $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['12']);
+                                    $vendorcdrdata['trunk'] = 'Other';
+                                    $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['30']),$RateCDR);
+                                    $vendorcdrdata['remote_ip'] = $excelrow['9'];
+                                    $vendorcdrdata['ProcessID'] = $processID;
+                                    $vendorcdrdata['ServiceID'] = $ServiceID;
+                                    $vendorcdrdata['ID'] = $CallID;
+
+                                    $InserVData[] = $vendorcdrdata;
+                                    if($data_countv > $insertLimit &&  !empty($InserVData)){
+                                        DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                                        $InserVData = array();
+                                        $data_countv =0;
+                                    }
+                                }
+                                $data_count++;
+                                $data_countv++;
+
+                            }//loop
+
+                            if(!empty($InserData)){
+                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+
                             }
-                            if (($IpBased == 0 &&  !empty($excelrow['40']) ) || ($IpBased ==1 && !empty($excelrow['10']))) {
-                                $vendorcdrdata = array();
-                                $vendorcdrdata['CompanyID'] = $CompanyID;
-                                $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
-                                if($IpBased){
-                                    $vendorcdrdata['GatewayAccountID'] = $excelrow['10'];
-                                }else{
-                                    $vendorcdrdata['GatewayAccountID'] = $excelrow['40'];
-                                }
-                                $vendorcdrdata['AccountIP'] = $excelrow['10'];
-                                $vendorcdrdata['AccountName'] = $excelrow['40'];
-                                $vendorcdrdata['AccountNumber'] = '';
-                                $vendorcdrdata['AccountCLI'] = '';
-                                $vendorcdrdata['billed_duration'] = (int)$excelrow['18'];
-                                $vendorcdrdata['billed_second'] = (int)$excelrow['18'];
-                                $vendorcdrdata['duration'] = $excelrow['23'];
-                                $vendorcdrdata['buying_cost'] = (float)$excelrow['35'];
-                                $vendorcdrdata['selling_cost'] = (float)$excelrow['26'];
-                                $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', ($excelrow['19']) / 1000);
-                                $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', ($excelrow['20']) / 1000);
-                                $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
-                                $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
-                                $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR);
-                                $vendorcdrdata['remote_ip'] = $excelrow['10'];
-                                $vendorcdrdata['ProcessID'] = $processID;
-                                $vendorcdrdata['ServiceID'] = $ServiceID;
-                                $vendorcdrdata['ID'] = $CallID;
-
-                                $InserVData[] = $vendorcdrdata;
-                                if($data_countv > $insertLimit &&  !empty($InserVData)){
-                                    DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
-                                    $InserVData = array();
-                                    $data_countv =0;
-                                }
+                            if(!empty($InserVData)){
+                                DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                             }
-                            $data_count++;
-                            $data_countv++;
 
-                        }//loop
-
-                        if(!empty($InserData)){
-                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-
+                            fclose($handle);
                         }
-                        if(!empty($InserVData)){
-                            DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
-                        }
-
-                        fclose($handle);
-                    }
                     }catch(Exception $e){
 
                         Log::error($e);
@@ -311,18 +311,18 @@ class VOSAccountUsage extends Command
             }
 
 
-            Log::error("VOS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Vos CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('vos prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('vos prc_insertCDR end');
 
-            /*Log::error('vos prc_linkCDR end');
+            Log::error('vos prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('vos prc_linkCDR end');*/
+            Log::error('vos prc_linkCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
@@ -338,10 +338,10 @@ class VOSAccountUsage extends Command
                  * Not in use
                 $CdrBehindData = array();
                 if (!empty($result[0]->min_date) && !empty($cronsetting['ErrorEmail'])) {
-                    $CdrBehindData['startdatetime'] = $result[0]->min_date;
-                    CronJob::CheckCdrBehindDuration($CronJob, $CdrBehindData);
+                $CdrBehindData['startdatetime'] = $result[0]->min_date;
+                CronJob::CheckCdrBehindDuration($CronJob, $CdrBehindData);
                 }
-                */
+                 */
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
