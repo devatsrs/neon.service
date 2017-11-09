@@ -86,6 +86,8 @@ class RMService extends Command {
                 'CustomerMorSheetDownload',
                 'VendorMorSheetDownload',
                 'XeroInvoicePost'
+                'CustomerM2SheetDownload',
+                'VendorM2SheetDownload'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -371,6 +373,26 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendormorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendormorsheet " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            //Customer M2 RateSheet Download
+            foreach($allpending['data']['CustomerM2SheetDownload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." customerm2sheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " customerm2sheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            //Vendor M2 RateSheet Download
+            foreach($allpending['data']['VendorM2SheetDownload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendorm2sheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendorm2sheetgeneration " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }
