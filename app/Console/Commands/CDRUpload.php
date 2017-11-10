@@ -383,9 +383,9 @@ class CDRUpload extends Command
                         TempUsageDownloadLog::insert($logdata);
                     }
                     if($RateCDR == 0) {
-                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
+                        Log::error("CDR upload CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
                         DB::statement("CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' )");
-                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
+                        Log::error("CDR upload CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
                     }
 
                     Log::error(' prc_insertCDR start');
