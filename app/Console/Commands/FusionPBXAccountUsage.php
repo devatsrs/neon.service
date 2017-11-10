@@ -115,7 +115,7 @@ class FusionPBXAccountUsage extends Command {
 
             Log::error(print_r($param, true));
 
-
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
 
             $InserData = $InserVData = array();
             $data_count = $data_countv = 0;
@@ -155,7 +155,7 @@ class FusionPBXAccountUsage extends Command {
                         $data['area_prefix'] = 'Other';
                         $data['userfield'] = $row_account['userfield'];
                         $data['is_inbound'] = $row_account['userfield'] == 'inbound' ? 1 : 0;
-                        //$data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR);
+                        //$data['area_prefix'] = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR, $RerateAccounts);
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
                         $data['disposition'] = $row_account['disposition'];
@@ -193,7 +193,7 @@ class FusionPBXAccountUsage extends Command {
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
