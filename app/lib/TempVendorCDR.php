@@ -14,12 +14,12 @@ class TempVendorCDR extends \Eloquent {
 
     protected  $primaryKey = "TempVendorCDRID";
 
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,$NameFormat=''){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,$NameFormat='',$Accounts=0){
         $skiped_account_data =array();
         $skiped_account_data =array();
-        Log::error('start CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
-        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
-        Log::error('end CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."')");
+        Log::error('start CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."','".$Accounts."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."','".$Accounts."')");
+        Log::error('end CALL  prc_ProcesssVCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$tempVendortable."',$RateCDR,$RateFormat,'".$NameFormat."','".$Accounts."')");
         foreach($skiped_account as $skiped_account_row){
             $skiped_account_data[]  = $skiped_account_row->Message;
         }

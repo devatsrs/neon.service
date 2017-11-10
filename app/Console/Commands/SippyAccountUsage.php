@@ -125,6 +125,8 @@ class SippyAccountUsage extends Command
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
 
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
+
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
 
@@ -203,7 +205,7 @@ class SippyAccountUsage extends Command
                                     $uddata['duration'] = $cdr_row['billed_duration'];
                                     $uddata['billed_second'] = $cdr_row['billed_duration'];
                                     $uddata['trunk'] = 'Other';
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $cdr_row['prefix']), $RateCDR);
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $cdr_row['prefix']), $RateCDR, $RerateAccounts);
                                     $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
@@ -284,7 +286,7 @@ class SippyAccountUsage extends Command
                                     $uddata['duration'] = $cdr_row['billed_duration'];
                                     $uddata['billed_second'] = $cdr_row['billed_duration'];
                                     $uddata['trunk'] = 'Other';
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR);
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR, $RerateAccounts);
                                     $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
@@ -346,8 +348,8 @@ class SippyAccountUsage extends Command
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'',$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
