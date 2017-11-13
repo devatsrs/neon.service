@@ -97,6 +97,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\M2AccountUsage',
 		'App\Console\Commands\MorCustomerRateImport',
 		'App\Console\Commands\CallShopCustomerRateImport',
+		'App\Console\Commands\CustomerM2SheetGeneration',
+		'App\Console\Commands\VendorM2SheetGeneration',
 	];
 
 	/**
