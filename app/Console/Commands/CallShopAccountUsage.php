@@ -118,6 +118,8 @@ class CallShopAccountUsage extends Command {
             Log::error(print_r($param, true));
 
 
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
+
 
             $InserData = $InserVData = array();
             $data_count = $data_countv = 0;
@@ -146,7 +148,7 @@ class CallShopAccountUsage extends Command {
                         $data['billed_second'] = $row_account['billed_second'];
                         $data['duration'] = $row_account['duration'];
                         $data['trunk'] = 'Other';
-                        $data['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['prefix']), $RateCDR);
+                        $data['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['prefix']), $RateCDR, $RerateAccounts);
                         $data['ProcessID'] = $processID;
                         //$data['remote_ip'] = $row_account['originator_ip'];
                         $data['ServiceID'] = $ServiceID;
@@ -179,7 +181,7 @@ class CallShopAccountUsage extends Command {
                         $vendorcdrdata['billed_second'] = $row_account['billed_second'];
                         $vendorcdrdata['duration'] = $row_account['duration'];
                         $vendorcdrdata['trunk'] = 'Other';
-                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['provider_prefix']), $RateCDR);
+                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['provider_prefix']), $RateCDR, $RerateAccounts);
                         $vendorcdrdata['ProcessID'] = $processID;
                         $vendorcdrdata['ServiceID'] = $ServiceID;
                         //$vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
@@ -220,8 +222,8 @@ class CallShopAccountUsage extends Command {
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'',$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }

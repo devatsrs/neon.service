@@ -208,10 +208,10 @@ class MorCustomerRateImport extends Command {
 								$data_count = 0;
 							}
 						} else {
-							$error[] = "rates not found for Account : '" . $Acccounts->AccountName . "'";
+							$error[] = "rates not found for Account : '" . $Acccount->AccountName . "'";
 						}
 					} else {
-						$error[] = "Error getting rates for Account : '" . $Acccounts->AccountName . "' -  Error: " . $rates['faultString'];
+						$error[] = "Error getting rates for Account : '" . $Acccount->AccountName . "' -  Error: " . $rates['faultString'];
 					}
 				} catch (\Exception $e) {
 					Log::error($e);
