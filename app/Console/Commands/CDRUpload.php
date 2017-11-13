@@ -353,7 +353,7 @@ class CDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID);
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID,0);
                 $skiped_rerated_data = array();
                 if($IgnoreZeroCall == 1){
                     foreach($skiped_account_data as $key => $errormg){

@@ -127,6 +127,8 @@ class VOSAccountUsage extends Command
             $RateFormat = Company::PREFIX;
             $RateCDR = $AutoAddIP = 0;
 
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
+
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
@@ -197,7 +199,7 @@ class VOSAccountUsage extends Command
                                 $uddata['billed_second'] = (int)$excelrow['25'];
                                 $uddata['duration'] = $excelrow['23'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['24']),$RateCDR, $RerateAccounts);
                                 $uddata['remote_ip'] = $excelrow['4'];
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
@@ -233,7 +235,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['1']);
                                 $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['14']);
                                 $vendorcdrdata['trunk'] = 'Other';
-                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR);
+                                $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR, $RerateAccounts);
                                 $vendorcdrdata['remote_ip'] = $excelrow['10'];
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;
@@ -282,8 +284,8 @@ class VOSAccountUsage extends Command
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'',$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .=  implode('<br>', $skiped_account_data);
             }
