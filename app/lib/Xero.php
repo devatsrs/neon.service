@@ -14,6 +14,8 @@ use XeroPHP\Application\PublicApplication;
 use XeroPHP\Application\PrivateApplication;
 use XeroPHP\Remote\Request;
 use XeroPHP\Remote\URL;
+use Webpatser\Uuid\Uuid;
+use Illuminate\Support\Facades\DB;
 
 class Xero {
 
@@ -67,7 +69,7 @@ class Xero {
 			try {
 				$xero = new PrivateApplication($config);
 				$Organisation = $xero->load('Accounting\\Organisation')->execute();
-				log::info(print_r($Organisation,true));
+				//log::info(print_r($Organisation,true));
 				log::info('count '.count($Organisation));
 				$Count = count($Organisation);
 				if($Count>0){
@@ -188,6 +190,7 @@ class Xero {
 		return $Response;
 	}
 
+	/* Not Using */
 	public function CreateItem($ProductName){
 		$response = array();
 		$count = $this->CheckItem($ProductName);
@@ -311,9 +314,20 @@ class Xero {
 					$invoice->setContact($contact);
 					$invoice->setType('ACCREC');
 
+					if(!empty($Invoices->BillingClassID)){
+						$PaymentDueInDays = BillingClass::getPaymentDueInDays($Invoices->BillingClassID);
+					}else{
+						$PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoices->AccountID,$Invoices->ServiceID);
+					}
+
+					$date =  date('Y-m-d H:i:s',strtotime($Invoices->IssueDate.' +'.$PaymentDueInDays.' days'));
+
 					$dateInstance = new \DateTime($Invoices->IssueDate);
 					$invoice->setDate($dateInstance);
-					//$invoice->setDueDate($dateInstance);
+
+					$duedateInstance = new \DateTime($date);
+					$invoice->setDueDate($duedateInstance);
+
 					$invoice->setInvoiceNumber($InvoiceFullNumber);
 					$invoice->setReference($InvoiceID);
 
@@ -325,10 +339,11 @@ class Xero {
 						if(!empty($lineItem['LineTotal'])) {
 							$line = new \XeroPHP\Models\Accounting\Invoice\LineItem($XeroContext);
 
-							$line->setDescription($lineItem['Description']);
-
+							$Description = $lineItem['Title'].' - '.$lineItem['Description'];
+							$line->setDescription($Description);
+							//$line->setItemCode('112');
 							$line->setQuantity($lineItem['Qty']);
-							//$line->setUnitAmount(99.99);
+							$line->setUnitAmount($lineItem['Price']);
 							//$line->setTaxAmount(0);
 							$line->setLineAmount($lineItem['LineTotal']);
 							//$line->setDiscountRate(0); // Percentage
@@ -337,15 +352,16 @@ class Xero {
 							$invoice->addLineItem($line);
 						}
 					}
-					if (!empty($Invoices->TotalTax)) {
+					$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->sum('TaxAmount');
+					if (!empty($InvoiceTaxRates)) {
 						$line = new \XeroPHP\Models\Accounting\Invoice\LineItem($XeroContext);
 						//$line->setItemCode('112');
-						$line->setUnitAmount($Invoices->TotalTax);
+						$line->setUnitAmount($InvoiceTaxRates);
 						//$line->setTaxType('NONE');
 						//$line->setTaxAmount('0.00');
 						$line->setDescription('Overall Tax');
 						$line->setQuantity(1);
-						$line->setLineAmount($Invoices->TotalTax);
+						$line->setLineAmount($InvoiceTaxRates);
 						$invoice->addLineItem($line);
 					}
 
@@ -407,10 +423,6 @@ class Xero {
 		return $response;
 	}
 
-	public function addJournals($Options){
-
-	}
-
 	public function GetInvoiceData($InvoiceID){
 		$data = array();
 		$Invoice = Invoice::find($InvoiceID);
@@ -419,11 +431,26 @@ class Xero {
 		foreach($InvoiceDetails as $InvoiceDetail){
 			if($InvoiceDetail->ProductType != Product::INVOICE_PERIOD){
 				$InvoiceData = array();
+				$Title = '';
+				if($InvoiceDetail->ProductType == Product::USAGE ){
+					$Title = 'Usage';
+				}
+				if($InvoiceDetail->ProductType == Product::SUBSCRIPTION ){
+					$Title = 'Recurring';
+				}
+				if($InvoiceDetail->ProductType == Product::ONEOFFCHARGE ){
+					$Title = 'Additional';
+				}
+				if($InvoiceDetail->ProductType == Product::ITEM ){
+					$Title = 'Item';
+				}
+				$InvoiceData['Title'] = $Title;
 				$InvoiceData['InvoiceDetailID'] = $InvoiceDetail->InvoiceDetailID;
 				$InvoiceData['ProductID'] = $InvoiceDetail->ProductID;
 				$InvoiceData['ProductType'] = $InvoiceDetail->ProductType;
 				$InvoiceData['Description'] = $InvoiceDetail->Description;
 				$InvoiceData['Qty'] = $InvoiceDetail->Qty;
+				$InvoiceData['Price'] = $InvoiceDetail->Price;
 				$InvoiceData['LineTotal'] = $InvoiceDetail->LineTotal;
 				$data[]=$InvoiceData;
 				$SubTotal=$SubTotal+$InvoiceDetail->LineTotal;
@@ -456,4 +483,402 @@ class Xero {
 
 		return $invoicecount;
 	}
+
+	public function addJournals($Options){
+		Log::info('-- Xero Add Journal --');
+		$response = array();
+		$error = array();
+		$success = array();
+		$Journal = array();
+
+		$Invoices = $Options['Invoices'];
+		$CompanyID = $Options['CompanyID'];
+
+		if(!empty($Invoices) && count($Invoices)>0){
+			$PaidInvoices = array();
+			foreach($Invoices as $Invoice){
+				if(!empty($Invoice))
+					$InvoiceData = array();
+				$InvoiceData = Invoice::find($Invoice);
+				$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
+				log::info('Invoice ID : '.$Invoice);
+				$CheckInvoiceFullPaid = Invoice::CheckInvoiceFullPaid($Invoice,$CompanyID);
+				if(!empty($CheckInvoiceFullPaid)){
+					$PaidInvoices[] = $Invoice;
+				}else{
+					$error[] =$InvoiceFullNumber.'(Invoice) not fully paid';
+				}
+				//$response[] = $this->CreateInvoice($Invoice);
+			}
+
+			if(!empty($PaidInvoices) && count($PaidInvoices)>0){
+
+				$Journal = $this->createJournal($PaidInvoices,$CompanyID);
+				if(!empty($Journal)){
+					if(!empty($Journal['error']) && count($Journal['error'])>0){
+						foreach($Journal['error'] as $err){
+							$error[] = $err;
+						}
+					}
+
+					if(!empty($Journal['Success']) && count($Journal['Success'])>0){
+						foreach($Journal['Success'] as $SucessMessage){
+							$success[] = $SucessMessage;
+						}
+					}
+				}
+			}else{
+				$error[] = 'Journal creation failed ';
+			}
+		}
+
+		$response['error'] = $error;
+		$response['Success'] = $success;
+		Log::info('-- Xero End Journal --');
+		//log::info('Final Response');
+		//log::info(print_r($response,true));
+
+		return $response;
+	}
+
+	public function getAccountMapping($name){
+		$XeroContext = $this->XeroContext;
+		$Response = array();
+		$accounts = $XeroContext->load('Accounting\\Account')
+			->where('Name', $name)
+			->execute();
+		if(!empty($accounts) && count($accounts)>0){
+			$Response['AccountID'] = $accounts[0]->AccountID;
+			$Response['Code'] = $accounts[0]->Code;
+			$Response['Type'] = $accounts[0]->Type;
+			$Response['Name'] = $accounts[0]->Name;
+			$Response['TaxType'] = $accounts[0]->TaxType;
+			$Response['Class'] = $accounts[0]->Class;
+			$Response['ReportingCode'] = $accounts[0]->ReportingCode;
+			$Response['ReportingCodeName'] = $accounts[0]->ReportingCodeName;
+			$Response['Status'] = $accounts[0]->Status;
+
+			//log::info(print_r($ContactID,true));
+		}
+		log::info(print_r($Response,true));
+		return $Response;
+	}
+
+	public function createJournal($Invoices,$CompanyID){
+		log::info(print_r($Invoices,true));
+		$response = array();
+		$error = array();
+		$success = array();
+		$JournalError = array();
+		if(!empty($Invoices) && count($Invoices)>0){
+
+			$XeroData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$XeroSlug,$CompanyID);
+
+			$XeroData = json_decode(json_encode($XeroData),true);
+
+			log::info(print_r($XeroData,true));
+			$InvoiceAccount = array();
+			$PaymentAccount = array();
+			$TaxId = '';
+
+			if(!empty($XeroData['InvoiceAccount'])){
+				$InvoiceAccount = $this->getAccountMapping($XeroData['InvoiceAccount']);
+				if(empty($InvoiceAccount)){
+					$error[]='Invoice Mapping not setup correctly';
+				}
+			}else{
+				$error[]='Invoice Mapping not setup in integration section';
+			}
+
+			if(!empty($XeroData['PaymentAccount'])){
+				$PaymentAccount = $this->getAccountMapping($XeroData['PaymentAccount']);
+				if(empty($PaymentAccount)){
+					$error[]='Payment Mapping not setup correctly';
+				}
+			}else{
+				$error[]='Payment Mapping not setup in integration section';
+			}
+
+			$XeroContext = $this->XeroContext;
+
+			$JournalNumber = 'Neon'.date('Y').date('m').date('d').date('H').date('i').date('s');
+			//log::info('Journal Number'.$JournalNumber);
+
+			try {
+
+				$Journal = new \XeroPHP\Models\Accounting\ManualJournal($XeroContext);
+
+				$Journal->setStatus('POSTED');
+				$Journal->setNarration($JournalNumber);
+
+				$dateInstance = new \DateTime();
+				$Journal->setDate($dateInstance);
+				//$Journal->setReference('checkjournal');
+
+
+				foreach($Invoices as $Invoice){
+
+					$InvoiceData = array();
+
+					$InvoiceData = Invoice::find($Invoice);
+
+					/*
+
+					$JournalErrormsg = $this->checkInvoiceInJournale($Invoice);
+					if(isset($JournalErrormsg) && $JournalErrormsg != ''){
+						$JournalError[$Invoice] = $JournalErrormsg;
+					}
+
+					$CustomerID = $this->getCustomerId($InvoiceData->AccountID);
+					if(empty($CustomerID)){
+						$response = $this->CreateCustomer($InvoiceData->AccountID);
+						$Account = Account::find($InvoiceData->AccountID);
+						$AccountName = $Account->AccountName;
+						if(!empty($response) && !empty($response['CustomerID'])){
+							$CustomerID = $response['CustomerID'];
+							$success[] = $AccountName. '(Account) is created';
+						}else{
+							$error[] = $AccountName.'(Customer) creation failed ';
+						}
+					}
+					*/
+					$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
+					$InvoiceGrantTotal = $InvoiceData->GrandTotal;
+					$PaymentTotal = $InvoiceData->SubTotal;
+					$TaxTotal = $InvoiceData->TotalTax;
+
+
+					//Debit Section
+
+					if(!empty($InvoiceAccount)){
+						$invoicedescription = $InvoiceFullNumber.' (Invoice)';
+						log::info('$invoicedescription '.$invoicedescription);
+						log::info(print_r($InvoiceAccount,true));
+						$JournalLines = new \XeroPHP\Models\Accounting\ManualJournal\JournalLine($XeroContext);
+
+						$JournalLines->setDescription($invoicedescription);
+						$JournalLines->setAccountCode($InvoiceAccount['Code']);
+						$JournalLines->setLineAmount($InvoiceGrantTotal);
+						$Journal->addJournalLine($JournalLines);
+
+					}
+
+					//Credit Section if total is in minus(-) it will goes to credit section
+
+					if(!empty($PaymentAccount)){
+						$paymentdescription = $InvoiceFullNumber.' (Payment)';
+						log::info('$paymentdescription '.$paymentdescription);
+						log::info(print_r($PaymentAccount,true));
+						$JournalLines1 = new \XeroPHP\Models\Accounting\ManualJournal\JournalLine($XeroContext);
+
+						$JournalLines1->setDescription($paymentdescription);
+						$JournalLines1->setAccountCode($PaymentAccount['Code']);
+						$JournalLines1->setLineAmount('-'.$PaymentTotal);
+						$Journal->addJournalLine($JournalLines1);
+
+						// All Tax
+						$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$Invoice])->get();
+
+						if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
+							foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
+
+								$Title = $InvoiceTaxRate->Title;
+								$TaxRateID = $InvoiceTaxRate->TaxRateID;
+								log::info($Title);
+								$TaxAmount = $InvoiceTaxRate->TaxAmount;
+								if($InvoiceTaxRate->InvoiceTaxType==0){
+									$type='Inline Tax';
+								}elseif($InvoiceTaxRate->InvoiceTaxType==1){
+									$type='Overall Tax';
+								}else{
+									$type='';
+								}
+
+								if(!empty($XeroData['Tax'][$TaxRateID])){
+									$TaxAccount = $this->getAccountMapping($XeroData['Tax'][$TaxRateID]);
+								}
+
+								if(empty($TaxAccount)){
+									$error[] = $Title. '(Tax Mapping not) setup correctly';
+								}else{
+
+									$taxdescription = $InvoiceFullNumber.' '.$Title.' ('.$type.')';
+									$JournalLines2 = new \XeroPHP\Models\Accounting\ManualJournal\JournalLine($XeroContext);
+
+									$JournalLines2->setDescription($taxdescription);
+									$JournalLines2->setAccountCode($TaxAccount['Code']);
+									$JournalLines2->setLineAmount('-'.$TaxAmount);
+									$Journal->addJournalLine($JournalLines2);
+								}
+							}
+						}
+					}
+
+				}
+				if(empty($error) && count($error)==0){
+					log::info('No error');
+
+					//Log::info(print_r($Journal,true));
+					$SaveManualJournal = $Journal->save()->getElements();
+
+					$ManualJournalID = $SaveManualJournal[0]['ManualJournalID'];
+
+					if (!empty($ManualJournalID))
+					{
+						foreach($Invoices as $Invoice){
+							$jernalmsg = '';
+							$InvoiceLog = Invoice::find($Invoice);
+							$InvoiceFullNumber = $InvoiceLog->FullInvoiceNumber;
+
+							/*
+							if(!empty($JournalError) && count($JournalError)>0){
+								if(!empty($JournalError[$Invoice])){
+									$jernalmsg = $JournalError[$Invoice];
+								}
+							}*/
+
+
+							$success[] = 'Invoice No:'.$InvoiceFullNumber.' posted to journal '.$jernalmsg;
+							/**
+							 * Insert Data in InvoiceLog
+							 */
+							$invoiceloddata = array();
+							$invoiceloddata['InvoiceID'] = $Invoice;
+							$invoiceloddata['Note'] = InvoiceLog::$log_status[InvoiceLog::POST].' (Xero Journal Number : '.$JournalNumber.') By RMScheduler';
+							$invoiceloddata['created_at'] = date("Y-m-d H:i:s");
+							$invoiceloddata['InvoiceLogStatus'] = InvoiceLog::POST;
+							InvoiceLog::insert($invoiceloddata);
+
+							$InvoiceLog->update(['InvoiceStatus' => Invoice::POST]);
+
+							/**
+							 * Insert Data in QuickBookLog
+							 */
+							$quickbooklogdata = array();
+							$quickbooklogdata['Note'] = $Invoice.' '.QuickBookLog::$log_status[QuickBookLog::INVOICE].' (Xero Journal Number : '.$JournalNumber.' Journal Id : '.$ManualJournalID.') Created';
+							$quickbooklogdata['created_at'] = date("Y-m-d H:i:s");
+							$quickbooklogdata['Type'] = QuickBookLog::INVOICE;
+							QuickBookLog::insert($quickbooklogdata);
+						}
+						$success[] = 'Journal created (Journal Number '.$JournalNumber.' )';
+						//$response['response'] = $resp;
+					}
+					else
+					{
+						$error[] = 'Journal creation failed ';
+					}
+
+				}else{
+					$error[] = 'Journal creation failed ';
+				}
+
+			}catch(\exception $e){
+				Log::error($e);
+				$error[] = 'Journal creation failed '.$e->getMessage();
+			}
+
+		}
+
+		//log::info('Journal Error '.print_r($error,true));
+		//log::info('Journal Success '.print_r($success,true));
+		$response['error'] = $error;
+		$response['Success'] = $success;
+		//log::info('Journal Response '.print_r($response,true));
+		return $response;
+
+	}
+
+	/**
+	 * Xero Payment Import
+	*/
+	public function GetAndInsertPayment($date){
+		$response = array();
+		$data = array();
+		$ProcessID = Uuid::generate();
+		$bacth_insert_limit = 250;
+		$counter = 0;
+		$lineno = 0;
+		try
+		{
+			$XeroContext = $this->XeroContext;
+			$dateInstance = new \DateTime($date);
+			$payments = $XeroContext->load('Accounting\\Payment')->modifiedAfter($dateInstance)->execute();
+
+			//log::info(print_r($payments[0],true));exit;
+			foreach($payments as $payment){
+				$paymentarray = array();
+				$paymentarray['ProcessID'] = $ProcessID;
+				$paymentarray['CompanyID'] = 1;
+				$paymentarray['TransactionID'] = $payment->PaymentID;
+				$paymentarray['Amount'] = $payment->Amount;
+				//$paymentarray['Status'] = $payment->Status;
+				//$paymentarray['Status'] = $payment->Status;
+				$paymentarray['InvoiceNumber'] = $payment->Invoice['InvoiceNumber'];
+				$paymentarray['AccountName'] = $payment->Invoice['Contact']['Name'];
+				$paymentarray['PaymentDate'] = $payment->Date->format('Y-m-d H:i:s');
+				$paymentarray['Notes'] = 'Xero Payment ID '. $payment->PaymentID;
+				//$paymentarray['CreateDate'] = $payment->UpdatedDateUTC->format('Y-m-d H:i:s');
+				if(!empty($payment->PaymentID)){
+					$data[]=$paymentarray;
+					$counter++;
+				}
+
+				if($counter==$bacth_insert_limit){
+					Log::info('Batch insert start');
+					Log::info('global counter'.$lineno);
+					Log::info('insertion start');
+					DB::connection('sqlsrv2')->table('tblTempPaymentAccounting')->insert($data);
+					Log::info('insertion end');
+					$data = [];
+					$counter = 0;
+				}
+				$lineno++;
+			} // loop over
+
+			if(!empty($data)){
+				Log::info('Batch insert start');
+				Log::info('global counter'.$lineno);
+				Log::info('insertion start');
+				Log::info('last batch insert ' . count($data));
+				DB::connection('sqlsrv2')->table('tblTempPaymentAccounting')->insert($data);
+				Log::info('insertion end');
+			}
+			//log::info(print_r($data,true));
+
+			DB::connection('sqlsrv2')->beginTransaction();
+			Log::info("CALL  prc_importPaymentAccounting ('".$ProcessID."') start");
+			$JobStatusMessage =DB::connection('sqlsrv2')->select("CALL  prc_importPaymentAccounting ('".$ProcessID."')");
+			Log::info("CALL  prc_importPaymentAccounting ('".$ProcessID."') end");
+			DB::connection('sqlsrv2')->commit();
+
+			$JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+			Log::info($JobStatusMessage);
+			Log::info(count($JobStatusMessage));
+			if(count($JobStatusMessage) > 1){
+				$prc_error = array();
+				foreach ($JobStatusMessage as $JobStatusMessage1) {
+					$prc_error[] = $JobStatusMessage1['Message'];
+				}
+				//$JobMessage = implode(',\n\r',fix_jobstatus_meassage($prc_error));
+				$JobMessage = implode('<br>',fix_jobstatus_meassage($prc_error));
+				$response['Status'] = 'success';
+				$response['Message'] = $JobMessage;
+
+			}elseif(!empty($JobStatusMessage[0]['Message'])){
+				$JobMessage = $JobStatusMessage[0]['Message'];
+				$response['Status'] = 'success';
+				$response['Message'] = $JobMessage;
+			}
+
+		}catch (\Exception $e) {
+			DB::connection('sqlsrv2')->rollback();
+			Log::error($e);
+			$JobMessage = 'Error: ' . $e->getMessage();
+			$response['Status'] = 'failed';
+			$response['Message'] = $JobMessage;
+		}
+
+		return $response;
+	}
+
 }

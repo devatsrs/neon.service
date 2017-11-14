@@ -100,6 +100,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\XeroInvoicePost',
 		'App\Console\Commands\CustomerM2SheetGeneration',
 		'App\Console\Commands\VendorM2SheetGeneration',
+		'App\Console\Commands\XeroPaymentImport',
 	];
 
 	/**
