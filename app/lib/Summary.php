@@ -42,7 +42,7 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
-            self::deleteOldTempTable($CompanyID,'customer');
+            //self::deleteOldTempTable($CompanyID,'customer');
         }
     }
 
@@ -87,7 +87,7 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
-            self::deleteOldTempTable($CompanyID,'vendor');
+            //self::deleteOldTempTable($CompanyID,'vendor');
         }
     }
 

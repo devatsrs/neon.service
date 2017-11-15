@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\CronHelper;
+use App\Lib\Summary;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -80,6 +81,11 @@ class DBCleanUp extends Command {
 			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
 			Log::info('DBcleanup Starts.');
+
+			Log::info('deleteOldTempTable Start.');
+				Summary::deleteOldTempTable($CompanyID,'vendor');
+				Summary::deleteOldTempTable($CompanyID,'customer');
+			Log::info('deleteOldTempTable End.');
 
 			Log::info('Usage Download Log Start.');
 				$error .= Retention::deleteUsageDownloadLog($CompanyID);
