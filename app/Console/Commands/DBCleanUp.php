@@ -82,10 +82,6 @@ class DBCleanUp extends Command {
 
 			Log::info('DBcleanup Starts.');
 
-			Log::info('deleteOldTempTable Start.');
-				Summary::deleteOldTempTable($CompanyID,'vendor');
-				Summary::deleteOldTempTable($CompanyID,'customer');
-			Log::info('deleteOldTempTable End.');
 
 			Log::info('Usage Download Log Start.');
 				$error .= Retention::deleteUsageDownloadLog($CompanyID);

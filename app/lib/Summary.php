@@ -31,18 +31,31 @@ class Summary extends \Eloquent {
                 }
                 try {
                     $UniqueID = self::CreateTempTable($CompanyID,0,$start_summary);
+                    $query = "call fnGetUsageForSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
+                    DB::connection('neon_report')->select($query);
+                    $query = "call fnGetVendorUsageForSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
+                    DB::connection('neon_report')->select($query);
                     $query = "call prc_generateSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
                     Log::info($query);
                     $error_message = DB::connection('neon_report')->select($query);
+
+                    $query = "call prc_generateVendorSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
+                    Log::info($query);
+                    $error_message2 = DB::connection('neon_report')->select($query);
+
                     if(count($error_message)){
                         throw  new \Exception($error_message[0]->Message);
+                    }
+                    if(count($error_message2)){
+                        throw  new \Exception($error_message2[0]->Message);
                     }
                 } catch (\Exception $e) {
                     Log::error($e);
                     Log::info($start_summary);
                 }
             }
-            //self::deleteOldTempTable($CompanyID,'customer');
+            self::deleteOldTempTable($CompanyID,'customer');
+            self::deleteOldTempTable($CompanyID,'vendor');
         }
     }
 
@@ -63,7 +76,7 @@ class Summary extends \Eloquent {
             }
         }else {
 
-            $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
+           /* $startdate = date("Y-m-d", strtotime(UsageHeader::getVendorStartHeaderDate($CompanyID)));
             $enddate = date("Y-m-d", strtotime("-1 Day"));
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
@@ -87,7 +100,7 @@ class Summary extends \Eloquent {
                     Log::info($start_summary);
                 }
             }
-            //self::deleteOldTempTable($CompanyID,'vendor');
+            //self::deleteOldTempTable($CompanyID,'vendor');*/
         }
     }
 
