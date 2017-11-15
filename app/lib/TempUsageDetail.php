@@ -287,7 +287,7 @@ Please check below error messages while re-rating cdrs.
             }
             $error_msg[] = $Messagesrow->Message;
         }
-        $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
+        $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::AutoAddIP]);
         //$IPEmail = empty($IPEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($IPEmail) && !empty($error_msg)) {
