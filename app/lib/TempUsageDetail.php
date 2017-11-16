@@ -25,11 +25,11 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
-    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0,$OutboundTableID=0,$InboundTableID=0){
+    public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0,$OutboundTableID=0,$InboundTableID=0,$Accounts=0){
         $skiped_account_data =array();
-        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
-        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
-        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."')");
+        Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."','".$Accounts."')");
+        $skiped_account = DB::connection('sqlsrv2')->select('CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."','".$Accounts."')");
+        Log::error('end CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."','".$Accounts."')");
         foreach($skiped_account as $skiped_account_row){
             $skiped_account_data[]  = $skiped_account_row->Message;
         }
@@ -287,7 +287,7 @@ Please check below error messages while re-rating cdrs.
             }
             $error_msg[] = $Messagesrow->Message;
         }
-        $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::ReRate]);
+        $IPEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::AutoAddIP]);
         //$IPEmail = empty($IPEmail)?$cronsetting['ErrorEmail']:$ReRateEmail;
         $CompanyGatewayName = CompanyGateway::where(array('Status'=>1,'CompanyGatewayID'=>$CompanyGatewayID))->pluck('Title');
         if (!empty($IPEmail) && !empty($error_msg)) {
