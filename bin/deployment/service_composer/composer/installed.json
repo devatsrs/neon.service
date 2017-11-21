@@ -5094,17 +5094,17 @@
     },
     {
         "name": "symfony/intl",
-        "version": "v2.8.30",
-        "version_normalized": "2.8.30.0",
+        "version": "v2.8.31",
+        "version_normalized": "2.8.31.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/intl.git",
-            "reference": "74f4ed6405bacf6dcc71a4d4674a5ae992ccad46"
+            "reference": "ae2802c8fb076af5ca04c9d5a30992ddb64874f7"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/intl/zipball/74f4ed6405bacf6dcc71a4d4674a5ae992ccad46",
-            "reference": "74f4ed6405bacf6dcc71a4d4674a5ae992ccad46",
+            "url": "https://api.github.com/repos/symfony/intl/zipball/ae2802c8fb076af5ca04c9d5a30992ddb64874f7",
+            "reference": "ae2802c8fb076af5ca04c9d5a30992ddb64874f7",
             "shasum": ""
         },
         "require": {
@@ -5118,7 +5118,7 @@
         "suggest": {
             "ext-intl": "to use the component with locales other than \"en\""
         },
-        "time": "2017-11-10T18:59:36+00:00",
+        "time": "2017-11-16T15:20:19+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -5171,9 +5171,49 @@
         ]
     },
     {
+        "name": "calcinai/xero-php",
+        "version": "v1.6.1",
+        "version_normalized": "1.6.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/calcinai/xero-php.git",
+            "reference": "05fdce06e53e80190b60dfba7007e2491b823fce"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/calcinai/xero-php/zipball/05fdce06e53e80190b60dfba7007e2491b823fce",
+            "reference": "05fdce06e53e80190b60dfba7007e2491b823fce",
+            "shasum": ""
+        },
+        "require": {
+            "ext-curl": "*",
+            "ext-openssl": "*",
+            "php": ">=5.5.0"
+        },
+        "require-dev": {
+            "fabpot/goutte": "~2.0",
+            "phpunit/phpunit": "~4.7",
+            "twig/twig": "1.16.2"
+        },
+        "time": "2017-11-01T01:29:31+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "XeroPHP\\": "src/XeroPHP/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "description": "A client implementation of the Xero API, with a cleaner OAuth interface and ORM-like abstraction.",
+        "homepage": "https://github.com/calcinai/xero-php"
+    },
+    {
         "name": "symfony/event-dispatcher",
-        "version": "v2.8.30",
-        "version_normalized": "2.8.30.0",
+        "version": "v2.8.31",
+        "version_normalized": "2.8.31.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/event-dispatcher.git",
@@ -5234,8 +5274,8 @@
     },
     {
         "name": "symfony/filesystem",
-        "version": "v2.8.30",
-        "version_normalized": "2.8.30.0",
+        "version": "v2.8.31",
+        "version_normalized": "2.8.31.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/filesystem.git",
@@ -5285,8 +5325,8 @@
     },
     {
         "name": "symfony/yaml",
-        "version": "v3.3.12",
-        "version_normalized": "3.3.12.0",
+        "version": "v3.3.13",
+        "version_normalized": "3.3.13.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/yaml.git",
@@ -5342,8 +5382,8 @@
     },
     {
         "name": "symfony/css-selector",
-        "version": "v3.3.12",
-        "version_normalized": "3.3.12.0",
+        "version": "v3.3.13",
+        "version_normalized": "3.3.13.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/css-selector.git",
@@ -5394,45 +5434,5 @@
         ],
         "description": "Symfony CssSelector Component",
         "homepage": "https://symfony.com"
-    },
-    {
-        "name": "calcinai/xero-php",
-        "version": "v1.6.0",
-        "version_normalized": "1.6.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/calcinai/xero-php.git",
-            "reference": "5b7bf584abbe262f73e00a18642a2806da8e9cd1"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/calcinai/xero-php/zipball/5b7bf584abbe262f73e00a18642a2806da8e9cd1",
-            "reference": "5b7bf584abbe262f73e00a18642a2806da8e9cd1",
-            "shasum": ""
-        },
-        "require": {
-            "ext-curl": "*",
-            "ext-openssl": "*",
-            "php": ">=5.5.0"
-        },
-        "require-dev": {
-            "fabpot/goutte": "~2.0",
-            "phpunit/phpunit": "~4.7",
-            "twig/twig": "1.16.2"
-        },
-        "time": "2017-09-01T17:16:22+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "XeroPHP\\": "src/XeroPHP/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "description": "A client implementation of the Xero API, with a cleaner OAuth interface and ORM-like abstraction.",
-        "homepage": "https://github.com/calcinai/xero-php"
     }
 ]

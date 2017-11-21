@@ -3356,20 +3356,11 @@ BEGIN
 END//
 DELIMITER ;
 
-
 DROP PROCEDURE IF EXISTS `prc_RateTableRateUpdatePreviousRate`;
 DELIMITER //
-CREATE  PROCEDURE `prc_RateTableRateUpdatePreviousRate`(
-	IN `p_RateTableID` INT
-
-
-
-
-,
+CREATE PROCEDURE `prc_RateTableRateUpdatePreviousRate`(
+	IN `p_RateTableID` INT,
 	IN `p_EffectiveDate` VARCHAR(50)
-
-
-
 )
 BEGIN
 
@@ -3377,24 +3368,22 @@ BEGIN
 	DECLARE v_rowCount_ INT;
 
 
-	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
-
-
-
-
-	IF p_EffectiveDate != '' THEN
-
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;  
+			
+			
+			
+			
+	IF p_EffectiveDate != '' THEN		
+	
 			-- front end update , tmp_Update_RateTable_ table required
-
+			
 			SET  @EffectiveDate = STR_TO_DATE(p_EffectiveDate , '%Y-%m-%d');
-			SELECT @EffectiveDate;
-
-
+		 
 			SET @row_num = 0;
-
-			-- update  previous rate with all latest recent entriy of previous effective date
+			
+			-- update  previous rate with all latest recent entriy of previous effective date 
 			UPDATE tblRateTableRate rtr
-			inner join
+			inner join 
 			(
 				-- get all rates RowID = 1 to remove old to old effective date
 				select distinct tmp.* ,
@@ -3403,44 +3392,46 @@ BEGIN
 				@prev_EffectiveDate := tmp.EffectiveDate
 				FROM
 				(
-					select distinct rt1.*
+					select distinct rt1.* 
 					from tblRateTableRate rt1
 					inner join tblRateTableRate rt2
 					on rt1.RateTableId = p_RateTableId and rt1.RateID = rt2.RateID
-					where
-					rt1.RateTableID = p_RateTableId
+					where 
+					rt1.RateTableID = p_RateTableId 
 					and rt1.EffectiveDate < rt2.EffectiveDate AND rt2.EffectiveDate  = @EffectiveDate
 					order by rt1.RateID desc ,rt1.EffectiveDate desc
 				) tmp
-
-			) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID
+				
+			) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID 
 			and old_rtr.EffectiveDate < rtr.EffectiveDate AND rtr.EffectiveDate =  @EffectiveDate AND old_rtr.RowID = 1
-			SET rtr.PreviousRate = old_rtr.Rate
-			where
+			SET rtr.PreviousRate = old_rtr.Rate 
+			where 
 			rtr.RateTableID = p_RateTableId;
-
-
+	
+	
 	ELSE
-
+			
 		-- update for job
-
+				
 		DROP TEMPORARY TABLE IF EXISTS tmp_EffectiveDates_;
 			CREATE TEMPORARY TABLE tmp_EffectiveDates_ (
 				EffectiveDate  Date,
-				RowID int
+				RowID int,
+				INDEX (RowID)
 			);
-
-
-
-		-- loop through effective date to update previous rate
-
+			
+		
+	
+		-- loop through effective date to update previous rate   
+      
 		INSERT INTO tmp_EffectiveDates_
-		SELECT distinct
+		SELECT distinct 
 			EffectiveDate,
 			@row_num := @row_num+1 AS RowID
 		FROM tblRateTableRate a
 			,(SELECT @row_num := 0) x
 		WHERE  RateTableID = p_RateTableID
+		GROUP By EffectiveDate
 		order by EffectiveDate asc;
 
 		SET v_pointer_ = 1;
@@ -3453,52 +3444,52 @@ BEGIN
 
 				SET @EffectiveDate = ( SELECT EffectiveDate FROM tmp_EffectiveDates_ WHERE RowID = v_pointer_ );
 				SET @row_num = 0;
-
-	         -- update  previous rate with all latest recent entriy of previous effective date
+				
+	         -- update  previous rate with all latest recent entriy of previous effective date 
 				UPDATE tblRateTableRate rtr
-				inner join
+				inner join 
 				(
 					-- get all rates RowID = 1 to remove old to old effective date
-
+					
 					select distinct tmp.* ,
 					@row_num := IF(@prev_RateId = tmp.RateID AND @prev_EffectiveDate >= tmp.EffectiveDate, (@row_num + 1), 1) AS RowID,
 					@prev_RateId := tmp.RateID,
 					@prev_EffectiveDate := tmp.EffectiveDate
 					FROM
 					(
-						select distinct rt1.*
+						select distinct rt1.* 
 						from tblRateTableRate rt1
 						inner join tblRateTableRate rt2
 						on rt1.RateTableId = p_RateTableId and rt1.RateID = rt2.RateID
-						where
-						rt1.RateTableID = p_RateTableId
+						where 
+						rt1.RateTableID = p_RateTableId 
 						and rt1.EffectiveDate < rt2.EffectiveDate AND rt2.EffectiveDate  = @EffectiveDate
 						order by rt1.RateID desc ,rt1.EffectiveDate desc
 					) tmp
-
-
-				) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID and old_rtr.EffectiveDate < rtr.EffectiveDate
-				AND rtr.EffectiveDate =  @EffectiveDate  AND old_rtr.RowID = 1
-				SET rtr.PreviousRate = old_rtr.Rate
-				where
-				rtr.RateTableID = p_RateTableID;
-
-
+					
+				
+				) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID and old_rtr.EffectiveDate < rtr.EffectiveDate 
+				AND rtr.EffectiveDate =  @EffectiveDate  AND old_rtr.RowID = 1 
+				SET rtr.PreviousRate = old_rtr.Rate 
+				where 
+				rtr.RateTableID = p_RateTableID; 
+				
+				
 				SET v_pointer_ = v_pointer_ + 1;
 
 
 			END WHILE;
 
-		END IF;
-
+		END IF;			
+		
 		-- Previous rate update
-
-
-	END IF;
-
-
-	 SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-
+		
+		
+	END IF;		
+		
+		
+	 SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;						 
+	 
 
 END//
 DELIMITER ;
@@ -3506,7 +3497,7 @@ DELIMITER ;
 
 DROP PROCEDURE IF EXISTS `prc_WSGenerateRateTable`;
 DELIMITER //
-CREATE  PROCEDURE `prc_WSGenerateRateTable`(
+CREATE PROCEDURE `prc_WSGenerateRateTable`(
 	IN `p_jobId` INT,
 	IN `p_RateGeneratorId` INT,
 	IN `p_RateTableId` INT,
@@ -3514,20 +3505,6 @@ CREATE  PROCEDURE `prc_WSGenerateRateTable`(
 	IN `p_EffectiveDate` VARCHAR(10),
 	IN `p_delete_exiting_rate` INT,
 	IN `p_EffectiveRate` VARCHAR(50)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 )
 GenerateRateTable:BEGIN
 
@@ -3545,12 +3522,12 @@ GenerateRateTable:BEGIN
 		DECLARE v_RateGeneratorName_ VARCHAR(200);
 		DECLARE v_pointer_ INT ;
 		DECLARE v_rowCount_ INT ;
-
+		
 		DECLARE v_IncreaseEffectiveDate_ DATETIME ;
 		DECLARE v_DecreaseEffectiveDate_ DATETIME ;
 
 
-
+	
 
 
 		DECLARE v_tmp_code_cnt int ;
@@ -3758,23 +3735,23 @@ GenerateRateTable:BEGIN
 		);
 
 		SELECT CurrencyID INTO v_CurrencyID_ FROM  tblRateGenerator WHERE RateGeneratorId = p_RateGeneratorId;
-
+		
 		-- get Increase Decrease date from Job
 		SELECT IFNULL(REPLACE(JSON_EXTRACT(Options, '$.IncreaseEffectiveDate'),'"',''), p_EffectiveDate) , IFNULL(REPLACE(JSON_EXTRACT(Options, '$.DecreaseEffectiveDate'),'"',''), p_EffectiveDate)   INTO v_IncreaseEffectiveDate_ , v_DecreaseEffectiveDate_  FROM tblJob WHERE Jobid = p_jobId;
-
+		
 
 		IF v_IncreaseEffectiveDate_ is null OR v_IncreaseEffectiveDate_ = '' THEN
-
+				
 				SET v_IncreaseEffectiveDate_ = p_EffectiveDate;
-
+				
 		END IF;
-
+		
 		IF v_DecreaseEffectiveDate_ is null OR v_DecreaseEffectiveDate_ = '' THEN
-
+				
 				SET v_DecreaseEffectiveDate_ = p_EffectiveDate;
-
+				
 		END IF;
-
+		
 
 		SELECT
 			UsePreference,
@@ -4312,7 +4289,7 @@ GenerateRateTable:BEGIN
 				WHERE tblRateTableRate.RateTableId = p_RateTableId;
 			END IF;
 
-
+			
 			INSERT INTO tblRateTableRate (RateID,
 																		RateTableId,
 																		Rate,
@@ -4369,40 +4346,15 @@ GenerateRateTable:BEGIN
 			WHERE tblRate.CodeDeckId = v_codedeckid_
 						AND rate.rate != tblRateTableRate.Rate;
 
-
-			-- update  previous rate with all latest recent entriy of previous effective date
-			UPDATE tblRateTableRate rtr
-			inner join
-			(
-				-- get all rates RowID = 1 to remove old to old effective date
-
-				select distinct rt1.* ,
-				@row_num := IF(@prev_RateId = rt1.RateID AND @prev_EffectiveDate >= rt1.EffectiveDate, @row_num + 1, 1) AS RowID,
-				@prev_RateId := rt1.RateID,
-				@prev_EffectiveDate := rt1.EffectiveDate
-				from tblRateTableRate rt1
-				inner join tblRateTableRate rt2
-				on rt1.RateTableId = rt2.RateTableId and rt1.RateID = rt2.RateID
-				and rt1.EffectiveDate < rt2.EffectiveDate
-				where
-				rt1.RateTableID = p_RateTableId
-				order by rt1.RateID desc ,rt1.EffectiveDate desc
-
-			) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID and old_rtr.EffectiveDate < rtr.EffectiveDate AND rtr.EffectiveDate =  p_EffectiveDate AND old_rtr.RowID = 1
-			SET rtr.PreviousRate = old_rtr.Rate
-			where
-			rtr.RateTableID = p_RateTableId;
-
-
-			-- Update previous rate
+ 			-- Update previous rate
          call prc_RateTableRateUpdatePreviousRate(p_RateTableId,'');
-
-
-			-- update increase decrease effective date
+         
+			
+			-- update increase decrease effective date		 	
 			IF v_IncreaseEffectiveDate_ != v_DecreaseEffectiveDate_ THEN
-
+			
 					 UPDATE tblRateTableRate
-					 SET
+					 SET 
 					 tblRateTableRate.EffectiveDate =
 							CASE WHEN tblRateTableRate.PreviousRate < tblRateTableRate.Rate THEN
 								v_IncreaseEffectiveDate_
@@ -4410,13 +4362,13 @@ GenerateRateTable:BEGIN
 								v_DecreaseEffectiveDate_
 							ELSE p_EffectiveDate
 							END
-					WHERE
+					WHERE 
 					RateTableId = p_RateTableId
 					AND EffectiveDate = p_EffectiveDate;
-
+					
 			END IF;
-
-
+			
+						
 			DELETE tblRateTableRate
 			FROM tblRateTableRate
 			WHERE tblRateTableRate.RateTableId = p_RateTableId
@@ -4453,10 +4405,9 @@ GenerateRateTable:BEGIN
 	END//
 DELIMITER ;
 
-
 DROP PROCEDURE IF EXISTS `prc_WSGenerateRateTableWithPrefix`;
 DELIMITER //
-CREATE  PROCEDURE `prc_WSGenerateRateTableWithPrefix`(
+CREATE PROCEDURE `prc_WSGenerateRateTableWithPrefix`(
 	IN `p_jobId` INT,
 	IN `p_RateGeneratorId` INT,
 	IN `p_RateTableId` INT,
@@ -4464,16 +4415,6 @@ CREATE  PROCEDURE `prc_WSGenerateRateTableWithPrefix`(
 	IN `p_EffectiveDate` VARCHAR(10),
 	IN `p_delete_exiting_rate` INT,
 	IN `p_EffectiveRate` VARCHAR(50)
-
-
-
-
-
-
-
-
-
-
 )
 GenerateRateTable:BEGIN
 
@@ -4703,21 +4644,21 @@ GenerateRateTable:BEGIN
 
 		-- get Increase Decrease date from Job
 		SELECT IFNULL(REPLACE(JSON_EXTRACT(Options, '$.IncreaseEffectiveDate'),'"',''), p_EffectiveDate) , IFNULL(REPLACE(JSON_EXTRACT(Options, '$.DecreaseEffectiveDate'),'"',''), p_EffectiveDate)   INTO v_IncreaseEffectiveDate_ , v_DecreaseEffectiveDate_  FROM tblJob WHERE Jobid = p_jobId;
-
+		
 
 		IF v_IncreaseEffectiveDate_ is null OR v_IncreaseEffectiveDate_ = '' THEN
-
+				
 				SET v_IncreaseEffectiveDate_ = p_EffectiveDate;
-
+				
 		END IF;
-
+		
 		IF v_DecreaseEffectiveDate_ is null OR v_DecreaseEffectiveDate_ = '' THEN
-
+				
 				SET v_DecreaseEffectiveDate_ = p_EffectiveDate;
-
+				
 		END IF;
-
-
+		
+		
 		SELECT
 			UsePreference,
 			rateposition,
@@ -5189,7 +5130,7 @@ GenerateRateTable:BEGIN
 				WHERE tblRateTableRate.RateTableId = p_RateTableId;
 			END IF;
 
-
+			
 			INSERT INTO tblRateTableRate (RateID,
 																		RateTableId,
 																		Rate,
@@ -5246,40 +5187,14 @@ GenerateRateTable:BEGIN
 			WHERE tblRate.CodeDeckId = v_codedeckid_
 						AND rate.rate != tblRateTableRate.Rate;
 
-			-- update  previous rate with all latest recent entriy of previous effective date
-			UPDATE tblRateTableRate rtr
-			inner join
-			(
-
-
-				-- get all rates RowID = 1 to remove old to old effective date
-
-				select distinct rt1.* ,
-				@row_num := IF(@prev_RateId = rt1.RateID AND @prev_EffectiveDate >= rt1.EffectiveDate, @row_num + 1, 1) AS RowID,
-				@prev_RateId := rt1.RateID,
-				@prev_EffectiveDate := rt1.EffectiveDate
-				from tblRateTableRate rt1
-				inner join tblRateTableRate rt2
-				on rt1.RateTableId = rt2.RateTableId and rt1.RateID = rt2.RateID
-				and rt1.EffectiveDate < rt2.EffectiveDate
-				where
-				rt1.RateTableID = p_RateTableId
-				order by rt1.RateID desc ,rt1.EffectiveDate desc
-
-			) old_rtr on  old_rtr.RateTableID = rtr.RateTableID  and old_rtr.RateID = rtr.RateID and old_rtr.EffectiveDate < rtr.EffectiveDate AND rtr.EffectiveDate =  p_EffectiveDate AND old_rtr.RowID = 1
-			SET rtr.PreviousRate = old_rtr.Rate
-			where
-			rtr.RateTableID = p_RateTableId;
-
 			-- Update previous rate
          call prc_RateTableRateUpdatePreviousRate(p_RateTableId,'');
-
-
-			-- update increase decrease effective date
+         
+			-- update increase decrease effective date		 	
 			IF v_IncreaseEffectiveDate_ != v_DecreaseEffectiveDate_ THEN
-
+			
 					 UPDATE tblRateTableRate
-					 SET
+					 SET 
 					 tblRateTableRate.EffectiveDate =
 							CASE WHEN tblRateTableRate.PreviousRate < tblRateTableRate.Rate THEN
 								v_IncreaseEffectiveDate_
@@ -5287,14 +5202,14 @@ GenerateRateTable:BEGIN
 								v_DecreaseEffectiveDate_
 							ELSE p_EffectiveDate
 							END
-					WHERE
+					WHERE 
 					RateTableId = p_RateTableId
 					AND EffectiveDate = p_EffectiveDate;
-
+					
 			END IF;
-
-
-
+			
+			
+			
 			DELETE tblRateTableRate
 			FROM tblRateTableRate
 			WHERE tblRateTableRate.RateTableId = p_RateTableId
@@ -5332,6 +5247,90 @@ GenerateRateTable:BEGIN
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS `vwVendorVersion3VosSheet`;
+DELIMITER //
+CREATE PROCEDURE `vwVendorVersion3VosSheet`(
+	IN `p_AccountID` INT,
+	IN `p_Trunks` LONGTEXT,
+	IN `p_Effective` VARCHAR(50)
+)
+BEGIN
+
+
+
+	DROP TEMPORARY TABLE IF EXISTS tmp_VendorVersion3VosSheet_;
+   CREATE TEMPORARY TABLE IF NOT EXISTS tmp_VendorVersion3VosSheet_(
+			RateID int,
+			`Rate Prefix` varchar(50),
+			`Area Prefix` varchar(50),
+			`Rate Type` varchar(50),
+			`Area Name` varchar(200),
+			`Billing Rate` float,
+			`Billing Cycle` int,
+			`Minute Cost` float,
+			`Lock Type` varchar(50),
+			`Section Rate` varchar(50),
+			`Billing Rate for Calling Card Prompt` float,
+			`Billing Cycle for Calling Card Prompt` INT,
+			AccountID int,
+			TrunkID int,
+			EffectiveDate date
+	);
+	 Call vwVendorCurrentRates(p_AccountID,p_Trunks,p_Effective);	
+	 
+	 
+INSERT INTO tmp_VendorVersion3VosSheet_	 
+SELECT
+
+
+    NULL AS RateID,
+    IFNULL(tblTrunk.RatePrefix, '') AS `Rate Prefix`,
+    Concat('' , IFNULL(tblTrunk.AreaPrefix, '') , vendorRate.Code) AS `Area Prefix`,
+    'International' AS `Rate Type`,
+    vendorRate.Description AS `Area Name`,
+    vendorRate.Rate / 60 AS `Billing Rate`,
+    vendorRate.IntervalN AS `Billing Cycle`,
+    CAST(vendorRate.Rate AS DECIMAL(18, 5)) AS `Minute Cost`,
+    CASE
+        WHEN (tblVendorBlocking.VendorBlockingId IS NOT NULL AND
+        FIND_IN_SET(vendorRate.TrunkId,tblVendorBlocking.TrunkId) != 0
+             OR
+            (blockCountry.VendorBlockingId IS NOT NULL AND
+             FIND_IN_SET(vendorRate.TrunkId,blockCountry.TrunkId) != 0
+            )) THEN 'No Lock'
+        ELSE 'No Lock'
+    END
+    AS `Lock Type`,
+        CASE WHEN vendorRate.Interval1 != vendorRate.IntervalN 
+                                      THEN 
+                    Concat('0,', vendorRate.Rate, ',',vendorRate.Interval1)
+                                      ELSE ''
+                                 END as `Section Rate`,
+    0 AS `Billing Rate for Calling Card Prompt`,
+    0 AS `Billing Cycle for Calling Card Prompt`,
+    tblAccount.AccountID,
+    vendorRate.TrunkId,
+    vendorRate.EffectiveDate
+FROM tmp_VendorCurrentRates_ AS vendorRate
+INNER JOIN tblAccount 
+    ON vendorRate.AccountId = tblAccount.AccountID
+LEFT OUTER JOIN tblVendorBlocking
+    ON vendorRate.TrunkId = tblVendorBlocking.TrunkID
+    AND vendorRate.RateID = tblVendorBlocking.RateId
+    AND tblAccount.AccountID = tblVendorBlocking.AccountId
+LEFT OUTER JOIN tblVendorBlocking AS blockCountry
+    ON vendorRate.TrunkId = blockCountry.TrunkID
+    AND vendorRate.CountryID = blockCountry.CountryId
+    AND tblAccount.AccountID = blockCountry.AccountId
+INNER JOIN tblTrunk
+    ON tblTrunk.TrunkID = vendorRate.TrunkId
+WHERE (vendorRate.Rate > 0);
+
+
+
+END//
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS `prc_WSProcessRateTableRate`;
 DELIMITER //
 CREATE  PROCEDURE `prc_WSProcessRateTableRate`(
@@ -5341,16 +5340,6 @@ CREATE  PROCEDURE `prc_WSProcessRateTableRate`(
 	IN `p_processId` VARCHAR(200),
 	IN `p_addNewCodesToCodeDeck` INT,
 	IN `p_companyId` INT
-
-
-
-
-
-
-
-
-
-
 )
 BEGIN
 	DECLARE v_AffectedRecords_ INT DEFAULT 0;
@@ -13928,6 +13917,115 @@ BEGIN
 END//
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS `prc_CheckTicketsSlaVoilation`;
+DELIMITER //
+CREATE PROCEDURE `prc_CheckTicketsSlaVoilation`(
+	IN `p_CompanyID` int,
+	IN `p_currentDateTime` DATETIME
+)
+BEGIN
+	DECLARE P_Status varchar(100);
+	DECLARE v_ClosedResolvedStatus varchar(100);
+	
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET  sql_mode='';
+	
+	SELECT 
+		 group_concat(TFV.ValuesID separator ',') INTO P_Status FROM tblTicketfieldsValues TFV 
+	LEFT JOIN tblTicketfields TF 
+		ON TF.TicketFieldsID = TFV.FieldsID
+	WHERE 
+		TF.FieldType = 'default_status' AND TFV.FieldValueAgent!='Closed' AND TFV.FieldValueAgent!='Resolved';
+
+
+	SELECT 
+		 group_concat(TFV.ValuesID separator ',') INTO v_ClosedResolvedStatus FROM tblTicketfieldsValues TFV 
+	LEFT JOIN tblTicketfields TF 
+		ON TF.TicketFieldsID = TFV.FieldsID
+	WHERE 
+		TF.FieldType = 'default_status' AND TFV.FieldValueAgent='Closed' AND TFV.FieldValueAgent='Resolved';
+
+				
+				
+				
+	 DROP TEMPORARY TABLE IF EXISTS tmp_tickets_sla_voilation_;
+	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_tickets_sla_voilation_(
+		TicketID int,
+		TicketSlaID int,
+		CreatedDate datetime,
+		RespondTime datetime,
+		ResolveTime datetime,
+		IsRespondedVoilation int,
+		RespondEmailTime datetime,
+		DueDate datetime,
+		IsResolvedVoilation int,
+		EscalationEmail int
+	
+	);
+		insert into tmp_tickets_sla_voilation_
+		SELECT 
+			T.TicketID,				
+			T.TicketSlaID as TicketSlaID,
+			T.created_at as CreatedDate,
+		   CASE WHEN (TST.RespondType = 'Minute') THEN
+		       	DATE_ADD(T.created_at, INTERVAL TST.RespondValue Minute)  
+	 	  		  WHEN RespondType = 'Hour' THEN
+	   	 		DATE_ADD(T.created_at, INTERVAL TST.RespondValue Hour) 			
+			 	  WHEN (TST.RespondType = 'Day') THEN
+		      	 DATE_ADD(T.created_at, INTERVAL TST.RespondValue Day)  
+	 	  		  WHEN RespondType = 'Month' THEN
+	   	 		DATE_ADD(T.created_at, INTERVAL TST.RespondValue Month)  	   	 
+	  END AS RespondTime,
+	  	CASE WHEN (TST.ResolveType = 'Minute') THEN
+		       DATE_ADD(T.DueDate, INTERVAL TST.ResolveValue Minute)  
+	 	  	  WHEN ResolveType = 'Hour' THEN
+		   	 DATE_ADD(T.DueDate, INTERVAL TST.ResolveValue Hour) 			
+		 	  WHEN (TST.ResolveType = 'Day') THEN
+		       DATE_ADD(T.DueDate, INTERVAL TST.ResolveValue Day)  
+	 	  	  WHEN ResolveType = 'Month' THEN
+	   		 DATE_ADD(T.DueDate, INTERVAL TST.ResolveValue Month)  	   	 
+	  END AS ResolveTime,
+	  T.RespondSlaPolicyVoilationEmailStatus AS IsRespondedVoilation,
+	  '0000-00-00 00:00' as RespondEmailTime,
+	  T.DueDate,
+	  T.ResolveSlaPolicyVoilationEmailStatus AS IsResolvedVoilation,
+	  TST.EscalationEmail as EscalationEmail
+			 		
+		FROM 
+			tblTickets T			
+		LEFT JOIN tblTicketSlaTarget TST
+			ON TST.TicketSlaID = T.TicketSlaID											
+		WHERE   
+			T.CompanyID = p_CompanyID	
+			AND TST.PriorityID = T.Priority		
+			AND T.Group > 0
+			AND (P_Status = '' OR find_in_set(T.`Status`,P_Status))
+			AND ( ( AgentRepliedDate is NULL AND T.RespondSlaPolicyVoilationEmailStatus = 0 ) OR  ( find_in_set(T.`Status`,v_ClosedResolvedStatus) = 0 AND  T.ResolveSlaPolicyVoilationEmailStatus = 0 ) )
+			AND T.TicketSlaID>0;		
+	
+	    	
+			
+			UPDATE tmp_tickets_sla_voilation_ TSV SET
+			TSV.IsRespondedVoilation = 
+			CASE  
+			  WHEN TSV.IsRespondedVoilation =1 THEN 0 
+			  WHEN p_currentDateTime>=TSV.RespondTime THEN 1 ELSE 0			
+			END,
+			TSV.IsResolvedVoilation  =
+			CASE  
+				 WHEN TSV.IsResolvedVoilation =1 THEN 0 
+				WHEN p_currentDateTime>=TSV.ResolveTime THEN 1 ELSE 0
+			END;
+		
+			SELECT * FROM tmp_tickets_sla_voilation_ order by TicketID;
+		
+			
+			
+			
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+END//
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS `prc_getTicketTimeline`;
 DELIMITER //
 CREATE PROCEDURE `prc_getTicketTimeline`(
@@ -13937,12 +14035,12 @@ CREATE PROCEDURE `prc_getTicketTimeline`(
 )
 BEGIN
 
-DECLARE v_EmailParent int;
+DECLARE v_EmailParent int;	
 	select AccountEmailLogID into v_EmailParent from tblTickets where TicketID = p_TicketID;
-
+	
 	DROP TEMPORARY TABLE IF EXISTS tmp_ticket_timeline_;
    CREATE TEMPORARY TABLE IF NOT EXISTS tmp_ticket_timeline_(
-		`Timeline_type` int(11),
+		`Timeline_type` int(11),		
 		EmailCall int(11),
 		EmailfromName varchar(200),
 		EmailTo varchar(200),
@@ -13953,35 +14051,33 @@ DECLARE v_EmailParent int;
 		AttachmentPaths LONGTEXT,
 		AccountEmailLogID int(11),
 	    NoteID int(11),
-		Note longtext,
+		Note longtext,			
 		CreatedBy varchar(50),
 		created_at datetime,
-		updated_at datetime
+		updated_at datetime		
 	);
 
 	INSERT INTO tmp_ticket_timeline_
-	select 1 as Timeline_type,EmailCall,EmailfromName,EmailTo,Emailfrom,Message,Cc,Bcc,IFNULL(AttachmentPaths,'a:0:{}'),AccountEmailLogID,0 as NoteID,'' as Note,ael.CreatedBy,ael.created_at, ael.updated_at
-	from `AccountEmailLog` ael
-	where
-
+	select 1 as Timeline_type,EmailCall,EmailfromName,EmailTo,Emailfrom,Message,Cc,Bcc,IFNULL(AttachmentPaths,'a:0:{}'),AccountEmailLogID,0 as NoteID,'' as Note,ael.CreatedBy,ael.created_at, ael.updated_at 
+	from `AccountEmailLog` ael	
+	where 
+	
 	ael.TicketID = p_TicketID and
-	ael.CompanyID = p_CompanyID
-	and ael.EmailParent > 0
-
-	order by ael.created_at desc;
-
+	ael.CompanyID = p_CompanyID 
+	and ael.EmailParent > 0;
+	
 	IF p_isCustomer =0
 	THEN
-
+	
 	INSERT INTO tmp_ticket_timeline_
-	select 2 as Timeline_type,0 as EmailCall,'' as EmailfromName,'' as EmailTo,'' as Emailfrom,'' as Message,'' as Cc,'' as Bcc,'a:0:{}' as AttachmentPaths,0 as AccountEmailLogID,NoteID,Note,TN.created_by,TN.created_at, TN.updated_at
-	from `tblNote` TN
-	where
+	select 2 as Timeline_type,0 as EmailCall,'' as EmailfromName,'' as EmailTo,'' as Emailfrom,'' as Message,'' as Cc,'' as Bcc,'a:0:{}' as AttachmentPaths,0 as AccountEmailLogID,NoteID,Note,TN.created_by,TN.created_at, TN.updated_at 
+	from `tblNote` TN	
+	where 
 	TN.TicketID = p_TicketID and
-	TN.CompanyID = p_CompanyID
+	TN.CompanyID = p_CompanyID  	
 	order by TN.created_at desc;
 END IF;
-	select * from tmp_ticket_timeline_  order by created_at desc;
+	select * from tmp_ticket_timeline_  order by created_at desc;		
 END//
 DELIMITER ;
 
@@ -14323,7 +14419,7 @@ BEGIN
 		AND tblUsageDetails.is_inbound = 0
 		AND tblUsageDetails.trunk = 'other'
 		AND area_prefix <> 'other'
-	LIMIT 100000;
+		AND tblUsageHeader.StartDate = DATE(now());
 		
 	UPDATE RMCDR3.tblVendorCDR
 	INNER JOIN RMCDR3.tblVendorCDRHeader
@@ -14341,7 +14437,7 @@ BEGIN
 		AND tblVendorCDRHeader.AccountID IS NOT NULL
 		AND tblVendorCDR.trunk = 'other'
 		AND area_prefix <> 'other'
-	LIMIT 100000;
+		AND tblVendorCDRHeader.StartDate = DATE(now());
 
 END//
 DELIMITER ;
