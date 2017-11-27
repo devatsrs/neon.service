@@ -88,6 +88,7 @@ class VendorRateUpload extends Command
         $dialcode_separator = 'null';
         Log::useFiles(storage_path() . '/logs/vendorfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
+        $error = array();
         try {
 
             if (!empty($job)) {
@@ -167,7 +168,6 @@ class VendorRateUpload extends Command
                             $lineno = 1;
                         }
 
-                        $error = array();
                         $batch_insert_array = [];
 
                         foreach ($results as $index => $temp_row) {
