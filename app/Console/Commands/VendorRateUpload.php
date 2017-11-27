@@ -168,7 +168,7 @@ class VendorRateUpload extends Command
                             $lineno = 1;
                         }
 
-                        $batch_insert_array = [];
+                        $batch_insert_array = $batch_insert_array2 = [];
 
                         foreach ($attrselection as $key => $value) {
                             $attrselection->$key = str_replace("\r",'',$value);
@@ -214,36 +214,10 @@ class VendorRateUpload extends Command
                                 } else {
                                     $error[] = 'Description is blank at line no:' . $lineno;
                                 }
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                    if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
-                                    } else {
-                                        $error[] = 'Rate is not numeric at line no:' . $lineno;
-                                    }
-                                } else {
-                                    $error[] = 'Rate is blank at line no:' . $lineno;
-                                }
+
                                 /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
                                     $tempvendordata['CurrencyID'] = $attrselection->FromCurrency;
                                 }*/
-                                if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                                    try {
-                                        $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
-                                    } catch (\Exception $e) {
-                                        $error[] = 'Date format is Wrong  at line no:' . $lineno;
-                                    }
-                                } elseif (empty($attrselection->EffectiveDate)) {
-                                    $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                                } else {
-                                    $error[] = 'EffectiveDate is blank at line no:' . $lineno;
-                                }
-                                if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
-                                    try {
-                                        $tempvendordata['EndDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
-                                    } catch (\Exception $e) {
-                                        $error[] = 'Date format is Wrong  at line no:' . $lineno;
-                                    }
-                                }
 
                                 if (isset($attrselection->Action) && !empty($attrselection->Action)) {
                                     if (empty($temp_row[$attrselection->Action])) {
@@ -263,6 +237,34 @@ class VendorRateUpload extends Command
 
                                 } else {
                                     $tempvendordata['Change'] = 'I';
+                                }
+
+                                if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                    if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
+                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    } else {
+                                        $error[] = 'Rate is not numeric at line no:' . $lineno;
+                                    }
+                                }elseif($tempvendordata['Change'] != 'D') {
+                                    $error[] = 'Rate is blank at line no:'.$lineno;
+                                }
+                                if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
+                                    try {
+                                        $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
+                                    }catch (\Exception $e){
+                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                    }
+                                }elseif(empty($attrselection->EffectiveDate)){
+                                    $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                                }elseif($tempvendordata['Change'] != 'D') {
+                                    $error[] = 'EffectiveDate is blank at line no:'.$lineno;
+                                }
+                                if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
+                                    try {
+                                        $tempvendordata['EndDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
+                                    }catch (\Exception $e){
+                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                    }
                                 }
 
                                 if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
@@ -295,7 +297,11 @@ class VendorRateUpload extends Command
                                     }
                                 }
                                 if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])) {
-                                    $batch_insert_array[] = $tempvendordata;
+                                    if(isset($tempvendordata['EndDate'])) {
+                                        $batch_insert_array[] = $tempvendordata;
+                                    } else {
+                                        $batch_insert_array2[] = $tempvendordata;
+                                    }
                                     $counter++;
                                 }
                             }
@@ -305,19 +311,22 @@ class VendorRateUpload extends Command
                                 Log::info('global counter' . $lineno);
                                 Log::info('insertion start');
                                 TempVendorRate::insert($batch_insert_array);
+                                TempVendorRate::insert($batch_insert_array2);
                                 Log::info('insertion end');
                                 $batch_insert_array = [];
+                                $batch_insert_array2 = [];
                                 $counter = 0;
                             }
                             $lineno++;
                         } // loop over
 
-                        if (!empty($batch_insert_array)) {
+                        if(!empty($batch_insert_array) || !empty($batch_insert_array)){
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
                             Log::info('insertion start');
                             Log::info('last batch insert ' . count($batch_insert_array));
                             TempVendorRate::insert($batch_insert_array);
+                            TempVendorRate::insert($batch_insert_array2);
                             Log::info('insertion end');
                         }
                     } else {
