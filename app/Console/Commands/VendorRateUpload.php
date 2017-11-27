@@ -170,11 +170,22 @@ class VendorRateUpload extends Command
 
                         $batch_insert_array = [];
 
+                        foreach ($attrselection as $key => $value) {
+                            $attrselection->$key = str_replace("\r",'',$value);
+                            $attrselection->$key = str_replace("\n",'',$attrselection->$key);
+                        }
+
                         foreach ($results as $index => $temp_row) {
 
                             if ($csvoption->Firstrow == 'data') {
                                 array_unshift($temp_row, null);
                                 unset($temp_row[0]);
+                            }
+
+                            foreach ($temp_row as $key => $value) {
+                                $key = str_replace("\r",'',$key);
+                                $key = str_replace("\n",'',$key);
+                                $temp_row[$key] = $value;
                             }
 
                             $tempvendordata = array();
