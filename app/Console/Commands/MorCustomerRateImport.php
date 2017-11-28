@@ -184,7 +184,7 @@ class MorCustomerRateImport extends Command {
 									$uddata['Rate'] = $rate['rate'];
 									//$uddata['Preference'] = $rate['Preference'];
 									//$uddata['ConnectionFee'] = $rate['ConnectionFee'];
-									$uddata['EffectiveDate'] = $rate['effective_from'];
+									$uddata['EffectiveDate'] = date('Y-m-d',strtotime($rate['effective_from']));
 									$uddata['Interval1'] = $rate['min_time'] == 0 ? 1 : $rate['min_time'];
 									$uddata['IntervalN'] = $rate['increment_s'];
 
@@ -207,6 +207,28 @@ class MorCustomerRateImport extends Command {
 								$InserData = array();
 								$data_count = 0;
 							}
+
+							/**
+							 * one by one accountwise procedure run
+							 */
+
+							Log::info("ProcessRate ".$Acccount->AccountName);
+
+							DB::beginTransaction();
+							DB::connection('sqlsrv2')->beginTransaction();
+
+							$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
+							if (count($result_data)) {
+								$joblogdata['Message'] .=  implode('<br>', $result_data);
+							} else {
+								$joblogdata['Message'] .= $AccountName ." No data imported";
+							}
+
+							DB::connection('sqlsrv2')->commit();
+							DB::commit();
+
+							DB::table($temptableName)->where(["processId" => $processID])->delete();
+
 						} else {
 							$error[] = "rates not found for Account : '" . $Acccount->AccountName . "'";
 						}
@@ -220,19 +242,6 @@ class MorCustomerRateImport extends Command {
 
 			Log::info("Account Loop End");
 			//Log::info('TempTable Data Count : '.DB::table($temptableName)->where(["processId" => $processID])->count());
-			Log::info("ProcessRate($processID,$temptableName)");
-			DB::beginTransaction();
-			DB::connection('sqlsrv2')->beginTransaction();
-
-			$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
-			if (count($result_data)) {
-				$joblogdata['Message'] .=  implode('<br>', $result_data);
-			} else {
-				$joblogdata['Message'] .= "No data imported";
-			}
-
-			DB::connection('sqlsrv2')->commit();
-			DB::commit();
 
 			if(!empty($error)) {
 				$joblogdata['Message'] = $joblogdata['Message'].implode('<br>',$error) ;
@@ -240,7 +249,6 @@ class MorCustomerRateImport extends Command {
 			} else {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			}
-			DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 		} catch (\Exception $e) {
 			try {
