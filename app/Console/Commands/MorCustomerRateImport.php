@@ -139,14 +139,14 @@ class MorCustomerRateImport extends Command {
 										$error_message = "Trunk Not exists for account : ". $AccountName;
 										$error[] = $error_message;
 										Log::error($error_message);
-										throw  new \Exception($error_message);
+										//throw  new \Exception($error_message);
 									}
 
 									if($TrunkID == 0) {
 										$error_message = "Trunk not found for '" . $rate['purpose'];
 										$error[] = $error_message;
 										Log::error($error_message);
-										throw  new \Exception($error_message);
+										//throw  new \Exception($error_message);
 									}
 
 									if ($TrunkID > 0 && $AccountID > 0) {
