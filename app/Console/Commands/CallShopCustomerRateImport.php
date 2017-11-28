@@ -105,7 +105,7 @@ class CallShopCustomerRateImport extends Command {
 			}
 
 			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'customer');
-			$current_date = date('Y-m-d H:i:s');
+			$current_date = date('Y-m-d');
 			Log::info("Start");
 
 			$error = array();
@@ -208,6 +208,28 @@ class CallShopCustomerRateImport extends Command {
 								$InserData = array();
 								$data_count = 0;
 							}
+
+							/** Code Added **/
+
+							Log::info("ProcessRate ".$AccountName);
+
+							DB::beginTransaction();
+							DB::connection('sqlsrv2')->beginTransaction();
+
+							$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
+							if (count($result_data)) {
+								$joblogdata['Message'] .=  implode('<br>', $result_data);
+							} else {
+								$joblogdata['Message'] .= $AccountName." No data imported";
+							}
+
+							DB::connection('sqlsrv2')->commit();
+							DB::commit();
+
+							DB::table($temptableName)->where(["processId" => $processID])->delete();
+
+							/** Code Added **/
+
 						} else {
 							$error[] = "rates not found for Account : '" . $Account->AccountName . "'";
 						}
@@ -221,19 +243,6 @@ class CallShopCustomerRateImport extends Command {
 
 			Log::info("Account Loop End");
 			//Log::info('TempTable Data Count : '.DB::table($temptableName)->where(["processId" => $processID])->count());
-			Log::info("ProcessRate($processID,$temptableName)");
-			DB::beginTransaction();
-			DB::connection('sqlsrv2')->beginTransaction();
-
-			$result_data = RateImportExporter::importCustomerRate($processID, $temptableName);
-			if (count($result_data)) {
-				$joblogdata['Message'] .=  implode('<br>', $result_data);
-			} else {
-				$joblogdata['Message'] .= "No data imported";
-			}
-
-			DB::connection('sqlsrv2')->commit();
-			DB::commit();
 
 			if(!empty($error)) {
 				$joblogdata['Message'] = $joblogdata['Message'].implode('<br>',$error) ;
@@ -241,7 +250,6 @@ class CallShopCustomerRateImport extends Command {
 			} else {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			}
-			DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 		} catch (\Exception $e) {
 			try {
