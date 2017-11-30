@@ -120,7 +120,7 @@ class MorCustomerRateImport extends Command {
 			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'customer');
 			Log::info("Start");
 
-			$error = array();
+			$error = $error1 = array();
 			Log::info(' ========================== Customer Rate  Transaction start =============================');
 			CronJob::createLog($CronJobID);
 
@@ -151,14 +151,14 @@ class MorCustomerRateImport extends Command {
 										}
 									} else {
 										$error_message = "Trunk Not exists for account : ". $AccountName;
-										$error[] = $error_message;
+										$error1[] = $error_message;
 										Log::error($error_message);
 										//throw  new \Exception($error_message);
 									}
 
 									if($TrunkID == 0) {
 										$error_message = "Trunk not found for '" . $rate['purpose'];
-										$error[] = $error_message;
+										$error1[] = $error_message;
 										Log::error($error_message);
 										//throw  new \Exception($error_message);
 									}
@@ -244,10 +244,10 @@ class MorCustomerRateImport extends Command {
 							DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 						} else {
-							$error[] = "rates not found for Account : '" . $Account->AccountName . "'";
+							$error1[] = "rates not found for Account : '" . $Account->AccountName . "'";
 						}
 					} else {
-						$error[] = "Error getting rates for Account : '" . $Account->AccountName . "' -  Error: " . $rates['faultString'];
+						$error1[] = "Error getting rates for Account : '" . $Account->AccountName . "' -  Error: " . $rates['faultString'];
 					}
 				} catch (\Exception $e) {
 					//Log::error($e);
@@ -271,6 +271,9 @@ class MorCustomerRateImport extends Command {
 			} else {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			}
+			if(!empty($error1)) {
+				$joblogdata['Message'] = $joblogdata['Message'] . implode('<br>', $error1);
+			}
 
 		} catch (\Exception $e) {
 			try {
@@ -293,23 +296,23 @@ class MorCustomerRateImport extends Command {
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			Log::error($e);
-			/*if(!empty($cronsetting['ErrorEmail'])) {
+			if(!empty($cronsetting['ErrorEmail'])) {
 
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
 				Log::error("**Email Sent Status " . $result['status']);
 				Log::error("**Email Sent message " . $result['message']);
-			}*/
+			}
 		}
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		CronJob::deactivateCronJob($CronJob);
 
-		/*if(!empty($cronsetting['SuccessEmail'])) {
+		if(!empty($cronsetting['SuccessEmail'])) {
 
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);
 			Log::error("**Email Sent message ".$result['message']);
 
-		}*/
+		}
 
 		CronHelper::after_cronrun($this->name, $this);
 	}
