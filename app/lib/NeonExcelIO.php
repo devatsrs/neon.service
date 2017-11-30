@@ -215,6 +215,7 @@ class NeonExcelIO
         }
 
         $result = array();
+
         $this->reader = ReaderFactory::create(Type::CSV); // for XLSX files
         $this->set_file_settings();
         $this->reader->open($filepath);
@@ -268,7 +269,8 @@ class NeonExcelIO
 
         }
 
-        if(self::$end_row)
+        $this->remove_footer_bottom_rows($result);
+        /*if(self::$end_row)
         {
             $requiredRow = abs($this->row_cnt - self::$end_row - self::$start_row-1);
             $totatRow = count($result);
@@ -279,7 +281,7 @@ class NeonExcelIO
                     unset($result[$i]);
                 }
             }
-        }
+        }*/
 
         $this->reader->close();
         return $result;
@@ -346,8 +348,11 @@ class NeonExcelIO
 
         }
 
-        if(self::$end_row)
+        $this->remove_footer_bottom_rows($result);
+
+        /*if(self::$end_row > 0)
         {
+
             $requiredRow = abs($this->row_cnt - self::$end_row - self::$start_row);
             $totatRow = count($result);
             if($requiredRow<$limit || $limit==0)
@@ -357,7 +362,7 @@ class NeonExcelIO
                     unset($result[$i]);
                 }
             }
-        }
+        }*/
 
         $this->reader->close();
 
@@ -414,7 +419,9 @@ class NeonExcelIO
                  $results=$tmp_results;
             }
 
-            if(self::$end_row && $totalRow>0)
+             $this->remove_footer_bottom_rows($result);
+
+            /*if(self::$end_row && $totalRow>0)
             {
                 $requiredRow = $totalRow - self::$end_row - self::$start_row;
                 $countRow =count($results);
@@ -422,7 +429,7 @@ class NeonExcelIO
                 {
                     unset($results[$i]);
                 }
-            }
+            }*/
 
 			return $results;
 				 
@@ -955,6 +962,49 @@ class NeonExcelIO
         $writer->close();
         if(rename (  $old_file , $new_file )) {
             return true;
+        }
+
+    }
+
+    /**
+     * Remove footer bottom rows for vendor upload file - for file cleanup.
+     * @param $result
+     */
+    public function remove_footer_bottom_rows(&$result){
+
+        if ( count($result) > 0 ) {
+
+//            Log::info("Before end row cleanup");
+//            Log::info("Total Result entries " . count($result));
+//            Log::info(print_r($result[0],true));
+//            Log::info(print_r($result[(count($result)-1)],true));
+
+            $columns = array_keys($result);
+
+            if(count($columns) > 0) {
+
+                for($i  = count($result) - 1 ; $i > 0; $i--)
+                {
+                    $empty_cnt = 0;
+                    foreach ($columns as $column ) {
+
+                        if(isset($result[$i][$column]) && empty($result[$i][$column])){
+                            $empty_cnt++;
+                        }
+                    }
+                    if($empty_cnt > 2){
+                        unset($result[$i]);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+//            Log::info("After end row cleanup");
+//            Log::info("Total Result entries " . count($result));
+//            Log::info(print_r($result[0],true));
+//            Log::info(print_r($result[(count($result)-1)],true));
+
         }
 
     }

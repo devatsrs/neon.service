@@ -320,7 +320,7 @@ class VendorRateUpload extends Command
                             $lineno++;
                         } // loop over
 
-                        if(!empty($batch_insert_array) || !empty($batch_insert_array)){
+                        if(!empty($batch_insert_array) || !empty($batch_insert_array) || !empty($batch_insert_array2)){
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
                             Log::info('insertion start');
