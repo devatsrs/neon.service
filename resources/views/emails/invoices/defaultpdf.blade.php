@@ -112,58 +112,132 @@
             <thead>
 
 
-
+            <?php $VisibleColumns = (array)json_decode($InvoiceTemplate->VisibleColumns); $colspan = 0; ?>
             <tr>
-                <th class="desc"><b>Usage</b></th>
-                <th class="desc"><b>Recurring</b></th>
-                <th class="desc"><b>Additional</b></th>
-                <th class="total"><b>Total</b></th>
+                @if(!empty($VisibleColumns))
+                    @if(isset($VisibleColumns['Description']) && $VisibleColumns['Description'] == 1 && !empty($InvoiceTemplate->ItemDescription))
+                        <?php $colspan++; ?>
+                        <th class="desc"><b>Description</b></th>
+                    @endif
+                    @if(isset($VisibleColumns['Usage']) && $VisibleColumns['Usage'] == 1)
+                        <?php $colspan++; ?>
+                        <th class="desc"><b>Usage</b></th>
+                    @endif
+                    @if(isset($VisibleColumns['Recurring']) && $VisibleColumns['Recurring'] == 1)
+                        <?php $colspan++; ?>
+                        <th class="desc"><b>Recurring</b></th>
+                    @endif
+                    @if(isset($VisibleColumns['Additional']) && $VisibleColumns['Additional'] == 1)
+                        <?php $colspan++; ?>
+                        <th class="desc"><b>Additional</b></th>
+                    @endif
+                    @if($colspan == 0)
+                        <th class="desc"></th>
+                    @endif
+                        <th class="total"><b>Total</b></th>
+                @else
+                    <?php $colspan = 2; ?>
+                    <th class="desc"><b>Usage</b></th>
+                    <th class="desc"><b>Recurring</b></th>
+                    <th class="desc"><b>Additional</b></th>
+                    <th class="total"><b>Total</b></th>
+                @endif
             </tr>
             </thead>
             <tbody>
 
             <tr>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
-                <td class="desc">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
-                <td class="total">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
+                @if(!empty($VisibleColumns))
+                    @if(isset($VisibleColumns['Description']) && $VisibleColumns['Description'] == 1 && !empty($InvoiceTemplate->ItemDescription))
+                        <td class="desc">{{$InvoiceTemplate->ItemDescription}}</td>
+                    @endif
+                    @if(isset($VisibleColumns['Usage']) && $VisibleColumns['Usage'] == 1)
+                        <td class="desc">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
+                    @endif
+                    @if(isset($VisibleColumns['Recurring']) && $VisibleColumns['Recurring'] == 1)
+                        <td class="desc">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
+                    @endif
+                    @if(isset($VisibleColumns['Additional']) && $VisibleColumns['Additional'] == 1)
+                        <td class="desc">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
+                    @endif
+                    @if($colspan == 0)
+                        <td class="desc"></td>
+                    @endif
+                        <td class="total">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
+                @else
+                    <td class="desc">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
+                    <td class="desc">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
+                    <td class="desc">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
+                    <td class="total">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
+                @endif
             </tr>
 
 
 
             </tbody>
             <tfoot>
+            <?php $colspan--; ?>
             <tr>
-                <td ></td>
-                <td colspan="2">Sub Total</td>
+                @if(!empty($VisibleColumns))
+                    @if($colspan > 0)
+                        <td colspan="{{$colspan}}"></td>
+                    @endif
+                @else
+                    <td colspan="2"></td>
+                @endif
+                <td>Sub Total</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
                 <tr>
-                    <td ></td>
-                    <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
+                    @if(!empty($VisibleColumns))
+                        @if($colspan > 0)
+                            <td colspan="{{$colspan}}"></td>
+                        @endif
+                    @else
+                        <td colspan="2"></td>
+                    @endif
+                    <td>{{$InvoiceTaxRate->Title}}</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
                 </tr>
                 @endforeach
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
-                    <td ></td>
-                    <td colspan="2">Discount</td>
+                    @if(!empty($VisibleColumns))
+                        @if($colspan > 0)
+                            <td colspan="{{$colspan}}"></td>
+                        @endif
+                    @else
+                        <td colspan="2"></td>
+                    @endif
+                    <td>Discount</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDiscount,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
-                    <td ></td>
-                    <td colspan="2">Brought Forward</td>
+                    @if(!empty($VisibleColumns))
+                        @if($colspan > 0)
+                            <td colspan="{{$colspan}}"></td>
+                        @endif
+                    @else
+                        <td colspan="2"></td>
+                    @endif
+                    <td>Brought Forward</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             <tr>
-                <td ></td>
-                <td colspan="2">
+                @if(!empty($VisibleColumns))
+                    @if($colspan > 0)
+                        <td colspan="{{$colspan}}"></td>
+                    @endif
+                @else
+                    <td colspan="2"></td>
+                @endif
+                <td>
 					@if(!$InvoiceTemplate->ShowPrevBal)
 						<b>
 					@endif
@@ -188,8 +262,14 @@
             </tr>
             @if($InvoiceTemplate->ShowPrevBal)
                 <tr>
-                    <td ></td>
-                    <td colspan="2"><b>Total Due</b></td>
+                    @if(!empty($VisibleColumns))
+                        @if($colspan > 0)
+                            <td colspan="{{$colspan}}"></td>
+                        @endif
+                    @else
+                        <td colspan="2"></td>
+                    @endif
+                    <td><b>Total Due</b></td>
                     <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
                 </tr>
             @endif
