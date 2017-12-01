@@ -168,6 +168,9 @@ class VendorRateUpload extends Command
                             $lineno = 1;
                         }
 
+
+                        // if EndDate is mapped and not empty than data will store in and insert from $batch_insert_array
+                        // if EndDate is mapped and     empty than data will store in and insert from $batch_insert_array2
                         $batch_insert_array = $batch_insert_array2 = [];
 
                         foreach ($attrselection as $key => $value) {
@@ -320,11 +323,12 @@ class VendorRateUpload extends Command
                             $lineno++;
                         } // loop over
 
-                        if(!empty($batch_insert_array) || !empty($batch_insert_array) || !empty($batch_insert_array2)){
+                        if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
                             Log::info('insertion start');
                             Log::info('last batch insert ' . count($batch_insert_array));
+                            Log::info('last batch insert 2 ' . count($batch_insert_array2));
                             TempVendorRate::insert($batch_insert_array);
                             TempVendorRate::insert($batch_insert_array2);
                             Log::info('insertion end');
