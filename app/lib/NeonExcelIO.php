@@ -269,8 +269,8 @@ class NeonExcelIO
 
         }
 
-        $this->remove_footer_bottom_rows($result);
-        /*if(self::$end_row)
+        //$result = $this->remove_footer_bottom_rows($result);
+        if(self::$end_row)
         {
             $requiredRow = abs($this->row_cnt - self::$end_row - self::$start_row-1);
             $totatRow = count($result);
@@ -281,7 +281,7 @@ class NeonExcelIO
                     unset($result[$i]);
                 }
             }
-        }*/
+        }
 
         $this->reader->close();
         return $result;
@@ -348,9 +348,9 @@ class NeonExcelIO
 
         }
 
-        $this->remove_footer_bottom_rows($result);
+        //$result = $this->remove_footer_bottom_rows($result);
 
-        /*if(self::$end_row > 0)
+        if(self::$end_row > 0)
         {
 
             $requiredRow = abs($this->row_cnt - self::$end_row - self::$start_row);
@@ -362,7 +362,7 @@ class NeonExcelIO
                     unset($result[$i]);
                 }
             }
-        }*/
+        }
 
         $this->reader->close();
 
@@ -396,7 +396,7 @@ class NeonExcelIO
              $limit++;
             }
 
-			$results = Excel::selectSheetsByIndex(0)->load($filepath, function ($reader) use ($flag,$isExcel,&$totalRow) {
+			$result = Excel::selectSheetsByIndex(0)->load($filepath, function ($reader) use ($flag,$isExcel,&$totalRow) {
                 if(self::$start_row>0)
                 {
                     $reader->skip(self::$start_row-1);
@@ -410,28 +410,28 @@ class NeonExcelIO
             if(self::$start_row>0)
             {
                  $tmp_results=array();
-                 $column=array_values($results[0]);
-                 unset($results[0]);
-                 foreach ($results as $row)
+                 $column=array_values($result[0]);
+                 unset($result[0]);
+                 foreach ($result as $row)
                  {
                      $tmp_results[] = array_combine($column, array_values($row));
                  }
-                 $results=$tmp_results;
+                 $result=$tmp_results;
             }
 
-             $this->remove_footer_bottom_rows($result);
+         //$result = $this->remove_footer_bottom_rows($result);
 
-            /*if(self::$end_row && $totalRow>0)
+            if(self::$end_row && $totalRow>0)
             {
                 $requiredRow = $totalRow - self::$end_row - self::$start_row;
-                $countRow =count($results);
+                $countRow =count($result);
                 for($i=$requiredRow-1 ; $i < $countRow; $i++)
                 {
-                    unset($results[$i]);
+                    unset($result[$i]);
                 }
-            }*/
+            }
 
-			return $results;
+			return $result;
 				 
 	 }
 	///////////
@@ -970,7 +970,7 @@ class NeonExcelIO
      * Remove footer bottom rows for vendor upload file - for file cleanup.
      * @param $result
      */
-    public function remove_footer_bottom_rows(&$result){
+    public function remove_footer_bottom_rows($result){
 
         if ( count($result) > 0 ) {
 
@@ -1006,6 +1006,7 @@ class NeonExcelIO
 //            Log::info(print_r($result[(count($result)-1)],true));
 
         }
+        return $result;
 
     }
 }
