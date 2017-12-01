@@ -89,11 +89,19 @@ class MorCustomerRateImport extends Command {
 		Log::useFiles(storage_path() . '/logs/morcustomerrateimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$start_time = date('Y-m-d H:i:s');
 			$mor = new MOR($CompanyGatewayID);
+			$mor_customers = $mor->listCustomerNames();
+			$end_time = date('Y-m-d H:i:s');
+			$execution_time = strtotime($end_time) - strtotime($start_time);
+			Log::info("execution time for getting accounts from mor : " . $execution_time . " seconds");
+			Log::info('accounts count from Mor : '.count($mor_customers));
 
+			$start_time = date('Y-m-d H:i:s');
 			if(isset($cronsetting['customers']) && $cronsetting['customers'] != '') {
 				$AccountIDs = $cronsetting['customers'];
-				$Acccounts = Account::whereIn('AccountID',$AccountIDs)->where(['IsCustomer'=>1])->select('AccountID','AccountName')->get();
+				//$Accounts = Account::whereIn('AccountID',$AccountIDs)->where(['IsCustomer'=>1])->lists('AccountID','AccountName');
+				$Accounts = Account::whereIn('AccountID',$AccountIDs)->whereIn('AccountName',$mor_customers)->where(['IsCustomer'=>1])->select('AccountID','AccountName')->get();
 			} else {
 				$a_data['Status'] = 1;
 				$a_data['AccountType'] = 1;
@@ -101,30 +109,36 @@ class MorCustomerRateImport extends Command {
 				$a_data['CompanyID'] = $CompanyID;
 				$a_data['IsCustomer'] = 1;
 
-				$Acccounts = Account::where($a_data)->select('AccountID','AccountName')->get();
+				//$Accounts = Account::where($a_data)->lists('AccountID','AccountName');
+				$Accounts = Account::where($a_data)->whereIn('AccountName',$mor_customers)->select('AccountID','AccountName')->get();
 			}
+			$end_time = date('Y-m-d H:i:s');
+			Log::info('Accounts which exist in both Neon and Mor : '.count($Accounts));
+			$execution_time = strtotime($end_time) - strtotime($start_time);
+			Log::info("execution time for getting Accounts from NEON : " . $execution_time . " seconds");
 
 			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'customer');
-			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");
 
-			$error = array();
+			$error = $error1 = array();
 			Log::info(' ========================== Customer Rate  Transaction start =============================');
 			CronJob::createLog($CronJobID);
 
 			Log::info("Account Loop Start");
-			foreach ($Acccounts as $Acccount) {
-
+			$start_time = date('Y-m-d H:i:s');
+			foreach ($Accounts as $Account) {
+				$start_time_acc = date('Y-m-d H:i:s');
+				Log::info("Getting rates for Account : " . $Account->AccountName);
 				try {
-					$param['username'] = $Acccount->AccountName;
+					$param['username'] = $Account->AccountName;
 					$rates = $mor->getRates($param);
 					//Log::info(print_r($rates,true));exit;
 					$InserData = array();
 					$TrunkID = $AccountID = 0;
 					$row_count = 0;
 
-					$AccountID = $Acccount->AccountID;
-					$AccountName = $Acccount->AccountName;
+					$AccountID = $Account->AccountID;
+					$AccountName = $Account->AccountName;
 
 					if (!isset($rates['faultString']) && !isset($rates['faultCode'])) {
 						if (isset($rates['rates']) && !empty($rates['rates']) && count($rates['rates']) > 0) {
@@ -137,14 +151,14 @@ class MorCustomerRateImport extends Command {
 										}
 									} else {
 										$error_message = "Trunk Not exists for account : ". $AccountName;
-										$error[] = $error_message;
+										$error1[] = $error_message;
 										Log::error($error_message);
 										//throw  new \Exception($error_message);
 									}
 
 									if($TrunkID == 0) {
 										$error_message = "Trunk not found for '" . $rate['purpose'];
-										$error[] = $error_message;
+										$error1[] = $error_message;
 										Log::error($error_message);
 										//throw  new \Exception($error_message);
 									}
@@ -212,7 +226,7 @@ class MorCustomerRateImport extends Command {
 							 * one by one accountwise procedure run
 							 */
 
-							Log::info("ProcessRate ".$Acccount->AccountName);
+							Log::info("ProcessRate ".$Account->AccountName);
 
 							DB::beginTransaction();
 							DB::connection('sqlsrv2')->beginTransaction();
@@ -230,17 +244,25 @@ class MorCustomerRateImport extends Command {
 							DB::table($temptableName)->where(["processId" => $processID])->delete();
 
 						} else {
-							$error[] = "rates not found for Account : '" . $Acccount->AccountName . "'";
+							$error1[] = "rates not found for Account : '" . $Account->AccountName . "'";
 						}
 					} else {
-						$error[] = "Error getting rates for Account : '" . $Acccount->AccountName . "' -  Error: " . $rates['faultString'];
+						$error1[] = "Error getting rates for Account : '" . $Account->AccountName . "' -  Error: " . $rates['faultString'];
 					}
 				} catch (\Exception $e) {
-					Log::error($e);
+					//Log::error($e);
+					$err = "Error getting rates for Account : '" . $Account->AccountName . "' -  Error: " . $e;
+					Log::error($err);
+					$error[] = $err;
 				}
+				$end_time_acc = date('Y-m-d H:i:s');
+				$execution_time_acc = strtotime($end_time_acc) - strtotime($start_time_acc);
+				Log::info("execution time to import rates for account ".$Account->AccountName." : ".$execution_time_acc . " seconds");
 			}
-
+			$end_time = date('Y-m-d H:i:s');
 			Log::info("Account Loop End");
+			$execution_time = strtotime($end_time) - strtotime($start_time);
+			Log::info("Account Loop execution time : ".$execution_time . " seconds");
 			//Log::info('TempTable Data Count : '.DB::table($temptableName)->where(["processId" => $processID])->count());
 
 			if(!empty($error)) {
@@ -248,6 +270,9 @@ class MorCustomerRateImport extends Command {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			} else {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			}
+			if(!empty($error1)) {
+				$joblogdata['Message'] = $joblogdata['Message'] . implode('<br>', $error1);
 			}
 
 		} catch (\Exception $e) {
@@ -271,23 +296,23 @@ class MorCustomerRateImport extends Command {
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			Log::error($e);
-			/*if(!empty($cronsetting['ErrorEmail'])) {
+			if(!empty($cronsetting['ErrorEmail'])) {
 
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
 				Log::error("**Email Sent Status " . $result['status']);
 				Log::error("**Email Sent message " . $result['message']);
-			}*/
+			}
 		}
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		CronJob::deactivateCronJob($CronJob);
 
-		/*if(!empty($cronsetting['SuccessEmail'])) {
+		if(!empty($cronsetting['SuccessEmail'])) {
 
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);
 			Log::error("**Email Sent message ".$result['message']);
 
-		}*/
+		}
 
 		CronHelper::after_cronrun($this->name, $this);
 	}
