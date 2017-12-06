@@ -198,8 +198,18 @@ class CompanyGateway extends \Eloquent {
 
         }
     }
-    public static function getCallID(){
-        return  DB::connection('sqlsrvcdr')->table('tblUCall')->insertGetId(array());
+    public static function getCallID($CompanyID,$CompanyGatewayID){
+        $UniqueID = (int)CompanyConfiguration::getValueConfigurationByKey($CompanyID,'VOS_UniqueID_'.$CompanyGatewayID);
+        if($UniqueID == 0){
+            $CompanyConfiguration['CompanyID'] = $CompanyID;
+            $CompanyConfiguration['Key'] = 'VOS_UniqueID_'.$CompanyGatewayID;
+            $CompanyConfiguration['Value'] = $UniqueID =  1;
+            CompanyConfiguration::insert($CompanyConfiguration);
+        }
+        return $UniqueID;
+    }
+    public static function setCallID($CompanyID,$CompanyGatewayID,$UniqueID){
+        CompanyConfiguration::where(['CompanyID'=>$CompanyID,'Key'=>'VOS_UniqueID_'.$CompanyGatewayID])->update(array('Value'=>$UniqueID));
     }
 
     /** function not in use*/
