@@ -168,6 +168,9 @@ class VendorRateUpload extends Command
                             $lineno = 1;
                         }
 
+
+                        // if EndDate is mapped and not empty than data will store in and insert from $batch_insert_array
+                        // if EndDate is mapped and     empty than data will store in and insert from $batch_insert_array2
                         $batch_insert_array = $batch_insert_array2 = [];
 
                         foreach ($attrselection as $key => $value) {
@@ -245,6 +248,8 @@ class VendorRateUpload extends Command
                                     } else {
                                         $error[] = 'Rate is not numeric at line no:' . $lineno;
                                     }
+                                }elseif($tempvendordata['Change'] == 'D') {
+                                    $tempvendordata['Rate'] = 0;
                                 }elseif($tempvendordata['Change'] != 'D') {
                                     $error[] = 'Rate is blank at line no:'.$lineno;
                                 }
@@ -255,6 +260,8 @@ class VendorRateUpload extends Command
                                         $error[] = 'Date format is Wrong  at line no:'.$lineno;
                                     }
                                 }elseif(empty($attrselection->EffectiveDate)){
+                                    $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                                }elseif($tempvendordata['Change'] == 'D') {
                                     $tempvendordata['EffectiveDate'] = date('Y-m-d');
                                 }elseif($tempvendordata['Change'] != 'D') {
                                     $error[] = 'EffectiveDate is blank at line no:'.$lineno;
@@ -271,10 +278,10 @@ class VendorRateUpload extends Command
                                     $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
                                 }
                                 if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                    $tempvendordata['Interval1'] = trim($temp_row[$attrselection->Interval1]);
+                                    $tempvendordata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
                                 }
                                 if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                    $tempvendordata['IntervalN'] = trim($temp_row[$attrselection->IntervalN]);
+                                    $tempvendordata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
                                 }
                                 if (isset($attrselection->Preference) && !empty($attrselection->Preference)) {
                                     $tempvendordata['Preference'] = trim($temp_row[$attrselection->Preference]);
@@ -296,7 +303,7 @@ class VendorRateUpload extends Command
                                         $tempvendordata['DialStringPrefix'] = '';
                                     }
                                 }
-                                if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['Rate']) && isset($tempvendordata['EffectiveDate'])) {
+                                if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && ( isset($tempvendordata['Rate'])  || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
                                     if(isset($tempvendordata['EndDate'])) {
                                         $batch_insert_array[] = $tempvendordata;
                                     } else {
@@ -320,11 +327,12 @@ class VendorRateUpload extends Command
                             $lineno++;
                         } // loop over
 
-                        if(!empty($batch_insert_array) || !empty($batch_insert_array)){
+                        if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
                             Log::info('insertion start');
                             Log::info('last batch insert ' . count($batch_insert_array));
+                            Log::info('last batch insert 2 ' . count($batch_insert_array2));
                             TempVendorRate::insert($batch_insert_array);
                             TempVendorRate::insert($batch_insert_array2);
                             Log::info('insertion end');
