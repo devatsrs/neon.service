@@ -284,7 +284,11 @@ class BulkAutoPaymentCapture extends Command {
                                             $transactiondata['CompanyID'] = $account->CompanyId;
                                             $transactiondata['AccountID'] = $account->AccountID;
                                             $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
-                                            $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            if(!empty($transactionResponse['transaction_id'])) {
+                                                $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            }else{
+                                                $transactiondata['Transaction'] = '';
+                                            }
                                             $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
                                             $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
                                             $transactiondata['Status'] = TransactionLog::FAILED;
