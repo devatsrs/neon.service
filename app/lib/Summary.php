@@ -13,7 +13,7 @@ class Summary extends \Eloquent {
             $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
 
             Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID)");
-            DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID));
+            DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
 
             $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "','".$UniqueID."')";
             Log::info($query);
