@@ -1,5 +1,8 @@
+<main>
+    <div class="ChargesTitle clearfix">
+        <div style="float:left; text-align: center">Management Report</div>
+    </div>
 <?php $ManagementReportTemplate = json_decode($InvoiceTemplate->ManagementReport,true); $reportcount=1;?>
-<div class="row">
     @foreach($ManagementReportTemplate as $ManagementReportTemplateRow)
         @if($ManagementReportTemplateRow['Status'] == 1)
             <?php
@@ -16,16 +19,12 @@
                 $table_data = $ManagementReports['UsageCategory'];
             }
             ?>
-            @if($reportcount%2 == 0)
-                <div class="clear-both"></div>
-            @endif
-            <div class="col-sm-6">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <div class="panel-title"><strong>{{$ManagementReportTemplateRow['UsageName']}}</strong></div>
-                    </div>
-                    <div class="panel-body with-table">
-                        <table class="table table-bordered table-responsive" id="LongestCalls">
+
+                <div class="{{$reportcount%2 == 0?'left-col':'right-col'}}">
+                <div class="ChargesTitle clearfix">
+                    <div style="float:left;">{{$ManagementReportTemplateRow['UsageName']}}</div>
+                </div>
+                        <table  border="0"  width="50%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                             <thead>
                             <tr>
                                 @if($ManagementReportTemplateRow['Title'] == 'Longest Calls' || $ManagementReportTemplateRow['Title'] == 'Most Expensive Calls' || $ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers')
@@ -60,10 +59,10 @@
                                 $cost += $call_row['col4'];
                                 ?>
                                 <tr>
-                                    <th>{{$call_row['col1']}}</th>
-                                    <th>{{$call_row['col2']}}</th>
-                                    <th>{{$call_row['col3']}}</th>
-                                    <th>{{$CurrencySymbol.number_format($call_row['col4'],$RoundChargesAmount)}}</th>
+                                    <td>{{$call_row['col1']}}</td>
+                                    <td>{{$call_row['col2']}}</td>
+                                    <td>{{$call_row['col3']}}</td>
+                                    <td>{{$CurrencySymbol.number_format($call_row['col4'],$RoundChargesAmount)}}</td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -81,8 +80,8 @@
                             </tfoot>
                         </table>
                     </div>
-                </div>
-            </div>
+
         @endif
     @endforeach
-</div>
+
+</main>
