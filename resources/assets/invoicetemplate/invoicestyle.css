@@ -278,7 +278,6 @@ footer {
 }
 .left-col {
   width: 50%;
-  border-right: 1px solid black;
   float: left;
   box-sizing: border-box;
   padding-right: 5px;
