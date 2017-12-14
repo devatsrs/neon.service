@@ -277,10 +277,11 @@ footer {
   font-size: 10px;
 }
 .left-col {
-  width: 49%;
+  width: 50%;
   border-right: 1px solid black;
   float: left;
   box-sizing: border-box;
+  padding-right: 5px;
 }
 .right-col {
   width: 49%;

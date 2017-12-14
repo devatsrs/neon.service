@@ -1,6 +1,6 @@
 <main>
     <div class="ChargesTitle clearfix">
-        <div style="float:left; text-align: center">Management Report</div>
+        <div style="text-align: center">Management Report</div>
     </div>
 <?php $ManagementReportTemplate = json_decode($InvoiceTemplate->ManagementReport,true); $reportcount=1;?>
     @foreach($ManagementReportTemplate as $ManagementReportTemplateRow)
