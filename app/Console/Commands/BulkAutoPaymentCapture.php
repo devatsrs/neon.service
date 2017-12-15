@@ -103,7 +103,7 @@ class BulkAutoPaymentCapture extends Command {
             ->get();
 
         /**  Create a Job */
-        $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+        $UserID = User::where("CompanyID", $CompanyID)->where(["AdmminUser"=>1,"Status"=>1])->min("UserID");
         $CreatedBy = User::get_user_full_name($UserID);
         $jobType = JobType::where(["Code" => 'BPC'])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
@@ -113,7 +113,7 @@ class BulkAutoPaymentCapture extends Command {
         $jobdata["JobLoggedUserID"] = $UserID;
         $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-        $jobdata["CreatedBy"] = $CreatedBy;
+        $jobdata["CreatedBy"] = "System";
         $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         $JobID = Job::insertGetId($jobdata);
