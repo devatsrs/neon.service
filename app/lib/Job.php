@@ -152,7 +152,7 @@ class Job extends \Eloquent {
         Job::where(["JobID" => $JobID])->update($jobdata);
     }
     public static function CreateJob($CompanyID,$job_type,$Options){
-        $UserID = User::where("CompanyID",$CompanyID)->where(["AdmminUser"=>1,"Status"=>1])->min("UserID");
+        $UserID = User::where("CompanyID",$CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         $jobType = JobType::where(["Code" => $job_type])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
         $jobdata = array();

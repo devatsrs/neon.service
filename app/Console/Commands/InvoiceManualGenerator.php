@@ -97,7 +97,7 @@ class InvoiceManualGenerator extends Command {
             $UserID = $arguments["UserID"];
             Log::info('run by user '.$UserID);
         }else{
-            $UserID = User::where("CompanyID",$CompanyID)->where(["AdmminUser"=>1,"Status"=>1])->min("UserID");
+            $UserID = User::where("CompanyID",$CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         }
 
         $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
