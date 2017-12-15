@@ -106,7 +106,7 @@ class InvoiceGenerator extends Command {
             $UserID = $arguments["UserID"];
             Log::info('run by user ' . $UserID);
         } else {
-            $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+            $UserID = User::where("CompanyID", $CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         }
 
         if((int)$JobID == 0) {
@@ -123,7 +123,7 @@ class InvoiceGenerator extends Command {
             $jobdata["JobLoggedUserID"] = $UserID;
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-            $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
+            $jobdata["CreatedBy"] = "System";
             $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,"recurringInvoiceIDs"=>$recurringInvoiceIDs,'CronJobID'=>$CronJobID));
             $jobdata["created_at"] = $date;
             $jobdata["updated_at"] = $date;
