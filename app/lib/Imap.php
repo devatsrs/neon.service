@@ -473,6 +473,7 @@ protected $server;
 		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
 
 		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+		$LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ",strtotime($LastEmailReadDateTime))); // read 1 hour ahead to avoid skipping email.
 
 		if(!empty($LastEmailReadDateTime)){
 
