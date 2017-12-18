@@ -529,13 +529,16 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
-				if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
+				/*if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
 					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
 					continue;
-				} else if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
+				} */
+
+				if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
 					Log::info("Email Already Exists");
 					continue;
 				}
+
 				Log::info("NEW Subject -  " . $overview_subject);
 
 
