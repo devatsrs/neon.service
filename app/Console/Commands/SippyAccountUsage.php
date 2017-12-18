@@ -106,7 +106,7 @@ class SippyAccountUsage extends Command
         $delete_files = $vdelete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
-        $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
+        //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
         $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
@@ -124,6 +124,8 @@ class SippyAccountUsage extends Command
 
             Log::info("Files Names Collected");
             Log::error('   sippy File Count ' . count($filenames));
+
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
 
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
@@ -203,7 +205,7 @@ class SippyAccountUsage extends Command
                                     $uddata['duration'] = $cdr_row['billed_duration'];
                                     $uddata['billed_second'] = $cdr_row['billed_duration'];
                                     $uddata['trunk'] = 'Other';
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $cdr_row['prefix']), $RateCDR);
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $cdr_row['prefix']), $RateCDR, $RerateAccounts);
                                     $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
@@ -276,7 +278,7 @@ class SippyAccountUsage extends Command
                                     $uddata['AccountCLI'] = '';
                                     $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
-                                    //$uddata['selling_cost'] = 0; // # is provided only in the cdrs table
+                                    $uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                     $uddata['buying_cost'] = (float)$cdr_row['cost'];
                                     $uddata['cld'] = apply_translation_rule($CLDTranslationRule, $cdr_row['cld_out']);
                                     $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_out']);
@@ -284,7 +286,7 @@ class SippyAccountUsage extends Command
                                     $uddata['duration'] = $cdr_row['billed_duration'];
                                     $uddata['billed_second'] = $cdr_row['billed_duration'];
                                     $uddata['trunk'] = 'Other';
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR);
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR, $RerateAccounts);
                                     $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
@@ -340,11 +342,14 @@ class SippyAccountUsage extends Command
             $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
             $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
 
+            Log::info("sippy CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
+            Log::info("sippy CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable);
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'',$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
@@ -378,18 +383,18 @@ class SippyAccountUsage extends Command
                 $filedetail .= '<br> No CustomerCDR Data Found!!';
             }
 
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("Sippy CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("Sippy CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('sippy prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('sippy prc_insertCDR end');
 
-            Log::error('sippy prc_linkCDR end');
+            /*Log::error('sippy prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('sippy prc_linkCDR end');
+            Log::error('sippy prc_linkCDR end');*/
 
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
@@ -477,10 +482,6 @@ class SippyAccountUsage extends Command
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);
         }
-
-        DB::disconnect('sqlsrv');
-        DB::disconnect('sqlsrv2');
-        DB::disconnect('sqlsrvcdr');
 
         CronHelper::after_cronrun($this->name, $this);
 

@@ -116,7 +116,7 @@ class CustomerRateSheetGenerator extends Command {
                     if(!empty($joboptions->downloadtype)){
                         $downloadtype = $joboptions->downloadtype;
                     }else{
-                        $downloadtype = 'csv';
+                        $downloadtype = 'xlsx';
                     }
                 }
                 $count = 0;
@@ -195,14 +195,18 @@ class CustomerRateSheetGenerator extends Command {
                             if($CustomerEmailSend==1 && is_array($joboptions->Trunks)){
                                 if(count($joboptions->Trunks)==1){
                                     $jobtrunkname = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->Trunks[0]))->pluck('Trunk');
-                                    $file_name = $jobtrunkname.'-'.date('YmdHis');
+                                    $file_name = $jobtrunkname.'-'.$account->AccountName.'-'.date('YmdHis');
                                 }else{
-                                    $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+                                    $jobtrunkname = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->Trunks[0]))->pluck('Trunk');
+                                    $file_name = $jobtrunkname.'-'.$account->AccountName.'-'.date('YmdHis');
                                 }
 
                             }else{
-                                $file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
+                                $trunk = is_array($joboptions->Trunks) ? $joboptions->Trunks[0] : $joboptions->Trunks;
+                                $jobtrunkname = DB::table('tblTrunk')->where(array('TrunkID'=>$trunk))->pluck('Trunk');
+                                $file_name = $jobtrunkname.'-'.$account->AccountName.'-'.date('YmdHis');
                             }
+
                             log::info('file name '.$file_name);
 
                             //$file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');

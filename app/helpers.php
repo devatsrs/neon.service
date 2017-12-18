@@ -226,8 +226,8 @@ function translation_rule($CLITranslationRule){
     return $return;
 
 }
-function sippy_vos_areaprefix($area_prefix,$RateCDR){
-    if($RateCDR == 1 || empty($area_prefix) || strtolower($area_prefix) == 'null'){
+function sippy_vos_areaprefix($area_prefix,$RateCDR, $RerateAccounts=0){
+    if(($RateCDR == 1 && $RerateAccounts == 0) || empty($area_prefix) || strtolower($area_prefix) == 'null'){
         $area_prefix = 'Other';
     }
 return $area_prefix;
@@ -265,7 +265,10 @@ function template_var_replace($EmailMessage,$replace_array){
 		"{{CompanyCountry}}",
 		"{{Logo}}",
         "{{TrunkPrefix}}",
-        "{{TrunkName}}"
+        "{{TrunkName}}",
+        "{{CurrencyCode}}",
+        "{{CurrencyDescription}}",
+        "{{CurrencySymbol}}"
     ];
 
     foreach($extra as $item){

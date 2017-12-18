@@ -70,12 +70,12 @@ class VendorVOSSheetGeneration extends Command {
             if(isset($joboptions->Format)){
                 $Format = $joboptions->Format;
             }
-            /*if(!empty($joboptions->downloadtype)){
+            if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
             }else{
                 $downloadtype = 'csv';
-            }*/
-            $downloadtype = 'csv';
+            }
+            //$downloadtype = 'csv';
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'vendorvosdownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
@@ -125,34 +125,51 @@ class VendorVOSSheetGeneration extends Command {
             }*/
 
             if($downloadtype == 'xlsx'){
-                $amazonPath = $amazonDir .  $file_name . '.xlsx';
+                $file_name .= '.xlsx';
+                $amazonPath = $amazonDir .  $file_name;
                 $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_excel($excel_data);
             }else if($downloadtype == 'csv'){
-                $amazonPath = $amazonDir .  $file_name . '.csv';
+                $file_name .= '.csv';
+                $amazonPath = $amazonDir .  $file_name;
+                $file_path = $UPLOADPATH . '/'. $amazonPath ;
+                /*$csvoption['delimiter'] = '|';
+                $csvoption['enclosure'] = ' ';*/
+                $csvoption = [];
+                $NeonExcel = new NeonExcelIO($file_path);
+                $NeonExcel->write_csv($excel_data,$csvoption);
+            }
+
+            if($downloadtype == 'txt') {
+                $file_name .= '.csv';
+                $amazonPath = $amazonDir .  $file_name;
                 $file_path = $UPLOADPATH . '/'. $amazonPath ;
                 $csvoption['delimiter'] = '|';
                 $csvoption['enclosure'] = ' ';
                 $NeonExcel = new NeonExcelIO($file_path);
                 $NeonExcel->write_csv($excel_data,$csvoption);
-            }
 
-            $file_content = file_get_contents($file_path);
-            $file_content = str_replace(","," | ",$file_content);
-            $file_content = str_replace("|"," | ",$file_content);
-            $file_content = str_replace("\n","\r\n",$file_content);
-            $file_content = str_replace("  "," ",$file_content);
+                $file_content = file_get_contents($file_path);
+                //$file_content = str_replace(","," | ",$file_content);
+                $file_content = str_replace("|", " | ", $file_content);
+                $file_content = str_replace("\n", "\r\n", $file_content);
+                $file_content = str_replace("  ", " ", $file_content);
 
 
-            $newfile_path = $UPLOADPATH . '/'.$amazonDir;
-            $file_name .='.txt';
+                $newfile_path = $UPLOADPATH . '/' . $amazonDir;
+                $file_name .= '.txt';
 
-            file_put_contents($newfile_path.'/'.$file_name,$file_content);
-            @unlink($newfile_path.'/'.$file_name.'.csv');
+                file_put_contents($newfile_path . '/' . $file_name, $file_content);
+                @unlink($newfile_path . '/' . $file_name . '.csv');
 
-            if(!AmazonS3::upload($newfile_path.'/'.$file_name,$amazonDir,$CompanyID)){
-                throw new Exception('Error in Amazon upload');
+                if (!AmazonS3::upload($newfile_path . '/' . $file_name, $amazonDir, $CompanyID)) {
+                    throw new Exception('Error in Amazon upload');
+                }
+            } else {
+                if(!AmazonS3::upload($file_path,$amazonDir,$CompanyID)){
+                    throw new Exception('Error in Amazon upload');
+                }
             }
 
             /*

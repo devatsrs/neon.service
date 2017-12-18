@@ -15,7 +15,7 @@ class CallShop{
     private static $dbname1 = 'svbpanel';
 
    public function __construct($CompanyGatewayID){
-       $setting = GatewayAPI::getSetting($CompanyGatewayID,'MOR');
+       $setting = GatewayAPI::getSetting($CompanyGatewayID,'CallShop');
        foreach((array)$setting as $configkey => $configval){
            if($configkey == 'password'){
                self::$config[$configkey] = Crypt::decrypt($configval);
@@ -88,7 +88,22 @@ class CallShop{
             }
         }
         return $response;
-
+    }
+    public static function listCustomerNames($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::purge('pbxmysql');
+                Log::info(DB::connection('pbxmysql')->table('usuarios')->toSql());
+                $response = DB::connection('pbxmysql')->table('usuarios')->lists('usuario');
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
     }
 
 
@@ -117,6 +132,44 @@ class CallShop{
 
     }
 
+    public static function getRates($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::purge('pbxmysql');
+                $sql = "SELECT
+                            `tarifas`.`estructura`, `importes`.`prefijo`, `importes`.`destino`, `importes`.`importe`, `importes`.`psi`, `importes`.`ps`
+                        FROM
+                            `usuarios`
+                        INNER JOIN
+                            `tarifas` ON `tarifas_id` = `tarifas`.`id`
+                        INNER JOIN
+                            `importes` ON `importes`.`tarifas_id` = `usuarios`.`tarifas_id`
+                        WHERE
+                            `usuario` = '".$addparams['username']."'";
 
+                if(isset($addparams['Prefix']) && trim($addparams['Prefix']) != '') {
+                    $sql .= " AND `prefijo` LIKE '%".trim($addparams['Prefix'])."%'";
+                }
+                if(isset($addparams['Description']) && trim($addparams['Description']) != '') {
+                    $sql .= " AND `destino` LIKE '%".trim($addparams['Description'])."%'";
+                }
+
+                $callshop_rates = DB::connection('pbxmysql')->select($sql);
+                $callshop_rates = json_decode(json_encode($callshop_rates), true);
+
+                $response['success'] = 1;
+                $response['rates'] = $callshop_rates;
+
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
 
 }

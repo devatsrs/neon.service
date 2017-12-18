@@ -572,7 +572,7 @@ class TicketEmails{
 
 		if(!$this->EmailTemplate->Status){
 			Log::error("Email template is disabled");
-			return;
+			return true;
 		}
 
 		$this->TicketEmailData = AccountEmailLog::where(['TicketID'=>$this->TicketID])->orderBy('AccountEmailLogID', 'DESC')->first();

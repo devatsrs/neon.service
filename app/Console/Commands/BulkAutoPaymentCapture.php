@@ -103,7 +103,7 @@ class BulkAutoPaymentCapture extends Command {
             ->get();
 
         /**  Create a Job */
-        $UserID = User::where("CompanyID", $CompanyID)->where("Roles", "like", "%Admin%")->min("UserID");
+        $UserID = User::where("CompanyID", $CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         $CreatedBy = User::get_user_full_name($UserID);
         $jobType = JobType::where(["Code" => 'BPC'])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
@@ -113,7 +113,7 @@ class BulkAutoPaymentCapture extends Command {
         $jobdata["JobLoggedUserID"] = $UserID;
         $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-        $jobdata["CreatedBy"] = $CreatedBy;
+        $jobdata["CreatedBy"] = "System";
         $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');
         $JobID = Job::insertGetId($jobdata);
@@ -284,7 +284,11 @@ class BulkAutoPaymentCapture extends Command {
                                             $transactiondata['CompanyID'] = $account->CompanyId;
                                             $transactiondata['AccountID'] = $account->AccountID;
                                             $transactiondata['InvoiceID'] = $Invoice->InvoiceID;
-                                            $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            if(!empty($transactionResponse['transaction_id'])) {
+                                                $transactiondata['Transaction'] = $transactionResponse['transaction_id'];
+                                            }else{
+                                                $transactiondata['Transaction'] = '';
+                                            }
                                             $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
                                             $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
                                             $transactiondata['Status'] = TransactionLog::FAILED;

@@ -71,24 +71,37 @@ class MOR{
     }
     public static function listCustomer($addparams=array()){
         $response = array();
-        if(count(self::$config) && isset(self::$config['api_url']) && isset(self::$config['password']) && isset($addparams['ICustomer'])){
-            echo $api_url = self::$config['api_url'].'/GetAccountByICustomer/'.self::$config['password'].'/'.$addparams['ICustomer'].'/?format=json';
-            self::$cli->get($api_url);
-            if(isset(self::$cli->response) && self::$cli->response != '') {
-                $ResponseArray = json_decode(self::$cli->response, true);
-                if(!empty($ResponseArray) && isset($ResponseArray['Accounts'])) {
-                    $response = $ResponseArray;
-                    $response['result'] = 'OK';
-                }
-            }else if(isset(self::$cli->error_message) && isset(self::$cli->error_code)){
-                $response['faultString'] =  self::$cli->error_message;
-                $response['faultCode'] =  self::$cli->error_code;
-                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . self::$cli->error_code. ", Reason: " . self::$cli->error_message);
-                throw new Exception(self::$cli->error_message);
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $columns = !empty($addparams['columns']) ? (string)$addparams['columns'] : '*';
+                $query = "select ".$columns." from users";
+
+                Log::info($query);
+                $response = DB::connection('pbxmysql')->select($query);
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
             }
         }
         return $response;
-
+    }
+    public static function listCustomerNames($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::purge('pbxmysql');
+                Log::info(DB::connection('pbxmysql')->table('users')->toSql());
+                $response = DB::connection('pbxmysql')->table('users')->lists('username');
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
     }
 
 
@@ -117,6 +130,48 @@ class MOR{
 
     }
 
+    public static function getRates($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::purge('pbxmysql');
+                $sql = "SELECT
+                            `destinations`.`name`, `destinations`.`prefix`, `tariffs`.`purpose`, `rates`.`effective_from`, `rate`, `connection_fee`, `increment_s`, `min_time`
+                        FROM
+                            `users`
+                        INNER JOIN
+                            `tariffs` ON `tariff_id` = `tariffs`.`id`
+                        INNER JOIN
+                            `rates` ON `rates`.`tariff_id` = `tariffs`.`id`
+                        INNER JOIN
+                            `destinations` ON `destination_id` = `destinations`.`id`
+                        INNER JOIN
+                            `ratedetails` ON `rates`.`id` = `rate_id`
+                        WHERE
+                            `username` = '".$addparams['username']."'";
 
+                if(isset($addparams['Prefix']) && trim($addparams['Prefix']) != '') {
+                    $sql .= " AND `destinations`.`prefix` LIKE '%".trim($addparams['Prefix'])."%'";
+                }
+                if(isset($addparams['Description']) && trim($addparams['Description']) != '') {
+                    $sql .= " AND `destinations`.`name` LIKE '%".trim($addparams['Description'])."%'";
+                }
+
+                $mor_rates = DB::connection('pbxmysql')->select($sql);
+                $mor_rates = json_decode(json_encode($mor_rates), true);
+
+                $response['success'] = 1;
+                $response['rates'] = $mor_rates;
+
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
 
 }

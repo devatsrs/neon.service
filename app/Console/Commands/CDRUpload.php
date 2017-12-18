@@ -353,7 +353,7 @@ class CDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID);
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat,'CurrentRate','0',$OutboundRateTableID,$InboundRateTableID,0);
                 $skiped_rerated_data = array();
                 if($IgnoreZeroCall == 1){
                     foreach($skiped_account_data as $key => $errormg){
@@ -383,9 +383,9 @@ class CDRUpload extends Command
                         TempUsageDownloadLog::insert($logdata);
                     }
                     if($RateCDR == 0) {
-                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
+                        Log::error("CDR upload CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) start");
                         DB::statement("CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' )");
-                        Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
+                        Log::error("CDR upload CALL  prc_ProcessDiscountPlan ('" . $ProcessID . "', '" . $temptableName . "' ) end");
                     }
 
                     Log::error(' prc_insertCDR start');

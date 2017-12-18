@@ -21,10 +21,12 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\PortaAccountUsage',
         'App\Console\Commands\PendingDueSheet',
         'App\Console\Commands\CustomerPortaSheet',
+        'App\Console\Commands\CustomerMorSheet',
         'App\Console\Commands\VOSAccountUsage',
         'App\Console\Commands\VOSDownloadCDR',
         'App\Console\Commands\BulkInvoiceSend',
         'App\Console\Commands\PortaVendorSheet',
+		'App\Console\Commands\VendorMorSheet',
         'App\Console\Commands\DBFixing',
         'App\Console\Commands\CDRRecalculate',
         'App\Console\Commands\InvoiceUsageFileGenerator',
@@ -92,6 +94,13 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\RateFileExport',
 		'App\Console\Commands\FusionPBXAccountUsage',
 		'App\Console\Commands\RateExportToVos',
+		'App\Console\Commands\M2AccountUsage',
+		'App\Console\Commands\MorCustomerRateImport',
+		'App\Console\Commands\CallShopCustomerRateImport',
+		'App\Console\Commands\XeroInvoicePost',
+		'App\Console\Commands\CustomerM2SheetGeneration',
+		'App\Console\Commands\VendorM2SheetGeneration',
+		'App\Console\Commands\XeroPaymentImport',
 	];
 
 	/**

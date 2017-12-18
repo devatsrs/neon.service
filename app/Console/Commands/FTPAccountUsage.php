@@ -145,6 +145,8 @@ class FTPAccountUsage extends Command
             Log::error(' ========================== ftp transaction start =============================');
             CronJob::createLog($CronJobID);
 
+            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
+
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
                 date_default_timezone_set($TimeZone);
@@ -193,7 +195,7 @@ class FTPAccountUsage extends Command
                                 $uddata['duration'] = $cdr_row['billed_duration'];
                                 $uddata['billed_second'] = $cdr_row['billed_duration'];
                                 $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR);
+                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR, $RerateAccounts);
                                 $uddata['remote_ip'] = $cdr_row['remote_ip'];
                                 $uddata['ProcessID'] = $processID;
 
@@ -241,7 +243,7 @@ class FTPAccountUsage extends Command
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
@@ -358,9 +360,7 @@ class FTPAccountUsage extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
 
-        DB::disconnect('sqlsrv');
-        DB::disconnect('sqlsrv2');
-
+        
         CronHelper::after_cronrun($this->name, $this);
 
     }
