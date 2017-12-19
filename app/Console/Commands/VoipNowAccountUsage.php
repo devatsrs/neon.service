@@ -154,7 +154,7 @@ class VoipNowAccountUsage extends Command {
                         $data['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['prefix']), $RateCDR, $RerateAccounts);
                         $data['ProcessID'] = $processID;
                         $data['remote_ip'] = $row_account['originator_ip'];
-                        $data['userfield'] = $row_account['userfield'];
+                        $data['userfield'] = $row_account['userfield'] == 'in' ? 'inbound' : 'outbound';
                         $data['is_inbound'] = $row_account['userfield'] == 'in' ? 1 : 0;
                         $data['ServiceID'] = $ServiceID;
                         $data['disposition'] = $row_account['disposition'];
