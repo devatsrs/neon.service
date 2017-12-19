@@ -165,11 +165,15 @@ protected $server;
 		$attachments   = array();
 		$attachmentsDB = array();
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-		
+
+
+		$structure_parts = $this->create_part_array($structure);
+
+
 		/* if any attachments found code start... */
-		if(isset($structure->parts) && count($structure->parts)) 
+		if(isset($structure_parts) && count($structure_parts))
 		{
-			for($i = 0; $i < count($structure->parts); $i++) 
+			for($i = 0; $i < count($structure_parts); $i++)
 			{
 				$attachments[$i] = array(
 					'is_attachment' => false,
@@ -178,9 +182,9 @@ protected $server;
 					'attachment' => ''
 				);
 		
-				if($structure->parts[$i]->ifdparameters) 
+				if($structure_parts[$i]["part_object"]->ifdparameters)
 				{
-					foreach($structure->parts[$i]->dparameters as $object) 
+					foreach($structure_parts[$i]["part_object"]->dparameters as $object)
 					{
 						if(strtolower($object->attribute) == 'filename') 
 						{
@@ -190,9 +194,9 @@ protected $server;
 					}
 				}
 		
-				if($structure->parts[$i]->ifparameters) 
+				if($structure_parts[$i]["part_object"]->ifparameters)
 				{
-					foreach($structure->parts[$i]->parameters as $object) 
+					foreach($structure_parts[$i]["part_object"]->parameters as $object)
 					{
 						if(strtolower($object->attribute) == 'name') 
 						{
@@ -204,15 +208,15 @@ protected $server;
 		
 				if($attachments[$i]['is_attachment']) 
 				{
-					$attachments[$i]['attachment'] = imap_fetchbody($inbox, $email_number, $i+1);
+					$attachments[$i]['attachment'] = imap_fetchbody($inbox, $email_number, $structure_parts[$i]["part_number"]);
 		
 					/* 3 = BASE64 encoding */
-					if($structure->parts[$i]->encoding == 3) 
+					if($structure_parts[$i]["part_object"]->encoding == 3)
 					{ 
 						$attachments[$i]['attachment'] = base64_decode($attachments[$i]['attachment']);
 					}
 					/* 4 = QUOTED-PRINTABLE encoding */
-					elseif($structure->parts[$i]->encoding == 4) 
+					elseif($structure_parts[$i]["part_object"]->encoding == 4)
 					{ 
 						$attachments[$i]['attachment'] = quoted_printable_decode($attachments[$i]['attachment']);
 					}
@@ -529,11 +533,28 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
+				// when there is no messageId found in email header.
+				// just to add dummy random message id so as no to skip this email.
+
+				if(empty($message_id)){
+
+					if(isset($overview[0]->from)){
+						$from_   	= 	$this->GetEmailtxt($overview[0]->from);
+					}else{
+						$from_		= 	"nofrom@email.com";
+					}
+					$message_id = $this->generate_random_message_id($from_);
+					Log::info("New MessageID " . $message_id);
+
+				}
+
 				/*if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
 					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
 					continue;
 				} */
 
+				// need to check for messageID already exists or not
+				// if message id is blank , make sure to set random messageId before sending
 				if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
 					Log::info("Email Already Exists");
 					continue;
@@ -1134,6 +1155,9 @@ protected $server;
 					$search[] = "src=\"cid:$match\"";
 					// change www.example.com etc to actual URL
 					$replace[] = "src=\"$path\"";
+				} else {
+
+
 				}
 			}
 			
@@ -1229,5 +1253,56 @@ protected $server;
 		}
 		return ["from" => $from , "from_name" => $from_name];
 	}
+
+	public function generate_random_message_id($from) {
+
+		$data["Message-ID"] = "neon_random_id";
+		$data["EmailFrom"] = $from;
+		$MessageID = PHPMAILERIntegtration::generate_email_message_id($data,[]);
+
+		return $MessageID;
+	}
+
+	public function create_part_array($structure, $prefix="") {
+		//print_r($structure);
+		if (sizeof($structure->parts) > 0) {    // There some sub parts
+			foreach ($structure->parts as $count => $part) {
+				$this->add_part_to_array($part, $prefix.($count+1), $part_array);
+			}
+		}else{    // Email does not have a seperate mime attachment for text
+			//$part_array[] = array('part_number' => $prefix.'1', 'part_object' => $obj);
+		}
+		return $part_array;
+	}
+
+	// http://php.net/manual/en/function.imap-fetchbody.php#89002
+	// Sub function for create_part_array(). Only called by create_part_array() and itself.
+	public function add_part_to_array($obj, $partno, &$part_array) {
+		$part_array[] = array('part_number' => $partno, 'part_object' => $obj);
+		if ($obj->type == 2) { // Check to see if the part is an attached email message, as in the RFC-822 type
+			//print_r($obj);
+			if (sizeof($obj->parts) > 0) {    // Check to see if the email has parts
+				foreach ($obj->parts as $count => $part) {
+					// Iterate here again to compensate for the broken way that imap_fetchbody() handles attachments
+					if (sizeof($part->parts) > 0) {
+						foreach ($part->parts as $count2 => $part2) {
+							$this->add_part_to_array($part2, $partno.".".($count2+1), $part_array);
+						}
+					}else{    // Attached email does not have a seperate mime attachment for text
+						//$part_array[] = array('part_number' => $partno.'.'.($count+1), 'part_object' => $obj);
+					}
+				}
+			}else{    // Not sure if this is possible
+				//$part_array[] = array('part_number' => $prefix.'.1', 'part_object' => $obj);
+			}
+		}else{    // If there are more sub-parts, expand them out.
+			if (isset($obj->parts) && sizeof($obj->parts) > 0) {
+				foreach ($obj->parts as $count => $p) {
+					$this->add_part_to_array($p, $partno.".".($count+1), $part_array);
+				}
+			}
+		}
+	}
+
 }
 ?>
