@@ -42,8 +42,8 @@ class Report extends \Eloquent{
                 $response = $cli->response;
                 $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).'.xls';
                 file_put_contents($report,$response);
-                $settings['EmailMessage'] = 'Please check file';
-                $settings['Subject'] = 'Please check file';
+                $settings['EmailMessage'] = 'Please check attached report';
+                $settings['Subject'] = $Report->Name;
                 $settings['attach'] = $report;
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
                 Report::SendReportEmail($CompanyID, $Report->ReportID, $settings);
