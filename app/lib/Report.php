@@ -35,7 +35,7 @@ class Report extends \Eloquent{
                 }
                 $StartDate = $settings['LastRunTime'];
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
-                $web_url = 'http://localhost/girish/neon/web/girish/public';//CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                $web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL');//'http://localhost/girish/neon/web/girish/public'
                 $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
                 $file  = file_get_contents($web_url.'/report/export/'.$Report->ReportID.'?StartDate='.$StartDate.'&EndDate='.$EndDate);
                 $report = $TEMP_PATH.basename($Report->Name).'.xls';
