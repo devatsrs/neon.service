@@ -166,17 +166,18 @@ protected $server;
 
 		$attachments = $emailMessage->attachments;
 
-		/* iterate through each attachment and save it */
-		foreach($attachments as $attachment)
-		{
-			// not inline image , only attachment
-			if(!$attachment['inline']) {
+		if(count($attachments) > 0) {
+			/* iterate through each attachment and save it */
+			foreach ($attachments as $attachment) {
+				// not inline image , only attachment
+				if (!$attachment['inline']) {
 
-				$filename = $attachment['filename'];
+					$filename = $attachment['filename'];
 
-				$file_detail = $this->store_email_file($filename , $attachment['data'] , $email_number , $CompanyID );
+					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
-				$attachmentsDB[] = $file_detail;
+					$attachmentsDB[] = $file_detail;
+				}
 			}
 		}
 		/* attachments code end... */
@@ -601,7 +602,11 @@ protected $server;
 				$emailMessage = new EmailMessage($inbox, $email_number);
 				$emailMessage->fetch();
 
-				$attachmentsDB 		  =		$this->ReadAttachments($emailMessage,$email_number , $CompanyID); //saving attachments
+				$attachmentsDB =  array();
+				if(count($emailMessage->attachments)>0) {
+					$attachmentsDB = $this->ReadAttachments($emailMessage, $email_number, $CompanyID); //saving attachments
+				}
+
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);				
 				}else{
@@ -612,6 +617,7 @@ protected $server;
 				if(count($emailMessage->attachments)>0){
 					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
+
 				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
 
 				$message = $this->body_cleanup($message);
