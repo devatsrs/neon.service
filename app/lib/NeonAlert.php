@@ -59,6 +59,15 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== CDR Post Process END===========');
 
+        Log::info('============== Report Schedule START===========');
+        try {
+            Report::send_schedule_report($CompanyID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Report Schedule Failed';
+        }
+        Log::info('============== Report Schedule END===========');
+
         return $cronjobdata;
     }
 
@@ -146,6 +155,8 @@ class NeonAlert extends \Eloquent {
             $Class = Alert::find($ClassID);
         }else if($ClassName == 'BillingClass'){
             $Class = BillingClass::find($ClassID);
+        }else if($ClassName == 'Report'){
+            $Class = Report::find($ClassID);
         }
         $settings = json_decode($Class->$setting_name, true);
         if(!empty($LastRunTime)) {
