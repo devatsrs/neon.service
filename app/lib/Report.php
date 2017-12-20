@@ -2,9 +2,8 @@
 namespace App\Lib;
 
 
-use Illuminate\Support\Facades\DB;
+use Curl\Curl;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\View;
 
 class Report extends \Eloquent{
     protected $guarded = array("ReportID");
@@ -37,16 +36,19 @@ class Report extends \Eloquent{
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
                 $web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL');//'http://localhost/girish/neon/web/girish/public'
                 $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
-                $file  = file_get_contents($web_url.'/report/export/'.$Report->ReportID.'?StartDate='.$StartDate.'&EndDate='.$EndDate);
-                $report = $TEMP_PATH.basename($Report->Name).'.xls';
-                file_put_contents($report,$file);
-
+                $web_url= $web_url.'/report/export/'.$Report->ReportID.'?StartDate='.urlencode($StartDate).'&EndDate='.urlencode($EndDate);
+                $cli = new Curl();
+                $cli->get($web_url);
+                $response = $cli->response;
+                $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).'.xls';
+                file_put_contents($report,$response);
                 $settings['EmailMessage'] = 'Please check file';
                 $settings['Subject'] = 'Please check file';
                 $settings['attach'] = $report;
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
                 Report::SendReportEmail($CompanyID, $Report->ReportID, $settings);
                 NeonAlert::UpdateNextRunTime($Report->ReportID, 'ScheduleSettings', 'Report', $settings['NextRunTime']);
+                @unlink($report);
             }
         }
     }
@@ -68,7 +70,9 @@ class Report extends \Eloquent{
         );
         if (!empty($settings['NotificationEmail'])) {
             $emaildata['EmailTo'] = explode(",", $settings['NotificationEmail']);
+            Log::info($settings['NotificationEmail']);
             $status = Helper::sendMail($email_view, $emaildata);
+            Log::info($status);
             if($status['status'] == 1) {
                 $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', '', 0, $EmailType);
                 if ($statuslog['status'] == 1) {
@@ -80,7 +84,7 @@ class Report extends \Eloquent{
 
     public static function report_email_log($ReportID,$AccountEmailLogID){
         $logData = [
-            'AlertID' => $ReportID,
+            'ReportID' => $ReportID,
             'AccountEmailLogID' => $AccountEmailLogID,
             'SendBy' => 'RMScheduler',
             'send_at'=>date('Y-m-d H:i:s')
