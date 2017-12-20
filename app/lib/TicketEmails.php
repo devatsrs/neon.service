@@ -703,11 +703,12 @@ class TicketEmails{
 	public static function remove_group_emails_from_array($CompanyID,$email_array = array()) {
 
 
-		$GroupEmailAddress 	=	TicketGroups::where(array("CompanyID"=>$CompanyID,"GroupEmailStatus"=>1))->get(["GroupEmailAddress"])->toArray();
+		$GroupEmailAddress 	=	TicketGroups::where(array("CompanyID"=>$CompanyID,"GroupEmailStatus"=>1))->get(["GroupReplyAddress", "GroupEmailAddress"])->toArray();
 
 		$group_emails = [];
 		foreach($GroupEmailAddress as $GEmailAddress){
 			$group_emails[]  = $GEmailAddress["GroupEmailAddress"];
+			$group_emails[]  = $GEmailAddress["GroupReplyAddress"];
 		}
 
 
