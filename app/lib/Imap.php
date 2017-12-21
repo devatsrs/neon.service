@@ -89,7 +89,7 @@ protected $server;
 					}
 					$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);	
                 }
-				
+
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
 				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
@@ -160,97 +160,24 @@ protected $server;
 		imap_close($inbox);
 	}
 	
-	function ReadAttachments($structure,$inbox,$email_number,$CompanyID)
+	function ReadAttachments($emailMessage,$email_number,$CompanyID)
 	{
-		$attachments   = array();
 		$attachmentsDB = array();
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-		
-		/* if any attachments found code start... */
-		if(isset($structure->parts) && count($structure->parts)) 
-		{
-			for($i = 0; $i < count($structure->parts); $i++) 
-			{
-				$attachments[$i] = array(
-					'is_attachment' => false,
-					'filename' => '',
-					'name' => '',
-					'attachment' => ''
-				);
-		
-				if($structure->parts[$i]->ifdparameters) 
-				{
-					foreach($structure->parts[$i]->dparameters as $object) 
-					{
-						if(strtolower($object->attribute) == 'filename') 
-						{
-							$attachments[$i]['is_attachment'] = true;
-							$attachments[$i]['filename'] = $object->value;
-						}
-					}
+
+		$attachments = $emailMessage->attachments;
+
+		if(count($attachments) > 0) {
+			/* iterate through each attachment and save it */
+			foreach ($attachments as $attachment) {
+				// not inline image , only attachment
+				if (!$attachment['inline']) {
+
+					$filename = $attachment['filename'];
+
+					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
+
+					$attachmentsDB[] = $file_detail;
 				}
-		
-				if($structure->parts[$i]->ifparameters) 
-				{
-					foreach($structure->parts[$i]->parameters as $object) 
-					{
-						if(strtolower($object->attribute) == 'name') 
-						{
-							$attachments[$i]['is_attachment'] = true;
-							$attachments[$i]['name'] = $object->value;
-						}
-					}
-				}
-		
-				if($attachments[$i]['is_attachment']) 
-				{
-					$attachments[$i]['attachment'] = imap_fetchbody($inbox, $email_number, $i+1);
-		
-					/* 3 = BASE64 encoding */
-					if($structure->parts[$i]->encoding == 3) 
-					{ 
-						$attachments[$i]['attachment'] = base64_decode($attachments[$i]['attachment']);
-					}
-					/* 4 = QUOTED-PRINTABLE encoding */
-					elseif($structure->parts[$i]->encoding == 4) 
-					{ 
-						$attachments[$i]['attachment'] = quoted_printable_decode($attachments[$i]['attachment']);
-					}
-				}
-			}
-		}
-		
-		/* iterate through each attachment and save it */
-		foreach($attachments as $attachment)
-		{
-			if($attachment['is_attachment'] == 1)
-			{
-				$filename = $attachment['name'];
-				if(empty($filename)) $filename = $attachment['filename'];		
-				if(empty($filename)) $filename = time() . ".dat";
-				
-				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
-				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
-				
-				/*if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
-					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
-				}*/
-				if (!file_exists($UPLOADPATH.'/'.$amazonPath)){
-                    mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
-           	  }
-				
-				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $email_number . "-" . $file_name;
-				$filepath2  =  $amazonPath . $email_number . "-" . $file_name; 
-				$fp = fopen($filepath, "w+");
-				fwrite($fp, $attachment['attachment']);
-				fclose($fp);
-				
-				if(is_amazon($CompanyID)){
-					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
-						throw new \Exception('Error in Amazon upload');	
-					}					
-				}
-				$attachmentsDB[] = array("filename"=>$filename,"filepath"=>$filepath2); 
 			}
 		}
 		/* attachments code end... */
@@ -473,6 +400,7 @@ protected $server;
 		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
 
 		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+		$LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ",strtotime($LastEmailReadDateTime))); // read 1 hour ahead to avoid skipping email.
 
 		if(!empty($LastEmailReadDateTime)){
 
@@ -528,13 +456,33 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
-				if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
+				// when there is no messageId found in email header.
+				// just to add dummy random message id so as no to skip this email.
+
+				if(empty($message_id)){
+
+					if(isset($overview[0]->from)){
+						$from_   	= 	$this->GetEmailtxt($overview[0]->from);
+					}else{
+						$from_		= 	"nofrom@email.com";
+					}
+					$message_id = $this->generate_random_message_id($from_);
+					Log::info("New MessageID " . $message_id);
+
+				}
+
+				/*if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
 					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
 					continue;
-				} else if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
+				} */
+
+				// need to check for messageID already exists or not
+				// if message id is blank , make sure to set random messageId before sending
+				if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
 					Log::info("Email Already Exists");
 					continue;
 				}
+
 				Log::info("NEW Subject -  " . $overview_subject);
 
 
@@ -650,22 +598,26 @@ protected $server;
 							}
 						}
 				}
-				
-				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments	
+
+				$emailMessage = new EmailMessage($inbox, $email_number);
+				$emailMessage->fetch();
+
+				$attachmentsDB =  array();
+				if(count($emailMessage->attachments)>0) {
+					$attachmentsDB = $this->ReadAttachments($emailMessage, $email_number, $CompanyID); //saving attachments
+				}
+
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);				
 				}else{
 					$AttachmentPaths  = 	serialize([]);										
 				}
 				
-				//$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID); 
-			 	//$message = 	$this->getBody($inbox,$email_number);
-				//if(empty($message)){
 				$message = 	$this->getBody($inbox,$email_number);  //get body from email
-				//}
-				if(count($attachmentsDB)>0){
-					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
+				if(count($emailMessage->attachments)>0){
+					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
+
 				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
 
 				$message = $this->body_cleanup($message);
@@ -1063,12 +1015,8 @@ protected $server;
 	}
 	
 	
-	function DownloadInlineImages($con,$msg,$CompanyID,$msgbody){ 
-		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-		// download email message #1 and fetch it
-		$emailMessage = new EmailMessage($con, $msg);
-		$emailMessage->fetch();
-		
+	function DownloadInlineImages($emailMessage,$email_number,$CompanyID,$msgbody){
+
 		// match inline images in html content
 		preg_match_all('/src="cid:(.*)"/Uims', $msgbody, $matches);
 		
@@ -1089,33 +1037,10 @@ protected $server;
 					$uniqueFilename = $str[0];
 					// change /path/to/images to actual path
 
-					///
-
 					$filename = $uniqueFilename;
-					$file_name = \Webpatser\Uuid\Uuid::generate() . "_" . basename($filename);
-					$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+					$file_detail = $this->store_email_file($filename , $emailMessage->attachments[$match]['data'] , $email_number , $CompanyID );
 
-					if (!is_dir($UPLOADPATH . '/' . $amazonPath)) {
-						mkdir($UPLOADPATH . '/' . $amazonPath, 0777, true);
-					}
-
-					$filepath = $UPLOADPATH . '/' . $amazonPath . $msg . "-" . $file_name;
-					$filepath2 = $amazonPath . $msg . "-" . $file_name;
-					$fp = fopen($filepath, "w+");
-					fwrite($fp, $emailMessage->attachments[$match]['data']);
-					fclose($fp);
-
-					$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
-					$dataImage = file_get_contents($filepath);
-					//@unlink($filepath);
-					///
-					if (is_amazon($CompanyID)) {
-						if (!AmazonS3::upload($filepath, $amazonPath, $CompanyID)) {
-							throw new \Exception('Error in Amazon upload');
-						}
-					}
-
-					$path = AmazonS3::unSignedUrl($filepath2, $CompanyID);
+					$path = AmazonS3::unSignedUrl($file_detail["filepath"], $CompanyID);
 
 					if (!is_numeric(strpos($path, "https://"))) {
 						//$path = str_replace('/', '\\', $path);
@@ -1124,7 +1049,7 @@ protected $server;
 						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
 						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
 						// }
-						$path = $path2 . base64_encode($filepath2);
+						$path = $path2 . base64_encode($file_detail["filepath"]);
 					}
 
 					$search[] = "src=\"cid:$match\"";
@@ -1225,5 +1150,42 @@ protected $server;
 		}
 		return ["from" => $from , "from_name" => $from_name];
 	}
+
+	public function generate_random_message_id($from) {
+
+		$data["Message-ID"] = "neon_random_id";
+		$data["EmailFrom"] = $from;
+		$MessageID = PHPMAILERIntegtration::generate_email_message_id($data,[]);
+
+		return $MessageID;
+	}
+
+	public function store_email_file ($file_name , $filedata , $email_number , $CompanyID ) {
+
+		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+
+		$file_name = $email_number . "-" . $file_name;
+
+		$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+
+		$local_filepath   =  $UPLOADPATH.'/'.$amazonPath . $file_name;
+
+		$filepath2  =  $amazonPath .'/'. $file_name;
+
+		$fp = fopen($local_filepath, "w+");
+		fwrite($fp, $filedata);
+		fclose($fp);
+
+		if(is_amazon($CompanyID)) {
+
+			if (!AmazonS3::upload($local_filepath, $amazonPath,$CompanyID)) {
+				throw new \Exception('Error in Amazon upload');
+			}
+		}
+
+		return array("filename"=>$file_name,"filepath"=>$filepath2);
+
+	}
+
 }
 ?>
