@@ -66,6 +66,9 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'bcc');
 
 
+		if(isset($data['In-Reply-To'])) {
+			$mail->addCustomHeader('In-Reply-To', $data['In-Reply-To']);
+		}
 
 		if(isset($data["Auto-Submitted"])){
 			$mail->addCustomHeader("Auto-Submitted","auto-generated");
