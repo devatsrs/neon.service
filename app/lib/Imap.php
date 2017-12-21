@@ -678,8 +678,10 @@ protected $server;
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
 				}*/
+
 				///Check if agent forwarded email.
-				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
+				//@TODO : not working with all types of email with different forwarded formats.
+				/*$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
 				if(in_array($from,$group_agents)) {
 					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
 					$from_array = $this->get_forwarded_email($_tmp_message);
@@ -688,7 +690,7 @@ protected $server;
 						$from = $from_array["from"];
 						$FromName = $from_array["from_name"];
 					}
-				}
+				}*/
 
 				$logData = [
 					'Requester'=> $from,
@@ -1132,10 +1134,11 @@ protected $server;
 
 	}
 
+	//@TODO: uncompleted , not working with various email forwarded messsages
 	public function get_forwarded_email($message){
 
-		$from_name = "";
-		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		return ["from" => "" , "from_name" => ""];
+		/*$from_name = "";
 		Log::info("message: " . $message);
 		$start = strpos($message,"<") +1;
 		$end = strpos($message,">")  ;
@@ -1147,7 +1150,7 @@ protected $server;
 			$end = strpos($message,"<");
 
 			$from_name = trim(substr($message, $start, $end-$start));
-		}
+		}*/
 		return ["from" => $from , "from_name" => $from_name];
 	}
 
