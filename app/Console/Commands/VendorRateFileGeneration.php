@@ -101,7 +101,7 @@ class VendorRateFileGeneration extends Command {
 
 				} else {
 
-					$Accounts = Account::getAccountIDList(["CompanyID"=>1]);
+					$Accounts = Account::getAccountIDList(["CompanyId"=>$CompanyID]);
 					$selected = $cronsetting["vendors"];
 					$selectedAccounts = [];
 					if(count($selected) > 0){

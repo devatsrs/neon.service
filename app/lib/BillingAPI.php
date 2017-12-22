@@ -81,6 +81,7 @@ class BillingAPI {
 				$QuickBookSandbox = false;
 			}
 			if(!empty($OauthConsumerKey) && !empty($OauthConsumerSecret) && !empty($AppToken)){
+				/*Only check quickbooks_is_connected*/
 				$this->oauth_consumer_key = $OauthConsumerKey;
 				$this->oauth_consumer_secret = $OauthConsumerSecret;
 				$this->token = $AppToken;
@@ -91,7 +92,7 @@ class BillingAPI {
 				$this->quickbooks_menu_url = 'http://localhost/bhavin/neon/web/newbhavin/public/quickbook';
 				$this->dsn = 'mysqli://root:root@localhost/LocalRatemanagement';
 				$this->encryption_key = 'bcde1234';
-				$this->the_username = 'DO_NOT_CHANGE_ME';
+				$this->the_username = 'DO_NOT_CHANGE_ME'.$CompanyID;
 				$this->the_tenant = 12345;
 				$this->quickbooks_is_connected = true;
 				Log::info('-- QuickBook Integration Setup Done --');

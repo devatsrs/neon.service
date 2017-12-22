@@ -16,8 +16,8 @@ class CodeDeck extends \Eloquent {
     protected $fillable = [];
     protected $guarded = ['CodeDeckID'];
 
-    public static function getDefaultCodeDeckID()
+    public static function getDefaultCodeDeckID($CompanyID)
     {
-        return CodeDeck::where('DefaultCodedeck',1)->pluck('CodeDeckID');
+        return CodeDeck::where(['DefaultCodedeck'=>1,'CompanyId'=>$CompanyID])->pluck('CodeDeckID');
     }
 }

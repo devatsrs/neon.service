@@ -31,12 +31,12 @@ class Product extends \Eloquent {
         }
     }
 
-    public static function getAllProductName(){
+    public static function getAllProductName($CompanyID){
         $products = [];
-        $items = Product::select(['ProductID','Name'])->lists('Name','ProductID');
+        $items = Product::select(['ProductID','Name'])->where('CompanyId',$CompanyID)->lists('Name','ProductID');
         $products[Product::ITEM] = $items;
         $products[Product::ONEOFFCHARGE] = $items;
-        $products[Product::SUBSCRIPTION] = BillingSubscription::getAllSubscriptionsNames();
+        $products[Product::SUBSCRIPTION] = BillingSubscription::getAllSubscriptionsNames($CompanyID);
         return $products;
     }
 }
