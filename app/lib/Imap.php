@@ -1115,7 +1115,8 @@ protected $server;
 			"Delivery to the following recipient failed permanently:",
 			"Delivery to the following recipients failed permanently:",
 			"This message was created automatically by mail delivery software",
-			"Delivery has failed to these recipients or groups", 
+			"Delivery has failed to these recipients or groups",
+			"Your mail message to the following address(es) could not be delivered.",
 		];
 
 
