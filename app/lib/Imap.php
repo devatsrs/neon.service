@@ -708,11 +708,12 @@ protected $server;
 					"created_by"=> 'RMScheduler'
 				];
 
+				$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
+
 				$skip_email_notification = false;
 				if(!$parentTicket){
 					// New ticket
 
-					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
 					$logData 		 	  = 	array_merge($logData,$MatchArray);
 
 					$ticketID 			  =  	TicketsTable::insertGetId($logData);
@@ -766,7 +767,6 @@ protected $server;
 					}
 					// -------------------------------
 
-					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
 
 					/* moved bellow
 
@@ -877,12 +877,14 @@ protected $server;
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				// -- Not New
 				if($parentTicket){
 					if(!$parent){
 						AccountEmailLog::find($EmailLog)->update(["EmailParent"=>$EmailLog]);
 					}
 				}
-				
+
+				// New Ticket
 				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
@@ -951,6 +953,16 @@ protected $server;
 					}
 				}
 
+
+				//create log
+
+				// if new ticket
+				$log_data = array_merge(["CompanyID" => $CompanyID , "TicketID" => $ticketID ], $MatchArray ) ;
+				if(!$parentTicket) {
+					TicketLog::insertTicketLog( $log_data, TicketLog::NEW_TICKET );
+				} else {
+					TicketLog::insertTicketLog( $log_data, TicketLog::TICKET_REPLIED );
+				}
 
 				//Send Notification Emails
 				if(!$parentTicket){
