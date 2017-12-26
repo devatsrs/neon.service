@@ -116,7 +116,7 @@ class CustomerRateSheetGenerator extends Command {
                     if(!empty($joboptions->downloadtype)){
                         $downloadtype = $joboptions->downloadtype;
                     }else{
-                        $downloadtype = 'csv';
+                        $downloadtype = 'xlsx';
                     }
                 }
                 $count = 0;

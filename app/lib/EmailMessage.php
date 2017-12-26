@@ -62,13 +62,13 @@ class EmailMessage {
 				$msg->getAttachments = $this->getAttachments;
 				if(isset($part->parts)){
 					$msg->recurse($part->parts, $partNumber.'.', 0, false);
-					$this->attachments[] = array(
+					/*$this->attachments[] = array(
 						'type' => $part->type,
 						'subtype' => $part->subtype,
 						'filename' => '',
 						'data' => $msg,
 						'inline' => false,
-					);
+					);*/
 				}
 			}
 			elseif(isset($part->parts)) {
