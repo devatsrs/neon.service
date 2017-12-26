@@ -957,8 +957,14 @@ protected $server;
 				//create log
 
 				// if new ticket
-				$log_data = array_merge(["CompanyID" => $CompanyID , "TicketID" => $ticketID ], $MatchArray ) ;
+				$log_data = [
+					"CompanyID" => $CompanyID ,
+					"TicketID" => $ticketID ,
+					"AccountID" => $MatchArray["AccountID"] ,
+					"UserID" => $MatchArray["UserID"] ,
+				];
 				if(!$parentTicket) {
+
 					TicketLog::insertTicketLog( $log_data, TicketLog::NEW_TICKET );
 				} else {
 					TicketLog::insertTicketLog( $log_data, TicketLog::TICKET_REPLIED );
