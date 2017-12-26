@@ -83,6 +83,10 @@ class DBCleanUp extends Command {
 			Log::info('DBcleanup Starts.');
 
 
+			Log::info('Delete Old Deleted Tickets.');
+				$error .= Retention::TicketDeleteFromDeleteTable($CompanyID);
+			Log::info('Delete Old Deleted Tickets End.');
+
 			Log::info('Usage Download Log Start.');
 				$error .= Retention::deleteUsageDownloadLog($CompanyID);
 			Log::info('Usage Download Log End.');
