@@ -618,7 +618,6 @@ protected $server;
 					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
 
-				$message = 	$this->getBody($inbox,$email_number);
 				if(!empty($message)){
 					$message =  $this->GetMessageBody($message);
 				}
