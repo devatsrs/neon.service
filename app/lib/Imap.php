@@ -618,7 +618,10 @@ protected $server;
 					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
 
-				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
+				$message = 	$this->getBody($inbox,$email_number);
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
 
 				$message = $this->body_cleanup($message);
 
@@ -765,19 +768,6 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
-					// -------------------------------
-
-
-					/* moved bellow
-
-					if(!$skip_email_notification) {
-						if ($GroupID) {
-							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
-						}
-						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}*/
-					
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -832,29 +822,6 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					// -------------------------------
-
-					/*
-					 * moved bellow
-					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
-						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
-						if(!$skip_email_notification) {
-							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
-						}
-					}
-
-					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){
-							if(!$skip_email_notification) {
-								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
-							}
-							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
-						}
-					}
-					if(!$skip_email_notification) {
-						//Email to all cc emails from main ticket.
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
