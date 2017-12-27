@@ -557,7 +557,7 @@ protected $server;
 							$EmailTo = $email;
 						}
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
 						}
@@ -618,7 +618,9 @@ protected $server;
 					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
 
-				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
 
 				$message = $this->body_cleanup($message);
 
@@ -765,19 +767,6 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
-					// -------------------------------
-
-
-					/* moved bellow
-
-					if(!$skip_email_notification) {
-						if ($GroupID) {
-							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
-						}
-						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}*/
-					
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -832,29 +821,6 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					// -------------------------------
-
-					/*
-					 * moved bellow
-					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
-						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
-						if(!$skip_email_notification) {
-							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
-						}
-					}
-
-					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){
-							if(!$skip_email_notification) {
-								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
-							}
-							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
-						}
-					}
-					if(!$skip_email_notification) {
-						//Email to all cc emails from main ticket.
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
