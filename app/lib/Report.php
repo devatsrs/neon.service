@@ -47,9 +47,9 @@ class Report extends \Eloquent{
                 $cli->get($web_url);
                 $response = $cli->response;
 
-                $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).$Format;
+                $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).'.'.strtolower($Format);
                 file_put_contents($report,$response);
-                $settings['EmailMessage'] = 'Please check attached report of date from Start Date: '.$StartDate.'to End Date: '.$EndDate;
+                $settings['EmailMessage'] = 'Please check attached report of date from Start Date: '.$StartDate.' to End Date: '.$EndDate;
                 $settings['Subject'] = $Report->Name;
                 $settings['attach'] = $report;
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
@@ -81,7 +81,7 @@ class Report extends \Eloquent{
             $emaildata['EmailTo'] = explode(",", $settings['NotificationEmail']);
             Log::info($settings['NotificationEmail']);
             $status = Helper::sendMail($email_view, $emaildata);
-            Log::info($status);
+            //Log::info($status);
             if($status['status'] == 1) {
                 $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', '', 0, $EmailType);
                 if ($statuslog['status'] == 1) {
