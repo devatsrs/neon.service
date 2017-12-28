@@ -34,10 +34,6 @@ class Report extends \Eloquent{
                     }
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
-                $Live = false;
-                if ($settings['Time'] == 'HOUR') {
-                    $Live = true;
-                }
                 $StartDate = $settings['LastRunTime'];
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
                 $web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL');//'http://localhost/girish/neon/web/girish/public'
@@ -47,9 +43,6 @@ class Report extends \Eloquent{
                     $Format = $settings['Format'];
                 }
                 $web_url= $web_url.'/report/export/'.$Report->ReportID.'?StartDate='.urlencode($StartDate).'&EndDate='.urlencode($EndDate).'&Type='.$Format;
-                if($Live){
-                    $web_url .= '&Live='.$Live;
-                }
                 $cli = new Curl();
                 $cli->get($web_url);
                 $response = $cli->response;
