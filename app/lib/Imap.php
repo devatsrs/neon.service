@@ -637,6 +637,17 @@ protected $server;
 				}
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
+
+				if( TicketsTable::checkRepeatedEmails($CompanyID,$from) ) {
+
+
+					Log::info( "Repeated Emails skipped" );
+					Log::info( "Repeated Emails skipped From " . $from );
+					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
+					Log::info( "Repeated Emails skipped MessageID " . $message_id );
+					continue;
+				}
+
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
 
