@@ -924,9 +924,14 @@ protected $server;
 				$log_data = [
 					"CompanyID" => $CompanyID ,
 					"TicketID" => $ticketID ,
-					"AccountID" => $MatchArray["AccountID"] ,
-					"UserID" => $MatchArray["UserID"] ,
 				];
+				if (isset($MatchArray["AccountID"])){
+					$log_data["AccountID"] = $MatchArray["AccountID"];
+				}
+				if (isset($MatchArray["UserID"])){
+					$log_data["UserID"] = $MatchArray["UserID"];
+				}
+
 				if(!$parentTicket) {
 
 					TicketLog::insertTicketLog( $log_data, TicketLog::NEW_TICKET );
