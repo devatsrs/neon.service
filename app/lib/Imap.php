@@ -526,10 +526,8 @@ protected $server;
 						$header_name 		    = 	$tmp[0];
 						$header_value 			= 	$tmp[1];								
 						$headers[$header_name] 	= 	$header_value;						
-					} else {
-						// Append row to previous field
-						$headers[$header_name]  = 	$header_value . $h;
-					}				
+					}
+
 				}
 				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
 					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
