@@ -60,16 +60,21 @@ class Summary extends \Eloquent {
                         throw  new \Exception($error_message2[0]->Message);
                     }
 
-                    DB::connection('neon_report')->table('tblUsageSummaryDayLive')->truncate();
-                    DB::connection('neon_report')->table('tblUsageSummaryHourLive')->truncate();
-                    DB::connection('neon_report')->table('tblVendorSummaryDayLive')->truncate();
-                    DB::connection('neon_report')->table('tblVendorSummaryHourLive')->truncate();
+
                     $message['message'][] = $start_summary.' Generated Successfully';
                 } catch (\Exception $e) {
                     Log::error($e);
                     $message['error'][] = $e->getMessage();
                     Log::info($start_summary);
                 }
+            }
+            try {
+                DB::connection('neon_report')->table('tblUsageSummaryDayLive')->truncate();
+                DB::connection('neon_report')->table('tblUsageSummaryHourLive')->truncate();
+                DB::connection('neon_report')->table('tblVendorSummaryDayLive')->truncate();
+                DB::connection('neon_report')->table('tblVendorSummaryHourLive')->truncate();
+            } catch (\Exception $e) {
+                Log::error($e);
             }
             self::deleteOldTempTable($CompanyID,'customer');
             self::deleteOldTempTable($CompanyID,'vendor');

@@ -21,7 +21,9 @@ class Report extends \Eloquent{
 
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                 if (!isset($settings['LastRunTime'])) {
-                    if ($settings['Time'] == 'DAILY') {
+                    if ($settings['Time'] == 'HOUR') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' hour'));
+                    }else if ($settings['Time'] == 'DAILY') {
                         $settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $settings['Interval'] . ' day'));
                     } else if ($settings['Time'] == 'WEEKLY') {
                         $settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $settings['Interval'] . ' week'));
@@ -36,11 +38,16 @@ class Report extends \Eloquent{
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
                 $web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL');//'http://localhost/girish/neon/web/girish/public'
                 $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
-                $web_url= $web_url.'/report/export/'.$Report->ReportID.'?StartDate='.urlencode($StartDate).'&EndDate='.urlencode($EndDate);
+                $Format = 'XLS';
+                if(!empty($settings['Format'])){
+                    $Format = $settings['Format'];
+                }
+                $web_url= $web_url.'/report/export/'.$Report->ReportID.'?StartDate='.urlencode($StartDate).'&EndDate='.urlencode($EndDate).'&Type='.$Format;
                 $cli = new Curl();
                 $cli->get($web_url);
                 $response = $cli->response;
-                $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).'.xls';
+
+                $report = $TEMP_PATH.basename($Report->Name).' '.substr($StartDate,0,10).' '.substr($EndDate,0,10).$Format;
                 file_put_contents($report,$response);
                 $settings['EmailMessage'] = 'Please check attached report of date from Start Date: '.$StartDate.'to End Date: '.$EndDate;
                 $settings['Subject'] = $Report->Name;
@@ -66,7 +73,9 @@ class Report extends \Eloquent{
             'CompanyID' => $CompanyID,
             'CompanyName' => $Company->CompanyName,
             'Message' => $settings['EmailMessage'],
-            'attach' => $settings['attach']
+            'attach' => $settings['attach'],
+            'cc' => (isset($settings['cc'])?$settings['cc']:''),
+            'bcc' => (isset($settings['bcc'])?$settings['bcc']:''),
         );
         if (!empty($settings['NotificationEmail'])) {
             $emaildata['EmailTo'] = explode(",", $settings['NotificationEmail']);
