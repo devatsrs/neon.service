@@ -1792,6 +1792,8 @@ class Invoice extends \Eloquent {
     public static function getInvoiceToByAccount($Message,$replace_array){
         $extra = [
             '{AccountName}',
+            '{FirstName}',
+            '{LastName}',
             '{AccountNumber}',
             '{VatNumber}',
             '{VatNumber}',
