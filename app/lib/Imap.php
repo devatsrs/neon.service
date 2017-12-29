@@ -526,10 +526,8 @@ protected $server;
 						$header_name 		    = 	$tmp[0];
 						$header_value 			= 	$tmp[1];								
 						$headers[$header_name] 	= 	$header_value;						
-					} else {
-						// Append row to previous field
-						$headers[$header_name]  = 	$header_value . $h;
-					}				
+					}
+
 				}
 				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
 					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
@@ -639,6 +637,20 @@ protected $server;
 				}
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
+
+				$checkRepeatedEmailsData = [
+					"from" => $from,
+					"GroupID" => $GroupID,
+				];
+				if( TicketsTable::checkRepeatedEmails($CompanyID,$checkRepeatedEmailsData) ) {
+
+					Log::info( "Repeated Emails skipped" );
+					Log::info( "Repeated Emails skipped From " . $from );
+					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
+					Log::info( "Repeated Emails skipped MessageID " . $message_id );
+					continue;
+				}
+
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
 
@@ -926,9 +938,14 @@ protected $server;
 				$log_data = [
 					"CompanyID" => $CompanyID ,
 					"TicketID" => $ticketID ,
-					"AccountID" => $MatchArray["AccountID"] ,
-					"UserID" => $MatchArray["UserID"] ,
 				];
+				if (isset($MatchArray["AccountID"])){
+					$log_data["AccountID"] = $MatchArray["AccountID"];
+				}
+				if (isset($MatchArray["UserID"])){
+					$log_data["UserID"] = $MatchArray["UserID"];
+				}
+
 				if(!$parentTicket) {
 
 					TicketLog::insertTicketLog( $log_data, TicketLog::NEW_TICKET );
