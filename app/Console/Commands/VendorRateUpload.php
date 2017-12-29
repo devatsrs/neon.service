@@ -15,7 +15,7 @@ use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
-use App\Lib\VendorFileUploadTemplate;
+use App\Lib\FileUploadTemplate;
 use App\Lib\Currency;
 use App\Lib\Company;
 use App\Lib\Account;
@@ -96,7 +96,7 @@ class VendorRateUpload extends Command
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
                     if (isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)) {
-                        $uploadtemplate = VendorFileUploadTemplate::find($joboptions->uploadtemplate);
+                        $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
                     } else {
                         $templateoptions = json_decode($joboptions->Options);
