@@ -36,7 +36,6 @@ class ReportSchedule extends \Eloquent{
                 }
                 $StartDate = $settings['LastRunTime'];
                 $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
-                $web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL');//'http://localhost/girish/neon/web/girish/public'
                 $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
                 $Format = 'XLS';
                 if(!empty($settings['Format'])){
@@ -44,7 +43,7 @@ class ReportSchedule extends \Eloquent{
                 }
                 $Reports = explode(',',$ReportSchedule->ReportID);
                 foreach($Reports as $ReportID) {
-                    $web_url = $web_url . '/report/export/' . $ReportID . '?StartDate=' . urlencode($StartDate) . '&EndDate=' . urlencode($EndDate) . '&Type=' . $Format;
+					$web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL') . '/report/export/' . $ReportID . '?StartDate=' . urlencode($StartDate) . '&EndDate=' . urlencode($EndDate) . '&Type=' . $Format;
                     $cli = new Curl();
                     $cli->get($web_url);
                     $response = $cli->response;
