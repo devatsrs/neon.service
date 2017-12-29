@@ -217,6 +217,11 @@ class TicketsTable extends \Eloquent {
 		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
 		$isBlock = DB::select($query);
 
+		if(isset($isBlock[0]->isAlreadyBlocked) && $isBlock[0]->isAlreadyBlocked == 1) {
+			Log::info("Repeated Emails skipped: AlreadyBlocked");
+			return true;
+		}
+
 		if(isset($isBlock[0]->block) && $isBlock[0]->block == 1) {
 
 			try {
