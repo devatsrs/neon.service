@@ -217,7 +217,7 @@ class TicketsTable extends \Eloquent {
 		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
 		$isBlock = DB::select($query);
 
-		if(isset($isBlock[0]["block"]) && $isBlock[0]["block"] == 1) {
+		if(isset($isBlock[0]->block) && $isBlock[0]->block == 1) {
 
 			try {
 
