@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -201,27 +202,36 @@ class TicketsTable extends \Eloquent {
 
 	/** Check Repeated Emails and add to Import Rule and send email to support ticket email.
 	 * @param $companyID
-	 * @param $emailToBlock
+	 * @param $data
+	 * @return bool
 	 */
-	static function checkRepeatedEmails($companyID,$emailToBlock) {
+	static function checkRepeatedEmails($CompanyID,$data) {
 
 		// Create Import Rule
 		// Check Duplicate
 
+		$emailToBlock = $data["from"];
+		$GroupID 	  = $data["GroupID"];
+
 		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com')
-		$query = "call prc_TicketCheckRepeatedEmails ('" . $companyID . "','" . $emailToBlock . "')";
+		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
 		$isBlock = DB::select($query);
 
-		if(isset($isBlock[0]["block"]) && $isBlock[0]["block"] == 1) {
+		if(isset($isBlock[0]->isAlreadyBlocked) && $isBlock[0]->isAlreadyBlocked == 1) {
+			Log::info("Repeated Emails skipped: AlreadyBlocked");
+			return true;
+		}
+
+		if(isset($isBlock[0]->block) && $isBlock[0]->block == 1) {
 
 			try {
 
 				DB::beginTransaction();
 
-				$Title = "Spam Detection by System";
-				$Description = "Spam Detection by System";
+				$Title = "Spam Detection by System Against Email: " . $emailToBlock;
+				$Description = "Spam Detection by System Against Email: " . $emailToBlock;;
 				$SaveData = array(
-					"CompanyID" => $companyID,
+					"CompanyID" => $CompanyID,
 					"Title" => $Title,
 					"Description" => $Description,
 					"Match" => TicketImportRule::MATCH_ANY,   // All , Any
@@ -235,7 +245,7 @@ class TicketsTable extends \Eloquent {
 				if ($ID) {
 					// Add condition
 
-					$Conditions = new TicketImportRuleConditionType();
+					$Conditions = TicketImportRuleConditionType::lists('Condition','TicketImportRuleConditionTypeID');
 					$rule_condition = array_search(TicketImportRuleConditionType::EMAIL_FROM, $Conditions);
 					if ($rule_condition == false) {
 						Log::info("Condition TicketImportRuleConditionType::EMAIL_FROM not found");
@@ -253,7 +263,7 @@ class TicketsTable extends \Eloquent {
 					TicketImportRuleCondition::create($SaveConditionData);
 
 					// Add Action
-					$Conditions = new TicketImportRuleActionType();
+					$Conditions = TicketImportRuleActionType::lists('Action','TicketImportRuleActionTypeID');
 					$rule_action = array_search(TicketImportRuleActionType::SKIP_NOTIFICATION, $Conditions);
 					if ($rule_action == false) {
 						Log::info("Condition TicketImportRuleActionType::SKIP_NOTIFICATION not found");
@@ -276,6 +286,8 @@ class TicketsTable extends \Eloquent {
 				DB::commit();
 
 				return true;
+
+				new TicketEmails(array("GroupID" => $GroupID, "CompanyID" => $CompanyID, "EmailToBlock" => $emailToBlock , "TriggerType" => array("RepeatedEmailBlockEmail")));
 
 			}catch (Exception $ex) {
 

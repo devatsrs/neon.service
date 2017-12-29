@@ -163,7 +163,7 @@ class TicketImportRuleConditionType extends \Eloquent  {
                 $field = $TicketData["Status"];
                 Log::info("Status " . $field);
             } else if ($this->isAgent($TicketImportRuleConditionTypeID)) {
-                $Agent = TicketsTable::where(["TicketID",$TicketData])->pluck("Agent");
+                $Agent = TicketsTable::where(["TicketID",$TicketData["TicketID"]])->pluck("Agent");
                 $field = $Agent;
                 Log::info("Agent " . $Agent);
             } else if ($this->isGroup($TicketImportRuleConditionTypeID)) {

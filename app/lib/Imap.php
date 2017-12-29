@@ -638,8 +638,11 @@ protected $server;
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
 
-				if( TicketsTable::checkRepeatedEmails($CompanyID,$from) ) {
-
+				$checkRepeatedEmailsData = [
+					"from" => $from,
+					"GroupID" => $GroupID,
+				];
+				if( TicketsTable::checkRepeatedEmails($CompanyID,$checkRepeatedEmailsData) ) {
 
 					Log::info( "Repeated Emails skipped" );
 					Log::info( "Repeated Emails skipped From " . $from );
