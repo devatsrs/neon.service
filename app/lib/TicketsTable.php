@@ -201,15 +201,19 @@ class TicketsTable extends \Eloquent {
 
 	/** Check Repeated Emails and add to Import Rule and send email to support ticket email.
 	 * @param $companyID
-	 * @param $emailToBlock
+	 * @param $data
+	 * @return bool
 	 */
-	static function checkRepeatedEmails($companyID,$emailToBlock) {
+	static function checkRepeatedEmails($CompanyID,$data) {
 
 		// Create Import Rule
 		// Check Duplicate
 
+		$emailToBlock = $data["from"];
+		$GroupID 	  = $data["GroupID"];
+
 		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com')
-		$query = "call prc_TicketCheckRepeatedEmails ('" . $companyID . "','" . $emailToBlock . "')";
+		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
 		$isBlock = DB::select($query);
 
 		if(isset($isBlock[0]["block"]) && $isBlock[0]["block"] == 1) {
@@ -218,10 +222,10 @@ class TicketsTable extends \Eloquent {
 
 				DB::beginTransaction();
 
-				$Title = "Spam Detection by System";
-				$Description = "Spam Detection by System";
+				$Title = "Spam Detection by System Against Email: " . $emailToBlock;
+				$Description = "Spam Detection by System Against Email: " . $emailToBlock;;
 				$SaveData = array(
-					"CompanyID" => $companyID,
+					"CompanyID" => $CompanyID,
 					"Title" => $Title,
 					"Description" => $Description,
 					"Match" => TicketImportRule::MATCH_ANY,   // All , Any
@@ -276,6 +280,8 @@ class TicketsTable extends \Eloquent {
 				DB::commit();
 
 				return true;
+
+				new TicketEmails(array("GroupID" => $GroupID, "CompanyID" => $CompanyID, "EmailToBlock" => $emailToBlock , "TriggerType" => array("RepeatedEmailBlockEmail")));
 
 			}catch (Exception $ex) {
 
