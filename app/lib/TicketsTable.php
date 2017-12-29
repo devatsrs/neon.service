@@ -240,7 +240,7 @@ class TicketsTable extends \Eloquent {
 				if ($ID) {
 					// Add condition
 
-					$Conditions = new TicketImportRuleConditionType();
+					$Conditions = TicketImportRuleConditionType::lists('Condition','TicketImportRuleConditionTypeID');
 					$rule_condition = array_search(TicketImportRuleConditionType::EMAIL_FROM, $Conditions);
 					if ($rule_condition == false) {
 						Log::info("Condition TicketImportRuleConditionType::EMAIL_FROM not found");
@@ -258,7 +258,7 @@ class TicketsTable extends \Eloquent {
 					TicketImportRuleCondition::create($SaveConditionData);
 
 					// Add Action
-					$Conditions = new TicketImportRuleActionType();
+					$Conditions = TicketImportRuleActionType::lists('Action','TicketImportRuleActionTypeID');
 					$rule_action = array_search(TicketImportRuleActionType::SKIP_NOTIFICATION, $Conditions);
 					if ($rule_action == false) {
 						Log::info("Condition TicketImportRuleActionType::SKIP_NOTIFICATION not found");
