@@ -61,7 +61,7 @@ class NeonAlert extends \Eloquent {
 
         Log::info('============== Report Schedule START===========');
         try {
-            Report::send_schedule_report($CompanyID);
+            ReportSchedule::send_schedule_report($CompanyID);
         } catch (\Exception $e) {
             Log::error($e);
             $cronjobdata[] = 'Report Schedule Failed';
@@ -155,8 +155,8 @@ class NeonAlert extends \Eloquent {
             $Class = Alert::find($ClassID);
         }else if($ClassName == 'BillingClass'){
             $Class = BillingClass::find($ClassID);
-        }else if($ClassName == 'Report'){
-            $Class = Report::find($ClassID);
+        }else if($ClassName == 'ReportSchedule'){
+            $Class = ReportSchedule::find($ClassID);
         }
         $settings = json_decode($Class->$setting_name, true);
         if(!empty($LastRunTime)) {
