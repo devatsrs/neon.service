@@ -49,7 +49,7 @@ class ReportSchedule extends \Eloquent{
                     $cli->get($web_url);
                     $response = $cli->response;
 
-                    $report = $TEMP_PATH . basename($ReportSchedule->Name) . ' ' . substr($StartDate, 0, 10) . ' ' . substr($EndDate, 0, 10) . '.' . strtolower($Format);
+                    $report = $TEMP_PATH . basename($ReportSchedule->Name).' '.$ReportID. ' ' . substr($StartDate, 0, 10) . ' ' . substr($EndDate, 0, 10) . '.' . strtolower($Format);
                     file_put_contents($report, $response);
                     $settings['attach'][] = $report;
                 }
