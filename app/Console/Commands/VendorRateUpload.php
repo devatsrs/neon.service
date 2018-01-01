@@ -15,7 +15,7 @@ use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempVendorRate;
-use App\Lib\VendorFileUploadTemplate;
+use App\Lib\FileUploadTemplate;
 use App\Lib\Currency;
 use App\Lib\Company;
 use App\Lib\Account;
@@ -96,7 +96,7 @@ class VendorRateUpload extends Command
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
                     if (isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)) {
-                        $uploadtemplate = VendorFileUploadTemplate::find($joboptions->uploadtemplate);
+                        $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
                     } else {
                         $templateoptions = json_decode($joboptions->Options);
@@ -154,21 +154,26 @@ class VendorRateUpload extends Command
                             }
                         };
 
-                        if (isset($templateoptions->skipRows)) {
-                            $skiptRows = $templateoptions->skipRows;
-                            NeonExcelIO::$start_row = $skiptRows->start_row;
-                            NeonExcelIO::$end_row = $skiptRows->end_row;
+                        if(isset($templateoptions->skipRows) && $csvoption->Firstrow == 'columnname') {
+                            $skiptRows              = $templateoptions->skipRows;
+                            NeonExcelIO::$start_row = intval($skiptRows->start_row);
+                            NeonExcelIO::$end_row   = intval($skiptRows->end_row);
+                            $lineno                 = intval($skiptRows->start_row) + 2;
+                        } else if (isset($templateoptions->skipRows) && $csvoption->Firstrow == 'data') {
+                            $skiptRows              = $templateoptions->skipRows;
+                            NeonExcelIO::$start_row = intval($skiptRows->start_row);
+                            NeonExcelIO::$end_row   = intval($skiptRows->end_row);
+                            $lineno                 = intval($skiptRows->start_row) + 1;
+                        } else if ($csvoption->Firstrow == 'data') {
+                            $lineno = 1;
+                        } else {
+                            $lineno = 2;
                         }
 
                         $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption);
                         $results = $NeonExcel->read();
                         /*Log::info(print_r(array_slice($results,0,10),true));
                         Log::info(print_r(array_slice($results,-10,10),true));*/
-                        $lineno = 2;
-
-                        if ($csvoption->Firstrow == 'data') {
-                            $lineno = 1;
-                        }
 
 
                         // if EndDate is mapped and not empty than data will store in and insert from $batch_insert_array
