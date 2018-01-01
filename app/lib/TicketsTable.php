@@ -285,9 +285,9 @@ class TicketsTable extends \Eloquent {
 
 				DB::commit();
 
-				return true;
-
 				new TicketEmails(array("GroupID" => $GroupID, "CompanyID" => $CompanyID, "EmailToBlock" => $emailToBlock , "TriggerType" => array("RepeatedEmailBlockEmail")));
+
+				return true;
 
 			}catch (Exception $ex) {
 
