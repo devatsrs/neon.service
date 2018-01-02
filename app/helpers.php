@@ -734,3 +734,10 @@ function get_client_ip() {
     return $ipaddress;
 
 }
+
+function extract_ip($data_remote_ip){
+    if (preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $data_remote_ip, $ip)) {
+        $data_remote_ip = array_pop($ip);
+    }
+    return $data_remote_ip;
+}

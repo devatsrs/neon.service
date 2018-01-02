@@ -563,7 +563,7 @@ class CronJob extends \Eloquent {
     public static function checkCDRDownloadFiles($CompanyID){
 
         $CronJonCommandsIds = array();
-        $rows = DB::table('tblCronJobCommand')->where(["Status"=> 1,'CompanyID'=>$CompanyID])->whereIn('Command',array('sippydownloadcdr','vosdownloadcdr'))->get();
+        $rows = DB::table('tblCronJobCommand')->where(["Status"=> 1,'CompanyID'=>$CompanyID])->whereIn('Command',array('sippydownloadcdr','vosdownloadcdr','vos5000downloadcdr'))->get();
         if(count($rows)>0){
             foreach($rows as $row){
                 if(!empty($row->CronJobCommandID)){

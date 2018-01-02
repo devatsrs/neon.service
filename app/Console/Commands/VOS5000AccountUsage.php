@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class VOSAccountUsage5000 extends Command
+class VOS5000AccountUsage extends Command
 {
 
     /**
@@ -35,7 +35,7 @@ class VOSAccountUsage5000 extends Command
      *
      * @var string
      */
-    protected $name = 'vosaccountusage';
+    protected $name = 'vos5000accountusage';
 
     /**
      * The console command description.
@@ -92,7 +92,7 @@ class VOSAccountUsage5000 extends Command
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
-        Log::useFiles(storage_path() . '/logs/vosaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/vos5000accountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
@@ -108,7 +108,7 @@ class VOSAccountUsage5000 extends Command
         $tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
 
 
-        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
+        $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS5000_LOCATION');
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -147,7 +147,7 @@ class VOSAccountUsage5000 extends Command
                 $AutoAddIP = $companysetting->AutoAddIP;
             }
             TempUsageDetail::applyDiscountPlan();
-            Log::error(' ========================== vos transaction start =============================');
+            Log::error(' ========================== vos5000 transaction start =============================');
             CronJob::createLog($CronJobID);
 
             $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
@@ -280,7 +280,7 @@ class VOSAccountUsage5000 extends Command
             }
 
 
-            Log::error(' ========================== vos transaction end =============================');
+            Log::error(' ========================== vos5000 transaction end =============================');
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
@@ -313,18 +313,18 @@ class VOSAccountUsage5000 extends Command
             }
 
 
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            Log::error("VOS5000 CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("VOS5000 CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
-            Log::error('vos prc_insertCDR start'.$processID);
+            Log::error('VOS5000 prc_insertCDR start'.$processID);
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
-            Log::error('vos prc_insertCDR end');
+            Log::error('VOS5000 prc_insertCDR end');
 
-            Log::error('vos prc_linkCDR end');
+            Log::error('VOS5000 prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('vos prc_linkCDR end');
+            Log::error('VOS5000 prc_linkCDR end');
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
@@ -350,7 +350,7 @@ class VOSAccountUsage5000 extends Command
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
 
-                Log::error('vos delete file count ' . count($delete_files));
+                Log::error('VOS5000 delete file count ' . count($delete_files));
 
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 //TempVendorCDR::where(["processId" => $processID])->delete();
