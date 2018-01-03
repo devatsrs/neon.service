@@ -200,7 +200,9 @@ function time_elapsed($start_time,$end_time){
     $datetime1 = new \DateTime($start_time);
     $datetime2 = new \DateTime($end_time);
     $interval = $datetime1->diff($datetime2);
-    return $elapsed = $interval->format('%i minutes %S seconds');
+    $minutes = $interval->h * 60;
+    $minutes += $interval->i;
+    return $minutes.' minutes '.$interval->s.' seconds';
 }
 function fix_jobstatus_meassage($message){
     if(count($message)>100) {
@@ -496,11 +498,59 @@ function cal_next_runtime($data){
                 $strtotime = 0;
             }
             return date('Y-m-d H:i:00',$strtotime);
+        case 'WEEKLY':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime = strtotime("+$Interval week", $strtotime);
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            if(isset($StartDay) && date('d',$strtotime) != $StartDay){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
         case 'MONTHLY':
             if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
                 $strtotime = strtotime($LastRunTime);
                 if(isset($Interval)){
                     $strtotime = strtotime("+$Interval month", $strtotime);
+                }
+                if($strtotime_current > $strtotime){
+                    $strtotime = $strtotime_current;
+                }
+            }
+
+            $dayname = strtoupper(date('D'));
+            if(isset($Day) && is_array($Day) && !in_array($dayname,$Day)){
+                $strtotime = 0;
+            }else if(isset($Day) && !is_array($Day) && $Day != $dayname){
+                $strtotime = 0;
+            }
+            If(isset($StartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$StartTime)) > date('Y-m-d H:i:00')){
+                $strtotime = 0;
+            }
+            if(isset($StartDay) && date('d',$strtotime) != $StartDay){
+                $strtotime = 0;
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'YEARLY':
+            if(isset($LastRunTime) && isset($NextRunTime) &&  $NextRunTime >= date('Y-m-d H:i:00') && $LastRunTime != ''){
+                $strtotime = strtotime($LastRunTime);
+                if(isset($Interval)){
+                    $strtotime = strtotime("+$Interval year", $strtotime);
                 }
                 if($strtotime_current > $strtotime){
                     $strtotime = $strtotime_current;
@@ -561,11 +611,31 @@ function next_run_time($data){
                 return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
             }
             return date('Y-m-d H:i:00',$strtotime);
+        case 'WEEKLY':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' week');
+            }else{
+                $strtotime = strtotime("+$Interval week", strtotime($LastRunTime));
+            }
+            if(isset($StartTime)){
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
+            }
+            return date('Y-m-d H:i:00',$strtotime);
         case 'MONTHLY':
             if($LastRunTime == ''){
                 $strtotime = strtotime('+'.$Interval.' month');
             }else{
                 $strtotime = strtotime("+$Interval month", strtotime($LastRunTime));
+            }
+            if(isset($StartTime)){
+                return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
+            }
+            return date('Y-m-d H:i:00',$strtotime);
+        case 'YEARLY':
+            if($LastRunTime == ''){
+                $strtotime = strtotime('+'.$Interval.' year');
+            }else{
+                $strtotime = strtotime("+$Interval year", strtotime($LastRunTime));
             }
             if(isset($StartTime)){
                 return date('Y-m-d',$strtotime).' '.date("H:i:00", strtotime("$StartTime"));
