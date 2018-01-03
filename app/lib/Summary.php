@@ -5,11 +5,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class Summary extends \Eloquent {
-    public static function generateSummary($CompanyID,$today){
+    public static function generateSummary($CompanyID,$today,$cronsetting=array()){
 
+        $message = array();
 
         if($today == 1){
             $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
+
+            Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID)");
+            DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
+
             $query = "call prc_generateSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "','".$UniqueID."')";
             Log::info($query);
             $error_message = DB::connection('neon_report')->select($query);
@@ -18,11 +23,16 @@ class Summary extends \Eloquent {
             }
         }else {
 
-            $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
-            $enddate = date("Y-m-d", strtotime("-1 Day"));
+            if(isset($cronsetting['StartDate']) && !empty($cronsetting['StartDate'])){
+                $startdate = date("Y-m-d", strtotime($cronsetting['StartDate']));
+                $enddate = date("Y-m-d", strtotime($cronsetting['EndDate']));
+            }else {
+                $startdate = date("Y-m-d", strtotime(UsageHeader::getStartHeaderDate($CompanyID)));
+                $enddate = date("Y-m-d", strtotime("-1 Day"));
+            }
             self::markFinalSummary($CompanyID, $startdate);
             $start = $startdate;
-            while ($start <= $enddate) {
+            while ($start <= $enddate && $start < date("Y-m-d")) {
 
                 $start_summary = $start;
                 $end_summary = $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
@@ -49,14 +59,27 @@ class Summary extends \Eloquent {
                     if(count($error_message2)){
                         throw  new \Exception($error_message2[0]->Message);
                     }
+
+
+                    $message['message'][] = $start_summary.' Generated Successfully';
                 } catch (\Exception $e) {
                     Log::error($e);
+                    $message['error'][] = $e->getMessage();
                     Log::info($start_summary);
                 }
+            }
+            try {
+                DB::connection('neon_report')->table('tblUsageSummaryDayLive')->truncate();
+                DB::connection('neon_report')->table('tblUsageSummaryHourLive')->truncate();
+                DB::connection('neon_report')->table('tblVendorSummaryDayLive')->truncate();
+                DB::connection('neon_report')->table('tblVendorSummaryHourLive')->truncate();
+            } catch (\Exception $e) {
+                Log::error($e);
             }
             self::deleteOldTempTable($CompanyID,'customer');
             self::deleteOldTempTable($CompanyID,'vendor');
         }
+        return $message;
     }
 
     public static function markFinalSummary($CompanyID,$startdate){
@@ -199,11 +222,6 @@ class Summary extends \Eloquent {
                 Log::error(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->table($temp_table1)->truncate();
                 DB::connection('neon_report')->table($temp_table2)->truncate();
-            }else{
-                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Customer')");
-                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Customer'));
-                Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID,'Vendor')");
-                DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?,?)",array($CompanyID,$UniqueID,'Vendor'));
             }
 
             //Log::error($link_table1 . ' done ');
