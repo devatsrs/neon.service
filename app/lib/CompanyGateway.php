@@ -207,7 +207,7 @@ class CompanyGateway extends \Eloquent {
 			if($UniqueID == 0){
 				$CompanyConfiguration['Value'] = $UniqueID =  1;
 			}else{
-				$CompanyConfiguration['Value'] = $UniqueID ;
+				$CompanyConfiguration['Value'] = $UniqueID+1 ;
 			}
             CompanyConfiguration::insert($CompanyConfiguration);
         }
