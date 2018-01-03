@@ -200,7 +200,9 @@ function time_elapsed($start_time,$end_time){
     $datetime1 = new \DateTime($start_time);
     $datetime2 = new \DateTime($end_time);
     $interval = $datetime1->diff($datetime2);
-    return $elapsed = $interval->format('%i minutes %S seconds');
+    $minutes = $interval->h * 60;
+    $minutes += $interval->i;
+    return $minutes.' minutes '.$interval->s.' seconds';
 }
 function fix_jobstatus_meassage($message){
     if(count($message)>100) {
