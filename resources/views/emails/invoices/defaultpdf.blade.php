@@ -559,5 +559,9 @@
         @endif
 		@endif
 
+        @if(!empty($ManagementReports))
+            <div class="page_break"></div>
+            @include('emails.invoices.management_chart')
+        @endif
 
  @stop
