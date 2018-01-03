@@ -68,7 +68,7 @@ class CompanyGateway extends \Eloquent {
             $tbltempusagedetail_name .=$extra_prefix;
 
             //self::dropTableForNewColumn($tbltempusagedetail_name);
-            //Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
+            Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
                                     `TempUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
                                     `CompanyID` INT(11) NULL DEFAULT NULL,
@@ -141,7 +141,7 @@ class CompanyGateway extends \Eloquent {
 
             $tbltempusagedetail_name .=$extra_prefix;
             Log::error($tbltempusagedetail_name);
-            //Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
+            Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
             	`TempVendorCDRID` INT(11) NOT NULL AUTO_INCREMENT,
                 `CompanyID` INT(11) NULL DEFAULT NULL,
@@ -203,7 +203,12 @@ class CompanyGateway extends \Eloquent {
         if($UniqueID == 0){
             $CompanyConfiguration['CompanyID'] = $CompanyID;
             $CompanyConfiguration['Key'] = 'VOS_UniqueID_'.$CompanyGatewayID;
-            $CompanyConfiguration['Value'] = $UniqueID =  1;
+			$UniqueID = (int)DB::connection('sqlsrvcdr')->table('tblUCall')->max('UID');
+			if($UniqueID == 0){
+				$CompanyConfiguration['Value'] = $UniqueID =  1;
+			}else{
+				$CompanyConfiguration['Value'] = $UniqueID ;
+			}
             CompanyConfiguration::insert($CompanyConfiguration);
         }
         return $UniqueID;
