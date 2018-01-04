@@ -64,12 +64,21 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'EmailTo');
 		$mail =  self::add_email_address($mail,$data,'cc');
 		$mail =  self::add_email_address($mail,$data,'bcc');
+
+
+		if(isset($data['In-Reply-To'])) {
+			$mail->addCustomHeader('In-Reply-To', $data['In-Reply-To']);
+		}
+
 		if(isset($data["Auto-Submitted"])){
 			$mail->addCustomHeader("Auto-Submitted","auto-generated");
 		}
 		//if(isset($data["Auto-Submitted"])){
 			$mail->addCustomHeader("Auto-Submitted","auto-generated");
 		//}
+
+		$mail->MessageID = self::generate_email_message_id($data,$config);
+
 		if(SiteIntegration::CheckIntegrationConfiguration(false,SiteIntegration::$imapSlug,$companyID))
 		{
 			$ImapData =  SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$imapSlug,$companyID);
@@ -78,7 +87,13 @@ class PHPMAILERIntegtration{
 		}
 			
 		if(isset($data['attach'])){
-            $mail->addAttachment($data['attach']);
+			if(is_array($data['attach'])){
+				foreach($data['attach'] as $attach){
+					$mail->addAttachment($attach);
+				}
+			}else{
+				$mail->addAttachment($data['attach']);
+			}
         }
 
 		$mail->Body = $mail->msgHTML($body);
@@ -126,5 +141,24 @@ class PHPMAILERIntegtration{
 		}
 		return $mail;
 	}
+
+	public static function generate_email_message_id($data,$config) {
+
+		if (isset($data['EmailFrom'])) {
+			$from = $data['EmailFrom'];
+		} else {
+			$from = $config->EmailFrom;
+		}
+
+		if(isset($data["Message-ID"]) && !empty($data["Message-ID"])) {
+			$message_id		  = $data["Message-ID"] .'_'.  \Illuminate\Support\Str::random(32) . ''. $from;
+		} else {
+			$message_id		  =  md5(time().$config->EmailFrom) . ''. $from ;
+		}
+
+		return "<".$message_id .">";
+
+	}
+
 }
 ?>

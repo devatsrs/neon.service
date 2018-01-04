@@ -11,7 +11,7 @@ class CompanyConfiguration extends \Eloquent {
     public  $primaryKey = "CompanyConfigurationID";
     static protected  $enable_cache = true;
     public static $cache = ["CompanyConfiguration"];
-
+    public $timestamps = false; // no created_at and updated_at
 
     //without cache get value of configuration
     public static function getValueConfigurationByKey($CompanyID,$Key){

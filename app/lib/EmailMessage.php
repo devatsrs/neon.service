@@ -29,7 +29,7 @@ class EmailMessage {
 	}
 
 	public function fetch() {
-		
+
 		$structure = @imap_fetchstructure($this->connection, $this->messageNumber);
 		if(!$structure) {
 			return false;
@@ -50,25 +50,22 @@ class EmailMessage {
 			$partNumber = $prefix . $index;
 			
 			if($part->type == 0) {
-				if($part->subtype == 'PLAIN') {
-					$this->bodyPlain .= $this->getPart($partNumber, $part->encoding);
-				}
-				else {
-					$this->bodyHTML .= $this->getPart($partNumber, $part->encoding);
-				}
+
+				$this->addAttachmentArray($part,$partNumber);
+
 			}
 			elseif($part->type == 2) {
 				$msg = new EmailMessage($this->connection, $this->messageNumber);
 				$msg->getAttachments = $this->getAttachments;
 				if(isset($part->parts)){
 					$msg->recurse($part->parts, $partNumber.'.', 0, false);
-					$this->attachments[] = array(
+					/*$this->attachments[] = array(
 						'type' => $part->type,
 						'subtype' => $part->subtype,
 						'filename' => '',
 						'data' => $msg,
 						'inline' => false,
-					);
+					);*/
 				}
 			}
 			elseif(isset($part->parts)) {
@@ -80,25 +77,7 @@ class EmailMessage {
 				}
 			}
 			elseif($part->type > 2) {
-				if(isset($part->id)) {
-					$id = str_replace(array('<', '>'), '', $part->id);
-					$this->attachments[$id] = array(
-						'type' => $part->type,
-						'subtype' => $part->subtype,
-						'filename' => $this->getFilenameFromPart($part),
-						'data' => $this->getAttachments ? $this->getPart($partNumber, $part->encoding) : '',
-						'inline' => true,
-					);
-				}
-				else {
-					$this->attachments[] = array(
-						'type' => $part->type,
-						'subtype' => $part->subtype,
-						'filename' => $this->getFilenameFromPart($part),
-						'data' => $this->getAttachments ? $this->getPart($partNumber, $part->encoding) : '',
-						'inline' => false,
-					);
-				}
+				$this->addAttachmentArray($part,$partNumber);
 			}
 			
 			$index++;
@@ -106,7 +85,32 @@ class EmailMessage {
 		}
 		
 	}
-	
+
+	function addAttachmentArray($part,$partNumber) {
+
+		$filename = $this->getFilenameFromPart($part);
+		if(!empty($filename)) {
+			if (isset($part->id)) {
+				$id = str_replace(array('<', '>'), '', $part->id);
+				$this->attachments[$id] = array(
+					'type' => $part->type,
+					'subtype' => $part->subtype,
+					'filename' => $filename,
+					'data' => $this->getAttachments ? $this->getPart($partNumber, $part->encoding) : '',
+					'inline' => true,
+				);
+			} else {
+				$this->attachments[] = array(
+					'type' => $part->type,
+					'subtype' => $part->subtype,
+					'filename' => $filename,
+					'data' => $this->getAttachments ? $this->getPart($partNumber, $part->encoding) : '',
+					'inline' => false,
+				);
+			}
+		}
+	}
+
 	function getPart($partNumber, $encoding) {
 
 		$data = imap_fetchbody($this->connection, $this->messageNumber, $partNumber);

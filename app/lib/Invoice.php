@@ -513,6 +513,13 @@ class Invoice extends \Eloquent {
             }else{
                 $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-' . date($InvoiceTemplate->DateFormat, strtotime($Invoice->IssueDate)) . '-' . $InvoiceID);
             }
+            $InvoiceUSAGEPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::USAGE])->first();
+            $ManagementReports = array();
+            if(!empty($InvoiceUSAGEPeriod) && !empty($InvoiceTemplate->ManagementReport)){
+                $management_query = "call prc_InvoiceManagementReport ('" . $companyID . "','".intval($Invoice->AccountID) . "','".$InvoiceUSAGEPeriod->StartDate . "','".$InvoiceUSAGEPeriod->EndDate. "')";
+                $ManagementReports = DataTableSql::of($management_query,'sqlsrvcdr')->getProcResult(array('LongestCalls','ExpensiveCalls','DialledNumber','DailySummary','UsageCategory'));
+                $ManagementReports = json_decode(json_encode($ManagementReports['data']), true);
+            }
             $file_name = 'Invoice-' . $common_name . '.pdf';
             $htmlfile_name = 'Invoice-' . $common_name . '.html';
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
@@ -520,9 +527,9 @@ class Invoice extends \Eloquent {
             if(!empty($Invoice->RecurringInvoiceID)) {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports'))->render();
             }else {
-                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -1792,6 +1799,8 @@ class Invoice extends \Eloquent {
     public static function getInvoiceToByAccount($Message,$replace_array){
         $extra = [
             '{AccountName}',
+            '{FirstName}',
+            '{LastName}',
             '{AccountNumber}',
             '{VatNumber}',
             '{VatNumber}',

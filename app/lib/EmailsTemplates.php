@@ -52,6 +52,7 @@ class EmailsTemplates{
 		$userID											=	isset($data['UserID'])?$data['UserID']:0;
 		/*try{*/
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
+				$InvoiceDetailPeriod 					= 	 InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
 				$EmailTemplate 							= 	 EmailTemplate::where(["SystemType"=>Invoice::EMAILTEMPLATE,"CompanyID"=>$CompanyID])->first();
 				if($type=="subject"){
@@ -81,9 +82,14 @@ class EmailsTemplates{
 				$replace_array['InvoiceGrandTotal']		=	 number_format($InvoiceData->GrandTotal,$RoundChargesAmount);
 				$replace_array['AccountName']			=	 $AccoutData->AccountName;
 				$replace_array['InvoiceOutstanding'] 	=	Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID,Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID));
-				
-				
-				 
+
+			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
+				$replace_array['StartDate'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+			}
+			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
+				$replace_array['EndDate'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+			}
+
 			$extraSpecific = [
 				'{{InvoiceNumber}}',
 				'{{InvoiceGrandTotal}}',
@@ -92,7 +98,9 @@ class EmailsTemplates{
 				'{{Signature}}',
 				'{{OutstandingIncludeUnbilledAmount}}',
 				'{{BalanceThreshold}}',				
-				"{{InvoiceLink}}"
+				"{{InvoiceLink}}",
+				"{{StartDate}}",
+				"{{EndDate}}"
 			];
 			
 			$extraDefault	=	EmailsTemplates::$fields;
@@ -208,6 +216,7 @@ class EmailsTemplates{
 		$userID = isset($data['UserID']) ? $data['UserID'] : 0;
 		/*try{*/
 		$InvoiceData = Invoice::find($InvoiceID);
+		$InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 		$AccoutData = Account::find($InvoiceData->AccountID);
 		$EmailTemplate = EmailTemplate::where(["SystemType" => Payment::AUTOINVOICETEMPLATE, "CompanyID" => $CompanyID])->first();
 		if ($type == "subject") {
@@ -229,6 +238,13 @@ class EmailsTemplates{
 		$replace_array['PaymentMethod'] = empty($staticdata['PaymentMethod'])?'':$staticdata['PaymentMethod'];
 		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
 
+		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
+			$replace_array['StartDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+		}
+		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
+			$replace_array['EndDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+		}
+
 		$extraSpecific = [
 			'{{InvoiceNumber}}',
 			'{{InvoiceGrandTotal}}',
@@ -241,7 +257,9 @@ class EmailsTemplates{
 			"{{PaidAmount}}",
 			"{{PaidStatus}}",
 			"{{PaymentMethod}}",
-			"{{PaymentNotes}}"
+			"{{PaymentNotes}}",
+			"{{StartDate}}",
+			"{{EndDate}}"
 		];
 
 		$extraDefault = EmailsTemplates::$fields;
