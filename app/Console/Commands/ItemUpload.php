@@ -10,6 +10,7 @@ use App\Lib\Job;
 use App\Lib\Currency;
 use App\Lib\Country;
 use App\Lib\JobFile;
+use App\Lib\Product;
 use App\Lib\Service;
 use App\Lib\User;
 use App\Lib\FileUploadTemplate;
@@ -175,6 +176,16 @@ class ItemUpload extends Command {
                                 $tempItemData['Note'] = trim($temp_row[$attrselection->Note]);
                             }else{
                                 $tempItemData['Note'] = '';
+                            }
+                            if (isset($attrselection->AppliedTo) && !empty($attrselection->AppliedTo) && !empty($temp_row[$attrselection->AppliedTo])) {
+                                $AppliedTo = strtolower(trim($temp_row[$attrselection->AppliedTo]));
+                                if($AppliedTo=='reseller'){
+                                    $tempItemData['AppliedTo'] = Product::Reseller;
+                                }else{
+                                    $tempItemData['AppliedTo'] = Product::Customer;
+                                }
+                            }else{
+                                $tempItemData['AppliedTo'] = Product::Customer;
                             }
                             if (isset($attrselection->Action) && !empty($attrselection->Action)) {
                                 $action_value = $temp_row[$attrselection->Action];
