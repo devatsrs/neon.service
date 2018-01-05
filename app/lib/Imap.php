@@ -939,18 +939,30 @@ protected $server;
 					"CompanyID" => $CompanyID ,
 					"TicketID" => $ticketID ,
 				];
-				if (isset($MatchArray["AccountID"])){
-					$log_data["AccountID"] = $MatchArray["AccountID"];
-				}
-				if (isset($MatchArray["UserID"])){
-					$log_data["UserID"] = $MatchArray["UserID"];
+				if (isset($MatchArray["AccountID"])) {
+					$log_data["ParentID"] = $MatchArray["AccountID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_ACCOUNT;
+					$TicketUserName = Account::where(["AccountID"=>$MatchArray["AccountID"]])->pluck('AccountName');
+
+				} else if (isset($MatchArray["UserID"])) {
+					$log_data["ParentID"] = $MatchArray["UserID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_USER;
+					$TicketUserName = User::get_user_full_name($MatchArray["UserID"]);
+				} else if (isset($MatchArray["ContactID"])) {
+					$log_data["ParentID"] = $MatchArray["ContactID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_CONTACT;
+					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
 				}
 
 				if(!$parentTicket) {
+					$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
+					$log_data["ActionText"]  = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
 
-					TicketLog::insertTicketLog( $log_data, TicketLog::NEW_TICKET );
+					TicketLog::insertTicketLog( $log_data);
 				} else {
-					TicketLog::insertTicketLog( $log_data, TicketLog::TICKET_REPLIED );
+					$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
+					$log_data["ActionText"]  = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
+					TicketLog::insertTicketLog( $log_data );
 				}
 
 				//Send Notification Emails
