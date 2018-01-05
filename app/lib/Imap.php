@@ -939,16 +939,16 @@ protected $server;
 					"CompanyID" => $CompanyID ,
 					"TicketID" => $ticketID ,
 				];
-				if (isset($MatchArray["AccountID"])) {
+				if (isset($MatchArray["AccountID"]) && $MatchArray["AccountID"] > 0) {
 					$log_data["ParentID"] = $MatchArray["AccountID"];
 					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_ACCOUNT;
 					$TicketUserName = Account::where(["AccountID"=>$MatchArray["AccountID"]])->pluck('AccountName');
 
-				} else if (isset($MatchArray["UserID"])) {
+				} else if (isset($MatchArray["UserID"])  && $MatchArray["UserID"] > 0) {
 					$log_data["ParentID"] = $MatchArray["UserID"];
 					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_USER;
 					$TicketUserName = User::get_user_full_name($MatchArray["UserID"]);
-				} else if (isset($MatchArray["ContactID"])) {
+				} else if (isset($MatchArray["ContactID"])  && $MatchArray["ContactID"] > 0 ) {
 					$log_data["ParentID"] = $MatchArray["ContactID"];
 					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_CONTACT;
 					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
