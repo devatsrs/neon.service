@@ -16,4 +16,16 @@ class Contact extends \Eloquent{
         'FirstName' => 'required',
         'LastName' => 'required',
     );
+
+
+    public static function get_full_name($ContactID) {
+
+        $contactInfo = Contact::where(["ContactID" => $ContactID])->select(["FirstName","LastName"])->first();
+
+        if(isset($contactInfo->FirstName) && isset($contactInfo->LastName)){
+            return $contactInfo->FirstName.' '. $contactInfo->LastName;
+        }
+
+    }
+
 }
