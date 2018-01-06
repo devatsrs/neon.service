@@ -214,7 +214,7 @@ class Account extends \Eloquent {
             "UserType"=>0
         ];
         $detail = array();
-        $accounts = Account::where(['CompanyID'=>1,'created_at'=>$AccountDate])->get()->toarray();
+        $accounts = Account::where(['CompanyID'=>$CompanyID,'created_at'=>$AccountDate])->get()->toarray();
         Log::info('account count '.count($accounts));
         if(!empty($accounts) && count($accounts)>0){
             foreach($accounts as $index=>$value ){

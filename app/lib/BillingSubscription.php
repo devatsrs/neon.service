@@ -25,14 +25,14 @@ class BillingSubscription extends \Eloquent {
         return $subscription;
     }
 
-    public static function getSubscriptionsList(){
+    //not using
+    public static function getSubscriptionsList($CompanyID){
 
         if (self::$enable_cache && Cache::has('subscription_dropdown1_cache')) {
             $admin_defaults = Cache::get('subscription_dropdown1_cache');
             self::$cache['subscription_dropdown1_cache'] = $admin_defaults['subscription_dropdown1_cache'];
         } else {
-            $CompanyId = User::get_companyID();
-            self::$cache['subscription_dropdown1_cache'] = BillingSubscription::where("CompanyId",$CompanyId)->lists('Name','SubscriptionID');
+            self::$cache['subscription_dropdown1_cache'] = BillingSubscription::where("CompanyID",$CompanyID)->lists('Name','SubscriptionID');
             Cache::forever('subscription_dropdown1_cache', array('subscription_dropdown1_cache' => self::$cache['subscription_dropdown1_cache']));
         }
 
@@ -45,8 +45,8 @@ class BillingSubscription extends \Eloquent {
             return $Name;
         }
     }
-    public static function getAllSubscriptionsNames(){
-        $subscriptions = BillingSubscription::select(['SubscriptionID','Name'])->lists('Name','SubscriptionID');
+    public static function getAllSubscriptionsNames($CompanyID){
+        $subscriptions = BillingSubscription::select(['SubscriptionID','Name'])->where('CompanyID',$CompanyID)->lists('Name','SubscriptionID');
         return $subscriptions;
     }
     public static function clearCache(){

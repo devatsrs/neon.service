@@ -17,8 +17,8 @@ class TaxRate extends \Eloquent {
         return $TaxRate = TaxRate::where(["TaxRateId"=>$TaxRateId])->pluck('Title');
     }
 
-    public static function getAllTaxName(){
-        $items = TaxRate::select(['TaxRateId','Title'])->lists('Title','TaxRateId');
+    public static function getAllTaxName($CompanyID){
+        $items = TaxRate::select(['TaxRateId','Title'])->where('CompanyId',$CompanyID)->lists('Title','TaxRateId');
         return $items;
     }
 

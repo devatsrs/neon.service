@@ -348,7 +348,7 @@ class Streamco{
                                 $CustomerTrunk = CustomerTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
                                 if($CustomerTrunk == 0) {
                                     $customertrunkdata = array();
-                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID($CompanyID);
                                     $customertrunkdata['CompanyID'] = $CompanyID;
                                     $customertrunkdata['AccountID'] = $AccountID;
                                     $customertrunkdata['TrunkID'] = $TrunkID;
@@ -396,7 +396,7 @@ class Streamco{
                                 $VendorTrunk = VendorTrunk::where(["TrunkID"=>$TrunkID, "AccountID"=>$AccountID, "CompanyID"=>$CompanyID])->count();
                                 if($VendorTrunk == 0) {
                                     $vendortrunkdata = array();
-                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+                                    $CodeDeckID = CodeDeck::getDefaultCodeDeckID($CompanyID);
                                     $vendortrunkdata['CompanyID'] = $CompanyID;
                                     $vendortrunkdata['AccountID'] = $AccountID;
                                     $vendortrunkdata['TrunkID'] = $TrunkID;
