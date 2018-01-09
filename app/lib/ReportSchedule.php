@@ -52,7 +52,7 @@ class ReportSchedule extends \Eloquent{
                     file_put_contents($report, $response);
                     $settings['attach'][] = $report;
                 }
-                $settings['EmailMessage'] = 'Please check attached report of date from Start Date: '.$StartDate.' to End Date: '.$EndDate;
+                $settings['EmailMessage'] = 'Please check attached reports. Start Date: '.$StartDate.' to End Date: '.$EndDate;
                 $settings['Subject'] = $ReportSchedule->Name;
 
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
