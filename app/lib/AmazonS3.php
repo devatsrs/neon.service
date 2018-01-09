@@ -124,6 +124,10 @@ class AmazonS3 {
             //exec("chmod -R 777 " . getenv('UPLOAD_PATH'));
             @mkdir($dir, 0777, TRUE);
         }
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+
 
         return $path;
     }

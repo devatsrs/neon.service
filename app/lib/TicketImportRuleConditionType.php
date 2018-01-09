@@ -20,6 +20,8 @@ class TicketImportRuleConditionType extends \Eloquent  {
     const AGENT = 'agent';
     const GROUP = 'group';
 
+    static $DifferentCondtionsArray = array(self::PRIORITY ,self::STATUS,self::AGENT,self::GROUP);
+
     protected $enable_cache = true;
     protected $cache_name = "TicketImportRuleConditionType";
 
@@ -161,7 +163,7 @@ class TicketImportRuleConditionType extends \Eloquent  {
                 $field = $TicketData["Status"];
                 Log::info("Status " . $field);
             } else if ($this->isAgent($TicketImportRuleConditionTypeID)) {
-                $Agent = TicketsTable::where(["TicketID",$TicketData])->pluck("Agent");
+                $Agent = TicketsTable::where(["TicketID",$TicketData["TicketID"]])->pluck("Agent");
                 $field = $Agent;
                 Log::info("Agent " . $Agent);
             } else if ($this->isGroup($TicketImportRuleConditionTypeID)) {

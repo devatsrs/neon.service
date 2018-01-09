@@ -412,4 +412,33 @@ class Retention {
         $result = Helper::sendMail('emails.FileRetentionEmail', $emaildata);
         return $result;
     }
+
+    /** delete old deleted tickets from table after 6 month.
+     * @param $CompanyID
+     */
+    public static function TicketDeleteFromDeleteTable($CompanyID) {
+
+        try{
+
+            //companyid not required.
+            $q1 = "DELETE FROM tblTicketsDeletedLog WHERE created_at  < DATE_SUB(CURRENT_DATE , INTERVAL 6 MONTH) ";
+            $q2 = "DELETE FROM AccountEmailLogDeletedLog where created_at  < DATE_SUB(CURRENT_DATE , INTERVAL 6 MONTH) ";
+
+            Log::info("Deleting old deleted tickets");
+            Log::info($q1);
+            Log::info($q2);
+
+            DB::delete($q1);
+            DB::delete($q2);
+
+            return;
+
+        } catch (\Exception $err) {
+            Log::error($err);
+        }
+
+        return "Failed to delete old deleted tickets from table after 6 month ";
+
+
+    }
 }

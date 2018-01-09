@@ -152,7 +152,7 @@ class Job extends \Eloquent {
         Job::where(["JobID" => $JobID])->update($jobdata);
     }
     public static function CreateJob($CompanyID,$job_type,$Options){
-        $UserID = User::where("CompanyID",$CompanyID)->where("Roles","like","%Admin%")->min("UserID");
+        $UserID = User::where("CompanyID",$CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         $jobType = JobType::where(["Code" => $job_type])->get(["JobTypeID", "Title"]);
         $jobStatus = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
         $jobdata = array();
@@ -162,7 +162,7 @@ class Job extends \Eloquent {
         $jobdata["JobLoggedUserID"] = $UserID;
         $jobdata["Title"] =  "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
         $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-        $jobdata["CreatedBy"] = User::get_user_full_name($UserID);
+        $jobdata["CreatedBy"] = "System";
         $jobdata["Options"] = json_encode($Options);
         $jobdata["created_at"] = date('Y-m-d H:i:s');
         $jobdata["updated_at"] = date('Y-m-d H:i:s');

@@ -71,9 +71,7 @@ class ImportAccountIp extends Command {
      */
     public function fire()
     {
-
         CronHelper::before_cronrun($this->name, $this );
-
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
@@ -82,7 +80,7 @@ class ImportAccountIp extends Command {
         $ProcessID = (string) Uuid::generate();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $jobdata = array();
-        $errorslog = array();
+        $error = array();
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 50;
         $counter = 0;
@@ -93,150 +91,167 @@ class ImportAccountIp extends Command {
         Log::useFiles(storage_path().'/logs/importaccountip-'.$JobID.'-'.date('Y-m-d').'.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
-
-
             if (!empty($job)) {
-                $jobfile = JobFile::where(['JobID' => $JobID])->first();
-                $joboptions = json_decode($jobfile->Options);
+                if(!empty($job->Options)){
+                    $importoptions = json_decode($job->Options,true);
+                }else{
+                    $jobfile = JobFile::where(['JobID' => $JobID])->first();
+                    $joboptions = json_decode($jobfile->Options);
+                }
 
                 $batch_insert_array = [];
-                if (count($joboptions) > 0){
+                if (count($joboptions) > 0 || count($importoptions)>0) {
+                    //gateway import start
+                    if(count($importoptions)>0){
+                        Log::info('Gateway AccountsIP Import');
+                        $CompanyGatewayID = $importoptions['companygatewayid'];
 
-                    if(isset($joboptions->UploadTemplate) && !empty($joboptions->UploadTemplate)) {
-                        $UploadTemplate = FileUploadTemplate::find($joboptions->UploadTemplate);
-                        $templateoptions = json_decode($UploadTemplate->Options);
-                    }else{
-                        $templateoptions = json_decode($joboptions->Options);
-
-                    }
-
-                    $csvoption = $templateoptions->option;
-                    $attrselection = $templateoptions->selection;
-                    if (!empty($jobfile->FilePath)) {
-                        $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
-                        if (strpos($path, "https://") !== false) {
-                            $file = $TEMP_PATH . basename($path);
-                            file_put_contents($file, file_get_contents($path));
-                            $jobfile->FilePath = $file;
-                        } else {
-                            $jobfile->FilePath = $path;
+                        if(!empty($importoptions['importprocessid'])){
+                            $ProcessID = $importoptions['importprocessid'];
+                        }else{
+                            $ProcessID = '';
                         }
-                    }
+                        if(empty($importoptions['criteria'])){
+                            $TempAccountIPIDs = explode(',',$importoptions['TempAccountIPIDs']);
 
-                    $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
-                    $results = $NeonExcel->read();
-                    $lineno = 2;
-                    if ($csvoption->Firstrow == 'data') {
-                        $lineno = 1;
-                    }
-
-                    foreach ($results as $temp_row) {
-                        if ($csvoption->Firstrow == 'data') {
-                            array_unshift($temp_row, null);
-                            unset($temp_row[0]);
-
+                            DB::table('tblTempAccountIP')->where(['ProcessID'=>$ProcessID])->whereNotIn('tblTempAccountIPID',$TempAccountIPIDs)->delete();
                         }
-                        $tempservice=1;
-                        $tempItemData = array();
-                        $checkemptyrow = array_filter(array_values($temp_row));
-                        if(!empty($checkemptyrow)) {
-                            if (isset($attrselection->AccountName) && !empty($attrselection->AccountName) && !empty($temp_row[$attrselection->AccountName])) {
-                                $AccountName = trim($temp_row[$attrselection->AccountName]);
-                                if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName,'AccountType'=>1])->count()>0){
-                                    $tempItemData['AccountName'] = $AccountName;
-                                }else{
-                                    $error[] = $AccountName." - Account Name doesn't exists.";
+                    } else { //excel/csv import
+                        if(isset($joboptions->UploadTemplate) && !empty($joboptions->UploadTemplate)) {
+                            $UploadTemplate = FileUploadTemplate::find($joboptions->UploadTemplate);
+                            $templateoptions = json_decode($UploadTemplate->Options);
+                        }else{
+                            $templateoptions = json_decode($joboptions->Options);
+                        }
 
-                                }
-
+                        $csvoption = $templateoptions->option;
+                        $attrselection = $templateoptions->selection;
+                        if (!empty($jobfile->FilePath)) {
+                            $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
+                            if (strpos($path, "https://") !== false) {
+                                $file = $TEMP_PATH . basename($path);
+                                file_put_contents($file, file_get_contents($path));
+                                $jobfile->FilePath = $file;
                             } else {
-                                $error[] = 'Account Name is blank at line no:' . $lineno;
+                                $jobfile->FilePath = $path;
                             }
+                        }
 
-                            if (isset($attrselection->IP) && !empty($attrselection->IP) && !empty($temp_row[$attrselection->IP])) {
-                                $IP = trim($temp_row[$attrselection->IP]);
-                                if(!empty($IP)){
-                                    $TempIP = trim($temp_row[$attrselection->IP]);
-                                }
+                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
+                        $results = $NeonExcel->read();
+                        $lineno = 2;
+                        if ($csvoption->Firstrow == 'data') {
+                            $lineno = 1;
+                        }
+
+                        foreach ($results as $temp_row) {
+                            if ($csvoption->Firstrow == 'data') {
+                                array_unshift($temp_row, null);
+                                unset($temp_row[0]);
+
                             }
+                            $tempservice=1;
+                            $tempItemData = array();
+                            $checkemptyrow = array_filter(array_values($temp_row));
+                            if(!empty($checkemptyrow)) {
+                                if (isset($attrselection->AccountName) && !empty($attrselection->AccountName) && !empty($temp_row[$attrselection->AccountName])) {
+                                    $AccountName = trim($temp_row[$attrselection->AccountName]);
+                                    if(Account::where(["CompanyID"=> $CompanyID,'AccountName'=>$AccountName,'AccountType'=>1])->count()>0){
+                                        $tempItemData['AccountName'] = $AccountName;
+                                    }else{
+                                        $error[] = $AccountName." - Account Name doesn't exists.";
 
-                            if (isset($attrselection->Type) && !empty($attrselection->Type) && !empty($temp_row[$attrselection->Type])) {
-                                $Type = trim($temp_row[$attrselection->Type]);
-                                if(!empty($Type)){
-                                    if(strtolower($Type)=='customer'){
-                                        $tempItemData['Type'] = 'Customer';
                                     }
-                                    if(strtolower($Type)=='vendor'){
-                                        $tempItemData['Type'] = 'Vendor';
+
+                                } else {
+                                    $error[] = 'Account Name is blank at line no:' . $lineno;
+                                }
+
+                                if (isset($attrselection->IP) && !empty($attrselection->IP) && !empty($temp_row[$attrselection->IP])) {
+                                    $IP = trim($temp_row[$attrselection->IP]);
+                                    if(!empty($IP)){
+                                        $TempIP = trim($temp_row[$attrselection->IP]);
                                     }
                                 }
-                            }
 
-                            if (isset($attrselection->Service) && !empty($attrselection->Service) && !empty($temp_row[$attrselection->Service])) {
-                                $Service = trim($temp_row[$attrselection->Service]);
-                                if(!empty($tempItemData['AccountName']) && !empty($Service)){
-                                    $ServiceID = Service::getServiceIDByName($Service);
-                                    if(!empty($ServiceID)){
-                                        $AccountID = Account::where(['CompanyID'=> $CompanyID,'AccountName'=>$tempItemData['AccountName'],'AccountType'=>1])->pluck('AccountID');
-                                        if(AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->count()>0){
-                                            $tempItemData['ServiceID'] = $ServiceID;
+                                if (isset($attrselection->Type) && !empty($attrselection->Type) && !empty($temp_row[$attrselection->Type])) {
+                                    $Type = trim($temp_row[$attrselection->Type]);
+                                    if(!empty($Type)){
+                                        if(strtolower($Type)=='customer'){
+                                            $tempItemData['Type'] = 'Customer';
+                                        }
+                                        if(strtolower($Type)=='vendor'){
+                                            $tempItemData['Type'] = 'Vendor';
+                                        }
+                                    }
+                                }
+
+                                if (isset($attrselection->Service) && !empty($attrselection->Service) && !empty($temp_row[$attrselection->Service])) {
+                                    $Service = trim($temp_row[$attrselection->Service]);
+                                    if(!empty($tempItemData['AccountName']) && !empty($Service)){
+                                        $ServiceID = Service::getServiceIDByName($Service);
+                                        if(!empty($ServiceID)){
+                                            $AccountID = Account::where(['CompanyID'=> $CompanyID,'AccountName'=>$tempItemData['AccountName'],'AccountType'=>1])->pluck('AccountID');
+                                            if(AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->count()>0){
+                                                $tempItemData['ServiceID'] = $ServiceID;
+                                            }else{
+                                                $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
+                                                $tempservice=0;
+                                            }
                                         }else{
                                             $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
                                             $tempservice=0;
                                         }
-                                    }else{
-                                        $error[] = $Service."(".$tempItemData['AccountName'].") - doesn't exists.";
-                                        $tempservice=0;
                                     }
                                 }
-                            }
 
 
-                            if (isset($tempItemData['AccountName']) && isset($TempIP) && isset($tempItemData['Type']) && $tempservice==1) {
-                                //Log::info(print_r($tempItemData,true));
-                                $TempIP = str_replace(' ',',',$TempIP);
-                                $TempIP = str_replace("\n", ",", $TempIP);
-                                $TempIP = str_replace("\r", ",", $TempIP);
-                                $AllIPs = explode(',',trim($TempIP));
+                                if (isset($tempItemData['AccountName']) && isset($TempIP) && isset($tempItemData['Type']) && $tempservice==1) {
+                                    //Log::info(print_r($tempItemData,true));
+                                    $TempIP = str_replace(' ',',',$TempIP);
+                                    $TempIP = str_replace("\n", ",", $TempIP);
+                                    $TempIP = str_replace("\r", ",", $TempIP);
+                                    $AllIPs = explode(',',trim($TempIP));
 
-                                foreach($AllIPs as $AllIP => $key){
-                                    if(!empty($key)){
-                                        $tempItemData['IP'] = trim($key);
-                                        $tempItemData['CompanyID'] = $CompanyID;
-                                        $tempItemData['ProcessID'] = $ProcessID;
-                                        if(empty($tempItemData['ServiceID'])){
-                                            $tempItemData['ServiceID'] = 0;
+                                    foreach($AllIPs as $AllIP => $key){
+                                        if(!empty($key)){
+                                            $tempItemData['IP'] = trim($key);
+                                            $tempItemData['CompanyID'] = $CompanyID;
+                                            $tempItemData['ProcessID'] = $ProcessID;
+                                            if(empty($tempItemData['ServiceID'])){
+                                                $tempItemData['ServiceID'] = 0;
+                                            }
+                                            //$tempItemData['ServiceID'] = 0;
+                                            $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
+                                            $tempItemData['created_by'] = 'System';
+                                            $batch_insert_array[] = $tempItemData;
+                                            $counter++;
                                         }
-                                        //$tempItemData['ServiceID'] = 0;
-                                        $tempItemData['created_at'] = date('Y-m-d H:i:s.000');
-                                        $tempItemData['created_by'] = 'System';
-                                        $batch_insert_array[] = $tempItemData;
-                                        $counter++;
                                     }
                                 }
                             }
+                            if ($counter == $bacth_insert_limit) {
+                                Log::info('Batch insert start');
+                                Log::info('global counter' . $lineno);
+                                Log::info('insertion start');
+                                DB::table('tblTempAccountIP')->insert($batch_insert_array);
+                                //Log::info(print_r($batch_insert_array,true));
+                                Log::info('insertion end');
+                                $batch_insert_array = [];
+                                $counter = 0;
+                            }
+                            $lineno++;
                         }
-                        if ($counter == $bacth_insert_limit) {
+
+                        if (!empty($batch_insert_array)) {
                             Log::info('Batch insert start');
                             Log::info('global counter' . $lineno);
                             Log::info('insertion start');
+                            Log::info('last batch insert ' . count($batch_insert_array));
                             DB::table('tblTempAccountIP')->insert($batch_insert_array);
                             //Log::info(print_r($batch_insert_array,true));
                             Log::info('insertion end');
-                            $batch_insert_array = [];
-                            $counter = 0;
                         }
-                        $lineno++;
-                    }
-
-                    if (!empty($batch_insert_array)) {
-                        Log::info('Batch insert start');
-                        Log::info('global counter' . $lineno);
-                        Log::info('insertion start');
-                        Log::info('last batch insert ' . count($batch_insert_array));
-                        DB::table('tblTempAccountIP')->insert($batch_insert_array);
-                        //Log::info(print_r($batch_insert_array,true));
-                        Log::info('insertion end');
                     }
 
                     Log::info("start CALL  prc_WSProcessImportAccountIP ('" . $ProcessID . "','" . $CompanyID . "')");

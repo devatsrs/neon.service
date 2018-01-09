@@ -185,7 +185,7 @@ class VendorRateFileProcess extends Command {
 										}
 
 
-										$Accounts = Account::getAccountIDList(array('IsVendor' => 1, 'CompanyID' => $CompanyID));
+										$Accounts = Account::getAccountIDList(array('IsVendor' => 1, 'CompanyId' => $CompanyID));
 										//print_r($Accounts);
 										if (isset($row['GatewayAccountName'])) {
 
@@ -213,7 +213,7 @@ class VendorRateFileProcess extends Command {
 												$CreatedBy = 'Rate Import';
 
 												$vendortrunkdata = array();
-												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID($CompanyID);
 												$vendortrunkdata['CompanyID'] = $CompanyID;
 												$vendortrunkdata['AccountID'] = $AccountID;
 												$vendortrunkdata['TrunkID'] = $TrunkID;

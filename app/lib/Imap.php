@@ -89,7 +89,7 @@ protected $server;
 					}
 					$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);	
                 }
-				
+
 				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
 				
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
@@ -160,97 +160,24 @@ protected $server;
 		imap_close($inbox);
 	}
 	
-	function ReadAttachments($structure,$inbox,$email_number,$CompanyID)
+	function ReadAttachments($emailMessage,$email_number,$CompanyID)
 	{
-		$attachments   = array();
 		$attachmentsDB = array();
-        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-		
-		/* if any attachments found code start... */
-		if(isset($structure->parts) && count($structure->parts)) 
-		{
-			for($i = 0; $i < count($structure->parts); $i++) 
-			{
-				$attachments[$i] = array(
-					'is_attachment' => false,
-					'filename' => '',
-					'name' => '',
-					'attachment' => ''
-				);
-		
-				if($structure->parts[$i]->ifdparameters) 
-				{
-					foreach($structure->parts[$i]->dparameters as $object) 
-					{
-						if(strtolower($object->attribute) == 'filename') 
-						{
-							$attachments[$i]['is_attachment'] = true;
-							$attachments[$i]['filename'] = $object->value;
-						}
-					}
+
+		$attachments = $emailMessage->attachments;
+
+		if(count($attachments) > 0) {
+			/* iterate through each attachment and save it */
+			foreach ($attachments as $attachment) {
+				// not inline image , only attachment
+				if (!$attachment['inline']) {
+
+					$filename = $attachment['filename'];
+
+					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
+
+					$attachmentsDB[] = $file_detail;
 				}
-		
-				if($structure->parts[$i]->ifparameters) 
-				{
-					foreach($structure->parts[$i]->parameters as $object) 
-					{
-						if(strtolower($object->attribute) == 'name') 
-						{
-							$attachments[$i]['is_attachment'] = true;
-							$attachments[$i]['name'] = $object->value;
-						}
-					}
-				}
-		
-				if($attachments[$i]['is_attachment']) 
-				{
-					$attachments[$i]['attachment'] = imap_fetchbody($inbox, $email_number, $i+1);
-		
-					/* 3 = BASE64 encoding */
-					if($structure->parts[$i]->encoding == 3) 
-					{ 
-						$attachments[$i]['attachment'] = base64_decode($attachments[$i]['attachment']);
-					}
-					/* 4 = QUOTED-PRINTABLE encoding */
-					elseif($structure->parts[$i]->encoding == 4) 
-					{ 
-						$attachments[$i]['attachment'] = quoted_printable_decode($attachments[$i]['attachment']);
-					}
-				}
-			}
-		}
-		
-		/* iterate through each attachment and save it */
-		foreach($attachments as $attachment)
-		{
-			if($attachment['is_attachment'] == 1)
-			{
-				$filename = $attachment['name'];
-				if(empty($filename)) $filename = $attachment['filename'];		
-				if(empty($filename)) $filename = time() . ".dat";
-				
-				$file_name 		=  \Webpatser\Uuid\Uuid::generate()."_".basename($filename);
-				$amazonPath 	= 	AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
-				
-				/*if(!is_dir($UPLOADPATH.'/'.$amazonPath)){
-					 mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
-				}*/
-				if (!file_exists($UPLOADPATH.'/'.$amazonPath)){
-                    mkdir($UPLOADPATH.'/'.$amazonPath, 0777, true);
-           	  }
-				
-				$filepath   =  $UPLOADPATH.'/'.$amazonPath . $email_number . "-" . $file_name;
-				$filepath2  =  $amazonPath . $email_number . "-" . $file_name; 
-				$fp = fopen($filepath, "w+");
-				fwrite($fp, $attachment['attachment']);
-				fclose($fp);
-				
-				if(is_amazon($CompanyID)){
-					if (!AmazonS3::upload($filepath, $amazonPath,$CompanyID)) {
-						throw new \Exception('Error in Amazon upload');	
-					}					
-				}
-				$attachmentsDB[] = array("filename"=>$filename,"filepath"=>$filepath2); 
 			}
 		}
 		/* attachments code end... */
@@ -473,6 +400,7 @@ protected $server;
 		//$emails   = imap_search($inbox, 'SUBJECT "Fwd: Forwarded Agent email from client"');
 
 		$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
+		$LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ",strtotime($LastEmailReadDateTime))); // read 1 hour ahead to avoid skipping email.
 
 		if(!empty($LastEmailReadDateTime)){
 
@@ -508,9 +436,9 @@ protected $server;
 				$priority					=		  1;				
 				$headers 					=		  array();
 				$message					=	      '';
-				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
-				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
-				$header 					= 		  imap_fetchheader($inbox, $email_number);
+				$overview = imap_fetch_overview($inbox, $email_number, 0);
+				//$structure = imap_fetchstructure($inbox, $email_number);
+				$header = imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
 				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
@@ -528,13 +456,33 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
-				if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
+				// when there is no messageId found in email header.
+				// just to add dummy random message id so as no to skip this email.
+
+				if(empty($message_id)){
+
+					if(isset($overview[0]->from)){
+						$from_   	= 	$this->GetEmailtxt($overview[0]->from);
+					}else{
+						$from_		= 	"nofrom@email.com";
+					}
+					$message_id = $this->generate_random_message_id($from_);
+					Log::info("New MessageID " . $message_id);
+
+				}
+
+				/*if(strtotime($email_received_date) < strtotime($LastEmailReadDateTime)) {
 					Log::info( "email_received_date ". date("Y-m-d H:i:s",strtotime($email_received_date)) . ' < ' .date("Y-m-d H:i:s",strtotime($LastEmailReadDateTime)));
 					continue;
-				} else if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
+				} */
+
+				// need to check for messageID already exists or not
+				// if message id is blank , make sure to set random messageId before sending
+				if ($msg_parent = AccountEmailLog::where(["CompanyID"=>$CompanyID, "MessageID"=>$message_id])->count() > 0){
 					Log::info("Email Already Exists");
 					continue;
 				}
+
 				Log::info("NEW Subject -  " . $overview_subject);
 
 
@@ -578,10 +526,8 @@ protected $server;
 						$header_name 		    = 	$tmp[0];
 						$header_value 			= 	$tmp[1];								
 						$headers[$header_name] 	= 	$header_value;						
-					} else {
-						// Append row to previous field
-						$headers[$header_name]  = 	$header_value . $h;
-					}				
+					}
+
 				}
 				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
 					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
@@ -609,7 +555,7 @@ protected $server;
 							$EmailTo = $email;
 						}
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
 						}
@@ -650,23 +596,29 @@ protected $server;
 							}
 						}
 				}
-				
-				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments	
+
+				$emailMessage = new EmailMessage($inbox, $email_number);
+				$emailMessage->fetch();
+
+				$attachmentsDB =  array();
+				if(count($emailMessage->attachments)>0) {
+					$attachmentsDB = $this->ReadAttachments($emailMessage, $email_number, $CompanyID); //saving attachments
+				}
+
 				if(isset($attachmentsDB) && count($attachmentsDB)>0){
 					$AttachmentPaths  =		serialize($attachmentsDB);				
 				}else{
 					$AttachmentPaths  = 	serialize([]);										
 				}
 				
-				//$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID); 
-			 	//$message = 	$this->getBody($inbox,$email_number);
-				//if(empty($message)){
 				$message = 	$this->getBody($inbox,$email_number);  //get body from email
-				//}
-				if(count($attachmentsDB)>0){
-					$message =  $this->DownloadInlineImages($inbox, $email_number,$CompanyID,$message); // download inline images and added it places in body
+				if(count($emailMessage->attachments)>0){
+					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
-				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
+
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
 
 				$message = $this->body_cleanup($message);
 
@@ -685,6 +637,20 @@ protected $server;
 				}
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
+
+				$checkRepeatedEmailsData = [
+					"from" => $from,
+					"GroupID" => $GroupID,
+				];
+				if( TicketsTable::checkRepeatedEmails($CompanyID,$checkRepeatedEmailsData) ) {
+
+					Log::info( "Repeated Emails skipped" );
+					Log::info( "Repeated Emails skipped From " . $from );
+					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
+					Log::info( "Repeated Emails skipped MessageID " . $message_id );
+					continue;
+				}
+
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
 
@@ -726,8 +692,10 @@ protected $server;
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
 				}*/
+
 				///Check if agent forwarded email.
-				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
+				//@TODO : not working with all types of email with different forwarded formats.
+				/*$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
 				if(in_array($from,$group_agents)) {
 					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
 					$from_array = $this->get_forwarded_email($_tmp_message);
@@ -736,7 +704,7 @@ protected $server;
 						$from = $from_array["from"];
 						$FromName = $from_array["from_name"];
 					}
-				}
+				}*/
 
 				$logData = [
 					'Requester'=> $from,
@@ -754,11 +722,12 @@ protected $server;
 					"created_by"=> 'RMScheduler'
 				];
 
+				$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
+
 				$skip_email_notification = false;
 				if(!$parentTicket){
 					// New ticket
 
-					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
 					$logData 		 	  = 	array_merge($logData,$MatchArray);
 
 					$ticketID 			  =  	TicketsTable::insertGetId($logData);
@@ -810,20 +779,6 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
-					// -------------------------------
-
-					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
-
-					/* moved bellow
-
-					if(!$skip_email_notification) {
-						if ($GroupID) {
-							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
-						}
-						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}*/
-					
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -878,29 +833,6 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					// -------------------------------
-
-					/*
-					 * moved bellow
-					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
-						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
-						if(!$skip_email_notification) {
-							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
-						}
-					}
-
-					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){
-							if(!$skip_email_notification) {
-								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
-							}
-							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
-						}
-					}
-					if(!$skip_email_notification) {
-						//Email to all cc emails from main ticket.
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -923,12 +855,14 @@ protected $server;
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				// -- Not New
 				if($parentTicket){
 					if(!$parent){
 						AccountEmailLog::find($EmailLog)->update(["EmailParent"=>$EmailLog]);
 					}
 				}
-				
+
+				// New Ticket
 				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
@@ -998,6 +932,39 @@ protected $server;
 				}
 
 
+				//create log
+
+				// if new ticket
+				$log_data = [
+					"CompanyID" => $CompanyID ,
+					"TicketID" => $ticketID ,
+				];
+				if (isset($MatchArray["AccountID"]) && $MatchArray["AccountID"] > 0) {
+					$log_data["ParentID"] = $MatchArray["AccountID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_ACCOUNT;
+					$TicketUserName = Account::where(["AccountID"=>$MatchArray["AccountID"]])->pluck('AccountName');
+
+				} else if (isset($MatchArray["UserID"])  && $MatchArray["UserID"] > 0) {
+					$log_data["ParentID"] = $MatchArray["UserID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_USER;
+					$TicketUserName = User::get_user_full_name($MatchArray["UserID"]);
+				} else if (isset($MatchArray["ContactID"])  && $MatchArray["ContactID"] > 0 ) {
+					$log_data["ParentID"] = $MatchArray["ContactID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_CONTACT;
+					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
+				}
+
+				if(!$parentTicket) {
+					$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
+					$log_data["ActionText"]  = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
+
+					TicketLog::insertTicketLog( $log_data);
+				} else {
+					$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
+					$log_data["ActionText"]  = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
+					TicketLog::insertTicketLog( $log_data );
+				}
+
 				//Send Notification Emails
 				if(!$parentTicket){
 
@@ -1063,12 +1030,8 @@ protected $server;
 	}
 	
 	
-	function DownloadInlineImages($con,$msg,$CompanyID,$msgbody){ 
-		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-		// download email message #1 and fetch it
-		$emailMessage = new EmailMessage($con, $msg);
-		$emailMessage->fetch();
-		
+	function DownloadInlineImages($emailMessage,$email_number,$CompanyID,$msgbody){
+
 		// match inline images in html content
 		preg_match_all('/src="cid:(.*)"/Uims', $msgbody, $matches);
 		
@@ -1089,33 +1052,10 @@ protected $server;
 					$uniqueFilename = $str[0];
 					// change /path/to/images to actual path
 
-					///
-
 					$filename = $uniqueFilename;
-					$file_name = \Webpatser\Uuid\Uuid::generate() . "_" . basename($filename);
-					$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+					$file_detail = $this->store_email_file($filename , $emailMessage->attachments[$match]['data'] , $email_number , $CompanyID );
 
-					if (!is_dir($UPLOADPATH . '/' . $amazonPath)) {
-						mkdir($UPLOADPATH . '/' . $amazonPath, 0777, true);
-					}
-
-					$filepath = $UPLOADPATH . '/' . $amazonPath . $msg . "-" . $file_name;
-					$filepath2 = $amazonPath . $msg . "-" . $file_name;
-					$fp = fopen($filepath, "w+");
-					fwrite($fp, $emailMessage->attachments[$match]['data']);
-					fclose($fp);
-
-					$typeImage = pathinfo($filepath, PATHINFO_EXTENSION);
-					$dataImage = file_get_contents($filepath);
-					//@unlink($filepath);
-					///
-					if (is_amazon($CompanyID)) {
-						if (!AmazonS3::upload($filepath, $amazonPath, $CompanyID)) {
-							throw new \Exception('Error in Amazon upload');
-						}
-					}
-
-					$path = AmazonS3::unSignedUrl($filepath2, $CompanyID);
+					$path = AmazonS3::unSignedUrl($file_detail["filepath"], $CompanyID);
 
 					if (!is_numeric(strpos($path, "https://"))) {
 						//$path = str_replace('/', '\\', $path);
@@ -1124,7 +1064,7 @@ protected $server;
 						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
 						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
 						// }
-						$path = $path2 . base64_encode($filepath2);
+						$path = $path2 . base64_encode($file_detail["filepath"]);
 					}
 
 					$search[] = "src=\"cid:$match\"";
@@ -1176,7 +1116,8 @@ protected $server;
 			"Delivery to the following recipient failed permanently:",
 			"Delivery to the following recipients failed permanently:",
 			"This message was created automatically by mail delivery software",
-			"Delivery has failed to these recipients or groups", 
+			"Delivery has failed to these recipients or groups",
+			"Your mail message to the following address(es) could not be delivered.",
 		];
 
 
@@ -1207,10 +1148,11 @@ protected $server;
 
 	}
 
+	//@TODO: uncompleted , not working with various email forwarded messsages
 	public function get_forwarded_email($message){
 
-		$from_name = "";
-		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		return ["from" => "" , "from_name" => ""];
+		/*$from_name = "";
 		Log::info("message: " . $message);
 		$start = strpos($message,"<") +1;
 		$end = strpos($message,">")  ;
@@ -1222,8 +1164,45 @@ protected $server;
 			$end = strpos($message,"<");
 
 			$from_name = trim(substr($message, $start, $end-$start));
-		}
+		}*/
 		return ["from" => $from , "from_name" => $from_name];
 	}
+
+	public function generate_random_message_id($from) {
+
+		$data["Message-ID"] = "neon_random_id";
+		$data["EmailFrom"] = $from;
+		$MessageID = PHPMAILERIntegtration::generate_email_message_id($data,[]);
+
+		return $MessageID;
+	}
+
+	public function store_email_file ($file_name , $filedata , $email_number , $CompanyID ) {
+
+		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+
+		$file_name = $email_number . "-" . $file_name;
+
+		$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
+
+		$local_filepath   =  $UPLOADPATH.'/'.$amazonPath . $file_name;
+
+		$filepath2  =  $amazonPath .'/'. $file_name;
+
+		$fp = fopen($local_filepath, "w+");
+		fwrite($fp, $filedata);
+		fclose($fp);
+
+		if(is_amazon($CompanyID)) {
+
+			if (!AmazonS3::upload($local_filepath, $amazonPath,$CompanyID)) {
+				throw new \Exception('Error in Amazon upload');
+			}
+		}
+
+		return array("filename"=>$file_name,"filepath"=>$filepath2);
+
+	}
+
 }
 ?>
