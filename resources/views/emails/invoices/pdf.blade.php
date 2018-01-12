@@ -59,11 +59,14 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
-
+	$total_usage = 0;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
             $InvoiceFrom = date('F d,Y',strtotime($ProductRow->StartDate));
             $InvoiceTo = date('F d,Y',strtotime($ProductRow->EndDate));
+        }
+		if($ProductRow->ProductType == \App\Lib\Product::USAGE){
+            $total_usage += $ProductRow->LineTotal;
         }
     }
 
@@ -512,7 +515,7 @@
     @endforeach
 	@endif
 
-    @if(!empty($ManagementReports))
+    @if(!empty($ManagementReports) && $total_usage != 0)
         <div class="page_break"></div>
         @include('emails.invoices.management_chart')
     @endif
