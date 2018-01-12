@@ -559,7 +559,7 @@
         @endif
 		@endif
 
-        @if(!empty($ManagementReports))
+        @if(!empty($ManagementReports) && $total_usage != 0)
             <div class="page_break"></div>
             @include('emails.invoices.management_chart')
         @endif
