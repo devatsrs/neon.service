@@ -319,7 +319,7 @@ function getBillingDay($BillingStartDate,$BillingCycleType,$BillingCycleValue){
             $BillingDays = 7;
             break;
         case 'monthly':
-            $BillingDays = date("t", $BillingStartDate);
+            $BillingDays = date("t", $BillingStartDate); // gives last day date 28,29 or 30,31
             break;
         case 'daily':
             $BillingDays = 1;
