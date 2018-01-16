@@ -210,7 +210,7 @@ class CustomerRateFileProcess extends Command {
 												$CreatedBy = 'Rate Import';
 
 												$customertrunkdata = array();
-												$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+												$CodeDeckID = CodeDeck::getDefaultCodeDeckID($CompanyID);
 												$customertrunkdata['CompanyID'] = $CompanyID;
 												$customertrunkdata['AccountID'] = $AccountID;
 												$customertrunkdata['TrunkID'] = $TrunkID;

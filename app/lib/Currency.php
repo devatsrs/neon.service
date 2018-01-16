@@ -20,10 +20,10 @@ class Currency extends \Eloquent {
         }
     }
 
-    public static function getCurrencyId($CurrencyCode){
+    public static function getCurrencyId($CompanyID,$CurrencyCode){
         $CurrencyId='';
         if(isset($CurrencyCode)){
-            $CurrencyId = Currency::where("Code",$CurrencyCode)->pluck('CurrencyId');
+            $CurrencyId = Currency::where(["Code"=>$CurrencyCode,"CompanyId"=>$CompanyID])->pluck('CurrencyId');
             if(!empty($CurrencyId) && $CurrencyId>0){
                 return $CurrencyId;
             }
@@ -35,6 +35,7 @@ class Currency extends \Eloquent {
         return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
+    // not using
     public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
 
         if($FileCurrency == $AccountCurrency) {

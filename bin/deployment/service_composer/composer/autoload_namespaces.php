@@ -24,7 +24,7 @@ return array(
     'PhpSpec' => array($vendorDir . '/phpspec/phpspec/src'),
     'PhpOption\\' => array($vendorDir . '/phpoption/phpoption/src'),
     'PhpCollection' => array($vendorDir . '/phpcollection/phpcollection/src'),
-    'PHPExcel' => array($vendorDir . '/phpoffice/phpexcel/Classes', $vendorDir . '/phpexcel/phpexcel/Classes'),
+    'PHPExcel' => array($vendorDir . '/phpoffice/phpexcel/Classes'),
     'Net' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Metadata\\' => array($vendorDir . '/jms/metadata/src'),
     'Math' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),

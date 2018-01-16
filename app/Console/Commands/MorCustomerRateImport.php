@@ -101,12 +101,12 @@ class MorCustomerRateImport extends Command {
 			if(isset($cronsetting['customers']) && $cronsetting['customers'] != '') {
 				$AccountIDs = $cronsetting['customers'];
 				//$Accounts = Account::whereIn('AccountID',$AccountIDs)->where(['IsCustomer'=>1])->lists('AccountID','AccountName');
-				$Accounts = Account::whereIn('AccountID',$AccountIDs)->whereIn('AccountName',$mor_customers)->where(['IsCustomer'=>1])->select('AccountID','AccountName')->get();
+				$Accounts = Account::whereIn('AccountID',$AccountIDs)->whereIn('AccountName',$mor_customers)->where(['IsCustomer'=>1,'CompanyId'=>$CompanyID])->select('AccountID','AccountName')->get();
 			} else {
 				$a_data['Status'] = 1;
 				$a_data['AccountType'] = 1;
 				$a_data['VerificationStatus'] = Account::VERIFIED;
-				$a_data['CompanyID'] = $CompanyID;
+				$a_data['CompanyId'] = $CompanyID;
 				$a_data['IsCustomer'] = 1;
 
 				//$Accounts = Account::where($a_data)->lists('AccountID','AccountName');
@@ -170,7 +170,7 @@ class MorCustomerRateImport extends Command {
 											$CreatedBy = 'Rate Import';
 
 											$customertrunkdata = array();
-											$CodeDeckID = CodeDeck::getDefaultCodeDeckID();
+											$CodeDeckID = CodeDeck::getDefaultCodeDeckID($CompanyID);
 											$customertrunkdata['CompanyID'] = $CompanyID;
 											$customertrunkdata['AccountID'] = $AccountID;
 											$customertrunkdata['TrunkID'] = $TrunkID;

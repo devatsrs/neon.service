@@ -288,8 +288,10 @@
 
 
 
+    @if($total_usage != 0 || $is_sub || $is_charge)
     <div class="page_break"> </div>
     <br/>
+    @endif
 
     <main>
         @if($total_usage != 0)
@@ -559,7 +561,7 @@
         @endif
 		@endif
 
-        @if(!empty($ManagementReports))
+        @if(!empty($ManagementReports) && $total_usage != 0)
             <div class="page_break"></div>
             @include('emails.invoices.management_chart')
         @endif

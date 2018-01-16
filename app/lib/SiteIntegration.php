@@ -139,16 +139,17 @@ class SiteIntegration{
 	 */ 
 	
 	public static function  CheckIntegrationConfiguration($data=false,$slug,$CompanyID){
-		$Integration	 	 =	Integration::where(["CompanyID" => $CompanyID,"Slug"=>$slug])->first();	
+		$Integration	 	 =	Integration::where(["Slug"=>$slug])->first();
 		
 		if(count($Integration)>0)
 		{						
 			$IntegrationSubcategory = Integration::select("*");
-			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join)
+			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join) use($CompanyID)
 			{
 				$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
+				$join->where('tblIntegrationConfiguration.CompanyID', '=', $CompanyID);
 	
-			})->where(["tblIntegration.CompanyID"=>$CompanyID])->where(["tblIntegration.IntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
+			})->where(["tblIntegration.IntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
 			 $result = $IntegrationSubcategory->first(); 
 			
 			 if(count($result)>0)
@@ -169,16 +170,17 @@ class SiteIntegration{
 		/*
 	check main category have data or not
 	*/
-	public static function  CheckCategoryConfiguration($data=false,$slug,$companyID){
-		$Integration	 =	Integration::where(["CompanyId" => $companyID,"Slug"=>$slug])->first();	
+	public static function  CheckCategoryConfiguration($data=false,$slug,$CompanyID){
+		$Integration	 =	Integration::where(["Slug"=>$slug])->first();
 		if(count($Integration)>0)
 		{						 
 			$IntegrationSubcategory = Integration::select("*");
-			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join)
+			$IntegrationSubcategory->join('tblIntegrationConfiguration', function($join) use($CompanyID)
 			{
 				$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
+				$join->where('tblIntegrationConfiguration.CompanyID', '=', $CompanyID);
 	
-			})->where(["tblIntegration.CompanyID"=>$companyID])->where(["tblIntegrationConfiguration.ParentIntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
+			})->where(["tblIntegrationConfiguration.ParentIntegrationID"=>$Integration->IntegrationID])->where(["tblIntegrationConfiguration.Status"=>1]);
 			 $result = $IntegrationSubcategory->first();
 			 if(count($result)>0)
 			 {	
