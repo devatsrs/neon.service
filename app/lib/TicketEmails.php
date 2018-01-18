@@ -181,6 +181,9 @@ class TicketEmails{
 		{
 			throw new \Exception($this->Error);
 		}
+		if(!$this->EmailTemplate->Status) {
+			return;
+		}
 		$Requester = explode(",",$this->TicketData->Requester);
 		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
 
@@ -219,6 +222,9 @@ class TicketEmails{
 				return false;
 				//throw new \Exception("Agent Email is blank");
 			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			
 			
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -249,7 +255,10 @@ class TicketEmails{
 			if(!$this->CheckBasicRequirments())
 			{
 				throw new \Exception($this->Error);
-			}			
+			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -285,6 +294,9 @@ class TicketEmails{
 				Log::info("AgentTicketReopened: Agent Email is blank");
 				return false;
 				//throw new \Exception("Agent Email is blank");
+			}
+			if(!$this->EmailTemplate->Status) {
+				return;
 			}
 
 		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
@@ -367,7 +379,7 @@ class TicketEmails{
 
 
 
-			if(count($sendemails) > 0) {
+			if(count($sendemails) > 0 && $this->EmailTemplate->Status) {
 
 				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
@@ -407,7 +419,9 @@ class TicketEmails{
 			{
 				throw new \Exception($this->Error);
 			}
-			
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$ResolveVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$ResolvedVoilationType])->select(['Time','Value'])->get();	
 			
 			//Log::info(print_r($ResolveVoilation,true));
@@ -494,8 +508,10 @@ class TicketEmails{
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
-			}	
-					
+			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$EscalationUser				=		User::find($this->EscalationAgent);
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -608,7 +624,7 @@ class TicketEmails{
 
 
 
-		if(count($emailto)>0){
+		if(count($emailto)>0 && $this->EmailTemplate->Status){
 
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
@@ -672,7 +688,7 @@ class TicketEmails{
 
 
 
-		if(count($emailto)>0){
+		if(count($emailto)>0 && $this->EmailTemplate->Status){
 
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
