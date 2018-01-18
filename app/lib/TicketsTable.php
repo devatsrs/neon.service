@@ -213,8 +213,8 @@ class TicketsTable extends \Eloquent {
 		$emailToBlock = $data["from"];
 		$GroupID 	  = $data["GroupID"];
 
-		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com')
-		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
+		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com',1)
+		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "','" . $GroupID . "')";
 		$isBlock = DB::select($query);
 
 		if(isset($isBlock[0]->isAlreadyBlocked) && $isBlock[0]->isAlreadyBlocked == 1) {
