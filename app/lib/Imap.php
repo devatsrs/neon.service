@@ -669,7 +669,7 @@ protected $server;
 					Log::info( "Repeated Emails skipped From " . $from );
 					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
 					Log::info( "Repeated Emails skipped MessageID " . $message_id );
-					continue;
+					//continue;
 				}
 
 				$check_auto = $this->check_auto_generated($header,$message);
@@ -728,6 +728,7 @@ protected $server;
 				}*/
 
 				$logData = [
+					"EmailTo"=>$to,
 					'Requester'=> $from,
 					"RequesterName"=>$FromName,
 					"RequesterCC"=>$cc,
@@ -754,7 +755,7 @@ protected $server;
 					$ticketID 			  =  	TicketsTable::insertGetId($logData);
 
 					// --------------- check for TicketImportRule ----------------
-					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$to,]);
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID]);
 					try{
 						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 					} catch ( \Exception $ex){
@@ -808,7 +809,7 @@ protected $server;
 
 
 					// --------------- check for TicketImportRule ----------------
-					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$to,]);
+					$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID]);
 					try{
 						$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 					} catch ( \Exception $ex){
