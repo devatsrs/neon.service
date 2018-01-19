@@ -479,7 +479,10 @@ class Helper{
 		$data['EmailFrom'] = User::get_user_email();
 	}
 	
-    $logData = ['EmailFrom'=>$data['EmailFrom'],
+    $logData = [
+
+        'TicketID'=>$data['TicketID'],
+        'EmailFrom'=>$data['EmailFrom'],
         'EmailTo'=>$data['EmailTo'],
         'Subject'=>$data['Subject'],
         'Message'=>$body,
