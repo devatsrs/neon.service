@@ -669,7 +669,7 @@ protected $server;
 					Log::info( "Repeated Emails skipped From " . $from );
 					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
 					Log::info( "Repeated Emails skipped MessageID " . $message_id );
-					continue;
+					//continue;
 				}
 
 				$check_auto = $this->check_auto_generated($header,$message);
@@ -975,15 +975,17 @@ protected $server;
 					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
 				}
 
-				if(!$parentTicket) {
-					$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
-					$log_data["ActionText"]  = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
+				if(isset($log_data["ParentType"]) && isset($log_data["ParentID"]) ) {
+					if (!$parentTicket) {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
+						$log_data["ActionText"] = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
 
-					TicketLog::insertTicketLog( $log_data);
-				} else {
-					$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
-					$log_data["ActionText"]  = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
-					TicketLog::insertTicketLog( $log_data );
+						TicketLog::insertTicketLog($log_data);
+					} else {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
+						$log_data["ActionText"] = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
+						TicketLog::insertTicketLog($log_data);
+					}
 				}
 
 				//Send Notification Emails
