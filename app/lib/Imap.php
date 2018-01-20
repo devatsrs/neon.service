@@ -466,8 +466,26 @@ protected $server;
 					}else{
 						$from_		= 	"nofrom@email.com";
 					}
-					$message_id = $this->generate_random_message_id($from_);
-					Log::info("New MessageID " . $message_id);
+
+					$whereArrray = ["CompanyID"=>$CompanyID, "Subject"=>trim($overview_subject) ];
+					/*if(isset($overview[0]->to)) {
+						$whereArrray["EmailTo"] = $overview[0]->to ;
+					}*/
+					if(!empty($from_)) {
+						$whereArrray["EmailFrom"] = $from_ ;
+					}
+					Log::info("checking Subject Already Exists ");
+					Log::info($whereArrray);
+					if( AccountEmailLog::where($whereArrray)->count() > 0 ) {
+						Log::info("Email Subject Already Exists.");
+						continue ;
+					}
+					else {
+
+						$message_id = $this->generate_random_message_id($from_);
+						Log::info("New MessageID " . $message_id);
+
+					}
 
 				}
 
@@ -556,6 +574,9 @@ protected $server;
 						}
 
 						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
+						if(!$msg_parent) {
+							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($overview_subject)])->first();
+						}
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
 						}
@@ -648,7 +669,7 @@ protected $server;
 					Log::info( "Repeated Emails skipped From " . $from );
 					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
 					Log::info( "Repeated Emails skipped MessageID " . $message_id );
-					continue;
+					//continue;
 				}
 
 				$check_auto = $this->check_auto_generated($header,$message);
@@ -954,15 +975,17 @@ protected $server;
 					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
 				}
 
-				if(!$parentTicket) {
-					$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
-					$log_data["ActionText"]  = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
+				if(isset($log_data["ParentType"]) && isset($log_data["ParentID"]) ) {
+					if (!$parentTicket) {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
+						$log_data["ActionText"] = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
 
-					TicketLog::insertTicketLog( $log_data);
-				} else {
-					$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
-					$log_data["ActionText"]  = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]]  . " " . $TicketUserName;
-					TicketLog::insertTicketLog( $log_data );
+						TicketLog::insertTicketLog($log_data);
+					} else {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
+						$log_data["ActionText"] = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
+						TicketLog::insertTicketLog($log_data);
+					}
 				}
 
 				//Send Notification Emails

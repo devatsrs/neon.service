@@ -213,16 +213,15 @@ class TicketsTable extends \Eloquent {
 		$emailToBlock = $data["from"];
 		$GroupID 	  = $data["GroupID"];
 
-		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com')
-		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "')";
+		//call prc_TicketCheckRepeatedEmails(1,'sumera@code-desk.com',1)
+		$query = "call prc_TicketCheckRepeatedEmails ('" . $CompanyID . "','" . $emailToBlock . "','" . $GroupID . "')";
 		$isBlock = DB::select($query);
 
 		if(isset($isBlock[0]->isAlreadyBlocked) && $isBlock[0]->isAlreadyBlocked == 1) {
 			Log::info("Repeated Emails skipped: AlreadyBlocked");
 			return true;
-		}
 
-		if(isset($isBlock[0]->block) && $isBlock[0]->block == 1) {
+		} else if(isset($isBlock[0]->block) && $isBlock[0]->block == 1) {
 
 			try {
 
@@ -249,7 +248,7 @@ class TicketsTable extends \Eloquent {
 					$rule_condition = array_search(TicketImportRuleConditionType::EMAIL_FROM, $Conditions);
 					if ($rule_condition == false) {
 						Log::info("Condition TicketImportRuleConditionType::EMAIL_FROM not found");
-						return;
+						return false;
 					}
 
 					$SaveConditionData = array(
@@ -267,7 +266,7 @@ class TicketsTable extends \Eloquent {
 					$rule_action = array_search(TicketImportRuleActionType::SKIP_NOTIFICATION, $Conditions);
 					if ($rule_action == false) {
 						Log::info("Condition TicketImportRuleActionType::SKIP_NOTIFICATION not found");
-						return;
+						return false;
 					}
 
 					$SaveRuleData = array(
