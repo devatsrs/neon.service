@@ -158,6 +158,7 @@ class VOSAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
+            $CallID = CompanyGateway::getCallID($CompanyID,$CompanyGatewayID);
             foreach ($filenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
@@ -175,8 +176,7 @@ class VOSAccountUsage extends Command
                     try{
                     if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                         $InserData = $InserVData = array();
-                        while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                            $CallID = CompanyGateway::getCallID();
+                        while (($excelrow = fgetcsv($handle)) !== FALSE) {
                             if ( ($IpBased == 0 && !empty($excelrow['33']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                 $uddata = array();
                                 $uddata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -250,6 +250,7 @@ class VOSAccountUsage extends Command
                             }
                             $data_count++;
                             $data_countv++;
+                            $CallID++;
 
                         }//loop
 
@@ -278,6 +279,7 @@ class VOSAccountUsage extends Command
                 Log::info("Loop End");
 
             }
+            CompanyGateway::setCallID($CompanyID,$CompanyGatewayID,$CallID);
 
 
             Log::error(' ========================== vos transaction end =============================');

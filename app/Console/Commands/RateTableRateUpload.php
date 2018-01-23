@@ -16,7 +16,7 @@ use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempRateTableRate;
-use App\Lib\VendorFileUploadTemplate;
+use App\Lib\FileUploadTemplate;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -88,7 +88,7 @@ class RateTableRateUpload extends Command
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
-                        $uploadtemplate = VendorFileUploadTemplate::find($joboptions->uploadtemplate);
+                        $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
                     }else{
                         $templateoptions = json_decode($joboptions->Options);

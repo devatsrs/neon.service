@@ -436,9 +436,9 @@ protected $server;
 				$priority					=		  1;				
 				$headers 					=		  array();
 				$message					=	      '';
-				$overview 					= 		  imap_fetch_overview($inbox,$email_number,0);    
-				$structure					= 		  imap_fetchstructure($inbox, $email_number); 
-				$header 					= 		  imap_fetchheader($inbox, $email_number);
+				$overview = imap_fetch_overview($inbox, $email_number, 0);
+				//$structure = imap_fetchstructure($inbox, $email_number);
+				$header = imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
 				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
@@ -466,8 +466,26 @@ protected $server;
 					}else{
 						$from_		= 	"nofrom@email.com";
 					}
-					$message_id = $this->generate_random_message_id($from_);
-					Log::info("New MessageID " . $message_id);
+
+					$whereArrray = ["CompanyID"=>$CompanyID, "Subject"=>trim($overview_subject) ];
+					/*if(isset($overview[0]->to)) {
+						$whereArrray["EmailTo"] = $overview[0]->to ;
+					}*/
+					if(!empty($from_)) {
+						$whereArrray["EmailFrom"] = $from_ ;
+					}
+					Log::info("checking Subject Already Exists ");
+					Log::info($whereArrray);
+					if( AccountEmailLog::where($whereArrray)->count() > 0 ) {
+						Log::info("Email Subject Already Exists.");
+						continue ;
+					}
+					else {
+
+						$message_id = $this->generate_random_message_id($from_);
+						Log::info("New MessageID " . $message_id);
+
+					}
 
 				}
 
@@ -526,10 +544,8 @@ protected $server;
 						$header_name 		    = 	$tmp[0];
 						$header_value 			= 	$tmp[1];								
 						$headers[$header_name] 	= 	$header_value;						
-					} else {
-						// Append row to previous field
-						$headers[$header_name]  = 	$header_value . $h;
-					}				
+					}
+
 				}
 				if(isset($headers['X-Priority']) && $headers['X-Priority']!=''){
 					$prioritytxt  =  explode("X-Priority ",$headers['X-Priority']);
@@ -557,7 +573,10 @@ protected $server;
 							$EmailTo = $email;
 						}
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailTo,"EmailTo"=> $EmailFrom,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
+						if(!$msg_parent) {
+							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($overview_subject)])->first();
+						}
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
 						}
@@ -618,7 +637,9 @@ protected $server;
 					$message =  $this->DownloadInlineImages($emailMessage, $email_number,$CompanyID,$message); // download inline images and added it places in body
 				}
 
-				$message =  $this->GetMessageBody($message);  //get only body section from email. remove css and scripts
+				if(!empty($message)){
+					$message =  $this->GetMessageBody($message);
+				}
 
 				$message = $this->body_cleanup($message);
 
@@ -637,6 +658,20 @@ protected $server;
 				}
 				$update_id  =	''; $insert_id  =	'';
 				//Log::info("message :".$message);
+
+				$checkRepeatedEmailsData = [
+					"from" => $from,
+					"GroupID" => $GroupID,
+				];
+				if( TicketsTable::checkRepeatedEmails($CompanyID,$checkRepeatedEmailsData) ) {
+
+					Log::info( "Repeated Emails skipped" );
+					Log::info( "Repeated Emails skipped From " . $from );
+					Log::info( "Repeated Emails skipped Subject " . $overview_subject );
+					Log::info( "Repeated Emails skipped MessageID " . $message_id );
+					//continue;
+				}
+
 				$check_auto = $this->check_auto_generated($header,$message);
 				if($check_auto && empty($msg_parent)){
 
@@ -678,8 +713,10 @@ protected $server;
 				if(count($CheckInboxGroup)>0){
 					$GroupID = $CheckInboxGroup->GroupID;
 				}*/
+
 				///Check if agent forwarded email.
-				$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
+				//@TODO : not working with all types of email with different forwarded formats.
+				/*$group_agents = 		array_values(TicketGroupAgents::get_group_agents($GroupID,0,'EmailAddress'));
 				if(in_array($from,$group_agents)) {
 					$_tmp_message = imap_fetchbody($inbox,$email_number,1);
 					$from_array = $this->get_forwarded_email($_tmp_message);
@@ -688,7 +725,7 @@ protected $server;
 						$from = $from_array["from"];
 						$FromName = $from_array["from_name"];
 					}
-				}
+				}*/
 
 				$logData = [
 					'Requester'=> $from,
@@ -706,11 +743,12 @@ protected $server;
 					"created_by"=> 'RMScheduler'
 				];
 
+				$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
+
 				$skip_email_notification = false;
 				if(!$parentTicket){
 					// New ticket
 
-					$MatchArray  		  =     $this->SetEmailType($from,$CompanyID);
 					$logData 		 	  = 	array_merge($logData,$MatchArray);
 
 					$ticketID 			  =  	TicketsTable::insertGetId($logData);
@@ -762,20 +800,6 @@ protected $server;
 							Log::info($TicketImportRuleResult);
 						}
 					}
-					// -------------------------------
-
-					TicketLog::AddLog($ticketID,$MatchArray,$CompanyID);
-
-					/* moved bellow
-
-					if(!$skip_email_notification) {
-						if ($GroupID) {
-							new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentAssignedGroup")));
-						}
-						new TicketEmails(array("TicketID" => $ticketID, "CompanyID" => $CompanyID, "TriggerType" => array("RequesterNewTicketCreated")));
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNewTicketCreated", "CompanyID" => $CompanyID));
-					}*/
-					
 				}
 				else //reopen ticket if ticket status closed 
 				{
@@ -830,29 +854,6 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
-					// -------------------------------
-
-					/*
-					 * moved bellow
-					 * if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
-						TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
-						if(!$skip_email_notification) {
-							new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
-						}
-					}
-
-					if(isset($ticketData->Requester)){
-						if($from==$ticketData->Requester){
-							if(!$skip_email_notification) {
-								new TicketEmails(array("TicketID" => $ticketData->TicketID, "TriggerType" => "RequesterRepliestoTicket", "CompanyID" => $CompanyID, "Comment" => $message));
-							}
-							TicketsTable::find($ticketData->TicketID)->update(array("CustomerRepliedDate" => date('Y-m-d H:i:s')));
-						}
-					}
-					if(!$skip_email_notification) {
-						//Email to all cc emails from main ticket.
-						new TicketEmails(array("TicketID" => $ticketID, "TriggerType" => "CCNoteaddedtoticket", "Comment" => $message, "NoteUser" => $FromName, "CompanyID" => $CompanyID));
-					}*/
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
@@ -875,12 +876,24 @@ protected $server;
 				];	
 						
 				$EmailLog   =  AccountEmailLog::insertGetId($logData);
+				// -- Not New
 				if($parentTicket){
 					if(!$parent){
 						AccountEmailLog::find($EmailLog)->update(["EmailParent"=>$EmailLog]);
 					}
 				}
-				
+
+				// update duedate immediately after ticket created...
+				try {
+					if(isset($ticketID)){
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
+				// New Ticket
 				if(!$parentTicket)
 				{
 					 TicketsTable::find($ticketID)->update(array("AccountEmailLogID"=>$EmailLog));
@@ -950,6 +963,41 @@ protected $server;
 				}
 
 
+				//create log
+
+				// if new ticket
+				$log_data = [
+					"CompanyID" => $CompanyID ,
+					"TicketID" => $ticketID ,
+				];
+				if (isset($MatchArray["AccountID"]) && $MatchArray["AccountID"] > 0) {
+					$log_data["ParentID"] = $MatchArray["AccountID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_ACCOUNT;
+					$TicketUserName = Account::where(["AccountID"=>$MatchArray["AccountID"]])->pluck('AccountName');
+
+				} else if (isset($MatchArray["UserID"])  && $MatchArray["UserID"] > 0) {
+					$log_data["ParentID"] = $MatchArray["UserID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_USER;
+					$TicketUserName = User::get_user_full_name($MatchArray["UserID"]);
+				} else if (isset($MatchArray["ContactID"])  && $MatchArray["ContactID"] > 0 ) {
+					$log_data["ParentID"] = $MatchArray["ContactID"];
+					$log_data["ParentType"] = TicketLog::TICKET_USER_TYPE_CONTACT;
+					$TicketUserName = Contact::get_full_name($MatchArray["UserID"]);
+				}
+
+				if(isset($log_data["ParentType"]) && isset($log_data["ParentID"]) ) {
+					if (!$parentTicket) {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CREATED;
+						$log_data["ActionText"] = "Ticket Created by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
+
+						TicketLog::insertTicketLog($log_data);
+					} else {
+						$log_data["Action"] = TicketLog::TICKET_ACTION_CUSTOMER_REPLIED;
+						$log_data["ActionText"] = "Ticket Replied by " . TicketLog::$TicketUserTypes[$log_data["ParentType"]] . " " . $TicketUserName;
+						TicketLog::insertTicketLog($log_data);
+					}
+				}
+
 				//Send Notification Emails
 				if(!$parentTicket){
 
@@ -991,14 +1039,7 @@ protected $server;
 
 
 
-				try {
-					if(isset($ticketID)){
-						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-					}
-				} catch (Exception $ex) {
-					Log::info("fail TicketSla::assignSlaToTicket");
-					Log::info($ex);
-				}
+
 
 			}
 			} catch (Exception $e) {
@@ -1101,7 +1142,8 @@ protected $server;
 			"Delivery to the following recipient failed permanently:",
 			"Delivery to the following recipients failed permanently:",
 			"This message was created automatically by mail delivery software",
-			"Delivery has failed to these recipients or groups", 
+			"Delivery has failed to these recipients or groups",
+			"Your mail message to the following address(es) could not be delivered.",
 		];
 
 
@@ -1132,10 +1174,11 @@ protected $server;
 
 	}
 
+	//@TODO: uncompleted , not working with various email forwarded messsages
 	public function get_forwarded_email($message){
 
-		$from_name = "";
-		//preg_match_all("/[\\._a-zA-Z0-9-]+@[\\._a-zA-Z0-9-]+/i", $message, $email_matches);
+		return ["from" => "" , "from_name" => ""];
+		/*$from_name = "";
 		Log::info("message: " . $message);
 		$start = strpos($message,"<") +1;
 		$end = strpos($message,">")  ;
@@ -1147,7 +1190,7 @@ protected $server;
 			$end = strpos($message,"<");
 
 			$from_name = trim(substr($message, $start, $end-$start));
-		}
+		}*/
 		return ["from" => $from , "from_name" => $from_name];
 	}
 

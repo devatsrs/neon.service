@@ -383,7 +383,7 @@ class ImportAccount extends Command {
 
                                 if (isset($attrselection->Currency) && !empty($attrselection->Currency)) {
                                     // get currencyid from currency code
-                                    $cid = Currency::getCurrencyId(trim($temp_row[$attrselection->Currency]));
+                                    $cid = Currency::getCurrencyId($CompanyID,trim($temp_row[$attrselection->Currency]));
                                     if(!empty($cid) && $cid>0){
                                         $tempItemData['Currency'] = $cid;
                                     }else{

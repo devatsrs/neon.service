@@ -140,8 +140,8 @@ class Alert extends \Eloquent{
             $settings['AccountID'] = $settings['AccountIDs'];
              self::CallDurationAlert($CompanyID,$Alert,$settings);
         }else if($settings['AccountIDs'] == -1){
-            $call_durations = CDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
-            $vcall_durations = VCDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->distinct()->get(['AccountID']);
+            $call_durations = CDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->where('CompanyID',$CompanyID)->distinct()->get(['AccountID']);
+            $vcall_durations = VCDRPostProcess::where('billed_duration', '>', intval($settings['Duration']))->where('CompanyID',$CompanyID)->distinct()->get(['AccountID']);
             foreach($call_durations as $call_duration){
                 $settings['AccountID'] = $call_duration->AccountID;
                 self::CallDurationAlert($CompanyID,$Alert,$settings);
@@ -158,8 +158,8 @@ class Alert extends \Eloquent{
             $settings['AccountID'] = $settings['AccountIDs'];
             self::CallCostAlert($CompanyID,$Alert,$settings);
         }else if($settings['AccountIDs'] == -1){
-            $call_costs = CDRPostProcess::where('cost', '>', doubleval($settings['Cost']))->distinct()->get(['AccountID']);
-            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', doubleval($settings['Cost']))->distinct()->get(['AccountID']);
+            $call_costs = CDRPostProcess::where('cost', '>', doubleval($settings['Cost']))->where('CompanyID',$CompanyID)->distinct()->get(['AccountID']);
+            $vcall_costs = VCDRPostProcess::where('buying_cost', '>', doubleval($settings['Cost']))->where('CompanyID',$CompanyID)->distinct()->get(['AccountID']);
             foreach($call_costs as $call_cost){
                 $settings['AccountID'] = $call_cost->AccountID;
                 self::CallCostAlert($CompanyID,$Alert,$settings);
@@ -175,9 +175,11 @@ class Alert extends \Eloquent{
     {
         $call_duration_count = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
             ->where('billed_duration', '>', intval($settings['Duration']))
+            ->where('CompanyID',$CompanyID)
             ->count();
         $vcall_duration_count = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
             ->where('billed_duration', '>', intval($settings['Duration']))
+            ->where('CompanyID',$CompanyID)
             ->count();
 
         if ($call_duration_count > 0 || $vcall_duration_count>0) {
@@ -185,9 +187,11 @@ class Alert extends \Eloquent{
             $Account = Account::find($settings['AccountID']);
             $call_duration = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
                 ->where('billed_duration', '>', intval($settings['Duration']))
+                ->where('CompanyID',$CompanyID)
                 ->get();
             $vcall_duration = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
                 ->where('billed_duration', '>', intval($settings['Duration']))
+                ->where('CompanyID',$CompanyID)
                 ->get();
             $settings['EmailMessage'] = View::make('emails.call_duration_alert',compact('call_duration','vcall_duration','settings'))->render();
             $settings['EmailType'] = AccountEmailLog::CallDurationAlert;
@@ -205,9 +209,11 @@ class Alert extends \Eloquent{
     {
         $call_cost_count = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
             ->where('cost', '>', doubleval($settings['Cost']))
+            ->where('CompanyID',$CompanyID)
             ->count();
         $vcall_cost_count = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
             ->where('buying_cost', '>', doubleval($settings['Cost']))
+            ->where('CompanyID',$CompanyID)
             ->count();
 
         if ($call_cost_count > 0 || $vcall_cost_count>0) {
@@ -216,9 +222,11 @@ class Alert extends \Eloquent{
 
             $call_cost = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
                 ->where('cost', '>', doubleval($settings['Cost']))
+                ->where('CompanyID',$CompanyID)
                 ->get();
             $vcall_cost = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
                 ->where('buying_cost', '>', doubleval($settings['Cost']))
+                ->where('CompanyID',$CompanyID)
                 ->get();
             $settings['EmailMessage'] = View::make('emails.call_cost_alert',compact('call_cost','vcall_cost','settings'))->render();
             $settings['EmailType'] = AccountEmailLog::CallCostAlert;
@@ -236,13 +244,13 @@ class Alert extends \Eloquent{
 
     public static function CallOfficeAlert($CompanyID,$Alert,$settings)
     {
-        $call_office_count = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
+        $call_office_count = CDRPostProcess::where('AccountID', intval($settings['AccountID']))->where('CompanyID',$CompanyID)
             ->Where(function ($query) use ($settings) {
                 $query->whereRaw("time(connect_time) < '" . date("H:i:s", strtotime($settings['OpenTime'])) . "'")
                     ->orwhereRaw("time(connect_time) > '" . date("H:i:s", strtotime($settings['CloseTime'])) . "'" );
             })
             ->count();
-        $vcall_office_count = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
+        $vcall_office_count = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))->where('CompanyID',$CompanyID)
             ->Where(function ($query) use ($settings) {
                 $query->whereRaw("time(connect_time) < '" . date("H:i:s", strtotime($settings['OpenTime'])) . "'")
                     ->orwhereRaw("time(connect_time) > '" . date("H:i:s", strtotime($settings['CloseTime'])) . "'" );
@@ -251,13 +259,13 @@ class Alert extends \Eloquent{
 
         if ($call_office_count > 0 || $vcall_office_count > 0) {
             $Account = Account::find($settings['AccountID']);
-            $call_office = CDRPostProcess::where('AccountID', intval($settings['AccountID']))
+            $call_office = CDRPostProcess::where('AccountID', intval($settings['AccountID']))->where('CompanyID',$CompanyID)
                 ->Where(function ($query) use ($settings) {
                     $query->whereRaw("time(connect_time) < '" . date("H:i:s", strtotime($settings['OpenTime'])) . "'")
                         ->orwhereRaw("time(connect_time) > '" . date("H:i:s", strtotime($settings['CloseTime'])) . "'" );
                 })
                 ->get();
-            $vcall_office = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))
+            $vcall_office = VCDRPostProcess::where('AccountID', intval($settings['AccountID']))->where('CompanyID',$CompanyID)
                 ->Where(function ($query) use ($settings) {
                     $query->whereRaw("time(connect_time) < '" . date("H:i:s", strtotime($settings['OpenTime'])) . "'")
                         ->orwhereRaw("time(connect_time) > '" . date("H:i:s", strtotime($settings['CloseTime'])) . "'" );
@@ -278,13 +286,13 @@ class Alert extends \Eloquent{
     public static function CallBlackListAlert($CompanyID,$Alert,$settings)
     {
 
-        $call_blacklist_count = CDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->count();
-        $vcall_blacklist_count = VCDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->count();
+        $call_blacklist_count = CDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->where('CompanyID',$CompanyID)->count();
+        $vcall_blacklist_count = VCDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->where('CompanyID',$CompanyID)->count();
 
         if ($call_blacklist_count > 0 || $vcall_blacklist_count > 0) {
             if (!empty($settings['ReminderEmail'])) {
-                $call_blacklist = CDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->get();
-                $vcall_blacklist = VCDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->get();
+                $call_blacklist = CDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->where('CompanyID',$CompanyID)->get();
+                $vcall_blacklist = VCDRPostProcess::whereIn('CountryID',$settings['BlacklistDestination'])->where('CompanyID',$CompanyID)->get();
 
 
                 $settings['EmailMessage'] = View::make('emails.call_blacklist_alert', compact('call_blacklist', 'vcall_blacklist','settings'))->render();

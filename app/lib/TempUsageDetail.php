@@ -25,6 +25,22 @@ class TempUsageDetail extends \Eloquent {
         Log::error($query);
         DB::connection('sqlsrv2')->statement($query);
     }
+
+    /**
+     * @param $CompanyID
+     * @param $ProcessID
+     * @param $CompanyGatewayID
+     * @param $RateCDR
+     * @param $RateFormat  - Prefix or ChargeCode(not in use at the moment, only used in cdr upload, ex. 2Circle)
+     * @param $temptableName
+     * @param string $NameFormat -- AuthenticationRule : AccountName,AccountNumber,CLI,IP etc default blank (only used for cdr upload)
+     * @param string $RateMethod -- CurrentRate(Rate setup against account(CustomerRate)) , SpecifyRate  (only used for cdr upload when ReRating)
+     * @param int $Rate
+     * @param int $OutboundTableID  -- Outbound RateTableID  (only used for cdr upload when ReRating)
+     * @param int $InboundTableID   -- Inbound RateTableID    (only used for cdr upload when ReRating)
+     * @param int $Accounts         -- ReRate only Selected Account (when ReRating) Can be set from Gateway option
+     * @return array
+     */
     public static function ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,$NameFormat='',$RateMethod='CurrentRate',$Rate=0,$OutboundTableID=0,$InboundTableID=0,$Accounts=0){
         $skiped_account_data =array();
         Log::error('start CALL  prc_ProcesssCDR( ' . $CompanyID . "," . $CompanyGatewayID .",".$ProcessID.",'".$temptableName."',$RateCDR,$RateFormat,'".$NameFormat."','".$RateMethod."','".$Rate."','".$OutboundTableID."','".$InboundTableID."','".$Accounts."')");
@@ -222,6 +238,8 @@ Please check below error messages while re-rating cdrs.
             return 'none';
         }
     }
+
+
     public static function applyDiscountPlan(){
         $today = date('Y-m-d');
         $todaytime = date('Y-m-d H:i:s');
@@ -244,10 +262,12 @@ Please check below error messages while re-rating cdrs.
                 $BillingCycleValue = $AccountBilling->BillingCycleValue;
             }
             if($Manualcount == 0 && !empty($BillingCycleType)) {
-                $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue);
+                $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue); // monthly : 30 or 31 days
                 $NextInvoiceDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($Account->EndDate));
-                $getdaysdiff = getdaysdiff($NextInvoiceDate, $today);
+                $getdaysdiff = getdaysdiff($NextInvoiceDate, $today); //
                 $DayDiff = $getdaysdiff > 0 ? intval($getdaysdiff) : 0;
+                // Apply new fresh or reset Discount Plan from 0 UsedSeconds
+                // if apply from 15th in between month . billing cycle thresold will be half. ie 1000 to 500
                 Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
                 DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID));
             }else{

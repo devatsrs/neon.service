@@ -16,6 +16,44 @@ class PBX{
     private static $timeout=0; /* 60 seconds timeout */
 
 
+    /**
+     *
+     *
+     *
+     *  PBX Columns
+     * --------------------------------------------------------
+     * Database:  asteriskcdrdb
+     * Database:  asterisk
+     * --------------------------------------------------------
+     * Table: asteriskcdrdb.cdr c
+     * Table: asterisk.cc_callcosts cc
+     * --------------------------------------------------------
+     * ##################  PBX Columns ########################
+     * ##################  ----------- ########################
+     *
+     * c.src
+     * c.ID                                     ID
+     * c.start                                  connect_time
+     * c.end                                    disconnect_time
+     * c.duration                               duration
+     * c.billsec                                billed_second,billed_duration
+     * c.realsrc as extension                   extension
+     * c.accountcode                            --  GatewayAccountID,AccountNumber
+     * c.firstdst                               if inbound call ,  cld
+     * c.lastdst                               if outbound call ,  cld (if empty then firstdst) --
+     * coalesce(sum(cc_cost)) as cc_cost        cost
+     * c.pincode                                pincode
+     * c.userfield                              userfield
+     * cc_type                                  -- to check Failed Call or Ignore calls (used to check internal call)
+     * disposition                              disposition
+     *
+     *--------------------------------------------------------
+     */
+
+    /**
+     * PBX constructor.
+     * @param $CompanyGatewayID
+     */
     public function __construct($CompanyGatewayID){
        $setting = GatewayAPI::getSetting($CompanyGatewayID,'PBX');
        foreach((array)$setting as $configkey => $configval){
@@ -56,14 +94,14 @@ class PBX{
                 $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,cc_type,disposition
                     from asteriskcdrdb.cdr c
                     left outer join asterisk.cc_callcosts cc on
-                     c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) )
+                     c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) ) /*-- Given by mirta same as in their front end.*/
                     where `end` >= '" . $addparams['start_date_ymd'] . "' and `end` < '" . $addparams['end_date_ymd'] . "'
                     AND (
                            userfield like '%outbound%'
                         or userfield like '%inbound%'
-                        or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' )
+                        or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' )  /*-- Ignore Internal call*/
                         )
-                    AND ( dst<>'h' or duration <> 0 )
+                    AND ( dst<>'h' or duration <> 0 ) /*-- given by mirta*/
                     and prevuniqueid=''
                     group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode
                     "; // and userfield like '%outbound%'  removed for inbound calls

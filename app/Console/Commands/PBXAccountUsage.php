@@ -119,7 +119,7 @@ class PBXAccountUsage extends Command
             if(!empty($companysetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
-            TempUsageDetail::applyDiscountPlan();
+            TempUsageDetail::applyDiscountPlan(); // when NextBillingDate comes , remove old discount entry and add fresh discout value with usedSeconds = 0
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
             $param['RateCDR'] = $RateCDR;
@@ -152,7 +152,7 @@ class PBXAccountUsage extends Command
 
                 foreach ((array)$response as $row_account) {
 
-                    $data = $data_outbound = array();
+                    $data = $data_outbound = array(); // for call type = both $data = inbound ,  $data_outbound = outbound entry only when rerating is on.
                     if(!empty($row_account['accountcode'])) {
 
 
@@ -231,6 +231,11 @@ class PBXAccountUsage extends Command
                         if ($call_type == 'both' && $RateCDR == 1) {
 
                             /**
+                             * IF rerating is on
+                             *
+                             */
+
+                            /**
                              * Inbound Entry
                              */
 
@@ -251,6 +256,11 @@ class PBXAccountUsage extends Command
                             $data_outbound['userfield'] = str_replace('inbound','',$row_account['userfield']);
 
                         }
+
+                        /**
+                         * remove prefix from cli cld , given in gateway option
+                         */
+
                         $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);
                         $data['cld'] = apply_translation_rule($CLDTranslationRule,$data['cld']);
 
@@ -258,6 +268,7 @@ class PBXAccountUsage extends Command
                         $data_count++;
 
                         if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
+
                             $data_outbound['cli'] = apply_translation_rule($CLITranslationRule,$data_outbound['cli']);
                             $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule,$data_outbound['cld']);
                             $InserData[] = $data_outbound;
@@ -286,6 +297,7 @@ class PBXAccountUsage extends Command
             Log::error(' ========================== pbx transaction end =============================');
 
             /** delete duplicate id*/
+            /** Check in tblUsageDetails and tblUsageDetailFailedCall table  and remove existing from temp table */
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
@@ -301,6 +313,7 @@ class PBXAccountUsage extends Command
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
+            //
             Log::error("PBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
             Log::error("PBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
@@ -377,7 +390,7 @@ class PBXAccountUsage extends Command
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         $pbxusageinterval = CompanyConfiguration::get($companyid,'USAGE_PBX_INTERVAL');
-        $current = strtotime(date('Y-m-d H:i:s'));
+        $current = strtotime(date('Y-m-d H:i:s'));  // if no call then use current time and continew reading cdrs to go ahead
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
         if ($minutes <= $pbxusageinterval) {

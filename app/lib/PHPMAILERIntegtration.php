@@ -66,6 +66,9 @@ class PHPMAILERIntegtration{
 		$mail =  self::add_email_address($mail,$data,'bcc');
 
 
+		if(isset($data['In-Reply-To'])) {
+			$mail->addCustomHeader('In-Reply-To', $data['In-Reply-To']);
+		}
 
 		if(isset($data["Auto-Submitted"])){
 			$mail->addCustomHeader("Auto-Submitted","auto-generated");
@@ -84,7 +87,13 @@ class PHPMAILERIntegtration{
 		}
 			
 		if(isset($data['attach'])){
-            $mail->addAttachment($data['attach']);
+			if(is_array($data['attach'])){
+				foreach($data['attach'] as $attach){
+					$mail->addAttachment($attach);
+				}
+			}else{
+				$mail->addAttachment($data['attach']);
+			}
         }
 
 		$mail->Body = $mail->msgHTML($body);

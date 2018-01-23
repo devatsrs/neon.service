@@ -14,16 +14,15 @@ class IntegrationConfiguration extends Model
     public static $rules = array(
     );	
 	
-   static function GetIntegrationDataBySlug($slug){
-	   
-	   $companyID	=  User::get_companyID();
+   static function GetIntegrationDataBySlug($CompanyID,$slug){
 	   
 	  $Subcategory = Integration::select("*");
-	  $Subcategory->leftJoin('tblIntegrationConfiguration', function($join)
+	  $Subcategory->leftJoin('tblIntegrationConfiguration', function($join) use($CompanyID)
 		{
 			$join->on('tblIntegrationConfiguration.IntegrationID', '=', 'tblIntegration.IntegrationID');
+			$join->where('tblIntegrationConfiguration.CompanyID','=',$CompanyID);
 	
-		})->where(["tblIntegration.CompanyID"=>$companyID])->where(["tblIntegration.Slug"=>$slug]);
+		})->where(["tblIntegration.Slug"=>$slug]);
 		 $result = $Subcategory->first();
 		 return $result;
    } 

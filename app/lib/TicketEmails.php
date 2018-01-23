@@ -181,6 +181,9 @@ class TicketEmails{
 		{
 			throw new \Exception($this->Error);
 		}
+		if(!$this->EmailTemplate->Status) {
+			return;
+		}
 		$Requester = explode(",",$this->TicketData->Requester);
 		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
 
@@ -193,7 +196,7 @@ class TicketEmails{
 		$emailData['EmailTo'] 		= 		$Requester;
 		$emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
 		$emailData['CompanyName'] 	= 		$this->Group->GroupName;
-		$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+		$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 		$emailData['TicketID'] 		= 		$this->TicketID;
 		$emailData['Auto-Submitted']= 		"auto-generated";
 		$emailData['Message-ID']	= 		$this->TicketID;
@@ -219,6 +222,9 @@ class TicketEmails{
 				return false;
 				//throw new \Exception("Agent Email is blank");
 			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			
 			
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -230,7 +236,7 @@ class TicketEmails{
 			$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['Comment']		=		$this->Comment;
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Auto-Submitted']= 		"auto-generated";
@@ -249,7 +255,10 @@ class TicketEmails{
 			if(!$this->CheckBasicRequirments())
 			{
 				throw new \Exception($this->Error);
-			}			
+			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
@@ -261,7 +270,7 @@ class TicketEmails{
             $emailData['EmailTo'] 		= 		$Groupagents;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['Auto-Submitted']= 		"auto-generated";
 			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
@@ -286,6 +295,9 @@ class TicketEmails{
 				return false;
 				//throw new \Exception("Agent Email is blank");
 			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 
 		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -297,7 +309,7 @@ class TicketEmails{
 			$emailData['EmailTo'] 		= 		$this->Agent->EmailAddress;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
@@ -367,7 +379,7 @@ class TicketEmails{
 
 
 
-			if(count($sendemails) > 0) {
+			if(count($sendemails) > 0 && $this->EmailTemplate->Status) {
 
 				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
@@ -381,7 +393,7 @@ class TicketEmails{
 				$emailData['EmailTo'] = $sendemails;
 				$emailData['EmailFrom'] = $this->Group->GroupReplyAddress;
 				$emailData['CompanyName'] = $this->Group->GroupName;
-				$emailData['In-Reply-To'] = isset($this->Group->GroupReplyAddress) ? $this->Group->GroupReplyAddress : $this->Group->GroupEmailAddress;
+				$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 				$emailData['Message-ID']	= 		$this->TicketID;
 				$status = Helper::sendMail($finalBody, $emailData, 0);
 				$emailData['TicketID'] = $this->TicketID;
@@ -407,7 +419,9 @@ class TicketEmails{
 			{
 				throw new \Exception($this->Error);
 			}
-			
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$ResolveVoilation			=	TicketSlaPolicyViolation::where(['TicketSlaID'=>$this->TicketData->TicketSlaID,"VoilationType"=>TicketSlaPolicyViolation::$ResolvedVoilationType])->select(['Time','Value'])->get();	
 			
 			//Log::info(print_r($ResolveVoilation,true));
@@ -474,7 +488,7 @@ class TicketEmails{
             $emailData['EmailTo'] 		= 		$sendemails;
             $emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
             $emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['Message-ID']	= 		$this->TicketID;
 			$status 					= 		Helper::sendMail($finalBody,$emailData,0);
 			$emailData['TicketID'] 		= 		$this->TicketID;
@@ -494,8 +508,10 @@ class TicketEmails{
 			if(!$this->CheckBasicRequirments())
 			{
 				return $this->Error;
-			}	
-					
+			}
+			if(!$this->EmailTemplate->Status) {
+				return;
+			}
 			$EscalationUser				=		User::find($this->EscalationAgent);
 			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
@@ -601,14 +617,14 @@ class TicketEmails{
 		if (($key = array_search($this->TicketData->Requester, $emailto)) !== false){			
 			    unset($emailto[$key]);
 		}	
-		
-		if (($key = array_search($this->Group->GroupEmailAddress, $emailto)) !== false){			
+	/*
+		if (($key = array_search($this->Group->GroupEmailAddress, $emailto)) !== false){
 			    unset($emailto[$key]);
-		}
+	 	}*/
 
 
 
-		if(count($emailto)>0){
+		if(count($emailto)>0 && $this->EmailTemplate->Status){
 
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
@@ -621,7 +637,7 @@ class TicketEmails{
 			$emailData['EmailTo'] 		= 		$emailto;
 			$emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
 			$emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['In-Reply-To'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Auto-Submitted']= 		"auto-generated";
 			$emailData['Message-ID']	= 		$this->TicketID;
@@ -672,7 +688,7 @@ class TicketEmails{
 
 
 
-		if(count($emailto)>0){
+		if(count($emailto)>0 && $this->EmailTemplate->Status){
 
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
@@ -685,7 +701,7 @@ class TicketEmails{
 			$emailData['EmailTo'] 		= 		$emailto;
 			$emailData['EmailFrom'] 	= 		$this->Group->GroupReplyAddress;
 			$emailData['CompanyName'] 	= 		$this->Group->GroupName;
-			$emailData['AddReplyTo'] 	= 		isset($this->Group->GroupReplyAddress)?$this->Group->GroupReplyAddress:$this->Group->GroupEmailAddress;
+			$emailData['In-Reply-To'] 	= 		AccountEmailLog::getLastMessageIDByTicketID($this->TicketID);
 			$emailData['TicketID'] 		= 		$this->TicketID;
 			$emailData['Comment'] 		= 		$this->Comment;
 			$emailData['NoteUser'] 		= 		$this->NoteUser;
@@ -718,5 +734,35 @@ class TicketEmails{
 
 	}
 
+	/** This is system generated email.
+	 * for repeated email block
+	 * system will block repeated email address who is frequently sending email to group email address.
+	 */
+	protected function RepeatedEmailBlockEmail() {
+
+		$this->slug						=		"RepeatedEmailBlockEmail";
+
+		$EmailSubject 					= 		'System has block repeated email';
+
+		$site_url 						= 		CompanyConfiguration::get($this->CompanyID,'WEB_URL');
+		$ImportRuleUrl					=   	$site_url."/tickets/importrules/";
+
+
+		$Group = TicketGroups::find($this->GroupID);
+
+		$emailData['Subject']				=		$EmailSubject;
+		$emailData['CompanyID'] 			= 		$this->CompanyID;
+		$emailData['EmailTo'] 				= 		$Group->GroupReplyAddress;
+		$emailData['EmailFrom'] 			= 		$Group->GroupReplyAddress;
+		$emailData['CompanyName'] 			= 		$Group->GroupName;
+		$emailData['BlockedEmailAddress'] 	= 		$this->EmailToBlock;
+		$emailData['ImportRuleUrl'] 		= 		$ImportRuleUrl;
+		//$emailData['Message-ID']			= 		$this->TicketID;
+		$status 							= 		Helper::sendMail('emails.ticket_repeated_email_block_email',$emailData);
+
+		if(!$status['status']) {
+			Log::error("RepeatedEmailBlockEmail: Error sending email");
+		}
+	}
 }
 ?>

@@ -78,8 +78,8 @@ class InvoiceGenerator extends Command {
 
         Log::useFiles(storage_path().'/logs/invoicegenerator-'.$CompanyID.'-'.date('Y-m-d').'.log');
 
-        $Products = Product::getAllProductName();
-        $Taxes = TaxRate::getAllTaxName();
+        $Products = Product::getAllProductName($CompanyID);
+        $Taxes = TaxRate::getAllTaxName($CompanyID);
         $data['Products'] = $Products;
         $data['Taxes'] = $Taxes;
 
