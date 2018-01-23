@@ -1901,10 +1901,9 @@ class Invoice extends \Eloquent {
                 }else{
                     $service_data[$Account_ServiceID]['add_cost'] = 0;
                 }
-                $service_data[$Account_ServiceID]['name'] = AccountService::getServiceName($AccountID, $Account_ServiceID);;
-                $service_data[$Account_ServiceID]['servicedescription'] = AccountService::getServiceDescription($AccountID, $Account_ServiceID);;
-                $service_data[$Account_ServiceID]['servicedescription'] = AccountService::getServiceDescription($AccountID, $Account_ServiceID);;
-                $service_data[$Account_ServiceID]['servicetitleshow'] = AccountService::getServiceTitleShow($AccountID, $Account_ServiceID);;
+                $service_data[$Account_ServiceID]['name'] = AccountService::getServiceName($AccountID, $Account_ServiceID);
+                $service_data[$Account_ServiceID]['servicedescription'] = AccountService::getServiceDescription($AccountID, $Account_ServiceID);
+                $service_data[$Account_ServiceID]['servicetitleshow'] = AccountService::getServiceTitleShow($AccountID, $Account_ServiceID);
             }
         }
 
@@ -1926,6 +1925,8 @@ class Invoice extends \Eloquent {
                 $service_data[0]['add_cost'] = 0;
             }
             $service_data[0]['name'] = Service::$defaultService;
+			$service_data[0]['servicedescription'] = '';
+            $service_data[0]['servicetitleshow'] = 1;
 
         }
         return $service_data;
