@@ -883,6 +883,16 @@ protected $server;
 					}
 				}
 
+				// update duedate immediately after ticket created...
+				try {
+					if(isset($ticketID)){
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
 				// New Ticket
 				if(!$parentTicket)
 				{
@@ -1029,14 +1039,7 @@ protected $server;
 
 
 
-				try {
-					if(isset($ticketID)){
-						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-					}
-				} catch (Exception $ex) {
-					Log::info("fail TicketSla::assignSlaToTicket");
-					Log::info($ex);
-				}
+
 
 			}
 			} catch (Exception $e) {
