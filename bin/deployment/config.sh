@@ -82,6 +82,8 @@ FRONT_STORAGE_PATH=${WEB_LOCATION}"/app/storage"
 SIPPYFILE_LOCATION=${TEMP_PATH}"/sippy_files"
 #Vos cdr file Location
 VOS_LOCATION=${TEMP_PATH}"/vos_files"
+#Vos5000 cdr file Location
+VOS5000_LOCATION=${TEMP_PATH}"/vos5000_files"
 #CRM Dashboards widgets
 CRM_DASHBOARD=CrmDashboardTasks,CrmDashboardRecentAccount,CrmDashboardSalesRevenue,CrmDashboardSalesOpportunity,CrmDashboardPipeline,CrmDashboardForecast,CrmDashboardOpportunities
 #Billing Dashboard customer widgets
