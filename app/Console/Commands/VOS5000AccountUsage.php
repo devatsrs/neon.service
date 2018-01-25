@@ -176,7 +176,7 @@ class VOS5000AccountUsage extends Command
                     try{
                         if (($handle = fopen($fullpath.$filename, "r")) !== FALSE) {
                             $InserData = $InserVData = array();
-                            while (($excelrow = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                            while (($excelrow = fgetcsv($handle)) !== FALSE) {
                                 if ( ($IpBased == 0 && !empty($excelrow['29']) ) || ($IpBased ==1 && !empty($excelrow['4']))) {
                                     $uddata = array();
                                     $uddata['CompanyGatewayID'] = $CompanyGatewayID;
