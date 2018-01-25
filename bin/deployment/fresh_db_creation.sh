@@ -109,6 +109,10 @@ INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'ACCO
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'ACCOUNT_LOG', '1');
 INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'M2_CRONJOB', '{"MaxInterval":"1440","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VIOPNOW_PBX_CRONJOB', '{"MaxInterval":"1440","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VOS5000_LOCATION', '_VOS5000_LOCATION_');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VOS5000_DOWNLOAD_CRONJOB', '{"FilesDownloadLimit":"10","ThresholdTime":"120","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"1","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
+INSERT INTO tblCompanyConfiguration (CompanyID, \`Key\`, Value) VALUES (1, 'VOS5000_PROCESS_CRONJOB', '{"FilesMaxProccess":"5","ThresholdTime":"30","SuccessEmail":"","ErrorEmail":"","JobTime":"MINUTE","JobInterval":"2","JobDay":["SUN","MON","TUE","WED","THU","FRI","SAT"],"JobStartTime":"12:00:00 AM","CompanyGatewayID":""}');
 
 INSERT INTO tblCompany (CompanyID, CompanyName,  CustomerAccountPrefix, FirstName, LastName, Email, Phone,  Status, TimeZone, created_at, created_by)
 VALUES (1, '${DB_COMPANY_NAME}', '22221', '${FIRST_NAME}', '${LAST_NAME}', '${COMPANY_EMAIL}', '',  1, 'Etc/GMT', '2017-02-17 10:12:25', 'Dev');
