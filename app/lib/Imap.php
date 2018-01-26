@@ -456,6 +456,12 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
+				if(empty($overview)){
+					Log::info("Blank overview found");
+					continue;
+				}
+
+
 				// when there is no messageId found in email header.
 				// just to add dummy random message id so as no to skip this email.
 
