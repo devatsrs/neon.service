@@ -337,7 +337,12 @@ protected $server;
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
     if (!$structure) {
-           $structure = imap_fetchstructure($imap, $uid, FT_UID);
+			try{
+				$structure = imap_fetchstructure($imap, $uid, FT_UID);
+			} catch ( \Exception $ex ) {
+				Log::error("Error in imap_fetchstructure");
+				Log::error(print_r($ex,true));
+			}
     }
     if ($structure) {
         if ($mimetype == $this->get_mime_type($structure)) {
