@@ -151,7 +151,7 @@ class BulkAutoPaymentCapture extends Command {
                             if (!empty($PaymentGatewayID)) {
                                 $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
                                 $VerifyStatus = 1;
-                                if($PaymentMethod=='StripeACH'){
+                                if(!empty($CustomerProfile) && $PaymentMethod=='StripeACH'){
                                     $StripeObj = json_decode($CustomerProfile->Options);
                                     if(empty($StripeObj->VerifyStatus) || $StripeObj->VerifyStatus!=='verified'){
                                         $VerifyStatus = 0;
