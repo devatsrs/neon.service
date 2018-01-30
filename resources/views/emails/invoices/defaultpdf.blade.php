@@ -2,6 +2,20 @@
 
 @section('content')
     <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/invoicestyle.css'}}" />
+    @if(isset($language->is_rtl) && $language->is_rtl=="Y")
+        <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap-rtl.min.css'}}" />
+        <style type="text/css">
+            .leftsideview{
+                direction: ltr;
+            }
+            #details{
+                border-right: 3px solid #000000;
+                padding-right: 6px;
+                padding-left: 0px;
+                border-left: 0px;
+            }
+        </style>
+    @endif
 <style type="text/css">
     .bg_graycolor{
         background-color: #f5f5f6;
@@ -49,7 +63,7 @@
             @endif
         </div>
         <div id="company">
-            <h2 class="name"><b>Invoice From</b></h2>
+            <h2 class="name"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_FROM")}}</b></h2>
             <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
         </div>
     </header>
@@ -93,15 +107,15 @@
     <main>
         <div id="details" class="clearfix">
             <div id="client">
-                <div class="to"><b>Invoice To:</b></div>
+                <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
                 <div>{{nl2br($return_message)}}</div>
             </div>
             <div id="invoice">
-                <h1>Invoice No: {{$Invoice->FullInvoiceNumber}}</h1>
-                <div class="date">Invoice Date: {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                <div class="date">Due Date: {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <h1>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
+                <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
+                <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
-                    <div class="date">Invoice Period: {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
+                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
                 @endif
             </div>
         </div>
@@ -117,30 +131,30 @@
                 @if(!empty($VisibleColumns))
                     @if(isset($VisibleColumns['Description']) && $VisibleColumns['Description'] == 1 && !empty($InvoiceTemplate->ItemDescription))
                         <?php $colspan++; ?>
-                        <th class="desc"><b>Description</b></th>
+                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</b></th>
                     @endif
                     @if(isset($VisibleColumns['Usage']) && $VisibleColumns['Usage'] == 1)
                         <?php $colspan++; ?>
-                        <th class="desc"><b>Usage</b></th>
+                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
                     @endif
                     @if(isset($VisibleColumns['Recurring']) && $VisibleColumns['Recurring'] == 1)
                         <?php $colspan++; ?>
-                        <th class="desc"><b>Recurring</b></th>
+                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
                     @endif
                     @if(isset($VisibleColumns['Additional']) && $VisibleColumns['Additional'] == 1)
                         <?php $colspan++; ?>
-                        <th class="desc"><b>Additional</b></th>
+                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
                     @endif
                     @if($colspan == 0)
                         <th class="desc"></th>
                     @endif
-                        <th class="total"><b>Total</b></th>
+                        <th class="total"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
                 @else
                     <?php $colspan = 2; ?>
-                    <th class="desc"><b>Usage</b></th>
-                    <th class="desc"><b>Recurring</b></th>
-                    <th class="desc"><b>Additional</b></th>
-                    <th class="total"><b>Total</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}Usage</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
+                    <th class="total"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
                 @endif
             </tr>
             </thead>
@@ -185,7 +199,7 @@
                 @else
                     <td colspan="2"></td>
                 @endif
-                <td>Sub Total</td>
+                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</td>
                 <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
             </tr>
             @if(count($InvoiceTaxRates))
@@ -212,7 +226,7 @@
                     @else
                         <td colspan="2"></td>
                     @endif
-                    <td>Discount</td>
+                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->TotalDiscount,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
@@ -225,7 +239,7 @@
                     @else
                         <td colspan="2"></td>
                     @endif
-                    <td>Brought Forward</td>
+                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BROUGHT_FORWARD")}}</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
@@ -242,7 +256,7 @@
 						<b>
 					@endif
 					
-					Grand Total
+					{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}
 					
 					@if(!$InvoiceTemplate->ShowPrevBal)
 						</b>				
@@ -269,7 +283,7 @@
                     @else
                         <td colspan="2"></td>
                     @endif
-                    <td><b>Total Due</b></td>
+                    <td><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_DUE")}}</b></td>
                     <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
                 </tr>
             @endif
@@ -296,19 +310,19 @@
     <main>
         @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
-            <div style="float:left;">Usage</div>
+            <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
             <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
             <tr>
-                <th class="leftalign">Title</th>
-                <th class="leftalign">Description</th>
-                <th class="rightalign">Price</th>
-                <th class="rightalign">Qty</th>
-                <th class="leftalign">Date From</th>
-                <th class="leftalign">Date To</th>
-                <th class="rightalign">Total</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                <th class="rightalign">{{cus_lang("TABLE_TOTAL")}}</th>
             </tr>
             </thead>
             <tbody>
@@ -331,20 +345,20 @@
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">
-                <div style="float:left;">Recurring</div>
+                <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
                 <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
                 <thead>
                 <tr>
-                    <th class="leftalign">Title</th>
-                    <th class="leftalign">Description</th>
-                    <th class="rightalign">Price</th>
-                    <th class="rightalign">Qty</th>
-                    <th class="leftalign">Date From</th>
-                    <th class="leftalign">Date To</th>
-                    <th class="rightalign">Total</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                    <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                    <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                    <th class="rightalign">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -367,19 +381,19 @@
 
         @if($is_charge)
             <div class="ChargesTitle clearfix">
-                <div style="float:left;">Additional</div>
+                <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
                 <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
                 <thead>
                 <tr>
-                    <th class="leftalign">Title</th>
-                    <th class="leftalign">Description</th>
-                    <th class="rightalign">Price</th>
-                    <th class="rightalign">Qty</th>
-                    <th class="leftalign">Date</th>
-                    <th class="rightalign">Total</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                    <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                    <th class="rightalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="rightalign">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -413,7 +427,7 @@
 
                 <main>
                     <div class="ChargesTitle clearfix">
-                        <div style="float:left;">Usage</div>
+                        <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
                     </div>
 
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
@@ -477,13 +491,13 @@
                     ?>
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"></th>
-                        <th>Calls</th>
-                        <th>Duration</th>
-                        <th class="centeralign">Billed <br> Duration</th>
-                        <th class="centeralign">Charge</th>
+                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CALLS")}}</th>
+                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DURATION")}}</th>
+                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
+                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
                     </tr>
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"><strong>Total</strong></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
                         <th>{{$totalCalls}}</th>
                         <th>{{$totalDuration}}</th>
                         <th class="centeralign">{{$totalBillDuration}}</th>
@@ -545,11 +559,11 @@
 
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
-                        <th class="centeralign">Billed <br> Duration</th>
-                        <th class="centeralign">Charge</th>
+                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
+                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
                     </tr>
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"><strong>Total</strong></th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
                         <th class="centeralign">{{$totalBillDuration}}</th>
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>

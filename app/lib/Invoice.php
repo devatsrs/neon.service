@@ -469,6 +469,14 @@ class Invoice extends \Eloquent {
         if($InvoiceID>0) {
 			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
+
+            $language=Account::where("AccountID", $Invoice->AccountID)
+                ->join('tblLanguage', 'tblLanguage.LanguageID', '=', 'tblAccount.LanguageID')
+                ->join('tblTranslation', 'tblTranslation.LanguageID', '=', 'tblAccount.LanguageID')
+                ->select('tblTranslation.Language', 'tblLanguage.is_rtl')
+                ->first();
+            App::setLocale($language->Language);
+
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $ServiceID = $Invoice->ServiceID;

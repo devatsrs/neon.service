@@ -2,6 +2,20 @@
 
 @section('content')
     <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/invoicestyle.css'}}" />
+    @if(isset($language->is_rtl) && $language->is_rtl=="Y")
+        <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap-rtl.min.css'}}" />
+        <style type="text/css">
+            .leftsideview{
+                direction: ltr;
+            }
+            #details{
+                border-right: 3px solid #000000;
+                padding-right: 6px;
+                padding-left: 0px;
+                border-left: 0px;
+            }
+        </style>
+    @endif
     <style type="text/css">
         .invoice,
         .invoice table,.invoice table td,.invoice table th,
@@ -32,7 +46,7 @@
                 @endif
             </div>
             <div id="company">
-                <h2 class="name"><b>Invoice From</b></h2>
+                <h2 class="name"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_FROM")}}</b></h2>
                 <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
             </div>
         </header>
@@ -49,13 +63,13 @@
         <main>
             <div id="details" class="clearfix">
                 <div id="client">
-                    <div class="to"><b>Invoice To:</b></div>
+                    <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
                     <div>{{nl2br($return_message)}}</div>
                 </div>
                 <div id="invoice">
-                    <h1>Invoice No: {{$Invoice->FullInvoiceNumber}}</h1>
-                    <div class="date">Invoice Date: {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                    <div class="date">Due Date: {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                    <h1>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
+                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
+                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 </div>
             </div>
 
@@ -67,11 +81,11 @@
             <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
                 <thead>
                 <tr>
-                    <th class="desc"><b>Title</b></th>
-                    <th class="desc"><b>Description</b></th>
-                    <th class="desc"><b>Quantity</b></th>
-                    <th class="desc"><b>Price</b></th>
-                    <th class="total"><b>Line Total</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</b></th>
+                    <th class="total"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_LINE_TOTAL")}}</b></th>
                 </tr>
                 </thead>
 
@@ -92,7 +106,7 @@
                 <tfoot>
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">Sub Total</td>
+                    <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</td>
                     <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
                 </tr>
 
@@ -108,7 +122,7 @@
 
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2"><b>Grand Total</b></td>
+                    <td colspan="2"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</b></td>
                     <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
                 </tr>
 
