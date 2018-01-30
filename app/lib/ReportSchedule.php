@@ -17,7 +17,7 @@ class ReportSchedule extends \Eloquent{
         $ReportSchedules = ReportSchedule::where(array('CompanyID' => $CompanyID,'Status' => 1))->orderby('ReportScheduleID', 'asc')->get();
         foreach ($ReportSchedules as $ReportSchedule) {
 
-            $settings = json_decode($ReportSchedule->Settings, true);
+            $settings = $report_settings = json_decode($ReportSchedule->Settings, true);
 
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                 if (!isset($settings['LastRunTime'])) {
@@ -34,8 +34,21 @@ class ReportSchedule extends \Eloquent{
                     }
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
-                $StartDate = $settings['LastRunTime'];
-                $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
+                if ($report_settings['Time'] == 'HOUR') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' hour'));
+                }else if ($report_settings['Time'] == 'DAILY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' day'));
+                } else if ($report_settings['Time'] == 'WEEKLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' week'));
+                } else if ($report_settings['Time'] == 'MONTHLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' month'));
+                } else if ($report_settings['Time'] == 'YEARLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' year'));
+                }
+                unset($report_settings['StartTime']);
+                $report_settings['NextRunTime'] = next_run_time($report_settings);
+                $StartDate = $report_settings['LastRunTime'];
+                $EndDate = date("Y-m-d H:i:s", strtotime($report_settings['NextRunTime']) - 1);
                 $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
                 $Format = 'XLS';
                 if(!empty($settings['Format'])){
