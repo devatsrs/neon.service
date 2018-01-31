@@ -14,6 +14,12 @@
                 padding-left: 0px;
                 border-left: 0px;
             }
+            #client{
+                border-left: 0;
+            }
+            #frontinvoice .desc {
+                text-align: right;
+            }
         </style>
     @endif
     <style type="text/css">
@@ -40,14 +46,14 @@
     <div class="inovicebody">
         <!-- logo and invoice from section start-->
         <header class="clearfix">
-            <div id="logo">
+            <div id="logo" class="pull-left flip">
                 @if(!empty($logo))
                     <img src="{{get_image_data($logo)}}" style="max-width: 250px">
                 @endif
             </div>
-            <div id="company">
-                <h2 class="name"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_FROM")}}</b></h2>
-                <div>{{ nl2br($InvoiceTemplate->Header)}}</div>
+            <div id="company" class="pull-right flip">
+                <h2 class="name text-right flip"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_FROM")}}</b></h2>
+                <div class="text-right flip">{{ nl2br($InvoiceTemplate->Header)}}</div>
             </div>
         </header>
         <!-- logo and invoice from section end-->
@@ -62,14 +68,14 @@
 
         <main>
             <div id="details" class="clearfix">
-                <div id="client">
+                <div id="client" class="pull-left flip">
                     <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
                     <div>{{nl2br($return_message)}}</div>
                 </div>
-                <div id="invoice">
-                    <h1>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
-                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <div id="invoice" class="pull-right flip">
+                    <h1 class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 </div>
             </div>
 
@@ -96,9 +102,9 @@
                         <tr>
                             <td class="desc">{{$data['Products'][$ProductRow->ProductType][$ProductRow->ProductID]}}</td>
                             <td class="desc">{{nl2br($ProductRow->Description)}}</td>
-                            <td class="desc">{{$ProductRow->Qty}}</td>
-                            <td class="desc">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
-                            <td class="total">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
+                            <td class="desc leftsideview">{{$ProductRow->Qty}}</td>
+                            <td class="desc leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="total leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
                 @endforeach
@@ -107,7 +113,7 @@
                 <tr>
                     <td colspan="2"></td>
                     <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</td>
-                    <td class="subtotal">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
+                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
                 </tr>
 
                 @if(count($InvoiceAllTaxRates))
@@ -115,7 +121,7 @@
                         <tr>
                             <td colspan="2"></td>
                             <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
-                            <td class="subtotal">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                            <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
                         </tr>
                     @endforeach
                 @endif
@@ -123,7 +129,7 @@
                 <tr>
                     <td colspan="2"></td>
                     <td colspan="2"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</b></td>
-                    <td class="subtotal"><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
+                    <td class="subtotal leftsideview"><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
                 </tr>
 
                 </tfoot>
@@ -134,7 +140,7 @@
         <!-- adevrtisement and terms section start-->
         <div id="thanksadevertise">
             <div class="invoice-left">
-                <p><a class="form-control" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+                <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
             </div>
         </div>
         <!-- adevrtisement and terms section end -->

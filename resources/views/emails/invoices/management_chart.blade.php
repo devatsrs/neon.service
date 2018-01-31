@@ -22,7 +22,7 @@
 
                 <div class="{{$reportcount%2 == 0?'left-col':'right-col'}}">
                 <div class="ChargesTitle clearfix">
-                    <div style="float:left;">{{$ManagementReportTemplateRow['UsageName']}}</div>
+                    <div class="pull-left flip">{{$ManagementReportTemplateRow['UsageName']}}</div>
                 </div>
                         <table  border="0"  width="50%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                             <thead>

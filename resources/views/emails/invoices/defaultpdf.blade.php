@@ -316,8 +316,8 @@
     <main>
         @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
-            <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
-            <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
+            <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+            <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
@@ -351,8 +351,8 @@
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">
-                <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
-                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
+                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -387,8 +387,8 @@
 
         @if($is_charge)
             <div class="ChargesTitle clearfix">
-                <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
-                <div style="text-align:right;float:right;">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
+                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -433,7 +433,7 @@
 
                 <main>
                     <div class="ChargesTitle clearfix">
-                        <div style="float:left;">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
                     </div>
 
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
