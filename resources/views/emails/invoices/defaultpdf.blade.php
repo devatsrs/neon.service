@@ -14,6 +14,12 @@
                 padding-left: 0px;
                 border-left: 0px;
             }
+			#client{
+                border-left: 0;
+            }
+			#frontinvoice .desc {
+                text-align: right;
+            }
         </style>
     @endif
 <style type="text/css">
@@ -111,11 +117,11 @@
                 <div>{{nl2br($return_message)}}</div>
             </div>
             <div id="invoice" class="pull-right flip">
-                <h1>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
-                <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
-                <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                <h1 class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
+                <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
+                <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
-                    <div class="date">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
                 @endif
             </div>
         </div>
