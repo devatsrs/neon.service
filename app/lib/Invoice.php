@@ -2,6 +2,7 @@
 namespace App\Lib;
 
 use Chumper\Zipper\Facades\Zipper;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -469,6 +470,14 @@ class Invoice extends \Eloquent {
         if($InvoiceID>0) {
 			$print_type = Invoice::PRINTTYPE;
             $Invoice = Invoice::find($InvoiceID);
+
+            $language=Account::where("AccountID", $Invoice->AccountID)
+                ->join('tblLanguage', 'tblLanguage.LanguageID', '=', 'tblAccount.LanguageID')
+                ->join('tblTranslation', 'tblTranslation.LanguageID', '=', 'tblAccount.LanguageID')
+                ->select('tblLanguage.ISOCode', 'tblTranslation.Language', 'tblLanguage.is_rtl')
+                ->first();
+            App::setLocale($language->ISOCode);
+
             $InvoiceDetail = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $Account = Account::find($Invoice->AccountID);
             $ServiceID = $Invoice->ServiceID;
@@ -525,11 +534,11 @@ class Invoice extends \Eloquent {
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
 
             if(!empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type'))->render();
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type','language'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports','language'))->render();
             }else {
-                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports','language'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
