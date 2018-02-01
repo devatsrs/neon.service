@@ -276,7 +276,7 @@ class SippyAccountUsage extends Command
                                     $uddata['AccountName'] = '';
                                     $uddata['AccountNumber'] = '';
                                     $uddata['AccountCLI'] = '';
-                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
+                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['call_setup_time']);
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
                                     $uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                     $uddata['buying_cost'] = (float)$cdr_row['cost'];
@@ -341,6 +341,14 @@ class SippyAccountUsage extends Command
             Log::error(' ========================== sippy transaction end =============================');
             $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
             $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
+
+
+            Log::info("sippy CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
+            $rows_updated = DB::connection('sqlsrvcdr')->select("CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
+            Log::info("sippy CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
+
+            Log::info("prc_updatSippyCustomerSetupTime rows updated " . $rows_updated[0]->rows_updated);
+
 
             Log::info("sippy CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
