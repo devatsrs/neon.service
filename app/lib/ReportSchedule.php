@@ -17,7 +17,7 @@ class ReportSchedule extends \Eloquent{
         $ReportSchedules = ReportSchedule::where(array('CompanyID' => $CompanyID,'Status' => 1))->orderby('ReportScheduleID', 'asc')->get();
         foreach ($ReportSchedules as $ReportSchedule) {
 
-            $settings = json_decode($ReportSchedule->Settings, true);
+            $settings = $report_settings = json_decode($ReportSchedule->Settings, true);
 
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                 if (!isset($settings['LastRunTime'])) {
@@ -34,9 +34,23 @@ class ReportSchedule extends \Eloquent{
                     }
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
-                $StartDate = $settings['LastRunTime'];
-                $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
-                $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
+                if ($report_settings['Time'] == 'HOUR') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' hour'));
+                }else if ($report_settings['Time'] == 'DAILY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' day'));
+                } else if ($report_settings['Time'] == 'WEEKLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' week'));
+                } else if ($report_settings['Time'] == 'MONTHLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' month'));
+                } else if ($report_settings['Time'] == 'YEARLY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' year'));
+                }
+                unset($report_settings['StartTime']);
+                $report_settings['NextRunTime'] = next_run_time($report_settings);
+                $StartDate = $report_settings['LastRunTime'];
+                $EndDate = date("Y-m-d H:i:s", strtotime($report_settings['NextRunTime']) - 1);
+                $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['REPORT_ATTACHMENT'],0,$CompanyID) ;
+                $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
                 $Format = 'XLS';
                 if(!empty($settings['Format'])){
                     $Format = $settings['Format'];
@@ -47,10 +61,15 @@ class ReportSchedule extends \Eloquent{
                     $cli = new Curl();
                     $cli->get($web_url);
                     $response = $cli->response;
-
-                    $report = $TEMP_PATH . basename($ReportSchedule->Name).' '.$ReportID. ' ' . substr($StartDate, 0, 10) . ' ' . substr($EndDate, 0, 10) . '.' . strtolower($Format);
-                    file_put_contents($report, $response);
-                    $settings['attach'][] = $report;
+                    $file_name =  basename($ReportSchedule->Name).' '.$ReportID. ' ' . substr($StartDate, 0, 10) . ' ' . substr($EndDate, 0, 10) . '.' . strtolower($Format);
+                    $amazonPath = $amazonDir .  $file_name;
+                    $file_path = $UPLOADPATH . '/'. $amazonPath ;
+                    file_put_contents($file_path, $response);
+                    if(!AmazonS3::upload($file_path,$amazonDir,$CompanyID)){
+                        throw new \Exception('Error in Amazon upload');
+                    }
+                    $settings['attach'][] = $file_path;
+                    $settings['AttachmentPaths'][] = $amazonPath;
                 }
                 $settings['EmailMessage'] = 'Please check attached reports. Start Date: '.$StartDate.' to End Date: '.$EndDate;
                 $settings['Subject'] = $ReportSchedule->Name;
@@ -58,7 +77,6 @@ class ReportSchedule extends \Eloquent{
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
                 ReportSchedule::SendReportEmail($CompanyID, $ReportSchedule->ReportScheduleID, $settings);
                 NeonAlert::UpdateNextRunTime($ReportSchedule->ReportScheduleID, 'Settings', 'ReportSchedule', $settings['NextRunTime']);
-                @unlink($report);
             }
         }
     }
@@ -77,6 +95,7 @@ class ReportSchedule extends \Eloquent{
             'CompanyName' => $Company->CompanyName,
             'Message' => $settings['EmailMessage'],
             'attach' => $settings['attach'],
+            'AttachmentPaths' => $settings['AttachmentPaths'],
             'cc' => (isset($settings['cc'])?$settings['cc']:''),
             'bcc' => (isset($settings['bcc'])?$settings['bcc']:''),
         );
