@@ -24,7 +24,8 @@ class AmazonS3 {
         'INVOICE_COMPANY_LOGO' =>  'InvoiceCompanyLogos',
         'INVOICE_USAGE_FILE' =>  'InvoiceUsageFile',
         'INVOICE_UPLOAD' =>  'Invoices',
-		'EMAIL_ATTACHMENT'=>'EmailAttachment'
+		'EMAIL_ATTACHMENT'=>'EmailAttachment',
+		'REPORT_ATTACHMENT'=>'ReportAttachment'
     );
 
     // Instantiate an S3 client

@@ -1,6 +1,6 @@
 <main>
     <div class="ChargesTitle clearfix">
-        <div style="text-align: center">Management Report</div>
+        <div style="text-align: center">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_MANAGEMENT_REPORT")}}</div>
     </div>
 <?php $ManagementReportTemplate = json_decode($InvoiceTemplate->ManagementReport,true); $reportcount=1;?>
     @foreach($ManagementReportTemplate as $ManagementReportTemplateRow)
@@ -22,27 +22,27 @@
 
                 <div class="{{$reportcount%2 == 0?'left-col':'right-col'}}">
                 <div class="ChargesTitle clearfix">
-                    <div style="float:left;">{{$ManagementReportTemplateRow['UsageName']}}</div>
+                    <div class="pull-left flip">{{$ManagementReportTemplateRow['UsageName']}}</div>
                 </div>
                         <table  border="0"  width="50%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                             <thead>
                             <tr>
                                 @if($ManagementReportTemplateRow['Title'] == 'Longest Calls' || $ManagementReportTemplateRow['Title'] == 'Most Expensive Calls' || $ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers')
-                                    <th>From</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_FROM")}}</th>
                                 @elseif($ManagementReportTemplateRow['Title'] == 'Daily Summary')
-                                    <th>Date</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                                 @elseif($ManagementReportTemplateRow['Title'] == 'Usage by Category')
-                                    <th>Description</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
                                 @endif
 
                                 @if($ManagementReportTemplateRow['Title'] == 'Longest Calls' || $ManagementReportTemplateRow['Title'] == 'Most Expensive Calls')
-                                    <th>To</th>
-                                    <th>Mins</th>
-                                    <th>Charge</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TO")}}</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_MINS")}}</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
                                 @elseif($ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers' || $ManagementReportTemplateRow['Title'] == 'Daily Summary' || $ManagementReportTemplateRow['Title'] == 'Usage by Category')
-                                    <th>Calls</th>
-                                    <th>Mins</th>
-                                    <th>Charge</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CALLS")}}</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_MINS")}}</th>
+                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
                                 @endif
 
                             </tr>
@@ -68,7 +68,7 @@
                             </tbody>
                             <tfoot>
                             <tr>
-                                <td><strong>Total</strong></td>
+                                <td><strong>{{cus_lang("TABLE_TOTAL")}}</strong></td>
                                 <td>
                                     @if($ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers' || $ManagementReportTemplateRow['Title'] == 'Daily Summary' || $ManagementReportTemplateRow['Title'] == 'Usage by Category')
                                         {{$call_count}}

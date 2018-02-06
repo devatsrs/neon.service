@@ -54,7 +54,7 @@ class EmailsTemplates{
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
 				$InvoiceDetailPeriod 					= 	 InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
-				$EmailTemplate 							= 	 EmailTemplate::where(["SystemType"=>Invoice::EMAILTEMPLATE,"CompanyID"=>$CompanyID])->first();
+				$EmailTemplate 							= 	 EmailTemplate::getSystemEmailTemplate($CompanyID, Invoice::EMAILTEMPLATE, $AccoutData->LanguageID);
 				if($type=="subject"){
 					$EmailMessage							=	 $EmailTemplate->Subject;
 				}else{
@@ -220,9 +220,9 @@ class EmailsTemplates{
 		$userID = isset($data['UserID']) ? $data['UserID'] : 0;
 		/*try{*/
 		$InvoiceData = Invoice::find($InvoiceID);
-		$InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 		$AccoutData = Account::find($InvoiceData->AccountID);
-		$EmailTemplate = EmailTemplate::where(["SystemType" => Payment::AUTOINVOICETEMPLATE, "CompanyID" => $CompanyID])->first();
+		$InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Payment::AUTOINVOICETEMPLATE, $AccoutData->LanguageID);
 		if ($type == "subject") {
 			$EmailMessage = $EmailTemplate->Subject;
 		} else {

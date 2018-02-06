@@ -11,8 +11,9 @@ class Company extends \Eloquent {
 
     const BILLING_STARTTIME = 1;
     const BILLING_ENDTIME = 2;
+    const BILLING_SETUPTIME = 3;
 
-    public static $billing_time = array(''=>'select a time',self::BILLING_STARTTIME=>'Start Time',self::BILLING_ENDTIME=>'End Time');
+    public static $billing_time = array(''=>'select a time',self::BILLING_STARTTIME=>'Start Time',self::BILLING_ENDTIME=>'End Time',self::BILLING_SETUPTIME=>'Setup Time');
     // CDR Rerate Based on Charge code or Prefix
     const CHARGECODE =1;
     const PREFIX =2;
