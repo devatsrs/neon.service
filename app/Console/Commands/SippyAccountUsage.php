@@ -343,11 +343,11 @@ class SippyAccountUsage extends Command
             $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
 
 
-            Log::info("sippy CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
-            $rows_updated = DB::connection('sqlsrvcdr')->select("CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
-            Log::info("sippy CALL  prc_updatSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
+            Log::info("sippy CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
+            $rows_updated = DB::connection('sqlsrvcdr')->select("CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
+            Log::info("sippy CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
 
-            Log::info("prc_updatSippyCustomerSetupTime rows updated " . $rows_updated[0]->rows_updated);
+            Log::info("prc_updateSippyCustomerSetupTime rows updated " . $rows_updated[0]->rows_updated);
 
 
             Log::info("sippy CALL  prc_updatVendorSellingCost ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
