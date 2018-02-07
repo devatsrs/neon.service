@@ -2058,4 +2058,11 @@ class Invoice extends \Eloquent {
         $response['message'] = $message;
         return $response;
     }
+
+    public static function NumberFormatNoZeroValue($value,$decimal_point) {
+        $value2 = number_format($value,$decimal_point);
+        $default_value = "0.000000";
+        $result = $value2==0 && $value>0 ? (float) substr_replace($default_value,'1',$decimal_point+1) : $value2;
+        return $result;
+    }
 }
