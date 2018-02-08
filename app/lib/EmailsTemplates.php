@@ -84,10 +84,14 @@ class EmailsTemplates{
 				$replace_array['InvoiceOutstanding'] 	=	Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID,Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID));
 
 			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
-				$replace_array['StartDate'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+				$replace_array['PeriodFrom'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+			} else {
+				$replace_array['PeriodFrom'] 			= 	 "";
 			}
 			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
-				$replace_array['EndDate'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+				$replace_array['PeriodTo'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+			} else {
+				$replace_array['PeriodTo'] 				= 	 "";
 			}
 
 			$extraSpecific = [
@@ -99,8 +103,8 @@ class EmailsTemplates{
 				'{{OutstandingIncludeUnbilledAmount}}',
 				'{{BalanceThreshold}}',				
 				"{{InvoiceLink}}",
-				"{{StartDate}}",
-				"{{EndDate}}"
+				"{{PeriodFrom}}",
+				"{{PeriodTo}}"
 			];
 			
 			$extraDefault	=	EmailsTemplates::$fields;
@@ -171,7 +175,7 @@ class EmailsTemplates{
 			$array['CompanyCity']					=   $CompanyData->City;
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
 			$array['CompanyCountry']				=   $CompanyData->Country;			
-			$array['Logo'] 							= \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL').'/assets/images/logo@2x.png'; 
+			$array['Logo'] 							= "<img src='".\App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/assets/images/logo@2x.png' />";
 			return $array;
 	}
 	
@@ -239,10 +243,14 @@ class EmailsTemplates{
 		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
 
 		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
-			$replace_array['StartDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+			$replace_array['PeriodFrom'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+		} else {
+			$replace_array['PeriodFrom'] 			= 	 "";
 		}
 		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
-			$replace_array['EndDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+			$replace_array['PeriodTo'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+		} else {
+			$replace_array['PeriodTo'] 				= 	 "";
 		}
 
 		$extraSpecific = [
@@ -258,8 +266,8 @@ class EmailsTemplates{
 			"{{PaidStatus}}",
 			"{{PaymentMethod}}",
 			"{{PaymentNotes}}",
-			"{{StartDate}}",
-			"{{EndDate}}"
+			"{{PeriodFrom}}",
+			"{{PeriodTo}}"
 		];
 
 		$extraDefault = EmailsTemplates::$fields;
