@@ -141,12 +141,13 @@ class VoipNowAccountUsage extends Command {
                         $data['AccountIP'] = $row_account['originator_ip'];
                         $data['AccountName'] = $row_account['username'];
                         $data['AccountNumber'] = '';
-                        $data['AccountCLI'] = '';
+                        //$data['AccountCLI'] = '';
                         $data['connect_time'] = $row_account['connect_time'];
                         $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['connect_time']) + $row_account['billed_second']);
                         $data['cost'] = (float)$row_account['cost'];
                         $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['cld']);
                         $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                        $data['AccountCLI'] = $data['cli'];
                         $data['billed_duration'] = $row_account['billed_second'];
                         $data['billed_second'] = $row_account['billed_second'];
                         $data['duration'] = $row_account['duration'];
