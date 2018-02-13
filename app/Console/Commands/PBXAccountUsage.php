@@ -183,7 +183,7 @@ class PBXAccountUsage extends Command
                         $data['AccountIP'] = '';
                         $data['AccountName'] = '';
                         $data['AccountNumber'] = $row_account['accountcode'];
-                        $data['AccountCLI'] = '';
+                        //$data['AccountCLI'] = '';
 
                         $data['trunk'] = 'Other';
                         $data['area_prefix'] = 'Other';
@@ -263,6 +263,9 @@ class PBXAccountUsage extends Command
 
                         $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);
                         $data['cld'] = apply_translation_rule($CLDTranslationRule,$data['cld']);
+
+                        //for CLI Authentication
+                        $data['AccountCLI'] = $data['cli'];
 
                         $InserData[] = $data;
                         $data_count++;
