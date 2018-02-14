@@ -389,8 +389,19 @@ protected $server;
 		$node->parentNode->removeChild($node);
 	  }
 	}
-	
-	
+
+	/**
+	 * For Gmail
+	 * IMAP Server : imap.gmail.com:993/imap/ssl
+	 * Allow Less secure apps :  ON by following url
+	 * https://myaccount.google.com/lesssecureapps?rfn=27&rfnc=1&eid=284774310474942540&et=0&asae=2&pli=1
+	 * @param $CompanyID
+	 * @param $server
+	 * @param $email
+	 * @param $password
+	 * @param $GroupID
+	 * @throws \Exception
+	 */
 	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){ 
 		$AllEmails  =   Messages::GetAllSystemEmails();
 		$email 		= 	$email;
@@ -469,21 +480,34 @@ protected $server;
 
 				// when there is no messageId found in email header.
 				// just to add dummy random message id so as no to skip this email.
+				$FromName = '';
+				if(isset($overview[0]->from)){
+					$from   	= 	$this->GetEmailtxt($overview[0]->from);
+					$FromName	=	$this->GetNametxt($overview[0]->from);
+				}else{
+					$from		= 	"nofrom@email.com";
+				}
+
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email;
+				}
+
+				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
+				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
+				$cc 		=	$this->GetCC($cc);
+				$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
+				$cc  = implode(",",$cc_);
 
 				if(empty($message_id)){
-
-					if(isset($overview[0]->from)){
-						$from_   	= 	$this->GetEmailtxt($overview[0]->from);
-					}else{
-						$from_		= 	"nofrom@email.com";
-					}
 
 					$whereArrray = ["CompanyID"=>$CompanyID, "Subject"=>trim($overview_subject) ];
 					/*if(isset($overview[0]->to)) {
 						$whereArrray["EmailTo"] = $overview[0]->to ;
 					}*/
-					if(!empty($from_)) {
-						$whereArrray["EmailFrom"] = $from_ ;
+					if(!empty($from)) {
+						$whereArrray["EmailFrom"] = $from ;
 					}
 					Log::info("checking Subject Already Exists ");
 					Log::info($whereArrray);
@@ -493,7 +517,7 @@ protected $server;
 					}
 					else {
 
-						$message_id = $this->generate_random_message_id($from_);
+						$message_id = $this->generate_random_message_id($from);
 						Log::info("New MessageID " . $message_id);
 
 					}
@@ -574,19 +598,10 @@ protected $server;
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview_subject);
 					if(!empty($original_plain_subject)){
-						$EmailFrom = $EmailTo = "";
-						if(isset($overview[0]->from)){
-							$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
-						}
-						if(isset($overview[0]->to)) {
-							$EmailTo = $this->GetEmailtxt($overview[0]->to);
-						}else {
-							$EmailTo = $email;
-						}
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$from,"EmailTo"=> $to,  "Subject"=>trim($original_plain_subject)])->first();
 						if(!$msg_parent) {
-							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($overview_subject)])->first();
+							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$from,"EmailTo"=> $to,  "Subject"=>trim($overview_subject)])->first();
 						}
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
@@ -655,7 +670,9 @@ protected $server;
 				$message = $this->body_cleanup($message);
 
 
-				$from   	= 	$this->GetEmailtxt($overview[0]->from);
+				/* Moved at top
+				 *
+				 * $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
@@ -666,8 +683,7 @@ protected $server;
 					$to = $email; //when to  is blank
 					$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
 					$cc  = implode(",",$cc_);
-				}
-				$update_id  =	''; $insert_id  =	'';
+				}*/
 				//Log::info("message :".$message);
 
 				$checkRepeatedEmailsData = [

@@ -258,8 +258,9 @@ class TicketEmails{
 			}
 			if(!$this->EmailTemplate->Status) {
 				return;
-			}
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+			}			
+			$account 					= 		Account::find($this->TicketData->AccountID);
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -299,7 +300,8 @@ class TicketEmails{
 				return;
 			}
 
-		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
+			$account 					= 		Account::find($this->TicketData->AccountID);
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -383,7 +385,8 @@ class TicketEmails{
 
 				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
-				$this->EmailTemplate = EmailTemplate::where(["SystemType" => $this->slug])->first();
+				$account 					= 		Account::find($this->TicketData->AccountID);
+				$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 				$replace_array = $this->ReplaceArray($this->TicketData);
 				$finalBody = $this->template_var_replace($this->EmailTemplate->TemplateBody, $replace_array);
 				$finalSubject = $this->template_var_replace($this->EmailTemplate->Subject, $replace_array);
@@ -478,7 +481,8 @@ class TicketEmails{
 
 			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+			$account 					= 		Account::find($this->TicketData->AccountID);
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -513,7 +517,8 @@ class TicketEmails{
 				return;
 			}
 			$EscalationUser				=		User::find($this->EscalationAgent);
-			$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();									
+			$account 					= 		Account::find($this->TicketData->AccountID);
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -581,7 +586,8 @@ class TicketEmails{
 			}
 			$this->Group = $group;
 		}
-		$this->EmailTemplate  		=		EmailTemplate::where(["SystemType"=>$this->slug])->first();
+		$account 					= 		Account::find($this->TicketData->AccountID);
+		$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
 		if(!$this->EmailTemplate){
 			$this->SetError("No email template found.");
 		}

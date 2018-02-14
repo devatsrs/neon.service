@@ -743,3 +743,7 @@ function extract_ip($data_remote_ip){
     }
     return $data_remote_ip;
 }
+
+function cus_lang($key=""){
+    return trans('routes.'.strtoupper($key));
+}
