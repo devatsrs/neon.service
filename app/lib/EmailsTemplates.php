@@ -62,7 +62,7 @@ class EmailsTemplates{
 				}
 				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);
 				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$userID);
-                $WEBURL                                 =    CompanyConfiguration::get($CompanyID,'WEB_URL');
+                $WEBURL                                 =    CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
                 $replace_array['InvoiceLink'] 			= 	 $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
 				$replace_array['LastName']				=	 $AccoutData->LastName;
@@ -171,7 +171,7 @@ class EmailsTemplates{
 			$array['CompanyCity']					=   $CompanyData->City;
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
 			$array['CompanyCountry']				=   $CompanyData->Country;			
-			$array['Logo'] 							= \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL').'/assets/images/logo@2x.png'; 
+			$array['Logo'] 							= \App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL').'/assets/images/logo@2x.png';
 			return $array;
 	}
 	
@@ -226,7 +226,7 @@ class EmailsTemplates{
 		}
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $InvoiceData->AccountID, $userID);
-		$WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+		$WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
 		$replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email=' . $singleemail;
 		$replace_array['InvoiceNumber'] = $InvoiceData->FullInvoiceNumber;
 		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $InvoiceData->AccountID);

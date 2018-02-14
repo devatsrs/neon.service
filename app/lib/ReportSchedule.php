@@ -57,7 +57,7 @@ class ReportSchedule extends \Eloquent{
                 }
                 $Reports = explode(',',$ReportSchedule->ReportID);
                 foreach($Reports as $ReportID) {
-					$web_url = CompanyConfiguration::get($CompanyID, 'WEB_URL') . '/report/export/' . $ReportID . '?StartDate=' . urlencode($StartDate) . '&EndDate=' . urlencode($EndDate) . '&Type=' . $Format;
+					$web_url = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL') . '/report/export/' . $ReportID . '?StartDate=' . urlencode($StartDate) . '&EndDate=' . urlencode($EndDate) . '&Type=' . $Format;
                     $cli = new Curl();
                     $cli->get($web_url);
                     $response = $cli->response;

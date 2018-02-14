@@ -1097,9 +1097,9 @@ protected $server;
 					if (!is_numeric(strpos($path, "https://"))) {
 						//$path = str_replace('/', '\\', $path);
 
-						$path2 = CompanyConfiguration::get($CompanyID, 'WEB_URL') . "/download_file?file=";
+						$path2 = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL') . "/download_file?file=";
 						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
-						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+						//   $path = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
 						// }
 						$path = $path2 . base64_encode($file_detail["filepath"]);
 					}

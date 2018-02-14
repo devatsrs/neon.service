@@ -164,7 +164,7 @@ class TicketEmails{
 			$array_data['CompanyCity']					=   	$CompanyData->City;
 			$array_data['CompanyPostCode']				=   	$CompanyData->PostCode;
 			$array_data['CompanyCountry']				=   	$CompanyData->Country;
-			$site_url 									= 		CompanyConfiguration::get($this->CompanyID,'WEB_URL');
+			$site_url 									= 		CompanyConfiguration::getValueConfigurationByKey($this->CompanyID,'WEB_URL');
 			$array_data['TicketUrl']					=   	$site_url."/tickets/".$this->TicketID."/detail";	
 			$array_data['TicketCustomerUrl']			=   	$site_url."/customer/tickets/".$this->TicketID."/detail";
 			$array_data['Group']						=   	$this->Group->GroupName;
@@ -744,7 +744,7 @@ class TicketEmails{
 
 		$EmailSubject 					= 		'System has block repeated email';
 
-		$site_url 						= 		CompanyConfiguration::get($this->CompanyID,'WEB_URL');
+		$site_url 						= 		CompanyConfiguration::getValueConfigurationByKey($this->CompanyID,'WEB_URL');
 		$ImportRuleUrl					=   	$site_url."/tickets/importrules/";
 
 
