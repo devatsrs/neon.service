@@ -78,7 +78,7 @@ class PBXAccountUsage extends Command
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
-        $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID );
         Log::useFiles(storage_path() . '/logs/pbxaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
         /* To avoid runing same day cron job twice */
@@ -274,6 +274,9 @@ class PBXAccountUsage extends Command
 
                             $data_outbound['cli'] = apply_translation_rule($CLITranslationRule,$data_outbound['cli']);
                             $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule,$data_outbound['cld']);
+                            //for CLI Authentication
+                            $data_outbound['AccountCLI'] = $data_outbound['cli'];
+
                             $InserData[] = $data_outbound;
                             $data_count++;
 
