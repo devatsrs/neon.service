@@ -22,7 +22,7 @@ class Notification extends \Eloquent {
         Notification::ReRate=>'Re Rate Log',
         Notification::WeeklyPaymentTransactionLog=>'Weekly Payment Transaction Log',
         Notification::LowBalanceReminder=>'Low Balance Reminder',
-        Notification::PendingApprovalPayment=>'Pending Approval Payment',
+        Notification::PendingApprovalPayment=>'Payment Verification',
         Notification::BlockAccount=>'Block Account',
         Notification::RetentionDiskSpaceEmail=>'Retention Disk Space Email',
         Notification::InvoicePaidByCustomer=>'Invoice Paid',

@@ -246,7 +246,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     $singleemail = trim($singleemail);
                                                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                                         $Emaildata['EmailTo'] = $singleemail;
-                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
                                                         $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                                                         $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
                                                         $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
@@ -325,7 +325,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     $singleemail = trim($singleemail);
                                                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                                         $Emaildata['EmailTo'] = $singleemail;
-                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
                                                         $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                                                         $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
                                                         $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
