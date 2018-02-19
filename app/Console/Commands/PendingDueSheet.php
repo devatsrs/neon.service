@@ -75,7 +75,7 @@ class PendingDueSheet extends Command {
         $CronJob->update($dataactive);
         Log::useFiles(storage_path().'/logs/pendingduesheet-'.$CronJobID.'-'.date('Y-m-d').'.log');
 
-        $WEBURL = App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL');
+        $WEBURL = App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
 
         DB::beginTransaction();
         $joblogdata = array();

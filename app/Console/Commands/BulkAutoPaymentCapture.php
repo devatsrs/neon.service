@@ -180,7 +180,9 @@ class BulkAutoPaymentCapture extends Command {
 
                                     /**  Start Transaction */
                                     Log::info("Transaction start");
-                                    $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account, $AccountPaymentProfileID, $CompanyID);
+                                    try {
+                                        $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account, $AccountPaymentProfileID, $CompanyID);
+
                                     Log::info("Transaction end");
                                     if (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1) {
                                         foreach ($unPaidInvoices as $Invoiceid) {
@@ -246,7 +248,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     $singleemail = trim($singleemail);
                                                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                                         $Emaildata['EmailTo'] = $singleemail;
-                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
                                                         $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                                                         $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
                                                         $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
@@ -308,12 +310,14 @@ class BulkAutoPaymentCapture extends Command {
                                             $Emaildata['PaymentMethod'] = $PaymentMethod;
                                             $Emaildata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
                                             $Emaildata['Notes'] = $transactionResponse['transaction_notes'];
+                                            /**
                                             $CustomerEmail = '';
                                             if ($EMAIL_TO_CUSTOMER == 1) {
                                                 $CustomerEmail = $account->BillingEmail;
                                             }
                                             $CustomerEmail = explode(",", $CustomerEmail);
                                             $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+
                                             if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
                                                 $staticdata = array();
                                                 $staticdata['PaidAmount'] = floatval($Invoiceid->RemaingAmount);
@@ -325,7 +329,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     $singleemail = trim($singleemail);
                                                     if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                                         $Emaildata['EmailTo'] = $singleemail;
-                                                        $WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+                                                        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
                                                         $Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                                                         $body = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, 'body', $CompanyID, $singleemail, $staticdata);
                                                         $Emaildata['Subject'] = EmailsTemplates::SendAutoPayment($Invoice->InvoiceID, "subject", $CompanyID, $singleemail, $staticdata);
@@ -341,6 +345,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     }
                                                 }
                                             }
+                                            */
 
                                             $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
@@ -356,6 +361,10 @@ class BulkAutoPaymentCapture extends Command {
                                             }
                                         }
                                         $errors[] = 'Transaction Failed :' . $account->AccountName . ' Reason : ' . $transactionResponse['failed_reason'];
+                                    }
+                                    }catch (Exception $ev) {
+                                        Log::error($ev);
+                                        $errors[] = 'Transaction Failed :' . $account->AccountName . ' Reason : ' . $ev->getMessage();
                                     }
 
                                 } else {
