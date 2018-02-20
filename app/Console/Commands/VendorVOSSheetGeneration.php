@@ -82,9 +82,14 @@ class VendorVOSSheetGeneration extends Command {
             $Effective = 'Now';
             if(!empty($joboptions->Effective)){
                 $Effective = $joboptions->Effective;
+                if($Effective == 'CustomDate') {
+                    $CustomDate = $joboptions->CustomDate;
+                } else {
+                    $CustomDate = date('Y-m-d');
+                }
             }
-
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
+            Log::info("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."','".$CustomDate."')");
+            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."','".$CustomDate."')");
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');
