@@ -457,7 +457,7 @@ protected $server;
 				$header = imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
+				$overview_subject  		    =		  isset($overview[0]->subject)?imap_mime_header_decode($overview[0]->subject)[0]->text:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
 				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
@@ -482,8 +482,8 @@ protected $server;
 				// just to add dummy random message id so as no to skip this email.
 				$FromName = '';
 				if(isset($overview[0]->from)){
-					$from   	= 	$this->GetEmailtxt($overview[0]->from);
-					$FromName	=	$this->GetNametxt($overview[0]->from);
+					$from   	= 	imap_mime_header_decode($this->GetEmailtxt($overview[0]->from))[0]->text;
+					$FromName	=	imap_mime_header_decode($this->GetNametxt($overview[0]->from))[0]->text;
 				}else{
 					$from		= 	"nofrom@email.com";
 				}

@@ -260,7 +260,12 @@ class TicketEmails{
 				return;
 			}			
 			$account 					= 		Account::find($this->TicketData->AccountID);
-			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+			if(!empty($account) && !empty($account->LanguageID)) {
+				$LanguageID = $account->LanguageID;
+			} else {
+				$LanguageID = Translation::$default_lang_id;
+			}
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -301,7 +306,12 @@ class TicketEmails{
 			}
 
 			$account 					= 		Account::find($this->TicketData->AccountID);
-			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+			if(!empty($account) && !empty($account->LanguageID)) {
+				$LanguageID = $account->LanguageID;
+			} else {
+				$LanguageID = Translation::$default_lang_id;
+			}
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -386,7 +396,12 @@ class TicketEmails{
 				$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
 				$account 					= 		Account::find($this->TicketData->AccountID);
-				$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+				if(!empty($account) && !empty($account->LanguageID)) {
+					$LanguageID = $account->LanguageID;
+				} else {
+					$LanguageID = Translation::$default_lang_id;
+				}
+				$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 				$replace_array = $this->ReplaceArray($this->TicketData);
 				$finalBody = $this->template_var_replace($this->EmailTemplate->TemplateBody, $replace_array);
 				$finalSubject = $this->template_var_replace($this->EmailTemplate->Subject, $replace_array);
@@ -482,7 +497,12 @@ class TicketEmails{
 			$sendemails = self::remove_group_emails_from_array($this->CompanyID,$sendemails);
 
 			$account 					= 		Account::find($this->TicketData->AccountID);
-			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+			if(!empty($account) && !empty($account->LanguageID)) {
+				$LanguageID = $account->LanguageID;
+			} else {
+				$LanguageID = Translation::$default_lang_id;
+			}
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -518,7 +538,12 @@ class TicketEmails{
 			}
 			$EscalationUser				=		User::find($this->EscalationAgent);
 			$account 					= 		Account::find($this->TicketData->AccountID);
-			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+			if(!empty($account) && !empty($account->LanguageID)) {
+				$LanguageID = $account->LanguageID;
+			} else {
+				$LanguageID = Translation::$default_lang_id;
+			}
+			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
 		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
 			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
@@ -587,7 +612,12 @@ class TicketEmails{
 			$this->Group = $group;
 		}
 		$account 					= 		Account::find($this->TicketData->AccountID);
-		$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $account->LanguageID);
+		if(!empty($account) && !empty($account->LanguageID)) {
+			$LanguageID = $account->LanguageID;
+		} else {
+			$LanguageID = Translation::$default_lang_id;
+		}
+		$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		if(!$this->EmailTemplate){
 			$this->SetError("No email template found.");
 		}
