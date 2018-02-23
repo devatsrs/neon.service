@@ -54,12 +54,13 @@ class Alert extends \Eloquent{
                 $AreaPrefix = !empty($settings['Prefix']) ? $settings['Prefix'] : '';
                 $Trunk = !empty($settings['TrunkID']) ? implode(',',$settings['TrunkID']) : '';
                 $CountryID = isset($settings['CountryID']) ? implode(',',$settings['CountryID']) : '';
+                $ResellerID = 0;
                 $settings = Helper::ACD_ASR_CR($settings);
 
                 //$StartDate = '2016-12-01';$EndDate = '2016-12-05';
                 /** send only if customer not empty or both empty */
                 if(!empty($AccountIDs) || (empty($AccountIDs) && empty($VAccountID))) {
-                    $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
+                    $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $ResellerID . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
                     Log::info($query);
                     $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                     foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
