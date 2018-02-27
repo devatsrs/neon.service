@@ -647,7 +647,7 @@ class Xero {
 					$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
 					//$InvoiceGrantTotal = $InvoiceData->GrandTotal;
 					//$PaymentTotal = $InvoiceData->SubTotal;
-					$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount);
+					$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount, '.', '');
 					$InvoiceTaxRateAmount = Invoice::getInvoiceTaxRateAmount($Invoice,$RoundChargesAmount);
 					$InvoiceGrantTotal = $PaymentTotal + $InvoiceTaxRateAmount;
 					$TaxTotal = $InvoiceData->TotalTax;
@@ -690,7 +690,7 @@ class Xero {
 								$Title = $InvoiceTaxRate->Title;
 								$TaxRateID = $InvoiceTaxRate->TaxRateID;
 								log::info($Title);
-								$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+								$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount, '.', '');
 								if($InvoiceTaxRate->InvoiceTaxType==0){
 									$type='Inline Tax';
 								}elseif($InvoiceTaxRate->InvoiceTaxType==1){
