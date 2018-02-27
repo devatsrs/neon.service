@@ -894,7 +894,7 @@ class QuickBook {
 				}
 				$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
 				//$InvoiceGrantTotal = number_format($InvoiceData->GrandTotal,$RoundChargesAmount);
-				$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount);
+				$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount, '.', '');
 				$InvoiceTaxRateAmount = Invoice::getInvoiceTaxRateAmount($Invoice,$RoundChargesAmount);
 				$InvoiceGrantTotal = $PaymentTotal + $InvoiceTaxRateAmount;
 
@@ -952,7 +952,7 @@ class QuickBook {
 					foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
 						$Title = $InvoiceTaxRate->Title;
 						$TaxRateID = $InvoiceTaxRate->TaxRateID;
-						$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+						$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount, '.', '');
 						//$Title = str_replace(' ','',$Title);
 						log::info($Title);
 						//$QuickBookData['Tax'][];

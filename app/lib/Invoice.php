@@ -1085,7 +1085,7 @@ class Invoice extends \Eloquent {
             foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
                 $Title = $InvoiceTaxRate->Title;
                 $TaxRateID = $InvoiceTaxRate->TaxRateID;
-                $TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                $TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount, '.', '');
                 $InvoiceTaxRateAmount+=	$TaxAmount;
             }
         }
