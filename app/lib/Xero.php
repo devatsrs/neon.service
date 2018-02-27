@@ -622,6 +622,8 @@ class Xero {
 
 					$InvoiceData = Invoice::find($Invoice);
 
+					$RoundChargesAmount = Helper::get_round_decimal_places($InvoiceData->CompanyID,$InvoiceData->AccountID,$InvoiceData->ServiceID);
+
 					/*
 
 					$JournalErrormsg = $this->checkInvoiceInJournale($Invoice);
@@ -643,8 +645,11 @@ class Xero {
 					}
 					*/
 					$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
-					$InvoiceGrantTotal = $InvoiceData->GrandTotal;
-					$PaymentTotal = $InvoiceData->SubTotal;
+					//$InvoiceGrantTotal = $InvoiceData->GrandTotal;
+					//$PaymentTotal = $InvoiceData->SubTotal;
+					$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount);
+					$InvoiceTaxRateAmount = Invoice::getInvoiceTaxRateAmount($Invoice,$RoundChargesAmount);
+					$InvoiceGrantTotal = $PaymentTotal + $InvoiceTaxRateAmount;
 					$TaxTotal = $InvoiceData->TotalTax;
 
 
@@ -685,7 +690,7 @@ class Xero {
 								$Title = $InvoiceTaxRate->Title;
 								$TaxRateID = $InvoiceTaxRate->TaxRateID;
 								log::info($Title);
-								$TaxAmount = $InvoiceTaxRate->TaxAmount;
+								$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
 								if($InvoiceTaxRate->InvoiceTaxType==0){
 									$type='Inline Tax';
 								}elseif($InvoiceTaxRate->InvoiceTaxType==1){
