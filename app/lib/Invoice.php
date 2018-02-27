@@ -1057,10 +1057,14 @@ class Invoice extends \Eloquent {
 
         $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
 
-        $InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
+        Log::info(' InvoiceGrandTotal ' . $InvoiceGrandTotal);
+        //$InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $SubTotal = number_format($SubTotal+$SubTotalWithoutTax, $decimal_places, '.', '');
         $TotalTax = number_format($TotalTax, $decimal_places, '.', '');
         $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
+
+        $InvoiceTaxRateAmount =Invoice::getInvoiceTaxRateAmount($Invoice->InvoiceID,$decimal_places);
+        $InvoiceGrandTotal = $SubTotal + $InvoiceTaxRateAmount;
 
         Log::info('GrandTotal ' . $InvoiceGrandTotal);
         Log::info('SubTotal ' . $SubTotal);
@@ -1069,6 +1073,26 @@ class Invoice extends \Eloquent {
         $Totals = ["TotalTax"=> $TotalTax , "GrandTotal" => $InvoiceGrandTotal,"SubTotal" => $SubTotal,'PreviousBalance'=>$PreviousBalance,'TotalDue'=>$TotalDue];
         $Invoice->update($Totals);
         return $Totals;
+    }
+
+    public static function getInvoiceTaxRateAmount($InvoiceID,$RoundChargesAmount){
+
+        $InvoiceTaxRateAmount = 0;
+
+        $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID])->get();
+
+        if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
+            foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
+                $Title = $InvoiceTaxRate->Title;
+                $TaxRateID = $InvoiceTaxRate->TaxRateID;
+                $TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                $InvoiceTaxRateAmount+=	$TaxAmount;
+            }
+        }
+
+        Log::info('InvoiceTaxAmount '.$InvoiceTaxRateAmount);
+
+        return $InvoiceTaxRateAmount;
     }
 
     public static function addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){

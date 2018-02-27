@@ -21,7 +21,7 @@ class BillingAPI {
 		if($this->check_quickbook($CompanyID)){
 			$this->request = new QuickBook($CompanyID);
 		}
-    }
+	}
 
 	public function test_connection($CompanyID)
 	{
@@ -180,6 +180,33 @@ class BillingAPI {
 			/* check Authantication and connect api */
 
 			return $this->request->addJournals($Options);
+		}
+		return false;
+	}
+
+	public function getCustomerId($id){
+		if($this->quickbooks_is_connected){
+			/* check Authantication and connect api */
+
+			return $this->request->getCustomerId($id);
+		}
+		return false;
+	}
+
+	public function getAllCustomer($id){
+		if($this->quickbooks_is_connected){
+			/* check Authantication and connect api */
+
+			return $this->request->getAllCustomer($id);
+		}
+		return false;
+	}
+
+	public function updateCustomer($id){
+		if($this->quickbooks_is_connected){
+			/* check Authantication and connect api */
+
+			return $this->request->updateCustomer($id);
 		}
 		return false;
 	}
