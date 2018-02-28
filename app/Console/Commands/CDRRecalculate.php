@@ -78,12 +78,17 @@ class CDRRecalculate extends Command {
             $joboptions = json_decode($job->Options);
             if(!empty($job)) {
                 $AccountID=0;
+                $ResellerOwner=0;
                 $CDRType = $startdate = $enddate= '';
                 $CompanyGatewayID = $joboptions->CompanyGatewayID;
                 $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID,'recal');
                 if(!empty($joboptions->AccountID) && $joboptions->AccountID> 0){
                     $AccountID = (int)$joboptions->AccountID;
                 }
+                if(!empty($joboptions->ResellerOwner) && $joboptions->ResellerOwner> 0){
+                    $ResellerOwner = (int)$joboptions->ResellerOwner;
+                }
+
                 $companysetting =   json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
                 $RateCDR = 1;
                 $RateFormat = Company::PREFIX;
@@ -130,9 +135,9 @@ class CDRRecalculate extends Command {
                     $SpecifyRate = $joboptions->SpecifyRate;
                 }
                 if(!empty($startdate) && !empty($enddate)){
-                    Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."')");
-                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."')");
-                    Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."')");
+                    Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
+                    DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
+                    Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
                     $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'',$RateMethod,$SpecifyRate,0,0,0);
                 }
                 if (count($skiped_account_data)) {
@@ -144,7 +149,7 @@ class CDRRecalculate extends Command {
                 }
                 //if(count($skiped_account_data) == 0) {
                 DB::connection('sqlsrvcdr')->beginTransaction();
-                DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
+                DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$ResellerOwner."')");
                 DB::connection('sqlsrvcdr')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
                 DB::connection('sqlsrvcdr')->commit();
                 //}
