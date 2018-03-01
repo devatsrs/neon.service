@@ -172,7 +172,7 @@ protected $server;
 				// not inline image , only attachment
 				if (!$attachment['inline']) {
 
-					$filename = $attachment['filename'];
+					$filename = imap_mime_header_decode($attachment['filename'])[0]->text;
 
 					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
