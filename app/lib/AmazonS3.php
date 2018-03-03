@@ -211,7 +211,7 @@ class AmazonS3 {
 
             //When no amazon ;
 
-            $Uploadpath = CompanyConfiguration::get('UPLOAD_PATH') . "/"."".$file;
+            $Uploadpath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH') . "/"."".$file;
             if ( file_exists($Uploadpath) ) {
                 @unlink($Uploadpath);
                 if(self::$isAmazonS3=="NoAmazon")

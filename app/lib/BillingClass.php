@@ -22,6 +22,9 @@ class BillingClass extends \Eloquent {
     public static function getRoundChargesAmount($BillingClassID){
         return BillingClass::where('BillingClassID',$BillingClassID)->pluck('RoundChargesAmount');
     }
+    public static function getRoundChargesCDR($BillingClassID){
+        return BillingClass::where('BillingClassID',$BillingClassID)->pluck('RoundChargesCDR');
+    }
     public static function getTaxRate($BillingClassID){
         return BillingClass::where('BillingClassID',$BillingClassID)->pluck('TaxRateID');
     }

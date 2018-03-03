@@ -172,7 +172,7 @@ protected $server;
 				// not inline image , only attachment
 				if (!$attachment['inline']) {
 
-					$filename = $attachment['filename'];
+					$filename = imap_mime_header_decode($attachment['filename'])[0]->text;
 
 					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
@@ -226,7 +226,7 @@ protected $server;
 		$mock = new \DOMDocument;
 		libxml_use_internal_errors(true);
 		// load the HTML into the DomDocument object (this would be your source HTML)
-		$doc->loadHTML($msg);		
+		$doc->loadHTML(mb_convert_encoding($msg, 'HTML-ENTITIES', 'UTF-8'));
 		$this->removeElementsByTagName('script', $doc);
 		$this->removeElementsByTagName('style', $doc); 
 		//removeElementsByTagName('link', $doc);
@@ -457,7 +457,7 @@ protected $server;
 				$header = imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
+				$overview_subject  		    =		  isset($overview[0]->subject)?imap_mime_header_decode($overview[0]->subject)[0]->text:'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
 				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
@@ -472,6 +472,11 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
+				if(AccountEmailLogDeletedLog::where(["CompanyID"=>$CompanyID , "MessageID"=>$message_id])->count() > 0) {
+					Log::info("Message id is exist in deleted tickets : ".$message_id);
+					continue;
+				}
+
 				if(empty($overview)){
 					Log::info("Blank overview found");
 					continue;
@@ -482,8 +487,8 @@ protected $server;
 				// just to add dummy random message id so as no to skip this email.
 				$FromName = '';
 				if(isset($overview[0]->from)){
-					$from   	= 	$this->GetEmailtxt($overview[0]->from);
-					$FromName	=	$this->GetNametxt($overview[0]->from);
+					$from   	= 	imap_mime_header_decode($this->GetEmailtxt($overview[0]->from))[0]->text;
+					$FromName	=	imap_mime_header_decode($this->GetNametxt($overview[0]->from))[0]->text;
 				}else{
 					$from		= 	"nofrom@email.com";
 				}

@@ -157,7 +157,7 @@ class Retention {
             DB::beginTransaction();
 
             Log::info('DBcleanup: prc_WSCronJobDeleteOldVendorRate Start.');
-                DB::statement("CALL prc_WSCronJobDeleteOldVendorRate()");
+                DB::statement("CALL prc_WSCronJobDeleteOldVendorRate('System')");
             Log::info('DBcleanup: prc_WSCronJobDeleteOldVendorRate Done.');
 
             Log::info('DBcleanup: prc_WSCronJobDeleteOldCustomerRate Start.');
