@@ -507,7 +507,7 @@
                                 }
                                 ?>
                                 @if($table_h_row['Title'] == 'ChargedAmount')
-                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
                                 @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
                                     <td class="{{$classname}}">{{substr($row[$table_h_row['Title']],1)}}</td>
                                 @else

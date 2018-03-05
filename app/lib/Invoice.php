@@ -532,13 +532,14 @@ class Invoice extends \Eloquent {
             $file_name = 'Invoice-' . $common_name . '.pdf';
             $htmlfile_name = 'Invoice-' . $common_name . '.html';
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
+            $RoundChargesCDR    = AccountBilling::getRoundChargesCDR($Account->AccountID,$ServiceID);
 
             if(!empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','data','print_type','language'))->render();
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','RoundChargesCDR','data','print_type','language'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports','language'))->render();
+                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
             }else {
-                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','print_type','service_data','ManagementReports','language'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
             }
             $body = htmlspecialchars_decode($body);
             $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
@@ -1057,10 +1058,14 @@ class Invoice extends \Eloquent {
 
         $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
 
-        $InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
+        Log::info(' InvoiceGrandTotal ' . $InvoiceGrandTotal);
+        //$InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $SubTotal = number_format($SubTotal+$SubTotalWithoutTax, $decimal_places, '.', '');
         $TotalTax = number_format($TotalTax, $decimal_places, '.', '');
         $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
+
+        $InvoiceTaxRateAmount =Invoice::getInvoiceTaxRateAmount($Invoice->InvoiceID,$decimal_places);
+        $InvoiceGrandTotal = $SubTotal + $InvoiceTaxRateAmount;
 
         Log::info('GrandTotal ' . $InvoiceGrandTotal);
         Log::info('SubTotal ' . $SubTotal);
@@ -1069,6 +1074,26 @@ class Invoice extends \Eloquent {
         $Totals = ["TotalTax"=> $TotalTax , "GrandTotal" => $InvoiceGrandTotal,"SubTotal" => $SubTotal,'PreviousBalance'=>$PreviousBalance,'TotalDue'=>$TotalDue];
         $Invoice->update($Totals);
         return $Totals;
+    }
+
+    public static function getInvoiceTaxRateAmount($InvoiceID,$RoundChargesAmount){
+
+        $InvoiceTaxRateAmount = 0;
+
+        $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID])->get();
+
+        if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
+            foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
+                $Title = $InvoiceTaxRate->Title;
+                $TaxRateID = $InvoiceTaxRate->TaxRateID;
+                $TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount, '.', '');
+                $InvoiceTaxRateAmount+=	$TaxAmount;
+            }
+        }
+
+        Log::info('InvoiceTaxAmount '.$InvoiceTaxRateAmount);
+
+        return $InvoiceTaxRateAmount;
     }
 
     public static function addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
@@ -1723,6 +1748,8 @@ class Invoice extends \Eloquent {
         }
         $activeColumns = array_intersect($activeColumns,$GroupColumns);
 
+        $RoundChargesCDR    = AccountBilling::getRoundChargesCDR($AccountID,$ServiceID);
+
         foreach ($GatewayAccount as $GatewayAccountRow) {
             $GatewayAccountRow['CompanyGatewayID'];
             $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
@@ -1750,7 +1777,7 @@ class Invoice extends \Eloquent {
                     }
                     if (isset($usage_data[$key_col_comb])) {
                         $usage_data[$key_col_comb]['NoOfCalls'] += $result_row['NoOfCalls'];
-                        $usage_data[$key_col_comb]['ChargedAmount'] += $result_row['ChargedAmount'];
+                        $usage_data[$key_col_comb]['ChargedAmount'] += number_format($result_row['ChargedAmount'],$RoundChargesCDR);
                         $usage_data[$key_col_comb]['DurationInSec'] += $result_row['DurationInSec'];
                         $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
@@ -1762,6 +1789,7 @@ class Invoice extends \Eloquent {
                         }
                     } else {
                         $usage_data[$key_col_comb] = $result_row;
+                        $usage_data[$key_col_comb]['ChargedAmount'] = number_format($usage_data[$key_col_comb]['ChargedAmount'],$RoundChargesCDR);
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
                         }else{
@@ -1769,6 +1797,7 @@ class Invoice extends \Eloquent {
                         }
                     }
                 } else {
+                    $result_row['ChargedAmount'] = number_format($result_row['ChargedAmount'],$RoundChargesCDR);
                     $usage_data[] = $result_row;
                 }
             }
