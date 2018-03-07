@@ -172,7 +172,7 @@ protected $server;
 				// not inline image , only attachment
 				if (!$attachment['inline']) {
 
-					$filename = $attachment['filename'];
+					$filename = imap_mime_header_decode($attachment['filename'])[0]->text;
 
 					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
@@ -226,7 +226,7 @@ protected $server;
 		$mock = new \DOMDocument;
 		libxml_use_internal_errors(true);
 		// load the HTML into the DomDocument object (this would be your source HTML)
-		$doc->loadHTML($msg);		
+		$doc->loadHTML(mb_convert_encoding($msg, 'HTML-ENTITIES', 'UTF-8'));
 		$this->removeElementsByTagName('script', $doc);
 		$this->removeElementsByTagName('style', $doc); 
 		//removeElementsByTagName('link', $doc);
@@ -471,6 +471,11 @@ protected $server;
 				Log::info("email_received_date - " . $email_received_date);
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
+
+				if(AccountEmailLogDeletedLog::where(["CompanyID"=>$CompanyID , "MessageID"=>$message_id])->count() > 0) {
+					Log::info("Message id is exist in deleted tickets : ".$message_id);
+					continue;
+				}
 
 				if(empty($overview)){
 					Log::info("Blank overview found");
