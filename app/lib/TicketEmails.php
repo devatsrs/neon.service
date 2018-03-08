@@ -81,7 +81,10 @@ class TicketEmails{
 			$replace_array['Requester'] 		 = 		$Ticketdata->Requester;
 			//$replace_array['RequesterName'] 	 = 		$Ticketdata->RequesterName;
 			if($Ticketdata->AccountID){
+				$AccountData						 =		Account::where("AccountID",$Ticketdata->AccountID)->select(['FirstName','LastName'])->first();
 				$replace_array['RequesterName'] 	 = 		Account::where(["AccountID"=>$Ticketdata->AccountID])->pluck("AccountName");
+				$replace_array['FirstName']				=	$AccountData->FirstName;
+				$replace_array['LastName']				=	$AccountData->LastName;
 			}
 			else if($Ticketdata->ContactID){
 				$contactData						 =		Contact::where("ContactID",$Ticketdata->ContactID)->select(['FirstName','LastName'])->first();
@@ -107,6 +110,7 @@ class TicketEmails{
 				$replace_array['NoteUser']			 =		$this->NoteUser;
 			}
 		}
+		$replace_array['Logo'] = '<img src="'.getCompanyLogo($this->CompanyID).'" />';
         return $replace_array;
     }	
 	
@@ -141,6 +145,9 @@ class TicketEmails{
 			"{{CompanyCountry}}",
 			"{{TicketCustomerUrl}}",
 			"{{TicketUrl}}",
+			'{{FirstName}}',
+			'{{LastName}}',
+			'{{Logo}}',
 			"{{helpdesk_name}}"
 		];
 	
@@ -150,6 +157,9 @@ class TicketEmails{
 				$EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
 			}
 		}
+
+		$EmailMessage = preg_replace("/\{\{(\w+)}}/", "", $EmailMessage);
+
 		return $EmailMessage;
 	} 
 	
