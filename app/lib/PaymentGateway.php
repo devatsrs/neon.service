@@ -15,8 +15,9 @@ class PaymentGateway extends \Eloquent {
     const  StripeACH	=	3;
     const  SagePayDirectDebit	=	4;
     const  FideliPay	=	5;
+    const  PeleCard	    =	6;
 
-    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH',self::FideliPay=>'FideliPay');
+    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH',self::FideliPay=>'FideliPay',self::PeleCard=>'PeleCard');
 
     public static function getName($PaymentGatewayID)
     {
@@ -195,6 +196,57 @@ class PaymentGateway extends \Eloquent {
                 $transactiondata['AccountID'] = $account->AccountID;
                 if(!empty($transaction['id'])) {
                     $transactiondata['Transaction'] = $transaction['id'];
+                }
+                $transactiondata['Notes'] = $Notes;
+                if(!empty($transaction['amount'])) {
+                    $transactiondata['Amount'] = floatval($transaction['amount']);
+                }
+                $transactiondata['Status'] = $Status;
+                $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                $transactiondata['CreatedBy'] = "RMScheduler";
+                $transactiondata['ModifyBy'] = "RMScheduler";
+                $transactiondata['Response'] = json_encode($transaction);
+                TransactionLog::insert($transactiondata);
+                return $transactionResponse;
+
+            case self::$paymentgateway_name[self::PeleCard]:
+
+                $PeleCarddata = array();
+                $PeleCarddata['GrandTotal']     = $amount;
+                $PeleCarddata['InvoiceNumber']  = $options->InvoiceNumber;
+                $PeleCarddata['AccountID']      = $account->AccountID;
+                $PeleCarddata['Token']          = $options->Token;
+                $PeleCarddata['CVVNumber']      = $options->CVVNumber;
+
+                $transactionResponse = array();
+
+                $pelecardpayment = new PeleCard($CompanyID);
+                $transaction = $pelecardpayment->pay_invoice($PeleCarddata);
+
+                $Notes = '';
+                if(!empty($transaction['status']) && $transaction['status'] == 'success') {
+                    $Notes = 'PeleCard transaction_id ' . $transaction['transaction_id'];
+                    $Status = TransactionLog::SUCCESS;
+                }else{
+                    $Status = TransactionLog::FAILED;
+                    $Notes = empty($transaction['error']) ? '' : $transaction['error'];
+                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
+                }
+                if(!empty($transaction['response_code'])) {
+                    $transactionResponse['response_code'] = $transaction['response_code'];
+                }
+                $transactionResponse['transaction_notes']           = $Notes;
+                $transactionResponse['transaction_payment_method']  = 'CREDIT CARD';
+                $transactionResponse['failed_reason']               = $Notes;
+                if(!empty($transaction['transaction_id'])) {
+                    $transactionResponse['transaction_id'] = $transaction['transaction_id'];
+                }
+                $transactiondata = array();
+                $transactiondata['CompanyID'] = $account->CompanyId;
+                $transactiondata['AccountID'] = $account->AccountID;
+                if(!empty($transaction['transaction_id'])) {
+                    $transactiondata['Transaction'] = $transaction['transaction_id'];
                 }
                 $transactiondata['Notes'] = $Notes;
                 if(!empty($transaction['amount'])) {
