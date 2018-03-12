@@ -8,6 +8,7 @@
 
 namespace App\Lib;
 
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class PeleCard {
@@ -33,7 +34,7 @@ class PeleCard {
 
             $this->terminalNumber 	= 	$PeleCardobj->terminalNumber;
             $this->user		        = 	$PeleCardobj->user;
-            $this->password		    = 	$PeleCardobj->password;
+            $this->password		    = 	Crypt::decrypt($PeleCardobj->password);
             $this->PeleCardLive     = 	$PeleCardobj->PeleCardLive;
             $this->DebitRegularType = 	"DebitRegularType";
             $this->ConvertToToken   = 	"ConvertToToken";
