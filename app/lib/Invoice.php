@@ -60,7 +60,8 @@ class Invoice extends \Eloquent {
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
                 $dir = $UPLOADPATH . '/' . $amazonPath;
                 if (!file_exists($dir)) {
-                    mkdir($dir, 0777, TRUE);
+                    RemoteSSH::run("mkdir -p " . $dir);
+                    RemoteSSH::run("chmod -R 777 " . $dir);
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
@@ -551,7 +552,8 @@ class Invoice extends \Eloquent {
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
             $destination_dir = $UPLOADPATH . '/'. $amazonPath;
             if (!file_exists($destination_dir)) {
-                mkdir($destination_dir, 0777, true);
+                RemoteSSH::run("mkdir -p " . $destination_dir);
+                RemoteSSH::run("chmod -R 777 " . $destination_dir);
             }
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
