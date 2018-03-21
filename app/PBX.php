@@ -15,6 +15,12 @@ class PBX{
     private static $connect;
     private static $timeout=0; /* 60 seconds timeout */
 
+    const  INBOUND      = 1;
+    const  OUTBOUND     = 2;
+    const  CONFERENCE   = 3;
+    const  OUTNOCHARGE  = 4;
+
+    static $CcType = [ "OTHER", "INBOUND" , "OUTBOUND"   , "CONFERENCE"   , "OUTNOCHARGE"  ];
 
     /**
      *
@@ -101,10 +107,9 @@ class PBX{
                         or userfield like '%inbound%'
                         or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' )  /*-- Ignore Internal call*/
                         )
-                    AND  cc_type <> 'OUTNOCHARGE'
                     AND ( dst<>'h' or duration <> 0 ) /*-- given by mirta*/
                     and prevuniqueid=''
-                    group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode
+                    group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode,cc_type
                     "; // and userfield like '%outbound%'  removed for inbound calls
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
