@@ -67,6 +67,8 @@ class CompanyGateway extends \Eloquent {
             Log::error( $tbltempusagedetail_name);
             $tbltempusagedetail_name .=$extra_prefix;
 
+            $temp_tblRetailUsageDetail_TableName = self::getUsagedetailRetailTablename($tbltempusagedetail_name);
+
             //self::dropTableForNewColumn($tbltempusagedetail_name);
             Schema::connection('sqlsrvcdr')->dropIfExists($tbltempusagedetail_name);
             $sql_create_table = 'CREATE TABLE IF NOT EXISTS `'  . $tbltempusagedetail_name . '` (
@@ -104,6 +106,7 @@ class CompanyGateway extends \Eloquent {
                                     `is_rerated` TINYINT(1) NULL DEFAULT 0,
                                     `disposition` VARCHAR(50) NULL DEFAULT NULL ,
                                     `userfield` VARCHAR(255) NULL DEFAULT NULL ,
+                                    `cc_type` TINYINT(1) NULL DEFAULT NULL ,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
                                     INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
@@ -112,6 +115,25 @@ class CompanyGateway extends \Eloquent {
                                 ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
             DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$tbltempusagedetail_name);
+
+            Schema::connection('sqlsrvcdr')->dropIfExists($temp_tblRetailUsageDetail_TableName);
+            $temp_tblRetailUsageDetail_Create = "CREATE TABLE IF NOT EXISTS `".$temp_tblRetailUsageDetail_TableName."` (
+                                        `TempRetailUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
+                                        `TempUsageDetailID` INT(11) NOT NULL,
+                                        `ID`  INT(11) NULL DEFAULT NULL ,
+                                        `cc_type` TINYINT(1) NOT NULL DEFAULT '0',
+                                        `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
+                                        PRIMARY KEY (`TempRetailUsageDetailID`),
+                                        UNIQUE INDEX `IX_TempUsageDetailID` (`TempUsageDetailID`),
+                                        KEY `IX_ID` (`ID`),
+                                        KEY `IX_ProcessID` (`ProcessID`),
+                                        KEY `IX_cc_type` (`cc_type`)
+                                    )
+                                    COLLATE='utf8_unicode_ci'
+                                    ENGINE=InnoDB
+                                    ;";
+            DB::connection('sqlsrvcdr')->statement($temp_tblRetailUsageDetail_Create);
+            DB::connection('sqlsrvcdr')->statement(' DELETE FROM '.$temp_tblRetailUsageDetail_TableName);
 
             Log::error(' done ');
 
@@ -125,6 +147,12 @@ class CompanyGateway extends \Eloquent {
             $tblPrefix = "tblTempVendorCDR_";
         }
         return $tbltempusagedetail_name  = $tblPrefix. $UniqueID;
+
+    }
+
+    public static function getUsagedetailRetailTablename($tbltempusagedetail_name){
+
+        return $tbltempusagedetail_name . "_Retail";
 
     }
     public static function CreateVendorTempTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
