@@ -9,12 +9,16 @@
 namespace App\Console\Commands;
 
 
+use App\FTPGateway;
+use App\FTPSSH;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\FileUploadTemplate;
+use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\UsageDownloadFiles;
@@ -73,7 +77,6 @@ class FTPAccountUsage extends Command
         CronHelper::before_cronrun($this->name, $this );
 
 
-
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
         $CronJobID = $arguments["CronJobID"];
@@ -91,21 +94,28 @@ class FTPAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
-        $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
-        $dataactive['Active'] = 1;
-        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-        $dataactive['PID'] = $getmypid;
-        $CronJob->update($dataactive);
+        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
+
+        //Template for file mapping
+        $uploadTemplate = FileUploadTemplate::where(['CompanyGatewayID'=>$CompanyGatewayID])->first();
+        $templateoptions = json_decode($uploadTemplate->Options);
+        $csvoption = $templateoptions->option;
+        $attrselection = $templateoptions->selection;
+
+        CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
+
+        $delete_files = array();
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
 
         Log::useFiles(storage_path() . '/logs/ftpaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
-        $FTPFILE_LOCATION = CompanyConfiguration::get($CompanyID,'FTPFILE_LOCATION');
+        $FTP_LOCATION =  FTPGateway::getFileLocation($CompanyID);
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -113,21 +123,24 @@ class FTPAccountUsage extends Command
             UsageDownloadFiles::UpdateProcessToPending($CompanyID,$CompanyGatewayID,$CronJob,$cronsetting);
 
             /** get pending files */
-            $filenames = UsageDownloadFiles::getSippyPendingFile($CompanyGatewayID,SippySSH::$customer_cdr_file_name);
+            $filenames = UsageDownloadFiles::getFTPGatewayPendingFile($CompanyGatewayID);
 
+            /** remove last downloaded */
             $lastelse = array_pop($filenames);
 
             Log::info("Files Names Collected");
             Log::error('   ftp File Count ' . count($filenames));
             $file_count = 1;
-            $RateFormat = Company::PREFIX;
             $RateCDR = 0;
+            $RerateAccounts = 0;
             if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
                 $RateCDR = $companysetting->RateCDR;
             }
+            $RateFormat = Company::PREFIX;
             if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
                 $RateFormat = $companysetting->RateFormat;
             }
+
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
             if(!empty($companysetting->CLITranslationRule)){
                 $CLITranslationRule = $companysetting->CLITranslationRule;
@@ -138,14 +151,10 @@ class FTPAccountUsage extends Command
             if(!empty($companysetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
-            if($RateCDR == 0) {
-                TempUsageDetail::applyDiscountPlan();
-            }
+            TempUsageDetail::applyDiscountPlan();
 
             Log::error(' ========================== ftp transaction start =============================');
             CronJob::createLog($CronJobID);
-
-            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
 
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
             if ($TimeZone != '') {
@@ -153,11 +162,9 @@ class FTPAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
-            /**
-             * Insert Customer CDR to temp table
-             */
+            $CallID = 0;
             foreach ($filenames as $UsageDownloadFilesID => $filename) {
-                Log::info("Loop Start" . SippySSH::get_file_datetime($filename));
+                Log::info("Loop Start");
 
                 if ($filename != '' && $file_count <= $FilesMaxProccess) {
 
@@ -166,66 +173,157 @@ class FTPAccountUsage extends Command
 
                     Log::info("CDR Insert Start ".$filename." processID: ".$processID);
 
-                    $fullpath = $FTPFILE_LOCATION.'/'.$CompanyGatewayID. '/' ;
-                    $csv_response = SippySSH::get_customer_file_content($fullpath.$filename,$CompanyID);
-                    if ( isset($csv_response["return_var"]) &&  $csv_response["return_var"] == 0 && isset($csv_response["output"]) && count($csv_response["output"]) > 0  ) {
-                        $delete_files[] = $UsageDownloadFilesID;
-                        /** update file status to progress */
-                        UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
-                        $cdr_rows = $csv_response["output"];
-                        $InserData = $InserVData = array();
-                        foreach($cdr_rows as $cdr_row){
-
-                            if (!empty($cdr_row['i_account']) || ($IpBased ==1 && !empty($cdr_row['remote_ip']))) {
-
-                                $uddata = array();
-                                $uddata['CompanyGatewayID'] = $CompanyGatewayID;
-                                $uddata['CompanyID'] = $CompanyID;
-                                if($IpBased){
-                                    $uddata['GatewayAccountID'] = $cdr_row['remote_ip'];
-                                }else{
-                                    $uddata['GatewayAccountID'] = $cdr_row['i_account'];
-                                }
-                                $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
-                                $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
-                                $uddata['cost'] = (float)$cdr_row['cost'];
-                                $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$cdr_row['cld_in']);
-                                $uddata['cli'] = apply_translation_rule($CLITranslationRule,$cdr_row['cli_in']);
-                                $uddata['billed_duration'] = $cdr_row['billed_duration'];
-                                $uddata['duration'] = $cdr_row['billed_duration'];
-                                $uddata['billed_second'] = $cdr_row['billed_duration'];
-                                $uddata['trunk'] = 'Other';
-                                $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$cdr_row['prefix']),$RateCDR, $RerateAccounts);
-                                $uddata['remote_ip'] = $cdr_row['remote_ip'];
-                                $uddata['ProcessID'] = $processID;
-
-                                $InserData[] = $uddata;
-                                if($data_count > $insertLimit &&  !empty($InserData)){
-                                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                                    $InserData = array();
-                                    $data_count = 0;
-                                }
-                            }
-
-                            $data_count++;
-
-
-                        }//loop
-
-                        if(!empty($InserData)){
-                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-
+                    /** update file status to progress */
+                    UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
+                    $delete_files[] = $UsageDownloadFilesID;
+                    $fullpath = $FTP_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    try{
+                        $NeonExcel = new NeonExcelIO($fullpath, (array) $csvoption);
+                        $results = $NeonExcel->read();
+                        $lineno = 2;
+                        if ($csvoption->Firstrow == 'data') {
+                            $lineno = 1;
                         }
 
-                    } else {
+                        $error = array();
+                        $batch_insert_array = [];
+                        foreach ($results as $index=>$temp_row) {
+                            if ($csvoption->Firstrow == 'data') {
+                                array_unshift($temp_row, null);
+                                unset($temp_row[0]);
+                            }
+                            $cdrdata = array();
+                            $cdrdata['ProcessID'] = $processID;
+                            $cdrdata['ServiceID'] = $ServiceID;
+                            $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
+                            $cdrdata['CompanyID'] = $CompanyID;
+                            $cdrdata['trunk'] = 'Other';
+                            $cdrdata['area_prefix'] = 'Other';
+                            $call_type = '';
 
-                        $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
-                        Log::error("Error Reading FTP Customer Encoded File. " . $return_var);
+                            //check empty row
+                            $checkemptyrow = array_filter(array_values($temp_row));
+                            if (!empty($checkemptyrow)) {
+                                if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
+                                    $cdrdata['connect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->connect_datetime]), $attrselection->DateFormat);
+                                } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
+                                    $cdrdata['connect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]), $attrselection->DateFormat);
+                                }
+                                if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
+                                    $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
+                                    $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
+                                }
+                                if (isset($attrselection->duration) && !empty($attrselection->duration)) {
+                                    $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
+                                }
+                                if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
+                                    $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+                                } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
+                                    $strtotime = strtotime($cdrdata['connect_time']);
+                                    $billed_duration = $cdrdata['billed_duration'];
+                                    $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
+                                }
+                                if (isset($attrselection->cld) && !empty($attrselection->cld)) {
+                                    $cdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $temp_row[$attrselection->cld]);
+                                }
+                                if (isset($attrselection->cli) && !empty($attrselection->cli)) {
+                                    $cdrdata['cli'] = apply_translation_rule($CLITranslationRule, $temp_row[$attrselection->cli]);
+                                }
+                                if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0) {
+                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                } else if ($RateCDR == 1) {
+                                    $cdrdata['cost'] = 0;
+                                }
+
+
+                                if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)) {
+                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
+                                }
+
+                                if (!empty($attrselection->TrunkID)) {
+                                    $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                                    $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $attrselection->TrunkID))->Pluck('trunk');
+                                }
+                                if (isset($attrselection->extension) && !empty($attrselection->extension)) {
+                                    $cdrdata['extension'] = $temp_row[$attrselection->extension];
+                                }
+
+                                if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+                                    $cdrdata['is_inbound'] = 0;
+                                    $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]), '', '');
+                                }
+                                if (isset($attrselection->Account) && !empty($attrselection->Account)) {
+                                    $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                                }
+                                if (empty($cdrdata['GatewayAccountID'])) {
+                                    $error[] = 'Account is blank at line no:' . $lineno;
+                                }
+                                if ($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld) && trim($temp_row[$attrselection->cld]) == '') {
+                                    $error[] = 'CLD is blank at line no:' . $lineno;
+                                }
+                                if ($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && trim($temp_row[$attrselection->billed_duration]) == '') {
+                                    $error[] = 'Billed duration is blank at line no:' . $lineno;
+                                }
+
+
+                                if (!empty($cdrdata['GatewayAccountID'])) {
+                                    if ($call_type == 'inbound') {
+                                        $cdrdata['is_inbound'] = 1;
+                                    } else if ($call_type == 'outbound') {
+                                        $cdrdata['is_inbound'] = 0;
+                                    } else if ($call_type == 'none') {
+                                        /** if user field is blank */
+                                        $cdrdata['is_inbound'] = 0;
+                                    } else if ($call_type == 'failed') {
+                                        /** if user field is failed or blocked call any reason make duration zero */
+                                        $cdrdata['billed_duration'] = 0;
+                                        $cdrdata['billed_second'] = 0;
+                                    }
+                                    if ($call_type == 'both' && $RateCDR == 1) {
+
+                                        /**
+                                         * Inbound Entry
+                                         */
+                                        $cdrdata['cost'] = 0;
+                                        $cdrdata['is_inbound'] = 1;
+
+                                        /**
+                                         * Outbound Entry
+                                         */
+                                        $data_outbound = $cdrdata;
+
+                                        $data_outbound['cli'] = !empty($cdrdata['cli']) ? $cdrdata['cli'] : '';
+                                        $data_outbound['cld'] = !empty($cdrdata['cld']) ? $cdrdata['cld'] : '';
+                                        $data_outbound['cost'] = !empty($cdrdata['cost']) ? $cdrdata['cost'] : 0;
+                                        $data_outbound['is_inbound'] = 0;
+                                        $batch_insert_array[] = $data_outbound;
+                                        $data_count++;
+
+                                    }
+
+                                    $batch_insert_array[] = $cdrdata;
+
+                                    if ($data_count >= $insertLimit) {
+                                        Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                                        Log::info('insertion end');
+                                        $batch_insert_array = [];
+                                        $data_count = 0;
+                                    }
+                                    $data_count++;
+
+                                }
+                            }
+                        }// loop over
+
+                    }catch(Exception $e){
+
+                        Log::error($e);
                         /** update file status to error */
-                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
-
+                        UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$e->getMessage());
                     }
-
 
                     Log::info("CDR Insert END");
                     $file_count++;
@@ -234,30 +332,36 @@ class FTPAccountUsage extends Command
                 }
                 Log::info("Loop End");
 
-            } // Customer cdr over.
+            }
+
+            if(!empty($batch_insert_array)){
+                Log::info('Batch insert start - count' . count($batch_insert_array));
+
+                DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+
+                Log::info('insertion end');
+            }
+
 
 
             Log::error(' ========================== ftp transaction end =============================');
-            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
-
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
+                $joblogdata['Message'] .=  implode('<br>', $skiped_account_data);
             }
 
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
             $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
 
-
+            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdr')->beginTransaction();
+            DB::connection('sqlsrvcdrazure')->beginTransaction();
 
-            $filedetail = "";
             if (!empty($result[0]->min_date)) {
-                $filedetail .= '<br>Customer From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
+                $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
                 date_default_timezone_set(Config::get('app.timezone'));
                 $logdata['CompanyGatewayID'] = $CompanyGatewayID;
                 $logdata['CompanyID'] = $CompanyID;
@@ -268,35 +372,27 @@ class FTPAccountUsage extends Command
                 TempUsageDownloadLog::insert($logdata);
 
             } else {
-                $filedetail .= '<br> No CustomerCDR Data Found!!';
+                $filedetail = '<br> No Data Found!!';
             }
 
-            if($RateCDR == 0) {
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-                Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-            }
+
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
             Log::error('ftp prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('ftp prc_insertCDR end');
+
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
-            DB::connection('sqlsrvcdr')->commit();
+            DB::connection('sqlsrvcdrazure')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
 
 
                 date_default_timezone_set(Config::get('app.timezone'));
-
-                /**
-                 * Not in Use
-                 * $CdrBehindData = array();
-                if (!empty($result[0]->min_date) && !empty($cronsetting['ErrorEmail'])) {
-                    $CdrBehindData['startdatetime'] = $result[0]->min_date;
-                    CronJob::CheckCdrBehindDuration($CronJob, $CdrBehindData);
-                }
-                 */
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
@@ -305,8 +401,7 @@ class FTPAccountUsage extends Command
 
                 Log::error('ftp delete file count ' . count($delete_files));
 
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-                //TempVendorCDR::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
@@ -316,12 +411,11 @@ class FTPAccountUsage extends Command
 
         } catch (Exception $e) {
             try {
-                DB::connection('sqlsrvcdr')->rollback();
+                DB::connection('sqlsrvcdrazure')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
             }
             try {
-                // Rename files to complete or delete
                 /** put back file to pending if any error occurred */
                 UsageDownloadFiles::UpdateToPending($delete_files);
 
@@ -330,8 +424,7 @@ class FTPAccountUsage extends Command
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete();
-
+                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
             } catch (\Exception $err) {
                 Log::error($err);
             }
@@ -360,7 +453,10 @@ class FTPAccountUsage extends Command
             Log::error("**Email Sent message ".$result['message']);
         }
 
-        
+        DB::disconnect('sqlsrv');
+        DB::disconnect('sqlsrv2');
+        DB::disconnect('sqlsrvcdr');
+
         CronHelper::after_cronrun($this->name, $this);
 
     }
