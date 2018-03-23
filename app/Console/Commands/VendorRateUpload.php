@@ -171,7 +171,9 @@ class VendorRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption);
+                        $Sheet = !empty($templateoptions->Sheet) ? $templateoptions->Sheet : '';
+
+                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption, $Sheet);
                         $results = $NeonExcel->read();
                         /*Log::info(print_r(array_slice($results,0,10),true));
                         Log::info(print_r(array_slice($results,-10,10),true));*/
