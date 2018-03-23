@@ -48,7 +48,6 @@ class Sippy{
         if(count(self::$config)>0) {
             $params = array(new xmlrpcval(array(
                 "offset" => new xmlrpcval('0', "int"),
-                "offset" => new xmlrpcval('0', "int"),
                 "limit" => new xmlrpcval('1', "int"),
             ), 'struct'));
             $msg = new xmlrpcmsg('listAccounts', $params);
