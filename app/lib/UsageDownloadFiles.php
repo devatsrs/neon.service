@@ -136,6 +136,17 @@ class UsageDownloadFiles extends Model {
 
     }
 
+    /** get FTP Gateway customer files */
+    public static function getFTPGatewayPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->orderby('ProcessCount')->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
     /** update file status to progress */
     public static function UpdateFileStausToProcess($UsageDownloadFilesID,$processID){
         $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);

@@ -16,6 +16,7 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Service;
+use App\Lib\SippyImporter;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
@@ -158,6 +159,15 @@ class SippyAccountUsage extends Command
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
 
+
+            try{
+
+                $this->createAccountJobLog($CompanyID,$CompanyGatewayID);
+
+            } catch (Exception $ex ) {
+                Log::error($ex);
+            }
+
             foreach ($filenames as $time_key => $files) {
 				foreach ($files as $UsageDownloadFilesID => $filename) {
                     Log::info("Loop Start" . SippySSH::get_file_datetime($filename));
@@ -194,7 +204,7 @@ class SippyAccountUsage extends Command
                                     }
                                     $uddata['AccountIP'] = $cdr_row['remote_ip'];
                                     $uddata['AccountName'] = '';
-                                    $uddata['AccountNumber'] = '';
+                                    $uddata['AccountNumber'] = $cdr_row['i_account'];
                                     $uddata['AccountCLI'] = '';
                                     $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['connect_time']);
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
@@ -274,7 +284,7 @@ class SippyAccountUsage extends Command
                                     }
                                     $uddata['AccountIP'] = $cdr_row['remote_ip'];
                                     $uddata['AccountName'] = '';
-                                    $uddata['AccountNumber'] = '';
+                                    $uddata['AccountNumber'] = $cdr_row['i_account_debug'];
                                     $uddata['AccountCLI'] = '';
                                     $uddata['connect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['call_setup_time']);
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', $cdr_row['disconnect_time']);
@@ -492,6 +502,33 @@ class SippyAccountUsage extends Command
         }
 
         CronHelper::after_cronrun($this->name, $this);
+
+    }
+
+    public function createAccountJobLog($CompanyID,$CompanyGatewayID){
+
+
+        $Interval = CompanyConfiguration::getValueConfigurationByKey($CompanyID,"AUTO_SIPPY_ACCOUNT_IMPORT_INTERVAL");
+
+        if($Interval > 0){
+
+            $CurrentTime = date("Y-m-d H:i:s");
+            Log::info("sippy CALL  prc_checkSippyAutoAccountImportJobInterval ('" . $CompanyID . "', '".$CurrentTime."') start");
+            $result = DB::select("CALL  prc_checkSippyAutoAccountImportJobInterval ('" . $CompanyID . "', '".$CurrentTime."')");
+
+            if(isset($result[0]->result)  && $result[0]->result == 1) {
+
+                SippyImporter::add_missing_gatewayaccounts($CompanyID, $CompanyGatewayID);
+                Log::info("add_missing_gatewayaccounts run");
+
+            } else if(isset($result[0]->message)) {
+
+                //Log::info("prc_checkSippyAutoAccountImportJobInterval result message");
+                //Log::info($result[0]->message);
+            }
+
+        }
+
 
     }
 
