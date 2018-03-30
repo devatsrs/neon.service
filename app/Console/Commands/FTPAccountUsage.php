@@ -126,8 +126,12 @@ class FTPAccountUsage extends Command
             /** get pending files */
             $filenames = UsageDownloadFiles::getFTPGatewayPendingFile($CompanyGatewayID);
 
-            /** remove last downloaded */
-            $lastelse = array_pop($filenames);
+            /** remove last downloaded only when not minute or second job
+             We should not skipp file when job is running daily.
+             */
+            if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
+                $lastelse = array_pop($filenames);
+            }
 
             Log::info("Files Names Collected");
             Log::error('   ftp File Count ' . count($filenames));
