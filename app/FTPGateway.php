@@ -1,6 +1,7 @@
 <?php
 namespace App;
 
+use App\Lib\CompanyConfiguration;
 use Collective\Remote\RemoteFacade;
 use \Exception;
 use App\Lib\GatewayAPI;
@@ -8,6 +9,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 class FTPGateway{
+
     private static $config = array();
 
     const DEFAULT_FILENAME = ".csv";

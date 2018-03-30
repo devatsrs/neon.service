@@ -97,7 +97,7 @@ class FTPAccountUsage extends Command
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
 
         //Template for file mapping
-        $uploadTemplate = FileUploadTemplate::where(['CompanyGatewayID'=>$CompanyGatewayID])->first();
+        $uploadTemplate = FileUploadTemplate::where('CompanyGatewayID', 'LIKE' , '"CompanyGatewayID":"'. $CompanyGatewayID.'"')->first();
         $templateoptions = json_decode($uploadTemplate->Options);
         $csvoption = $templateoptions->option;
         $attrselection = $templateoptions->selection;
