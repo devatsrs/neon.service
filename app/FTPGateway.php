@@ -59,7 +59,7 @@ class FTPGateway{
             }
             asort($filename);
             $filename = array_values($filename);
-            if(!isset($addparams["SkipOneFile"])){
+            if(isset($addparams["SkipOneFile"])){
                 $lastele = array_pop($filename);
             }
             $response = $filename;
