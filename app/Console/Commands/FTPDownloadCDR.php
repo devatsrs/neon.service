@@ -88,9 +88,14 @@ class FTPDownloadCDR extends Command {
             $joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] = '';
 
+            $getCDRsParam = [];
+            if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
+                $getCDRsParam = ["SkipOneFile"=>1];
+            }
+
             $ftp = new FTPGateway($CompanyGatewayID);
             Log::info("FTP Connected");
-            $filenames = $ftp->getCDRs();
+            $filenames = $ftp->getCDRs($getCDRsParam);
             $FTP_FILE_LOCATION = $ftp->getFileLocation($CompanyID);
             $destination = $FTP_FILE_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
