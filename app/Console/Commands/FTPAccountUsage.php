@@ -22,6 +22,7 @@ use App\Lib\NeonExcelIO;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
 use Illuminate\Console\Command;
