@@ -252,12 +252,14 @@ class FTPAccountUsage extends Command
 
 
                                 if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)  && isset($temp_row[$attrselection->area_prefix])) {
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
+                                    $cdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
                                 }
 
-                                if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) && isset($temp_row[$attrselection->ServiceID]) && $ServiceID_1 = array_search($temp_row[$attrselection->ServiceID],$Services)){
-                                    $cdrdata['ServiceID'] = $ServiceID_1;
-                                }else{
+                                if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) &&  array_key_exists($attrselection->ServiceID,$Services)){
+                                    $cdrdata['ServiceID'] = $attrselection->ServiceID;
+                                }else if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) && isset($temp_row[$attrselection->ServiceID]) && $Service_1 = array_search($temp_row[$attrselection->ServiceID],$Services)){
+                                    $cdrdata['ServiceID'] = $Service_1;
+                                } else{
                                     $cdrdata['ServiceID'] = $ServiceID;
                                 }
 
