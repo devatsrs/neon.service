@@ -22,6 +22,7 @@ use App\Lib\NeonExcelIO;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\Trunk;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
 use Illuminate\Console\Command;
@@ -95,7 +96,7 @@ class FTPAccountUsage extends Command
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         $GatewaySetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
-        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
+        //$ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
 
         //Template for file mapping
         $uploadTemplate = FileUploadTemplate::where('Options', 'LIKE' , '%"CompanyGatewayID":"'. $CompanyGatewayID.'"%')->first();
@@ -139,6 +140,11 @@ class FTPAccountUsage extends Command
             $RateCDR = 0;
             $NameFormat = '';
             $RerateAccounts = 0;
+
+            $ServiceID =  0;
+            $Services = Service::where(array("CompanyID"=>$CompanyID,"Status"=>1))->lists('ServiceName', 'ServiceID');;
+            $Trunks = Trunk::where([ "CompanyID" => $CompanyID , "Status" => 1 ])->lists('Trunk', 'TrunkID');
+
             if(isset($GatewaySetting->RateCDR) && $GatewaySetting->RateCDR){
                 $RateCDR = $GatewaySetting->RateCDR;
             }
@@ -203,10 +209,10 @@ class FTPAccountUsage extends Command
                             }
                             $cdrdata = array();
                             $cdrdata['ProcessID'] = $processID;
-                            $cdrdata['ServiceID'] = $ServiceID;
+                            //$cdrdata['ServiceID'] = $ServiceID;
                             $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                             $cdrdata['CompanyID'] = $CompanyID;
-                            $cdrdata['trunk'] = 'Other';
+                            //$cdrdata['trunk'] = 'Other';
                             $cdrdata['area_prefix'] = 'Other';
                             $call_type = '';
 
@@ -246,12 +252,25 @@ class FTPAccountUsage extends Command
 
 
                                 if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)  && isset($temp_row[$attrselection->area_prefix])) {
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
+                                    $cdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
                                 }
 
-                                if (!empty($attrselection->TrunkID)) {
+                                if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) &&  array_key_exists($attrselection->ServiceID,$Services)){
+                                    $cdrdata['ServiceID'] = $attrselection->ServiceID;
+                                }else if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) && isset($temp_row[$attrselection->ServiceID]) && $Service_1 = array_search($temp_row[$attrselection->ServiceID],$Services)){
+                                    $cdrdata['ServiceID'] = $Service_1;
+                                } else{
+                                    $cdrdata['ServiceID'] = $ServiceID;
+                                }
+
+                                if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && array_key_exists($attrselection->TrunkID,$Trunks)){
                                     $cdrdata['TrunkID'] = $attrselection->TrunkID;
-                                    $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $attrselection->TrunkID))->Pluck('trunk');
+                                    $cdrdata['trunk'] = $Trunks[$attrselection->TrunkID];
+                                }else if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && isset($temp_row[$attrselection->TrunkID]) && $TrunkID_1 = array_search($temp_row[$attrselection->TrunkID],$Trunks)){
+                                    $cdrdata['TrunkID'] = $TrunkID_1;
+                                    $cdrdata['trunk'] = $Trunks[$TrunkID_1];
+                                }else{
+                                    $cdrdata['trunk'] = 'Other';
                                 }
                                 if (isset($attrselection->extension) && !empty($attrselection->extension) && isset($temp_row[$attrselection->extension])) {
                                     $cdrdata['extension'] = $temp_row[$attrselection->extension];
