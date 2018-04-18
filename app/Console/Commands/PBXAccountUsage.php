@@ -79,6 +79,8 @@ class PBXAccountUsage extends Command
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID );
+        $tempRetailtableName = CompanyGateway::getUsagedetailRetailTablename($temptableName );
+
         Log::useFiles(storage_path() . '/logs/pbxaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
         /* To avoid runing same day cron job twice */
@@ -170,6 +172,15 @@ class PBXAccountUsage extends Command
                         $call_type = TempUsageDetail::check_call_type(strtolower($row_account["userfield"]),strtolower($row_account['cc_type']),strtolower($row_account['pincode']));
 
                         //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
+
+                        //if (strtolower(trim($row_account['cc_type'])) == strtolower(PBX::$CcType[PBX::OUTNOCHARGE])) {
+
+                        if (strtolower(trim($row_account['cc_type'])) == strtolower(PBX::$CcType[PBX::OUTNOCHARGE])) {
+                            $data['cc_type'] = PBX::OUTNOCHARGE;
+                        }else {
+                            $data['cc_type'] = 0;
+                        }
+
 
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
                         $data['CompanyID'] = $CompanyID;
@@ -297,6 +308,7 @@ class PBXAccountUsage extends Command
                 date_default_timezone_set(Config::get('app.timezone'));
             }
 
+
             $joblogdata['Message'] = "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'];
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             Log::error("pbx CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
@@ -307,10 +319,21 @@ class PBXAccountUsage extends Command
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+
+
+            /**
+             * insert into $tempRetailtableName
+             */
+
+            $sql = "INSERT INTO ".$tempRetailtableName. " (TempUsageDetailID,ID,cc_type,ProcessID) SELECT  TempUsageDetailID,ID,cc_type,ProcessID FROM ".  $temptableName . " WHERE ProcessID = '" .$processID . "'";
+            Log::info($sql);
+            DB::connection('sqlsrvcdr')->statement($sql);
+
             //ProcessCDR
-
+            /** pbx ProcessCDR New Tasks
+             * 1. update cost = 0 where cc_type = 4 (OUTNOCHARGE)
+             */
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
@@ -324,8 +347,12 @@ class PBXAccountUsage extends Command
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
             Log::error("PBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
+            /** pbx prc_insertCDR New Tasks
+             * 1. Move disposition <> "ANSWERED" to failed call
+             */
             Log::error('pbx prc_insertCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+
             Log::error('pbx prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;

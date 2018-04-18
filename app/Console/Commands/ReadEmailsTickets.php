@@ -142,9 +142,9 @@ class ReadEmailsTickets extends Command
 			$GroupID 			=	 $GroupData->GroupID;	
 			$minutes			=	 $GroupAssignTime/60; 
 			$datetime_from 		=    date("Y-m-d H:i:s", strtotime("-".$minutes." minutes"));	
-			
+			$closeStatus=TicketsTable::getClosedTicketStatus();
 			if($GroupAssignEmail){		
-				$Tickets 			= 	TicketsTable::select(['TicketID'])->where(["CompanyID"=>$CompanyID,"Group"=>$GroupID])->where(["Agent"=>0])->where(['EscalationEmail'=>0])->WhereRaw('created_at <= "'.$datetime_from.'"')->get();
+				$Tickets 			= 	TicketsTable::select(['TicketID'])->where(["CompanyID"=>$CompanyID,"Group"=>$GroupID])->where("Status", "!=", $closeStatus)->where(["Agent"=>0])->where(['EscalationEmail'=>0])->WhereRaw('created_at <= "'.$datetime_from.'"')->get();
 				 Log::error("**Escalation check for " .$GroupData->GroupName);
 				 Log::error("**Escalation Tickets:".count($Tickets)."Found");
 				foreach($Tickets as $TicketsData){

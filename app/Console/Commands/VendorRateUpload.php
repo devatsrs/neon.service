@@ -5,6 +5,7 @@
  * Date: 25/05/2015
  * Time: 06:58
  */
+//if you change anything in this file then you need to change also in RateTableRateUpload in service and RateUploadController.php->ReviewRates() in web
 
 namespace App\Console\Commands;
 
@@ -171,7 +172,9 @@ class VendorRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption);
+                        $Sheet = !empty($templateoptions->Sheet) ? $templateoptions->Sheet : '';
+
+                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption, $Sheet);
                         $results = $NeonExcel->read();
                         /*Log::info(print_r(array_slice($results,0,10),true));
                         Log::info(print_r(array_slice($results,-10,10),true));*/
@@ -250,7 +253,8 @@ class VendorRateUpload extends Command
                                     $tempvendordata['Change'] = 'I';
                                 }
 
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
+                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
                                     if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
                                         $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                     } else {
