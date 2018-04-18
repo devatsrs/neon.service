@@ -8,6 +8,10 @@ class Gateway extends \Eloquent {
 
     protected  $primaryKey = "GatewayID";
 
+    const FTP_CLASSIC = "classic";
+    const FTP_OVER_TLS_SSL = "ftps"; // FTP over TLS/SSL
+    const SSH_FILE_TRANSFER = "ssh"; // SSH File Transfer Protocol
+
     public  static  function getGatewayListID(){
         $row = Gateway::where(array('Status'=>1))->lists('Title', 'GatewayID');
         if(!empty($row)){
@@ -29,4 +33,7 @@ class Gateway extends \Eloquent {
     public static function getGatewayName($GatewayID){
         return Gateway::where(array('Status'=>1,'GatewayID'=>$GatewayID))->pluck('Name');
     }
+
+
+
 }

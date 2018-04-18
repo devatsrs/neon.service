@@ -224,6 +224,13 @@ class FTPAccountUsage extends Command
                                 } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)  && isset($temp_row[$attrselection->connect_date]) && isset($temp_row[$attrselection->connect_time])  && isset($attrselection->DateFormat) ) {
                                     $cdrdata['connect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]), $attrselection->DateFormat);
                                 }
+                                //when Date and Time has no '-' and '/'  ie. 20180308	160345
+                                if (isset($attrselection->connect_date) && !empty($attrselection->connect_date)  && isset($temp_row[$attrselection->connect_date]) && isset($temp_row[$attrselection->connect_time])  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->connect_date]) ) {
+                                    $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]));
+                                }
+
+
+
                                 if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && isset($temp_row[$attrselection->billed_duration]) ) {
                                     $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
                                     $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
@@ -231,8 +238,16 @@ class FTPAccountUsage extends Command
                                 if (isset($attrselection->duration) && !empty($attrselection->duration)  && isset($temp_row[$attrselection->duration]) ) {
                                     $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
                                 }
+
+
                                 if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)   && isset($temp_row[$attrselection->disconnect_time])  && isset($attrselection->DateFormat)   ) {
-                                    $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+
+                                    //when Date and Time has no '-' and '/'  ie. 20180308	160345
+                                    if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->disconnect_time]) ) {
+                                        $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->disconnect_time] . ' ' . $temp_row[$attrselection->disconnect_time]));
+                                    }else {
+                                        $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+                                    }
                                 } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && isset($cdrdata['connect_time']) && !empty($cdrdata['connect_time'])  ) {
                                     $strtotime = strtotime($cdrdata['connect_time']);
                                     $billed_duration = $cdrdata['billed_duration'];
