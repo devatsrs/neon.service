@@ -16,6 +16,7 @@ class FTPGateway{
     const DEFAULT_FILENAME = ".csv";
     const DEFAULT_GATEWAYNAME = "FTP";
 
+    private static $FTPSGatewayObj ;
     public function __construct($CompanyGatewayID){
 
 
@@ -35,8 +36,8 @@ class FTPGateway{
             }
         }else {
 
-            if(count($this->config) && isset($this->config['host']) && isset($this->config['username']) && isset($this->config['port'])  && isset($this->config['ssl'])   && isset($this->config['passive_mode']) && isset($this->config['password'])){
-                return new FTPSGateway($CompanyGatewayID);
+            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['port'])  && isset(self::$config['ssl'])   && isset(self::$config['passive_mode']) && isset(self::$config['password'])){
+                self::$FTPSGatewayObj  = new FTPSGateway($CompanyGatewayID);
             }
         }
 
@@ -57,6 +58,11 @@ class FTPGateway{
     }
 
     public static function getCDRs($addparams=array()){
+
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->getCDRs($addparams);
+        }
+
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $filename = array();
@@ -80,6 +86,10 @@ class FTPGateway{
         return $response;
     }
     public static function deleteCDR($addparams=array()){
+
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->deleteCDR($addparams);
+        }
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status =  RemoteFacade::delete(self::$config['cdr_folder'].'/'.$addparams['filename']);
@@ -90,6 +100,10 @@ class FTPGateway{
         return $status;
     }
     public static function downloadCDR($addparams=array()){
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->downloadCDR($addparams);
+        }
+
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] . $addparams['filename']);
