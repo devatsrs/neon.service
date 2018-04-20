@@ -107,11 +107,11 @@ class RegenerateInvoice extends Command {
                             DB::beginTransaction();
                             DB::connection('sqlsrv2')->beginTransaction();
 
-                            $FirstInvoice =  InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::FIRST_PERIOD)->count();
+                            $FirstInvoiceSend =  InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::FIRST_PERIOD)->count();
 
                             $hasUsageInInvoice =  InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::USAGE)->count();
 
-                            if($hasUsageInInvoice == 0 && $FirstInvoice==0){
+                            if($hasUsageInInvoice == 0 && $FirstInvoiceSend==0){
 
                                 $errors[] = $Account->AccountName .'('.$Invoice->FullInvoiceNumber.') ' . ' Invoice has no usage';
 
@@ -130,13 +130,8 @@ class RegenerateInvoice extends Command {
 
                                         Log::info(' ========================== Invoice Send Start =============================');
 
-                                        if($FirstInvoice==1) {
-                                            log::info('First Invoice Regenerate');
-                                            $response = Invoice::regenerateFirstInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceCopyEmail,$ProcessID,$JobID);
-                                        }else{
-                                            log::info('Regular Invoice Regenerate');
-                                            $response = Invoice::regenerateInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceCopyEmail,$ProcessID,$JobID);
-                                        }
+                                        log::info('Regular Invoice Regenerate');
+                                        $response = Invoice::regenerateInvoice($CompanyID, $Invoice, $InvoiceDetail, $InvoiceCopyEmail,$ProcessID,$JobID,$FirstInvoiceSend);
 
                                         if (isset($response["status"]) && $response["status"] == 'success') {
 
