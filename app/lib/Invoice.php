@@ -2115,7 +2115,6 @@ class Invoice extends \Eloquent {
                 }
             } // Loop over
             //Log::info($skip_accounts);
-            Break;
         } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
 
 
