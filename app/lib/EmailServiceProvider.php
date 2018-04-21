@@ -23,14 +23,14 @@ class EmailServiceProvider
 
     public static function getCC($cc){
 
-            if (!empty($cc)) {
+        if (!empty($cc)) {
             foreach ($cc as $ccmail) {
-            $cmail[] = $ccmail->mail;
+                $cmail[] = $ccmail->mail;
             }
-                $ccemail = implode(", ", $cmail);
-            } else {
-                $ccemail = '';
-            }
+            $ccemail = implode(", ", $cmail);
+        } else {
+            $ccemail = '';
+        }
         return $ccemail;
 
     }
