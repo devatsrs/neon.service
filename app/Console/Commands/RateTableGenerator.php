@@ -68,6 +68,7 @@ class RateTableGenerator extends Command {
         $job = Job::find($JobID);
         $ProcessID = Uuid::generate();
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
+        $username = User::get_user_full_name($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/ratetablegenerator-'.$JobID.'-'.date('Y-m-d').'.log');
         Log::info('job start '.$JobID);
@@ -102,15 +103,17 @@ class RateTableGenerator extends Command {
             $data['CompanyID'] = $CompanyID;
 
             $Policy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Policy");
+            $GroupBy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("GroupBy");
 
             if($Policy == \LCR::LCR_PREFIX){
-
-                Log::info("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
-                DB::statement("CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
+                $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                Log::info($query);
+                DB::statement($query);
 
             }else {
-                Log::info("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
-                DB::statement("CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."')");
+                $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                Log::info($query);
+                DB::statement($query);
 
             }
 

@@ -91,7 +91,7 @@ class FTPAccountUsage extends Command
             $FilesMaxProccess = '30';
         }
         $data_count = 0;
-        $insertLimit = 1000;
+        $insertLimit = 10;
 
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
@@ -177,7 +177,7 @@ class FTPAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
-            $CallID = 0;
+
             foreach ($filenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
