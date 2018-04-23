@@ -26,7 +26,8 @@ class AmazonS3 {
         'INVOICE_USAGE_FILE' =>  'InvoiceUsageFile',
         'INVOICE_UPLOAD' =>  'Invoices',
 		'EMAIL_ATTACHMENT'=>'EmailAttachment',
-		'REPORT_ATTACHMENT'=>'ReportAttachment'
+		'REPORT_ATTACHMENT'=>'ReportAttachment',
+		'DIGITAL_SIGNATURE_KEY'=>'DigitalSignature'
     );
 
     // Instantiate an S3 client
@@ -102,17 +103,17 @@ class AmazonS3 {
      * Generate Path
      * Ex. WaveTell/18-Y/VendorUploads/2015/05
      * */
-    static function generate_upload_path($dir ='',$accountId = '',$CompanyID ) {
+    static function generate_upload_path($dir ='',$accountId = '',$CompanyID, $noDateFolders=false) {
 
         if(empty($dir))
             return false;
 
-        $path = self::generate_path($dir,$CompanyID,$accountId);
+        $path = self::generate_path($dir,$CompanyID,$accountId, $noDateFolders);
 
         return $path;
     }
 
-    static function generate_path($dir ='',$companyId , $accountId = '' ) {
+    static function generate_path($dir ='',$companyId , $accountId = '', $noDateFolders=false ) {
         $UPLOADPATH = CompanyConfiguration::get($companyId,'UPLOAD_PATH');
         $path = $companyId  ."/";
 
@@ -120,7 +121,11 @@ class AmazonS3 {
             $path .= $accountId ."/";
         }
 
-        $path .=  $dir . "/". date("Y")."/".date("m") ."/" .date("d") ."/";
+        if($noDateFolders){
+            $path .=  $dir . "/";
+        }else{
+            $path .=  $dir . "/". date("Y")."/".date("m") ."/" .date("d") ."/";
+        }
         $dir = $UPLOADPATH . '/'. $path;
         if (!file_exists($dir)) {
             //exec("chmod -R 777 " . getenv('UPLOAD_PATH'));
