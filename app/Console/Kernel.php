@@ -104,9 +104,11 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\VoipNowAccountUsage',
 		'App\Console\Commands\VOS5000AccountUsage',
 		'App\Console\Commands\VOS5000DownloadCDR',
+		'App\Console\Commands\ReadEmailsAutoImport',
 		'App\Console\Commands\ResellerPBXAccountUsage',
 		'App\Console\Commands\FTPDownloadCDR',
 		'App\Console\Commands\FTPAccountUsage',
+
 
 	];
 
