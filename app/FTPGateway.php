@@ -22,7 +22,7 @@ class FTPGateway{
 
         $setting = GatewayAPI::getSetting($CompanyGatewayID,self::DEFAULT_GATEWAYNAME);
         foreach((array)$setting as $configkey => $configval){
-            if($configkey == 'password'){
+            if($configkey == 'password' && !empty($configval)){
                 self::$config[$configkey] = Crypt::decrypt($configval);
             }else{
                 self::$config[$configkey] = $configval;
