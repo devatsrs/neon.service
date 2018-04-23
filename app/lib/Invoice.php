@@ -2033,8 +2033,15 @@ class Invoice extends \Eloquent {
                                     $oldNextInvoiceDate = $NextInvoiceDate;
                                     //Add One Date In Last Charge Date because when we next period(Last Charge Date - Next Charge)Both Date include
                                     if($FirstInvoice==1) {
+                                        $CheckBillingStartDate = date("Y-m-d", strtotime($AccountBilling->BillingStartDate));
                                         $NewLastChargeDate = date("Y-m-d", strtotime($AccountBilling->NextChargeDate));
-                                        $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                                        if($NewLastChargeDate!=$CheckBillingStartDate){
+                                            $CheckChargeDate=date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($CheckChargeDate));
+                                        }else{
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                                        }
+
                                         $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
                                         log::info('FirstInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
                                     }else{
