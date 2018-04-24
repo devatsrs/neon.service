@@ -205,7 +205,8 @@ class Job extends \Eloquent {
                     $data["created_at"] = date('Y-m-d H:i:s');
                     $data["updated_at"] = date('Y-m-d H:i:s');
                     if ($JobFileID = JobFile::insertGetId($data)) {
-                        return $JobFileID;
+                        // return $JobFileID;
+                        return $JobID;
                     } else {
                         // error code
                     }
@@ -243,7 +244,8 @@ class Job extends \Eloquent {
                     $data["created_at"] = date('Y-m-d H:i:s');
                     $data["updated_at"] = date('Y-m-d H:i:s');
                     if ($JobFileID = JobFile::insertGetId($data)) {
-                        return $JobFileID;
+                       // return $JobFileID;
+                        return $JobID;
                     } else {
                         // error code
                     }

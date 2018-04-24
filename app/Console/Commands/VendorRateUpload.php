@@ -12,6 +12,7 @@ namespace App\Console\Commands;
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
+use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
