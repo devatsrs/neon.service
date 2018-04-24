@@ -600,6 +600,17 @@ class Invoice extends \Eloquent {
                 exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
 
+                if(CompanySetting::getKeyVal($companyID, 'UseDigitalSignature')==true){
+                    $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
+                    $signaturePath = CompanyConfiguration::get($companyID,'UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $companyID, true);
+                    $mypdfsignerOutput=RemoteSSH::run('mypdfsigner -i '.$local_file.' -o '.$newlocal_file.' -z '.$signaturePath.'mypdfsigner.conf -v -c -q');
+                    Log::info($mypdfsignerOutput);
+                    if(file_exists($newlocal_file)){
+                        RemoteSSH::run('rm '.$local_file);
+                        RemoteSSH::run('mv '.$newlocal_file.' '.$local_file);
+                    }
+                }
+
             }else{
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
@@ -2033,8 +2044,15 @@ class Invoice extends \Eloquent {
                                     $oldNextInvoiceDate = $NextInvoiceDate;
                                     //Add One Date In Last Charge Date because when we next period(Last Charge Date - Next Charge)Both Date include
                                     if($FirstInvoice==1) {
+                                        $CheckBillingStartDate = date("Y-m-d", strtotime($AccountBilling->BillingStartDate));
                                         $NewLastChargeDate = date("Y-m-d", strtotime($AccountBilling->NextChargeDate));
-                                        $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                                        if($NewLastChargeDate!=$CheckBillingStartDate){
+                                            $CheckChargeDate=date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($CheckChargeDate));
+                                        }else{
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                                        }
+
                                         $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
                                         log::info('FirstInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
                                     }else{
