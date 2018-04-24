@@ -60,8 +60,8 @@ class Invoice extends \Eloquent {
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
                 $dir = $UPLOADPATH . '/' . $amazonPath;
                 if (!file_exists($dir)) {
-                    RemoteSSH::run("mkdir -p " . $dir);
-                    RemoteSSH::run("chmod -R 777 " . $dir);
+                    RemoteSSH::run($CompanyID, "mkdir -p " . $dir);
+                    RemoteSSH::run($CompanyID, "chmod -R 777 " . $dir);
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
@@ -583,8 +583,8 @@ class Invoice extends \Eloquent {
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
             $destination_dir = $UPLOADPATH . '/'. $amazonPath;
             if (!file_exists($destination_dir)) {
-                RemoteSSH::run("mkdir -p " . $destination_dir);
-                RemoteSSH::run("chmod -R 777 " . $destination_dir);
+                RemoteSSH::run($companyID, "mkdir -p " . $destination_dir);
+                RemoteSSH::run($companyID, "chmod -R 777 " . $destination_dir);
             }
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
@@ -603,11 +603,11 @@ class Invoice extends \Eloquent {
                 if(CompanySetting::getKeyVal($companyID, 'UseDigitalSignature')==true){
                     $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
                     $signaturePath = CompanyConfiguration::get($companyID,'UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $companyID, true);
-                    $mypdfsignerOutput=RemoteSSH::run('mypdfsigner -i '.$local_file.' -o '.$newlocal_file.' -z '.$signaturePath.'mypdfsigner.conf -v -c -q');
+                    $mypdfsignerOutput=RemoteSSH::run($companyID, 'mypdfsigner -i '.$local_file.' -o '.$newlocal_file.' -z '.$signaturePath.'mypdfsigner.conf -v -c -q');
                     Log::info($mypdfsignerOutput);
                     if(file_exists($newlocal_file)){
-                        RemoteSSH::run('rm '.$local_file);
-                        RemoteSSH::run('mv '.$newlocal_file.' '.$local_file);
+                        RemoteSSH::run($companyID, 'rm '.$local_file);
+                        RemoteSSH::run($companyID, 'mv '.$newlocal_file.' '.$local_file);
                     }
                 }
 
