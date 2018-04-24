@@ -125,6 +125,8 @@ class ReadEmailsAutoImport extends Command
 				/* If "Sendor Email" And "From Email" Match Then We read the email and Save in table (tblAutoImport)  */
 				if( $autoImportSetting > 0 ){
 
+
+
 					$SaveData = array(
 						"AccountName" => $sender[0]->personal,
 						"Subject" => $Subject,
@@ -147,7 +149,7 @@ class ReadEmailsAutoImport extends Command
 
 					/* Job Log Start  ( IF Mail Match With Setting Then Job Log   )*/
 					if( !empty($results) ) {
-						//Log::info(print_r($results));
+						// Log::info(print_r($results));
 						$mapping_option = $emailread->GetMappingArray();
 
 						$data['Options'] = json_encode($mapping_option);
@@ -177,11 +179,14 @@ class ReadEmailsAutoImport extends Command
 						$data["CompanyID"] = $CompanyID;
 
 						DB::beginTransaction();
-						Job::CreateAutoImportJob($CompanyID,$job_type,$data);
+						$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
 						DB::commit();
 
 					}
 					/* Job Block End */
+					$jobID = !empty($jobId) ? $jobId : 0;
+					$SaveData["JobID"] = $jobID;
+					AutoImportRate::insert($SaveData);
 
 				}
 
@@ -195,3 +200,27 @@ class ReadEmailsAutoImport extends Command
 
 
 }
+
+
+
+
+
+/* Email Send by AUtoimport Start */
+/*
+$jobResult = DB::table('tblJob as j')
+	->join('tblJobStatus as js','j.JobStatusID','=','js.JobStatusID')
+	->where('j.JobID', $JobID)->select('js.Title','j.JobStatusMessage','j.CompanyID')->get();
+Log::info($jobResult);
+Log::info($jobResult[0]->Title);
+$subject = $jobResult[0]->Title;
+$body = $jobResult["JobStatusMessage"];
+// $email = DB::table('tblAutoImportInboxSetting')->where('CompanyID', $jobResult["Title"])->select('emailNotificationOnSuccess','emailNotificationOnFail')->get();
+$test123 = Helper::sendMail('emails.AccountActivityEmailSend', array(
+	'EmailTo' => 'vinesh.srs@gmail.com',
+	'EmailToName' => 'test',
+	'Subject' => 'Account activity reminder',
+	'CompanyID' => 'test',
+	'data' => array("AccountTaskData" => 'sdfsdf')
+));
+Log::info($test123);
+/* Email Send by AUtoimport End */
