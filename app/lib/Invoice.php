@@ -1674,6 +1674,12 @@ class Invoice extends \Eloquent {
             $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
             $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
             InvoiceDetail::insert($InvoiceDetailData);
+
+            $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+            $InvoiceStartDate = $EndDate;
+            $checkDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($checkDate)))));
+
         }
 
         $InvoiceDetailData = array();
@@ -2122,6 +2128,7 @@ class Invoice extends \Eloquent {
                 }
             } // Loop over
             //Log::info($skip_accounts);
+            //Break;
         } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
 
 
