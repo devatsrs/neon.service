@@ -37,6 +37,7 @@ class RateSheetDetails extends \Eloquent {
             $ratesheetdetaildata['Rate'] = $excel_data_row['rate per minute (usd)'];
             $ratesheetdetaildata['Change'] = $excel_data_row['change'];
             $ratesheetdetaildata['EffectiveDate'] = $excel_data_row['effective date'];
+            $ratesheetdetaildata['EndDate'] = $excel_data_row['end date'];
             $ratesheetdetaildata['Interval1'] = $excel_data_row['interval1'];
             $ratesheetdetaildata['IntervalN'] = $excel_data_row['intervaln'];
 
