@@ -102,6 +102,9 @@ class RateTableRateUpload extends Command
                     }
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
+                    if(isset($templateoptions->importdialcodessheet) && !empty($templateoptions->importdialcodessheet)) {
+                        $attrselection2 = $templateoptions->selection2;
+                    }
 
                     // check dialstring mapping or not
                     if (isset($attrselection->DialString) && !empty($attrselection->DialString)) {
@@ -122,8 +125,15 @@ class RateTableRateUpload extends Command
                         } else {
                             $dialcode_separator = $attrselection->DialCodeSeparator;
                         }
-                    } else {
+                    } /*else {
                         $dialcode_separator = 'null';
+                    }*/
+                    if(isset($attrselection2->DialCodeSeparator)){
+                        if($attrselection2->DialCodeSeparator == ''){
+                            $dialcode_separator = 'null';
+                        }else{
+                            $dialcode_separator = $attrselection2->DialCodeSeparator;
+                        }
                     }
 
                     if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
@@ -146,26 +156,56 @@ class RateTableRateUpload extends Command
                             }
                         }
 
-                        if(isset($templateoptions->skipRows) && $csvoption->Firstrow == 'columnname') {
-                            $skiptRows              = $templateoptions->skipRows;
-                            NeonExcelIO::$start_row = intval($skiptRows->start_row);
-                            NeonExcelIO::$end_row   = intval($skiptRows->end_row);
-                            $lineno                 = intval($skiptRows->start_row) + 2;
-                        } else if (isset($templateoptions->skipRows) && $csvoption->Firstrow == 'data') {
-                            $skiptRows              = $templateoptions->skipRows;
-                            NeonExcelIO::$start_row = intval($skiptRows->start_row);
-                            NeonExcelIO::$end_row   = intval($skiptRows->end_row);
-                            $lineno                 = intval($skiptRows->start_row) + 1;
+                        $data = json_decode(json_encode($templateoptions), true);
+                        $data['start_row'] = $data['skipRows']['start_row'];
+                        $data['end_row'] = $data['skipRows']['end_row'];
+                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            $data['start_row_sheet2'] = $data['skipRows_sheet2']['start_row'];
+                            $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
+                        }
+                        //convert excel to CSV
+                        $file_name_with_path = $jobfile->FilePath;
+                        $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
+                        $file_name = $NeonExcel->convertExcelToCSV($data);
+
+                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data['option'], $data['importdialcodessheet']);
+                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data);
+                        }
+
+                        if(isset($templateoptions->skipRows)) {
+                            $skipRows              = $templateoptions->skipRows;
+
+                            if($csvoption->Firstrow == 'columnname'){
+                                $lineno                 = intval($skipRows->start_row) + 2;
+                            }
+                            if($csvoption->Firstrow == 'data'){
+                                $lineno                 = intval($skipRows->start_row) + 1;
+                            }
+                            NeonExcelIO::$start_row = intval($skipRows->start_row);
+                            NeonExcelIO::$end_row   = intval($skipRows->end_row);
+                            $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                            $ratesheet = $NeonExcel->read();
+
+                            if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                                $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
+                                NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
+                                NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
+                                $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
+                                $dialcodessheet = $NeonExcel2->read();
+                            }
+
                         } else if ($csvoption->Firstrow == 'data') {
                             $lineno = 1;
                         } else {
                             $lineno = 2;
                         }
 
-                        $Sheet = !empty($templateoptions->Sheet) ? $templateoptions->Sheet : '';
-
-                        $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array)$csvoption, $Sheet);
-                        $results = $NeonExcel->read();
+                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            $results = $this->merge_arrays($ratesheet, $dialcodessheet);
+                        }else{
+                            $results = $ratesheet;
+                        }
 
                         // if EndDate is mapped and not empty than data will store in and insert from $batch_insert_array
                         // if EndDate is mapped and     empty than data will store in and insert from $batch_insert_array2
@@ -174,6 +214,12 @@ class RateTableRateUpload extends Command
                         foreach ($attrselection as $key => $value) {
                             $attrselection->$key = str_replace("\r",'',$value);
                             $attrselection->$key = str_replace("\n",'',$attrselection->$key);
+                        }
+                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            foreach ($attrselection2 as $key => $value) {
+                                $attrselection2->$key = str_replace("\r", '', $value);
+                                $attrselection2->$key = str_replace("\n", '', $attrselection2->$key);
+                            }
                         }
 
                         $error = array();
@@ -196,24 +242,45 @@ class RateTableRateUpload extends Command
                             //check empty row
                             $checkemptyrow = array_filter(array_values($temp_row));
                             if (!empty($checkemptyrow)) {
-                                if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
-                                    $tempratetabledata['CountryCode'] = trim($temp_row[$attrselection->CountryCode]);
-                                } else {
-                                    $tempratetabledata['CountryCode'] = '';
+                                if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
+                                    if(!empty($attrselection->CountryCode)) {
+                                        $selection_CountryCode = $attrselection->CountryCode;
+                                    } else if(!empty($attrselection2->CountryCode)) {
+                                        $selection_CountryCode = $attrselection2->CountryCode;
+                                    }
+                                    if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                        $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
+                                    } else {
+                                        $tempratetabledata['CountryCode'] = '';
+                                    }
                                 }
 
-                                if (isset($attrselection->Code) && !empty($attrselection->Code) && trim($temp_row[$attrselection->Code]) != '') {
-                                    $tempratetabledata['Code'] = trim($temp_row[$attrselection->Code]);
-                                } else if (isset($attrselection->CountryCode) && !empty($attrselection->CountryCode) && !empty($temp_row[$attrselection->CountryCode])) {
-                                    $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
-                                } else {
-                                    $error[] = 'Code is blank at line no:' . $lineno;
+                                if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
+                                    if(!empty($attrselection->Code)) {
+                                        $selection_Code = $attrselection->Code;
+                                    } else if(!empty($attrselection2->Code)) {
+                                        $selection_Code = $attrselection2->Code;
+                                    }
+                                    if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                        $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                    } else if (isset($selection_Code) && !empty($selection_Code) && !empty($temp_row[$selection_Code])) {
+                                        $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                                    } else {
+                                        $error[] = 'Code is blank at line no:' . $lineno;
+                                    }
                                 }
 
-                                if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                                    $tempratetabledata['Description'] = $temp_row[$attrselection->Description];
-                                } else {
-                                    $error[] = 'Description is blank at line no:' . $lineno;
+                                if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
+                                    if(!empty($attrselection->Description)) {
+                                        $selection_Description = $attrselection->Description;
+                                    } else if(!empty($attrselection2->Description)) {
+                                        $selection_Description = $attrselection2->Description;
+                                    }
+                                    if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
+                                        $tempratetabledata['Description'] = $temp_row[$selection_Description];
+                                    } else {
+                                        $error[] = 'Description is blank at line no:' . $lineno;
+                                    }
                                 }
 
                                 /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
@@ -252,19 +319,31 @@ class RateTableRateUpload extends Command
                                 }elseif($tempratetabledata['Change'] != 'D') {
                                     $error[] = 'Rate is blank at line no:'.$lineno;
                                 }
-                                if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                                    try {
-                                        $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
-                                    }catch (\Exception $e){
-                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
+
+                                if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
+                                    if(!empty($attrselection->EffectiveDate)) {
+                                        $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                    } else if(!empty($attrselection2->EffectiveDate)) {
+                                        $selection_EffectiveDate = $attrselection2->EffectiveDate;
                                     }
-                                }elseif(empty($attrselection->EffectiveDate)){
+
+                                    if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
+                                        try {
+                                            $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $attrselection->DateFormat);
+                                        } catch (\Exception $e) {
+                                            $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                        }
+                                    } elseif (empty($selection_EffectiveDate)) {
+                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                    } elseif ($tempratetabledata['Change'] == 'D') {
+                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                    } elseif ($tempratetabledata['Change'] != 'D') {
+                                        $error[] = 'EffectiveDate is blank at line no:' . $lineno;
+                                    }
+                                } else {
                                     $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                                }elseif($tempratetabledata['Change'] == 'D') {
-                                    $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                                }elseif($tempratetabledata['Change'] != 'D') {
-                                    $error[] = 'EffectiveDate is blank at line no:'.$lineno;
                                 }
+
                                 if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
                                     try {
                                         $tempratetabledata['EndDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
@@ -289,6 +368,7 @@ class RateTableRateUpload extends Command
                                         $tempratetabledata['DialStringPrefix'] = '';
                                     }
                                 }
+                                //echo "<pre>";print_r($tempratetabledata);exit;
                                 if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ( isset($tempratetabledata['Rate'])  || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                     if(isset($tempratetabledata['EndDate'])) {
                                         $batch_insert_array[] = $tempratetabledata;
@@ -406,6 +486,15 @@ class RateTableRateUpload extends Command
 
         CronHelper::after_cronrun($this->name, $this);
 
+    }
 
+    public function merge_arrays(&$array1, &$array2) {
+        $result = Array();
+        foreach($array1 as $key => &$value) {
+            $result[$key] = array_merge($value, $array2[$key]);
+            //remove null index from arrays
+            unset($result[$key][""]);
+        }
+        return $result;
     }
 }
