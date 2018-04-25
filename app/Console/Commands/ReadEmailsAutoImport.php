@@ -186,6 +186,7 @@ class ReadEmailsAutoImport extends Command
 					/* Job Block End */
 					$jobID = !empty($jobId) ? $jobId : 0;
 					$SaveData["JobID"] = $jobID;
+					$SaveData["CompanyID"] = $CompanyID;
 					AutoImportRate::insert($SaveData);
 
 				}
