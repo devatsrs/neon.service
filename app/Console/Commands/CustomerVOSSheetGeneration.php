@@ -78,12 +78,20 @@ class CustomerVOSSheetGeneration extends Command {
             $Effective = 'Now';
             if(!empty($joboptions->Effective)){
                 $Effective = $joboptions->Effective;
+                if($Effective == 'CustomDate') {
+                    $CustomDate = $joboptions->CustomDate;
+                } else {
+                    $CustomDate = date('Y-m-d');
+                }
             }
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'customervosdownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
-            $excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
+            //$excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
+            $query = "CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$CustomDate."','".$Format."')";
+            //Log::info($query);
+            $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');

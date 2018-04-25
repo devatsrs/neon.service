@@ -5,12 +5,14 @@
  * Date: 25/05/2015
  * Time: 06:58
  */
+//if you change anything in this file then you need to change also in RateTableRateUpload in service and RateUploadController.php->ReviewRates() in web
 
 namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
+use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
@@ -340,7 +342,8 @@ class VendorRateUpload extends Command
                                     $tempvendordata['Change'] = 'I';
                                 }
 
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
+                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
                                     if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
                                         $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                     } else {

@@ -5,6 +5,7 @@
  * Date: 25/05/2015
  * Time: 06:58
  */
+//if you change anything in this file then you need to change also in VendorRateUpload in service and RateUploadController.php->ReviewRates() in web
 
 namespace App\Console\Commands;
 
@@ -306,7 +307,8 @@ class RateTableRateUpload extends Command
                                     $tempratetabledata['Change'] = 'I';
                                 }
 
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric(trim($temp_row[$attrselection->Rate]))  ) {
+                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
+                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
                                     if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
                                         $tempratetabledata['Rate'] = trim($temp_row[$attrselection->Rate]);
                                     } else {
