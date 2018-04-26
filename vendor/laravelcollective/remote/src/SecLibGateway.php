@@ -307,34 +307,4 @@ class SecLibGateway implements GatewayInterface {
 
 		return $this->connection = new Net_SFTP( $this->host, $this->port );
 	}
-	/**
-	 * List  Dir
-	 *
-	 * @param  string $dir
-	 *
-	 * @return \Net_SFTP
-	 */
-	public function nlist( $dir) {
-		return $this->getConnection()->nlist( $dir);
-	}
-	/**
-	 * List  Dir
-	 *
-	 * @param  string $dir
-	 *
-	 * @return \Net_SFTP
-	 */
-	public function rawlist( $dir) {
-		return $this->getConnection()->rawlist( $dir);
-	}
-	/**
-	 * List  Dir
-	 *
-	 * @param  string $path
-	 *
-	 * @return \Net_SFTP
-	 */
-	public function delete( $path) {
-		return $this->getConnection()->delete( $path);
-	}
 }
