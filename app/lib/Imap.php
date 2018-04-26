@@ -231,9 +231,11 @@ protected $server;
 		$this->removeElementsByTagName('style', $doc); 
 		//removeElementsByTagName('link', $doc);
 		$body = $doc->getElementsByTagName('body')->item(0);
-		foreach ($body->childNodes as $child){
-			$mock->appendChild($mock->importNode($child, true));
-		}	
+		if(isset($body->childNodes)){
+			foreach ($body->childNodes as $child){
+				$mock->appendChild($mock->importNode($child, true));
+			}	
+		}
 		// output cleaned html
 		$msg = $mock->saveHtml();	
 		return $msg;	
