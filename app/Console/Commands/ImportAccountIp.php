@@ -299,6 +299,9 @@ class ImportAccountIp extends Command {
                         Log::error($err);
                     }
 
+                    DB::table('tblTempAccountIP')->where(["ProcessID"=>$ProcessID])->delete();
+
+
                 } // job option empty over
 
 
