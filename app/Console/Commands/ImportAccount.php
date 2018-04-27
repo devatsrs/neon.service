@@ -457,6 +457,8 @@ class ImportAccount extends Command {
                             Log::info('last batch insert ' . count($batch_insert_array));
                             DB::table('tblTempAccount')->insert($batch_insert_array);
                             Log::info('insertion end');
+
+
                         }
 
                     }//csv import end
@@ -502,7 +504,7 @@ class ImportAccount extends Command {
                         }else{
                             Log::info('Leads import End');
                         }
-                    }catch ( Exception $err ){
+                    } catch ( Exception $err ) {
                         try{
                             DB::rollback();
                         }catch (Exception $err) {
@@ -517,6 +519,9 @@ class ImportAccount extends Command {
                     }
 
                 }
+
+                DB::table('tblTempAccount')->where(["ProcessID"=>$ProcessID])->delete();
+                DB::table('tblTempAccountSippy')->where(["ProcessID"=>$ProcessID])->delete();
             }
 
 
