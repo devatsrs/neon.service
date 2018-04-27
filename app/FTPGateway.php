@@ -29,7 +29,7 @@ class FTPGateway{
             }
         }
 
-        if(isset($this->config['protocol_type']) && $this->config['protocol_type'] == Gateway::SSH_FILE_TRANSFER) {
+        if(isset(self::$config['protocol_type']) && self::$config['protocol_type'] == Gateway::SSH_FILE_TRANSFER) {
 
             if (count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])) {
                 Config::set('remote.connections.production', self::$config);
