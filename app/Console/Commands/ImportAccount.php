@@ -520,8 +520,6 @@ class ImportAccount extends Command {
 
                 }
 
-                DB::table('tblTempAccount')->where(["ProcessID"=>$ProcessID])->delete();
-                DB::table('tblTempAccountSippy')->where(["ProcessID"=>$ProcessID])->delete();
             }
 
 
