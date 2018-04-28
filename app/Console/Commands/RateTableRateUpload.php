@@ -202,7 +202,19 @@ class RateTableRateUpload extends Command
                         }
 
                         if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
-                            $results = $this->merge_arrays($ratesheet, $dialcodessheet);
+                            $Join1 = $data["selection"]['Join1'];
+                            $Join2 = $data["selection2"]['Join2'];
+                            foreach($ratesheet as $key => $value)
+                            {
+                                foreach($dialcodessheet as $key1 => $value1)
+                                {
+                                    if($value[$Join1] == $value1[$Join2])
+                                    {
+                                        $results[$key1] = array_merge($value1, $ratesheet[$key]);
+                                    }
+                                    unset($results[$key1][""]);
+                                }
+                            }
                         }else{
                             $results = $ratesheet;
                         }
@@ -488,13 +500,4 @@ class RateTableRateUpload extends Command
 
     }
 
-    public function merge_arrays(&$array1, &$array2) {
-        $result = Array();
-        foreach($array1 as $key => &$value) {
-            $result[$key] = array_merge($value, $array2[$key]);
-            //remove null index from arrays
-            unset($result[$key][""]);
-        }
-        return $result;
-    }
 }
