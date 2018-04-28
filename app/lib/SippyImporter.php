@@ -37,8 +37,8 @@ class SippyImporter
     public static function getAccountsDetail($addparams = array())
     {
         $response = array();
-        $currency = Currency::getCurrencyDropdownIDList();
-        $country = Country::getCountryDropdownList();
+        $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
+        $country = Country::getCountryDropdownList($addparams['CompanyID']);
 
         $TimeZone = 'GMT';
         date_default_timezone_set($TimeZone);
@@ -145,8 +145,8 @@ class SippyImporter
     public static function getVendorsDetail($addparams = array())
     {
         $response = array();
-        $currency = Currency::getCurrencyDropdownIDList();
-        $country = Country::getCountryDropdownList();
+        $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
+        $country = Country::getCountryDropdownList($addparams['CompanyID']);
 
         $TimeZone = 'GMT';
         date_default_timezone_set($TimeZone);
