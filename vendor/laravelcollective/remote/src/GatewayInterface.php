@@ -60,4 +60,10 @@ interface GatewayInterface {
 	 * @return int|bool
 	 */
 	public function status();
+
+	public function nlist($dir);
+
+	public function rawlist($dir);
+
+	public function delete($path);
 }
