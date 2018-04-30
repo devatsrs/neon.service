@@ -55,13 +55,14 @@ class ReadEmailsAutoImport extends Command
 
 		foreach($aFolder as $oFolder) {
 
-			if (!empty($LastEmailReadDateTime)) {
-				$LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
-				$aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);
-			} else {
-				$aMessage = $oFolder->searchMessages([['UNSEEN']]);
-			}
+			 if (!empty($LastEmailReadDateTime)) {
+				 $LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
+				 $aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);
+			 } else {
+				 $aMessage = $oFolder->searchMessages([['UNSEEN']]);
+			 }
 
+			
 			foreach ($aMessage as $oMessage) {
 
 
@@ -69,7 +70,9 @@ class ReadEmailsAutoImport extends Command
 				$fromMail = $from[0]->mail;
 				$MailDateTime = date('Y-m-d h:i:s', strtotime($oMessage->getDate()));
 				$sender = $oMessage->getSender();
+				$senderName = $sender[0]->personal;
 				$to = $oMessage->getTo();
+				$toMail=$to[0]->mail;
 				$MessageId = $oMessage->getMessageId();
 				$aAttachmentCount = $oMessage->getAttachments()->count();
 				$cc = $oMessage->getCc();
@@ -86,109 +89,140 @@ class ReadEmailsAutoImport extends Command
 				}
 
 
-				if ($aAttachmentCount > 0) {
-
-					$aAttachment = $oMessage->getAttachments();
-					$AttachmentFileNames = [];
-					$MatchedAttachmentFileNames = [];
-
-					foreach ($aAttachment as $oAttachment) {
-
-						$extension = \File::extension($oAttachment->getName());
-						$file_name = Uuid::generate() . '.' . strtolower($extension);
-						$AttachmentFileNames[] = $file_name;
-
-						$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['AUTOIMPORT_UPLOAD'],'',$CompanyID);
-						$fullPath = $upload_path . "/". $amazonPath;
-						$oAttachment->save($fullPath, $file_name);
-
-						if(!AmazonS3::upload($amazonPath.$file_name,$amazonPath,$CompanyID)){
-							throw new Exception('Error in Amazon upload');
-						}
-
-						if (in_array(strtolower($extension), array('xls','csv','xlsx') )) {
-							$MatchedAttachmentFileNames[] = $file_name;
-						}
-
-					}
-					$Attachments = implode(", ", $AttachmentFileNames);
-					$Final_AttachmentName = implode(", ", $MatchedAttachmentFileNames);
-
-				} else {
-					$Attachments = '';
-				}
-
-
-
-				$autoImportSetting = $emailread->GetMatchSubjectEmail($fromMail,$CompanyID);
-
+				$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$from[0]->mail."','".addslashes($Subject)."' )";
+				Log::info($query);
+				$results = DB::select($query);				
 				/* If "Sendor Email" And "From Email" Match Then We read the email and Save in table (tblAutoImport)  */
-				if( $autoImportSetting > 0 ){
+				if( !empty($results) ){
 
+					$results=array_shift($results);
+					$Attachments="";
+					$Final_AttachmentNameList="";
+					if ($aAttachmentCount > 0) {
 
+						$aAttachment = $oMessage->getAttachments();
+						$AttachmentFileNames = [];
+						$MatchedAttachmentFileNames = [];
 
-					$SaveData = array(
-						"AccountName" => $sender[0]->personal,
-						"Subject" => $Subject,
-						"Description" => $oMessage->getTextBody(),
-						"Attachment" => $Attachments,
-						"To" => $to[0]->mail,
-						"From" => $fromMail,
-						"CC" => $ccemail,
-						"MailDateTime" => $MailDateTime,
-						"MessageId" => $MessageId,
-						"created_at" => date('Y-m-d H:i:s'),
-						"created_by" => "System"
-					);
-					AutoImportRate::insert($SaveData);
+						foreach ($aAttachment as $oAttachment) {
 
+							$extension = \File::extension($oAttachment->getName());
+							$file_name = Uuid::generate() . '.' . strtolower($extension);
+							$AttachmentFileNames[] = $file_name;
 
-					$query = "call prc_ImportSettingMatch ( '".$from[0]->mail."','".$Subject."','".$Final_AttachmentName."' )";
-					Log::info($query);
-					$results = DB::select($query);
+							$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['AUTOIMPORT_UPLOAD'],'',$CompanyID);
+							$fullPath = $upload_path . "/". $amazonPath;
+							$oAttachment->save($fullPath, $file_name);
 
-					/* Job Log Start  ( IF Mail Match With Setting Then Job Log   )*/
-					if( !empty($results) ) {
-						// Log::info(print_r($results));
-						$mapping_option = $emailread->GetMappingArray();
+							if(!AmazonS3::upload($amazonPath.$file_name,$amazonPath,$CompanyID)){
+								throw new Exception('Error in Amazon upload');
+							}
 
-						$data['Options'] = json_encode($mapping_option);
-						if($results[0]->Type == 1){
-							// For Vendor Rate
-							$job_type = "VU" ;
-							$data['Trunk'] = $results[0]->TrunkID;
-							$data["AccountID"] = $results[0]->TypePKID;
-							$data['codedeckid'] = VendorTrunk::where(["AccountID" => $results[0]->TypePKID,'TrunkID'=>$data['Trunk']])->pluck("CodeDeckId");
-						}else{
-							// For RateTable
-							$job_type = "RTU" ;
-							$ratetable = \DB::table("tblRateTable")->select("RateTableName")->where('RateTableId','=',$results[0]->TypePKID)->get();
-							$data["ratetablename"] = $ratetable[0]->RateTableName;
-							$data["RateTableID"] = $results[0]->TypePKID;
+							if (in_array(strtolower($extension), array('xls','csv','xlsx') )) {
+								if(!empty($results->FileName) && $file_name==$results->FileName){
+									$MatchedAttachmentFileNames[] = $file_name;
+								}else{
+									$MatchedAttachmentFileNames[] = $file_name;
+								}
+							}
 
 						}
+						$Attachments = implode(", ", $AttachmentFileNames);
+						$Final_AttachmentNameList = implode(", ", $MatchedAttachmentFileNames);
 
-						$data['checkbox_replace_all'] = "0";
-						$data['checkbox_rates_with_effected_from'] = "1";
-						$data['checkbox_add_new_codes_to_code_decks'] = "1";
-						$data['radio_list_option'] = "1";
-
-						$data['uploadtemplate'] = $results[0]->ImportFileTempleteID;
-						$fullPath = $amazonPath . $Final_AttachmentName;
-						$data['full_path'] = $fullPath;
-						$data["CompanyID"] = $CompanyID;
-
-						DB::beginTransaction();
-						$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
-						DB::commit();
-
+					} else {
+						$Attachments = '';
 					}
-					/* Job Block End */
-					$jobID = !empty($jobId) ? $jobId : 0;
-					$SaveData["JobID"] = $jobID;
-					$SaveData["CompanyID"] = $CompanyID;
-					AutoImportRate::insert($SaveData);
 
+					if(!empty($Final_AttachmentNameList)){
+						/* Job Log Start  ( IF Mail Match With Setting Then Job Log   )*/
+						// Log::info(print_r($results));
+						foreach(explode(',', $Final_AttachmentNameList) as $Final_AttachmentName){
+							$data=array();
+							if($results->Type == 1){
+								// For Vendor Rate
+								$job_type = "VU" ;
+								$data['Trunk'] = $results->TrunkID;
+								$data["AccountID"] = $results->TypePKID;
+								$data['codedeckid'] = VendorTrunk::where(["AccountID" => $results->TypePKID,'TrunkID'=>$data['Trunk']])->pluck("CodeDeckId");
+								$AccountID = $results->TypePKID;
+							}else{
+								// For RateTable
+								$job_type = "RTU" ;
+								$ratetable = \DB::table("tblRateTable")->select("RateTableName")->where('RateTableId','=',$results->TypePKID)->get();
+								$data["ratetablename"] = $ratetable[0]->RateTableName;
+								$data["RateTableID"] = $results->TypePKID;
+								$data['codedeckid']="";
+								$AccountID = Account::where("Email", $fromMail)->pluck('AccountID');
+							}
+
+							$options=json_decode($results->Options);
+							$arrOptions=array();
+							$arrOptions["skipRows"]=$options->skipRows;
+							$arrOptions["importratesheet"]=$options->importratesheet;
+							$arrOptions["option"]=$options->option;
+							$arrOptions["selection"]=$options->selection;
+							$arrOptions["Trunk"]=$results->TrunkID;
+							$arrOptions["codedeckid"]=$data['codedeckid'];
+							$arrOptions["uploadtemplate"]=$results->ImportFileTempleteID;
+							$arrOptions["checkbox_replace_all"]=$options->Settings->checkbox_replace_all;
+							$arrOptions["checkbox_rates_with_effected_from"]=$options->Settings->checkbox_rates_with_effected_from;
+							$arrOptions["checkbox_add_new_codes_to_code_decks"]=$options->Settings->checkbox_add_new_codes_to_code_decks;
+							$arrOptions["checkbox_review_rates"]=$options->Settings->checkbox_review_rates;
+							$arrOptions["radio_list_option"]=$options->Settings->radio_list_option;
+							$data['Options'] = json_encode($arrOptions);
+
+							$data['uploadtemplate'] = $results->ImportFileTempleteID;
+							$fullPath = $amazonPath . $Final_AttachmentName;
+							$data['full_path'] = $fullPath;
+							$data["CompanyID"] = $CompanyID;
+							$data['checkbox_replace_all'] = $arrOptions["checkbox_replace_all"];
+							$data['checkbox_rates_with_effected_from'] = $arrOptions["checkbox_rates_with_effected_from"];
+							$data['checkbox_add_new_codes_to_code_decks'] = $arrOptions["checkbox_add_new_codes_to_code_decks"];
+							$data['radio_list_option'] = $arrOptions["checkbox_review_rates"];
+							DB::beginTransaction();
+							$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
+							DB::commit();
+
+							/* Job Block End */
+							$jobID = !empty($jobId) ? $jobId : 0;
+
+							$SaveData = array(
+								"AccountID" => $AccountID,
+								"AccountName" => $senderName,
+								"Subject" => $Subject,
+								"Description" => $oMessage->getTextBody(),
+								"Attachment" => $Attachments,
+								"To" => $toMail,
+								"From" => $fromMail,
+								"CC" => $ccemail,
+								"MailDateTime" => $MailDateTime,
+								"MessageId" => $MessageId,
+								"created_at" => date('Y-m-d H:i:s'),
+								"created_by" => "System",
+								"JobID" => $jobID,
+								"CompanyID" => $CompanyID
+							);
+							AutoImportRate::insert($SaveData);
+						}
+					}else{
+						$SaveData = array(
+							"AccountName" => $senderName,
+							"Subject" => $Subject,
+							"Description" => $oMessage->getTextBody(),
+							"Attachment" => $Attachments,
+							"To" => $toMail,
+							"From" => $fromMail,
+							"CC" => $ccemail,
+							"MailDateTime" => $MailDateTime,
+							"MessageId" => $MessageId,
+							"created_at" => date('Y-m-d H:i:s'),
+							"created_by" => "System",
+							"JobID" => 0,
+							"CompanyID" => $CompanyID
+						);
+						AutoImportRate::insert($SaveData);
+					}
 				}
 
 			}
