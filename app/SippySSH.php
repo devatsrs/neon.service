@@ -16,8 +16,11 @@ class SippySSH{
     public static $customer_cdr_file_name = "cdrs-thrift.bin.";
     public static $vendor_cdr_file_name = "cdrs_connections-thrift.bin.";
 
+    public static $GatewayName = "SippySFTP";
+
+
     public function __construct($CompanyGatewayID){
-        $setting = GatewayAPI::getSetting($CompanyGatewayID,'SippySFTP');
+        $setting = GatewayAPI::getSetting($CompanyGatewayID,self::$GatewayName);
         foreach((array)$setting as $configkey => $configval){
             if($configkey == 'password'){
                 self::$config[$configkey] = Crypt::decrypt($configval);

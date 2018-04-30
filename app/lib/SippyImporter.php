@@ -10,6 +10,7 @@ namespace App\Lib;
 
 //use App\Lib\SippySFTP;
 use App\Sippy;
+use App\SippySSH;
 use \Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Webpatser\Uuid\Uuid;
@@ -574,7 +575,7 @@ class SippyImporter
         $data["importprocessid"] = $ProcessID;
         $data["criteria"] = 1;
         $data["companygatewayid"] = $CompanyGatewayID;
-        $data["gateway"] = 'sippy';
+        $data["gateway"] =  SippySSH::$GatewayName;
 
         $JobID = Job::CreateJob($CompanyID,'MGA',$data);
 
