@@ -249,7 +249,7 @@ class AmazonS3 {
     static function download($CompanyID,$key,$destination){
         $path = self::unSignedUrl($key,$CompanyID);
         if (strpos($path, "https://") !== false) {
-            $file = $destination . basename($path);
+            $file = $destination;
             file_put_contents($file, file_get_contents($path));
         }
         return $path;
