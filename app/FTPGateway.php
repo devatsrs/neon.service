@@ -3,6 +3,7 @@ namespace App;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanyGateway;
 use App\Lib\Gateway;
 use Collective\Remote\RemoteFacade;
 use \Exception;
