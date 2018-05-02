@@ -35,42 +35,4 @@ class EmailServiceProvider
 
     }
 
-    public static function GetMatchSubjectEmail($fromMail,$CompanyID){
-        $autoImportSetting = \DB::table("tblAutoImportSetting")->whereRaw(" CompanyID = '".$CompanyID."' AND '".$fromMail."' LIKE  CONCAT('%', SendorEmail, '%')  ")->count();
-        return $autoImportSetting;
-    }
-
-    Public static function GetMappingArray(){
-        $Staticdata =
-            Array	(
-                "option" => Array(
-                    "Delimiter" => '',
-                    "Enclosure" =>'',
-                    "Escape" => '',
-                    "Firstrow" => "columnname"
-                ),
-                "selection" => Array(
-                    "Code" => "Code",
-                    "Description" => "Destination",
-                    "Rate" => "Rate",
-                    "EffectiveDate" => "Effective Date",
-                    "Action" => "Action",
-                    "ActionInsert" => "I",
-                    "ActionUpdate" => "U",
-                    "ActionDelete" => "D",
-                    "Interval1" => "Interval1",
-                    "IntervalN" => "IntervalN",
-                    "ConnectionFee" => "Connection Fee",
-                    "DateFormat" => "d-m-Y"
-                )
-
-            );
-        return $Staticdata;
-    }
-
-
-
-
-
-
 }

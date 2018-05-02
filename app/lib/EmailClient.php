@@ -8,12 +8,12 @@ class EmailClient
     protected $clientData;
     function connectClientEmail($CompanyID)
     {
-        $inboxSetting = AutoImportInboxSetting::select('host','port','encryption','validate_cert','username','password')->where('CompanyID','=',$CompanyID)->get();
+        $inboxSetting = AutoImportInboxSetting::select('host','port','IsSSL','username','password')->where('CompanyID','=',$CompanyID)->get();
         $oClient = new Client([
             'host' => $inboxSetting[0]->host,
             'port' => $inboxSetting[0]->port,
-            'encryption' => $inboxSetting[0]->encryption,
-            'validate_cert' => $inboxSetting[0]->validate_cert,
+            'IsSSL' => $inboxSetting[0]->IsSSL==1?'ssl':'tls',
+            'validate_cert' => $inboxSetting[0]->IsSSL==1? 'true':'false',
             'username' => $inboxSetting[0]->username,
             'password' => $inboxSetting[0]->password,
         ]);
