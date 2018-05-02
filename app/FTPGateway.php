@@ -3,6 +3,7 @@ namespace App;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanyGateway;
 use App\Lib\Gateway;
 use Collective\Remote\RemoteFacade;
 use \Exception;
@@ -35,18 +36,24 @@ class FTPGateway{
             if (count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])) {
                 Config::set('remote.connections.production', self::$config);
 
-                if(isset(self::$config["key"]) && !empty(self::$config["key"])) {
+                if(isset(self::$config["key"]) && !empty(self::$config["key"]) ) {
+
                     $CompanyID = CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('CompanyID');
                     $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-                    $destination = $UPLOADPATH  . '/' . AmazonS3::$dir["GATEWAY_KEY"] . "/" . self::$config["key"];
-                    $path = AmazonS3::download($CompanyID,self::$config["key"],$destination);
-                    $key = "";
-                    if(file_exists($path)){
-                        $key = $path;
-                    } else {
+                    $full_key_path = $UPLOADPATH   . "/" . self::$config["key"];
 
+                    if(!file_exists($full_key_path)) {
+                        $path = AmazonS3::download($CompanyID, self::$config["key"], $full_key_path);
+                        $full_key_path = "";
+                        if (file_exists($path)) {
+                            $full_key_path = $path;
+                        } else {
+
+                        }
                     }
-                    Config::set('remote.connections.production.key',   $key);
+
+                    Config::set('remote.connections.production.key',   $full_key_path);
+
                 }
 
 
