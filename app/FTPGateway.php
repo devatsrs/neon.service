@@ -39,7 +39,7 @@ class FTPGateway{
                 if(isset(self::$config["key"]) && !empty(self::$config["key"])) {
                     $CompanyID = CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('CompanyID');
                     $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-                    $destination = $UPLOADPATH  . '/' . AmazonS3::$dir["GATEWAY_KEY"] . "/" . self::$config["key"];
+                    $destination = $UPLOADPATH   . "/" . self::$config["key"];
                     $path = AmazonS3::download($CompanyID,self::$config["key"],$destination);
                     $key = "";
                     if(file_exists($path)){
