@@ -2195,7 +2195,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($usage_data[$key_col_comb]['AvgRate'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -2203,7 +2203,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb] = $result_row;
                         $usage_data[$key_col_comb]['ChargedAmount'] = number_format($usage_data[$key_col_comb]['ChargedAmount'],$RoundChargesCDR);
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($usage_data[$key_col_comb]['AvgRate'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -2400,7 +2400,7 @@ class Invoice extends \Eloquent {
             foreach($usage_data as $row_key =>$usage_data_row){
                 if (isset($usage_data_row['AreaPrefix'])) {
                     if($usage_data_row['BillDurationInSec'] != 0) {
-                        $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount'] / $usage_data_row['BillDurationInSec']) * 60, 6);
+                        $usage_data_row['AvgRatePerMin'] = number_format($usage_data_row['AvgRate'], 6);
                     }else{
                         $usage_data_row['AvgRatePerMin'] = 0;
                     }
@@ -2501,6 +2501,7 @@ class Invoice extends \Eloquent {
     }
 
     public static function NumberFormatNoZeroValue($value,$decimal_point) {
+        $value=str_replace(',','',$value);
         $value2 = number_format($value,$decimal_point);
         $default_value = "0.000000";
         $result = $value2==0 && $value>0 ? (float) substr_replace($default_value,'1',$decimal_point+1) : $value2;
