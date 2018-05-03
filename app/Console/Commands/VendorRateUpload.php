@@ -306,12 +306,14 @@ class VendorRateUpload extends Command
                                 if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
                                     if(!empty($attrselection->Code)) {
                                         $selection_Code = $attrselection->Code;
+                                        $selection_CountryCode = $attrselection->CountryCode;
                                     } else if(!empty($attrselection2->Code)) {
                                         $selection_Code = $attrselection2->Code;
+                                        $selection_CountryCode = $attrselection2->CountryCode;
                                     }
                                     if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
                                         $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (isset($selection_Code) && !empty($selection_Code) && !empty($temp_row[$selection_Code])) {
+                                    } else if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
                                         $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
                                     } else {
                                         $error[] = 'Code is blank at line no:' . $lineno;
@@ -371,13 +373,15 @@ class VendorRateUpload extends Command
                                 if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
                                     if(!empty($attrselection->EffectiveDate)) {
                                         $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                        $selection_dateformat = $attrselection->DateFormat;
                                     } else if(!empty($attrselection2->EffectiveDate)) {
                                         $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                        $selection_dateformat = $attrselection2->DateFormat;
                                     }
 
                                     if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
                                         try {
-                                            $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $attrselection->DateFormat);
+                                            $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
                                         } catch (\Exception $e) {
                                             $error[] = 'Date format is Wrong  at line no:' . $lineno;
                                         }
