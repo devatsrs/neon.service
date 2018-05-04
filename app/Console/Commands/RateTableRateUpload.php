@@ -102,7 +102,7 @@ class RateTableRateUpload extends Command
                     }
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
-                    if(isset($templateoptions->importdialcodessheet) && !empty($templateoptions->importdialcodessheet)) {
+                    if(!empty($templateoptions->importdialcodessheet)) {
                         $attrselection2 = $templateoptions->selection2;
                     }
 
@@ -159,7 +159,7 @@ class RateTableRateUpload extends Command
                         $data = json_decode(json_encode($templateoptions), true);
                         $data['start_row'] = $data['skipRows']['start_row'];
                         $data['end_row'] = $data['skipRows']['end_row'];
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $data['start_row_sheet2'] = $data['skipRows_sheet2']['start_row'];
                             $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
                         }
@@ -168,7 +168,7 @@ class RateTableRateUpload extends Command
                         $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
                         $file_name = $NeonExcel->convertExcelToCSV($data);
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data['option'], $data['importdialcodessheet']);
                             $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data);
                         }
@@ -187,7 +187,7 @@ class RateTableRateUpload extends Command
                             $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
                             $ratesheet = $NeonExcel->read();
 
-                            if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            if(!empty($data['importdialcodessheet'])) {
                                 $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
                                 NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
                                 NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
@@ -201,7 +201,7 @@ class RateTableRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $Join1 = $data["selection"]['Join1'];
                             $Join2 = $data["selection2"]['Join2'];
                             foreach($ratesheet as $key => $value)
@@ -227,7 +227,7 @@ class RateTableRateUpload extends Command
                             $attrselection->$key = str_replace("\r",'',$value);
                             $attrselection->$key = str_replace("\n",'',$attrselection->$key);
                         }
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             foreach ($attrselection2 as $key => $value) {
                                 $attrselection2->$key = str_replace("\r", '', $value);
                                 $attrselection2->$key = str_replace("\n", '', $attrselection2->$key);
@@ -270,14 +270,12 @@ class RateTableRateUpload extends Command
                                 if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
                                     if(!empty($attrselection->Code)) {
                                         $selection_Code = $attrselection->Code;
-                                        $selection_CountryCode = $attrselection->CountryCode;
                                     } else if(!empty($attrselection2->Code)) {
                                         $selection_Code = $attrselection2->Code;
-                                        $selection_CountryCode = $attrselection2->CountryCode;
                                     }
                                     if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
                                         $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                    } else if (!empty($tempvendordata['CountryCode'])) {
                                         $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
                                     } else {
                                         $error[] = 'Code is blank at line no:' . $lineno;
