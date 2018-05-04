@@ -6,6 +6,9 @@ use App\Lib\AmazonS3;
 use App\Lib\AutoImportRate;
 use App\Lib\AutoImportSetting;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CronHelper;
+use App\Lib\CronJob;
+use App\Lib\CronJobLog;
 use App\Lib\Job;
 use App\Lib\Trunk;
 use App\Lib\User;
@@ -38,72 +41,76 @@ class ReadEmailsAutoImport extends Command
 	}
 	public function fire()
 	{
+		CronHelper::before_cronrun($this->name, $this );
 		$arguments = $this->argument();
 		$CompanyID = $arguments["CompanyID"];
 		$CronJobID = $arguments["CronJobID"];
-		$emailread = new EmailServiceProvider();
+		$CronJob = CronJob::find($CronJobID);
+		$cronsetting 	= 	json_decode($CronJob->Settings,true);
 
-		//Get all Mailboxes
-		$aFolder = $emailread->connectEmail($CompanyID);
-		$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime();
+		CronJob::activateCronJob($CronJob);
+		CronJob::createLog($CronJobID);
 
-		$upload_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+		Log::useFiles(storage_path() . '/logs/reademailsautoimport-' . $CronJobID . '-' . date('Y-m-d') . '.log');
 
+		$joblogdata = array();
+		$joblogdata['CronJobID'] = $CronJobID;
+		$joblogdata['created_at'] = date('Y-m-d H:i:s');
+		$joblogdata['created_by'] = 'RMScheduler';
+		try
+		{
+			$emailread = new EmailServiceProvider();
 
-		//Loop through every Mailbox
-		/** @var \Webklex\IMAP\Folder $oFolder */
+			//Get all Mailboxes
+			$aFolder = $emailread->connectEmail($CompanyID);
+			$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime();
 
-		foreach($aFolder as $oFolder) {
-
-			 if (!empty($LastEmailReadDateTime)) {
-				 $LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
-				 $aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);
-			 } else {
-				 $aMessage = $oFolder->searchMessages([['UNSEEN']]);
-			 }
-
-			
-			foreach ($aMessage as $oMessage) {
+			$upload_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
 
-				$from = $oMessage->getFrom();
-				$fromMail = $from[0]->mail;
-				$MailDateTime = date('Y-m-d h:i:s', strtotime($oMessage->getDate()));
-				$sender = $oMessage->getSender();
-				$senderName = $sender[0]->personal;
-				$to = $oMessage->getTo();
-				$toMail=$to[0]->mail;
-				$MessageId = $oMessage->getMessageId();
-				$aAttachmentCount = $oMessage->getAttachments()->count();
-				$cc = $oMessage->getCc();
-				$ccemail = $emailread->getCC($cc);
-				$Subject = $oMessage->getSubject();
+			//Loop through every Mailbox
+			/** @var \Webklex\IMAP\Folder $oFolder */
+
+			foreach($aFolder as $oFolder) {
+
+				  if (!empty($LastEmailReadDateTime)) {
+				 	 $LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
+				 	 $aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);
+				  } else {
+				 	 $aMessage = $oFolder->searchMessages([['UNSEEN']]);
+				  }
+//				$aMessage = $oFolder->searchMessages([['UNSEEN']]);
+				foreach ($aMessage as $oMessage) {
+					$from = $oMessage->getFrom();
+					$fromMail = $from[0]->mail;
+					$MailDateTime = date('Y-m-d h:i:s', strtotime($oMessage->getDate()));
+					$sender = $oMessage->getSender();
+					$senderName = $sender[0]->personal;
+					$to = $oMessage->getTo();
+					$toMail=$to[0]->mail;
+					$MessageId = $oMessage->getMessageId();
+					$aAttachmentCount = $oMessage->getAttachments()->count();
+					$cc = $oMessage->getCc();
+					$ccemail = $emailread->getCC($cc);
+					$Subject = $oMessage->getSubject();
 
 
-				if(!empty($MessageId) && AutoImportRate::where( ["CompanyID" => $CompanyID, 'MessageId'=> $MessageId] )->count() > 0){
-					Log::info("Already Imported. MessageId " . $MessageId);
-					continue;
-				} else if(empty($MessageId) && AutoImportRate::where( ["CompanyID" => $CompanyID, 'MailDateTime'=> $MailDateTime  , "Subject" => $Subject   ] )->count() > 0){
-					Log::info("Already Imported. MailDateTime " . $MailDateTime);
-					continue;
-				}
+					if(!empty($MessageId) && AutoImportRate::where( ["CompanyID" => $CompanyID, 'MessageId'=> $MessageId] )->count() > 0){
+						Log::info("Already Imported. MessageId " . $MessageId);
+						continue;
+					} else if(empty($MessageId) && AutoImportRate::where( ["CompanyID" => $CompanyID, 'MailDateTime'=> $MailDateTime  , "Subject" => $Subject   ] )->count() > 0){
+						Log::info("Already Imported. MailDateTime " . $MailDateTime);
+						continue;
+					}
 
-
-				$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$from[0]->mail."','".addslashes($Subject)."' )";
-				Log::info($query);
-				$results = DB::select($query);				
-				/* If "Sendor Email" And "From Email" Match Then We read the email and Save in table (tblAutoImport)  */
-				if( !empty($results) ){
-
-					$results=array_shift($results);
 					$Attachments="";
-					$Final_AttachmentNameList="";
+					$MatchedAttachmentFileNames = [];
+
 					if ($aAttachmentCount > 0) {
 
 						$aAttachment = $oMessage->getAttachments();
 						$AttachmentFileNames = [];
-						$MatchedAttachmentFileNames = [];
-
+						
 						foreach ($aAttachment as $oAttachment) {
 
 							$extension = \File::extension($oAttachment->getName());
@@ -114,97 +121,99 @@ class ReadEmailsAutoImport extends Command
 							$fullPath = $upload_path . "/". $amazonPath;
 							$oAttachment->save($fullPath, $file_name);
 
-							if(!AmazonS3::upload($amazonPath.$file_name,$amazonPath,$CompanyID)){
+							if(!AmazonS3::upload($fullPath.$file_name,$amazonPath,$CompanyID)){
 								throw new Exception('Error in Amazon upload');
 							}
 
 							if (in_array(strtolower($extension), array('xls','csv','xlsx') )) {
-								if(!empty($results->FileName) && $file_name==$results->FileName){
-									$MatchedAttachmentFileNames[] = $file_name;
-								}else{
-									$MatchedAttachmentFileNames[] = $file_name;
-								}
+								$MatchedAttachmentFileNames[strtolower(pathinfo($oAttachment->getName(), PATHINFO_FILENAME))] = $file_name;
 							}
 
 						}
 						$Attachments = implode(", ", $AttachmentFileNames);
-						$Final_AttachmentNameList = implode(", ", $MatchedAttachmentFileNames);
 
-					} else {
-						$Attachments = '';
 					}
 
-					if(!empty($Final_AttachmentNameList)){
-						/* Job Log Start  ( IF Mail Match With Setting Then Job Log   )*/
-						// Log::info(print_r($results));
-						foreach(explode(',', $Final_AttachmentNameList) as $Final_AttachmentName){
-							$data=array();
-							if($results->Type == 1){
-								// For Vendor Rate
-								$job_type = "VU" ;
-								$data['Trunk'] = $results->TrunkID;
-								$data["AccountID"] = $results->TypePKID;
-								$data['codedeckid'] = VendorTrunk::where(["AccountID" => $results->TypePKID,'TrunkID'=>$data['Trunk']])->pluck("CodeDeckId");
-								$AccountID = $results->TypePKID;
-							}else{
-								// For RateTable
-								$job_type = "RTU" ;
-								$ratetable = \DB::table("tblRateTable")->select("RateTableName")->where('RateTableId','=',$results->TypePKID)->get();
-								$data["ratetablename"] = $ratetable[0]->RateTableName;
-								$data["RateTableID"] = $results->TypePKID;
-								$data['codedeckid']="";
-								$AccountID = Account::where("Email", $fromMail)->pluck('AccountID');
-							}
+					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".implode(", ", array_keys($MatchedAttachmentFileNames))."' )";
+					Log::info($query);
+					Log::info($MatchedAttachmentFileNames);
+					$results = DB::select($query);
+					/* If "Sendor Email" And "From Email" Match Then We read the email and Save in table (tblAutoImport)  */
+					if( !empty($results) ){
+						foreach($results as $matchData){
+								$data=array();
+								if($matchData->Type == 1){
+									// For Vendor Rate
+									$job_type = "VU" ;
+									$data['Trunk'] = $matchData->TrunkID;
+									$data["AccountID"] = $matchData->TypePKID;
+									$data['codedeckid'] = VendorTrunk::where(["AccountID" => $matchData->TypePKID,'TrunkID'=>$data['Trunk']])->pluck("CodeDeckId");
+									$AccountID = $matchData->TypePKID;
+								}else{
+									// For RateTable
+									$job_type = "RTU" ;
+									$ratetable = \DB::table("tblRateTable")->select("RateTableName")->where('RateTableId','=',$matchData->TypePKID)->get();
+									$data["ratetablename"] = $ratetable[0]->RateTableName;
+									$data["RateTableID"] = $matchData->TypePKID;
+									$data['codedeckid']="";
+									$AccountID = 0;
+								}
 
-							$options=json_decode($results->Options);
-							$arrOptions=array();
-							$arrOptions["skipRows"]=$options->skipRows;
-							$arrOptions["importratesheet"]=$options->importratesheet;
-							$arrOptions["option"]=$options->option;
-							$arrOptions["selection"]=$options->selection;
-							$arrOptions["Trunk"]=$results->TrunkID;
-							$arrOptions["codedeckid"]=$data['codedeckid'];
-							$arrOptions["uploadtemplate"]=$results->ImportFileTempleteID;
-							$arrOptions["checkbox_replace_all"]=$options->Settings->checkbox_replace_all;
-							$arrOptions["checkbox_rates_with_effected_from"]=$options->Settings->checkbox_rates_with_effected_from;
-							$arrOptions["checkbox_add_new_codes_to_code_decks"]=$options->Settings->checkbox_add_new_codes_to_code_decks;
-							$arrOptions["checkbox_review_rates"]=$options->Settings->checkbox_review_rates;
-							$arrOptions["radio_list_option"]=$options->Settings->radio_list_option;
-							$data['Options'] = json_encode($arrOptions);
+								$options=json_decode($matchData->options);
+								$arrOptions=array();
+								$arrOptions["skipRows"]=$options->skipRows;
+								$arrOptions["importratesheet"]=$options->importratesheet;
+								$arrOptions["option"]=$options->option;
+								$arrOptions["selection"]=$options->selection;
+								$arrOptions["Trunk"]=$matchData->TrunkID;
+								$arrOptions["codedeckid"]=$data['codedeckid'];
+								$arrOptions["uploadtemplate"]=$matchData->ImportFileTempleteID;
+								$arrOptions["checkbox_replace_all"]=$options->Settings->checkbox_replace_all;
+								$arrOptions["checkbox_rates_with_effected_from"]=$options->Settings->checkbox_rates_with_effected_from;
+								$arrOptions["checkbox_add_new_codes_to_code_decks"]=$options->Settings->checkbox_add_new_codes_to_code_decks;
+								$arrOptions["checkbox_review_rates"]=$options->Settings->checkbox_review_rates;
+								$arrOptions["radio_list_option"]=$options->Settings->radio_list_option;
+								$data['Options'] = json_encode($arrOptions);
 
-							$data['uploadtemplate'] = $results->ImportFileTempleteID;
-							$fullPath = $amazonPath . $Final_AttachmentName;
-							$data['full_path'] = $fullPath;
-							$data["CompanyID"] = $CompanyID;
-							$data['checkbox_replace_all'] = $arrOptions["checkbox_replace_all"];
-							$data['checkbox_rates_with_effected_from'] = $arrOptions["checkbox_rates_with_effected_from"];
-							$data['checkbox_add_new_codes_to_code_decks'] = $arrOptions["checkbox_add_new_codes_to_code_decks"];
-							$data['radio_list_option'] = $arrOptions["checkbox_review_rates"];
-							DB::beginTransaction();
-							$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
-							DB::commit();
+								$data['uploadtemplate'] = $matchData->ImportFileTempleteID;
+								$fullPath = $amazonPath . $MatchedAttachmentFileNames[trim($matchData->lognFileName)];
 
-							/* Job Block End */
-							$jobID = !empty($jobId) ? $jobId : 0;
+								$data['full_path'] = $fullPath;
+								$data["CompanyID"] = $CompanyID;
+								$data['checkbox_replace_all'] = $arrOptions["checkbox_replace_all"];
+								$data['checkbox_rates_with_effected_from'] = $arrOptions["checkbox_rates_with_effected_from"];
+								$data['checkbox_add_new_codes_to_code_decks'] = $arrOptions["checkbox_add_new_codes_to_code_decks"];
+								$data['radio_list_option'] = $arrOptions["checkbox_review_rates"];
+								DB::beginTransaction();
+								$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
+								DB::commit();
 
-							$SaveData = array(
-								"AccountID" => $AccountID,
-								"AccountName" => $senderName,
-								"Subject" => $Subject,
-								"Description" => $oMessage->getTextBody(),
-								"Attachment" => $Attachments,
-								"To" => $toMail,
-								"From" => $fromMail,
-								"CC" => $ccemail,
-								"MailDateTime" => $MailDateTime,
-								"MessageId" => $MessageId,
-								"created_at" => date('Y-m-d H:i:s'),
-								"created_by" => "System",
-								"JobID" => $jobID,
-								"CompanyID" => $CompanyID
-							);
-							AutoImportRate::insert($SaveData);
+								/* Job Block End */
+								$jobID = !empty($jobId) ? $jobId : 0;
+
+								$SaveData = array(
+									"AccountID" => $AccountID,
+									"AccountName" => $senderName,
+									"Subject" => $Subject,
+									"Description" => $oMessage->getTextBody(),
+									"Attachment" => $Attachments,
+									"To" => $toMail,
+									"From" => $fromMail,
+									"CC" => $ccemail,
+									"MailDateTime" => $MailDateTime,
+									"MessageId" => $MessageId,
+									"created_at" => date('Y-m-d H:i:s'),
+									"created_by" => "System",
+									"JobID" => $jobID,
+									"CompanyID" => $CompanyID
+								);
+								AutoImportRate::insert($SaveData);
+								if(isset($MatchedAttachmentFileNames[$matchData->lognFileName])){
+									unset($MatchedAttachmentFileNames[$matchData->lognFileName]);
+								}
+
 						}
+
 					}else{
 						$SaveData = array(
 							"AccountName" => $senderName,
@@ -228,7 +237,29 @@ class ReadEmailsAutoImport extends Command
 			}
 
 		}
+		catch (\Exception $e)
+		{
 
+			$this->info('Failed:' . $e->getMessage());
+			$joblogdata['Message'] = 'Error:' . $e->getMessage();
+			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+			Log::error($e);
+			if(!empty($cronsetting['ErrorEmail'])) {
+				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+				Log::error("**Email Sent Status " . $result['status']);
+				Log::error("**Email Sent message " . $result['message']);
+			}
+		}
+
+		CronJob::deactivateCronJob($CronJob);
+		CronJobLog::createLog($CronJobID,$joblogdata);
+		if(!empty($cronsetting['SuccessEmail'])) {
+			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
+			Log::error("**Email Sent Status ".$result['status']);
+			Log::error("**Email Sent message ".$result['message']);
+		}
+
+		CronHelper::after_cronrun($this->name, $this);
 
 
 	}

@@ -192,7 +192,7 @@ class VendorRateUpload extends Command
                         $data = json_decode(json_encode($templateoptions), true);
                         $data['start_row'] = $data['skipRows']['start_row'];
                         $data['end_row'] = $data['skipRows']['end_row'];
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $data['start_row_sheet2'] = $data['skipRows_sheet2']['start_row'];
                             $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
                         }
@@ -202,7 +202,7 @@ class VendorRateUpload extends Command
                         $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
                         $file_name = $NeonExcel->convertExcelToCSV($data);
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data['option'], $data['importdialcodessheet']);
                             $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data);
                         }
@@ -221,7 +221,7 @@ class VendorRateUpload extends Command
                             $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
                             $ratesheet = $NeonExcel->read();
 
-                            if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                            if(!empty($data['importdialcodessheet'])) {
                                 $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
                                 NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
                                 NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
@@ -235,7 +235,7 @@ class VendorRateUpload extends Command
                             $lineno = 2;
                         }
                        // echo "<pre>";print_r($data);exit;
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $Join1 = $data["selection"]['Join1'];
                             $Join2 = $data["selection2"]['Join2'];
 
@@ -263,7 +263,7 @@ class VendorRateUpload extends Command
                             $attrselection->$key = str_replace("\n",'',$attrselection->$key);
                         }
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             foreach ($attrselection2 as $key => $value) {
                                 $attrselection2->$key = str_replace("\r", '', $value);
                                 $attrselection2->$key = str_replace("\n", '', $attrselection2->$key);
@@ -311,7 +311,7 @@ class VendorRateUpload extends Command
                                     }
                                     if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
                                         $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (isset($selection_Code) && !empty($selection_Code) && !empty($temp_row[$selection_Code])) {
+                                    } else if (!empty($tempvendordata['CountryCode'])) {
                                         $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
                                     } else {
                                         $error[] = 'Code is blank at line no:' . $lineno;
@@ -371,13 +371,15 @@ class VendorRateUpload extends Command
                                 if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
                                     if(!empty($attrselection->EffectiveDate)) {
                                         $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                        $selection_dateformat = $attrselection->DateFormat;
                                     } else if(!empty($attrselection2->EffectiveDate)) {
                                         $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                        $selection_dateformat = $attrselection2->DateFormat;
                                     }
 
                                     if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
                                         try {
-                                            $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $attrselection->DateFormat);
+                                            $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
                                         } catch (\Exception $e) {
                                             $error[] = 'Date format is Wrong  at line no:' . $lineno;
                                         }
