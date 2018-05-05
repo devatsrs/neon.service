@@ -36,6 +36,7 @@ return array(
     'Indatus\\Dispatcher\\' => array($vendorDir . '/indatus/dispatcher/src'),
     'Guzzle\\Tests' => array($vendorDir . '/guzzle/guzzle/tests'),
     'Guzzle' => array($vendorDir . '/guzzle/guzzle/src'),
+    'FtpClient' => array($vendorDir . '/nicolab/php-ftp-client/src'),
     'File' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Dotenv' => array($vendorDir . '/vlucas/phpdotenv/src'),
     'Doctrine\\Common\\Lexer\\' => array($vendorDir . '/doctrine/lexer/lib'),
