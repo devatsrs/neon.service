@@ -203,8 +203,11 @@ class VendorRateUpload extends Command
                         $file_name = $NeonExcel->convertExcelToCSV($data);
 
                         if(!empty($data['importdialcodessheet'])) {
-                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data['option'], $data['importdialcodessheet']);
-                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data);
+                            $data2 = $data;
+                            $data2['start_row'] = $data["start_row_sheet2"];
+                            $data2['end_row'] = $data["end_row_sheet2"];
+                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data2['option'], $data2['importdialcodessheet']);
+                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data2);
                         }
 
                         if(isset($templateoptions->skipRows)) {
@@ -218,21 +221,22 @@ class VendorRateUpload extends Command
                             }
                             NeonExcelIO::$start_row = intval($skipRows->start_row);
                             NeonExcelIO::$end_row   = intval($skipRows->end_row);
-                            $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
-                            $ratesheet = $NeonExcel->read();
-
-                            if(!empty($data['importdialcodessheet'])) {
-                                $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
-                                NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
-                                NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
-                                $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
-                                $dialcodessheet = $NeonExcel2->read();
-                            }
 
                         } else if ($csvoption->Firstrow == 'data') {
                             $lineno = 1;
                         } else {
                             $lineno = 2;
+                        }
+
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $ratesheet = $NeonExcel->read();
+
+                        if(!empty($data['importdialcodessheet'])) {
+                            $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
+                            NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
+                            NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
+                            $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
+                            $dialcodessheet = $NeonExcel2->read();
                         }
                        // echo "<pre>";print_r($data);exit;
                         if(!empty($data['importdialcodessheet'])) {
