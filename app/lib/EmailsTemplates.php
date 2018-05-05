@@ -54,7 +54,7 @@ class EmailsTemplates{
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
 				$InvoiceDetailPeriod 					= 	 InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
-				$EmailTemplate 							= 	 EmailTemplate::where(["SystemType"=>Invoice::EMAILTEMPLATE,"CompanyID"=>$CompanyID])->first();
+				$EmailTemplate 							= 	 EmailTemplate::getSystemEmailTemplate($CompanyID, Invoice::EMAILTEMPLATE, $AccoutData->LanguageID);
 				if($type=="subject"){
 					$EmailMessage							=	 $EmailTemplate->Subject;
 				}else{
@@ -62,7 +62,7 @@ class EmailsTemplates{
 				}
 				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);
 				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$userID);
-                $WEBURL                                 =    CompanyConfiguration::get($CompanyID,'WEB_URL');
+                $WEBURL                                 =    CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
                 $replace_array['InvoiceLink'] 			= 	 $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
 				$replace_array['LastName']				=	 $AccoutData->LastName;
@@ -84,10 +84,14 @@ class EmailsTemplates{
 				$replace_array['InvoiceOutstanding'] 	=	Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID,Helper::get_round_decimal_places($CompanyID,$InvoiceData->AccountID));
 
 			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
-				$replace_array['StartDate'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+				$replace_array['PeriodFrom'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+			} else {
+				$replace_array['PeriodFrom'] 			= 	 "";
 			}
 			if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
-				$replace_array['EndDate'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+				$replace_array['PeriodTo'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+			} else {
+				$replace_array['PeriodTo'] 				= 	 "";
 			}
 
 			$extraSpecific = [
@@ -99,8 +103,8 @@ class EmailsTemplates{
 				'{{OutstandingIncludeUnbilledAmount}}',
 				'{{BalanceThreshold}}',				
 				"{{InvoiceLink}}",
-				"{{StartDate}}",
-				"{{EndDate}}"
+				"{{PeriodFrom}}",
+				"{{PeriodTo}}"
 			];
 			
 			$extraDefault	=	EmailsTemplates::$fields;
@@ -170,8 +174,8 @@ class EmailsTemplates{
 			$array['CompanyAddress3']				=   $CompanyData->Address1;
 			$array['CompanyCity']					=   $CompanyData->City;
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
-			$array['CompanyCountry']				=   $CompanyData->Country;			
-			$array['Logo'] 							= \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL').'/assets/images/logo@2x.png'; 
+			$array['CompanyCountry']				=   $CompanyData->Country;	
+			$array['Logo'] 							= "<img src='".\App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL')."/assets/images/logo@2x.png' />";
 			return $array;
 	}
 	
@@ -216,9 +220,9 @@ class EmailsTemplates{
 		$userID = isset($data['UserID']) ? $data['UserID'] : 0;
 		/*try{*/
 		$InvoiceData = Invoice::find($InvoiceID);
-		$InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
 		$AccoutData = Account::find($InvoiceData->AccountID);
-		$EmailTemplate = EmailTemplate::where(["SystemType" => Payment::AUTOINVOICETEMPLATE, "CompanyID" => $CompanyID])->first();
+		$InvoiceDetailPeriod = InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Payment::AUTOINVOICETEMPLATE, $AccoutData->LanguageID);
 		if ($type == "subject") {
 			$EmailMessage = $EmailTemplate->Subject;
 		} else {
@@ -226,7 +230,7 @@ class EmailsTemplates{
 		}
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $InvoiceData->AccountID, $userID);
-		$WEBURL = CompanyConfiguration::get($CompanyID, 'WEB_URL');
+		$WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
 		$replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email=' . $singleemail;
 		$replace_array['InvoiceNumber'] = $InvoiceData->FullInvoiceNumber;
 		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $InvoiceData->AccountID);
@@ -239,10 +243,14 @@ class EmailsTemplates{
 		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
 
 		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->StartDate)) {
-			$replace_array['StartDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+			$replace_array['PeriodFrom'] 			= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->StartDate));
+		} else {
+			$replace_array['PeriodFrom'] 			= 	 "";
 		}
 		if(!empty($InvoiceDetailPeriod) && isset($InvoiceDetailPeriod->EndDate)) {
-			$replace_array['EndDate'] = date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+			$replace_array['PeriodTo'] 				= 	 date('Y-m-d', strtotime($InvoiceDetailPeriod->EndDate));
+		} else {
+			$replace_array['PeriodTo'] 				= 	 "";
 		}
 
 		$extraSpecific = [
@@ -258,8 +266,8 @@ class EmailsTemplates{
 			"{{PaidStatus}}",
 			"{{PaymentMethod}}",
 			"{{PaymentNotes}}",
-			"{{StartDate}}",
-			"{{EndDate}}"
+			"{{PeriodFrom}}",
+			"{{PeriodTo}}"
 		];
 
 		$extraDefault = EmailsTemplates::$fields;

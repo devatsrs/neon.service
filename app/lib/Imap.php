@@ -172,7 +172,7 @@ protected $server;
 				// not inline image , only attachment
 				if (!$attachment['inline']) {
 
-					$filename = $attachment['filename'];
+					$filename = Imap::dataDecode($attachment['filename']);
 
 					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
@@ -186,6 +186,7 @@ protected $server;
 	
 	function GetEmailtxt($email)
 	{
+		$email=Imap::dataDecode($email);
 		$pos 	= 	strpos($email, "<");	
 		if($pos){			
 		  $first = explode("<",$email);
@@ -200,6 +201,7 @@ protected $server;
 
     function GetNametxt($email)
     {
+		$email=Imap::dataDecode($email);
         $pos 	= 	strpos($email, "<");
         if($pos){
             $first = explode("<",$email);
@@ -212,6 +214,7 @@ protected $server;
     }
 	
 	function GetCC($str){
+		$str=Imap::dataDecode($str);
 		$cc = array();
 		if(count($str)>0 && is_array($str)){
 			foreach($str as $strData){
@@ -226,14 +229,16 @@ protected $server;
 		$mock = new \DOMDocument;
 		libxml_use_internal_errors(true);
 		// load the HTML into the DomDocument object (this would be your source HTML)
-		$doc->loadHTML($msg);		
+		$doc->loadHTML(Imap::dataDecode($msg));
 		$this->removeElementsByTagName('script', $doc);
 		$this->removeElementsByTagName('style', $doc); 
 		//removeElementsByTagName('link', $doc);
 		$body = $doc->getElementsByTagName('body')->item(0);
-		foreach ($body->childNodes as $child){
-			$mock->appendChild($mock->importNode($child, true));
-		}	
+		if(isset($body->childNodes)){
+			foreach ($body->childNodes as $child){
+				$mock->appendChild($mock->importNode($child, true));
+			}	
+		}
 		// output cleaned html
 		$msg = $mock->saveHtml();	
 		return $msg;	
@@ -279,7 +284,7 @@ protected $server;
 		$MatchID		=	0;
 		$MatchType		=	'';
 		$AccountID		=	0;
-		
+		$email=Imap::dataDecode($email);
 		//find in account(email,billing email), Email
 		$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$email."',Email) OR find_in_set('".$email."',BillingEmail)")->get(array("AccountID","AccountName","AccountType"));
 		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("Owner","ContactID","FirstName","LastName"));		
@@ -332,12 +337,17 @@ protected $server;
     if ($body == "") {
         $body = nl2br($this->get_part($imap, $uid, "TEXT/PLAIN"));
     }
-        return $body;
+        return Imap::dataDecode($body);
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
     if (!$structure) {
-           $structure = imap_fetchstructure($imap, $uid, FT_UID);
+			try{
+				$structure = imap_fetchstructure($imap, $uid, FT_UID);
+			} catch ( \Exception $ex ) {
+				Log::error("Error in imap_fetchstructure");
+				Log::error(print_r($ex,true));
+			}
     }
     if ($structure) {
         if ($mimetype == $this->get_mime_type($structure)) {
@@ -384,8 +394,19 @@ protected $server;
 		$node->parentNode->removeChild($node);
 	  }
 	}
-	
-	
+
+	/**
+	 * For Gmail
+	 * IMAP Server : imap.gmail.com:993/imap/ssl
+	 * Allow Less secure apps :  ON by following url
+	 * https://myaccount.google.com/lesssecureapps?rfn=27&rfnc=1&eid=284774310474942540&et=0&asae=2&pli=1
+	 * @param $CompanyID
+	 * @param $server
+	 * @param $email
+	 * @param $password
+	 * @param $GroupID
+	 * @throws \Exception
+	 */
 	function ReadTicketEmails($CompanyID,$server,$email,$password,$GroupID){ 
 		$AllEmails  =   Messages::GetAllSystemEmails();
 		$email 		= 	$email;
@@ -441,7 +462,7 @@ protected $server;
 				$header = imap_fetchheader($inbox, $email_number);
 				$message_id   				= 		  isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   				=  		  isset($overview[0]->references)?$overview[0]->references:'';
-				$overview_subject  		    =		  isset($overview[0]->subject)?$overview[0]->subject:'(no subject)';
+				$overview_subject  		    =		  isset($overview[0]->subject)?Imap::dataDecode($overview[0]->subject):'(no subject)';
 				$in_reply_to  				= 		  isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
 				$msg_parent 				= 		  "";
 				$email_received_date		= 		  isset($overview[0]->date)?$overview[0]->date:'';
@@ -456,23 +477,47 @@ protected $server;
 				Log::info("email_received_date DateTime - " . date("Y-m-d H:i:s",strtotime($email_received_date)));
 
 
+				if(AccountEmailLogDeletedLog::where(["CompanyID"=>$CompanyID , "MessageID"=>$message_id])->count() > 0) {
+					Log::info("Message id is exist in deleted tickets : ".$message_id);
+					continue;
+				}
+
+				if(empty($overview)){
+					Log::info("Blank overview found");
+					continue;
+				}
+
+
 				// when there is no messageId found in email header.
 				// just to add dummy random message id so as no to skip this email.
+				$FromName = '';
+				if(isset($overview[0]->from)){
+					$from   	= 	$this->GetEmailtxt($overview[0]->from);
+					$FromName	=	$this->GetNametxt($overview[0]->from);
+				}else{
+					$from		= 	"nofrom@email.com";
+				}
+
+				if(isset($overview[0]->to)) {
+					$to = $this->GetEmailtxt($overview[0]->to);
+				}else {
+					$to = $email;
+				}
+
+				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
+				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
+				$cc 		=	$this->GetCC($cc);
+				$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
+				$cc  = implode(",",$cc_);
 
 				if(empty($message_id)){
-
-					if(isset($overview[0]->from)){
-						$from_   	= 	$this->GetEmailtxt($overview[0]->from);
-					}else{
-						$from_		= 	"nofrom@email.com";
-					}
 
 					$whereArrray = ["CompanyID"=>$CompanyID, "Subject"=>trim($overview_subject) ];
 					/*if(isset($overview[0]->to)) {
 						$whereArrray["EmailTo"] = $overview[0]->to ;
 					}*/
-					if(!empty($from_)) {
-						$whereArrray["EmailFrom"] = $from_ ;
+					if(!empty($from)) {
+						$whereArrray["EmailFrom"] = $from ;
 					}
 					Log::info("checking Subject Already Exists ");
 					Log::info($whereArrray);
@@ -482,7 +527,7 @@ protected $server;
 					}
 					else {
 
-						$message_id = $this->generate_random_message_id($from_);
+						$message_id = $this->generate_random_message_id($from);
 						Log::info("New MessageID " . $message_id);
 
 					}
@@ -563,19 +608,10 @@ protected $server;
 					//Match the subject with all emails.
 					$original_plain_subject = $this->get_original_plain_subject($overview_subject);
 					if(!empty($original_plain_subject)){
-						$EmailFrom = $EmailTo = "";
-						if(isset($overview[0]->from)){
-							$EmailFrom 	= 	$this->GetEmailtxt($overview[0]->from);
-						}
-						if(isset($overview[0]->to)) {
-							$EmailTo = $this->GetEmailtxt($overview[0]->to);
-						}else {
-							$EmailTo = $email;
-						}
 
-						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($original_plain_subject)])->first();
+						$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$from,"EmailTo"=> $to,  "Subject"=>trim($original_plain_subject)])->first();
 						if(!$msg_parent) {
-							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$EmailFrom,"EmailTo"=> $EmailTo,  "Subject"=>trim($overview_subject)])->first();
+							$msg_parent = AccountEmailLog::whereRaw(" created_at >= DATE_ADD(now(), INTERVAL -1 Month )   ")->where(["CompanyID"=>$CompanyID, "EmailFrom"=>$from,"EmailTo"=> $to,  "Subject"=>trim($overview_subject)])->first();
 						}
 						if(isset($msg_parent->TicketID) && $msg_parent->TicketID > 0 && TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count() == 0 ) {
 							$msg_parent = "";
@@ -644,7 +680,9 @@ protected $server;
 				$message = $this->body_cleanup($message);
 
 
-				$from   	= 	$this->GetEmailtxt($overview[0]->from);
+				/* Moved at top
+				 *
+				 * $from   	= 	$this->GetEmailtxt($overview[0]->from);
 				$FromName	=	$this->GetNametxt($overview[0]->from);
 				$cc			=	isset($headerdata->ccaddress)?$headerdata->cc:array();
 				$bcc		=	isset($headerdata->bccaddress)?$headerdata->bccaddress:'';
@@ -655,8 +693,7 @@ protected $server;
 					$to = $email; //when to  is blank
 					$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
 					$cc  = implode(",",$cc_);
-				}
-				$update_id  =	''; $insert_id  =	'';
+				}*/
 				//Log::info("message :".$message);
 
 				$checkRepeatedEmailsData = [
@@ -883,6 +920,16 @@ protected $server;
 					}
 				}
 
+				// update duedate immediately after ticket created...
+				try {
+					if(isset($ticketID)){
+						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
+					}
+				} catch (Exception $ex) {
+					Log::info("fail TicketSla::assignSlaToTicket");
+					Log::info($ex);
+				}
+
 				// New Ticket
 				if(!$parentTicket)
 				{
@@ -1029,14 +1076,7 @@ protected $server;
 
 
 
-				try {
-					if(isset($ticketID)){
-						TicketSla::assignSlaToTicket($CompanyID,$ticketID);
-					}
-				} catch (Exception $ex) {
-					Log::info("fail TicketSla::assignSlaToTicket");
-					Log::info($ex);
-				}
+
 
 			}
 			} catch (Exception $e) {
@@ -1083,9 +1123,9 @@ protected $server;
 					if (!is_numeric(strpos($path, "https://"))) {
 						//$path = str_replace('/', '\\', $path);
 
-						$path2 = CompanyConfiguration::get($CompanyID, 'WEB_URL') . "/download_file?file=";
+						$path2 = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL') . "/download_file?file=";
 						//if (copy($filepath, $path2.'/uploads/' . basename($filepath))) {
-						//   $path = CompanyConfiguration::get($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
+						//   $path = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL') . '/uploads/' . basename($path);
 						// }
 						$path = $path2 . base64_encode($file_detail["filepath"]);
 					}
@@ -1165,7 +1205,7 @@ protected $server;
 	}
 
 	public function body_cleanup($message){
-
+		$message = Imap::dataDecode($message);
 		$message = html_entity_decode($message);
 		return $message ;
 
@@ -1225,6 +1265,41 @@ protected $server;
 
 		return array("filename"=>$file_name,"filepath"=>$filepath2);
 
+	}
+
+
+	public static function dataDecode($emailHtml) {
+		if(is_string($emailHtml)){
+
+			$matches = null;
+
+			/* Repair instances where two encodings are together and separated by a space (strip the spaces) */
+			$emailHtml = preg_replace('/(=\?[^ ?]+\?[BQbq]\?[^ ?]+\?=)\s+(=\?[^ ?]+\?[BQbq]\?[^ ?]+\?=)/', "$1$2", $emailHtml);
+
+			/* Now see if any encodings exist and match them */
+			if (!preg_match_all('/=\?([^ ?]+)\?([BQbq])\?([^ ?]+)\?=/', $emailHtml, $matches, PREG_SET_ORDER)) {
+				return $emailHtml;
+			}
+			foreach ($matches as $header_match) {
+				list($match, $charset, $encoding, $data) = $header_match;
+				$encoding = strtoupper($encoding);
+				switch ($encoding) {
+					case 'B':
+						$data = base64_decode($data);
+						break;
+					case 'Q':
+						$data = quoted_printable_decode(str_replace("_", " ", $data));
+						break;
+				}
+				// This part needs to handle every charset
+				switch (strtoupper($charset)) {
+					case "UTF-8":
+						break;
+				}
+				$emailHtml = str_replace($match, $data, $emailHtml);
+			}
+		}
+		return $emailHtml;
 	}
 
 }

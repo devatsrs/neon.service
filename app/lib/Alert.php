@@ -22,7 +22,7 @@ class Alert extends \Eloquent{
         $Alerts = Alert::where(array('CompanyID' => $CompanyID, 'AlertGroup' => 'qos', 'Status' => 1))->orderby('AlertType', 'asc')->get();
         foreach ($Alerts as $Alert) {
 
-            $settings = json_decode($Alert->Settings, true);
+            $settings = $report_settings =  json_decode($Alert->Settings, true);
             $settings['ProcessID'] = $ProcessID;
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
                 if (!isset($settings['LastRunTime'])) {
@@ -35,8 +35,17 @@ class Alert extends \Eloquent{
                     }
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
-                $StartDate = $settings['LastRunTime'];
-                $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
+                if ($report_settings['Time'] == 'MINUTE') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' minute'));
+                } else if ($report_settings['Time'] == 'HOUR') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' hour'));
+                } else if ($report_settings['Time'] == 'DAILY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' day'));
+                }
+                unset($report_settings['StartTime']);
+                $report_settings['NextRunTime'] = next_run_time($report_settings);
+                $StartDate = $report_settings['LastRunTime'];
+                $EndDate = date("Y-m-d H:i:s", strtotime($report_settings['NextRunTime']) - 1);
                 $CompanyGatewayID = isset($settings['CompanyGatewayID']) ? implode(',',$settings['CompanyGatewayID']) : '';
                 $AccountIDs = isset($settings['AccountID']) ? implode(',',$settings['AccountID']) : '';
                 $VAccountID = isset($settings['VAccountID']) ? implode(',',$settings['VAccountID']) : '';
@@ -45,12 +54,13 @@ class Alert extends \Eloquent{
                 $AreaPrefix = !empty($settings['Prefix']) ? $settings['Prefix'] : '';
                 $Trunk = !empty($settings['TrunkID']) ? implode(',',$settings['TrunkID']) : '';
                 $CountryID = isset($settings['CountryID']) ? implode(',',$settings['CountryID']) : '';
+                $ResellerID = 0;
                 $settings = Helper::ACD_ASR_CR($settings);
 
                 //$StartDate = '2016-12-01';$EndDate = '2016-12-05';
                 /** send only if customer not empty or both empty */
                 if(!empty($AccountIDs) || (empty($AccountIDs) && empty($VAccountID))) {
-                    $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
+                    $query = "CALL prc_getACD_ASR_Alert(" . $CompanyID . ",'" . $CompanyGatewayID . "','" . $AccountIDs . "','" . $ResellerID . "','" . $CurrencyID . "','" . $StartDate . "','" . $EndDate . "','" . $AreaPrefix . "','" . $Trunk . "','" . $CountryID . "')";
                     Log::info($query);
                     $ACD_ASR_alerts = DB::connection('neon_report')->select($query);
                     foreach ($ACD_ASR_alerts as $ACD_ASR_alert) {
@@ -308,7 +318,7 @@ class Alert extends \Eloquent{
         $Alerts = Alert::where(array('CompanyID' => $CompanyID, 'AlertGroup' => 'call','AlertType'=>'vendor_balance_report', 'Status' => 1))->orderby('AlertType', 'asc')->get();
         foreach ($Alerts as $Alert) {
 
-            $settings = json_decode($Alert->Settings, true);
+            $settings = $report_settings = json_decode($Alert->Settings, true);
             $settings['ProcessID'] = $ProcessID;
             $settings['Subject'] = $Alert->Name;
             if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
@@ -322,8 +332,17 @@ class Alert extends \Eloquent{
                     }
                     $settings['NextRunTime'] = next_run_time($settings);
                 }
-                $StartDate = $settings['LastRunTime'];
-                $EndDate = date("Y-m-d H:i:s", strtotime($settings['NextRunTime']) - 1);
+                if ($report_settings['Time'] == 'MINUTE') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' minute'));
+                } else if ($report_settings['Time'] == 'HOUR') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' hour'));
+                } else if ($report_settings['Time'] == 'DAILY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' day'));
+                }
+                unset($report_settings['StartTime']);
+                $report_settings['NextRunTime'] = next_run_time($report_settings);
+                $StartDate = $report_settings['LastRunTime'];
+                $EndDate = date("Y-m-d H:i:s", strtotime($report_settings['NextRunTime']) - 1);
                 $VAccountIDs = isset($settings['VAccountID']) ? implode(',', $settings['VAccountID']) : '';
 
                 //$StartDate = '2016-12-01';$EndDate = '2016-12-03';

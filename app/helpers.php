@@ -671,7 +671,7 @@ function validator_response($validator){
 }
 
 function MakeWebUrl($CompanyID,$path){
-	return \App\Lib\CompanyConfiguration::get($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
+	return \App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL')."/download_file?file=".base64_encode($path);
 }
 
 function remove_extra_columns($usage_data,$usage_data_table){
@@ -742,4 +742,31 @@ function extract_ip($data_remote_ip){
         $data_remote_ip = array_pop($ip);
     }
     return $data_remote_ip;
+}
+
+function cus_lang($key=""){
+    return trans('routes.'.strtoupper($key));
+}
+
+function getCompanyLogo($CompanyID){
+    $logo_url 				= combile_url_path(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL'),'assets/images/logo@2x.png');
+
+
+    $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL'));
+    $Host		  = 	$domain_data['host'];
+    $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
+
+    if(!empty($result)){
+
+        if(!empty($result->Logo)){
+            $path = \App\Lib\AmazonS3::unSignedUrl($result->Logo,$CompanyID);
+            if(strpos($path, "https://") !== false){
+                $logo_url = $path;
+            }else{
+                $file = $result->Logo;
+                $logo_url = MakeWebUrl($CompanyID,$file);
+            }
+        }
+    }
+    return $logo_url;
 }

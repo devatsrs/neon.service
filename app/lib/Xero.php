@@ -512,25 +512,50 @@ class Xero {
 			}
 
 			if(!empty($PaidInvoices) && count($PaidInvoices)>0){
+				/**
+				 * New Change Start
+				 **/
 
-				$Journal = $this->createJournal($PaidInvoices,$CompanyID);
-				if(!empty($Journal)){
-					if(!empty($Journal['error']) && count($Journal['error'])>0){
-						foreach($Journal['error'] as $err){
+				$NewPaidInvoices = array();
+				foreach($PaidInvoices as $paidInvoice){
+					$Payments = Payment::where(['InvoiceID'=>$paidInvoice])->first();
+					$PaymentDate=$Payments->PaymentDate;
+					$PaymentDate=date('Y-m-d',strtotime($PaymentDate));
+					$NewPaidInvoices[$PaymentDate][]=$paidInvoice;
+				}
+
+				if(!empty($NewPaidInvoices) && count($NewPaidInvoices)>0) {
+					// Check Invoice and Payment Mapping
+
+					$XeroMappingError=$this->checkXeroMapping($CompanyID,$PaidInvoices);
+					if (!empty($XeroMappingError) && count($XeroMappingError)>0) {
+						foreach ($XeroMappingError as $err) {
 							$error[] = $err;
 						}
-					}
-
-					if(!empty($Journal['Success']) && count($Journal['Success'])>0){
-						foreach($Journal['Success'] as $SucessMessage){
-							$success[] = $SucessMessage;
+					}else{
+						foreach ($NewPaidInvoices as $key => $NewPaidInvoice) {
+							log::info('Journal Payment Date ' . $key);
+							$Journal = $this->createJournal($key, $NewPaidInvoice, $CompanyID);
+							if (!empty($Journal)) {
+								if (!empty($Journal['error']) && count($Journal['error']) > 0) {
+									foreach ($Journal['error'] as $err) {
+										$error[] = $err;
+									}
+								}
+								if (!empty($Journal['Success']) && count($Journal['Success']) > 0) {
+									foreach ($Journal['Success'] as $SucessMessage) {
+										$success[] = $SucessMessage;
+									}
+								}
+							}
 						}
-					}
-				}
+
+					} // xero mapping over
+				} // newpaidinvoice over
 			}else{
 				$error[] = 'Journal creation failed ';
 			}
-		}
+		}//invoice loop over
 
 		$response['error'] = $error;
 		$response['Success'] = $success;
@@ -564,7 +589,7 @@ class Xero {
 		return $Response;
 	}
 
-	public function createJournal($Invoices,$CompanyID){
+	public function createJournal($JournalDate,$Invoices,$CompanyID){
 		log::info(print_r($Invoices,true));
 		$response = array();
 		$error = array();
@@ -611,7 +636,7 @@ class Xero {
 				$Journal->setStatus('POSTED');
 				$Journal->setNarration($JournalNumber);
 
-				$dateInstance = new \DateTime();
+				$dateInstance = new \DateTime($JournalDate);
 				$Journal->setDate($dateInstance);
 				//$Journal->setReference('checkjournal');
 
@@ -621,6 +646,8 @@ class Xero {
 					$InvoiceData = array();
 
 					$InvoiceData = Invoice::find($Invoice);
+
+					$RoundChargesAmount = Helper::get_round_decimal_places($InvoiceData->CompanyID,$InvoiceData->AccountID,$InvoiceData->ServiceID);
 
 					/*
 
@@ -643,8 +670,11 @@ class Xero {
 					}
 					*/
 					$InvoiceFullNumber = $InvoiceData->FullInvoiceNumber;
-					$InvoiceGrantTotal = $InvoiceData->GrandTotal;
-					$PaymentTotal = $InvoiceData->SubTotal;
+					//$InvoiceGrantTotal = $InvoiceData->GrandTotal;
+					//$PaymentTotal = $InvoiceData->SubTotal;
+					$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount, '.', '');
+					$InvoiceTaxRateAmount = Invoice::getInvoiceTaxRateAmount($Invoice,$RoundChargesAmount);
+					$InvoiceGrantTotal = $PaymentTotal + $InvoiceTaxRateAmount;
 					$TaxTotal = $InvoiceData->TotalTax;
 
 
@@ -685,7 +715,7 @@ class Xero {
 								$Title = $InvoiceTaxRate->Title;
 								$TaxRateID = $InvoiceTaxRate->TaxRateID;
 								log::info($Title);
-								$TaxAmount = $InvoiceTaxRate->TaxAmount;
+								$TaxAmount = number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount, '.', '');
 								if($InvoiceTaxRate->InvoiceTaxType==0){
 									$type='Inline Tax';
 								}elseif($InvoiceTaxRate->InvoiceTaxType==1){
@@ -760,28 +790,28 @@ class Xero {
 							$quickbooklogdata['Type'] = QuickBookLog::INVOICE;
 							QuickBookLog::insert($quickbooklogdata);
 						}
-						$success[] = 'Journal created (Journal Number '.$JournalNumber.' )';
+						$success[] = $JournalDate.' Journal created (Journal Number '.$JournalNumber.' )';
 						//$response['response'] = $resp;
 					}
 					else
 					{
-						$error[] = 'Journal creation failed ';
+						$error[] = $JournalDate.' Journal creation failed ';
 					}
 
 				}else{
-					$error[] = 'Journal creation failed ';
+					$error[] = $JournalDate.' Journal creation failed ';
 				}
 
 			}catch(\exception $e){
 				Log::error($e);
-				$error[] = 'Journal creation failed '.$e->getMessage();
+				$error[] = $JournalDate.' Journal creation failed '.$e->getMessage();
 			}
 
 		}
 
 		//log::info('Journal Error '.print_r($error,true));
 		//log::info('Journal Success '.print_r($success,true));
-		$response['error'] = $error;
+		$response['error'] = array_unique($error);
 		$response['Success'] = $success;
 		//log::info('Journal Response '.print_r($response,true));
 		return $response;
@@ -879,6 +909,46 @@ class Xero {
 		}
 
 		return $response;
+	}
+	public function checkXeroMapping($CompanyID,$PaidInvoices){
+		$error=array();
+		$XeroData =	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$XeroSlug,$CompanyID);
+		$XeroData = json_decode(json_encode($XeroData),true);
+
+		if(!empty($XeroData['InvoiceAccount'])){
+			$InvoiceAccount = $this->getAccountMapping($XeroData['InvoiceAccount']);
+			if(empty($InvoiceAccount)){
+				$error[]='Invoice Mapping not setup correctly';
+			}
+		}else{
+			$error[]='Invoice Mapping not setup in integration section';
+		}
+
+		if(!empty($XeroData['PaymentAccount'])){
+			$PaymentAccount = $this->getAccountMapping($XeroData['PaymentAccount']);
+			if(empty($PaymentAccount)){
+				$error[]='Payment Mapping not setup correctly';
+			}
+		}else{
+			$error[]='Payment Mapping not setup in integration section';
+		}
+
+		if(!empty($PaidInvoices) && count($PaidInvoices)>0){
+			$InvoiceTaxRates = InvoiceTaxRate::distinct()->select(array('TaxRateID','Title'))->whereIn('InvoiceID',$PaidInvoices)->get()->toArray();
+			if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0){
+				foreach($InvoiceTaxRates as $InvoiceTaxRate){
+					$Title = $InvoiceTaxRate['Title'];
+					$TaxRateID = $InvoiceTaxRate['TaxRateID'];
+					if(!empty($XeroData['Tax'][$TaxRateID])){
+						$TaxAccount = $this->getAccountMapping($XeroData['Tax'][$TaxRateID]);
+					}
+					if(empty($TaxAccount)){
+						$error[] = $Title. '(Tax Mapping not) setup correctly';
+					}
+				}
+			}
+		}
+		return $error;
 	}
 
 }

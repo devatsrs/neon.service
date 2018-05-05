@@ -238,6 +238,11 @@ class Helper{
         if(!empty($data['EmailType'])){
             $logData['EmailType'] = $data['EmailType'];
         }
+        if(isset($data['AttachmentPaths']) && is_array($data['AttachmentPaths'])){
+            $logData['AttachmentPaths'] = implode(',',$data['AttachmentPaths']);
+        } else if(!empty($data['AttachmentPaths'])){
+            $logData['AttachmentPaths'] =  $data['AttachmentPaths'];
+        }
         try {
             if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
@@ -294,6 +299,8 @@ class Helper{
             $User = User::getDummyUserInfo($CompanyID, $Company);
         }
 		$status['message_id'] 	=  isset($status['message_id'])?$status['message_id']:"";
+		$status['attach'] 	=  isset($emaildata['attach'])?$emaildata['attach']:"";
+		$status['AttachmentPaths'] 	=  isset($emaildata['AttachmentPaths'])?$emaildata['AttachmentPaths']:"";
         $logData = ['AccountID' => $AccountID,
             'ProcessID' => $ProcessID,
             'JobID' => $JobID,
@@ -303,7 +310,9 @@ class Helper{
             'EmailTo' => $emaildata['EmailTo'],
             'Subject' => $emaildata['Subject'],
             'Message' => $status['body'],
-			"message_id"=>$status['message_id']
+			"message_id"=>$status['message_id'],
+            "attach" => $status['attach'],
+            "AttachmentPaths" => $status['AttachmentPaths'],
 			];
         $statuslog = Helper::email_log($logData);
         return $statuslog;
@@ -337,10 +346,10 @@ class Helper{
 		$replace_array['CompanyCity'] 		= $CompanyData->City;
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
-		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png'); 		
+		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png');
 
 		
-        $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::get($Account->CompanyId,'WEB_URL'));
+        $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId,'WEB_URL'));
 		$Host		  = 	$domain_data['host'];
         $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
 

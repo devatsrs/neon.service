@@ -142,12 +142,13 @@ class FusionPBXAccountUsage extends Command {
                         $data['AccountIP'] = '';
                         $data['AccountName'] = '';
                         $data['AccountNumber'] = $row_account['username'];
-                        $data['AccountCLI'] = '';
+                        //$data['AccountCLI'] = '';
                         $data['connect_time'] = $row_account['connect_time'];
                         $data['disconnect_time'] = $row_account['disconnect_time'];
                         $data['cost'] = (float)$row_account['cost'];
                         $data['cld'] = apply_translation_rule($CLDTranslationRule, $destination_number);
                         $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['cli']);
+                        $data['AccountCLI'] = $data['cli'];
                         $data['billed_duration'] = $row_account['billed_second'];
                         $data['billed_second'] = $row_account['billed_second'];
                         $data['duration'] = $row_account['duration'];

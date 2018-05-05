@@ -10,18 +10,17 @@ namespace App\Console\Commands;
 
 
 
-use App\Lib\CompanyConfiguration;
+use App\FTPGateway;
+use App\FTPSGateway;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Gateway;
 use App\Lib\UsageDownloadFiles;
-use App\VOS;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Webpatser\Uuid\Uuid;
 use \Exception;
 
 class FTPDownloadCDR extends Command {
@@ -79,7 +78,7 @@ class FTPDownloadCDR extends Command {
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
         $FilesDownloadLimit =  $cronsetting['FilesDownloadLimit'];
         Log::useFiles(storage_path().'/logs/ftpdownloadcdr-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
-        $FTP_FILE_LOCATION = CompanyConfiguration::get($CompanyID,'FTPFILE_LOCATION');
+        //$FTP_FILE_LOCATION = CompanyConfiguration::get($CompanyID,'FTP_FILE_LOCATION');
         try {
 
             Log::info("Start");
@@ -92,9 +91,16 @@ class FTPDownloadCDR extends Command {
             $joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] = '';
 
-            $ftp = new VOS($CompanyGatewayID);
+            $getCDRsParam = [];
+            if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
+                $getCDRsParam = ["SkipOneFile"=>1];
+            }
+
+            $ftp = new FTPGateway($CompanyGatewayID);
+
             Log::info("FTP Connected");
-            $filenames = $ftp->getCDRs();
+            $filenames = $ftp->getCDRs($getCDRsParam);
+            $FTP_FILE_LOCATION = $ftp->getFileLocation($CompanyID);
             $destination = $FTP_FILE_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
                 mkdir($destination, 0777, true);
@@ -138,10 +144,16 @@ class FTPDownloadCDR extends Command {
                     }
 
                     if(filesize($file_path) > 0 &&  UsageDownloadFiles::where(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename)))->count() == 0 ) {
-                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+
                         if($isdownloaded == false){
+                            $param = array();
+                            $param['filename'] = $filename;
+                            $param['download_path'] = $destination . '/';
+                            $ftp->downloadCDR($param);
                             Log::info("Missing file inserted " . $filename . ' - ' . $ftp->get_file_datetime($filename));
                         }
+                        UsageDownloadFiles::create(array("CompanyGatewayID" => $CompanyGatewayID, "FileName" => basename($filename), "CreatedBy" => "NeonService"));
+
                     }
 
                     if (count($downloaded) == $FilesDownloadLimit) {
@@ -156,8 +168,8 @@ class FTPDownloadCDR extends Command {
             $joblogdata['Message'] = "Files Downloaded " . $downloaded_files;
             if (count($downloaded) > 0) {
 
-                $joblogdata['Message'] .= "<br> Date  : " . $ftp->get_file_datetime($downloaded[0]);
-                $joblogdata['Message'] .= " - " . $ftp->get_file_datetime($downloaded[$downloaded_files - 1]);
+                $joblogdata['Message'] .= "<br> File From : " . $downloaded[0];
+                $joblogdata['Message'] .= " - " . $downloaded[$downloaded_files - 1];
             }
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);

@@ -291,7 +291,7 @@ class CronJob extends \Eloquent {
         $PID = $CronJob->PID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
-        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
+        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
 
         $cronsetting = json_decode($CronJob->Settings,true);
         $ActiveCronJobEmailTo = isset($cronsetting['ErrorEmail']) ? $cronsetting['ErrorEmail'] : '';
@@ -390,7 +390,7 @@ class CronJob extends \Eloquent {
         $LastCdrBehindEmailSendTime = isset($CronJob->CdrBehindEmailSendTime) ? $CronJob->CdrBehindEmailSendTime : '';
         $LastCdrBehindDuration = isset($CronJob->CdrBehindDuration) ? $CronJob->CdrBehindDuration : '';
 
-        $WEBURL = CompanyConfiguration::get($CompanyID,'WEB_URL');
+        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
         $ComanyName = Company::getName($CompanyID);
 
         $cronsetting = json_decode($CronJob->Settings,true);

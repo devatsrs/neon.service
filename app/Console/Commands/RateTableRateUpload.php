@@ -5,6 +5,7 @@
  * Date: 25/05/2015
  * Time: 06:58
  */
+//if you change anything in this file then you need to change also in VendorRateUpload in service and RateUploadController.php->ReviewRates() in web
 
 namespace App\Console\Commands;
 
@@ -74,13 +75,19 @@ class RateTableRateUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
+        $p_UserName = $job->CreatedBy;
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
+        $p_forbidden = 0;
+        $p_preference = 0;
+        $DialStringId = 0;
+        $dialcode_separator = 'null';
         Log::useFiles(storage_path() . '/logs/ratetablefileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
+        $error = array();
         try {
 
             if (!empty($job)) {
@@ -95,123 +102,338 @@ class RateTableRateUpload extends Command
                     }
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
-                    if ($jobfile->FilePath) {
-                        $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
-                        if (strpos($path, "https://") !== false) {
-                            $file = $TEMP_PATH . basename($path);
-                            file_put_contents($file, file_get_contents($path));
-                            $jobfile->FilePath = $file;
+                    if(!empty($templateoptions->importdialcodessheet)) {
+                        $attrselection2 = $templateoptions->selection2;
+                    }
+
+                    // check dialstring mapping or not
+                    if (isset($attrselection->DialString) && !empty($attrselection->DialString)) {
+                        $DialStringId = $attrselection->DialString;
+                    } else {
+                        $DialStringId = 0;
+                    }
+                    if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
+                        $p_forbidden = 1;
+                    }
+                    if (isset($attrselection->Preference) && !empty($attrselection->Preference)) {
+                        $p_preference = 1;
+                    }
+
+                    if (isset($attrselection->DialCodeSeparator)) {
+                        if ($attrselection->DialCodeSeparator == '') {
+                            $dialcode_separator = 'null';
                         } else {
-                            $jobfile->FilePath = $path;
+                            $dialcode_separator = $attrselection->DialCodeSeparator;
+                        }
+                    } /*else {
+                        $dialcode_separator = 'null';
+                    }*/
+                    if(isset($attrselection2->DialCodeSeparator)){
+                        if($attrselection2->DialCodeSeparator == ''){
+                            $dialcode_separator = 'null';
+                        }else{
+                            $dialcode_separator = $attrselection2->DialCodeSeparator;
                         }
                     }
 
-                    $NeonExcel = new NeonExcelIO($jobfile->FilePath, (array) $csvoption);
-                    $results = $NeonExcel->read();
-
-                    $lineno = 2;
-                    if ($csvoption->Firstrow == 'data') {
-                        $lineno = 1;
+                    if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
+                        $CurrencyConversion = 1;
+                        $CurrencyID = $attrselection->FromCurrency;
+                    } else {
+                        $CurrencyConversion = 0;
+                        $CurrencyID = 0;
                     }
-                    $error = array();
-                    foreach ($results as $temp_row) {
-                        if ($csvoption->Firstrow == 'data') {
-                            array_unshift($temp_row, null);
-                            unset($temp_row[0]);
 
-                        }
-                        $tempratetabledata = array();
-                        $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
-                        $tempratetabledata['ProcessId'] = $ProcessID;
-
-                        //check empty row
-                        $checkemptyrow = array_filter(array_values($temp_row));
-                        if(!empty($checkemptyrow)){
-                            if (isset($attrselection->Code) && !empty($attrselection->Code) && !empty($temp_row[$attrselection->Code])) {
-                                $tempratetabledata['Code'] = $temp_row[$attrselection->Code];
-                            }else{
-                                $error[] = 'Code is blank at line no:'.$lineno;
-                            }
-                            if (isset($attrselection->Description) && !empty($attrselection->Description) && !empty($temp_row[$attrselection->Description])) {
-                                $tempratetabledata['Description'] = $temp_row[$attrselection->Description];
-                            }else{
-                                $error[] = 'Description is blank at line no:'.$lineno;
-                            }
-                            if (isset($attrselection->Rate) && !empty($attrselection->Rate) && is_numeric($temp_row[$attrselection->Rate])  ) {
-                                if(is_numeric($temp_row[$attrselection->Rate])) {
-                                    $tempratetabledata['Rate'] = $temp_row[$attrselection->Rate];
-                                }else{
-                                    $error[] = 'Rate is not numeric at line no:'.$lineno;
-                                }
-                            }else{
-                                $error[] = 'Rate is blank at line no:'.$lineno;
-                            }
-                            if (isset($attrselection->EffectiveDate) && !empty($attrselection->EffectiveDate) && !empty($temp_row[$attrselection->EffectiveDate])) {
-                                try {
-                                    $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EffectiveDate]), $attrselection->DateFormat);
-                                }catch (\Exception $e){
-                                    $error[] = 'Date format is Wrong  at line no:'.$lineno;
-                                }
-                            }elseif(empty($attrselection->EffectiveDate)){
-                                $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                            }else{
-                                $error[] = 'EffectiveDate is blank at line no:'.$lineno;
-                            }
-                            if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                                $action_value = $temp_row[$attrselection->Action];
-                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && strtolower($action_value) == strtolower($attrselection->ActionDelete) ) {
-                                    $tempratetabledata['Change'] = 'D';
-                                }else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && strtolower($action_value) == strtolower($attrselection->ActionUpdate)) {
-                                    $tempratetabledata['Change'] = 'U';
-                                }else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && strtolower($action_value) == strtolower($attrselection->ActionInsert)) {
-                                    $tempratetabledata['Change'] = 'I';
-                                }else{
-                                    $tempratetabledata['Change'] = 'I';
-                                }
-                            }else{
-                                $tempratetabledata['Change'] = 'I';
-                            }
-
-                            if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                $tempratetabledata['ConnectionFee'] = $temp_row[$attrselection->ConnectionFee];
-                            }
-                            if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                $tempratetabledata['Interval1'] = $temp_row[$attrselection->Interval1];
-                            }
-                            if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                $tempratetabledata['IntervalN'] = $temp_row[$attrselection->IntervalN];
-                            }
-                            if(isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && isset($tempratetabledata['Rate']) && isset($tempratetabledata['EffectiveDate'])){
-                                $batch_insert_array[] = $tempratetabledata;
-                                $counter++;
+                    if (empty($joboptions->ProcessID)) {
+                        if ($jobfile->FilePath) {
+                            $path = AmazonS3::unSignedUrl($jobfile->FilePath, $CompanyID);
+                            if (strpos($path, "https://") !== false) {
+                                $file = $TEMP_PATH . basename($path);
+                                file_put_contents($file, file_get_contents($path));
+                                $jobfile->FilePath = $file;
+                            } else {
+                                $jobfile->FilePath = $path;
                             }
                         }
-                        if($counter==$bacth_insert_limit){
+
+                        $data = json_decode(json_encode($templateoptions), true);
+                        $data['start_row'] = $data['skipRows']['start_row'];
+                        $data['end_row'] = $data['skipRows']['end_row'];
+                        if(!empty($data['importdialcodessheet'])) {
+                            $data['start_row_sheet2'] = $data['skipRows_sheet2']['start_row'];
+                            $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
+                        }
+                        //convert excel to CSV
+                        $file_name_with_path = $jobfile->FilePath;
+                        $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
+                        $file_name = $NeonExcel->convertExcelToCSV($data);
+
+                        if(!empty($data['importdialcodessheet'])) {
+                            $data2 = $data;
+                            $data2['start_row'] = $data["start_row_sheet2"];
+                            $data2['end_row'] = $data["end_row_sheet2"];
+                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data2['option'], $data2['importdialcodessheet']);
+                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data2);
+                        }
+
+                        if(isset($templateoptions->skipRows)) {
+                            $skipRows              = $templateoptions->skipRows;
+
+                            if($csvoption->Firstrow == 'columnname'){
+                                $lineno                 = intval($skipRows->start_row) + 2;
+                            }
+                            if($csvoption->Firstrow == 'data'){
+                                $lineno                 = intval($skipRows->start_row) + 1;
+                            }
+                            NeonExcelIO::$start_row = intval($skipRows->start_row);
+                            NeonExcelIO::$end_row   = intval($skipRows->end_row);
+
+                        } else if ($csvoption->Firstrow == 'data') {
+                            $lineno = 1;
+                        } else {
+                            $lineno = 2;
+                        }
+
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $ratesheet = $NeonExcel->read();
+
+                        if(!empty($data['importdialcodessheet'])) {
+                            $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
+                            NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
+                            NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
+                            $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
+                            $dialcodessheet = $NeonExcel2->read();
+                        }
+
+                        if(!empty($data['importdialcodessheet'])) {
+                            $Join1 = $data["selection"]['Join1'];
+                            $Join2 = $data["selection2"]['Join2'];
+                            foreach($ratesheet as $key => $value)
+                            {
+                                foreach($dialcodessheet as $key1 => $value1)
+                                {
+                                    if($value[$Join1] == $value1[$Join2])
+                                    {
+                                        $results[$key1] = array_merge($value1, $ratesheet[$key]);
+                                    }
+                                    unset($results[$key1][""]);
+                                }
+                            }
+                        }else{
+                            $results = $ratesheet;
+                        }
+
+                        // if EndDate is mapped and not empty than data will store in and insert from $batch_insert_array
+                        // if EndDate is mapped and     empty than data will store in and insert from $batch_insert_array2
+                        $batch_insert_array = $batch_insert_array2 = [];
+
+                        foreach ($attrselection as $key => $value) {
+                            $attrselection->$key = str_replace("\r",'',$value);
+                            $attrselection->$key = str_replace("\n",'',$attrselection->$key);
+                        }
+                        if(!empty($data['importdialcodessheet'])) {
+                            foreach ($attrselection2 as $key => $value) {
+                                $attrselection2->$key = str_replace("\r", '', $value);
+                                $attrselection2->$key = str_replace("\n", '', $attrselection2->$key);
+                            }
+                        }
+
+                        $error = array();
+                        foreach ($results as $temp_row) {
+                            if ($csvoption->Firstrow == 'data') {
+                                array_unshift($temp_row, null);
+                                unset($temp_row[0]);
+                            }
+
+                            foreach ($temp_row as $key => $value) {
+                                $key = str_replace("\r",'',$key);
+                                $key = str_replace("\n",'',$key);
+                                $temp_row[$key] = $value;
+                            }
+
+                            $tempratetabledata = array();
+                            $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
+                            $tempratetabledata['ProcessId'] = (string)$ProcessID;
+
+                            //check empty row
+                            $checkemptyrow = array_filter(array_values($temp_row));
+                            if (!empty($checkemptyrow)) {
+                                if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
+                                    if(!empty($attrselection->CountryCode)) {
+                                        $selection_CountryCode = $attrselection->CountryCode;
+                                    } else if(!empty($attrselection2->CountryCode)) {
+                                        $selection_CountryCode = $attrselection2->CountryCode;
+                                    }
+                                    if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                        $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
+                                    } else {
+                                        $tempratetabledata['CountryCode'] = '';
+                                    }
+                                }
+
+                                if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
+                                    if(!empty($attrselection->Code)) {
+                                        $selection_Code = $attrselection->Code;
+                                    } else if(!empty($attrselection2->Code)) {
+                                        $selection_Code = $attrselection2->Code;
+                                    }
+                                    if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                        $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                    } else if (!empty($tempvendordata['CountryCode'])) {
+                                        $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                                    } else {
+                                        $error[] = 'Code is blank at line no:' . $lineno;
+                                    }
+                                }
+
+                                if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
+                                    if(!empty($attrselection->Description)) {
+                                        $selection_Description = $attrselection->Description;
+                                    } else if(!empty($attrselection2->Description)) {
+                                        $selection_Description = $attrselection2->Description;
+                                    }
+                                    if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
+                                        $tempratetabledata['Description'] = $temp_row[$selection_Description];
+                                    } else {
+                                        $error[] = 'Description is blank at line no:' . $lineno;
+                                    }
+                                }
+
+                                /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
+                                    $tempratetabledata['CurrencyID'] = $attrselection->FromCurrency;
+                                }*/
+
+                                if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                    if (empty($temp_row[$attrselection->Action])) {
+                                        $tempratetabledata['Change'] = 'I';
+                                    } else {
+                                        $action_value = $temp_row[$attrselection->Action];
+                                        if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete))) {
+                                            $tempratetabledata['Change'] = 'D';
+                                        } else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
+                                            $tempratetabledata['Change'] = 'U';
+                                        } else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                            $tempratetabledata['Change'] = 'I';
+                                        } else {
+                                            $tempratetabledata['Change'] = 'I';
+                                        }
+                                    }
+
+                                } else {
+                                    $tempratetabledata['Change'] = 'I';
+                                }
+
+                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
+                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
+                                    if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
+                                        $tempratetabledata['Rate'] = trim($temp_row[$attrselection->Rate]);
+                                    } else {
+                                        $error[] = 'Rate is not numeric at line no:' . $lineno;
+                                    }
+                                }elseif($tempratetabledata['Change'] == 'D') {
+                                    $tempratetabledata['Rate'] = 0;
+                                }elseif($tempratetabledata['Change'] != 'D') {
+                                    $error[] = 'Rate is blank at line no:'.$lineno;
+                                }
+
+                                if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
+                                    if(!empty($attrselection->EffectiveDate)) {
+                                        $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                        $selection_dateformat = $attrselection->DateFormat;
+                                    } else if(!empty($attrselection2->EffectiveDate)) {
+                                        $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                        $selection_dateformat = $attrselection2->DateFormat;
+                                    }
+
+                                    if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
+                                        try {
+                                            $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
+                                        } catch (\Exception $e) {
+                                            $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                        }
+                                    } elseif (empty($selection_EffectiveDate)) {
+                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                    } elseif ($tempratetabledata['Change'] == 'D') {
+                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                    } elseif ($tempratetabledata['Change'] != 'D') {
+                                        $error[] = 'EffectiveDate is blank at line no:' . $lineno;
+                                    }
+                                } else {
+                                    $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                }
+
+                                if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
+                                    try {
+                                        $tempratetabledata['EndDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
+                                    }catch (\Exception $e){
+                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
+                                    }
+                                }
+
+                                if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                    $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                }
+                                if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                    $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
+                                }
+                                if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                    $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
+                                }
+                                if (!empty($DialStringId)) {
+                                    if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
+                                        $tempratetabledata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                    } else {
+                                        $tempratetabledata['DialStringPrefix'] = '';
+                                    }
+                                }
+                                //echo "<pre>";print_r($tempratetabledata);exit;
+                                if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ( isset($tempratetabledata['Rate'])  || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                    if(isset($tempratetabledata['EndDate'])) {
+                                        $batch_insert_array[] = $tempratetabledata;
+                                    } else {
+                                        $batch_insert_array2[] = $tempratetabledata;
+                                    }
+                                    $counter++;
+                                }
+                            }
+                            if ($counter == $bacth_insert_limit) {
+                                Log::info('Batch insert start');
+                                Log::info('global counter' . $lineno);
+                                Log::info('insertion start');
+                                TempRateTableRate::insert($batch_insert_array);
+                                TempRateTableRate::insert($batch_insert_array2);
+                                Log::info('insertion end');
+                                $batch_insert_array = [];
+                                $batch_insert_array2 = [];
+                                $counter = 0;
+                            }
+                            $lineno++;
+                        }
+
+                        if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                             Log::info('Batch insert start');
-                            Log::info('global counter'.$lineno);
+                            Log::info('global counter' . $lineno);
                             Log::info('insertion start');
+                            Log::info('last batch insert ' . count($batch_insert_array));
+                            Log::info('last batch insert 2 ' . count($batch_insert_array2));
                             TempRateTableRate::insert($batch_insert_array);
+                            TempRateTableRate::insert($batch_insert_array2);
                             Log::info('insertion end');
-                            $batch_insert_array = [];
-                            $counter = 0;
                         }
-                        $lineno++;
-                    }
-
-                    if(!empty($batch_insert_array)){
-                        Log::info('Batch insert start');
-                        Log::info('global counter'.$lineno);
-                        Log::info('insertion start');
-                        TempRateTableRate::insert($batch_insert_array);
-                        Log::info('insertion end');
+                    } else {
+                        $ProcessID = $joboptions->ProcessID;
                     }
                     $JobStatusMessage = array();
                     $duplicatecode=0;
-                    Log::info("start CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+
+                    $query = "CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_forbidden."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$CurrencyID.",".$joboptions->radio_list_option.",'".$p_UserName."')";
+
+                    Log::info("start ".$query);
+
                     try{
                         DB::beginTransaction();
-                        $JobStatusMessage = DB::select("CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
-                        Log::info("end CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "')");
+                        $JobStatusMessage = DB::select($query);
+                        Log::info("end ".$query);
                         DB::commit();
 
                         $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
@@ -282,6 +504,6 @@ class RateTableRateUpload extends Command
 
         CronHelper::after_cronrun($this->name, $this);
 
-
     }
+
 }
