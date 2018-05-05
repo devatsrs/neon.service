@@ -8,20 +8,20 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
 {
     public static $files = array (
         '3e2471375464aac821502deb0ac64275' => __DIR__ . '/..' . '/symfony/polyfill-php54/bootstrap.php',
-        '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
         '9f7f3f9b1f82484e76bcd07b985a2d2f' => __DIR__ . '/..' . '/symfony/var-dumper/Symfony/Component/VarDumper/Resources/functions/dump.php',
         'fe1bcd0336136e435eaf197895daf81a' => __DIR__ . '/..' . '/nikic/php-parser/lib/bootstrap.php',
+        '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
         'e40631d46120a9c38ea139981f8dab26' => __DIR__ . '/..' . '/ircmaxell/password-compat/lib/password.php',
         '5255c38a0faeba867671b61dfda6d864' => __DIR__ . '/..' . '/paragonie/random_compat/lib/random.php',
-        '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
         'bd9634f2d41831496de0d3dfe4c94881' => __DIR__ . '/..' . '/symfony/polyfill-php56/bootstrap.php',
-        'e7223560d890eab89cda23685e711e2c' => __DIR__ . '/..' . '/psy/psysh/src/Psy/functions.php',
         '65fec9ebcfbb3cbb4fd0d519687aea01' => __DIR__ . '/..' . '/danielstjules/stringy/src/Create.php',
-        'be01b9b16925dcb22165c40b46681ac6' => __DIR__ . '/..' . '/wp-cli/php-cli-tools/lib/cli/cli.php',
-        '6a47392539ca2329373e0d33e1dba053' => __DIR__ . '/..' . '/symfony/polyfill-intl-icu/bootstrap.php',
+        '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
+        'e7223560d890eab89cda23685e711e2c' => __DIR__ . '/..' . '/psy/psysh/src/Psy/functions.php',
         'f0906e6318348a765ffb6eb24e0d0938' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Foundation/helpers.php',
         '58571171fd5812e6e447dce228f52f4d' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Support/helpers.php',
+        '6a47392539ca2329373e0d33e1dba053' => __DIR__ . '/..' . '/symfony/polyfill-intl-icu/bootstrap.php',
+        'be01b9b16925dcb22165c40b46681ac6' => __DIR__ . '/..' . '/wp-cli/php-cli-tools/lib/cli/cli.php',
         'cf23f80ea1e20903a9175ea58c5c13aa' => __DIR__ . '/..' . '/consolibyte/quickbooks/QuickBooks.php',
         'b4e3f29b106af37a2bb239f73cdf68c7' => __DIR__ . '/../..' . '/app/helpers.php',
     );
@@ -39,6 +39,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'W' => 
         array (
             'Webmozart\\Assert\\' => 17,
+            'Webklex\\IMAP\\' => 13,
         ),
         'T' => 
         array (
@@ -95,7 +96,6 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
             'Cartalyst\\Stripe\\Laravel\\' => 25,
             'Cartalyst\\Stripe\\' => 17,
             'Cartalyst\\Collections\\' => 22,
-            'Carbon\\' => 7,
         ),
         'B' => 
         array (
@@ -110,9 +110,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
     public static $prefixDirsPsr4 = array (
         'phpDocumentor\\Reflection\\' => 
         array (
-            0 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
+            0 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
             1 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
-            2 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
+            2 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
         ),
         'XeroPHP\\' => 
         array (
@@ -125,6 +125,10 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Webmozart\\Assert\\' => 
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
+        ),
+        'Webklex\\IMAP\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP',
         ),
         'TijsVerkoyen\\CssToInlineStyles\\' => 
         array (
@@ -230,10 +234,6 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         array (
             0 => __DIR__ . '/..' . '/cartalyst/collections/src',
         ),
-        'Carbon\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon',
-        ),
         'Box\\Spout\\' => 
         array (
             0 => __DIR__ . '/..' . '/box/spout/src/Spout',
@@ -242,6 +242,10 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         array (
             0 => __DIR__ . '/../..' . '/app',
         ),
+    );
+
+    public static $fallbackDirsPsr4 = array (
+        0 => __DIR__ . '/..' . '/nesbot/carbon/src',
     );
 
     public static $prefixesPsr0 = array (
@@ -394,6 +398,10 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         ),
         'F' => 
         array (
+            'FtpClient' => 
+            array (
+                0 => __DIR__ . '/..' . '/nicolab/php-ftp-client/src',
+            ),
             'File' => 
             array (
                 0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
@@ -522,9 +530,11 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Commands\\RateTableGenerator' => __DIR__ . '/../..' . '/app/Console/Commands/RateTableGenerator.php',
         'App\\Console\\Commands\\RateTableRateUpload' => __DIR__ . '/../..' . '/app/Console/Commands/RateTableRateUpload.php',
         'App\\Console\\Commands\\ReImportCDRbyAccount' => __DIR__ . '/../..' . '/app/Console/Commands/ReImportCDRbyAccount.php',
+        'App\\Console\\Commands\\ReadEmailsAutoImport' => __DIR__ . '/../..' . '/app/Console/Commands/ReadEmailsAutoImport.php',
         'App\\Console\\Commands\\ReadEmailsTickets' => __DIR__ . '/../..' . '/app/Console/Commands/ReadEmailsTickets.php',
         'App\\Console\\Commands\\RegenerateInvoice' => __DIR__ . '/../..' . '/app/Console/Commands/RegenerateInvoice.php',
         'App\\Console\\Commands\\RegenerateManualInvoice' => __DIR__ . '/../..' . '/app/Console/Commands/RegenerateManualInvoice.php',
+        'App\\Console\\Commands\\ResellerPBXAccountUsage' => __DIR__ . '/../..' . '/app/Console/Commands/ResellerPBXAccountUsage.php',
         'App\\Console\\Commands\\ServerCleanUp' => __DIR__ . '/../..' . '/app/Console/Commands/ServerCleanUp.php',
         'App\\Console\\Commands\\SippyAccountUsage' => __DIR__ . '/../..' . '/app/Console/Commands/SippyAccountUsage.php',
         'App\\Console\\Commands\\SippyDownloadCDR' => __DIR__ . '/../..' . '/app/Console/Commands/SippyDownloadCDR.php',
@@ -552,6 +562,8 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Kernel' => __DIR__ . '/../..' . '/app/Console/Kernel.php',
         'App\\Events\\Event' => __DIR__ . '/../..' . '/app/Events/Event.php',
         'App\\Exceptions\\Handler' => __DIR__ . '/../..' . '/app/Exceptions/Handler.php',
+        'App\\FTPGateway' => __DIR__ . '/../..' . '/app/FTPGateway.php',
+        'App\\FTPSGateway' => __DIR__ . '/../..' . '/app/FTPSGateway.php',
         'App\\FusionPBX' => __DIR__ . '/../..' . '/app/FusionPBX.php',
         'App\\Http\\Controllers\\Auth\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/AuthController.php',
         'App\\Http\\Controllers\\Auth\\PasswordController' => __DIR__ . '/../..' . '/app/Http/Controllers/Auth/PasswordController.php',
@@ -568,7 +580,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\AccountBalance' => __DIR__ . '/../..' . '/app/lib/AccountBalance.php',
         'App\\Lib\\AccountBalanceHistory' => __DIR__ . '/../..' . '/app/lib/AccountBalanceHistory.php',
         'App\\Lib\\AccountBilling' => __DIR__ . '/../..' . '/app/lib/AccountBilling.php',
+        'App\\Lib\\AccountDetails' => __DIR__ . '/../..' . '/app/lib/AccountDetails.php',
         'App\\Lib\\AccountEmailLog' => __DIR__ . '/../..' . '/app/lib/AccountEmailLog.php',
+        'App\\Lib\\AccountEmailLogDeletedLog' => __DIR__ . '/../..' . '/app/lib/AccountEmailLogDeletedLog.php',
         'App\\Lib\\AccountNextBilling' => __DIR__ . '/../..' . '/app/lib/AccountNextBilling.php',
         'App\\Lib\\AccountOneOffCharge' => __DIR__ . '/../..' . '/app/lib/AccountOneOffCharge.php',
         'App\\Lib\\AccountPaymentProfile' => __DIR__ . '/../..' . '/app/lib/AccountPaymentProfile.php',
@@ -579,6 +593,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\AmazonS3' => __DIR__ . '/../..' . '/app/lib/AmazonS3.php',
         'App\\Lib\\AuditDetails' => __DIR__ . '/../..' . '/app/lib/AuditDetails.php',
         'App\\Lib\\AuditHeader' => __DIR__ . '/../..' . '/app/lib/AuditHeader.php',
+        'App\\Lib\\AutoImportInboxSetting' => __DIR__ . '/../..' . '/app/lib/AutoImportInboxSetting.php',
+        'App\\Lib\\AutoImportRate' => __DIR__ . '/../..' . '/app/lib/AutoImportRate.php',
+        'App\\Lib\\AutoImportSetting' => __DIR__ . '/../..' . '/app/lib/AutoImportSetting.php',
         'App\\Lib\\BillingAPI' => __DIR__ . '/../..' . '/app/lib/BillingAPI.php',
         'App\\Lib\\BillingClass' => __DIR__ . '/../..' . '/app/lib/BillingClass.php',
         'App\\Lib\\BillingSubscription' => __DIR__ . '/../..' . '/app/lib/BillingSubscription.php',
@@ -601,7 +618,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\CustomerRateUpdateHistoryWithData' => __DIR__ . '/../..' . '/app/lib/CustomerRateUpdateHistoryWithData.php',
         'App\\Lib\\CustomerTrunk' => __DIR__ . '/../..' . '/app/lib/CustomerTrunk.php',
         'App\\Lib\\DataTableSql' => __DIR__ . '/../..' . '/app/lib/DataTableSql.php',
+        'App\\Lib\\EmailClient' => __DIR__ . '/../..' . '/app/lib/EmailClient.php',
         'App\\Lib\\EmailMessage' => __DIR__ . '/../..' . '/app/lib/EmailMessage.php',
+        'App\\Lib\\EmailServiceProvider' => __DIR__ . '/../..' . '/app/lib/EmailServiceProvider.php',
         'App\\Lib\\EmailTemplate' => __DIR__ . '/../..' . '/app/lib/EmailTemplate.php',
         'App\\Lib\\EmailsTemplates' => __DIR__ . '/../..' . '/app/lib/EmailsTemplates.php',
         'App\\Lib\\FideliPay' => __DIR__ . '/../..' . '/app/lib/FideliPay.php',
@@ -616,6 +635,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\IntegrationConfiguration' => __DIR__ . '/../..' . '/app/lib/IntegrationConfiguration.php',
         'App\\Lib\\Invoice' => __DIR__ . '/../..' . '/app/lib/Invoice.php',
         'App\\Lib\\InvoiceDetail' => __DIR__ . '/../..' . '/app/lib/InvoiceDetail.php',
+        'App\\Lib\\InvoiceHistory' => __DIR__ . '/../..' . '/app/lib/InvoiceHistory.php',
         'App\\Lib\\InvoiceLog' => __DIR__ . '/../..' . '/app/lib/InvoiceLog.php',
         'App\\Lib\\InvoiceTaxRate' => __DIR__ . '/../..' . '/app/lib/InvoiceTaxRate.php',
         'App\\Lib\\InvoiceTemplate' => __DIR__ . '/../..' . '/app/lib/InvoiceTemplate.php',
@@ -634,6 +654,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\PHPMAILERIntegtration' => __DIR__ . '/../..' . '/app/lib/PHPMAILERIntegtration.php',
         'App\\Lib\\Payment' => __DIR__ . '/../..' . '/app/lib/Payment.php',
         'App\\Lib\\PaymentGateway' => __DIR__ . '/../..' . '/app/lib/PaymentGateway.php',
+        'App\\Lib\\PeleCard' => __DIR__ . '/../..' . '/app/lib/PeleCard.php',
         'App\\Lib\\Product' => __DIR__ . '/../..' . '/app/lib/Product.php',
         'App\\Lib\\QuickBook' => __DIR__ . '/../..' . '/app/lib/QuickBook.php',
         'App\\Lib\\QuickBookLog' => __DIR__ . '/../..' . '/app/lib/QuickBookLog.php',
@@ -645,8 +666,11 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\Report' => __DIR__ . '/../..' . '/app/lib/Report.php',
         'App\\Lib\\ReportSchedule' => __DIR__ . '/../..' . '/app/lib/ReportSchedule.php',
         'App\\Lib\\ReportScheduleLog' => __DIR__ . '/../..' . '/app/lib/ReportScheduleLog.php',
+        'App\\Lib\\Reseller' => __DIR__ . '/../..' . '/app/lib/Reseller.php',
+        'App\\Lib\\RetailUsageDetail' => __DIR__ . '/../..' . '/app/lib/RetailUsageDetail.php',
         'App\\Lib\\Retention' => __DIR__ . '/../..' . '/app/lib/Retention.php',
         'App\\Lib\\Service' => __DIR__ . '/../..' . '/app/lib/Service.php',
+        'App\\Lib\\SippyImporter' => __DIR__ . '/../..' . '/app/lib/SippyImporter.php',
         'App\\Lib\\SiteIntegration' => __DIR__ . '/../..' . '/app/lib/SiteIntegration.php',
         'App\\Lib\\StripeACH' => __DIR__ . '/../..' . '/app/lib/StripeACH.php',
         'App\\Lib\\StripeBilling' => __DIR__ . '/../..' . '/app/lib/StripeBilling.php',
@@ -682,6 +706,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\TicketsDetails' => __DIR__ . '/../..' . '/app/lib/TicketsDetails.php',
         'App\\Lib\\TicketsTable' => __DIR__ . '/../..' . '/app/lib/TicketsTable.php',
         'App\\Lib\\TransactionLog' => __DIR__ . '/../..' . '/app/lib/TransactionLog.php',
+        'App\\Lib\\Translation' => __DIR__ . '/../..' . '/app/lib/Translation.php',
         'App\\Lib\\Trunk' => __DIR__ . '/../..' . '/app/lib/Trunk.php',
         'App\\Lib\\UsageDetail' => __DIR__ . '/../..' . '/app/lib/UsageDetail.php',
         'App\\Lib\\UsageDetailFailedCall' => __DIR__ . '/../..' . '/app/lib/UsageDetailFailedCall.php',
@@ -1812,6 +1837,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Carbon\\Carbon' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Carbon.php',
         'Carbon\\CarbonInterval' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/CarbonInterval.php',
         'Carbon\\Exceptions\\InvalidDateException' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Exceptions/InvalidDateException.php',
+        'Carbon\\Translator' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Translator.php',
         'Cartalyst\\Collections\\Collection' => __DIR__ . '/..' . '/cartalyst/collections/src/Collection.php',
         'Cartalyst\\Stripe\\AmountConverter' => __DIR__ . '/..' . '/cartalyst/stripe/src/AmountConverter.php',
         'Cartalyst\\Stripe\\Api\\Account' => __DIR__ . '/..' . '/cartalyst/stripe/src/Api/Account.php',
@@ -1951,6 +1977,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Doctrine\\Instantiator\\InstantiatorInterface' => __DIR__ . '/..' . '/doctrine/instantiator/src/Doctrine/Instantiator/InstantiatorInterface.php',
         'Dotenv' => __DIR__ . '/..' . '/vlucas/phpdotenv/src/Dotenv.php',
         'EasyPeasyICS' => __DIR__ . '/..' . '/phpmailer/phpmailer/extras/EasyPeasyICS.php',
+        'FileUploadTemplateType' => __DIR__ . '/../..' . '/app/lib/FileUploadTemplateType.php',
         'File_ANSI' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
         'File_ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
         'File_ASN1_Element' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
@@ -1958,6 +1985,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'File_Iterator_Facade' => __DIR__ . '/..' . '/phpunit/php-file-iterator/src/Facade.php',
         'File_Iterator_Factory' => __DIR__ . '/..' . '/phpunit/php-file-iterator/src/Factory.php',
         'File_X509' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/X509.php',
+        'FtpClient\\FtpClient' => __DIR__ . '/..' . '/nicolab/php-ftp-client/src/FtpClient/FtpClient.php',
+        'FtpClient\\FtpException' => __DIR__ . '/..' . '/nicolab/php-ftp-client/src/FtpClient/FtpException.php',
+        'FtpClient\\FtpWrapper' => __DIR__ . '/..' . '/nicolab/php-ftp-client/src/FtpClient/FtpWrapper.php',
         'GoetasWebservices\\Xsd\\XsdToPhpRuntime\\Jms\\Handler\\BaseTypesHandler' => __DIR__ . '/..' . '/goetas-webservices/xsd2php-runtime/src/Jms/Handler/BaseTypesHandler.php',
         'GoetasWebservices\\Xsd\\XsdToPhpRuntime\\Jms\\Handler\\XmlSchemaDateHandler' => __DIR__ . '/..' . '/goetas-webservices/xsd2php-runtime/src/Jms/Handler/XmlSchemaDateHandler.php',
         'GuzzleHttp\\BatchResults' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/BatchResults.php',
@@ -3077,6 +3107,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'JMS\\Serializer\\Metadata\\PropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/PropertyMetadata.php',
         'JMS\\Serializer\\Metadata\\StaticPropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/StaticPropertyMetadata.php',
         'JMS\\Serializer\\Metadata\\VirtualPropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/VirtualPropertyMetadata.php',
+        'JMS\\Serializer\\Naming\\AdvancedNamingStrategyInterface' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/AdvancedNamingStrategyInterface.php',
         'JMS\\Serializer\\Naming\\CacheNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/CacheNamingStrategy.php',
         'JMS\\Serializer\\Naming\\CamelCaseNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/CamelCaseNamingStrategy.php',
         'JMS\\Serializer\\Naming\\IdenticalPropertyNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/IdenticalPropertyNamingStrategy.php',
@@ -3099,6 +3130,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'JakubOnderka\\PhpConsoleColor\\ConsoleColor' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/JakubOnderka/PhpConsoleColor/ConsoleColor.php',
         'JakubOnderka\\PhpConsoleColor\\InvalidStyleException' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/JakubOnderka/PhpConsoleColor/InvalidStyleException.php',
         'JakubOnderka\\PhpConsoleHighlighter\\Highlighter' => __DIR__ . '/..' . '/jakub-onderka/php-console-highlighter/src/JakubOnderka/PhpConsoleHighlighter/Highlighter.php',
+        'JsonSerializable' => __DIR__ . '/..' . '/nesbot/carbon/src/JsonSerializable.php',
         'LCR' => __DIR__ . '/../..' . '/app/lib/LCR.php',
         'League\\Flysystem\\AdapterInterface' => __DIR__ . '/..' . '/league/flysystem/src/AdapterInterface.php',
         'League\\Flysystem\\Adapter\\AbstractAdapter' => __DIR__ . '/..' . '/league/flysystem/src/Adapter/AbstractAdapter.php',
@@ -4200,6 +4232,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Prophecy\\Doubler\\Generator\\Node\\ClassNode' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/Generator/Node/ClassNode.php',
         'Prophecy\\Doubler\\Generator\\Node\\MethodNode' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/Generator/Node/MethodNode.php',
         'Prophecy\\Doubler\\Generator\\ReflectionInterface' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/Generator/ReflectionInterface.php',
+        'Prophecy\\Doubler\\Generator\\TypeHintReference' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/Generator/TypeHintReference.php',
         'Prophecy\\Doubler\\LazyDouble' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/LazyDouble.php',
         'Prophecy\\Doubler\\NameGenerator' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Doubler/NameGenerator.php',
         'Prophecy\\Exception\\Call\\UnexpectedCallException' => __DIR__ . '/..' . '/phpspec/prophecy/src/Prophecy/Exception/Call/UnexpectedCallException.php',
@@ -5479,7 +5512,9 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'Symfony\\Polyfill\\Util\\Binary' => __DIR__ . '/..' . '/symfony/polyfill-util/Binary.php',
         'Symfony\\Polyfill\\Util\\BinaryNoFuncOverload' => __DIR__ . '/..' . '/symfony/polyfill-util/BinaryNoFuncOverload.php',
         'Symfony\\Polyfill\\Util\\BinaryOnFuncOverload' => __DIR__ . '/..' . '/symfony/polyfill-util/BinaryOnFuncOverload.php',
+        'Symfony\\Polyfill\\Util\\LegacyTestListener' => __DIR__ . '/..' . '/symfony/polyfill-util/LegacyTestListener.php',
         'Symfony\\Polyfill\\Util\\TestListener' => __DIR__ . '/..' . '/symfony/polyfill-util/TestListener.php',
+        'Symfony\\Polyfill\\Util\\TestListenerTrait' => __DIR__ . '/..' . '/symfony/polyfill-util/TestListenerTrait.php',
         'System_SSH_Agent' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent.php',
         'System_SSH_Agent_Identity' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/System/SSH/Agent.php',
         'TestCase' => __DIR__ . '/../..' . '/tests/TestCase.php',
@@ -5488,6 +5523,20 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'TijsVerkoyen\\CssToInlineStyles\\Exception' => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src/Exception.php',
         'TijsVerkoyen\\CssToInlineStyles\\Selector' => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src/Selector.php',
         'TijsVerkoyen\\CssToInlineStyles\\Specificity' => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src/Specificity.php',
+        'Webklex\\IMAP\\Attachment' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Attachment.php',
+        'Webklex\\IMAP\\Client' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Client.php',
+        'Webklex\\IMAP\\ClientManager' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/ClientManager.php',
+        'Webklex\\IMAP\\Exceptions\\ConnectionFailedException' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Exceptions/ConnectionFailedException.php',
+        'Webklex\\IMAP\\Exceptions\\GetMessagesFailedException' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Exceptions/GetMessagesFailedException.php',
+        'Webklex\\IMAP\\Exceptions\\MessageSearchValidationException' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Exceptions/MessageSearchValidationException.php',
+        'Webklex\\IMAP\\Facades\\Client' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Facades/Client.php',
+        'Webklex\\IMAP\\Folder' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Folder.php',
+        'Webklex\\IMAP\\Message' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Message.php',
+        'Webklex\\IMAP\\Providers\\LaravelServiceProvider' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Providers/LaravelServiceProvider.php',
+        'Webklex\\IMAP\\Support\\AttachmentCollection' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Support/AttachmentCollection.php',
+        'Webklex\\IMAP\\Support\\FolderCollection' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Support/FolderCollection.php',
+        'Webklex\\IMAP\\Support\\MessageCollection' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Support/MessageCollection.php',
+        'Webklex\\IMAP\\Support\\PaginatedCollection' => __DIR__ . '/..' . '/webklex/laravel-imap/src/IMAP/Support/PaginatedCollection.php',
         'Webmozart\\Assert\\Assert' => __DIR__ . '/..' . '/webmozart/assert/src/Assert.php',
         'Webpatser\\Uuid\\Uuid' => __DIR__ . '/..' . '/webpatser/laravel-uuid/src/Webpatser/Uuid/Uuid.php',
         'Webpatser\\Uuid\\UuidFacade' => __DIR__ . '/..' . '/webpatser/laravel-uuid/src/Webpatser/Uuid/UuidFacade.php',
@@ -5653,6 +5702,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'XeroPHP\\Remote\\Exception\\OrganisationOfflineException' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/Exception/OrganisationOfflineException.php',
         'XeroPHP\\Remote\\Exception\\RateLimitExceededException' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/Exception/RateLimitExceededException.php',
         'XeroPHP\\Remote\\Exception\\UnauthorizedException' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/Exception/UnauthorizedException.php',
+        'XeroPHP\\Remote\\Model' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/Model.php',
         'XeroPHP\\Remote\\OAuth\\Client' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/OAuth/Client.php',
         'XeroPHP\\Remote\\OAuth\\Exception' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/OAuth/Exception.php',
         'XeroPHP\\Remote\\OAuth\\SignatureMethod\\HMACSHA1' => __DIR__ . '/..' . '/calcinai/xero-php/src/XeroPHP/Remote/OAuth/SignatureMethod/HMACSHA1.php',
@@ -6022,6 +6072,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInit590e70dd7d1036a77112195bccbdd455::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit590e70dd7d1036a77112195bccbdd455::$prefixDirsPsr4;
+            $loader->fallbackDirsPsr4 = ComposerStaticInit590e70dd7d1036a77112195bccbdd455::$fallbackDirsPsr4;
             $loader->prefixesPsr0 = ComposerStaticInit590e70dd7d1036a77112195bccbdd455::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit590e70dd7d1036a77112195bccbdd455::$classMap;
 
