@@ -106,6 +106,9 @@
     $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
     $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
+    $Terms = $Invoice->Terms;
+    $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
+    $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
     ?>
 
 
@@ -301,7 +304,7 @@
     <!-- adevrtisement and terms section start-->
     <div id="thanksadevertise">
         <div class="invoice-left">
-            <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+            <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
         </div>
     </div>
     <!-- adevrtisement and terms section end -->
@@ -480,7 +483,7 @@
                                         @if($table_h_row['Title'] == 'ChargedAmount')
                                                 <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
                                         @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-											<td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format($row['AvgRate'],$RoundChargesAmount) : 0}}</td>
+											<td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format($row['AvgRatePerMin'],$RoundChargesAmount) : 0}}</td>
                                         @else
                                             <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                         @endif

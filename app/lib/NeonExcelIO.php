@@ -1027,20 +1027,12 @@ class NeonExcelIO
                 if(!empty($this->Sheet)) {
                     $objPHPExcelReader->setActiveSheetIndexByName($this->Sheet);
                 }
-
-                $sheetindex = $objPHPExcelReader->getActiveSheetIndex();
                 $ActiveSheet = $objPHPExcelReader->getActiveSheet();
                 $drow = $ActiveSheet->getHighestDataRow();
                 $dcol = $ActiveSheet->getHighestDataColumn();
-                if($sheetindex == 0) {
-                    $start_row = intval($data["start_row"]) + 1;
-                    $end_row = ($drow - intval($data["end_row"]));
-                }
-                else
-                {
-                    $start_row = intval($data["start_row_sheet2"]) + 1;
-                    $end_row = ($drow - intval($data["end_row_sheet2"]));
-                }
+
+                $start_row = intval($data["start_row"]) + 1;
+                $end_row = ($drow - intval($data["end_row"]));
 
                 Log::info('start row : ' . $start_row);
                 Log::info('highest row : ' . $drow . ' and highest col : ' . $dcol);
@@ -1051,8 +1043,6 @@ class NeonExcelIO
                 $process_time1 = strtotime($end_time1) - strtotime($start_time1);
                 Log::info('rangeToArray function call time : ' . $process_time1 . ' Seconds');
 
-                //Log::info(print_r(array_slice($allRows,0,10),true));
-
                 //$file_name = substr($file_name, 0, strrpos($file_name, '.')) . '.csv';
                 $file_name = substr($file_name, 0, strrpos($file_name, '.')) .'_'.$this->Sheet.'.csv';
                 $end_time = date('Y-m-d H:i:s');
@@ -1062,45 +1052,23 @@ class NeonExcelIO
 
                 $header_rows = $footer_rows = array();
                 $char_arr = array_combine(range('a','z'),range(1,26));
-                if($sheetindex == 0) {
-                    if ($start_row > 0) {
-                        for ($i = 0; $i < intval($data["start_row"]); $i++) {
-                            $row = array();
-                            for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 1; $j++) {
-                                $row[$j] = "";
-                            }
-                            $header_rows[$i] = $row;
+
+                if ($start_row > 0) {
+                    for ($i = 0; $i < intval($data["start_row"]); $i++) {
+                        $row = array();
+                        for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 1; $j++) {
+                            $row[$j] = "";
                         }
-                    }
-                    if (intval($data["end_row"]) > 0) {
-                        for ($i = 0; $i < intval($data["end_row"]); $i++) {
-                            $row = array();
-                            for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 2; $j++) {
-                                $row[$j] = "";
-                            }
-                            $footer_rows[$i] = $row;
-                        }
+                        $header_rows[$i] = $row;
                     }
                 }
-                else
-                {
-                    if ($start_row > 0) {
-                        for ($i = 0; $i < intval($data["start_row_sheet2"]); $i++) {
-                            $row = array();
-                            for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 1; $j++) {
-                                $row[$j] = "";
-                            }
-                            $header_rows[$i] = $row;
+                if (intval($data["end_row"]) > 0) {
+                    for ($i = 0; $i < intval($data["end_row"]); $i++) {
+                        $row = array();
+                        for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 2; $j++) {
+                            $row[$j] = "";
                         }
-                    }
-                    if (intval($data["end_row_sheet2"]) > 0) {
-                        for ($i = 0; $i < intval($data["end_row_sheet2"]); $i++) {
-                            $row = array();
-                            for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 2; $j++) {
-                                $row[$j] = "";
-                            }
-                            $footer_rows[$i] = $row;
-                        }
+                        $footer_rows[$i] = $row;
                     }
                 }
 

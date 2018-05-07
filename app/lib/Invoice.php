@@ -574,7 +574,7 @@ class Invoice extends \Eloquent {
                 $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
             }
             $body = htmlspecialchars_decode($body);
-            $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
+            $footer = View::make('emails.invoices.pdffooter', compact('Invoice', 'Account'))->render();
             $footer = htmlspecialchars_decode($footer);
 
             $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
@@ -2151,7 +2151,7 @@ class Invoice extends \Eloquent {
         }
         $UsageColumn = getUsageColumns($InvoiceTemplate);
         $activeColumns = array();
-        $GroupColumns = array('Trunk','Country','AreaPrefix','Description');
+        $GroupColumns = array('Trunk','Country','AreaPrefix','Description','AvgRatePerMin');
         foreach($UsageColumn as $UsageColumnRow){
             if($UsageColumnRow['Status']=='true') {
                 $activeColumns[] = $UsageColumnRow['Title'];
@@ -2195,7 +2195,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($usage_data[$key_col_comb]['AvgRate'], 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($result_row['AvgRatePerMin'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -2203,7 +2203,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb] = $result_row;
                         $usage_data[$key_col_comb]['ChargedAmount'] = number_format($usage_data[$key_col_comb]['ChargedAmount'],$RoundChargesCDR);
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($usage_data[$key_col_comb]['AvgRate'], 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($result_row['AvgRatePerMin'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -2400,7 +2400,7 @@ class Invoice extends \Eloquent {
             foreach($usage_data as $row_key =>$usage_data_row){
                 if (isset($usage_data_row['AreaPrefix'])) {
                     if($usage_data_row['BillDurationInSec'] != 0) {
-                        $usage_data_row['AvgRatePerMin'] = number_format($usage_data_row['AvgRate'], 6);
+                        $usage_data_row['AvgRatePerMin'] = number_format($usage_data_row['AvgRatePerMin'], 6);
                     }else{
                         $usage_data_row['AvgRatePerMin'] = 0;
                     }

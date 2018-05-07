@@ -192,7 +192,7 @@ class VendorRateUpload extends Command
                         $data = json_decode(json_encode($templateoptions), true);
                         $data['start_row'] = $data['skipRows']['start_row'];
                         $data['end_row'] = $data['skipRows']['end_row'];
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $data['start_row_sheet2'] = $data['skipRows_sheet2']['start_row'];
                             $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
                         }
@@ -202,9 +202,12 @@ class VendorRateUpload extends Command
                         $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
                         $file_name = $NeonExcel->convertExcelToCSV($data);
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
-                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data['option'], $data['importdialcodessheet']);
-                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data);
+                        if(!empty($data['importdialcodessheet'])) {
+                            $data2 = $data;
+                            $data2['start_row'] = $data["start_row_sheet2"];
+                            $data2['end_row'] = $data["end_row_sheet2"];
+                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data2['option'], $data2['importdialcodessheet']);
+                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data2);
                         }
 
                         if(isset($templateoptions->skipRows)) {
@@ -218,24 +221,25 @@ class VendorRateUpload extends Command
                             }
                             NeonExcelIO::$start_row = intval($skipRows->start_row);
                             NeonExcelIO::$end_row   = intval($skipRows->end_row);
-                            $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
-                            $ratesheet = $NeonExcel->read();
-
-                            if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
-                                $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
-                                NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
-                                NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
-                                $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
-                                $dialcodessheet = $NeonExcel2->read();
-                            }
 
                         } else if ($csvoption->Firstrow == 'data') {
                             $lineno = 1;
                         } else {
                             $lineno = 2;
                         }
+
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $ratesheet = $NeonExcel->read();
+
+                        if(!empty($data['importdialcodessheet'])) {
+                            $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
+                            NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
+                            NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
+                            $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
+                            $dialcodessheet = $NeonExcel2->read();
+                        }
                        // echo "<pre>";print_r($data);exit;
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             $Join1 = $data["selection"]['Join1'];
                             $Join2 = $data["selection2"]['Join2'];
 
@@ -263,7 +267,7 @@ class VendorRateUpload extends Command
                             $attrselection->$key = str_replace("\n",'',$attrselection->$key);
                         }
 
-                        if(isset($data['importdialcodessheet']) && !empty($data['importdialcodessheet'])) {
+                        if(!empty($data['importdialcodessheet'])) {
                             foreach ($attrselection2 as $key => $value) {
                                 $attrselection2->$key = str_replace("\r", '', $value);
                                 $attrselection2->$key = str_replace("\n", '', $attrselection2->$key);
@@ -306,14 +310,12 @@ class VendorRateUpload extends Command
                                 if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
                                     if(!empty($attrselection->Code)) {
                                         $selection_Code = $attrselection->Code;
-                                        $selection_CountryCode = $attrselection->CountryCode;
                                     } else if(!empty($attrselection2->Code)) {
                                         $selection_Code = $attrselection2->Code;
-                                        $selection_CountryCode = $attrselection2->CountryCode;
                                     }
                                     if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
                                         $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                    } else if (!empty($tempvendordata['CountryCode'])) {
                                         $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
                                     } else {
                                         $error[] = 'Code is blank at line no:' . $lineno;
