@@ -574,7 +574,7 @@ class Invoice extends \Eloquent {
                 $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
             }
             $body = htmlspecialchars_decode($body);
-            $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
+            $footer = View::make('emails.invoices.pdffooter', compact('Invoice', 'Account'))->render();
             $footer = htmlspecialchars_decode($footer);
 
             $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();

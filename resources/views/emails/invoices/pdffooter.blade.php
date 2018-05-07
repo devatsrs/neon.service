@@ -12,10 +12,16 @@
             width:100%;
         }
     </style>
+    <?php
+    $FooterTerm = $Invoice->FooterTerm;
 
+    $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
+    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
+    $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
+    ?>
     <!-- footer section start -->
     <div id="pdf_footer">
-        {{nl2br($Invoice->FooterTerm)}}
+        {{nl2br($FooterTerm_message)}}
 
     </div>
     <!-- footer section start -->
