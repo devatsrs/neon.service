@@ -63,6 +63,10 @@
         $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
         $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
         $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
+
+        $Terms = $Invoice->Terms;
+        $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
+        $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
         ?>
 
 
@@ -140,7 +144,7 @@
         <!-- adevrtisement and terms section start-->
         <div id="thanksadevertise">
             <div class="invoice-left">
-                <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+                <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
             </div>
         </div>
         <!-- adevrtisement and terms section end -->
