@@ -9,15 +9,15 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '3e2471375464aac821502deb0ac64275' => __DIR__ . '/..' . '/symfony/polyfill-php54/bootstrap.php',
-        '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
         'ad155f8f1cf0d418fe49e248db8c661b' => __DIR__ . '/..' . '/react/promise/src/functions_include.php',
+        '2c102faa651ef8ea5874edb585946bce' => __DIR__ . '/..' . '/swiftmailer/swiftmailer/lib/swift_required.php',
         'e40631d46120a9c38ea139981f8dab26' => __DIR__ . '/..' . '/ircmaxell/password-compat/lib/password.php',
-        '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
         '5255c38a0faeba867671b61dfda6d864' => __DIR__ . '/..' . '/paragonie/random_compat/lib/random.php',
+        '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
         'a0edc8309cc5e1d60e3047b5df6b7052' => __DIR__ . '/..' . '/guzzlehttp/psr7/src/functions_include.php',
         '6a47392539ca2329373e0d33e1dba053' => __DIR__ . '/..' . '/symfony/polyfill-intl-icu/bootstrap.php',
-        '58571171fd5812e6e447dce228f52f4d' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Support/helpers.php',
         'cf23f80ea1e20903a9175ea58c5c13aa' => __DIR__ . '/..' . '/consolibyte/quickbooks/QuickBooks.php',
+        '58571171fd5812e6e447dce228f52f4d' => __DIR__ . '/..' . '/laravel/framework/src/Illuminate/Support/helpers.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -91,7 +91,6 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
             'Cartalyst\\Stripe\\Laravel\\' => 25,
             'Cartalyst\\Stripe\\' => 17,
             'Cartalyst\\Collections\\' => 22,
-            'Carbon\\' => 7,
         ),
         'B' => 
         array (
@@ -253,10 +252,6 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         array (
             0 => __DIR__ . '/..' . '/cartalyst/collections/src',
         ),
-        'Carbon\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon',
-        ),
         'Box\\Spout\\' => 
         array (
             0 => __DIR__ . '/..' . '/box/spout/src/Spout',
@@ -265,6 +260,10 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         array (
             0 => __DIR__ . '/..' . '/barryvdh/laravel-dompdf/src',
         ),
+    );
+
+    public static $fallbackDirsPsr4 = array (
+        0 => __DIR__ . '/..' . '/nesbot/carbon/src',
     );
 
     public static $prefixesPsr0 = array (
@@ -445,6 +444,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'AccountAuthenticate' => __DIR__ . '/../..' . '/app/models/AccountAuthenticate.php',
         'AccountBalance' => __DIR__ . '/../..' . '/app/models/AccountBalance.php',
         'AccountBilling' => __DIR__ . '/../..' . '/app/models/AccountBilling.php',
+        'AccountDetails' => __DIR__ . '/../..' . '/app/models/AccountDetails.php',
         'AccountDiscountController' => __DIR__ . '/../..' . '/app/controllers/AccountDiscountController.php',
         'AccountDiscountPlan' => __DIR__ . '/../..' . '/app/models/AccountDiscountPlan.php',
         'AccountDiscountScheme' => __DIR__ . '/../..' . '/app/models/AccountDiscountScheme.php',
@@ -503,6 +503,11 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'AuthorizeNetTransaction' => __DIR__ . '/..' . '/authorizenet/authorizenet/lib/shared/AuthorizeNetTypes.php',
         'AuthorizeNetXMLResponse' => __DIR__ . '/..' . '/authorizenet/authorizenet/lib/shared/AuthorizeNetXMLResponse.php',
         'AuthorizeNet_Subscription' => __DIR__ . '/..' . '/authorizenet/authorizenet/lib/shared/AuthorizeNetTypes.php',
+        'AutoImport' => __DIR__ . '/../..' . '/app/models/AutoImport.php',
+        'AutoImportController' => __DIR__ . '/../..' . '/app/controllers/AutoImportController.php',
+        'AutoImportInboxSetting' => __DIR__ . '/../..' . '/app/models/AutoImportInboxSetting.php',
+        'AutoImportSetting' => __DIR__ . '/../..' . '/app/models/AutoImportSetting.php',
+        'AutoRateImportController' => __DIR__ . '/../..' . '/app/controllers/AutoRateImportController.php',
         'Aws\\AutoScaling\\AutoScalingClient' => __DIR__ . '/..' . '/aws/aws-sdk-php/src/Aws/AutoScaling/AutoScalingClient.php',
         'Aws\\AutoScaling\\Enum\\LifecycleState' => __DIR__ . '/..' . '/aws/aws-sdk-php/src/Aws/AutoScaling/Enum/LifecycleState.php',
         'Aws\\AutoScaling\\Enum\\ScalingActivityStatusCode' => __DIR__ . '/..' . '/aws/aws-sdk-php/src/Aws/AutoScaling/Enum/ScalingActivityStatusCode.php',
@@ -1610,6 +1615,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'Carbon\\Carbon' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Carbon.php',
         'Carbon\\CarbonInterval' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/CarbonInterval.php',
         'Carbon\\Exceptions\\InvalidDateException' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Exceptions/InvalidDateException.php',
+        'Carbon\\Translator' => __DIR__ . '/..' . '/nesbot/carbon/src/Carbon/Translator.php',
         'Cartalyst\\Collections\\Collection' => __DIR__ . '/..' . '/cartalyst/collections/src/Collection.php',
         'Cartalyst\\Stripe\\AmountConverter' => __DIR__ . '/..' . '/cartalyst/stripe/src/AmountConverter.php',
         'Cartalyst\\Stripe\\Api\\Account' => __DIR__ . '/..' . '/cartalyst/stripe/src/Api/Account.php',
@@ -1787,6 +1793,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'FideliPay' => __DIR__ . '/../..' . '/app/lib/FideliPay.php',
         'FileUploadTemplate' => __DIR__ . '/../..' . '/app/models/FileUploadTemplate.php',
         'FileUploadTemplateController' => __DIR__ . '/../..' . '/app/controllers/FileUploadTemplateController.php',
+        'FileUploadTemplateType' => __DIR__ . '/../..' . '/app/models/FileUploadTemplateType.php',
         'File_ANSI' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
         'File_ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
         'File_ASN1_Element' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
@@ -3024,6 +3031,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'JMS\\Serializer\\Metadata\\PropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/PropertyMetadata.php',
         'JMS\\Serializer\\Metadata\\StaticPropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/StaticPropertyMetadata.php',
         'JMS\\Serializer\\Metadata\\VirtualPropertyMetadata' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Metadata/VirtualPropertyMetadata.php',
+        'JMS\\Serializer\\Naming\\AdvancedNamingStrategyInterface' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/AdvancedNamingStrategyInterface.php',
         'JMS\\Serializer\\Naming\\CacheNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/CacheNamingStrategy.php',
         'JMS\\Serializer\\Naming\\CamelCaseNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/CamelCaseNamingStrategy.php',
         'JMS\\Serializer\\Naming\\IdenticalPropertyNamingStrategy' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/Naming/IdenticalPropertyNamingStrategy.php',
@@ -3057,6 +3065,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'JobStatus' => __DIR__ . '/../..' . '/app/models/JobStatus.php',
         'JobType' => __DIR__ . '/../..' . '/app/models/JobType.php',
         'JobsController' => __DIR__ . '/../..' . '/app/controllers/JobsController.php',
+        'JsonSerializable' => __DIR__ . '/..' . '/nesbot/carbon/src/JsonSerializable.php',
         'LCR' => __DIR__ . '/../..' . '/app/models/LCR.php',
         'LCRController' => __DIR__ . '/../..' . '/app/controllers/LCRController.php',
         'LastPrefixNo' => __DIR__ . '/../..' . '/app/models/LastPrefixNo.php',
@@ -3648,6 +3657,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'PaymentsController' => __DIR__ . '/../..' . '/app/controllers/PaymentsController.php',
         'PaymentsCustomerController' => __DIR__ . '/../..' . '/app/controllers/customer/PaymentsCustomerController.php',
         'PaypalIpn' => __DIR__ . '/../..' . '/app/lib/PaypalIpn.php',
+        'PeleCard' => __DIR__ . '/../..' . '/app/lib/PeleCard.php',
         'Permission' => __DIR__ . '/../..' . '/app/models/Permission.php',
         'PhpCollection\\AbstractCollection' => __DIR__ . '/..' . '/phpcollection/phpcollection/src/PhpCollection/AbstractCollection.php',
         'PhpCollection\\AbstractMap' => __DIR__ . '/..' . '/phpcollection/phpcollection/src/PhpCollection/AbstractMap.php',
@@ -3977,6 +3987,9 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'RateTable' => __DIR__ . '/../..' . '/app/models/RateTable.php',
         'RateTableRate' => __DIR__ . '/../..' . '/app/models/RateTableRate.php',
         'RateTablesController' => __DIR__ . '/../..' . '/app/controllers/RateTablesController.php',
+        'RateTablesMultiAccController' => __DIR__ . '/../..' . '/app/controllers/RateTablesMultiAccController.php',
+        'RateUpload' => __DIR__ . '/../..' . '/app/lib/RateUpload.php',
+        'RateUploadController' => __DIR__ . '/../..' . '/app/controllers/RateUploadController.php',
         'React\\Promise\\CancellablePromiseInterface' => __DIR__ . '/..' . '/react/promise/src/CancellablePromiseInterface.php',
         'React\\Promise\\CancellationQueue' => __DIR__ . '/..' . '/react/promise/src/CancellationQueue.php',
         'React\\Promise\\Deferred' => __DIR__ . '/..' . '/react/promise/src/Deferred.php',
@@ -4025,7 +4038,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'ServerInfoController' => __DIR__ . '/../..' . '/app/controllers/ServerInfoController.php',
         'Service' => __DIR__ . '/../..' . '/app/models/Service.php',
         'ServicesController' => __DIR__ . '/../..' . '/app/controllers/ServicesController.php',
-        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/http-foundation/Resources/stubs/SessionHandlerInterface.php',
+        'SessionHandlerInterface' => __DIR__ . '/..' . '/symfony/polyfill-php54/Resources/stubs/SessionHandlerInterface.php',
         'SippyImporter' => __DIR__ . '/../..' . '/app/lib/SippyImporter.php',
         'SippySFTP' => __DIR__ . '/../..' . '/app/lib/SippySFTP.php',
         'SiteIntegration' => __DIR__ . '/../..' . '/app/lib/SiteIntegration.php',
@@ -4743,11 +4756,13 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'TaskController' => __DIR__ . '/../..' . '/app/controllers/TaskController.php',
         'TaxRate' => __DIR__ . '/../..' . '/app/models/TaxRate.php',
         'TaxRatesController' => __DIR__ . '/../..' . '/app/controllers/TaxRatesController.php',
+        'TempRateTableRate' => __DIR__ . '/../..' . '/app/models/TempRateTableRate.php',
         'TempUsageDetail' => __DIR__ . '/../..' . '/app/models/TempUsageDetail.php',
         'TempUsageDownloadLog' => __DIR__ . '/../..' . '/app/models/TempUsageDownloadLog.php',
         'TempVendorRate' => __DIR__ . '/../..' . '/app/models/TempVendorRate.php',
         'Test' => __DIR__ . '/../..' . '/app/models/Test.php',
         'TestCase' => __DIR__ . '/../..' . '/app/tests/TestCase.php',
+        'TestController' => __DIR__ . '/../..' . '/app/controllers/TestController.php',
         'Text_Frame_Decorator' => __DIR__ . '/..' . '/dompdf/dompdf/include/text_frame_decorator.cls.php',
         'Text_Frame_Reflower' => __DIR__ . '/..' . '/dompdf/dompdf/include/text_frame_reflower.cls.php',
         'Text_Renderer' => __DIR__ . '/..' . '/dompdf/dompdf/include/text_renderer.cls.php',
@@ -4792,6 +4807,8 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         'TimeZone' => __DIR__ . '/../..' . '/app/models/TimeZone.php',
         'TransactionLog' => __DIR__ . '/../..' . '/app/models/TransactionLog.php',
         'TransactionLogController' => __DIR__ . '/../..' . '/app/controllers/TransactionLogController.php',
+        'TranslateController' => __DIR__ . '/../..' . '/app/controllers/TranslateController.php',
+        'Translation' => __DIR__ . '/../..' . '/app/models/Translation.php',
         'Trunk' => __DIR__ . '/../..' . '/app/models/Trunk.php',
         'TrunkController' => __DIR__ . '/../..' . '/app/controllers/TrunkController.php',
         'TrunkObserver' => __DIR__ . '/../..' . '/app/models/observer/TrunkObserver.php',
@@ -5306,6 +5323,7 @@ class ComposerStaticInitce1705b63ded342e97963852a6c0c424
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixDirsPsr4;
+            $loader->fallbackDirsPsr4 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$fallbackDirsPsr4;
             $loader->prefixesPsr0 = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$prefixesPsr0;
             $loader->classMap = ComposerStaticInitce1705b63ded342e97963852a6c0c424::$classMap;
 
