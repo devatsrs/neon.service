@@ -57,13 +57,14 @@ class ReadEmailsAutoImport extends Command
 		$joblogdata['CronJobID'] = $CronJobID;
 		$joblogdata['created_at'] = date('Y-m-d H:i:s');
 		$joblogdata['created_by'] = 'RMScheduler';
+		$countEmails=0;
 		try
 		{
 			$emailread = new EmailServiceProvider();
 
 			//Get all Mailboxes
 			$aFolder = $emailread->connectEmail($CompanyID);
-			$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime();
+			$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime($CompanyID);
 
 			$upload_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
@@ -211,7 +212,7 @@ class ReadEmailsAutoImport extends Command
 								if(isset($MatchedAttachmentFileNames[$matchData->lognFileName])){
 									unset($MatchedAttachmentFileNames[$matchData->lognFileName]);
 								}
-
+								$countEmails++;
 						}
 
 					}else{
@@ -246,12 +247,13 @@ class ReadEmailsAutoImport extends Command
 			Log::error($e);
 			if(!empty($cronsetting['ErrorEmail'])) {
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
-				Log::error("**Email Sent Status " . $result['status']);
-				Log::error("**Email Sent message " . $result['message']);
+				Log::error("**Auto Import Email Read Status " . $result['status']);
+				Log::error("**Auto Import Email Read message " . $result['message']);
 			}
 		}
 
 		CronJob::deactivateCronJob($CronJob);
+		$joblogdata['Message'] = 'Emails Read ' . $countEmails;
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		if(!empty($cronsetting['SuccessEmail'])) {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
