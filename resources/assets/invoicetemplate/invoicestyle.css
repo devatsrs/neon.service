@@ -286,3 +286,10 @@ footer {
   width: 49%;
   float: right;
 }
+.col-harf{
+  width: 50%;
+  float: left;
+}
+.text-right {
+  text-align: right;
+}
