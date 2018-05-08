@@ -160,7 +160,7 @@
                         <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
                 @else
                     <?php $colspan = 2; ?>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}Usage</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
                     <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
