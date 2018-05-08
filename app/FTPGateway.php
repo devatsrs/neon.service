@@ -92,7 +92,10 @@ class FTPGateway{
             $filename = array();
             $files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $FileNameRule = self::DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"]) && !empty(trim($addparams["FileNameRule"]))){
+            if(isset($addparams["FileNameRule"])){
+                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
+            }
+            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
                 $FileNameRule =  $addparams["FileNameRule"];
             }
             foreach((array)$files as $file){
