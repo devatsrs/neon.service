@@ -63,7 +63,7 @@ class ReadEmailsAutoImport extends Command
 
 			//Get all Mailboxes
 			$aFolder = $emailread->connectEmail($CompanyID);
-			$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime();
+			$LastEmailReadDateTime = AutoImportRate::getLastEmailReadDateTime($CompanyID);
 
 			$upload_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
