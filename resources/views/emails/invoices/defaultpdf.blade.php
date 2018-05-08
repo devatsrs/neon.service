@@ -106,6 +106,9 @@
     $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
     $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
+    $Terms = $Invoice->Terms;
+    $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
+    $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
     ?>
 
 
@@ -157,7 +160,7 @@
                         <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
                 @else
                     <?php $colspan = 2; ?>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}Usage</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
                     <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
@@ -301,7 +304,7 @@
     <!-- adevrtisement and terms section start-->
     <div id="thanksadevertise">
         <div class="invoice-left">
-            <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+            <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
         </div>
     </div>
     <!-- adevrtisement and terms section end -->
@@ -316,8 +319,8 @@
     <main>
         @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
-            <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
-            <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+            <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
@@ -351,8 +354,8 @@
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">
-                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
-                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
+                <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -387,8 +390,8 @@
 
         @if($is_charge)
             <div class="ChargesTitle clearfix">
-                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
-                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
+                <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
