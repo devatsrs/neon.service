@@ -16365,7 +16365,7 @@ BEGIN
 			TrunkID int
 		);
 
-		call vwVendorCurrentRates(p_AccountID,p_Trunks,p_Effective);
+		call vwVendorCurrentRates(p_AccountID,p_Trunks,p_Effective,p_CustomDate);
 
 		INSERT INTO tmp_VendorSippySheet_
 			SELECT
@@ -18389,6 +18389,41 @@ WHERE (vendorRate.Rate > 0);
 
 END//
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `prc_CronJobGeneratePortaSheet`;
+DELIMITER //
+CREATE PROCEDURE `prc_CronJobGeneratePortaSheet`(
+	IN `p_CustomerID` INT ,
+	IN `p_trunks` VARCHAR(200) ,
+	IN `p_Effective` VARCHAR(50),
+	IN `p_CustomDate` DATE
+)
+BEGIN
+    
+	-- get customer rates
+	CALL vwCustomerRate(p_CustomerID,p_Trunks,p_Effective,p_CustomDate);
+        
+	 SELECT distinct 
+       Code as `Destination` ,
+       Description  as `Description`,
+       Interval1 as `First Interval`,
+       IntervalN as `Next Interval`,
+       Abs(Rate) as `First Price` ,
+       Abs(Rate) as `Next Price`,
+       DATE_FORMAT(EffectiveDate ,'%d/%m/%Y') as  `Effective From`,
+       CASE WHEN Rate < 0 THEN 'Y' ELSE '' END  `Payback Rate` ,
+		 CASE WHEN ConnectionFee > 0 THEN
+			CONCAT('SEQ=', ConnectionFee,'&int1x1@price1&intNxN@priceN')
+		 ELSE
+			''
+		 END as `Formula`
+     FROM tmp_customerrateall_;
+	 
+		SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+END//
+DELIMITER ;
+
+
 
 USE `RMBilling3`;
 
@@ -21571,14 +21606,14 @@ ThisSP:BEGIN
 		/** delete todays reseller cdrs */
 		
 --		Leave ThisSP;
-				
+		/*		
 		DELETE ud 
 		FROM tblUsageDetailFailedCall  ud
 			INNER JOIN tmp_usageheader uh
 				ON uh.UsageHeaderID = ud.UsageHeaderID
 			INNER JOIN tmp_allaccounts_ ta
 				ON uh.AccountID = ta.ResellerAccountID	
-		WHERE uh.CompanyGatewayID = p_CompanyGatewayID;
+		WHERE uh.CompanyGatewayID = p_CompanyGatewayID; */
 		
 		DELETE ud 
 		FROM tblUsageDetails  ud
@@ -21768,7 +21803,7 @@ BEGIN
 	PREPARE stmt2 FROM @stm2;
 	EXECUTE stmt2;
 	DEALLOCATE PREPARE stmt2;
-
+	/*
 	SET @stm3 = CONCAT('
 	INSERT INTO tblUsageDetailFailedCall (UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition,userfield)
 	SELECT UsageHeaderID,connect_time,disconnect_time,billed_duration,billed_second,area_prefix,pincode,extension,cli,cld,cost,remote_ip,duration,trunk,ProcessID,ID,is_inbound,disposition,userfield
@@ -21784,7 +21819,7 @@ BEGIN
 
 	PREPARE stmt3 FROM @stm3;
 	EXECUTE stmt3;
-	DEALLOCATE PREPARE stmt3;
+	DEALLOCATE PREPARE stmt3; */
 
 	SET @stm4 = CONCAT('
 	DELETE FROM `' , p_tbltempusagedetail_name , '` WHERE processid = "' , p_processId , '"  AND billed_duration = 0 AND cost = 0 AND ( disposition <> "ANSWERED" OR disposition IS NULL);
@@ -22534,6 +22569,7 @@ CREATE PROCEDURE `prc_getACD_ASR_Alert`(
 	IN `p_CompanyID` INT,
 	IN `p_CompanyGatewayID` TEXT,
 	IN `p_AccountID` TEXT,
+	IN `p_ResellerID` INT,
 	IN `p_CurrencyID` INT,
 	IN `p_StartDate` DATETIME,
 	IN `p_EndDate` DATETIME,
