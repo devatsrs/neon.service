@@ -3018,6 +3018,7 @@ class Invoice extends \Eloquent {
         $SubscriptionCount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
             ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'tblInvoiceDetail.LineTotal'=>$LineTotal,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID])
             ->where(['tblInvoice.AccountID'=>$AccountID])
+            ->where('tblInvoice.InvoiceStatus','<>',Invoice::CANCEL)
             ->count();
         return $SubscriptionCount;
     }

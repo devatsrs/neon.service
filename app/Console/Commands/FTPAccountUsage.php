@@ -156,7 +156,7 @@ class FTPAccountUsage extends Command
                 $NameFormat = $GatewaySetting->Authentication;
             }
 
-            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = $ReRateMargin = '' ;
             if(!empty($GatewaySetting->CLITranslationRule)){
                 $CLITranslationRule = $GatewaySetting->CLITranslationRule;
             }
@@ -165,6 +165,9 @@ class FTPAccountUsage extends Command
             }
             if(!empty($GatewaySetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $GatewaySetting->PrefixTranslationRule;
+            }
+            if(!empty($GatewaySetting->ReRateMargin)){
+                $ReRateMargin = $GatewaySetting->ReRateMargin;
             }
             TempUsageDetail::applyDiscountPlan();
 
@@ -261,7 +264,9 @@ class FTPAccountUsage extends Command
                                 }
                                 if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0   && isset($temp_row[$attrselection->cost]) ) {
                                     $cdrdata['cost'] = $temp_row[$attrselection->cost];
-                                } else if ($RateCDR == 1) {
+                                } else if ($RateCDR == 1 && !empty($ReRateMargin)) {
+                                    $cdrdata['cost'] = calculate_cost_with_margin( $RateCDR, $temp_row[$attrselection->cost] , $ReRateMargin );
+                                } else if ($RateCDR == 1 && empty($ReRateMargin)) {
                                     $cdrdata['cost'] = 0;
                                 }
 
@@ -353,12 +358,6 @@ class FTPAccountUsage extends Command
                                     if ($call_type == 'both' && $RateCDR == 1) {
 
                                         /**
-                                         * Inbound Entry
-                                         */
-                                        $cdrdata['cost'] = 0;
-                                        $cdrdata['is_inbound'] = 1;
-
-                                        /**
                                          * Outbound Entry
                                          */
                                         $data_outbound = $cdrdata;
@@ -369,6 +368,12 @@ class FTPAccountUsage extends Command
                                         $data_outbound['is_inbound'] = 0;
                                         $batch_insert_array[] = $data_outbound;
                                         $data_count++;
+
+                                        /**
+                                         * Inbound Entry
+                                         */
+                                        $cdrdata['cost'] = 0;
+                                        $cdrdata['is_inbound'] = 1;
 
                                     }
 
@@ -417,6 +422,11 @@ class FTPAccountUsage extends Command
 
             Log::error(' ========================== ftp transaction end =============================');
             //ProcessCDR
+
+            // $ReRateMargin is present dont ReRate CDR as we already added margin.
+            if ($RateCDR == 1 && !empty($ReRateMargin)) {
+                $RateCDR = 0;
+            }
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
