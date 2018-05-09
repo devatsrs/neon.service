@@ -770,3 +770,16 @@ function getCompanyLogo($CompanyID){
     }
     return $logo_url;
 }
+
+function calculate_cost_with_margin($RateCDR,$Cost,$Margin){
+
+    if($RateCDR == 1){
+        $Margin = trim($Margin);
+        if(strpos($Margin,"p") !== FALSE){
+            $Cost = $Cost + ($Cost * doubleval(str_replace("p","",$Margin)) / 100);
+        }else if(is_numeric($Margin) ) {
+            $Cost = $Margin;
+        }
+    }
+    return $Cost;
+}
