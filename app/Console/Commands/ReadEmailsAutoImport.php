@@ -253,6 +253,7 @@ class ReadEmailsAutoImport extends Command
 		}
 
 		CronJob::deactivateCronJob($CronJob);
+		$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 		$joblogdata['Message'] = 'Emails Read ' . $countEmails;
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		if(!empty($cronsetting['SuccessEmail'])) {
