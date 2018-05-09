@@ -124,14 +124,8 @@ class AutoImportRate extends \Eloquent {
 	}
 	static function getLastEmailReadDateTime($CompanyID) {
 
-		$LastEmailReadDateTime = AutoImportRate::orderBy('AutoImportID', 'desc')->where("CompanyID", $CompanyID)->first();
-		if(isset($LastEmailReadDateTime->created_at)){
-			return $LastEmailReadDateTime->created_at;
-		}else{
-			date("Y-m-d H:i:s");
-		}	
+		$LastEmailReadDateTime = AutoImportRate::orderBy('AutoImportID', 'desc')->where("CompanyID", $CompanyID)->pluck("created_at");
 		return $LastEmailReadDateTime;
-
 	}
 
 }
