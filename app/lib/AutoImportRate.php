@@ -122,11 +122,10 @@ class AutoImportRate extends \Eloquent {
 		return  AutoImportRate::where('Attachment','!=','')->lists('MessageId','From');
 
 	}
-	static function getLastEmailReadDateTime() {
+	static function getLastEmailReadDateTime($CompanyID) {
 
-		$LastEmailReadDateTime = AutoImportRate::orderBy('AutoImportID', 'desc')->first()->created_at;
+		$LastEmailReadDateTime = AutoImportRate::orderBy('AutoImportID', 'desc')->where("CompanyID", $CompanyID)->pluck("created_at");
 		return $LastEmailReadDateTime;
-
 	}
 
 }
