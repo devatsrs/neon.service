@@ -58,7 +58,7 @@ protected $server;
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
-				$overview_subject   =   isset($overview[0]->subject)?$overview[0]->subject:'';
+				$overview_subject   =   isset($overview[0]->subject)?Imap::dataDecode($overview[0]->subject):'';
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
 
 			
