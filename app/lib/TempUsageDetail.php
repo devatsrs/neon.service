@@ -355,13 +355,13 @@ Please check below ip auto added.
 
                 if (strpos($ReRateMargin, "p") !== FALSE) {
 
-                    $sql = "UPDATE '" . $temptableName . "' SET cost  = cost +  (cost * REPLACE(" . $ReRateMargin . ",'p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
+                    $sql = "UPDATE `" . $temptableName . "` SET cost  = cost +  (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
                     DB::connection('sqlsrvcdr')->statement($sql);
                     return true;
 
                 } else {
 
-                    $sql = "UPDATE '" . $temptableName . "' SET cost  = " . $ReRateMargin . " WHERE ProcessID = '" . $ProcessID . "';";
+                    $sql = "UPDATE `" . $temptableName . "` SET cost  = " . $ReRateMargin . " WHERE ProcessID = '" . $ProcessID . "';";
                     DB::connection('sqlsrvcdr')->statement($sql);
                     return true;
 
