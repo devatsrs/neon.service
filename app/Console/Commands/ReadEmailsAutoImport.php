@@ -196,7 +196,7 @@ class ReadEmailsAutoImport extends Command
 									"AccountID" => $AccountID,
 									"AccountName" => $senderName,
 									"Subject" => $Subject,
-									"Description" => $oMessage->getTextBody(),
+									"Description" => $oMessage->getHTMLBody(),
 									"Attachment" => $Attachments,
 									"To" => $toMail,
 									"From" => $fromMail,
@@ -219,7 +219,7 @@ class ReadEmailsAutoImport extends Command
 						$SaveData = array(
 							"AccountName" => $senderName,
 							"Subject" => $Subject,
-							"Description" => $oMessage->getTextBody(),
+							"Description" => $oMessage->getHTMLBody(),
 							"Attachment" => $Attachments,
 							"To" => $toMail,
 							"From" => $fromMail,
