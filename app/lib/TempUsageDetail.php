@@ -344,4 +344,30 @@ Please check below ip auto added.
             }
         }
     }
+
+    public static function update_cost_with_margin($RateMethod,$ReRateMargin,$temptableName,$ProcessID) {
+
+        if($RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
+
+            if (!empty($ReRateMargin)) {
+
+                $ReRateMargin = trim($ReRateMargin);
+
+                if (strpos($ReRateMargin, "p") !== FALSE) {
+
+                    $sql = "UPDATE '" . $temptableName . "' SET cost  = cost +  (cost * REPLACE(" . $ReRateMargin . ",'p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
+                    DB::connection('sqlsrvcdr')->statement($sql);
+                    return true;
+
+                } else {
+
+                    $sql = "UPDATE '" . $temptableName . "' SET cost  = " . $ReRateMargin . " WHERE ProcessID = '" . $ProcessID . "';";
+                    DB::connection('sqlsrvcdr')->statement($sql);
+                    return true;
+
+                }
+            }
+        }
+        return false;
+    }
 }
