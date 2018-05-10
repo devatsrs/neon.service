@@ -5,6 +5,7 @@ use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\TempUsageDetail;
+use App\Lib\UsageDetail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -137,6 +138,10 @@ class CDRRecalculate extends Command {
                 if(!empty($startdate) && !empty($enddate)){
                     Log::error("start  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
                     DB::connection('sqlsrv2')->statement(" call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
+
+                    if(TempUsageDetail::update_cost_with_margin($RateMethod,$SpecifyRate,$temptableName,$ProcessID)){
+                        $RateCDR = 0;
+                    }
                     Log::error("end  call  prc_InsertTempReRateCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."','".$ResellerOwner."')");
                     $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'',$RateMethod,$SpecifyRate,0,0,0);
                 }
