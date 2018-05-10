@@ -58,7 +58,7 @@ protected $server;
 				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
 				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
 				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
-				$overview_subject   =   isset($overview[0]->subject)?$overview[0]->subject:'';
+				$overview_subject   =   isset($overview[0]->subject)?Imap::dataDecode($overview[0]->subject):'';
 				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
 
 			
@@ -172,7 +172,7 @@ protected $server;
 				// not inline image , only attachment
 				if (!$attachment['inline']) {
 
-					$filename = Imap::dataDecode($attachment['filename']);
+					$filename = imap_mime_header_decode($attachment['filename'])[0]->text;
 
 					$file_detail = $this->store_email_file($filename, $attachment['data'], $email_number, $CompanyID);
 
@@ -186,7 +186,6 @@ protected $server;
 	
 	function GetEmailtxt($email)
 	{
-		$email=Imap::dataDecode($email);
 		$pos 	= 	strpos($email, "<");	
 		if($pos){			
 		  $first = explode("<",$email);
@@ -201,7 +200,6 @@ protected $server;
 
     function GetNametxt($email)
     {
-		$email=Imap::dataDecode($email);
         $pos 	= 	strpos($email, "<");
         if($pos){
             $first = explode("<",$email);
@@ -214,7 +212,6 @@ protected $server;
     }
 	
 	function GetCC($str){
-		$str=Imap::dataDecode($str);
 		$cc = array();
 		if(count($str)>0 && is_array($str)){
 			foreach($str as $strData){
@@ -229,7 +226,7 @@ protected $server;
 		$mock = new \DOMDocument;
 		libxml_use_internal_errors(true);
 		// load the HTML into the DomDocument object (this would be your source HTML)
-		$doc->loadHTML(Imap::dataDecode($msg));
+		$doc->loadHTML(mb_convert_encoding($msg, 'HTML-ENTITIES', 'UTF-8'));
 		$this->removeElementsByTagName('script', $doc);
 		$this->removeElementsByTagName('style', $doc); 
 		//removeElementsByTagName('link', $doc);
@@ -284,7 +281,7 @@ protected $server;
 		$MatchID		=	0;
 		$MatchType		=	'';
 		$AccountID		=	0;
-		$email=Imap::dataDecode($email);
+
 		//find in account(email,billing email), Email
 		$AccountSearch1  =  DB::table('tblAccount')->whereRaw("find_in_set('".$email."',Email) OR find_in_set('".$email."',BillingEmail)")->get(array("AccountID","AccountName","AccountType"));
 		$ContactSearch 	 =  DB::table('tblContact')->whereRaw("find_in_set('".$email."',Email)")->get(array("Owner","ContactID","FirstName","LastName"));		
@@ -337,7 +334,7 @@ protected $server;
     if ($body == "") {
         $body = nl2br($this->get_part($imap, $uid, "TEXT/PLAIN"));
     }
-        return Imap::dataDecode($body);
+		return $body;
     }
 
     function get_part($imap, $uid, $mimetype, $structure = false, $partNumber = false){
@@ -492,8 +489,8 @@ protected $server;
 				// just to add dummy random message id so as no to skip this email.
 				$FromName = '';
 				if(isset($overview[0]->from)){
-					$from   	= 	$this->GetEmailtxt($overview[0]->from);
-					$FromName	=	$this->GetNametxt($overview[0]->from);
+					$from   	= 	imap_mime_header_decode($this->GetEmailtxt($overview[0]->from))[0]->text;
+					$FromName	=	imap_mime_header_decode($this->GetNametxt($overview[0]->from))[0]->text;
 				}else{
 					$from		= 	"nofrom@email.com";
 				}
@@ -1205,7 +1202,6 @@ protected $server;
 	}
 
 	public function body_cleanup($message){
-		$message = Imap::dataDecode($message);
 		$message = html_entity_decode($message);
 		return $message ;
 
