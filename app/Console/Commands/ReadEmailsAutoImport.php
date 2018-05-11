@@ -57,6 +57,8 @@ class ReadEmailsAutoImport extends Command
 		$joblogdata['CronJobID'] = $CronJobID;
 		$joblogdata['created_at'] = date('Y-m-d H:i:s');
 		$joblogdata['created_by'] = 'RMScheduler';
+		$countEmailMSG="";
+		$errorEmailMSG="";
 		$countEmails=0;
 		try
 		{
@@ -160,6 +162,7 @@ class ReadEmailsAutoImport extends Command
 									$AccountID = 0;
 								}
 
+							try {
 								$options=json_decode($matchData->options);
 								$arrOptions=array();
 								$arrOptions["skipRows"]=$options->skipRows;
@@ -213,6 +216,11 @@ class ReadEmailsAutoImport extends Command
 									unset($MatchedAttachmentFileNames[$matchData->lognFileName]);
 								}
 								$countEmails++;
+								$countEmailMSG='Success Emails Read ' . $countEmails;
+
+							}catch (\Exception $e){
+								$errorEmailMSG .= "<br>E-Mail Subject - '".$Subject."' - Template Not Valid </br> Error:" . $e->getMessage();
+							}
 						}
 
 					}else{
@@ -254,7 +262,7 @@ class ReadEmailsAutoImport extends Command
 
 		CronJob::deactivateCronJob($CronJob);
 		$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-		$joblogdata['Message'] = 'Emails Read ' . $countEmails;
+		$joblogdata['Message'] = $countEmailMSG.$errorEmailMSG;
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		if(!empty($cronsetting['SuccessEmail'])) {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
