@@ -137,7 +137,7 @@ class ReadEmailsAutoImport extends Command
 
 					}
 
-					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".implode(", ", array_keys($MatchedAttachmentFileNames))."' )";
+					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".addslashes(implode(", ", array_keys($MatchedAttachmentFileNames)))."' )";
 					Log::info($query);
 					Log::info($MatchedAttachmentFileNames);
 					$results = DB::select($query);
