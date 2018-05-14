@@ -250,8 +250,8 @@ class VendorRateUpload extends Command
                                     if($value[$Join1] == $value1[$Join2])
                                     {
                                         $results[$key1] = array_merge($value1, $ratesheet[$key]);
+                                        unset($results[$key1][""]);
                                     }
-                                    unset($results[$key1][""]);
                                 }
                             }
                         }else{
