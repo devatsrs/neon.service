@@ -19967,19 +19967,13 @@ CREATE PROCEDURE `prc_getInvoiceUsage`(
 	IN `p_StartDate` DATETIME,
 	IN `p_EndDate` DATETIME,
 	IN `p_ShowZeroCall` INT
-
-
-
-
-
-
-
 )
 BEGIN
 
 	DECLARE v_InvoiceCount_ INT; 
 	DECLARE v_BillingTime_ INT; 
 	DECLARE v_CDRType_ INT; 
+	DECLARE v_AvgRound_ INT;
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
 	SELECT fnGetBillingTime(p_GatewayID,p_AccountID) INTO v_BillingTime_;
@@ -19987,7 +19981,7 @@ BEGIN
 	CALL fnServiceUsageDetail(p_CompanyID,p_AccountID,p_GatewayID,p_ServiceID,p_StartDate,p_EndDate,v_BillingTime_);
 
 	SELECT 
-		it.CDRType  INTO v_CDRType_
+		it.CDRType,b.RoundChargesAmount  INTO v_CDRType_, v_AvgRound_
 	FROM Ratemanagement3.tblAccountBilling ab
 	INNER JOIN  Ratemanagement3.tblBillingClass b
 		ON b.BillingClassID = ab.BillingClassID
@@ -20023,7 +20017,7 @@ SELECT
 	billed_duration,
 	cost,
 	ServiceID,
-	ROUND((uh.cost/uh.billed_duration)*60.0,6) as AvgRate 
+	ROUND((uh.cost/uh.billed_duration)*60.0,v_AvgRound_) as AvgRate 
 FROM tmp_tblUsageDetails_ uh;
 
 SELECT
