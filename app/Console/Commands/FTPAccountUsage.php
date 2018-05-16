@@ -376,6 +376,11 @@ class FTPAccountUsage extends Command
                                 }
                             }
                         }// loop over
+                        if(!empty($batch_insert_array)){
+                            Log::info('Batch insert start - afterloop count' . count($batch_insert_array));
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+                            $batch_insert_array = [];
+                        }
 
                     }catch(Exception $e){
 
