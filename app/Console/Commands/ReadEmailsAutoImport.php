@@ -187,7 +187,7 @@ class ReadEmailsAutoImport extends Command
 								$data['checkbox_replace_all'] = $arrOptions["checkbox_replace_all"];
 								$data['checkbox_rates_with_effected_from'] = $arrOptions["checkbox_rates_with_effected_from"];
 								$data['checkbox_add_new_codes_to_code_decks'] = $arrOptions["checkbox_add_new_codes_to_code_decks"];
-								$data['radio_list_option'] = $arrOptions["checkbox_review_rates"];
+								$data['radio_list_option'] = $arrOptions["radio_list_option"];
 								DB::beginTransaction();
 								$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
 								DB::commit();
