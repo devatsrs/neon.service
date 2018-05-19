@@ -2241,6 +2241,8 @@ class Invoice extends \Eloquent {
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+        $temp_balance = AccountBalance::getAccountSOA($Account->CompanyId,$Account->AccountID);
+        $replace_array['AccountBalance'] = $replace_array['CurrencySign'] ." ". AccountBalance::getAccountOutstandingBalance($Account->AccountID,$temp_balance);
 
         return $replace_array;
     }
@@ -2269,7 +2271,8 @@ class Invoice extends \Eloquent {
             '{Currency}',
             '{CompanyName}',
             '{CompanyVAT}',
-            '{CompanyAddress}'
+            '{CompanyAddress}',
+            '{AccountBalance}'
         ];
 
         foreach($extra as $item){

@@ -18,6 +18,10 @@ class AccountBalance extends Model
 
     public $timestamps = false; // no created_at and updated_at
 
+    const BILLINGTYPE_PREPAID = 1;
+    const BILLINGTYPE_POSTPAID = 2;
+    const BILLINGTYPE_BOTH = 3;
+
     public static function LowBalanceReminder($CompanyID,$ProcessID){
 
         $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
@@ -114,6 +118,48 @@ class AccountBalance extends Model
             $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', $ProcessID, 0, Notification::BlockAccount);
         }
         return $error_message;
+    }
+
+    public static function getAccountSOA($CompanyID,$AccountID){
+        $query = "call prc_getSOA (" . $CompanyID . "," . $AccountID . ",'','',0)";
+        $result = DataTableSql::of($query,'sqlsrv2')->getProcResult(array('InvoiceOutWithPaymentIn','InvoiceInWithPaymentOut','InvoiceOutAmountTotal','InvoiceOutDisputeAmountTotal','PaymentInAmountTotal','InvoiceInAmountTotal','InvoiceInDisputeAmountTotal','PaymentOutAmountTotal'));
+
+        $InvoiceOutAmountTotal = $result['data']['InvoiceOutAmountTotal'];
+        $PaymentInAmountTotal = $result['data']['PaymentInAmountTotal'];
+        $InvoiceInAmountTotal = $result['data']['InvoiceInAmountTotal'];
+        $PaymentOutAmountTotal = $result['data']['PaymentOutAmountTotal'];
+
+        $InvoiceOutAmountTotal = ($InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal <> 0) ? $InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal : 0;
+        $PaymentInAmountTotal = ($PaymentInAmountTotal[0]->PaymentInAmountTotal <> 0) ? $PaymentInAmountTotal[0]->PaymentInAmountTotal : 0;
+        $InvoiceInAmountTotal = ($InvoiceInAmountTotal[0]->InvoiceInAmountTotal <> 0) ? $InvoiceInAmountTotal[0]->InvoiceInAmountTotal : 0;
+        $PaymentOutAmountTotal = ($PaymentOutAmountTotal[0]->PaymentOutAmountTotal <> 0) ? $PaymentOutAmountTotal[0]->PaymentOutAmountTotal : 0;
+
+        $OffsetBalance = ($InvoiceOutAmountTotal - $PaymentInAmountTotal) - ($InvoiceInAmountTotal - $PaymentOutAmountTotal);
+
+        return $OffsetBalance;
+
+    }
+
+    public static function getAccountOutstandingBalance($AccountID,$AccountOutstandingBalance){
+        $BillingType = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingType');
+        if(isset($BillingType)){
+            if($BillingType==AccountBalance::BILLINGTYPE_PREPAID){
+                if($AccountOutstandingBalance<0){
+                    $AccountOutstandingBalance=abs($AccountOutstandingBalance);
+                }else{
+                    $AccountOutstandingBalance=($AccountOutstandingBalance) * -1;
+                }
+            }else{
+                if($AccountOutstandingBalance<0){
+                    $AccountOutstandingBalance=0;
+                }
+            }
+        }else{
+            if($AccountOutstandingBalance<0){
+                $AccountOutstandingBalance=0;
+            }
+        }
+        return $AccountOutstandingBalance;
     }
 
 }
