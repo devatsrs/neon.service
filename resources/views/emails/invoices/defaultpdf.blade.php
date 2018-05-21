@@ -468,7 +468,7 @@
                                 $totalCalls  += $row['NoOfCalls'];
                                 $totalDuration  += $row['DurationInSec'];
                                 $totalBillDuration  += $row['BillDurationInSec'];
-                                $totalTotalCharges  += $row['ChargedAmount'];
+                                $totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                                 ?>
                                 <tr>
                                     @foreach($usage_data_table['header'] as $table_h_row)
@@ -541,7 +541,7 @@
 							@foreach($usage_data as $row)
                                 <?php
                                 $totalBillDuration  +=  $row['BillDuration'];
-                                $totalTotalCharges  += $row['ChargedAmount'];
+								$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                                 ?>
                                 <tr>
                                     @foreach($usage_data_table['header'] as $table_h_row)
