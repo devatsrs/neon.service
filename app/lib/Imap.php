@@ -454,6 +454,10 @@ protected $server;
 						$Extra = $message;
 
 						Log::info("Subject -  " . $Subject);
+
+						$Subject = Imap::dataDecode($Subject);
+						Log::info("decode_Subject -  " . $Subject);
+
 						Log::info("email_received_date - " . $MailDateTime);
 
 						if(!empty($MessageId) && AccountEmailLogDeletedLog::where(["CompanyID"=>$CompanyID , "MessageID"=>$MessageId])->count() > 0){
