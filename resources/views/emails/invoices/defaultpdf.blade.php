@@ -79,6 +79,8 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
+    $AllTaxSummary = array();
+    $AllTaxCount=0;
     $is_sub = $is_charge = false;
     $total_usage= $total_sub = $total_add = 0;
     foreach($InvoiceDetail as $ProductRow){
@@ -213,6 +215,13 @@
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
+                    <?php
+                    $tempsummary['Title']=$InvoiceTaxRate->Title;
+                    $tempsummary['Amount']=$CurrencySymbol.number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                    $AllTaxSummary[]=$tempsummary;
+                    $AllTaxCount+=number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                    ?>
+                @endforeach
                 <tr>
                     @if(!empty($VisibleColumns))
                         @if($colspan > 0)
@@ -221,10 +230,9 @@
                     @else
                         <td colspan="2"></td>
                     @endif
-                    <td>{{$InvoiceTaxRate->Title}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{$AllTaxCount}}</td>
                 </tr>
-                @endforeach
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -583,6 +591,54 @@
 
         @endif
 		@endif
+    @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
+        <div class="page_break"></div>
+
+        <div class="ChargesTitle clearfix">
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
+        </div>
+
+        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+            <thead>
+            <tr>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($AllTaxSummary as $row)
+                <tr>
+                    <td class="leftalign">{{$row['Title']}}</td>
+                    <td class="leftalign">{{$row['Amount']}}</td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice))
+            <div class="ChargesTitle clearfix">
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
+            </div>
+
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($payment_data as $row)
+                    <tr>
+                        <td class="leftalign">{{$row['PaymentDate']}}</td>
+                        <td class="leftalign">{{$row['Amount']}}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        @endif
+
+    @endif
 
         @if(!empty($ManagementReports) && $total_usage != 0)
             <div class="page_break"></div>

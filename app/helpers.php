@@ -270,7 +270,9 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{TrunkName}}",
         "{{CurrencyCode}}",
         "{{CurrencyDescription}}",
-        "{{CurrencySymbol}}"
+        "{{CurrencySymbol}}",
+        "{{AccountBalance}}",
+        "{{AccountExposure}}"
     ];
 
     foreach($extra as $item){
@@ -417,7 +419,6 @@ function apply_translation_rule($TranslationRule,$call_string){
 function cal_next_runtime($data){
     $strtotime_current = strtotime(date('Y-m-d H:i:00'));
     $strtotime = strtotime(date('Y-m-d H:i:00'));
-
     if(isset($data['Interval'])){
         $Interval = $data['Interval'];
     }
