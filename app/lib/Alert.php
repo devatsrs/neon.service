@@ -398,7 +398,8 @@ class Alert extends \Eloquent{
                                 $EmailMessage 	= $EmailTemplate->TemplateBody;
                                 $replace_array 	= Helper::create_replace_array($Account, array());
                                 $EmailMessage 	= template_var_replace($EmailMessage, $replace_array);
-                                $Subject 		= $EmailTemplate->Subject." (" . $Account->AccountName . ")";
+                                $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array);
+                                $EmailFrom 	    = $EmailTemplate->EmailFrom;
 
                                 $emailsTo[] = $Settings->ReminderEmail;
                                 if ($Settings->EmailToAccount == 1) {
@@ -408,6 +409,7 @@ class Alert extends \Eloquent{
                                 $emaildata = array(
                                     'EmailToName' => $Company->CompanyName,
                                     'EmailTo' => $emailsTo,
+                                    'EmailFrom' => $EmailFrom,
                                     'Subject' => $Subject,
                                     'CompanyID' => $CompanyID,
                                     'CompanyName' => $Company->CompanyName,
