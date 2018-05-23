@@ -261,6 +261,54 @@ class PaymentGateway extends \Eloquent {
                 TransactionLog::insert($transactiondata);
                 return $transactionResponse;
 
+            case 'AccountBalance':
+
+                $AccountBalancedata = array();
+                $AccountBalancedata['CompanyID']     = $CompanyID;
+                $AccountBalancedata['GrandTotal']     = $amount;
+                $AccountBalancedata['InvoiceNumber']  = $options->InvoiceNumber;
+                $AccountBalancedata['AccountID']      = $account->AccountID;
+
+                $transactionResponse = array();
+                $transaction = AccountBalance::AutoPayInvoice($AccountBalancedata);
+
+                $Notes = '';
+                if(!empty($transaction['status']) && $transaction['status'] == 'success') {
+                    $Notes = 'Account Balance transaction_id ' . $transaction['id'];
+                    $Status = TransactionLog::SUCCESS;
+                }else{
+                    $Status = TransactionLog::FAILED;
+                    $Notes = empty($transaction['error']) ? '' : $transaction['error'];
+                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
+                }
+                if(!empty($transaction['response_code'])) {
+                    $transactionResponse['response_code'] = $transaction['response_code'];
+                }
+                $transactionResponse['transaction_notes']           = $Notes;
+                $transactionResponse['transaction_payment_method']  = 'Account Balance';
+                $transactionResponse['failed_reason']               = $Notes;
+                if(!empty($transaction['id'])) {
+                    $transactionResponse['transaction_id'] = $transaction['id'];
+                }
+                $transactiondata = array();
+                $transactiondata['CompanyID'] = $account->CompanyId;
+                $transactiondata['AccountID'] = $account->AccountID;
+                if(!empty($transaction['id'])) {
+                    $transactiondata['Transaction'] = $transaction['id'];
+                }
+                $transactiondata['Notes'] = $Notes;
+                if(!empty($transaction['amount'])) {
+                    $transactiondata['Amount'] = floatval($transaction['amount']);
+                }
+                $transactiondata['Status'] = $Status;
+                $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                $transactiondata['CreatedBy'] = "RMScheduler";
+                $transactiondata['ModifyBy'] = "RMScheduler";
+                $transactiondata['Response'] = json_encode($transaction);
+                TransactionLog::insert($transactiondata);
+                return $transactionResponse;
+
             case '':
                 return '';
 
