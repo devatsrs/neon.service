@@ -76,6 +76,15 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== Report Schedule END===========');
 
+        Log::info('============== Account Balance Email Reminder START===========');
+        try {
+            Alert::sendAccountBalanceEmailReminder($CompanyID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Account Balance Email Reminder  Failed';
+        }
+        Log::info('============== Account Balance Email Reminder  END===========');
+
         return $cronjobdata;
     }
 
