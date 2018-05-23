@@ -15,6 +15,14 @@ class NeonAlert extends \Eloquent {
             $cronjobdata[] = 'Low Balance Reminder Failed';
         }
         Log::info('============== LowBalanceReminder END ===========');
+        Log::info('============== Balance Warning START===========');
+        try {
+            AccountBalance::SendBalanceWarning($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Balance Warning Failed';
+        }
+        Log::info('============== Balance Warning END===========');
         Log::info('============== InvoicePaymentReminder START===========');
         try {
             Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
