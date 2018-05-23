@@ -593,7 +593,7 @@
 		@endif
     @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
         <div class="page_break"></div>
-
+        @if(count($AllTaxSummary)>0)
         <div class="ChargesTitle clearfix">
             <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
         </div>
@@ -614,8 +614,8 @@
             @endforeach
             </tbody>
         </table>
-
-        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice))
+        @endif
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && count($payment_data)>0)
             <div class="ChargesTitle clearfix">
                 <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
             </div>
