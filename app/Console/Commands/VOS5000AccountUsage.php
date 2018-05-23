@@ -204,6 +204,7 @@ class VOS5000AccountUsage extends Command
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $CallID;
+                                    $uddata['customer_trunk_type'] = $excelrow['28'];
 
                                     $InserData[] = $uddata;
                                     if($data_count > $insertLimit &&  !empty($InserData)){
@@ -240,6 +241,7 @@ class VOS5000AccountUsage extends Command
                                     $vendorcdrdata['ProcessID'] = $processID;
                                     $vendorcdrdata['ServiceID'] = $ServiceID;
                                     $vendorcdrdata['ID'] = $CallID;
+                                    $vendorcdrdata['vendor_trunk_type'] = $excelrow['34'];
 
                                     $InserVData[] = $vendorcdrdata;
                                     if($data_countv > $insertLimit &&  !empty($InserVData)){
@@ -323,9 +325,9 @@ class VOS5000AccountUsage extends Command
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
             Log::error('VOS5000 prc_insertCDR end');
 
-            Log::error('VOS5000 prc_linkCDR end');
+            /*Log::error('VOS5000 prc_linkCDR end');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_linkCDR ('" . $processID . "','".$tempLinkPrefix."')");
-            Log::error('VOS5000 prc_linkCDR end');
+            Log::error('VOS5000 prc_linkCDR end');*/
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 

@@ -18,9 +18,12 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\FileUploadTemplate;
+use App\Lib\NeonExcelIO;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\Trunk;
+use App\Lib\UsageDetail;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
 use Illuminate\Console\Command;
@@ -89,15 +92,15 @@ class FTPAccountUsage extends Command
             $FilesMaxProccess = '30';
         }
         $data_count = 0;
-        $insertLimit = 1000;
+        $insertLimit = 10;
 
 
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-        $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
-        $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
+        $GatewaySetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
+        //$ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
 
         //Template for file mapping
-        $uploadTemplate = FileUploadTemplate::where(['CompanyGatewayID'=>$CompanyGatewayID])->first();
+        $uploadTemplate = FileUploadTemplate::where('Options', 'LIKE' , '%"CompanyGatewayID":"'. $CompanyGatewayID.'"%')->first();
         $templateoptions = json_decode($uploadTemplate->Options);
         $csvoption = $templateoptions->option;
         $attrselection = $templateoptions->selection;
@@ -125,31 +128,50 @@ class FTPAccountUsage extends Command
             /** get pending files */
             $filenames = UsageDownloadFiles::getFTPGatewayPendingFile($CompanyGatewayID);
 
-            /** remove last downloaded */
-            $lastelse = array_pop($filenames);
+            /** remove last downloaded only when not minute or second job
+             We should not skipp file when job is running daily.
+             */
+            if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
+                $lastelse = array_pop($filenames);
+            }
 
             Log::info("Files Names Collected");
             Log::error('   ftp File Count ' . count($filenames));
             $file_count = 1;
             $RateCDR = 0;
+            $NameFormat = '';
             $RerateAccounts = 0;
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
+
+            $ServiceID =  0;
+            $Services = Service::where(array("CompanyID"=>$CompanyID,"Status"=>1))->lists('ServiceName', 'ServiceID');;
+            $Trunks = Trunk::where([ "CompanyID" => $CompanyID , "Status" => 1 ])->lists('Trunk', 'TrunkID');
+
+            if(isset($GatewaySetting->RateCDR) && $GatewaySetting->RateCDR){
+                $RateCDR = $GatewaySetting->RateCDR;
             }
             $RateFormat = Company::PREFIX;
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
+            if(isset($GatewaySetting->RateFormat) && $GatewaySetting->RateFormat){
+                $RateFormat = $GatewaySetting->RateFormat;
+            }
+            if(isset($GatewaySetting->Authentication) && $GatewaySetting->Authentication){
+                $NameFormat = $GatewaySetting->Authentication;
             }
 
-            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
-                $CLITranslationRule = $companysetting->CLITranslationRule;
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = $SpecifyRate = $RateMethod = '' ;
+            if(!empty($GatewaySetting->CLITranslationRule)){
+                $CLITranslationRule = $GatewaySetting->CLITranslationRule;
             }
-            if(!empty($companysetting->CLDTranslationRule)){
-                $CLDTranslationRule = $companysetting->CLDTranslationRule;
+            if(!empty($GatewaySetting->CLDTranslationRule)){
+                $CLDTranslationRule = $GatewaySetting->CLDTranslationRule;
             }
-            if(!empty($companysetting->PrefixTranslationRule)){
-                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
+            if(!empty($GatewaySetting->PrefixTranslationRule)){
+                $PrefixTranslationRule = $GatewaySetting->PrefixTranslationRule;
+            }
+            if(!empty($GatewaySetting->SpecifyRate)){
+                $SpecifyRate = $GatewaySetting->SpecifyRate;
+            }
+            if(!empty($GatewaySetting->RateMethod)){
+                $RateMethod = $GatewaySetting->RateMethod;
             }
             TempUsageDetail::applyDiscountPlan();
 
@@ -162,7 +184,7 @@ class FTPAccountUsage extends Command
             } else {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
-            $CallID = 0;
+
             foreach ($filenames as $UsageDownloadFilesID => $filename) {
                 Log::info("Loop Start");
 
@@ -176,7 +198,7 @@ class FTPAccountUsage extends Command
                     /** update file status to progress */
                     UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
                     $delete_files[] = $UsageDownloadFilesID;
-                    $fullpath = $FTP_LOCATION.'/'.$CompanyGatewayID. '/' ;
+                    $fullpath = $FTP_LOCATION.'/'.$CompanyGatewayID. '/'  . $filename;
                     try{
                         $NeonExcel = new NeonExcelIO($fullpath, (array) $csvoption);
                         $results = $NeonExcel->read();
@@ -194,74 +216,132 @@ class FTPAccountUsage extends Command
                             }
                             $cdrdata = array();
                             $cdrdata['ProcessID'] = $processID;
-                            $cdrdata['ServiceID'] = $ServiceID;
+                            //$cdrdata['ServiceID'] = $ServiceID;
                             $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
                             $cdrdata['CompanyID'] = $CompanyID;
-                            $cdrdata['trunk'] = 'Other';
+                            //$cdrdata['trunk'] = 'Other';
                             $cdrdata['area_prefix'] = 'Other';
                             $call_type = '';
 
                             //check empty row
                             $checkemptyrow = array_filter(array_values($temp_row));
                             if (!empty($checkemptyrow)) {
-                                if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime)) {
+                                if (isset($attrselection->connect_datetime) && !empty($attrselection->connect_datetime) && isset($temp_row[$attrselection->connect_datetime])  && isset($attrselection->DateFormat)   ) {
                                     $cdrdata['connect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->connect_datetime]), $attrselection->DateFormat);
-                                } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)) {
+                                } elseif (isset($attrselection->connect_date) && !empty($attrselection->connect_date)  && isset($temp_row[$attrselection->connect_date]) && isset($temp_row[$attrselection->connect_time])  && isset($attrselection->DateFormat) ) {
                                     $cdrdata['connect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]), $attrselection->DateFormat);
                                 }
-                                if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration)) {
+                                //when Date and Time has no '-' and '/'  ie. 20180308	160345
+                                if (isset($attrselection->connect_date) && !empty($attrselection->connect_date)  && isset($temp_row[$attrselection->connect_date]) && isset($temp_row[$attrselection->connect_time])  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->connect_date]) ) {
+                                    $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->connect_date] . ' ' . $temp_row[$attrselection->connect_time]));
+                                }
+
+
+
+                                if (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && isset($temp_row[$attrselection->billed_duration]) ) {
                                     $cdrdata['billed_duration'] = formatDuration($temp_row[$attrselection->billed_duration]);
                                     $cdrdata['billed_second'] = formatDuration($temp_row[$attrselection->billed_duration]);
                                 }
-                                if (isset($attrselection->duration) && !empty($attrselection->duration)) {
+                                if (isset($attrselection->duration) && !empty($attrselection->duration)  && isset($temp_row[$attrselection->duration]) ) {
                                     $cdrdata['duration'] = formatDuration($temp_row[$attrselection->duration]);
                                 }
-                                if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)) {
-                                    $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
-                                } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && !empty($cdrdata['connect_time'])) {
+
+
+                                if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)   && isset($temp_row[$attrselection->disconnect_time])  && isset($attrselection->DateFormat)   ) {
+
+                                    //when Date and Time has no '-' and '/'  ie. 20180308	160345
+                                    if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->disconnect_time]) ) {
+                                        $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->disconnect_time] . ' ' . $temp_row[$attrselection->disconnect_time]));
+                                    }else {
+                                        $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+                                    }
+                                } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && isset($cdrdata['connect_time']) && !empty($cdrdata['connect_time'])  ) {
                                     $strtotime = strtotime($cdrdata['connect_time']);
                                     $billed_duration = $cdrdata['billed_duration'];
                                     $cdrdata['disconnect_time'] = date('Y-m-d H:i:s', $strtotime + $billed_duration);
                                 }
-                                if (isset($attrselection->cld) && !empty($attrselection->cld)) {
+                                if (isset($attrselection->cld) && !empty($attrselection->cld)  && isset($temp_row[$attrselection->cld]) ) {
                                     $cdrdata['cld'] = apply_translation_rule($CLDTranslationRule, $temp_row[$attrselection->cld]);
                                 }
-                                if (isset($attrselection->cli) && !empty($attrselection->cli)) {
+                                if (isset($attrselection->cli) && !empty($attrselection->cli)   && isset($temp_row[$attrselection->cli]) ) {
                                     $cdrdata['cli'] = apply_translation_rule($CLITranslationRule, $temp_row[$attrselection->cli]);
                                 }
-                                if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0) {
+                                if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0   && isset($temp_row[$attrselection->cost]) ) {
+                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                } else if ($RateCDR == 1 && !empty($SpecifyRate) && $RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
                                     $cdrdata['cost'] = $temp_row[$attrselection->cost];
                                 } else if ($RateCDR == 1) {
                                     $cdrdata['cost'] = 0;
                                 }
 
 
-                                if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)) {
-                                    $uddata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
+                                if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)  && isset($temp_row[$attrselection->area_prefix])) {
+                                    $cdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$temp_row[$attrselection->area_prefix]),$RateCDR, $RerateAccounts);
                                 }
 
-                                if (!empty($attrselection->TrunkID)) {
-                                    $cdrdata['TrunkID'] = $attrselection->TrunkID;
-                                    $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $attrselection->TrunkID))->Pluck('trunk');
+                                if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) &&  array_key_exists($attrselection->ServiceID,$Services)){
+                                    $cdrdata['ServiceID'] = $attrselection->ServiceID;
+                                }else if(isset($attrselection->ServiceID) && !empty($attrselection->ServiceID) && isset($temp_row[$attrselection->ServiceID]) && $Service_1 = array_search($temp_row[$attrselection->ServiceID],$Services)){
+                                    $cdrdata['ServiceID'] = $Service_1;
+                                } else{
+                                    $cdrdata['ServiceID'] = $ServiceID;
                                 }
-                                if (isset($attrselection->extension) && !empty($attrselection->extension)) {
+
+                                if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && array_key_exists($attrselection->TrunkID,$Trunks)){
+                                    $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                                    $cdrdata['trunk'] = $Trunks[$attrselection->TrunkID];
+                                }else if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && isset($temp_row[$attrselection->TrunkID]) && $TrunkID_1 = array_search($temp_row[$attrselection->TrunkID],$Trunks)){
+                                    $cdrdata['TrunkID'] = $TrunkID_1;
+                                    $cdrdata['trunk'] = $Trunks[$TrunkID_1];
+                                }else{
+                                    $cdrdata['trunk'] = 'Other';
+                                }
+                                if (isset($attrselection->extension) && !empty($attrselection->extension) && isset($temp_row[$attrselection->extension])) {
                                     $cdrdata['extension'] = $temp_row[$attrselection->extension];
                                 }
 
-                                if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
+                                if (isset($attrselection->ID) && !empty($attrselection->ID) && isset($temp_row[$attrselection->ID])) {
+                                    $cdrdata['ID'] = $temp_row[$attrselection->ID];
+                                }
+
+                                if (isset($attrselection->Account) && !empty($attrselection->Account)  && isset($temp_row[$attrselection->Account])) {
+                                    $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
+                                    if ($NameFormat == 'NUB') {
+                                        $cdrdata['AccountIP'] = '';
+                                        $cdrdata['AccountName'] = '';
+                                        $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
+                                        $cdrdata['AccountCLI'] = '';
+                                    } else if ($NameFormat == 'IP') {
+                                        $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
+                                        $cdrdata['AccountName'] = '';
+                                        $cdrdata['AccountNumber'] = '';
+                                        $cdrdata['AccountCLI'] = '';
+                                    }else if ($NameFormat == 'CLI') {
+                                        $cdrdata['AccountIP'] = '';
+                                        $cdrdata['AccountName'] = '';
+                                        $cdrdata['AccountNumber'] = '';
+                                        $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
+                                    }else{
+                                        $cdrdata['AccountIP'] = '';
+                                        $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
+                                        $cdrdata['AccountNumber'] = '';
+                                        $cdrdata['AccountCLI'] = '';
+                                    }
+
+                                }
+
+                                if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound) && isset($temp_row[$attrselection->is_inbound]) ) {
                                     $cdrdata['is_inbound'] = 0;
                                     $call_type = TempUsageDetail::check_call_type(strtolower($temp_row[$attrselection->is_inbound]), '', '');
                                 }
-                                if (isset($attrselection->Account) && !empty($attrselection->Account)) {
-                                    $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                                }
+
                                 if (empty($cdrdata['GatewayAccountID'])) {
                                     $error[] = 'Account is blank at line no:' . $lineno;
                                 }
-                                if ($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld) && trim($temp_row[$attrselection->cld]) == '') {
+                                if ($RateCDR == 1 && empty($cdrdata['cld']) && !empty($attrselection->cld)  && isset($temp_row[$attrselection->cld]) && trim($temp_row[$attrselection->cld]) == '') {
                                     $error[] = 'CLD is blank at line no:' . $lineno;
                                 }
-                                if ($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && trim($temp_row[$attrselection->billed_duration]) == '') {
+                                if ($RateCDR == 1 && empty($cdrdata['billed_duration']) && !empty($attrselection->billed_duration) && isset($temp_row[$attrselection->billed_duration]) && trim($temp_row[$attrselection->billed_duration]) == '') {
                                     $error[] = 'Billed duration is blank at line no:' . $lineno;
                                 }
 
@@ -278,27 +358,6 @@ class FTPAccountUsage extends Command
                                         /** if user field is failed or blocked call any reason make duration zero */
                                         $cdrdata['billed_duration'] = 0;
                                         $cdrdata['billed_second'] = 0;
-                                    }
-                                    if ($call_type == 'both' && $RateCDR == 1) {
-
-                                        /**
-                                         * Inbound Entry
-                                         */
-                                        $cdrdata['cost'] = 0;
-                                        $cdrdata['is_inbound'] = 1;
-
-                                        /**
-                                         * Outbound Entry
-                                         */
-                                        $data_outbound = $cdrdata;
-
-                                        $data_outbound['cli'] = !empty($cdrdata['cli']) ? $cdrdata['cli'] : '';
-                                        $data_outbound['cld'] = !empty($cdrdata['cld']) ? $cdrdata['cld'] : '';
-                                        $data_outbound['cost'] = !empty($cdrdata['cost']) ? $cdrdata['cost'] : 0;
-                                        $data_outbound['is_inbound'] = 0;
-                                        $batch_insert_array[] = $data_outbound;
-                                        $data_count++;
-
                                     }
 
                                     $batch_insert_array[] = $cdrdata;
@@ -317,6 +376,11 @@ class FTPAccountUsage extends Command
                                 }
                             }
                         }// loop over
+                        if(!empty($batch_insert_array)){
+                            Log::info('Batch insert start - afterloop count' . count($batch_insert_array));
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+                            $batch_insert_array = [];
+                        }
 
                     }catch(Exception $e){
 
@@ -347,6 +411,12 @@ class FTPAccountUsage extends Command
             Log::error(' ========================== ftp transaction end =============================');
             //ProcessCDR
 
+            // $SpecifyRate is present dont ReRate CDR as we already added margin.
+            if ($RateCDR == 1 && !empty($SpecifyRate)) {
+                if(TempUsageDetail::update_cost_with_margin($RateMethod,$SpecifyRate,$temptableName,$processID)){
+                    $RateCDR = 0;
+                }
+            }
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {
@@ -356,9 +426,9 @@ class FTPAccountUsage extends Command
             //select   MAX(disconnect_time) as max_date,MIN(connect_time)  as min_date    from tblTempUsageDetail where ProcessID = p_ProcessID;
             $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
 
-            $totaldata_count = DB::connection('sqlsrvcdrazure')->table($temptableName)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
             DB::connection('sqlsrv2')->beginTransaction();
-            DB::connection('sqlsrvcdrazure')->beginTransaction();
+            DB::connection('sqlsrvcdr')->beginTransaction();
 
             if (!empty($result[0]->min_date)) {
                 $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
@@ -381,13 +451,13 @@ class FTPAccountUsage extends Command
             Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('ftp prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdrazure')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
             Log::error('ftp prc_insertCDR end');
 
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
 
-            DB::connection('sqlsrvcdrazure')->commit();
+            DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
             try {
 
@@ -401,7 +471,7 @@ class FTPAccountUsage extends Command
 
                 Log::error('ftp delete file count ' . count($delete_files));
 
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
 
                 //Only for CDR Rerate ON.
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
@@ -411,7 +481,7 @@ class FTPAccountUsage extends Command
 
         } catch (Exception $e) {
             try {
-                DB::connection('sqlsrvcdrazure')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
             } catch (Exception $err) {
                 Log::error($err);
             }
@@ -424,7 +494,7 @@ class FTPAccountUsage extends Command
             }
             // delete temp table if process fail
             try {
-                DB::connection('sqlsrvcdrazure')->table($temptableName)->where(["processId" => $processID])->delete();
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete();
             } catch (\Exception $err) {
                 Log::error($err);
             }

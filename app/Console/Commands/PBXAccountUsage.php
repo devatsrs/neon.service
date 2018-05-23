@@ -175,11 +175,12 @@ class PBXAccountUsage extends Command
 
                         //if (strtolower(trim($row_account['cc_type'])) == strtolower(PBX::$CcType[PBX::OUTNOCHARGE])) {
 
-                        $cc_type = array_search($row_account['cc_type'], PBX::$CcType);
-                        $data['cc_type'] = 0;
-                        if ($cc_type > 0) {
-                             $row_account['cc_cost'] = $cc_type;
+                        if (strtolower(trim($row_account['cc_type'])) == strtolower(PBX::$CcType[PBX::OUTNOCHARGE])) {
+                            $data['cc_type'] = PBX::OUTNOCHARGE;
+                        }else {
+                            $data['cc_type'] = 0;
                         }
+
 
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
                         $data['CompanyID'] = $CompanyID;

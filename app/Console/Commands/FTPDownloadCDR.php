@@ -11,9 +11,12 @@ namespace App\Console\Commands;
 
 
 use App\FTPGateway;
+use App\FTPSGateway;
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Gateway;
 use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -88,9 +91,15 @@ class FTPDownloadCDR extends Command {
             $joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] = '';
 
+            $getCDRsParam = [];
+            if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
+                $getCDRsParam = ["SkipOneFile"=>1];
+            }
+
             $ftp = new FTPGateway($CompanyGatewayID);
+
             Log::info("FTP Connected");
-            $filenames = $ftp->getCDRs();
+            $filenames = $ftp->getCDRs($getCDRsParam);
             $FTP_FILE_LOCATION = $ftp->getFileLocation($CompanyID);
             $destination = $FTP_FILE_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {

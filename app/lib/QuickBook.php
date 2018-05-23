@@ -789,25 +789,51 @@ class QuickBook {
 					}
 
 					if(!empty($PaidInvoices) && count($PaidInvoices)>0){
+						/**
+						 * New Change Start
+						**/
+						$NewPaidInvoices = array();
+						foreach($PaidInvoices as $paidInvoice){
+							$Payments = Payment::where(['InvoiceID'=>$paidInvoice])->first();
+							$PaymentDate=$Payments->PaymentDate;
+							$PaymentDate=date('Y-m-d',strtotime($PaymentDate));
+							$NewPaidInvoices[$PaymentDate][]=$paidInvoice;
+						}
 
-						$Journal = $this->createJournal($PaidInvoices,$CompanyID);
-						if(!empty($Journal)){
-							if(!empty($Journal['error']) && count($Journal['error'])>0){
-								foreach($Journal['error'] as $err){
+						if(!empty($NewPaidInvoices) && count($NewPaidInvoices)>0){
+							// Check Invoice and Payment Mapping
+
+							$QuickBookMappingError=$this->checkQuickBookMapping($CompanyID,$PaidInvoices);
+							if (!empty($QuickBookMappingError) && count($QuickBookMappingError)>0) {
+								foreach ($QuickBookMappingError as $err) {
 									$error[] = $err;
 								}
-							}
-
-							if(!empty($Journal['Success']) && count($Journal['Success'])>0){
-								foreach($Journal['Success'] as $SucessMessage){
-									$success[] = $SucessMessage;
+							}else{
+								foreach ($NewPaidInvoices as $key => $NewPaidInvoice) {
+									log::info('Journal Payment Date ' . $key);
+									$Journal = $this->createJournal($key, $NewPaidInvoice, $CompanyID);
+									if (!empty($Journal)) {
+										if (!empty($Journal['error']) && count($Journal['error']) > 0) {
+											foreach ($Journal['error'] as $err) {
+												$error[] = $err;
+											}
+										}
+										if (!empty($Journal['Success']) && count($Journal['Success']) > 0) {
+											foreach ($Journal['Success'] as $SucessMessage) {
+												$success[] = $SucessMessage;
+											}
+										}
+									}
 								}
-							}
-						}
+
+							} // quickbook mapping over
+						} // newpaidinvoice over
+
+						// End Create Journal
 					}else{
 						$error[] = 'Journal creation failed ';
 					}
-				}
+				} //invoice loop over
 			}
 		}
 		$response['error'] = $error;
@@ -819,7 +845,7 @@ class QuickBook {
 		return $response;
 	}
 
-	public function createJournal($Invoices,$CompanyID){
+	public function createJournal($JournalDate,$Invoices,$CompanyID){
 		log::info(print_r($Invoices,true));
 		$response = array();
 		$error = array();
@@ -865,7 +891,8 @@ class QuickBook {
 			// Main journal entry object
 			$JournalEntry = new \QuickBooks_IPP_Object_JournalEntry();
 			$JournalEntry->setDocNumber($JournalNumber);
-			$JournalEntry->setTxnDate(date('Y-m-d'));
+			$JournalEntry->setTxnDate($JournalDate);
+			//$JournalEntry->setTxnDate(date('Y-m-d'));
 
 			foreach($Invoices as $Invoice){
 
@@ -897,7 +924,6 @@ class QuickBook {
 				$PaymentTotal = number_format($InvoiceData->SubTotal,$RoundChargesAmount, '.', '');
 				$InvoiceTaxRateAmount = Invoice::getInvoiceTaxRateAmount($Invoice,$RoundChargesAmount);
 				$InvoiceGrantTotal = $PaymentTotal + $InvoiceTaxRateAmount;
-
 
 				//Debit Section
 
@@ -1032,22 +1058,22 @@ class QuickBook {
 						$quickbooklogdata['Type'] = QuickBookLog::INVOICE;
 						QuickBookLog::insert($quickbooklogdata);
 					}
-					$success[] = 'Journal created (Journal Number '.$JournalNumber.' )';
+					$success[] = $JournalDate.' Journal created (Journal Number '.$JournalNumber.' )';
 					//$response['response'] = $resp;
 				}
 				else
 				{
-					$error[] = 'Journal creation failed '.$JournalEntryService->lastError($Context);
+					$error[] = $JournalDate.' Journal creation failed '.$JournalEntryService->lastError($Context);
 				}
 
 			}else{
-				$error[] = 'Journal creation failed ';
+				$error[] = $JournalDate.' Journal creation failed ';
 			}
 
 		}
 		//log::info('Journal Error '.print_r($error,true));
 		//log::info('Journal Success '.print_r($success,true));
-		$response['error'] = $error;
+		$response['error'] = array_unique($error);
 		$response['Success'] = $success;
 		//log::info('Journal Response '.print_r($response,true));
 		return $response;
@@ -1124,6 +1150,45 @@ class QuickBook {
 		log::info(print_r($response,true));
 		log::info('Check Invoice Alreday in Journal Over');
 		return $response;
+	}
+
+	public function checkQuickBookMapping($CompanyID,$PaidInvoices){
+		$error=array();
+		$QuickBookData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$QuickBookSlug,$CompanyID);
+		$QuickBookData = json_decode(json_encode($QuickBookData),true);
+		if(!empty($QuickBookData['InvoiceAccount'])){
+			$InvoiceAccountID = $this->getQuickBookAccountantId($QuickBookData['InvoiceAccount']);
+			if(empty($InvoiceAccountID)){
+				$error[]='Invoice Mapping not setup correctly';
+			}
+		}else{
+			$error[]='Invoice Mapping not setup in integration section';
+		}
+		if(!empty($QuickBookData['PaymentAccount'])){
+			$PaymentAccountID = $this->getQuickBookAccountantId($QuickBookData['PaymentAccount']);
+			if(empty($PaymentAccountID)){
+				$error[]='Payment Mapping not setup correctly';
+			}
+		}else{
+			$error[]='Payment Mapping not setup in integration section';
+		}
+		if(!empty($PaidInvoices) && count($PaidInvoices)>0){
+			$InvoiceTaxRates = InvoiceTaxRate::distinct()->select(array('TaxRateID','Title'))->whereIn('InvoiceID',$PaidInvoices)->get()->toArray();
+			if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0){
+				foreach($InvoiceTaxRates as $InvoiceTaxRate){
+					$Title = $InvoiceTaxRate['Title'];
+					$TaxRateID = $InvoiceTaxRate['TaxRateID'];
+
+					if(!empty($QuickBookData['Tax'][$TaxRateID])){
+						$TaxId = $this->getQuickBookAccountantId($QuickBookData['Tax'][$TaxRateID]);
+					}
+					if(empty($TaxId)){
+						$error[] = $Title. '(Tax Mapping not) setup correctly';
+					}
+				}
+			}
+		}
+		return $error;
 	}
 
 

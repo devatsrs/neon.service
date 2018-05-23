@@ -1,6 +1,10 @@
 <?php
 namespace App;
 
+use App\Lib\AmazonS3;
+use App\Lib\CompanyConfiguration;
+use App\Lib\CompanyGateway;
+use App\Lib\Gateway;
 use Collective\Remote\RemoteFacade;
 use \Exception;
 use App\Lib\GatewayAPI;
@@ -8,23 +12,59 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 class FTPGateway{
+
     private static $config = array();
 
     const DEFAULT_FILENAME = ".csv";
     const DEFAULT_GATEWAYNAME = "FTP";
 
+    private static $FTPSGatewayObj ;
     public function __construct($CompanyGatewayID){
+
+
         $setting = GatewayAPI::getSetting($CompanyGatewayID,self::DEFAULT_GATEWAYNAME);
         foreach((array)$setting as $configkey => $configval){
-            if($configkey == 'password'){
+            if($configkey == 'password' && !empty($configval)){
                 self::$config[$configkey] = Crypt::decrypt($configval);
             }else{
                 self::$config[$configkey] = $configval;
             }
         }
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
-            Config::set('remote.connections.production',self::$config);
+
+        if(isset(self::$config['protocol_type']) && self::$config['protocol_type'] == Gateway::SSH_FILE_TRANSFER) {
+
+            if (count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+                Config::set('remote.connections.production', self::$config);
+
+                if(isset(self::$config["key"]) && !empty(self::$config["key"]) ) {
+
+                    $CompanyID = CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('CompanyID');
+                    $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+                    $full_key_path = $UPLOADPATH   . "/" . self::$config["key"];
+
+                    if(!file_exists($full_key_path)) {
+                        $path = AmazonS3::download($CompanyID, self::$config["key"], $full_key_path);
+                        $full_key_path = "";
+                        if (file_exists($path)) {
+                            $full_key_path = $path;
+                        } else {
+
+                        }
+                    }
+
+                    Config::set('remote.connections.production.key',   $full_key_path);
+
+                }
+
+
+            }
+        }else {
+
+            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['port'])  && isset(self::$config['ssl'])   && isset(self::$config['passive_mode']) && isset(self::$config['password'])){
+                self::$FTPSGatewayObj  = new FTPSGateway($CompanyGatewayID);
+            }
         }
+
     }
 
     public static function getFileLocation($CompanyID){
@@ -42,12 +82,20 @@ class FTPGateway{
     }
 
     public static function getCDRs($addparams=array()){
+
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->getCDRs($addparams);
+        }
+
         $response = array();
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $filename = array();
             $files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $FileNameRule = self::DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"]) && !empty(trim($addparams["FileNameRule"]))){
+            if(isset($addparams["FileNameRule"])){
+                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
+            }
+            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
                 $FileNameRule =  $addparams["FileNameRule"];
             }
             foreach((array)$files as $file){
@@ -57,12 +105,18 @@ class FTPGateway{
             }
             asort($filename);
             $filename = array_values($filename);
-            $lastele = array_pop($filename);
+            if(isset($addparams["SkipOneFile"])){
+                $lastele = array_pop($filename);
+            }
             $response = $filename;
         }
         return $response;
     }
     public static function deleteCDR($addparams=array()){
+
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->deleteCDR($addparams);
+        }
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status =  RemoteFacade::delete(self::$config['cdr_folder'].'/'.$addparams['filename']);
@@ -73,6 +127,10 @@ class FTPGateway{
         return $status;
     }
     public static function downloadCDR($addparams=array()){
+        if(!empty(self::$FTPSGatewayObj)){
+            return self::$FTPSGatewayObj->downloadCDR($addparams);
+        }
+
         $status = false;
         if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status = RemoteFacade::get(self::$config['cdr_folder'] .'/'. $addparams['filename'], $addparams['download_path'] . $addparams['filename']);
@@ -81,63 +139,6 @@ class FTPGateway{
             }
         }
         return $status;
-    }
-
-    //not in use
-    public static function changeCDRFilesStatus($status,$delete_files,$CompanyGatewayID,$isSingle=false){
-
-        if(empty($CompanyGatewayID) && !is_numeric($CompanyGatewayID)){
-            throw new Exception("Invalid CompanyGatewayID");
-        }
-
-        if($status== "progress-to-pending" ) {
-            if( is_array($delete_files) && count($delete_files)>0) {
-                foreach ($delete_files as $filename) {
-                    $inproress_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $complete_name = str_replace('progress', 'pending', Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename));
-                    rename($inproress_name, $complete_name);
-                    Log::info('progress-to-pending ' . $complete_name);
-
-                }
-            }
-        }
-        if($status== "pending-to-progress" ) {
-            if($isSingle == true && is_string($delete_files) ){
-                $filename = $delete_files;
-                $inproress_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename);
-                $complete_file_name = str_replace('pending', 'progress', basename($filename));
-                $complete_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . $complete_file_name;
-                rename($inproress_name, $complete_name);
-                Log::info('pending-to-progress ' . $complete_name);
-                return array("new_filename"=>$complete_file_name,"new_file_fullpath"=>$complete_name);
-            }
-            if( is_array($delete_files) && count($delete_files)>0) {
-                foreach ($delete_files as $filename) {
-
-                    $inproress_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $complete_file_name = str_replace('pending', 'progress', basename($filename));
-                    $complete_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . $complete_file_name;
-                    rename($inproress_name, $complete_name);
-                    Log::info('pending-to-progress ' . $complete_name);
-                }
-            }
-        }
-        if($status== "progress-to-complete" ) {
-            if( is_array($delete_files) && count($delete_files)>0) {
-                foreach ($delete_files as $filename) {
-                    $inproress_name = Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename);
-                    $complete_name = str_replace('progress', 'complete', Config::get('app.vos_location') . $CompanyGatewayID . '/' . basename($filename));
-                    rename($inproress_name, $complete_name);
-                    Log::info('progress-to-complete ' . $complete_name);
-
-                    /*if(unlink($complete_name)){
-                        Log::info("CDR delete file ".$filename." processID: ".$processID);
-                    }else{
-                        Log::info("CDR not delete file ".$filename." processID: ".$processID);
-                    }*/
-                }
-            }
-        }
     }
 
     /**

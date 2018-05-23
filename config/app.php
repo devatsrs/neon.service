@@ -151,6 +151,8 @@ return [
 		'Cartalyst\Stripe\Laravel\StripeServiceProvider',
         //Zip
         'Chumper\Zipper\ZipperServiceProvider',
+        'Webklex\IMAP\Providers\LaravelServiceProvider',
+
         //PDF
 
 	],
@@ -204,6 +206,7 @@ return [
         'SSH'       => 'Collective\Remote\RemoteFacade',
         'Zipper' => 'Chumper\Zipper\Zipper',
         'Stripe' => 'Cartalyst\Stripe\Laravel\Facades\Stripe',
+        'Client' => 'Webklex\IMAP\Facades\Client::class',
 
 
 	],

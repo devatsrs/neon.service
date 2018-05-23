@@ -60,8 +60,8 @@ class Invoice extends \Eloquent {
                 $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
                 $dir = $UPLOADPATH . '/' . $amazonPath;
                 if (!file_exists($dir)) {
-                    RemoteSSH::run("mkdir -p " . $dir);
-                    RemoteSSH::run("chmod -R 777 " . $dir);
+                    RemoteSSH::run($CompanyID, "mkdir -p " . $dir);
+                    RemoteSSH::run($CompanyID, "chmod -R 777 " . $dir);
                 }
                 if (is_writable($dir)) {
                     $AccountName = Account::where(["AccountID" => $AccountID])->pluck('AccountName');
@@ -197,11 +197,11 @@ class Invoice extends \Eloquent {
     /**
      * Invoice Generation Date
      * */
-    public static function calculateNextInvoiceDateFromLastInvoiceDate($CompanyID,$AccountID,$ServiceID,$LastInvoiceDate){
+    public static function calculateNextInvoiceDateFromLastInvoiceDate($InvoiceID,$CompanyID,$AccountID,$ServiceID,$LastInvoiceDate){
 
         if(!empty($CompanyID) && !empty($AccountID) && !empty($LastInvoiceDate) ){
 
-            $BillingCycle = AccountBilling::select(["BillingCycleType", "BillingCycleValue"])->where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
+            $BillingCycle = InvoiceHistory::select(["BillingCycleType", "BillingCycleValue"])->where(["InvoiceID"=>$InvoiceID,"AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
             //"weekly"=>"Weekly", "monthly"=>"Monthly" , "daily"=>"Daily", "in_specific_days"=>"In Specific days", "monthly_anniversary"=>"Monthly anniversary");
 
             $NextInvoiceDate = "";
@@ -214,11 +214,25 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static function sendInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID,$ServiceID){
+    public static function sendInvoice($CompanyID,$AccountID,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID,$ServiceID,$ManualInvoice){
+
+        /**
+         * Invoice Will Calculate Base on Last Charge Date and Next Charge Date(both date included)
+         *
+        **/
 
         $error = "";
-        $StartDate = $LastInvoiceDate;
-        $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
+        $FirstInvoiceSend=1;
+        if($ManualInvoice==1){
+            $StartDate = $LastInvoiceDate;
+            $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
+        }else{
+            $FirstInvoiceSend=Invoice::isFirstInvoiceSend($CompanyID,$AccountID,$ServiceID);
+            $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+            $StartDate=$AccountBilling->LastChargeDate;
+            $EndDate=$AccountBilling->NextChargeDate;
+            $EndDate =  date("Y-m-d 23:59:59", strtotime($EndDate));
+        }
 
         Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
 
@@ -259,14 +273,17 @@ class Invoice extends \Eloquent {
                     //FALSE = Not billed
                     Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
 
-                    $AlreadyBilled = Invoice::checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate,$ServiceID);
-
-                    //If Already Billed
-
-                    if ($AlreadyBilled) {
-                        $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                        return array("status" => "failure", "message" => $error);
+                    if($FirstInvoiceSend==0){
+                        $AlreadyBilled = Invoice::checkIfAccountUsageAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate,$ServiceID);
+                        //If Already Billed
+                        if ($AlreadyBilled) {
+                            $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
+                            return array("status" => "failure", "message" => $error);
+                        }
+                    }else{
+                        $AlreadyBilled=0;
                     }
+
 
                     $Invoice = "";
                     $SubTotal = 0;
@@ -274,10 +291,9 @@ class Invoice extends \Eloquent {
                     $AdditionalChargeTax = 0;
 
                     //If Account usage not already billed
-
+                    Log::info('AlreadyBilled '.$AlreadyBilled);
                     if (!$AlreadyBilled) {
-
-                        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID);
+                        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend);
                         $Invoice = $uResponse["Invoice"];
                         $SubTotal = $uResponse["SubTotal"];
 
@@ -296,14 +312,14 @@ class Invoice extends \Eloquent {
                     /**
                      * Add Subscription in InvoiceDetail if any
                      */
-                    $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places);
+                    $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
                     $SubTotal = $subResponse["SubTotal"];
                     $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
 
                     /**
                      * Add OneOffCharge in InvoiceDetail if any
                      */
-                    $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places);
+                    $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
                     $SubTotal = $subResponse["SubTotal"];
                     $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
                     $AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
@@ -319,6 +335,11 @@ class Invoice extends \Eloquent {
                     Log::info('USAGE FILE & Invoice PDF & EMAIL Start') ;
 
                     if (isset($Invoice)) {
+                        $InvoiceID = $Invoice->InvoiceID;
+                        $UsageStartDate = InvoiceDetail::where(["InvoiceID" => $InvoiceID, "ProductType" => Product::USAGE, "ServiceID" => $ServiceID])->pluck('StartDate');
+                        $UsageStartDate = date("Y-m-d", strtotime($UsageStartDate));
+                        $UsageEndDate = InvoiceDetail::where(["InvoiceID" => $InvoiceID, "ProductType" => Product::USAGE, "ServiceID" => $ServiceID])->pluck('EndDate');
+                        log::info("New UsageDates ".$UsageStartDate.' - '.$UsageEndDate);
 
                         $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
 
@@ -326,12 +347,21 @@ class Invoice extends \Eloquent {
                          * PDF Generation CODE HERE
                          *
                          */
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
 
-                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                        if($FirstInvoiceSend==1 || $InvoiceTemplate->IgnoreCallCharge==1){
+                            $usage_data = array();
+                            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                            $usage_data_table = array();
+                            $usage_data_table['header'] =array();
+                            $usage_data_table['data'] = array();
+                        }else{
+                            $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$UsageStartDate,$UsageEndDate,$InvoiceTemplate);
+                            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                        }
+
                         Log::info('PDF Generation start');
 
-                        $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
+                        $pdf_path = Invoice::generate_pdf($InvoiceID,array(),$usage_data,$usage_data_table);
                         if(empty($pdf_path)){
                             $error = Invoice::$InvoiceGenrationErrorReasons["PDF"];
                             return array("status" => "failure", "message" => $error);
@@ -345,12 +375,15 @@ class Invoice extends \Eloquent {
                         Log::info('Generate Usage File Start ') ;
 
                         $fullPath = "";
-                        if($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
-                            $InvoiceID = $Invoice->InvoiceID;
-                            if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
-                                if (empty($fullPath)) {
-                                    $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
+                        if($FirstInvoiceSend==1 || $InvoiceTemplate->IgnoreCallCharge==1){
+                            // No Need to file generate
+                        }else{
+                            if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                                if ($InvoiceID > 0 && $AccountID > 0) {
+                                    $fullPath = Invoice::generate_usage_file($InvoiceID, $usage_data_table, $UsageStartDate, $UsageEndDate, $InvoiceTemplate->GroupByService, $usage_data);
+                                    if (empty($fullPath)) {
+                                        $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
+                                    }
                                 }
                             }
                         }
@@ -535,15 +568,18 @@ class Invoice extends \Eloquent {
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID,$ServiceID);
             $RoundChargesCDR    = AccountBilling::getRoundChargesCDR($Account->AccountID,$ServiceID);
 
+            /*Payment Data*/
+            $payment_data = Payment::GetBillingPeriodPayments($InvoiceID,$Account->AccountID);
+
             if(!empty($Invoice->RecurringInvoiceID)) {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','RoundChargesCDR','data','print_type','language'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
                 $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
             }else {
-                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language'))->render();
+                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data'))->render();
             }
             $body = htmlspecialchars_decode($body);
-            $footer = View::make('emails.invoices.pdffooter', compact('Invoice'))->render();
+            $footer = View::make('emails.invoices.pdffooter', compact('Invoice', 'Account'))->render();
             $footer = htmlspecialchars_decode($footer);
 
             $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
@@ -552,8 +588,8 @@ class Invoice extends \Eloquent {
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
             $destination_dir = $UPLOADPATH . '/'. $amazonPath;
             if (!file_exists($destination_dir)) {
-                RemoteSSH::run("mkdir -p " . $destination_dir);
-                RemoteSSH::run("chmod -R 777 " . $destination_dir);
+                RemoteSSH::run($companyID, "mkdir -p " . $destination_dir);
+                RemoteSSH::run($companyID, "chmod -R 777 " . $destination_dir);
             }
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
@@ -568,6 +604,17 @@ class Invoice extends \Eloquent {
             if(getenv('APP_OS') == 'Linux'){
                 exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+
+                if(CompanySetting::getKeyVal($companyID, 'UseDigitalSignature')==true){
+                    $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
+                    $signaturePath = CompanyConfiguration::get($companyID,'UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $companyID, true);
+                    $mypdfsignerOutput=RemoteSSH::run($companyID, 'mypdfsigner -i '.$local_file.' -o '.$newlocal_file.' -z '.$signaturePath.'mypdfsigner.conf -v -c -q');
+                    Log::info($mypdfsignerOutput);
+                    if(file_exists($newlocal_file)){
+                        RemoteSSH::run($companyID, 'rm '.$local_file);
+                        RemoteSSH::run($companyID, 'mv '.$newlocal_file.' '.$local_file);
+                    }
+                }
 
             }else{
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
@@ -684,7 +731,7 @@ class Invoice extends \Eloquent {
 
         return $TotalTax;
     }
-    public static function regenerateInvoice($CompanyID,$Invoice, $InvoiceDetail,$InvoiceGenerationEmail,$ProcessID,$JobID){
+    public static function regenerateInvoice($CompanyID,$Invoice, $InvoiceDetail,$InvoiceGenerationEmail,$ProcessID,$JobID,$FirstInvoiceSend){
         $error = array();
         $message = array();
         $SubTotal = 0;
@@ -694,8 +741,32 @@ class Invoice extends \Eloquent {
         $ServiceID = $Invoice->ServiceID;
         $AccountID = $Account->AccountID;
         $AccountBilling = AccountBilling::getBillingClass($AccountID,$ServiceID);
+
+        /**
+         * New Logic - Regenerate will work on invoice history like period lastchargedate-nextchragedate,usage came from invoicedetail
+        */
+        $InvoiceHistory = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->First();
+        if(empty($InvoiceHistory)){
+            InvoiceHistory::addInvoiceHistoryDetail($Invoice->InvoiceID,$AccountID,$ServiceID,$FirstInvoiceSend,1);
+            log::info('Invoice History Created');
+            $InvoiceHistory = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->First();
+        }
+        $StartDate=$InvoiceHistory->LastChargeDate;
+        $EndDate=$InvoiceHistory->NextChargeDate;
+        $EndDate =  date("Y-m-d 23:59:59", strtotime($EndDate));
+
+        if($FirstInvoiceSend==0) {
+            $UsageStartDate = InvoiceDetail::where(["InvoiceID" => $Invoice->InvoiceID, "ProductType" => Product::USAGE, "ServiceID" => $ServiceID])->pluck('StartDate');
+            $UsageStartDate = date("Y-m-d", strtotime($UsageStartDate));
+            $UsageEndDate = InvoiceDetail::where(["InvoiceID" => $Invoice->InvoiceID, "ProductType" => Product::USAGE, "ServiceID" => $ServiceID])->pluck('EndDate');
+        }else{
+            $UsageStartDate='';
+            $UsageEndDate='';
+        }
+
+        /**
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
-        $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));
+        $EndDate = date("Y-m-d 23:59:59", strtotime($InvoiceDetail[0]->EndDate));*/
 
         if($AccountID > 0 && $CompanyID > 0 && !empty($StartDate) && !empty($EndDate)) {
             $CompanyName = Company::getName($CompanyID);
@@ -710,12 +781,20 @@ class Invoice extends \Eloquent {
                 if (!empty($InvoiceTemplate)) {
                     $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID,$ServiceID);
 
-                    Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $StartDate . ',' . $EndDate . ')');
+                    Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $UsageStartDate . ',' . $UsageEndDate . ')');
                     $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
 
                     //get Total Usage
-                    $TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $StartDate, $EndDate,$ServiceID);
-
+                    if($FirstInvoiceSend==1){
+                        $TotalCharges=0;
+                    }else{
+                        if(isset($InvoiceTemplate->IgnoreCallCharge) && $InvoiceTemplate->IgnoreCallCharge==1){
+                            $TotalCharges = 0;
+                            Log::info('Invoice IgnoreCallCharge 1');
+                        } else{
+                            $TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $UsageStartDate, $UsageEndDate,$ServiceID);
+                        }
+                    }
 
                     Log::info('TotalCharges - ' . $TotalCharges);
 
@@ -745,22 +824,23 @@ class Invoice extends \Eloquent {
                     /**
                      * Update Usage in InvoiceDetail
                      */
-                    $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($StartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($EndDate));
-                    $InvoiceDetailData = array();
-                    $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-                    $InvoiceDetailData['ProductID'] = 0;
-                    $InvoiceDetailData['ProductType'] = Product::USAGE;
-                    $InvoiceDetailData['Description'] = $ProductDescription;
-                    $InvoiceDetailData['StartDate'] = $StartDate;
-                    $InvoiceDetailData['EndDate'] = $EndDate;
-                    $InvoiceDetailData['Price'] = $TotalUsageCharges;
-                    $InvoiceDetailData['Qty'] = 1;
-                    $InvoiceDetailData['Discount'] = 0;
-                    $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
-                    $InvoiceDetailData["updated_at"] = date("Y-m-d H:i:s");
-                    $InvoiceDetailData["ModifiedBy"] = 'RMScheduler';
-                    InvoiceDetail::where(array('InvoiceID' => $Invoice->InvoiceID, 'ProductID' => 0, 'ProductType' => Product::USAGE))->update($InvoiceDetailData);
-
+                    if($FirstInvoiceSend==0) {
+                        $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($UsageStartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($UsageEndDate));
+                        $InvoiceDetailData = array();
+                        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+                        $InvoiceDetailData['ProductID'] = 0;
+                        $InvoiceDetailData['ProductType'] = Product::USAGE;
+                        $InvoiceDetailData['Description'] = $ProductDescription;
+                        $InvoiceDetailData['StartDate'] = $UsageStartDate;
+                        $InvoiceDetailData['EndDate'] = $UsageEndDate;
+                        $InvoiceDetailData['Price'] = $TotalUsageCharges;
+                        $InvoiceDetailData['Qty'] = 1;
+                        $InvoiceDetailData['Discount'] = 0;
+                        $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
+                        $InvoiceDetailData["updated_at"] = date("Y-m-d H:i:s");
+                        $InvoiceDetailData["ModifiedBy"] = 'RMScheduler';
+                        InvoiceDetail::where(array('InvoiceID' => $Invoice->InvoiceID, 'ProductID' => 0, 'ProductType' => Product::USAGE))->update($InvoiceDetailData);
+                    }
                     /**
                      * Insert Data in InvoiceLog
                      */
@@ -777,14 +857,14 @@ class Invoice extends \Eloquent {
                     /**
                      * Add Subscription in InvoiceDetail if any
                      */
-                    $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate);
+                    $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate,$FirstInvoiceSend);
                     $SubTotal = $subResponse["SubTotal"];
                     $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
 
                     /**
                      * Add OneOffCharge in InvoiceDetail if any
                      */
-                    $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate);
+                    $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate,$FirstInvoiceSend);
                     $SubTotal = $subResponse["SubTotal"];
                     $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
                     $AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
@@ -802,10 +882,16 @@ class Invoice extends \Eloquent {
                          *
                          */
                         Log::info('PDF Generation start');
-
-                        $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$StartDate,$EndDate,$InvoiceTemplate);
-
-                        $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                        if($FirstInvoiceSend==1 || $InvoiceTemplate->IgnoreCallCharge==1){
+                            $usage_data = array();
+                            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                            $usage_data_table = array();
+                            $usage_data_table['header'] =array();
+                            $usage_data_table['data'] = array();
+                        }else{
+                            $usage_data = self::getInvoiceServiceUsage($CompanyID,$AccountID,$ServiceID,$UsageStartDate,$UsageEndDate,$InvoiceTemplate);
+                            $usage_data_table = self::usageDataTable($usage_data,$InvoiceTemplate);
+                        }
 
                         $pdf_path = Invoice::generate_pdf($Invoice->InvoiceID,array(),$usage_data,$usage_data_table);
                         if (empty($pdf_path)) {
@@ -823,13 +909,17 @@ class Invoice extends \Eloquent {
 
                         $fullPath = "";
                         $message['message'] = $Account->AccountName.' ('.$Invoice->InvoiceNumber.')';
-                        if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
-                            $InvoiceID = $Invoice->InvoiceID;
-                            if ($InvoiceID > 0 && $AccountID > 0) {
-                                $fullPath = Invoice::generate_usage_file($InvoiceID,$usage_data_table,$StartDate,$EndDate,$InvoiceTemplate->GroupByService,$usage_data);
-                                if (empty($fullPath)) {
-                                    $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
-                                    $error['status'] = 'failure';
+                        if($FirstInvoiceSend==1 || $InvoiceTemplate->IgnoreCallCharge==1){
+                            // No Need to file generate
+                        }else{
+                            if ($InvoiceTemplate->CDRType != Account::NO_CDR) { // Check in to generate Invoice usage file or not
+                                $InvoiceID = $Invoice->InvoiceID;
+                                if ($InvoiceID > 0 && $AccountID > 0) {
+                                    $fullPath = Invoice::generate_usage_file($InvoiceID, $usage_data_table, $UsageStartDate, $UsageEndDate, $InvoiceTemplate->GroupByService, $usage_data);
+                                    if (empty($fullPath)) {
+                                        $error['message'] = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['UsageFile'];
+                                        $error['status'] = 'failure';
+                                    }
                                 }
                             }
                         }
@@ -865,6 +955,7 @@ class Invoice extends \Eloquent {
             }
         }
     }
+
 
     public static  function EmailToCustomer($Account,$GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
@@ -1098,7 +1189,7 @@ class Invoice extends \Eloquent {
         return $InvoiceTaxRateAmount;
     }
 
-    public static function addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
+    public static function addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0,$FirstInvoiceSend=0){
 
         // Get All Account Subscriptions
         $query = "CALL prc_getAccountSubscription(?,?)";
@@ -1107,7 +1198,15 @@ class Invoice extends \Eloquent {
         $SubscriptionChargewithouttaxTotal = 0;
         Log::info('SUBSCRIPTION '.count($AccountSubscriptions)) ;
         $StartDate = date("Y-m-d",strtotime($StartDate));
-        $EndDate = date("Y-m-d",strtotime($EndDate));
+        if($FirstInvoiceSend==1) {
+            $EndDate = Invoice::getNextDateFirstInvoice($Invoice->InvoiceID,$Invoice->CompanyID, $Invoice->AccountID, $ServiceID);
+            /** End Date Change for advance subscription*/
+            $EndDate = date("Y-m-d", strtotime($EndDate));
+        }else{
+            $EndDate = date("Y-m-d",strtotime($EndDate));
+        }
+
+
         if($regenerate == 1) {
             InvoiceDetail::where(array('InvoiceID'=>$Invoice->InvoiceID,'ProductType'=>Product::SUBSCRIPTION))->delete();
         }
@@ -1125,21 +1224,36 @@ class Invoice extends \Eloquent {
 
             foreach ($AccountSubscriptions as $AccountSubscription) {
                 $isAdvanceSubscription =0;
+                $AlreadyBilled=0;
                 /**check for advance subscription*/
                 Log::info( " ============================Subscription Start ================= \n\n");
                 Log::info( ' SubscriptionID - ' . $AccountSubscription->SubscriptionID );
                 if($AccountSubscription->EndDate == '0000-00-00'){
                     $AccountSubscription->EndDate  = date("Y-m-d",strtotime('+1 years'));
                 }
-                $BillingCycleType = AccountBilling::where(["AccountID"=>$Invoice->AccountID,"ServiceID"=>$ServiceID])->pluck('BillingCycleType');
+                $BillingCycleType = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$Invoice->AccountID,"ServiceID"=>$ServiceID])->pluck('BillingCycleType');
                 if(BillingSubscription::isAdvanceSubscription($AccountSubscription->SubscriptionID) && $BillingCycleType != 'manual'){
                 $isAdvanceSubscription =1;
                     Log::info( 'isAdvanceSubscription - ' . $AccountSubscription->SubscriptionID );
 
                     //Advance Subscription Date
-                    $SubscriptionStartDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$StartDate); // Advance Date 1-7-2015 - 1-8-2015
-                    $SubscriptionEndDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$SubscriptionStartDate); // Advance Date 1-7-2015 - 1-8-2015
+
+                    /**
+                     * Check StartDate And End Date and already billed or not
+                    **/
+
+                    $SubscriptionStartDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->InvoiceID,$Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$StartDate); // Advance Date 1-7-2015 - 1-8-2015
+                    $SubscriptionEndDate = Invoice::calculateNextInvoiceDateFromLastInvoiceDate($Invoice->InvoiceID,$Invoice->CompanyID,$Invoice->AccountID,$ServiceID,$SubscriptionStartDate); // Advance Date 1-7-2015 - 1-8-2015
                     $SubscriptionEndDate = date("Y-m-d", strtotime("-1 Day", strtotime($SubscriptionEndDate))); // Convert 1-8-2015 -to 31-7-2015
+                    if($FirstInvoiceSend==0) {
+                        $ASdata = Invoice::getAccountAdavanceSubscriptionDate($Invoice->InvoiceID,$Invoice->AccountID, $SubscriptionStartDate, $SubscriptionEndDate, $AccountSubscription);
+                        $AlreadyBilled = $ASdata['AlreadyCharged'];
+                        $SubscriptionStartDate = $ASdata['StartDate'];
+                        $SubscriptionEndDate = $ASdata['EndDate'];
+                        if ($AlreadyBilled == 1) {
+                            log::info($AccountSubscription->InvoiceDescription . ' ' . $SubscriptionStartDate . ' ' . $SubscriptionEndDate . ' is already charged');
+                        }
+                    }
 
                     if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$StartDate)) {
                         Log::info( 'First Time + Advance Billing - Yes' );
@@ -1148,6 +1262,8 @@ class Invoice extends \Eloquent {
                          * regular Subscription '1-1-2015' to '1-1-2016'
                          * charge for '1-3-2015' to '1-4-2015'
                          */
+                        log::info('StartDate '.$StartDate.' - EndDate '.$EndDate);
+                        log::info('ACStartDate '.$AccountSubscription->StartDate.' - ACEndDate '.$AccountSubscription->EndDate);
                         if( $StartDate >= $AccountSubscription->StartDate && $StartDate <= $AccountSubscription->EndDate && $EndDate >= $AccountSubscription->StartDate && $EndDate <= $AccountSubscription->EndDate) {
                             Log::info( 'regular Subscription if advance ' );
                             //Charge Current Subscription Date
@@ -1197,51 +1313,55 @@ class Invoice extends \Eloquent {
                  * regular Subscription '1-1-2015' to '1-1-2016'
                  * charge for '1-3-2015' to '1-4-2015'
                  */
-                if( $isAdvanceSubscription == 0 && $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
-                    Log::info( 'regular Subscription ' );
-                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
-                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
-                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
-                }else if( $isAdvanceSubscription == 0 && $AccountSubscription->StartDate >= $SubscriptionStartDate && $AccountSubscription->StartDate <= $SubscriptionEndDate ){
-                    /**
-                     *Special Subscription with StartDate  '15-3-2015' to '1-1-2016'
-                     * charge for '1-3-2015' to '1-4-2015' should take '15-3-2015' to '1-4-2015'
-                     */
-                    $SubscriptionStartDate = $AccountSubscription->StartDate;
-                    Log::info( 'charge half of month - Subscription Start after StartDate' );
-                    if($AccountSubscription->EndDate < $SubscriptionEndDate){
-                        $SubscriptionEndDate = $AccountSubscription->EndDate;// '15-3-2015' to '20-3-2015'
-                        Log::info( 'charge half of month - Subscription end before EndDate' );
+
+                if($FirstInvoiceSend==0) {
+
+                    if ($isAdvanceSubscription == 0 && $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                        Log::info('regular Subscription ');
+                        $addInvoiceSubscriptionDetail = Invoice::addInvoiceSubscriptionDetail($Invoice, $AccountSubscription, $SubscriptionStartDate, $SubscriptionEndDate, $SubscriptionChargewithouttaxTotal, $SubTotal, $decimal_places);
+                        $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                        $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                    } else if ($isAdvanceSubscription == 0 && $AccountSubscription->StartDate >= $SubscriptionStartDate && $AccountSubscription->StartDate <= $SubscriptionEndDate) {
+                        /**
+                         *Special Subscription with StartDate  '15-3-2015' to '1-1-2016'
+                         * charge for '1-3-2015' to '1-4-2015' should take '15-3-2015' to '1-4-2015'
+                         */
+                        $SubscriptionStartDate = $AccountSubscription->StartDate;
+                        Log::info('charge half of month - Subscription Start after StartDate');
+                        if ($AccountSubscription->EndDate < $SubscriptionEndDate) {
+                            $SubscriptionEndDate = $AccountSubscription->EndDate;// '15-3-2015' to '20-3-2015'
+                            Log::info('charge half of month - Subscription end before EndDate');
+                        }
+                        $addInvoiceSubscriptionDetail = Invoice::addInvoiceSubscriptionDetail($Invoice, $AccountSubscription, $SubscriptionStartDate, $SubscriptionEndDate, $SubscriptionChargewithouttaxTotal, $SubTotal, $decimal_places);
+                        $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                        $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                    } else if ($isAdvanceSubscription == 0 && $AccountSubscription->EndDate >= $SubscriptionStartDate && $AccountSubscription->EndDate <= $SubscriptionEndDate) {
+                        /**
+                         *Special Subscription with EndDate  '1-1-2015' to '15-3-2015'
+                         * charge for '1-3-2015' to '1-4-2015' should take '1-3-2015' to '15-3-2015'
+                         */
+                        Log::info('charge half of month - 2 Subscription end before EndDate');
+                        $SubscriptionEndDate = $AccountSubscription->EndDate;
+                        $addInvoiceSubscriptionDetail = Invoice::addInvoiceSubscriptionDetail($Invoice, $AccountSubscription, $SubscriptionStartDate, $SubscriptionEndDate, $SubscriptionChargewithouttaxTotal, $SubTotal, $decimal_places);
+                        $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                        $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                    } else if ($isAdvanceSubscription == 1 && $AlreadyBilled==0 && $AccountSubscription->EndDate >= $SubscriptionStartDate && $AccountSubscription->EndDate <= $SubscriptionEndDate) {
+                        /** if advance subscription and expiring in current month
+                         *Special Subscription with EndDate  '2015-08-01' to '2015-11-03'
+                         * Advance charge for '1-11-2015' to '31-11-2015' should take '1-11-2015' to '03-11-2015'
+                         */
+                        Log::info('advance charge for next month expiring subscription.');
+                        $SubscriptionEndDate = $AccountSubscription->EndDate;
+                        $addInvoiceSubscriptionDetail = Invoice::addInvoiceSubscriptionDetail($Invoice, $AccountSubscription, $SubscriptionStartDate, $SubscriptionEndDate, $SubscriptionChargewithouttaxTotal, $SubTotal, $decimal_places);
+                        $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                        $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
+                    } else if ($isAdvanceSubscription == 1 && $AlreadyBilled==0 && $SubscriptionStartDate >= $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
+                        Log::info('regular Advance Subscription ');
+                        //Charge Current Subscription Date
+                        $addInvoiceSubscriptionDetail = Invoice::addInvoiceSubscriptionDetail($Invoice, $AccountSubscription, $SubscriptionStartDate, $SubscriptionEndDate, $SubscriptionChargewithouttaxTotal, $SubTotal, $decimal_places);
+                        $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
+                        $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
                     }
-                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
-                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
-                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
-                }else if($isAdvanceSubscription ==0 && $AccountSubscription->EndDate >= $SubscriptionStartDate && $AccountSubscription->EndDate <= $SubscriptionEndDate ){
-                    /**
-                     *Special Subscription with EndDate  '1-1-2015' to '15-3-2015'
-                     * charge for '1-3-2015' to '1-4-2015' should take '1-3-2015' to '15-3-2015'
-                     */
-                    Log::info( 'charge half of month - 2 Subscription end before EndDate' );
-                    $SubscriptionEndDate = $AccountSubscription->EndDate;
-                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
-                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
-                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
-                }else if($isAdvanceSubscription ==1 && $AccountSubscription->EndDate >= $SubscriptionStartDate && $AccountSubscription->EndDate <= $SubscriptionEndDate ){
-                    /** if advance subscription and expiring in current month
-                     *Special Subscription with EndDate  '2015-08-01' to '2015-11-03'
-                     * Advance charge for '1-11-2015' to '31-11-2015' should take '1-11-2015' to '03-11-2015'
-                     */
-                    Log::info( 'advance charge for next month expiring subscription.' );
-                    $SubscriptionEndDate = $AccountSubscription->EndDate;
-                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
-                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
-                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
-                }else if( $isAdvanceSubscription ==1 && $SubscriptionStartDate > $AccountSubscription->StartDate && $SubscriptionStartDate <= $AccountSubscription->EndDate && $SubscriptionEndDate >= $AccountSubscription->StartDate && $SubscriptionEndDate <= $AccountSubscription->EndDate) {
-                    Log::info( 'regular Advance Subscription ' );
-                    //Charge Current Subscription Date
-                    $addInvoiceSubscriptionDetail =  Invoice::addInvoiceSubscriptionDetail($Invoice,$AccountSubscription,$SubscriptionStartDate,$SubscriptionEndDate,$SubscriptionChargewithouttaxTotal,$SubTotal,$decimal_places);
-                    $SubTotal = $addInvoiceSubscriptionDetail['SubTotal'];
-                    $SubscriptionChargewithouttaxTotal = $addInvoiceSubscriptionDetail['SubscriptionChargewithouttaxTotal'];
                 }
                 Log::info( " ============================Subscription End ================= \n\n");
 
@@ -1255,22 +1375,41 @@ class Invoice extends \Eloquent {
         return array("SubTotal"=>$SubTotal,'SubscriptionChargewithouttaxTotal' => $SubscriptionChargewithouttaxTotal);
     }
 
-    public static function addUsage($Account,$CompanyID, $AccountID,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID){
+    public static function addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend){
+        /**
+         * Start Date = Last Invoice ChargeDate , End Date = Next Invoice ChargeDate
+        */
+        $UsageStartDate=$StartDate;
+        $UsageEndDate=$EndDate;
 
-        Log::info('Invoice::getAccountUsageTotal('.$CompanyID.','. $AccountID.','. $StartDate.','. $EndDate.')') ;
+        if($FirstInvoiceSend==1) {
+            $TotalCharges = 0;
+        }else{
+            /**
+             * IF InvoiceGeneration Date < InvoiceNextChargeDate
+             * Than EndDate Is Yesterday Date
+            */
+            $NewLastChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($EndDate)));
+            if($NewLastChargeDate>$NextInvoiceDate){
+                Log::info('Charge In Advance Logic ');
+                $UsageEndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
+            }
 
-        //get Total Usage
-        $TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $StartDate, $EndDate,$ServiceID);
+            /**
+            * We Need To Check Last UsageEndDate - if any mismatch than continue with that usagedate
+            * Than StartDate Is LastUsageDate
+            */
 
-        /*if( $TotalCharges == 0 ) {
-            $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons['NoCDR'];
-            return array("status" => "failure", "message" => $error);
-        }*/
-
+            $UsageStartDate=Invoice::getAccountUsageStartDate($AccountID,$StartDate,$ServiceID);
+            if(isset($InvoiceTemplate->IgnoreCallCharge) && $InvoiceTemplate->IgnoreCallCharge==1){
+                $TotalCharges = 0;
+                Log::info('Invoice IgnoreCallCharge 1');
+            } else{
+                $TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $UsageStartDate, $UsageEndDate, $ServiceID);
+                Log::info('Invoice::getAccountUsageTotal(' . $CompanyID . ',' . $AccountID . ',' . $UsageStartDate . ',' . $UsageEndDate . ')');
+            }
+        }
         Log::info('TotalCharges - '.$TotalCharges) ;
-
-        //if ($TotalCharges > 0) {
-        //Create Invoice even if TotalCharges is zero its used for PBX customer
 
         $Address = Account::getFullAddress($Account);
 
@@ -1317,34 +1456,61 @@ class Invoice extends \Eloquent {
         //Store Last Invoice Number.
         InvoiceTemplate::find(AccountBilling::getInvoiceTemplateID($AccountID,$ServiceID))->update(array("LastInvoiceNumber" => $InvoiceNumber));
 
-        /**
-         * Add Usage in InvoiceDetail
-         */
-        $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($StartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($EndDate));
-        $InvoiceDetailData = array();
-        $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-        $InvoiceDetailData['ProductID'] = 0;
-        $InvoiceDetailData['ServiceID'] = $ServiceID;
-        $InvoiceDetailData['ProductType'] = Product::USAGE;
-        $InvoiceDetailData['Description'] = $ProductDescription;
-        $InvoiceDetailData['StartDate'] = $StartDate;
-        $InvoiceDetailData['EndDate'] = $EndDate;
-        $InvoiceDetailData['Price'] = $TotalUsageCharges;
-        $InvoiceDetailData['Qty'] = 1;
-        $InvoiceDetailData['Discount'] = 0;
-        $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
-        $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
-        $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
-        InvoiceDetail::insert($InvoiceDetailData);
+        if($FirstInvoiceSend==0) {
+            /**
+             * Add Usage in InvoiceDetail
+             */
+            $ProductDescription = " From " . date($InvoiceTemplate->DateFormat, strtotime($UsageStartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($UsageEndDate));
+            $InvoiceDetailData = array();
+            $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+            $InvoiceDetailData['ProductID'] = 0;
+            $InvoiceDetailData['ServiceID'] = $ServiceID;
+            $InvoiceDetailData['ProductType'] = Product::USAGE;
+            $InvoiceDetailData['Description'] = $ProductDescription;
+            $InvoiceDetailData['StartDate'] = $UsageStartDate;
+            $InvoiceDetailData['EndDate'] = $UsageEndDate;
+            $InvoiceDetailData['Price'] = $TotalUsageCharges;
+            $InvoiceDetailData['Qty'] = 1;
+            $InvoiceDetailData['Discount'] = 0;
+            $InvoiceDetailData['LineTotal'] = $TotalUsageCharges;
+            $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+            $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+            InvoiceDetail::insert($InvoiceDetailData);
 
-        $BillingType = AccountBilling::getBillingType($AccountID);
-        $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
-        if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
-            $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
-            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
+            $BillingType = AccountBilling::getBillingType($AccountID);
+            $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+            if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+                $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+                $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
+            }else{
+                $InvoiceStartDate = $StartDate;
+                $InvoiceEndDate = $EndDate;
+            }
         }else{
-            $InvoiceStartDate = $StartDate;
-            $InvoiceEndDate = $EndDate;
+            $InvoiceStartDate = date("Y-m-d", strtotime($StartDate));
+            $InvoiceEndDate   = date("Y-m-d", strtotime($StartDate));
+
+            $InvoiceDetailData = array();
+            $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+            $InvoiceDetailData['ProductID'] = 0;
+            $InvoiceDetailData['ServiceID'] = $ServiceID;
+            $InvoiceDetailData['ProductType'] = Product::FIRST_PERIOD;
+            $InvoiceDetailData['Description'] = 'First Invoice';
+            $InvoiceDetailData['StartDate'] = $InvoiceStartDate;
+            $InvoiceDetailData['EndDate'] = $InvoiceEndDate;
+            $InvoiceDetailData['Price'] = 0;
+            $InvoiceDetailData['Qty'] = 0;
+            $InvoiceDetailData['Discount'] = 0;
+            $InvoiceDetailData['LineTotal'] = 0;
+            $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+            $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+            InvoiceDetail::insert($InvoiceDetailData);
+
+            $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
+            $InvoiceStartDate = $EndDate;
+            $checkDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
+            $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($checkDate)))));
+
         }
 
         $InvoiceDetailData = array();
@@ -1363,6 +1529,7 @@ class Invoice extends \Eloquent {
         $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
         InvoiceDetail::insert($InvoiceDetailData);
 
+        InvoiceHistory::addInvoiceHistoryDetail($Invoice->InvoiceID,$AccountID,$ServiceID,$FirstInvoiceSend,0);
 
         return array("SubTotal"=>$SubTotal,'Invoice' => $Invoice);
 
@@ -1375,11 +1542,14 @@ class Invoice extends \Eloquent {
              * */
             if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$SubscriptionStartDate)) {
                 $FirstTime = true;
+                log::info('First Time True '.$AccountSubscription->StartDate.' '.$SubscriptionStartDate);
             } else {
                 $FirstTime = false;
+                log::info('First Time False '.$AccountSubscription->StartDate.' '.$SubscriptionStartDate);
             }
+
             Log::info('StartDate '. $SubscriptionStartDate .' AccountSubscription->StartDate '. $AccountSubscription->StartDate .' EndDate '. $SubscriptionEndDate .' AccountSubscription->EndDate '.$AccountSubscription->EndDate);
-            $BillingCycleType = AccountBilling::where(["AccountID"=>$Invoice->AccountID,"ServiceID"=>$Invoice->ServiceID])->pluck('BillingCycleType');
+            $BillingCycleType = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$Invoice->AccountID,"ServiceID"=>$Invoice->ServiceID])->pluck('BillingCycleType');
             $QuarterSubscription =  0;
             if($BillingCycleType == 'quarterly'){
                 $QuarterSubscription = 1;
@@ -1396,10 +1566,23 @@ class Invoice extends \Eloquent {
              * */
             $qty = $AccountSubscription->Qty;
             $TotalSubscriptionCharge = ( $SubscriptionCharge * $qty );
-            if($AccountSubscription->ExemptTax){
-                $SubscriptionChargewithouttaxTotal += $TotalSubscriptionCharge;
-            }else{
-                $SubTotal += $TotalSubscriptionCharge;
+            $ProductDescription = $AccountSubscription->InvoiceDescription;
+            //$Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
+            $Subscription = AccountSubscription::find($AccountSubscription->AccountSubscriptionID);
+
+            /**
+             * Checking Already Subscription Added or not
+            */
+
+            $AlreadyInvoiceSubscription=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ProductDescription,$TotalSubscriptionCharge,$SubscriptionCharge,$qty);
+            log::info('Already Invoice Subscription '. $AlreadyInvoiceSubscription);
+            Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID. ',' .$AccountSubscription->ServiceID. ',' .$AccountSubscription->SubscriptionID. ',' .$SubscriptionStartDate. ',' .$SubscriptionEndDate. ',' .$ProductDescription. ',' .$TotalSubscriptionCharge. ','.$SubscriptionCharge. ','.$qty.')');
+            if($AlreadyInvoiceSubscription==0){
+                if($AccountSubscription->ExemptTax){
+                    $SubscriptionChargewithouttaxTotal += $TotalSubscriptionCharge;
+                }else{
+                    $SubTotal += $TotalSubscriptionCharge;
+                }
             }
 
             $SubscriptionCharge = number_format($SubscriptionCharge, $decimal_places, '.', '');
@@ -1407,49 +1590,55 @@ class Invoice extends \Eloquent {
 
             Log::info( ' TotalSubscriptionCharge - ' . $TotalSubscriptionCharge );
 
-            $ProductDescription = $AccountSubscription->InvoiceDescription;
-            //$Subscription = BillingSubscription::find($AccountSubscription->SubscriptionID);
-            $Subscription = AccountSubscription::find($AccountSubscription->AccountSubscriptionID);
+
 
         if ($FirstTime && $Subscription->ActivationFee >0) {
+                $ActivationProductDescription=$ProductDescription.' Activation Fee';
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
-                if($AccountSubscription->ExemptTax){
-                    $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
-                }else{
-                    $SubTotal += $TotalActivationFeeCharge;
+                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty);
+                log::info('Already Activatiob Fee '. $AlreadyActivationFee);
+                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.')');
+                if($AlreadyActivationFee==0) {
+                    if ($AccountSubscription->ExemptTax) {
+                        $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
+                    } else {
+                        $SubTotal += $TotalActivationFeeCharge;
+                    }
+                    $InvoiceDetailData = array();
+                    $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+                    $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
+                    $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
+                    $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
+                    $InvoiceDetailData['Description'] = $ActivationProductDescription;
+                    $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
+                    $InvoiceDetailData['EndDate'] = $SubscriptionEndDate;
+                    $InvoiceDetailData['Price'] = $Subscription->ActivationFee;
+                    $InvoiceDetailData['Qty'] = $qty;
+                    $InvoiceDetailData['Discount'] = 0;
+                    $InvoiceDetailData['LineTotal'] = $TotalActivationFeeCharge;
+                    $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+                    $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+                    InvoiceDetail::insert($InvoiceDetailData);
                 }
+            }
+            //$ProductDescription .= " From " . date($InvoiceTemplate->DateFormat, strtotime($SubscriptionStartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($SubscriptionEndDate));
+            if($AlreadyInvoiceSubscription==0) {
                 $InvoiceDetailData = array();
                 $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
                 $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
                 $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
                 $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
-                $InvoiceDetailData['Description'] = $ProductDescription.' Activation Fee';
+                $InvoiceDetailData['Description'] = $ProductDescription;
                 $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
                 $InvoiceDetailData['EndDate'] = $SubscriptionEndDate;
-                $InvoiceDetailData['Price'] = $Subscription->ActivationFee;
+                $InvoiceDetailData['Price'] = $SubscriptionCharge;
                 $InvoiceDetailData['Qty'] = $qty;
                 $InvoiceDetailData['Discount'] = 0;
-                $InvoiceDetailData['LineTotal'] = $TotalActivationFeeCharge;
+                $InvoiceDetailData['LineTotal'] = $TotalSubscriptionCharge;
                 $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
                 $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
                 InvoiceDetail::insert($InvoiceDetailData);
             }
-            //$ProductDescription .= " From " . date($InvoiceTemplate->DateFormat, strtotime($SubscriptionStartDate)) . " To " . date($InvoiceTemplate->DateFormat, strtotime($SubscriptionEndDate));
-            $InvoiceDetailData = array();
-            $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-            $InvoiceDetailData['ProductID'] = $AccountSubscription->SubscriptionID;
-            $InvoiceDetailData['ServiceID'] = $AccountSubscription->ServiceID;
-            $InvoiceDetailData['ProductType'] = Product::SUBSCRIPTION;
-            $InvoiceDetailData['Description'] = $ProductDescription;
-            $InvoiceDetailData['StartDate'] = $SubscriptionStartDate;
-            $InvoiceDetailData['EndDate'] = $SubscriptionEndDate;
-            $InvoiceDetailData['Price'] = $SubscriptionCharge;
-            $InvoiceDetailData['Qty'] = $qty;
-            $InvoiceDetailData['Discount'] = 0;
-            $InvoiceDetailData['LineTotal'] = $TotalSubscriptionCharge;
-            $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
-            $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
-            InvoiceDetail::insert($InvoiceDetailData);
             return array("SubTotal"=>$SubTotal,'SubscriptionChargewithouttaxTotal' => $SubscriptionChargewithouttaxTotal);
 
         //}
@@ -1513,7 +1702,14 @@ class Invoice extends \Eloquent {
 
 
     }
-    public static function addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0){
+    public static function addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0,$FirstInvoiceSend=0){
+        if($FirstInvoiceSend==1){
+            $StartDate = date("Y-m-d",strtotime($StartDate));
+            $EndDate = Invoice::getNextDateFirstInvoice($Invoice->InvoiceID,$Invoice->CompanyID, $Invoice->AccountID, $ServiceID); /** End Date Change for advance One off(first time)*/
+            $EndDate =  date("Y-m-d 23:59:59", strtotime($EndDate));
+        }else{
+            $EndDate =  date("Y-m-d 23:59:59", strtotime( "+1 Day", strtotime($EndDate))); // for invoice generation day include
+        }
 
         $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
         $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($Invoice->AccountID,$ServiceID,$StartDate,$EndDate));
@@ -1526,37 +1722,45 @@ class Invoice extends \Eloquent {
         }
         if (count($AccountOneOffCharges)) {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
+
+                $OneOffcount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
+                    ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID])
+                    ->where(['tblInvoice.AccountID'=>$Invoice->AccountID])
+                    ->count();
+
                 Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
 
                 Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->Date);
-                $ProductDescription = $AccountOneOffCharge->Description;
-                $singlePrice = $AccountOneOffCharge->Price;
-                $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
-                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
-                    $SubscriptionChargewithouttaxTotal += $LineTotal;
-                    $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
-                    Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
-                    //$SubTotal += $LineTotal+$AccountOneOffCharge->TaxAmount;
-                }else{
-                    $SubscriptionChargewithouttaxTotal += $LineTotal;
+                if($OneOffcount==0) {
+                    $ProductDescription = $AccountOneOffCharge->Description;
+                    $singlePrice = $AccountOneOffCharge->Price;
+                    $LineTotal = ($AccountOneOffCharge->Price) * $AccountOneOffCharge->Qty;
+                    if ($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2) {
+                        $SubscriptionChargewithouttaxTotal += $LineTotal;
+                        $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
+                        Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
+                        //$SubTotal += $LineTotal+$AccountOneOffCharge->TaxAmount;
+                    } else {
+                        $SubscriptionChargewithouttaxTotal += $LineTotal;
+                    }
+                    $singlePrice = number_format($singlePrice, $decimal_places, '.', '');
+                    $LineTotal = number_format($LineTotal, $decimal_places, '.', '');
+                    $InvoiceDetailData = array();
+                    $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
+                    $InvoiceDetailData['ProductID'] = $AccountOneOffCharge->ProductID;
+                    $InvoiceDetailData['ServiceID'] = $AccountOneOffCharge->ServiceID;
+                    $InvoiceDetailData['ProductType'] = Product::ONEOFFCHARGE;
+                    $InvoiceDetailData['Description'] = $ProductDescription;
+                    $InvoiceDetailData['StartDate'] = $AccountOneOffCharge->Date;
+                    $InvoiceDetailData['EndDate'] = $AccountOneOffCharge->Date;
+                    $InvoiceDetailData['Price'] = $singlePrice;
+                    $InvoiceDetailData['Qty'] = $AccountOneOffCharge->Qty;
+                    $InvoiceDetailData['Discount'] = 0;
+                    $InvoiceDetailData['LineTotal'] = $LineTotal;
+                    $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
+                    $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+                    InvoiceDetail::insert($InvoiceDetailData);
                 }
-                $singlePrice = number_format($singlePrice, $decimal_places, '.', '');
-                $LineTotal = number_format($LineTotal, $decimal_places, '.', '');
-                $InvoiceDetailData = array();
-                $InvoiceDetailData["InvoiceID"] = $Invoice->InvoiceID;
-                $InvoiceDetailData['ProductID'] = $AccountOneOffCharge->ProductID;
-                $InvoiceDetailData['ServiceID'] = $AccountOneOffCharge->ServiceID;
-                $InvoiceDetailData['ProductType'] = Product::ONEOFFCHARGE;
-                $InvoiceDetailData['Description'] = $ProductDescription ;
-                $InvoiceDetailData['StartDate'] = $AccountOneOffCharge->Date;
-                $InvoiceDetailData['EndDate'] = $AccountOneOffCharge->Date;
-                $InvoiceDetailData['Price'] = $singlePrice;
-                $InvoiceDetailData['Qty'] = $AccountOneOffCharge->Qty;
-                $InvoiceDetailData['Discount'] = 0;
-                $InvoiceDetailData['LineTotal'] = $LineTotal;
-                $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
-                $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
-                InvoiceDetail::insert($InvoiceDetailData);
             }
         } //Subscription over
         Log::info('AccountOneOffCharge Over');
@@ -1594,12 +1798,13 @@ class Invoice extends \Eloquent {
         $skip_accounts = array();
         $today = date("Y-m-d");
         $response = $errors = $message = array();
-
+        $count=0;
 
         do {
             $query = "CALL prc_getBillingAccounts(?,?,?)";
             $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
             Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            log::info(print_r($Accounts,true));
             $Accounts = json_decode(json_encode($Accounts),true);
 
             foreach ($Accounts as $Account) {
@@ -1608,13 +1813,34 @@ class Invoice extends \Eloquent {
                 $AccountID = $Account['AccountID'];
                 $ServiceID = $Account['ServiceID'];
                 try {
+                    $FirstInvoice = Invoice::isFirstInvoiceSend($CompanyID,$AccountID,$ServiceID);
 
+                    $AccountBillings = AccountBilling::getBilling($AccountID, $ServiceID);
+                    $LastChargeDate = $AccountBillings->LastChargeDate;
+                    $NextChargeDate = $AccountBillings->NextChargeDate;
 
-                    $NextInvoiceDate = Invoice::getNextInvoiceDate($CompanyID, $AccountID, $ServiceID);
-                    Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
+                    if($FirstInvoice==1){
+                        $NextInvoiceDate = Invoice::getFirstInvoiceDate($CompanyID,$AccountID,$ServiceID);
+                        $LastInvoiceDate = $AccountBillings->BillingStartDate;
+                    }else{
+                        /*
+                        $NextInvoiceDate = Invoice::getNextInvoiceDate($CompanyID, $AccountID, $ServiceID);
+                        $LastInvoiceDate = Invoice::getLastInvoiceDate($CompanyID, $AccountID, $ServiceID);
+                        */
+                        $LastInvoiceDate = $AccountBillings->LastInvoiceDate;
+                        $NextInvoiceDate = $AccountBillings->NextInvoiceDate;
+
+                    }
+
+                    Log::info('AccountID =' . $AccountID . ' FirstInvoiceSend '.$FirstInvoice);
+                    Log::info('LastInvoiceDate '.$LastInvoiceDate.' NextInvoiceDate '.$NextInvoiceDate);
+                    Log::info('LastChargeDate '.$LastChargeDate.' NextChargeDate '.$NextChargeDate);
+
                     if (!empty($NextInvoiceDate)) {
 
                         $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
+
+                        //@todo: Need to check checkCDRIsLoadedOrNot.
 
                         /**
                          * 1. If Account is not in tblAccountGateway Generate Invoice
@@ -1635,18 +1861,12 @@ class Invoice extends \Eloquent {
 
                                 DB::beginTransaction();
                                 DB::connection('sqlsrv2')->beginTransaction();
-                                Log::info('AccountID =' . $AccountID . ' NextInvoiceDate = ' . $NextInvoiceDate);
-
-                                $LastInvoiceDate = Invoice::getLastInvoiceDate($CompanyID, $AccountID, $ServiceID);
-
-                                Log::info('getLastInvoiceDate =' . $LastInvoiceDate);
 
                                 /*                    $StartDate = $LastInvoiceDate;
                                                     $EndDate = date("Y-m-d 23:59:59", strtotime("-1 Day", strtotime($NextInvoiceDate)));*/
 
                                 Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
-
-                                $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID,$ServiceID);
+                                $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID,$ServiceID,0);
 
                                 Log::info('Invoice::sendInvoice done');
 
@@ -1659,14 +1879,36 @@ class Invoice extends \Eloquent {
                                     Log::info('=========== Updating  InvoiceDate =========== ');
                                     $AccountBilling = AccountBilling::getBilling($AccountID, $ServiceID);
                                     $oldNextInvoiceDate = $NextInvoiceDate;
+                                    //Add One Date In Last Charge Date because when we next period(Last Charge Date - Next Charge)Both Date include
+                                    if($FirstInvoice==1) {
+                                        $CheckBillingStartDate = date("Y-m-d", strtotime($AccountBilling->BillingStartDate));
+                                        $NewLastChargeDate = date("Y-m-d", strtotime($AccountBilling->NextChargeDate));
+                                        if($NewLastChargeDate!=$CheckBillingStartDate){
+                                            $CheckChargeDate=date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($CheckChargeDate));
+                                        }else{
+                                            $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                                        }
+
+                                        $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
+                                        log::info('FirstInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
+                                    }else{
+                                        $NewLastChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
+                                        $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($NewLastChargeDate));
+                                        $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
+                                        log::info('NextInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
+                                    }
+
                                     $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($oldNextInvoiceDate));
-                                    AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["LastInvoiceDate" => $oldNextInvoiceDate, "NextInvoiceDate" => $NewNextInvoiceDate]);
+                                    AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["LastInvoiceDate" => $oldNextInvoiceDate, "NextInvoiceDate" => $NewNextInvoiceDate,'LastChargeDate'=>$NewLastChargeDate,'NextChargeDate'=>$NewNextChargeDate]);
                                     $AccountNextBilling = AccountNextBilling::getBilling($AccountID, $ServiceID);
                                     if (!empty($AccountNextBilling)) {
                                         AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
                                         AccountNextBilling::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID])->delete();
                                     }
-
+                                    log::info("new dates");
+                                    Log::info('LastInvoiceDate '.$oldNextInvoiceDate.' NextInvoiceDate '.$NewNextInvoiceDate);
+                                    Log::info('LastChargeDate '.$NewLastChargeDate.' NextChargeDate '.$NewNextChargeDate);
 
                                     Log::info('=========== Updated  InvoiceDate =========== ');
                                     DB::commit();
@@ -1697,7 +1939,6 @@ class Invoice extends \Eloquent {
 
                     Log::info(' ========================== Invoice Send End =============================');
 
-
                 } catch (\Exception $e) {
 
                     try {
@@ -1716,9 +1957,9 @@ class Invoice extends \Eloquent {
                     }
 
                 }
-
             } // Loop over
             //Log::info($skip_accounts);
+            //Break; //if generate only one invoice per account
         } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
 
 
@@ -1741,7 +1982,7 @@ class Invoice extends \Eloquent {
         }
         $UsageColumn = getUsageColumns($InvoiceTemplate);
         $activeColumns = array();
-        $GroupColumns = array('Trunk','Country','AreaPrefix','Description');
+        $GroupColumns = array('Trunk','Country','AreaPrefix','Description','AvgRatePerMin');
         foreach($UsageColumn as $UsageColumnRow){
             if($UsageColumnRow['Status']=='true') {
                 $activeColumns[] = $UsageColumnRow['Title'];
@@ -1785,7 +2026,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
                         $usage_data[$key_col_comb]['BillDuration'] = (int)($usage_data[$key_col_comb]['BillDurationInSec']/60).':'.$usage_data[$key_col_comb]['BillDurationInSec']%60;
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($result_row['AvgRatePerMin'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -1793,7 +2034,7 @@ class Invoice extends \Eloquent {
                         $usage_data[$key_col_comb] = $result_row;
                         $usage_data[$key_col_comb]['ChargedAmount'] = number_format($usage_data[$key_col_comb]['ChargedAmount'],$RoundChargesCDR);
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
-                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format(($usage_data[$key_col_comb]['ChargedAmount'] / $usage_data[$key_col_comb]['BillDurationInSec']) * 60, 6);
+                            $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($result_row['AvgRatePerMin'], 6);
                         }else{
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = 0;
                         }
@@ -1831,6 +2072,8 @@ class Invoice extends \Eloquent {
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+        $replace_array['AccountBalance'] = $replace_array['CurrencySign'] ." ". AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+
 
         return $replace_array;
     }
@@ -1859,7 +2102,8 @@ class Invoice extends \Eloquent {
             '{Currency}',
             '{CompanyName}',
             '{CompanyVAT}',
-            '{CompanyAddress}'
+            '{CompanyAddress}',
+            '{AccountBalance}'
         ];
 
         foreach($extra as $item){
@@ -1990,7 +2234,7 @@ class Invoice extends \Eloquent {
             foreach($usage_data as $row_key =>$usage_data_row){
                 if (isset($usage_data_row['AreaPrefix'])) {
                     if($usage_data_row['BillDurationInSec'] != 0) {
-                        $usage_data_row['AvgRatePerMin'] = number_format(($usage_data_row['ChargedAmount'] / $usage_data_row['BillDurationInSec']) * 60, 6);
+                        $usage_data_row['AvgRatePerMin'] = number_format($usage_data_row['AvgRatePerMin'], 6);
                     }else{
                         $usage_data_row['AvgRatePerMin'] = 0;
                     }
@@ -2038,7 +2282,7 @@ class Invoice extends \Eloquent {
                     DB::connection('sqlsrv2')->beginTransaction();
 
                     Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
-                    $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID, $ServiceID);
+                    $response = Invoice::sendInvoice($CompanyID, $AccountID, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID, $ServiceID,1);
                     Log::info('Invoice::sendInvoice done');
                     if (isset($response["status"]) && $response["status"] == 'success') {
 
@@ -2091,9 +2335,250 @@ class Invoice extends \Eloquent {
     }
 
     public static function NumberFormatNoZeroValue($value,$decimal_point) {
+        $value=str_replace(',','',$value);
         $value2 = number_format($value,$decimal_point);
         $default_value = "0.000000";
         $result = $value2==0 && $value>0 ? (float) substr_replace($default_value,'1',$decimal_point+1) : $value2;
         return $result;
     }
+
+    public static function getFirstInvoiceDate($CompanyID,$AccountID,$ServiceID){
+
+        /**
+         * Assumption : If Billing Cycle is 7 Days then Usage and Subscription both will be 7 Days and same for Monthly and other billing cycles..
+         * */
+        if(!empty($CompanyID) && !empty($AccountID) ) {
+
+            $Account = AccountBilling::select(["NextInvoiceDate","BillingStartDate","LastInvoiceDate","BillingCycleType","BillingCycleValue"])->where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
+
+            if(!empty($Account['BillingStartDate'])) {
+                $BillingStartDate = strtotime($Account['BillingStartDate']);
+            }else{
+                return '';
+            }
+            $NextInvoiceDate = date("Y-m-d", $BillingStartDate);
+
+            return $NextInvoiceDate;
+        }
+
+    }
+    public static function getNextDateFirstInvoice($InvoiceID,$CompanyID,$AccountID,$ServiceID){
+
+        /**
+         * Assumption : If Billing Cycle is 7 Days then Usage and Subscription both will be 7 Days and same for Monthly and other billing cycles..
+         * */
+        if(!empty($CompanyID) && !empty($AccountID) ) {
+
+            //$Account = AccountBilling::select(["NextInvoiceDate","BillingStartDate","LastInvoiceDate","BillingCycleType","BillingCycleValue","NextChargeDate"])->where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
+            $Account=InvoiceHistory::select(["NextInvoiceDate","BillingStartDate","LastInvoiceDate","BillingCycleType","BillingCycleValue","NextChargeDate"])->where(["InvoiceID"=>$InvoiceID,"AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first()->toArray();
+            if(!empty($Account['BillingStartDate'])) {
+                $BillingStartDate = strtotime($Account['BillingStartDate']);
+            }else{
+                return '';
+            }
+            if($Account['BillingStartDate']==$Account['NextChargeDate']){
+                $NextInvoiceDate = next_billing_date($Account['BillingCycleType'],$Account['BillingCycleValue'],$BillingStartDate);
+                $NextInvoiceDate = date("Y-m-d 00:00:00", strtotime("-1 Day", strtotime($NextInvoiceDate)));
+            }else{
+                $NextInvoiceDate = $Account['NextChargeDate'];
+            }
+
+            return $NextInvoiceDate;
+        }
+
+    }
+
+    public static function isFirstInvoiceSend($CompanyID,$AccountID,$ServiceID){
+        $FirstInvoice=0;
+        /**  Billingstart and NextInvoiceDate is same than it would be first invoice **/
+        $Account = AccountBilling::where(["AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->first();
+        if(!empty($Account)){
+            $BillingStartDate=$Account->BillingStartDate;
+            $NextInvoiceDate=$Account->NextInvoiceDate;
+            if($BillingStartDate==$NextInvoiceDate){
+                $invocie_count =  Account::getInvoiceCount($AccountID);
+                if($invocie_count==0){
+                    $FirstInvoice=1;
+                }
+            }
+        }
+        return $FirstInvoice;
+    }
+
+    public static function IsAlreadyInvoiceSubscriptionDetail($AccountID,$ServiceID,$ProductID,$StartDate,$EndDate,$Description,$LineTotal,$Price,$Qty){
+        $SubscriptionCount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
+            ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'tblInvoiceDetail.LineTotal'=>$LineTotal,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID])
+            ->where(['tblInvoice.AccountID'=>$AccountID])
+            ->where('tblInvoice.InvoiceStatus','<>',Invoice::CANCEL)
+            ->count();
+        return $SubscriptionCount;
+    }
+
+    public static function getAccountUsageStartDate($AccountID,$StartDate,$ServiceID){
+        $UsageStartDate=$StartDate;
+        $UsageDetails = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
+            ->where(['ProductType'=>Product::USAGE,'tblInvoiceDetail.ServiceID'=>$ServiceID])
+            ->where(['tblInvoice.AccountID'=>$AccountID])
+            ->orderby('tblInvoiceDetail.InvoiceDetailID','desc')
+            ->limit(1)
+            ->first();
+        if(!empty($UsageDetails)){
+            $EndDate = $UsageDetails->EndDate;
+            if(!empty($EndDate)){
+                $EndDate = date("Y-m-d", strtotime("+1 Day", strtotime($EndDate)));
+                if($EndDate<$StartDate){
+                    $UsageStartDate=$EndDate;
+                }
+            }
+        }
+        return $UsageStartDate;
+    }
+
+    public static function getAccountAdavanceSubscriptionDate($InvoiceID,$AccountID,$SubscriptionStartDate,$SubscriptionEndDate,$AccountSubscription){
+        $SubscriptionData=array();
+        $SubscriptionData['StartDate']=$SubscriptionStartDate;
+        $SubscriptionData['EndDate']=$SubscriptionEndDate;
+        $SubscriptionData['AlreadyCharged']=0;
+        $ProductID = $AccountSubscription->SubscriptionID;
+        $Qty = $AccountSubscription->Qty;
+        $ServiceID = $AccountSubscription->ServiceID;
+
+        $StartDate = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
+            ->where(['ProductID'=>$ProductID,'ProductType'=>Product::SUBSCRIPTION,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID])
+            ->where('tblInvoice.InvoiceID','<',$InvoiceID)
+            ->where(['tblInvoice.AccountID'=>$AccountID])
+            ->min('StartDate');
+
+        $EndDate = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
+            ->where(['ProductID'=>$ProductID,'ProductType'=>Product::SUBSCRIPTION,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID])
+            ->where('tblInvoice.InvoiceID','<',$InvoiceID)
+            ->where(['tblInvoice.AccountID'=>$AccountID])
+            ->max('EndDate');
+
+        if(empty($StartDate) && empty($EndDate)){
+            return $SubscriptionData;
+        }
+        if($SubscriptionStartDate > $EndDate){
+            //nothing do
+        }elseif($SubscriptionEndDate <= $EndDate){
+            $SubscriptionData['AlreadyCharged']=1;
+        }elseif($SubscriptionStartDate <= $EndDate && $SubscriptionEndDate > $EndDate){
+            $EndDate = date("Y-m-d", strtotime("+1 Day", strtotime($EndDate)));
+            $SubscriptionData['StartDate']=$EndDate;
+        }
+        return $SubscriptionData;
+    }
+
+    public static function getFutureInvoiceTotal($CompanyID,$AccountBillingID,$IgnoreCallCharge){
+        /**
+         * Invoice Will Calculate Base on Last Charge Date and Next Charge Date(both date included)
+         *
+         **/
+        $response=array();
+        $error = "";
+        $FirstInvoiceSend=0;
+        $AlreadyBilled=0;
+        $AccountBilling=AccountBilling::find($AccountBillingID);
+        $AccountID = $AccountBilling->AccountID;
+        $ServiceID=$AccountBilling->ServiceID;
+        $LastInvoiceDate = $AccountBilling->LastInvoiceDate;
+        $NextInvoiceDate = $AccountBilling->NextInvoiceDate;
+
+        $StartDate=$AccountBilling->LastChargeDate;
+        $EndDate=$AccountBilling->NextChargeDate;
+        $EndDate =  date("Y-m-d 23:59:59", strtotime($EndDate));
+
+        Log::info('start Date =' . $StartDate . " EndDate =" .$EndDate );
+
+        $CompanyName  = Company::getName($CompanyID);
+        $Account = Account::find((int)$AccountID);
+
+        $InvoiceTemplateID=BillingClass::getInvoiceTemplateID($AccountBilling->BillingClassID);
+
+        $InvoiceTemplate = InvoiceTemplate::where("InvoiceTemplateID",$InvoiceTemplateID)->first();
+        //Log::info('InvoiceTemplate->InvoiceNumberPrefix =' .($InvoiceTemplate->InvoiceNumberPrefix)) ;
+        //Log::info('InvoiceTemplate->Terms =' .($InvoiceTemplate->Terms));
+
+        $InvoiceTemplate->DateFormat = invoice_date_fomat($InvoiceTemplate->DateFormat);
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID,$ServiceID);
+
+        /**
+         ***************************
+         **************************
+        Step 1     USAGE
+         **************************
+         **************************
+         */
+        //Check if Invoice Usage is already Created.
+        //TRUE=Already Billed
+        //FALSE = Not billed
+        //Log::info('Invoice::checkIfAccountUsageAlreadyBilled') ;
+
+        $Invoice = "";
+        $SubTotal = 0;
+        $SubTotalWithoutTax = 0;
+        $AdditionalChargeTax = 0;
+
+        //If Account usage not already billed
+
+        DB::connection('sqlsrv2')->beginTransaction();
+
+        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend);
+        $Invoice = $uResponse["Invoice"];
+        $SubTotal = $uResponse["SubTotal"];
+
+        // Usage Over
+
+        //Log::info('Usage Over') ;
+
+        /**
+         ***************************
+         **************************
+        Step 2  SUBSCRIPTION
+         **************************
+         **************************
+         */
+
+        /**
+         * Add Subscription in InvoiceDetail if any
+         */
+        $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
+        $SubTotal = $subResponse["SubTotal"];
+        $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
+
+        /**
+         * Add OneOffCharge in InvoiceDetail if any
+         */
+        $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
+        $SubTotal = $subResponse["SubTotal"];
+        $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
+        $AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
+
+        /**
+         ***************************
+         **************************
+        Step 3  USAGE FILE & Invoice PDF & EMAIL
+         **************************
+         **************************
+         */
+
+        //Log::info('USAGE FILE & Invoice PDF & EMAIL Start') ;
+
+        if (isset($Invoice)) {
+            $InvoiceID = $Invoice->InvoiceID;
+            $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
+            log::info(print_r($totals,true));
+			$response = $totals;
+
+
+		}//Email Sending over
+
+        DB::connection('sqlsrv2')->rollback();
+
+        //Log::info('=========== Email Sending over =========== ') ;
+
+        return $response;
+
+    }
+
 }

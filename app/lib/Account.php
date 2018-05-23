@@ -197,6 +197,17 @@ class Account extends \Eloquent {
         return $count;
     }
 
+
+    public static function FirstBalanceWarning($AccountID,$LastRunTime){
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::BalanceWarning));
+        if(!empty($LastRunTime)){
+            $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+        }
+        $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
+    }
+
     public static function getAccountName($AccountID){
         return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
     }
