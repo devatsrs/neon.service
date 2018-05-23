@@ -258,7 +258,7 @@ class AccountBalance extends Model
                                     $SubTotal=$response['SubTotal'];
                                     $AccountBalance  = AccountBalance::getAccountBalance($CompanyID,$AccountID);
                                     $AccountExposure = AccountBalance::getAccountBalance($CompanyID,$AccountID);
-                                    if($BillingType==AccountBilling::BILLINGTYPE_POSTPAID){
+                                    if($IncludeUnBilledAmount==1){
                                         $AccountOutstandingBalance = $AccountExposure;
                                     }else{
                                         $AccountOutstandingBalance = $AccountBalance;

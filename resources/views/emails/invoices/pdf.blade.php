@@ -167,13 +167,13 @@
                     $tempsummary['Title']=$InvoiceTaxRate->Title;
                     $tempsummary['Amount']=$CurrencySymbol.number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
                     $AllTaxSummary[]=$tempsummary;
-                    $AllTaxCount+=number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                    $AllTaxCount+=$InvoiceTaxRate->TaxAmount;
                     ?>
                 @endforeach
                 <tr>
                     <td colspan="2"></td>
                     <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{$AllTaxCount}}</td>
+                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
                 </tr>
             @endif
             @if($Invoice->TotalDiscount > 0)
