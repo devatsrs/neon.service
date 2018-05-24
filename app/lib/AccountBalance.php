@@ -286,6 +286,9 @@ class AccountBalance extends Model
     public static function getAccountBalance($CompanyID,$AccountID){
         $AccountBalance = AccountBalance::getAccountSOA($CompanyID,$AccountID);
         $BillingType = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingType');
+        /**
+         * If billing type postpaid it will display as it is
+         */
         if(isset($BillingType)){
             if($BillingType==AccountBilling::BILLINGTYPE_PREPAID){
                 if($AccountBalance<0){
@@ -293,17 +296,18 @@ class AccountBalance extends Model
                 }else{
                     $AccountBalance=($AccountBalance) * -1;
                 }
-            }else{
+            }
+            /*
+            else{
                 if($AccountBalance<0){
                     $AccountBalance=0;
                 }
-            }
-        }
-        /*else{
+            }*/
+        }else{
             if($AccountBalance<0){
                 $AccountBalance=0;
             }
-        }*/
+        }
         return $AccountBalance;
     }
 
@@ -317,20 +321,18 @@ class AccountBalance extends Model
                 }else{
                     $AccountOutstandingBalance=($AccountOutstandingBalance) * -1;
                 }
-            }else{
+            }
+            /*
+            else{
                 if($AccountOutstandingBalance<0){
                     $AccountOutstandingBalance=0;
                 }
-            }
-        }
-        /**
-         * If billing type postpaid it will display as it is
-        */
-        /*else{
+            }*/
+        }else{
             if($AccountOutstandingBalance<0){
                 $AccountOutstandingBalance=0;
             }
-        }*/
+        }
         return $AccountOutstandingBalance;
     }
 }
