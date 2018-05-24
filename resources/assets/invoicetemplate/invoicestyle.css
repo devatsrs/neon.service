@@ -293,3 +293,8 @@ footer {
 .text-right {
   text-align: right;
 }
+
+#backinvoice .total{
+  border-top:1px solid #DDDDDD;
+  font-weight: bold;
+}
