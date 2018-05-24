@@ -298,11 +298,12 @@ class AccountBalance extends Model
                     $AccountBalance=0;
                 }
             }
-        }else{
+        }
+        /*else{
             if($AccountBalance<0){
                 $AccountBalance=0;
             }
-        }
+        }*/
         return $AccountBalance;
     }
 
@@ -321,11 +322,15 @@ class AccountBalance extends Model
                     $AccountOutstandingBalance=0;
                 }
             }
-        }else{
+        }
+        /**
+         * If billing type postpaid it will display as it is
+        */
+        /*else{
             if($AccountOutstandingBalance<0){
                 $AccountOutstandingBalance=0;
             }
-        }
+        }*/
         return $AccountOutstandingBalance;
     }
 }
