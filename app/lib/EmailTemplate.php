@@ -34,12 +34,10 @@ class EmailTemplate extends \Eloquent {
         if(empty($languageID)){
             $languageID=Translation::$default_lang_id;
         }
-
-        $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$companyID, 'Status'=>1])->first();
+        $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$companyID ])->first();
         if(empty($emailtemplate)){
-            $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>User::get_companyID(), 'Status'=>1])->first();
+            $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$companyID ])->first();
         }
-
         return $emailtemplate;
     }
 }

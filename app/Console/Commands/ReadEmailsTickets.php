@@ -100,7 +100,7 @@ class ReadEmailsTickets extends Command
 						}*/
 						$imap = new Imap(array('email'=>$TicketgroupData->GroupEmailAddress,"server"=>$TicketgroupData->GroupEmailServer,"password"=>$TicketgroupData->GroupEmailPassword));
 
-					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);	 
+					 	$imap->ReadTicketEmails($CompanyID,$TicketgroupData->GroupEmailServer,$TicketgroupData->GroupEmailPort,$TicketgroupData->GroupEmailIsSSL,$TicketgroupData->GroupEmailAddress,$TicketgroupData->GroupEmailPassword,$TicketgroupData->GroupID);
 						$joblogdata['Message'] = 'Success';
 						$this->CheckEscalationRule($TicketgroupData,$CompanyID);
 

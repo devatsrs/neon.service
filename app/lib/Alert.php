@@ -365,5 +365,78 @@ class Alert extends \Eloquent{
         }
     }
 
+    public static function sendAccountBalanceEmailReminder($CompanyID) {
+        $Company 	= Company::find($CompanyID);
+        $TodayDate 	= date_create(date('Y-m-d'));
 
+        $Alerts = Alert::where(['CompanyID' => $CompanyID,'AlertType'=>'account_balance', 'AlertGroup' => 'call', 'Status' => 1])->get();
+
+        foreach ($Alerts as $Alert) {
+            $Settings   	= json_decode($Alert->Settings);
+            $AccountID 		= $Settings->AccountIDs;
+
+            if(!empty($AccountID)) {
+                if($AccountID == -1) {
+                    $Accounts = Account::where(['AccountType'=>1,'Status'=>1,'Billing'=>1])->get();
+                } else {
+                    $Accounts = Account::where(['AccountID'=>$AccountID,'AccountType'=>1,'Status'=>1,'Billing'=>1])->get();
+                }
+
+                foreach ($Accounts as $Account) {
+                    $AccountBilling = AccountBilling::where(['AccountID'=>$Account->AccountID,'ServiceID'=>0]);
+                    if($AccountBilling->count() > 0) {
+                        $NextInvoiceDate = date_create($AccountBilling->first()->NextInvoiceDate);
+
+                        $diff = date_diff($TodayDate,$NextInvoiceDate);
+
+                        if($diff->invert == 0 && $diff->days == $Settings->ReminderDays) {
+                            $IsEmailSend = AccountEmailLog::where(['CompanyID'=>$CompanyID,'AccountID'=>$Account->AccountID,'EmailType' => AccountEmailLog::AccountBalanceEmailReminder])
+                                ->where('created_at','like',date('Y-m-d').'%')->count();
+
+                            if(!($IsEmailSend > 0)) {
+                                $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'AccountBalanceEmailReminder', $Account->LanguageID);
+                                $EmailMessage 	= $EmailTemplate->TemplateBody;
+                                $replace_array 	= Helper::create_replace_array($Account, array());
+                                $EmailMessage 	= template_var_replace($EmailMessage, $replace_array);
+                                $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array);
+                                $EmailFrom 	    = $EmailTemplate->EmailFrom;
+
+                                $emailsTo[] = $Settings->ReminderEmail;
+                                if ($Settings->EmailToAccount == 1) {
+                                    $emailsTo[] = $Account->BillingEmail;
+                                }
+
+                                $emaildata = array(
+                                    'EmailToName' => $Company->CompanyName,
+                                    'EmailTo' => $emailsTo,
+                                    'EmailFrom' => $EmailFrom,
+                                    'Subject' => $Subject,
+                                    'CompanyID' => $CompanyID,
+                                    'CompanyName' => $Company->CompanyName,
+                                    'Message' => $EmailMessage
+                                );
+
+                                $emailstatus = Helper::sendMail('emails.template', $emaildata);
+
+                                if ($emailstatus) {
+                                    $logdata = array(
+                                        'CompanyID' => $CompanyID,
+                                        'AccountID' => $Account->AccountID,
+                                        'CreatedBy' => 'System Notification',
+                                        'created_at' => date('Y-m-d H:i:s'),
+                                        'EmailTo' => implode(',', $emailsTo),
+                                        'Subject' => $Subject,
+                                        'Message' => $EmailMessage,
+                                        'EmailType' => AccountEmailLog::AccountBalanceEmailReminder
+                                    );
+
+                                    AccountEmailLog::insert($logdata);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

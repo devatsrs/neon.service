@@ -44,7 +44,7 @@ return array(
     'Cartalyst\\Stripe\\Laravel\\' => array($vendorDir . '/cartalyst/stripe-laravel/src'),
     'Cartalyst\\Stripe\\' => array($vendorDir . '/cartalyst/stripe/src'),
     'Cartalyst\\Collections\\' => array($vendorDir . '/cartalyst/collections/src'),
-    'Carbon\\' => array($vendorDir . '/nesbot/carbon/src/Carbon'),
     'Box\\Spout\\' => array($vendorDir . '/box/spout/src/Spout'),
     'Barryvdh\\DomPDF\\' => array($vendorDir . '/barryvdh/laravel-dompdf/src'),
+    '' => array($vendorDir . '/nesbot/carbon/src'),
 );

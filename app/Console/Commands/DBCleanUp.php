@@ -82,6 +82,9 @@ class DBCleanUp extends Command {
 
 			Log::info('DBcleanup Starts.');
 
+			/*
+			 * @TODO: need to update as per new tables changes 27-03-18
+			 * */
 
 			Log::info('Delete Old Deleted Tickets.');
 				$error .= Retention::TicketDeleteFromDeleteTable($CompanyID);
