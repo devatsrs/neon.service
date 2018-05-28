@@ -253,7 +253,7 @@ class AccountBalance extends Model
                                 }
                                 // check date - next invoice date = today or grater , renewal day = today or less today
                                 if($NextInvoiceDate >= $Today && $Today >=$CheckInvoiceDate){
-                                    $response = Invoice::getFutureInvoiceTotal($CompanyID,$AccountBillingID,$IgnoreCallCharge);
+                                    $response = Invoice::getFutureInvoiceTotal($CompanyID,$AccountBillingID,0);
                                     $GrandTotal=$response['GrandTotal'];
                                     $SubTotal=$response['SubTotal'];
                                     $AccountBalance  = AccountBalance::getAccountBalance($CompanyID,$AccountID);
@@ -286,6 +286,9 @@ class AccountBalance extends Model
     public static function getAccountBalance($CompanyID,$AccountID){
         $AccountBalance = AccountBalance::getAccountSOA($CompanyID,$AccountID);
         $BillingType = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingType');
+        /**
+         * If billing type postpaid it will display as it is
+         */
         if(isset($BillingType)){
             if($BillingType==AccountBilling::BILLINGTYPE_PREPAID){
                 if($AccountBalance<0){
@@ -293,11 +296,13 @@ class AccountBalance extends Model
                 }else{
                     $AccountBalance=($AccountBalance) * -1;
                 }
-            }else{
+            }
+            /*
+            else{
                 if($AccountBalance<0){
                     $AccountBalance=0;
                 }
-            }
+            }*/
         }else{
             if($AccountBalance<0){
                 $AccountBalance=0;
@@ -316,11 +321,13 @@ class AccountBalance extends Model
                 }else{
                     $AccountOutstandingBalance=($AccountOutstandingBalance) * -1;
                 }
-            }else{
+            }
+            /*
+            else{
                 if($AccountOutstandingBalance<0){
                     $AccountOutstandingBalance=0;
                 }
-            }
+            }*/
         }else{
             if($AccountOutstandingBalance<0){
                 $AccountOutstandingBalance=0;

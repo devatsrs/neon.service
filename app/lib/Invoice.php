@@ -293,7 +293,8 @@ class Invoice extends \Eloquent {
                     //If Account usage not already billed
                     Log::info('AlreadyBilled '.$AlreadyBilled);
                     if (!$AlreadyBilled) {
-                        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend);
+                        $OnlyUsageCallChares=0;
+                        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend,$OnlyUsageCallChares);
                         $Invoice = $uResponse["Invoice"];
                         $SubTotal = $uResponse["SubTotal"];
 
@@ -340,8 +341,8 @@ class Invoice extends \Eloquent {
                         $UsageStartDate = date("Y-m-d", strtotime($UsageStartDate));
                         $UsageEndDate = InvoiceDetail::where(["InvoiceID" => $InvoiceID, "ProductType" => Product::USAGE, "ServiceID" => $ServiceID])->pluck('EndDate');
                         log::info("New UsageDates ".$UsageStartDate.' - '.$UsageEndDate);
-
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
+                        $OnlyUsageCallCharge=0;
+                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID,$OnlyUsageCallCharge);
 
                         /*
                          * PDF Generation CODE HERE
@@ -875,7 +876,8 @@ class Invoice extends \Eloquent {
                     if (isset($Invoice)) {
 
                         // Add Tax in Subtotal and Update all Total Fields in Invoice Table.
-                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
+                        $OnlyUsageCallCharge=0;
+                        $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID,$OnlyUsageCallCharge);
 
                         /*
                          * PDF Generation CODE HERE
@@ -1121,7 +1123,7 @@ class Invoice extends \Eloquent {
         return $status;
     }
 
-    public static function updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID){
+    public static function updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID,$OnlyUsageCallCharge=0){
 
         /**
          * Find
@@ -1142,7 +1144,11 @@ class Invoice extends \Eloquent {
         /* Total Tax to update here */
         Log::info(' SubTotal ' . $SubTotal);
         Log::info(' SubTotalWithouttaxTotal ' . $SubTotalWithoutTax);
-        $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID,$Invoice->AccountID, $SubTotal,$AdditionalChargeTax,$ServiceID);
+        if($OnlyUsageCallCharge==1) {
+            $TotalTax = Invoice::insertInvoiceUsageTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+        }else{
+            $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+        }
         //$TotalTax += $AdditionalChargeTax; // Additional Tax from AdditionalCharge
 
         Log::info(' TotalTax ' . $TotalTax);
@@ -1375,7 +1381,7 @@ class Invoice extends \Eloquent {
         return array("SubTotal"=>$SubTotal,'SubscriptionChargewithouttaxTotal' => $SubscriptionChargewithouttaxTotal);
     }
 
-    public static function addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend){
+    public static function addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend,$OnlyUsageCallChares=0){
         /**
          * Start Date = Last Invoice ChargeDate , End Date = Next Invoice ChargeDate
         */
@@ -1401,7 +1407,7 @@ class Invoice extends \Eloquent {
             */
 
             $UsageStartDate=Invoice::getAccountUsageStartDate($AccountID,$StartDate,$ServiceID);
-            if(isset($InvoiceTemplate->IgnoreCallCharge) && $InvoiceTemplate->IgnoreCallCharge==1){
+            if(isset($InvoiceTemplate->IgnoreCallCharge) && $InvoiceTemplate->IgnoreCallCharge==1 && $OnlyUsageCallChares==0){
                 $TotalCharges = 0;
                 Log::info('Invoice IgnoreCallCharge 1');
             } else{
@@ -2469,7 +2475,7 @@ class Invoice extends \Eloquent {
         return $SubscriptionData;
     }
 
-    public static function getFutureInvoiceTotal($CompanyID,$AccountBillingID,$IgnoreCallCharge){
+    public static function getFutureInvoiceTotal($CompanyID,$AccountBillingID,$OnlyUsageCallChares=0){
         /**
          * Invoice Will Calculate Base on Last Charge Date and Next Charge Date(both date included)
          *
@@ -2523,7 +2529,7 @@ class Invoice extends \Eloquent {
 
         DB::connection('sqlsrv2')->beginTransaction();
 
-        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend);
+        $uResponse = self::addUsage($Account,$CompanyID, $AccountID,$LastInvoiceDate,$NextInvoiceDate,$StartDate,$EndDate,$InvoiceTemplate,$SubTotal,$decimal_places,$ServiceID,$FirstInvoiceSend,$OnlyUsageCallChares);
         $Invoice = $uResponse["Invoice"];
         $SubTotal = $uResponse["SubTotal"];
 
@@ -2539,21 +2545,23 @@ class Invoice extends \Eloquent {
          **************************
          */
 
-        /**
-         * Add Subscription in InvoiceDetail if any
-         */
-        $subResponse = self::addSubscription($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
-        $SubTotal = $subResponse["SubTotal"];
-        $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
+        if($OnlyUsageCallChares==0) {
 
-        /**
-         * Add OneOffCharge in InvoiceDetail if any
-         */
-        $subResponse = self::addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,0,$FirstInvoiceSend);
-        $SubTotal = $subResponse["SubTotal"];
-        $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
-        $AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
+            /**
+             * Add Subscription in InvoiceDetail if any
+             */
+            $subResponse = self::addSubscription($Invoice, $ServiceID, $StartDate, $EndDate, $SubTotal, $decimal_places, 0, $FirstInvoiceSend);
+            $SubTotal = $subResponse["SubTotal"];
+            $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
 
+            /**
+             * Add OneOffCharge in InvoiceDetail if any
+             */
+            $subResponse = self::addOneOffCharge($Invoice, $ServiceID, $StartDate, $EndDate, $SubTotal, $decimal_places, 0, $FirstInvoiceSend);
+            $SubTotal = $subResponse["SubTotal"];
+            $SubTotalWithoutTax += $subResponse["SubscriptionChargewithouttaxTotal"];
+            $AdditionalChargeTax = $subResponse["AdditionalChargeTotalTax"];
+        }
         /**
          ***************************
          **************************
@@ -2566,9 +2574,13 @@ class Invoice extends \Eloquent {
 
         if (isset($Invoice)) {
             $InvoiceID = $Invoice->InvoiceID;
-            $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID);
+            $totals = self::updateInvoiceAllTotalAmounts($Invoice,$SubTotal,$SubTotalWithoutTax,$AdditionalChargeTax,$decimal_places,$ServiceID,$OnlyUsageCallChares);
             log::info(print_r($totals,true));
 			$response = $totals;
+            if($OnlyUsageCallChares==1){
+                $Description = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::USAGE)->pluck('Description');
+                $response['Description'] = empty($Description) ? '' : $Description;
+            }
 
 
 		}//Email Sending over
@@ -2579,6 +2591,145 @@ class Invoice extends \Eloquent {
 
         return $response;
 
+    }
+
+    public static function insertInvoiceUsageTaxRate($InvoiceID,$AccountID,$InvoiceSubTotal,$AdditionalChargeTax,$ServiceID) {
+
+        /*$Invoice = Invoice::find($InvoiceID);
+        $InvoiceSubTotal = $Invoice->SubTotal;*/
+
+        //Get Account TaxIDs
+        $TaxRateIDs = AccountBilling::getTaxRate($AccountID,$ServiceID);
+
+        //delete tax first
+        InvoiceTaxRate::where("InvoiceID",$InvoiceID)->delete();
+
+        $UsageTotal = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::USAGE)->pluck('LineTotal');
+
+        $TaxGrandTotal = 0;
+        if(!empty($TaxRateIDs)){
+
+            $TaxRateIDs = explode(",",$TaxRateIDs);
+
+            foreach($TaxRateIDs as $TaxRateID) {
+
+                $TaxRateID = intval($TaxRateID);
+
+                if($TaxRateID>0){
+
+                    $SubTotal = 0;
+                    $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+                    $Title = '';
+                    if(isset($TaxRate->TaxType) && isset($TaxRate->Amount) ) {
+
+                        if ($TaxRate->TaxType == TaxRate::TAX_ALL) {
+                            $SubTotal = $InvoiceSubTotal;
+                            $Title = $TaxRate->Title;
+                        } else if ($TaxRate->TaxType == TaxRate::TAX_USAGE) {
+                            $SubTotal = $UsageTotal;
+                            $Title = $TaxRate->Title . ' (Usage)';
+
+                        }
+                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $SubTotal);
+
+                        $TaxGrandTotal += $TotalTax;
+                        InvoiceTaxRate::create(array(
+                            "InvoiceID" => $InvoiceID,
+                            "TaxRateID" => $TaxRateID,
+                            "TaxAmount" => $TotalTax,
+                            "Title" => $Title,
+                        ));
+                    }
+                }
+            }
+        }
+
+        return $TaxGrandTotal;
+    }
+
+    public static function  ProcessAccountCallCharges($CompanyID,$ProcessID){
+        $skip_accounts = array();
+        $today = date("Y-m-d");
+        $processresponse = $errors = $message = array();
+        $count=0;
+
+        do {
+            $query = "CALL prc_getBillingAccounts(?,?,?)";
+            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
+            Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            //log::info(print_r($Accounts,true));
+            $Accounts = json_decode(json_encode($Accounts),true);
+
+            foreach ($Accounts as $Account) {
+                $AccountID = $Account['AccountID'];
+                $ServiceID = $Account['ServiceID'];
+                $NextInvoiceDate = $Account['NextInvoiceDate'];
+                $DeductCallChargeCount=0;
+                $AutoPaymentSetting = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->pluck('AutoPaymentSetting');
+                $AutoPayMethod = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->pluck('AutoPayMethod');
+
+                /**
+                 * When Autopay on and autopaymethod is account balancd and billing class have deductcallcharge is on than add negetive payment of usage
+                */
+                if(!empty($AutoPaymentSetting) && $AutoPaymentSetting!='never' && !empty($AutoPayMethod) && $AutoPayMethod=AccountBilling::ACCOUNT_BALANCE){
+                    $BillingClassID = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'NextInvoiceDate'=>$NextInvoiceDate])->pluck('BillingClassID');
+                    if(!empty($BillingClassID)){
+                        $DeductCallChargeCount = BillingClass::where(['BillingClassID'=>$BillingClassID,'DeductCallChargeInAdvance'=>1])->count();
+                    }
+                }
+
+
+                log::info('DeductCallChargeCount '.$DeductCallChargeCount);
+                log::info('AccountID '.$AccountID.' ServiceID '.$ServiceID.' NextInvoiceDate '.$NextInvoiceDate);
+
+                $PaymentStatus = DB::connection('sqlsrv2')->table('tblProcessCallChargesLog')->where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'InvoiceDate'=>$NextInvoiceDate])->pluck('PaymentStatus');
+                if(empty($PaymentStatus) && $DeductCallChargeCount>0){
+                    log::info('PaymentStatus 0');
+                    $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
+                    $isCDRLoaded = DB::connection('sqlsrv2')->select("CALL prc_checkCDRIsLoadedOrNot(" . (int)$AccountID . ",$CompanyID,'$EndDate')");
+                    if (isset($isCDRLoaded[0]->isLoaded) && $isCDRLoaded[0]->isLoaded == 1) {
+                        $AccountBillingID = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'NextInvoiceDate'=>$NextInvoiceDate])->pluck('AccountBillingID');
+                        $response = Invoice::getFutureInvoiceTotal($CompanyID,$AccountBillingID,1);
+                        $Description=$response['Description'];
+                        $Amount='-'.$response['GrandTotal'];
+                        log::info('New Amount '.$Amount);
+                        $account=Account::find($AccountID);
+                        $paymentdata = array();
+                        $paymentdata['CompanyID'] = $CompanyID;
+                        $paymentdata['AccountID'] = $AccountID;
+                        $paymentdata['PaymentDate'] = date('Y-m-d');
+                        $paymentdata['PaymentMethod'] = 'Account Balance';
+                        $paymentdata['CurrencyID'] = $account->CurrencyId;
+                        $paymentdata['PaymentType'] = 'Payment In';
+                        $paymentdata['Notes'] = 'Usage Call Charges';
+                        $paymentdata['Amount'] = floatval($Amount);
+                        $paymentdata['Status'] = 'Approved';
+                        $paymentdata['created_at'] = date('Y-m-d H:i:s');
+                        $paymentdata['updated_at'] = date('Y-m-d H:i:s');
+                        $paymentdata['CreatedBy'] = 'System';
+                        $paymentdata['ModifyBy'] = 'System';
+
+                        if ($payment = Payment::insert($paymentdata)) {
+                            $LogData=array();
+                            $LogData['AccountID'] = $AccountID;
+                            $LogData['ServiceID'] = $ServiceID;
+                            $LogData['InvoiceDate'] = $NextInvoiceDate;
+                            $LogData['Description'] = $Description;
+                            $LogData['Amount'] = $Amount;
+                            $LogData['PaymentStatus'] = 1;
+                            DB::connection('sqlsrv2')->table('tblProcessCallChargesLog')->insert($LogData);
+
+                            $processresponse[] = $account->AccountName.' Usage Call Charges '.$Description;
+                        }
+                    }
+
+                }
+
+            } // Loop over
+            Break;
+        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
+
+        return $processresponse;
     }
 
 }

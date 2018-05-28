@@ -81,6 +81,7 @@
     $InvoiceTo =$InvoiceFrom = '';
     $AllTaxSummary = array();
     $AllTaxCount=0;
+    $AllPayment=0;
 	$total_usage = 0;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
@@ -165,9 +166,9 @@
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
                     <?php
                     $tempsummary['Title']=$InvoiceTaxRate->Title;
-                    $tempsummary['Amount']=$CurrencySymbol.number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount);
+                    $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
                     $AllTaxSummary[]=$tempsummary;
-                    $AllTaxCount+=$InvoiceTaxRate->TaxAmount;
+                    $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
                     ?>
                 @endforeach
                 <tr>
@@ -563,9 +564,13 @@
             @foreach($AllTaxSummary as $row)
                 <tr>
                     <td class="leftalign">{{$row['Title']}}</td>
-                    <td class="leftalign">{{$row['Amount']}}</td>
+                    <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
                 </tr>
             @endforeach
+            <tr>
+                <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+            </tr>
             </tbody>
         </table>
         @endif
@@ -583,11 +588,18 @@
                 </thead>
                 <tbody>
                 @foreach($payment_data as $row)
+                    <?php
+                    $AllPayment  += str_replace(',','',$row['Amount']);
+                    ?>
                     <tr>
-                        <td class="leftalign">{{$row['PaymentDate']}}</td>
-                        <td class="leftalign">{{$row['Amount']}}</td>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($row['PaymentDate']))}}</td>
+                        <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
                     </tr>
                 @endforeach
+                <tr>
+                    <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                    <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
+                </tr>
                 </tbody>
             </table>
         @endif
