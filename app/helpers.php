@@ -272,7 +272,8 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{CurrencyDescription}}",
         "{{CurrencySymbol}}",
         "{{AccountBalance}}",
-        "{{AccountExposure}}"
+        "{{AccountExposure}}",
+        "{{AccountBlocked}}"
     ];
 
     foreach($extra as $item){
