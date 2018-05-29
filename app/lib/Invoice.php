@@ -1893,7 +1893,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
 
                 $OneOffcount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
-                    ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID])
+                    ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID,'tblInvoiceDetail.Description'=>$AccountOneOffCharge->Description,'tblInvoiceDetail.Price'=>$AccountOneOffCharge->Price,'tblInvoiceDetail.Qty'=>$AccountOneOffCharge->Qty])
                     ->where(['tblInvoice.AccountID'=>$Invoice->AccountID])
                     ->count();
 
