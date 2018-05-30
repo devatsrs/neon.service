@@ -2726,7 +2726,7 @@ class Invoice extends \Eloquent {
                             $LogData['PaymentStatus'] = 1;
                             DB::connection('sqlsrv2')->table('tblProcessCallChargesLog')->insert($LogData);
 
-                            $processresponse[] = $account->AccountName.' Usage Call Charges '.$Description;
+                            $processresponse[] = $account->AccountName.' Call Charges '.$Description;
 
                             $Emaildata = array();
                             $Emaildata['CompanyID'] = $CompanyID;
@@ -2743,9 +2743,9 @@ class Invoice extends \Eloquent {
                                     $CustomerEmail = $account->BillingEmail;
                                 }
 
-                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Subject'] = 'Call Charges ('.$Description . ') Payment';
                                 $Emaildata['Status'] = 'Success';
-                                $Emaildata['Notes'] = 'Usage call charges is Successfully paid';
+                                $Emaildata['Notes'] = 'Call charges is Successfully paid';
 
                                 $CustomerEmail = explode(",", $CustomerEmail);
                                 $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
@@ -2787,7 +2787,7 @@ class Invoice extends \Eloquent {
                                     }
                                 }
                             }else{
-                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Subject'] = 'Call Charges ('.$Description . ') Payment';
                                 $Emaildata['Status'] = 'Fail';
                                 $Emaildata['Notes'] = 'Account has not sufficient balance';
 
