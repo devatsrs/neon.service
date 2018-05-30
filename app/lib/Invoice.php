@@ -1730,7 +1730,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
 
                 $OneOffcount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
-                    ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID])
+                    ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID,'tblInvoiceDetail.Description'=>$AccountOneOffCharge->Description,'tblInvoiceDetail.Price'=>$AccountOneOffCharge->Price,'tblInvoiceDetail.Qty'=>$AccountOneOffCharge->Qty])
                     ->where(['tblInvoice.AccountID'=>$Invoice->AccountID])
                     ->count();
 
@@ -2706,8 +2706,15 @@ class Invoice extends \Eloquent {
                         $paymentdata['Status'] = 'Approved';
                         $paymentdata['created_at'] = date('Y-m-d H:i:s');
                         $paymentdata['updated_at'] = date('Y-m-d H:i:s');
-                        $paymentdata['CreatedBy'] = 'System';
-                        $paymentdata['ModifyBy'] = 'System';
+                        $paymentdata['CreatedBy'] = 'ProcessCallChargeSystem';
+                        $paymentdata['ModifyBy'] = 'ProcessCallChargeSystem';
+
+                        $PaymentMethod = 'Account Balance';
+                        $AccountOutstandingBalance = AccountBalance::getAccountSOA($CompanyID,$AccountID);
+                        $CheckAccountBalance = AccountBalance::CheckAccountBalance($AccountID,$AccountOutstandingBalance,$response['GrandTotal']);
+                        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+                        $Company=Company::find($CompanyID);
+                        $UserID = User::where("CompanyID", $CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
 
                         if ($payment = Payment::insert($paymentdata)) {
                             $LogData=array();
@@ -2720,6 +2727,120 @@ class Invoice extends \Eloquent {
                             DB::connection('sqlsrv2')->table('tblProcessCallChargesLog')->insert($LogData);
 
                             $processresponse[] = $account->AccountName.' Usage Call Charges '.$Description;
+
+                            $Emaildata = array();
+                            $Emaildata['CompanyID'] = $CompanyID;
+                            $Emaildata['CompanyName'] = $Company->CompanyName;
+                            $Emaildata['AccountName'] = $account->AccountName;
+                            $Emaildata['Amount'] = floatval($response['GrandTotal']);
+                            $Emaildata['PaymentMethod'] = $PaymentMethod;
+                            $Emaildata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
+
+                            /*Email Send Start */
+                            if(isset($CheckAccountBalance) && $CheckAccountBalance==1){
+                                $CustomerEmail = '';
+                                if ($EMAIL_TO_CUSTOMER == 1) {
+                                    $CustomerEmail = $account->BillingEmail;
+                                }
+
+                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Status'] = 'Success';
+                                $Emaildata['Notes'] = 'Usage call charges is Successfully paid';
+
+                                $CustomerEmail = explode(",", $CustomerEmail);
+                                $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
+                                    $staticdata = array();
+                                    $staticdata['PaidAmount'] = floatval($response['GrandTotal']);
+                                    $staticdata['PaidStatus'] = 'Success';
+                                    $staticdata['PaymentMethod'] = $PaymentMethod;
+                                    $staticdata['PaymentNotes'] = 'Usage call charges is Successfully paid';
+                                    foreach ($CustomerEmail as $singleemail) {
+                                        $singleemail = trim($singleemail);
+                                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                            $Emaildata['EmailTo'] = $singleemail;
+                                            $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
+                                            //$Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                                            $body = EmailsTemplates::SendAutoPaymentFromProcessCallChare($AccountID, 'body', $CompanyID, $singleemail, $staticdata);
+                                            //$Emaildata['Subject'] = EmailsTemplates::SendAutoPaymentFromProcessCallChare($AccountID, "subject", $CompanyID, $singleemail, $staticdata);
+                                            if (!isset($Emaildata['EmailFrom'])) {
+                                                $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                            }
+                                            $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                            if (!empty($customeremail_status['status'])) {
+                                                $JobLoggedUser = User::find($UserID);
+                                                $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', 0);
+                                            }
+                                        }
+                                    }
+                                }
+                                $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
+                                $emailArray = explode(',', $NotificationEmails);
+                                if (!empty($emailArray)) {
+                                    foreach ($emailArray as $singleemail) {
+                                        $singleemail = trim($singleemail);
+                                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                            $Emaildata['EmailTo'] = $singleemail;
+                                            $Emaildata['EmailToName'] = '';
+                                            $status = Helper::sendMail('emails.AutoPaymentEmailSend', $Emaildata);
+                                        }
+                                    }
+                                }
+                            }else{
+                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Status'] = 'Fail';
+                                $Emaildata['Notes'] = 'Account has not sufficient balance';
+
+                                $CustomerEmail = '';
+                                if ($EMAIL_TO_CUSTOMER == 1) {
+                                    $CustomerEmail = $account->BillingEmail;
+                                }
+                                $CustomerEmail = explode(",", $CustomerEmail);
+                                $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                log::info('EmailTemplat Status '.$EmailTemplateStatus);
+                                if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
+                                    $staticdata = array();
+                                    $staticdata['PaidAmount'] = floatval($response['GrandTotal']);
+                                    $staticdata['PaidStatus'] = 'Failed';
+                                    $staticdata['PaymentMethod'] = $PaymentMethod;
+                                    $staticdata['PaymentNotes'] = 'Account has not sufficient balance';
+
+                                    foreach ($CustomerEmail as $singleemail) {
+                                        $singleemail = trim($singleemail);
+                                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                            $Emaildata['EmailTo'] = $singleemail;
+                                            $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
+                                            //$Emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                                            $body = EmailsTemplates::SendAutoPaymentFromProcessCallChare($AccountID, 'body', $CompanyID, $singleemail, $staticdata);
+                                            //$Emaildata['Subject'] = EmailsTemplates::SendAutoPaymentFromProcessCallChare($AccountID, "subject", $CompanyID, $singleemail, $staticdata);
+                                            if (!isset($Emaildata['EmailFrom'])) {
+                                                $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
+                                            }
+                                            $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                            //log::info('Customer EmailTemplat Status '.print_r($customeremail_status,true));
+                                            if (!empty($customeremail_status['status'])) {
+                                                $JobLoggedUser = User::find($UserID);
+                                                $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', 0);
+                                            }
+                                            //Log::info($customeremail_status);
+                                        }
+                                    }
+                                }
+                                $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
+                                $emailArray = explode(',', $NotificationEmails);
+                                if (!empty($emailArray)) {
+                                    foreach ($emailArray as $singleemail) {
+                                        $singleemail = trim($singleemail);
+                                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                                            $Emaildata['EmailTo'] = $singleemail;
+                                            $Emaildata['EmailToName'] = '';
+                                            $status = Helper::sendMail('emails.AutoPaymentEmailSend', $Emaildata);
+                                        }
+                                    }
+                                }
+                            }
+                            /* Email send Over */
+
                         }
                     }
 

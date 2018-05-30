@@ -286,6 +286,63 @@ class EmailsTemplates{
             return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);
         }*/
 	}
+
+	static function SendAutoPaymentFromProcessCallChare($AccountID,$type="body",$CompanyID,$singleemail,$staticdata=array(),$data = array())
+	{
+		$message = "";
+		$replace_array = $data;
+		$userID = isset($data['UserID']) ? $data['UserID'] : 0;
+		/*try{*/
+
+		$AccoutData = Account::find($AccountID);
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Payment::AUTOINVOICETEMPLATE, $AccoutData->LanguageID);
+		if ($type == "subject") {
+			$EmailMessage = $EmailTemplate->Subject;
+		} else {
+			$EmailMessage = $EmailTemplate->TemplateBody;
+		}
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $AccountID, $userID);
+		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $AccountID);
+
+		$replace_array['PaidAmount'] = empty($staticdata['PaidAmount'])?'':$staticdata['PaidAmount'];
+		$replace_array['PaidStatus'] = empty($staticdata['PaidStatus'])?'':$staticdata['PaidStatus'];
+		$replace_array['PaymentMethod'] = empty($staticdata['PaymentMethod'])?'':$staticdata['PaymentMethod'];
+		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
+
+		$extraSpecific = [
+			'{{InvoiceNumber}}',
+			'{{InvoiceGrandTotal}}',
+			'{{InvoiceOutstanding}}',
+			'{{OutstandingExcludeUnbilledAmount}}',
+			'{{Signature}}',
+			'{{OutstandingIncludeUnbilledAmount}}',
+			'{{BalanceThreshold}}',
+			"{{InvoiceLink}}",
+			"{{PaidAmount}}",
+			"{{PaidStatus}}",
+			"{{PaymentMethod}}",
+			"{{PaymentNotes}}",
+			"{{PeriodFrom}}",
+			"{{PeriodTo}}"
+		];
+
+		$extraDefault = EmailsTemplates::$fields;
+		$extra = array_merge($extraDefault, $extraSpecific);
+
+		foreach ($extra as $item) {
+			$item_name = str_replace(array('{', '}'), array('', ''), $item);
+			if (array_key_exists($item_name, $replace_array)) {
+				$EmailMessage = str_replace($item, $replace_array[$item_name], $EmailMessage);
+			}
+		}
+		return $EmailMessage;
+
+		/*	return array("error"=>"","status"=>"success","data"=>$EmailMessage,"from"=>$EmailTemplate->EmailFrom);
+        }catch (Exception $ex){
+            return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);
+        }*/
+	}
 	
 }
 ?>
