@@ -18,6 +18,7 @@ use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempRateTableRate;
 use App\Lib\FileUploadTemplate;
+use App\Lib\Timezones;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -94,6 +95,9 @@ class RateTableRateUpload extends Command
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
+
+                    $Timezones = Timezones::getTimezonesIDList(1);
+
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
@@ -386,8 +390,20 @@ class RateTableRateUpload extends Command
                                         $tempratetabledata['DialStringPrefix'] = '';
                                     }
                                 }
-                                //echo "<pre>";print_r($tempratetabledata);exit;
-                                if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ( isset($tempratetabledata['Rate'])  || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+
+                                if(!empty($templateoptions->TimezonesID)) {
+                                    $tempratetabledata['TimezonesID'] = $templateoptions->TimezonesID;
+                                } else if (!empty($attrselection->Timezones)) {
+                                    if(array_key_exists($temp_row[$attrselection->Timezones],$Timezones)) {
+                                        $tempratetabledata['TimezonesID'] = $Timezones[$temp_row[$attrselection->Timezones]];
+                                    } else {
+                                        $error[] = 'Timezones not match at line no:' . $lineno;
+                                    }
+                                } else {
+                                    $error[] = 'Timezones is blank at line no:' . $lineno;
+                                }
+
+                                if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && isset($tempratetabledata['TimezonesID']) && ( isset($tempratetabledata['Rate'])  || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                     if(isset($tempratetabledata['EndDate'])) {
                                         $batch_insert_array[] = $tempratetabledata;
                                     } else {
