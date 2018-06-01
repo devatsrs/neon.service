@@ -67,58 +67,110 @@ class AccountBalance extends Model
     public static function PBXBlockUnBlockAccount($CompanyID,$GatewayID,$ProcessID){
         $email_message  = array();
         $error_message  = array();
-        $BlockingGateways = CompanyGateway::where(array('CompanyID'=>$CompanyID,'GatewayID'=>$GatewayID,'Status'=>1))->get();
-        foreach ($BlockingGateways as $BlockingGateway) {
-            $pbx = new PBX($BlockingGateway->CompanyGatewayID);
-            $BlockingAccounts = DB::select('CALL prc_GetBlockUnblockAccount(?,?)', array($CompanyID, $BlockingGateway->CompanyGatewayID));
-            foreach ($BlockingAccounts as $BlockingAccount) {
-                $param['te_code'] = $BlockingAccount->Number;
+        $BillingClass = BillingClass::select('BillingClassID')->where(["CompanyID" => $CompanyID,"SuspendAccount" => 1])->get()->toArray();
+        $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID')
+            ->where(array('CompanyID'=>$CompanyID,'Status'=>1,"AccountType"=>1))
+            ->whereIn('tblAccountBilling.BillingClassID',$BillingClass)
+            ->distinct()
+            ->get()->toArray();
 
-                if($BlockingAccount->Balance > 0) {
-                    $response = $pbx->blockAccount($param);
-                    if(isset($response['message']) && $response['message'] == 'account blocked'){
-                        $email_message[$BlockingAccount->AccountName] = 'Blocked';
-                    }
-                    if(isset($response['faultCode'])){
-                        $error_message =  $response;
-                    }
-                    if($BlockingAccount->Blocked == 0) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
-                    }
-                }else{
-                    $response =  $pbx->unBlockAccount($param);
-                    if(isset($response['message']) && $response['message'] == 'account unblocked'){
-                        $email_message[$BlockingAccount->AccountName] = 'Unblocked';
-                    }
-                    if(isset($response['faultCode'])){
-                        $error_message =  $response;
-                    }
-                    if($BlockingAccount->Blocked == 1) {
-                        Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
+        $BlockingGateways = CompanyGateway::where(array('CompanyID'=>$CompanyID,'GatewayID'=>$GatewayID,'Status'=>1))->get();
+        if(!empty($BillingClass) && !empty($BlockingGateways)) {
+            foreach ($BlockingGateways as $BlockingGateway) {
+                $pbx = new PBX($BlockingGateway->CompanyGatewayID);
+                $BlockingAccounts = DB::select('CALL prc_GetBlockUnblockAccount(?,?)', array($CompanyID, $BlockingGateway->CompanyGatewayID));
+                foreach ($BlockingAccounts as $BlockingAccount) {
+                    if (in_array($BlockingAccount->AccountID, array_column($Accounts, 'AccountID'))) {
+                        $param['te_code'] = $BlockingAccount->Number;
+
+                        if ($BlockingAccount->Balance > 0) {
+                            $response = $pbx->blockAccount($param);
+                            if (isset($response['message']) && $response['message'] == 'account blocked') {
+                                $email_message[$BlockingAccount->AccountName] = 'Blocked';
+                            }
+                            if (isset($response['faultCode'])) {
+                                $error_message = $response;
+                            }
+                            if ($BlockingAccount->Blocked == 0) {
+                                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
+
+                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID);
+                            }
+                        } else {
+                            $response = $pbx->unBlockAccount($param);
+                            if (isset($response['message']) && $response['message'] == 'account unblocked') {
+                                $email_message[$BlockingAccount->AccountName] = 'Unblocked';
+                            }
+                            if (isset($response['faultCode'])) {
+                                $error_message = $response;
+                            }
+                            if ($BlockingAccount->Blocked == 1) {
+                                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
+                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID);
+                            }
+                        }
                     }
                 }
 
             }
+            $notification_email = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::BlockAccount]);
+            $Company = Company::find($CompanyID);
+            if (!empty($notification_email) && !empty($email_message)) {
+                Log::info($notification_email . ' block email sent ');
+                $emaildata = array(
+                    'EmailToName' => $Company->CompanyName,
+                    'Subject' => 'Account Status Changed',
+                    'CompanyID' => $CompanyID,
+                    'CompanyName' => $Company->CompanyName,
+                    'Message' => $email_message
+                );
+                $emaildata['EmailTo'] = $notification_email;
 
-        }
-
-        $notification_email = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::BlockAccount]);
-        $Company = Company::find($CompanyID);
-        if (!empty($notification_email) && !empty($email_message)) {
-            Log::info($notification_email . ' block email sent ');
-            $emaildata = array(
-                'EmailToName' => $Company->CompanyName,
-                'Subject' => 'Account Status Changed',
-                'CompanyID' => $CompanyID,
-                'CompanyName' => $Company->CompanyName,
-                'Message' => $email_message
-            );
-            $emaildata['EmailTo'] = $notification_email;
-
-            $status = Helper::sendMail('emails.account_block', $emaildata);
-            $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', $ProcessID, 0, Notification::BlockAccount);
+                $status = Helper::sendMail('emails.account_block', $emaildata);
+                $statuslog = Helper::account_email_log($CompanyID, 0, $emaildata, $status, '', $ProcessID, 0, Notification::BlockAccount);
+            }
         }
         return $error_message;
+    }
+
+    public static function SendAccountBlockingEmail($CompanyID,$AccountID){
+        $CustomerEmail = '';
+        $CompanyName = Company::getName($CompanyID);
+        $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
+        $Account = Account::find($AccountID);
+        if ($EMAIL_TO_CUSTOMER == 1) {
+            $CustomerEmail = $Account->BillingEmail;
+        }
+        $CustomerEmail = explode(",", $CustomerEmail);
+        $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'PBXAccountBlockEmail', $Account->LanguageID);
+        if (!empty($CustomerEmail) && !empty($EmailTemplate) && !empty($EmailTemplate->Status)) {
+            foreach ($CustomerEmail as $singleemail) {
+                $singleemail = trim($singleemail);
+                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                    $EmailMessage 	= $EmailTemplate->TemplateBody;
+                    $replace_array 	= Helper::create_replace_array($Account, array());
+                    $EmailMessage 	= template_var_replace($EmailMessage, $replace_array);
+                    $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array);
+                    $EmailFrom 	    = $EmailTemplate->EmailFrom;
+                    $EmailsTo		= $singleemail;
+                    $Emaildata = array(
+                        'EmailToName' => $CompanyName,
+                        'EmailTo' => $EmailsTo,
+                        'EmailFrom' => $EmailFrom,
+                        'Subject' => $Subject,
+                        'CompanyID' => $CompanyID,
+                        'CompanyName' => $CompanyName,
+                        'Message' => $EmailMessage
+                    );
+                    $customeremail_status = Helper::sendMail('emails.template', $Emaildata);
+                    log::info(print_r($customeremail_status,true));
+                    if (!empty($customeremail_status['status'])) {
+                        $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $Emaildata, $customeremail_status, '', '', 0,0);
+                    }
+                }
+            }
+        }
     }
 
     public static function AutoPayInvoice($data){

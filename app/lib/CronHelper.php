@@ -59,7 +59,7 @@ class CronHelper {
 
         CronHelper::unlock($lock_command_file);
         Log::info($lock_command_file . " #Stops# ");
-
+        Log::info(memory_get_usage(true)/(1024*1024) . " MB  #Memory Used# ");
     }
 
     private static function isrunning() {

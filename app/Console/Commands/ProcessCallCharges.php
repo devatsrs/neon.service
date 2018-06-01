@@ -61,6 +61,8 @@ class ProcessCallCharges extends Command
      * Execute the console command.
      *
      * @return mixed
+     * This CronJob is for automatic deduct usage call charge when our billing cycle
+     * if that billing class enable deduct usage call charge on and account has auto pay on and auto payment method is account balance.
      */
     public function fire()
     {
