@@ -25,11 +25,10 @@ class Handler extends ExceptionHandler {
 	 */
 	public function report(Exception $e)
 	{
-        $to = "girish.vadher@code-desk.com";
+        $to = "error@neon-soft.com";
         $subject = getenv("COMPANY_NAME")." - RM Service has Problem";
         $txt = "Error Message:".$e->getMessage();
-        $headers = "From: no-reply@code-desk.com" . "\r\n" .
-            "CC: shriramsoft@gmail.com,bhavin@code-desk.com,vasim.seta@code-desk.com";
+        $headers = "From: no-reply@code-desk.com" ;
         @mail($to,$subject,$txt,$headers);
         return parent::report($e);
 	}
