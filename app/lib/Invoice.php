@@ -2026,7 +2026,7 @@ class Invoice extends \Eloquent {
                     }
                     if (isset($usage_data[$key_col_comb])) {
                         $usage_data[$key_col_comb]['NoOfCalls'] += $result_row['NoOfCalls'];
-                        $usage_data[$key_col_comb]['ChargedAmount'] += number_format($result_row['ChargedAmount'],$RoundChargesCDR);
+                        $usage_data[$key_col_comb]['ChargedAmount'] += $result_row['ChargedAmount'];
                         $usage_data[$key_col_comb]['DurationInSec'] += $result_row['DurationInSec'];
                         $usage_data[$key_col_comb]['BillDurationInSec'] += $result_row['BillDurationInSec'];
                         $usage_data[$key_col_comb]['Duration'] = (int)($usage_data[$key_col_comb]['DurationInSec']/60).':'.$usage_data[$key_col_comb]['DurationInSec']%60;
@@ -2038,7 +2038,7 @@ class Invoice extends \Eloquent {
                         }
                     } else {
                         $usage_data[$key_col_comb] = $result_row;
-                        $usage_data[$key_col_comb]['ChargedAmount'] = number_format($usage_data[$key_col_comb]['ChargedAmount'],$RoundChargesCDR);
+                        $usage_data[$key_col_comb]['ChargedAmount'] = $usage_data[$key_col_comb]['ChargedAmount'];
                         if($usage_data[$key_col_comb]['BillDurationInSec'] != 0) {
                             $usage_data[$key_col_comb]['AvgRatePerMin'] = number_format($result_row['AvgRatePerMin'], 6);
                         }else{
@@ -2046,7 +2046,7 @@ class Invoice extends \Eloquent {
                         }
                     }
                 } else {
-                    $result_row['ChargedAmount'] = number_format($result_row['ChargedAmount'],$RoundChargesCDR);
+                    $result_row['ChargedAmount'] = $result_row['ChargedAmount'];
                     $usage_data[] = $result_row;
                 }
             }
@@ -2444,6 +2444,21 @@ class Invoice extends \Eloquent {
         $SubscriptionData=array();
         $SubscriptionData['StartDate']=$SubscriptionStartDate;
         $SubscriptionData['EndDate']=$SubscriptionEndDate;
+
+        $InvoiceHistory = InvoiceHistory::where(["InvoiceID"=>$InvoiceID,"AccountID"=>$AccountID])->first();
+        $NewLastChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($InvoiceHistory->NextChargeDate)));
+        $NewNextChargeDate=next_billing_date($InvoiceHistory->BillingCycleType, $InvoiceHistory->BillingCycleValue, strtotime($NewLastChargeDate));
+        $NewNextChargeDate = date("Y-m-d 00:00:00", strtotime("-1 Day", strtotime($NewNextChargeDate)));
+        Log::info('SubscriptionStartDate =' . $SubscriptionStartDate.' - SubscriptionEndDate = '.$SubscriptionEndDate);
+        Log::info('NewNextChargeDate =' . $NewNextChargeDate );
+        if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$InvoiceHistory->LastInvoiceDate)) {
+
+        }else{
+            if($NewNextChargeDate > $SubscriptionEndDate){
+                $SubscriptionData['EndDate']=$NewNextChargeDate;
+            }
+        }
+
         $SubscriptionData['AlreadyCharged']=0;
         $ProductID = $AccountSubscription->SubscriptionID;
         $Qty = $AccountSubscription->Qty;
@@ -2462,16 +2477,22 @@ class Invoice extends \Eloquent {
             ->max('EndDate');
 
         if(empty($StartDate) && empty($EndDate)){
+            Log::info('SubscriptionDate');
+            Log::info(print_r($SubscriptionData,true));
             return $SubscriptionData;
         }
+        Log::info('EndDate =' . $EndDate);
         if($SubscriptionStartDate > $EndDate){
             //nothing do
         }elseif($SubscriptionEndDate <= $EndDate){
             $SubscriptionData['AlreadyCharged']=1;
         }elseif($SubscriptionStartDate <= $EndDate && $SubscriptionEndDate > $EndDate){
             $EndDate = date("Y-m-d", strtotime("+1 Day", strtotime($EndDate)));
+            Log::info('NewEndDate =' . $EndDate);
             $SubscriptionData['StartDate']=$EndDate;
         }
+        Log::info('SubscriptionDate');
+        Log::info(print_r($SubscriptionData,true));
         return $SubscriptionData;
     }
 
@@ -2726,7 +2747,7 @@ class Invoice extends \Eloquent {
                             $LogData['PaymentStatus'] = 1;
                             DB::connection('sqlsrv2')->table('tblProcessCallChargesLog')->insert($LogData);
 
-                            $processresponse[] = $account->AccountName.' Usage Call Charges '.$Description;
+                            $processresponse[] = $account->AccountName.' Call Charges '.$Description;
 
                             $Emaildata = array();
                             $Emaildata['CompanyID'] = $CompanyID;
@@ -2743,9 +2764,9 @@ class Invoice extends \Eloquent {
                                     $CustomerEmail = $account->BillingEmail;
                                 }
 
-                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Subject'] = 'Call Charges ('.$Description . ') Payment';
                                 $Emaildata['Status'] = 'Success';
-                                $Emaildata['Notes'] = 'Usage call charges is Successfully paid';
+                                $Emaildata['Notes'] = 'Call charges is Successfully paid';
 
                                 $CustomerEmail = explode(",", $CustomerEmail);
                                 $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
@@ -2787,7 +2808,7 @@ class Invoice extends \Eloquent {
                                     }
                                 }
                             }else{
-                                $Emaildata['Subject'] = 'Usage Call Charges ('.$Description . ') Payment';
+                                $Emaildata['Subject'] = 'Call Charges ('.$Description . ') Payment';
                                 $Emaildata['Status'] = 'Fail';
                                 $Emaildata['Notes'] = 'Account has not sufficient balance';
 
