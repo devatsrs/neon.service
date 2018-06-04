@@ -21,6 +21,7 @@ use App\Lib\FileUploadTemplate;
 use App\Lib\Currency;
 use App\Lib\Company;
 use App\Lib\Account;
+use App\Lib\Timezones;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Console\Command;
@@ -98,6 +99,9 @@ class VendorRateUpload extends Command
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
+
+                    $Timezones = Timezones::getTimezonesIDList(1);
+
                     if (isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)) {
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
@@ -436,7 +440,19 @@ class VendorRateUpload extends Command
                                     }
                                 }
 
-                                if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && ( isset($tempvendordata['Rate'])  || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
+                                if(!empty($templateoptions->TimezonesID)) {
+                                    $tempvendordata['TimezonesID'] = $templateoptions->TimezonesID;
+                                } else if (!empty($attrselection->Timezones)) {
+                                    if(array_key_exists($temp_row[$attrselection->Timezones],$Timezones)) {
+                                        $tempvendordata['TimezonesID'] = $Timezones[$temp_row[$attrselection->Timezones]];
+                                    } else {
+                                        $error[] = 'Timezones not match at line no:' . $lineno;
+                                    }
+                                } else {
+                                    $error[] = 'Timezones is blank at line no:' . $lineno;
+                                }
+
+                                if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['TimezonesID']) && ( isset($tempvendordata['Rate'])  || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
                                     if(isset($tempvendordata['EndDate'])) {
                                         $batch_insert_array[] = $tempvendordata;
                                     } else {
