@@ -13,6 +13,10 @@ class AccountBilling extends \Eloquent {
 
     public $timestamps = false; // no created_at and updated_at
 
+    const  ACCOUNT_BALANCE = 1;
+    const  PREFERRED_METHOD = 2;
+    public static $AutoPayMethod = array('0'=>'Select' ,self::ACCOUNT_BALANCE => 'Account Balance',self::PREFERRED_METHOD=>'Preferred Method');
+
     public static function getBilling($AccountID,$ServiceID){
         return AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->first();
     }
@@ -70,5 +74,10 @@ class AccountBilling extends \Eloquent {
     public static function getTaxRate($AccountID,$ServiceID){
         $BillingClassID = self::getBillingClassID($AccountID,$ServiceID);
         return BillingClass::getTaxRate($BillingClassID);
+    }
+
+    public static function getAccountAutoPaymentMethod($AccountID,$ServiceID=0){
+        $AutoPayMethod = (int)AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('AutoPayMethod');
+        return $AutoPayMethod;
     }
 }

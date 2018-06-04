@@ -79,6 +79,9 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
+    $AllTaxSummary = array();
+    $AllTaxCount=0;
+    $AllPayment=0;
 	$total_usage = 0;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
@@ -161,12 +164,18 @@
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
+                    <?php
+                    $tempsummary['Title']=$InvoiceTaxRate->Title;
+                    $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
+                    $AllTaxSummary[]=$tempsummary;
+                    $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
+                    ?>
+                @endforeach
                 <tr>
                     <td colspan="2"></td>
-                    <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                    <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
                 </tr>
-                @endforeach
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -430,7 +439,7 @@
                         $totalCalls  += $row['NoOfCalls'];
                         $totalDuration  += $row['DurationInSec'];
                         $totalBillDuration  += $row['BillDurationInSec'];
-                        $totalTotalCharges  += $row['ChargedAmount'];
+						$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                         ?>
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
@@ -497,7 +506,7 @@
                     @foreach($usage_data_table['data'][$ServiceID] as $row)
                         <?php
                         $totalBillDuration  +=  $row['BillDuration'];
-                        $totalTotalCharges  += $row['ChargedAmount'];
+						$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                         ?>
                         <tr>
                             @foreach($usage_data_table['header'] as $table_h_row)
@@ -537,7 +546,65 @@
         @endif
     @endforeach
 	@endif
+    @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
+        <div class="page_break"></div>
+        @if(count($AllTaxSummary)>0)
+        <div class="ChargesTitle clearfix">
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
+        </div>
 
+        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+            <thead>
+            <tr>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($AllTaxSummary as $row)
+                <tr>
+                    <td class="leftalign">{{$row['Title']}}</td>
+                    <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+            </tr>
+            </tbody>
+        </table>
+        @endif
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && count($payment_data)>0)
+            <div class="ChargesTitle clearfix">
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
+            </div>
+
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($payment_data as $row)
+                    <?php
+                    $AllPayment  += str_replace(',','',$row['Amount']);
+                    ?>
+                    <tr>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($row['PaymentDate']))}}</td>
+                        <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                    </tr>
+                @endforeach
+                <tr>
+                    <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                    <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
+                </tr>
+                </tbody>
+            </table>
+        @endif
+
+    @endif
     @if(!empty($ManagementReports) && $total_usage != 0)
         <div class="page_break"></div>
         @include('emails.invoices.management_chart')

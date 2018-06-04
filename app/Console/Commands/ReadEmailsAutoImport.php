@@ -9,6 +9,7 @@ use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Imap;
 use App\Lib\Job;
 use App\Lib\Trunk;
 use App\Lib\User;
@@ -105,39 +106,39 @@ class ReadEmailsAutoImport extends Command
 						Log::info("Already Imported. MailDateTime " . $MailDateTime);
 						continue;
 					}
-
-					$Attachments="";
 					$MatchedAttachmentFileNames = [];
-
+					$AttachmentFileNames = [];
 					if ($aAttachmentCount > 0) {
 
 						$aAttachment = $oMessage->getAttachments();
-						$AttachmentFileNames = [];
-						
+
 						foreach ($aAttachment as $oAttachment) {
 
-							$extension = \File::extension($oAttachment->getName());
-							$file_name = Uuid::generate() . '.' . strtolower($extension);
-							$AttachmentFileNames[] = $file_name;
-
+							$path_parts = pathinfo($oAttachment->getName());
+							if(!array_key_exists("extension", $path_parts)){
+								$path_parts["extension"]="";
+							}
+							$file_name = Imap::dataDecode($path_parts["filename"]) . '-'. date("YmdHis") . '.' . $path_parts["extension"];
 							$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['AUTOIMPORT_UPLOAD'],'',$CompanyID);
+
 							$fullPath = $upload_path . "/". $amazonPath;
+							$filepath2  =  $amazonPath .'/'. $file_name;
 							$oAttachment->save($fullPath, $file_name);
-
-							if(!AmazonS3::upload($fullPath.$file_name,$amazonPath,$CompanyID)){
-								throw new Exception('Error in Amazon upload');
+							if(is_amazon($CompanyID)) {
+								if(!AmazonS3::upload($fullPath.$file_name,$amazonPath,$CompanyID)){
+									throw new Exception('Error in Amazon upload');
+								}
 							}
+							$AttachmentFileNames[] = array("filename"=>$file_name,"filepath"=>$filepath2);
 
-							if (in_array(strtolower($extension), array('xls','csv','xlsx') )) {
-								$MatchedAttachmentFileNames[strtolower(pathinfo($oAttachment->getName(), PATHINFO_FILENAME))] = $file_name;
+							if (in_array(strtolower($path_parts["extension"]), array('xls','csv','xlsx') )) {
+								$MatchedAttachmentFileNames[strtolower($path_parts["filename"])] = $file_name;
 							}
-
 						}
-						$Attachments = implode(", ", $AttachmentFileNames);
-
 					}
+					$Attachments = json_encode($AttachmentFileNames);
 
-					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".implode(", ", array_keys($MatchedAttachmentFileNames))."' )";
+					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".addslashes(implode(",", array_keys($MatchedAttachmentFileNames)))."' )";
 					Log::info($query);
 					Log::info($MatchedAttachmentFileNames);
 					$results = DB::select($query);
@@ -187,7 +188,7 @@ class ReadEmailsAutoImport extends Command
 								$data['checkbox_replace_all'] = $arrOptions["checkbox_replace_all"];
 								$data['checkbox_rates_with_effected_from'] = $arrOptions["checkbox_rates_with_effected_from"];
 								$data['checkbox_add_new_codes_to_code_decks'] = $arrOptions["checkbox_add_new_codes_to_code_decks"];
-								$data['radio_list_option'] = $arrOptions["checkbox_review_rates"];
+								$data['radio_list_option'] = $arrOptions["radio_list_option"];
 								DB::beginTransaction();
 								$jobId = Job::CreateAutoImportJob($CompanyID,$job_type,$data);
 								DB::commit();
