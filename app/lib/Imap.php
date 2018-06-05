@@ -888,6 +888,22 @@ protected $server;
 						}
 					}
 					$ticketID		=	$ticketData->TicketID;
+
+					//update cc and bcc in ticket
+					if(!empty($cc) || !empty($bcc)) {
+						$ticketdatacc =	TicketsTable::find($ticketData->TicketID);
+
+						$update_cc 	= explode(',',$cc);
+						$update_bcc 	= explode(',',$bcc);
+
+						$ticketcc  = explode(',',$ticketdatacc->RequesterCC);
+						$ticketbcc = explode(',',$ticketdatacc->RequesterBCC);
+
+						$ticketcc  = implode(',',array_unique(array_merge(array_filter($ticketcc),array_filter($update_cc))));
+						$ticketbcc = implode(',',array_unique(array_merge(array_filter($ticketbcc),array_filter($update_bcc))));
+
+						$ticketdatacc->update(['RequesterCC'=>$ticketcc,'RequesterBCC'=>$ticketbcc]);
+					}
 				}
 				$logData = ['EmailFrom'=> $from,
 					"EmailfromName"=>$FromName,
