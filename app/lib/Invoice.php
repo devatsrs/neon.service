@@ -1580,9 +1580,11 @@ class Invoice extends \Eloquent {
              * Checking Already Subscription Added or not
             */
 
-            $AlreadyInvoiceSubscription=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ProductDescription,$TotalSubscriptionCharge,$SubscriptionCharge,$qty);
+            $AlreadyInvoiceSubscription=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ProductDescription,$TotalSubscriptionCharge,$SubscriptionCharge,$qty,$AccountSubscription->AccountSubscriptionID);
+
             log::info('Already Invoice Subscription '. $AlreadyInvoiceSubscription);
-            Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID. ',' .$AccountSubscription->ServiceID. ',' .$AccountSubscription->SubscriptionID. ',' .$SubscriptionStartDate. ',' .$SubscriptionEndDate. ',' .$ProductDescription. ',' .$TotalSubscriptionCharge. ','.$SubscriptionCharge. ','.$qty.')');
+            Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID. ',' .$AccountSubscription->ServiceID. ',' .$AccountSubscription->SubscriptionID. ',' .$SubscriptionStartDate. ',' .$SubscriptionEndDate. ',' .$ProductDescription. ',' .$TotalSubscriptionCharge. ','.$SubscriptionCharge. ','.$qty.','.$AccountSubscription->AccountSubscriptionID.')');
+
             if($AlreadyInvoiceSubscription==0){
                 if($AccountSubscription->ExemptTax){
                     $SubscriptionChargewithouttaxTotal += $TotalSubscriptionCharge;
@@ -1601,9 +1603,9 @@ class Invoice extends \Eloquent {
         if ($FirstTime && $Subscription->ActivationFee >0) {
                 $ActivationProductDescription=$ProductDescription.' Activation Fee';
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
-                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty);
+                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty,$AccountSubscription->SubscriptionID);
                 log::info('Already Activatiob Fee '. $AlreadyActivationFee);
-                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.')');
+                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.','.$AccountSubscription->SubscriptionID.')');
                 if($AlreadyActivationFee==0) {
                     if ($AccountSubscription->ExemptTax) {
                         $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
@@ -1622,6 +1624,7 @@ class Invoice extends \Eloquent {
                     $InvoiceDetailData['Qty'] = $qty;
                     $InvoiceDetailData['Discount'] = 0;
                     $InvoiceDetailData['LineTotal'] = $TotalActivationFeeCharge;
+                    $InvoiceDetailData['AccountSubscriptionID'] = $AccountSubscription->AccountSubscriptionID;
                     $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
                     $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
                     InvoiceDetail::insert($InvoiceDetailData);
@@ -1641,6 +1644,7 @@ class Invoice extends \Eloquent {
                 $InvoiceDetailData['Qty'] = $qty;
                 $InvoiceDetailData['Discount'] = 0;
                 $InvoiceDetailData['LineTotal'] = $TotalSubscriptionCharge;
+                $InvoiceDetailData['AccountSubscriptionID'] = $AccountSubscription->AccountSubscriptionID;
                 $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
                 $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
                 InvoiceDetail::insert($InvoiceDetailData);
@@ -2411,9 +2415,9 @@ class Invoice extends \Eloquent {
         return $FirstInvoice;
     }
 
-    public static function IsAlreadyInvoiceSubscriptionDetail($AccountID,$ServiceID,$ProductID,$StartDate,$EndDate,$Description,$LineTotal,$Price,$Qty){
+    public static function IsAlreadyInvoiceSubscriptionDetail($AccountID,$ServiceID,$ProductID,$StartDate,$EndDate,$Description,$LineTotal,$Price,$Qty,$AccountSubscriptionID){
         $SubscriptionCount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
-            ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'tblInvoiceDetail.LineTotal'=>$LineTotal,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID])
+            ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'tblInvoiceDetail.LineTotal'=>$LineTotal,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID,'tblInvoiceDetail.AccountSubscriptionID'=>$AccountSubscriptionID])
             ->where(['tblInvoice.AccountID'=>$AccountID])
             ->where('tblInvoice.InvoiceStatus','<>',Invoice::CANCEL)
             ->count();
