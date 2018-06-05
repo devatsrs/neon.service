@@ -506,7 +506,7 @@ class NeonExcelIO
             array_shift($excel_data_rr);
             array_shift($excel_data_rr);
 
-            $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+            $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
             $excel_data_sheet[] = $excel_data_rr;
 
@@ -761,7 +761,7 @@ class NeonExcelIO
                         array_shift($excel_data_rr);
                         array_shift($excel_data_rr);
 
-                        $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+                        $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
                         $excel_data_sheet[] = $excel_data_rr;
 
