@@ -13,7 +13,12 @@ class VOS{
     /**
     VOS cSV columns
 
-
+    select calleraccesse164 as CLI , calleeaccesse164 as CLD, feeprefix as area_prefix,  FROM_UNIXTIME(starttime/1000,"%Y-%m-%d %H:%i:%s") as connect_time , FROM_UNIXTIME( stoptime/1000,"%Y-%m-%d %H:%i:%s") as disconnect_time , customername as AccountName,  fee as cost  , callerip as AccountIP , feetime as billed_duration , holdtime as duration from vos3000.e_cdr_20180525
+    where calleraccesse164 = '148badam' and calleeaccesse164 = '1004923479143163' and fee > 0
+    order by id limit 10;
+     *
+     *
+     *
     0	=	callere164
     1	=	calleraccesse164
     2	=	calleee164
@@ -38,7 +43,7 @@ class VOS{
     21	=	callerpdd
     22	=	calleepdd
     23	=	holdtime
-    24	=	callerareacode
+    24	=	feeprefix
     25	=	feetime
     26	=	fee
     27	=	tax
