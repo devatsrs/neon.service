@@ -218,6 +218,7 @@ class PaymentGateway extends \Eloquent {
                 $PeleCarddata['AccountID']      = $account->AccountID;
                 $PeleCarddata['Token']          = $options->Token;
                 $PeleCarddata['CVVNumber']      = $options->CVVNumber;
+                $PeleCarddata['PeleCardID']     = !empty($options->PeleCardID) ? $options->PeleCardID : '';
 
                 $transactionResponse = array();
 
