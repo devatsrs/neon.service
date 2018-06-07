@@ -109,7 +109,7 @@ class PeleCard {
                 'total'                 => str_replace(',','',str_replace('.','',$data['GrandTotal'])),
                 'currency'              => $currency,
                 'cvv2'                  => $data['CVVNumber'],
-                'id'                    => $data['AccountID'],
+                'id'                    => $data['PeleCardID'],//$data['AccountID'],
                 'authorizationNumber'   => "",
                 'paramX'                => $data['InvoiceNumber']
             );
