@@ -1,0 +1,1 @@
+lftp sftp://root:B[zI3\)Pt0kOJ@89.187.80.59  -e "mirror -n --verbose /home/kunshi/vos5000/cdrs /home/cdrsftp/vos/gatewayip1; bye"
