@@ -133,8 +133,8 @@ sub main {
     # Get the names of the data tables from 24 hours before $start_time to 24 hours after $end_time
     my @mysqlfiles;
     my $first_file_time = modify_packed_date($start_time, -86400);
-    #my $last_file_time  = modify_packed_date($end_time,   +86400); OLD
-	my $last_file_time  = modify_packed_date($end_time,   +0);
+    my $last_file_time  = modify_packed_date($end_time,   +86400); #OLD Fixed in FamilyTalk Timezone issue +2hr
+	#my $last_file_time  = modify_packed_date($end_time,   +0);
     my $mysqlfiletime = $first_file_time;
     while ($mysqlfiletime <= $last_file_time) {
         push(@mysqlfiles, 'e_cdr_' . substr($mysqlfiletime, 0, 8));
