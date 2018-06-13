@@ -1603,9 +1603,9 @@ class Invoice extends \Eloquent {
         if ($FirstTime && $Subscription->ActivationFee >0) {
                 $ActivationProductDescription=$ProductDescription.' Activation Fee';
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
-                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty,$AccountSubscription->SubscriptionID);
+                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty,$AccountSubscription->AccountSubscriptionID);
                 log::info('Already Activatiob Fee '. $AlreadyActivationFee);
-                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.','.$AccountSubscription->SubscriptionID.')');
+                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.','.$AccountSubscription->AccountSubscriptionID.')');
                 if($AlreadyActivationFee==0) {
                     if ($AccountSubscription->ExemptTax) {
                         $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
