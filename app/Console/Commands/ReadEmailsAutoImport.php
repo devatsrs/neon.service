@@ -245,13 +245,13 @@ class ReadEmailsAutoImport extends Command
 				}
 
 			}
-
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 		}
 		catch (\Exception $e)
 		{
 
 			$this->info('Failed:' . $e->getMessage());
-			$joblogdata['Message'] = 'Error:' . $e->getMessage();
+			$errorEmailMSG .= '<br>Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			Log::error($e);
 			if(!empty($cronsetting['ErrorEmail'])) {
@@ -262,7 +262,6 @@ class ReadEmailsAutoImport extends Command
 		}
 
 		CronJob::deactivateCronJob($CronJob);
-		$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 		$joblogdata['Message'] = $countEmailMSG.$errorEmailMSG;
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		if(!empty($cronsetting['SuccessEmail'])) {
