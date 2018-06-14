@@ -71,9 +71,13 @@ class UsageDownloadFiles extends Model {
             $customercdrarray = explode(SippySSH::$customer_cdr_file_name,$file->FileName);
             $vendorcdrarray = explode(SippySSH::$vendor_cdr_file_name,$file->FileName);
 
-            if(count($customercdrarray)==2){
+            if(count($customercdrarray)==2  && !in_array($customercdrarray[1],$customercdrfiles) ){
                 $customercdrfiles[] = $customercdrarray[1];
             }
+            if(count($vendorcdrarray)==2 && !in_array($vendorcdrarray[1],$customercdrfiles)){
+                $customercdrfiles[] = $vendorcdrarray[1];
+            }
+
             if((count($customercdrarray) ==2 && in_array($customercdrarray[1],$customercdrfiles)) || (count($vendorcdrarray) ==2 && in_array($vendorcdrarray[1],$customercdrfiles))){
                 if(isset($customercdrarray[1])){
                     $tempfilenames[$customercdrarray[1]][$file->UsageDownloadFilesID] = $file->FileName;
