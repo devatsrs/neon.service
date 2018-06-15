@@ -13,7 +13,6 @@ class SippySQL{
     private static $config = array();
     private static $cli;
     private static $timeout = 0; /* 60 seconds timeout */
-    private static $dbname1 = 'sippy2';
 
     public function __construct($CompanyGatewayID){
         $setting = GatewayAPI::getSetting($CompanyGatewayID, 'SippySQL');
@@ -27,7 +26,7 @@ class SippySQL{
         if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
             extract(self::$config);
             Config::set('database.connections.pgsql.host', $dbserver);
-            Config::set('database.connections.pgsql.database', self::$dbname1);
+            Config::set('database.connections.pgsql.database', $dbname);
             Config::set('database.connections.pgsql.username', $username);
             Config::set('database.connections.pgsql.password', $password);
 
