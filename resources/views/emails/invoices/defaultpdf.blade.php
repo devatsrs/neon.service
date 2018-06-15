@@ -20,6 +20,15 @@
 			#frontinvoice .desc {
                 text-align: right;
             }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
 <style type="text/css">
