@@ -299,8 +299,9 @@ class SippySQLAccountUsage extends Command {
                 DB::connection('sqlsrvcdr')->commit();
                 DB::connection('sqlsrv2')->commit();
 
+                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-                $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+                $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
 
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
@@ -318,6 +319,8 @@ class SippySQLAccountUsage extends Command {
                 $logdata['ProcessID'] = $processID;
                 TempUsageDownloadLog::insert($logdata);
 
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['Message'] .= 'No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd'];
                 Log::error('No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd']);
             }
         } catch (Exception $e) {
