@@ -8,6 +8,7 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Service;
+use App\Lib\SippyImporter;
 use App\Lib\TempVendorCDR;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
@@ -270,36 +271,21 @@ class SippySQLAccountUsage extends Command {
                     $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
                 }
 
-                $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
-                $vresult = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $tempVendortable . "')");
+                //$result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
+                //$vresult = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $tempVendortable . "')");
 
                 DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrvcdr')->beginTransaction();
 
-                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
-                $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID', $processID)->count();
-
                 //start end time
-                $filedetail = "";
-                if (!empty($vresult[0]->min_date)) {
-                    $filedetail .= '<br>Vendor From' . date('Y-m-d H:i:00', strtotime($vresult[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($vresult[0]->max_date)) .' count '. $vtotaldata_count;
-                }else{
-                    $filedetail .= '<br> No VendorCDR Data Found!!';
-                }
-                if (!empty($result[0]->min_date)) {
-                    $filedetail .= '<br>Customer From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
-                    date_default_timezone_set(Config::get('app.timezone'));
-                    $logdata['CompanyGatewayID'] = $CompanyGatewayID;
-                    $logdata['CompanyID'] = $CompanyID;
-                    $logdata['start_time'] = $result[0]->min_date;
-                    $logdata['end_time'] = $result[0]->max_date;
-                    $logdata['created_at'] = date('Y-m-d H:i:s');
-                    $logdata['ProcessID'] = $processID;
-                    TempUsageDownloadLog::insert($logdata);
-
-                } else {
-                    $filedetail .= '<br> No CustomerCDR Data Found!!';
-                }
+                date_default_timezone_set(Config::get('app.timezone'));
+                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $logdata['CompanyID'] = $CompanyID;
+                $logdata['start_time'] = $param['start_date_ymd'];
+                $logdata['end_time'] = $param['end_date_ymd'];
+                $logdata['created_at'] = date('Y-m-d H:i:s');
+                $logdata['ProcessID'] = $processID;
+                TempUsageDownloadLog::insert($logdata);
 
                 Log::error("SippySQL CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
                 DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
@@ -322,31 +308,15 @@ class SippySQLAccountUsage extends Command {
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
             }
             else{
-
-                $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
-                $vresult = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $tempVendortable . "')");
-
                 //start end time
-                $filedetail = "";
-                if (!empty($vresult[0]->min_date)) {
-                    $filedetail .= '<br>Vendor From' . date('Y-m-d H:i:00', strtotime($vresult[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($vresult[0]->max_date)) .' count '. $vtotaldata_count;
-                }else{
-                    $filedetail .= '<br> No VendorCDR Data Found!!';
-                }
-                if (!empty($result[0]->min_date)) {
-                    $filedetail .= '<br>Customer From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
-                    date_default_timezone_set(Config::get('app.timezone'));
-                    $logdata['CompanyGatewayID'] = $CompanyGatewayID;
-                    $logdata['CompanyID'] = $CompanyID;
-                    $logdata['start_time'] = $result[0]->min_date;
-                    $logdata['end_time'] = $result[0]->max_date;
-                    $logdata['created_at'] = date('Y-m-d H:i:s');
-                    $logdata['ProcessID'] = $processID;
-                    TempUsageDownloadLog::insert($logdata);
-
-                } else {
-                    $filedetail .= '<br> No CustomerCDR Data Found!!';
-                }
+                date_default_timezone_set(Config::get('app.timezone'));
+                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $logdata['CompanyID'] = $CompanyID;
+                $logdata['start_time'] = $param['start_date_ymd'];
+                $logdata['end_time'] = $param['end_date_ymd'];
+                $logdata['created_at'] = date('Y-m-d H:i:s');
+                $logdata['ProcessID'] = $processID;
+                TempUsageDownloadLog::insert($logdata);
 
                 Log::error('No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd']);
             }

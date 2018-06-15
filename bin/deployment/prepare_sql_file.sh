@@ -13,7 +13,7 @@ sed -i 's/ AUTO_INCREMENT=[0-9]*//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/Sumera Khan/System/g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/bhavin@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/umer.ahmed@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
-sed -i 's/umer.ahmed@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
+sed -i 's/vasim.seta@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/girish.vadher@code-desk.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 sed -i 's/saeedsumera@hotmail.com//g' ${POST_INSTALLATION_SQL_SCRIPT_NEW}
 

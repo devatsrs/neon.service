@@ -2,6 +2,24 @@ USE `Ratemanagement3`;
 
 set sql_mode='';
 
+INSERT INTO `tblResourceCategories` (`ResourceCategoryID`, `ResourceCategoryName`, `CompanyID`, `CategoryGroupID`) VALUES (1345, 'Translate.All', 1, 9);
+
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.index', 'TranslateController.index', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.*', 'TranslateController.*', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.changeLanguage', 'TranslateController.changeLanguage', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.search_ajax_datagrid', 'TranslateController.search_ajax_datagrid', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.process_multipalUpdate', 'TranslateController.process_multipalUpdate', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.process_singleDelete', 'TranslateController.process_singleDelete', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.exports', 'TranslateController.exports', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.new_system_name', 'TranslateController.new_system_name', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.refresh_label', 'TranslateController.refresh_label', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.datatable_Label', 'TranslateController.datatable_Label', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+INSERT INTO `tblResource` (`ResourceName`, `ResourceValue`, `CompanyID`, `CreatedBy`, `ModifiedBy`, `created_at`, `updated_at`, `CategoryID`) VALUES ('Translate.process_singleUpdate', 'TranslateController.process_singleUpdate', 1, 'System', NULL, '2018-05-07 14:38:17.000', '2018-05-07 14:38:17.000', 1345);
+
+
+ALTER TABLE `tblFileUploadTemplate`
+	CHANGE COLUMN `Options` `Options` TEXT NULL DEFAULT NULL COLLATE 'utf8_unicode_ci' AFTER `Title`;
+
 ALTER TABLE `tblRateRule`
 ADD COLUMN `Order` INT(11) NULL AFTER `ModifiedBy`;
 
@@ -156,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `tblRateTableRateChangeLog` (
   KEY `Action` (`Action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+DROP TABLE IF EXISTS `tblTempRateTableRate`;
 CREATE TABLE IF NOT EXISTS `tblTempRateTableRate` (
   `TempRateTableRateID` int(11) NOT NULL AUTO_INCREMENT,
   `CodeDeckId` int(11) DEFAULT NULL,
@@ -233,7 +252,7 @@ ALTER TABLE `tblFileUploadTemplate`
 	CHANGE COLUMN `Type` `FileUploadTemplateTypeID` TINYINT(3) UNSIGNED NULL DEFAULT NULL AFTER `FileUploadTemplateID`;
 	
 ALTER TABLE `tblBillingClass`
-	ADD COLUMN `RoundChargesCDR` INT(11) NULL DEFAULT NULL AFTER `RoundChargesAmount`;	
+	ADD COLUMN `RoundChargesCDR` INT(11) NULL DEFAULT '2' AFTER `RoundChargesAmount`;	
 	
 CREATE TABLE IF NOT EXISTS `tblAutoImport` (
   `AutoImportID` int(11) NOT NULL AUTO_INCREMENT,
@@ -4358,6 +4377,7 @@ CREATE PROCEDURE `prc_getDiscontinuedRateTableRateGrid`(
 BEGIN
 	DECLARE v_OffSet_ int;
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET SESSION GROUP_CONCAT_MAX_LEN = 1000000; -- group_concat limit bydefault is 1024, so we have increase it
 
 	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
 
@@ -5131,6 +5151,7 @@ CREATE PROCEDURE `prc_GetRateTableRate`(
 BEGIN
 	DECLARE v_OffSet_ int;
 	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET SESSION GROUP_CONCAT_MAX_LEN = 1000000; -- group_concat limit bydefault is 1024, so we have increase it
 --	SET sql_mode = '';
 	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
 
@@ -5413,6 +5434,8 @@ CREATE PROCEDURE `prc_GetRateTableRatesArchiveGrid`(
 )
 BEGIN
 
+	SET SESSION GROUP_CONCAT_MAX_LEN = 1000000; -- group_concat limit bydefault is 1024, so we have increase it
+	
 	DROP TEMPORARY TABLE IF EXISTS tmp_RateTableRate_;
    CREATE TEMPORARY TABLE tmp_RateTableRate_ (
         Code VARCHAR(50),
@@ -18486,6 +18509,9 @@ CREATE TABLE IF NOT EXISTS `tblInvoiceHistory` (
 
 ALTER TABLE `tblInvoiceDetail`
 	CHANGE COLUMN `Qty` `Qty` FLOAT NULL DEFAULT NULL AFTER `Price`;
+
+ALTER TABLE `tblInvoiceDetail`
+		ADD COLUMN `AccountSubscriptionID` INT(11) NULL DEFAULT '0' AFTER `ServiceID`;	
 	
 DROP PROCEDURE IF EXISTS `fnServiceUsageDetail`;
 DELIMITER //

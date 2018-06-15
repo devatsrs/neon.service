@@ -66,9 +66,11 @@ class SippySQL{
                 {
                     $cdrs_qry = "select cc.*,c.i_call from ".$tablename->cdrs_table." as cc inner join ".$tablename->calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
                     $response_cdr = DB::connection('pgsql')->select($cdrs_qry);
+                    Log::info($cdrs_qry);
 
                     $cdrs_conn_qry = "select cc.*,c.i_call from ".$tablename->cdrs_connections_table." as cc inner join ".$tablename->calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
                     $response_cdr_connection = DB::connection('pgsql')->select($cdrs_conn_qry);
+                    Log::info($cdrs_conn_qry);
 
                     $response['cdrs_response'][] = $response_cdr;
                     $response['cdrs_response_connection'][] = $response_cdr_connection;
