@@ -250,10 +250,15 @@ class SippySQLAccountUsage extends Command {
                 $rows_updated = DB::connection('sqlsrvcdr')->select("CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
                 Log::info("sippy CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
 
-                /** delete duplicate id*/
+                /** delete duplicate id from customer*/
                 Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
                 DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
                 Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
+
+                /** delete duplicate id from vendor*/
+                Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) start");
+                DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' )");
+                Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) end");
 
                 Log::info("SippySQL CALL  prc_updatVendorSellingCost ('" . $processID . "', '" . $temptableName . "','" . $tempVendortable . "' ) start");
                 DB::connection('sqlsrvcdr')->statement("CALL  prc_updatVendorSellingCost ('" . $processID . "', '" . $temptableName . "','" . $tempVendortable . "' )");
@@ -271,13 +276,17 @@ class SippySQLAccountUsage extends Command {
                     $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
                 }
 
-                //$result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $temptableName . "')");
-                //$vresult = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $processID . "','" . $tempVendortable . "')");
+                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
+                $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
 
                 DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrvcdr')->beginTransaction();
 
                 //start end time
+                $filedetail = "";
+                $filedetail .= '<br>Vendor From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $vtotaldata_count;
+                $filedetail .= '<br>Customer From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $totaldata_count;
+
                 date_default_timezone_set(Config::get('app.timezone'));
                 $logdata['CompanyGatewayID'] = $CompanyGatewayID;
                 $logdata['CompanyID'] = $CompanyID;
@@ -300,7 +309,7 @@ class SippySQLAccountUsage extends Command {
                 DB::connection('sqlsrv2')->commit();
 
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-                $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+                $joblogdata['Message'] .= $filedetail . ' <br/>';
 
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
                 DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
@@ -318,6 +327,8 @@ class SippySQLAccountUsage extends Command {
                 $logdata['ProcessID'] = $processID;
                 TempUsageDownloadLog::insert($logdata);
 
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['Message'] .= 'No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd'];
                 Log::error('No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd']);
             }
         } catch (Exception $e) {
