@@ -985,6 +985,14 @@ class Invoice extends \Eloquent {
         $emaildata['Subject'] = 'New invoice ' . $_InvoiceNumber . ' from ' . $CompanyName;
         $emaildata['CompanyID'] = $CompanyID;
 
+        $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+        if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+            $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
+            $attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
+            $emaildata['attach'][] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+        }
+
         $status['status'] = "success"; // Default Status
 
         foreach ($InvoiceGenerationEmail as $singleemail) {
@@ -1603,9 +1611,9 @@ class Invoice extends \Eloquent {
         if ($FirstTime && $Subscription->ActivationFee >0) {
                 $ActivationProductDescription=$ProductDescription.' Activation Fee';
                 $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
-                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty,$AccountSubscription->SubscriptionID);
+                $AlreadyActivationFee=Invoice::IsAlreadyInvoiceSubscriptionDetail($Invoice->AccountID,$AccountSubscription->ServiceID,$AccountSubscription->SubscriptionID,$SubscriptionStartDate,$SubscriptionEndDate,$ActivationProductDescription,$TotalActivationFeeCharge,$Subscription->ActivationFee,$qty,$AccountSubscription->AccountSubscriptionID);
                 log::info('Already Activatiob Fee '. $AlreadyActivationFee);
-                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.','.$AccountSubscription->SubscriptionID.')');
+                Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID.','.$AccountSubscription->ServiceID.','.$AccountSubscription->SubscriptionID.','.$SubscriptionStartDate.','.$SubscriptionEndDate.','.$ActivationProductDescription.','.$TotalActivationFeeCharge.','.$Subscription->ActivationFee.','.$qty.','.$AccountSubscription->AccountSubscriptionID.')');
                 if($AlreadyActivationFee==0) {
                     if ($AccountSubscription->ExemptTax) {
                         $SubscriptionChargewithouttaxTotal += $TotalActivationFeeCharge;
