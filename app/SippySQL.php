@@ -56,24 +56,28 @@ class SippySQL{
         if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
             try {
                 //$addparams['end_date_ymd'] = '2018-06-03 00:02:00';
-                $query = "select table_name as calls_table,REPLACE(table_name, 'calls', 'cdrs') as cdrs_table, REPLACE(table_name, 'calls', 'cdrs_connections') as cdrs_connections_table  from calls_schedule where newest_setup_time >= '" . $addparams['start_date_ymd'] . "' and newest_setup_time < '" . $addparams['end_date_ymd'] . "'";
-                Log::info($query);
-                $tables = DB::connection('pgsql')->select($query);
+                //$query = "select table_name as calls_table,REPLACE(table_name, 'calls', 'cdrs') as cdrs_table, REPLACE(table_name, 'calls', 'cdrs_connections') as cdrs_connections_table  from calls_schedule where newest_setup_time >= '" . $addparams['start_date_ymd'] . "' and newest_setup_time < '" . $addparams['end_date_ymd'] . "'";
+                //Log::info($query);
+                //$tables = DB::connection('pgsql')->select($query);
+
+                $cdrs_table = "cdrs";
+                $cdrs_connections_table = "cdrs_connections";
+                $calls_table = "calls";
 
                 $response_cdr = array();
-                foreach($tables as $tablename)
-                {
-                    $cdrs_qry = "select cc.*,c.i_call from ".$tablename->cdrs_table." as cc inner join ".$tablename->calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
+               // foreach($tables as $tablename)
+               // {
+                    $cdrs_qry = "select cc.*,c.i_call from ".$cdrs_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
                     $response_cdr = DB::connection('pgsql')->select($cdrs_qry);
                     Log::info($cdrs_qry);
 
-                    $cdrs_conn_qry = "select cc.*,c.i_call from ".$tablename->cdrs_connections_table." as cc inner join ".$tablename->calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
+                    $cdrs_conn_qry = "select cc.*,c.i_call from ".$cdrs_connections_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
                     $response_cdr_connection = DB::connection('pgsql')->select($cdrs_conn_qry);
                     Log::info($cdrs_conn_qry);
 
                     $response['cdrs_response'][] = $response_cdr;
                     $response['cdrs_response_connection'][] = $response_cdr_connection;
-                }
+                //}
                 //print_R($response_cdr);exit;
 
             } catch (Exception $e) {
