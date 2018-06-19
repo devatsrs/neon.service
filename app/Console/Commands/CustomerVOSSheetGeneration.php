@@ -66,6 +66,8 @@ class CustomerVOSSheetGeneration extends Command {
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            $timezoneid = $joboptions->Timezones;
+
             if(isset($joboptions->Format)){
                 $Format = $joboptions->Format;
             }
@@ -94,7 +96,7 @@ class CustomerVOSSheetGeneration extends Command {
             //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
             //$excel_data = DB::select("CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."')");
-            $query = "CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$CustomDate."','".$Format."')";
+            $query = "CALL prc_WSGenerateVersion3VosSheet('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."','".$Format."')";
             //Log::info($query);
             $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);
