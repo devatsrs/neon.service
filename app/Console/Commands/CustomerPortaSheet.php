@@ -96,6 +96,8 @@ class CustomerPortaSheet extends Command {
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            $timezoneid = $joboptions->Timezones;
+
             if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
             }else{
@@ -113,7 +115,7 @@ class CustomerPortaSheet extends Command {
             $file_name = Job::getfileName($job->AccountID,$joboptions->Trunks,'customerdownload');
             $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'],$job->AccountID,$CompanyID) ;
             //$excel_data = DB::select("CALL  prc_CronJobGeneratePortaSheet( '" .$job->AccountID . "','" . $tunkids."','".$Effective."' ) ");
-            $query = "CALL  prc_CronJobGeneratePortaSheet( '" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$CustomDate."' ) ";
+            $query = "CALL  prc_CronJobGeneratePortaSheet( '" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."' ) ";
             //Log::info($query);
             $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);
