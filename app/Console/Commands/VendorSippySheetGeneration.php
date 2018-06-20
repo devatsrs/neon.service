@@ -60,6 +60,8 @@ class VendorSippySheetGeneration extends Command {
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            $timezoneid = $joboptions->Timezones;
+
             if(!empty($joboptions->downloadtype)){
                 $downloadtype = $joboptions->downloadtype;
             }else{
@@ -78,8 +80,9 @@ class VendorSippySheetGeneration extends Command {
                 }
             }
 
-            Log::info("CALL  prc_WSGenerateVendorSippySheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$CustomDate."')");
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorSippySheet( '" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$CustomDate."')");
+            $query = "CALL  prc_WSGenerateVendorSippySheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."')";
+            Log::info($query);
+            $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);
 
             //Fix .333 to 0.333 on following column
