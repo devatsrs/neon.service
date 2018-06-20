@@ -67,6 +67,8 @@ class VendorVOSSheetGeneration extends Command {
             }else if(isset($joboptions->Trunks) && !is_array($joboptions->Trunks)){
                 $tunkids = $joboptions->Trunks;
             }
+            $timezoneid = $joboptions->Timezones;
+
             if(isset($joboptions->Format)){
                 $Format = $joboptions->Format;
             }
@@ -88,8 +90,10 @@ class VendorVOSSheetGeneration extends Command {
                     $CustomDate = date('Y-m-d');
                 }
             }
-            Log::info("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."','".$CustomDate."')");
-            $excel_data = DB::select("CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."','".$Effective."','".$Format."','".$CustomDate."')");
+
+            $query = "CALL  prc_WSGenerateVendorVersion3VosSheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$Format."','".$CustomDate."')";
+            Log::info($query);
+            $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);
 
             Config::set('excel.csv.delimiter', ' | ');
