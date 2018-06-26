@@ -256,7 +256,7 @@ Please check below error messages while re-rating cdrs.
         $today = date('Y-m-d');
         $todaytime = date('Y-m-d H:i:s');
         $Accounts = DB::table('tblAccountDiscountPlan')->where('EndDate','<=',$today)
-            ->get(['AccountID','DiscountPlanID','ServiceID','EndDate','Type']);
+            ->get(['AccountID','DiscountPlanID','ServiceID','EndDate','Type','AccountSubscriptionID','AccountName','AccountCLI','SubscriptionDiscountPlanID']);
         foreach($Accounts as $Account){
             $ServiceID = $Account->ServiceID;
             $Manualcount = AccountBilling::where(['AccountID'=>$Account->AccountID,'BillingCycleType'=>'manual'])->count();
@@ -276,12 +276,20 @@ Please check below error messages while re-rating cdrs.
             if($Manualcount == 0 && !empty($BillingCycleType)) {
                 $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue); // monthly : 30 or 31 days
                 $NextInvoiceDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($Account->EndDate));
+                log::info('next invoice date');
+                log::info($NextInvoiceDate);
                 $getdaysdiff = getdaysdiff($NextInvoiceDate, $today); //
+                log::info('getdaysdiff');
+                log::info($getdaysdiff);
                 $DayDiff = $getdaysdiff > 0 ? intval($getdaysdiff) : 0;
+                $AccountSubscriptionID = $Account->AccountSubscriptionID;
+                $AccountName=empty($Account->AccountName) ? '' : $Account->AccountName;
+                $AccountCLI=empty($Account->AccountCLI) ? '' : $Account->AccountCLI;
+                $SubscriptionDiscountPlanID=empty($Account->SubscriptionDiscountPlanID) ? 0 : $Account->SubscriptionDiscountPlanID;
                 // Apply new fresh or reset Discount Plan from 0 UsedSeconds
                 // if apply from 15th in between month . billing cycle thresold will be half. ie 1000 to 500
-                Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
-                DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID));
+                Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID,$AccountSubscriptionID,$AccountName,$AccountCLI,$SubscriptionDiscountPlanID)");
+                DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID,$AccountSubscriptionID,$AccountName,$AccountCLI,$SubscriptionDiscountPlanID));
             }else{
                 Log::info("No biiling setup");
             }

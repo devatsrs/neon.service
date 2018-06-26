@@ -20,6 +20,7 @@ use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\NeonExcelIO;
 use App\Lib\RateSheetDetails;
+use App\Lib\Timezones;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -225,26 +226,28 @@ class CustomerRateSheetGenerator extends Command {
                                 $trunk_prefix = '';
                                 $trunk_name = '';
                                 foreach ($joboptions->Trunks as $trunk) {
-                                    if(in_array($trunk,$trunks)) {
+                                    if (in_array($trunk, $trunks)) {
                                         $excel_data = array();
                                         $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
+                                        $timezonename = Timezones::find($joboptions->Timezones)->Title;
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
+                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $joboptions->Timezones . "')");
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                        if(empty($excel_data)){
-                                            Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
-                                            throw new Exception('No rate sheet data found against trunk: '.$trunkname);
+                                        if (empty($excel_data)) {
+                                            $msg = 'No rate sheet data found against account: ' . $account->AccountName . ' trunk: ' . $trunkname . ' timezone: ' . $timezonename;
+                                            Log::info($msg);
+                                            throw new Exception($msg);
                                         }
                                         $excel_data = json_decode(json_encode($excel_data), true);
-                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
-                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
-                                        $data['excel_data'][$trunkname] = $excel_data;
+                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $joboptions->Timezones, $file_name, $excel_data);
+                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $joboptions->Timezones);
+                                        $data['excel_data'][$trunkname.' - '.$timezonename] = $excel_data;
                                         /*Customer trunk */
-                                        $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
-                                        if(!empty($customertrunkprefix)){
-                                            $trunk_prefix.= $customertrunkprefix.'-';
+                                        $customertrunkprefix = CustomerTrunk::where(['AccountID' => $account->AccountID, 'TrunkID' => $trunk, 'Status' => 1])->pluck('Prefix');
+                                        if (!empty($customertrunkprefix)) {
+                                            $trunk_prefix .= $customertrunkprefix . '-';
                                         }
-                                        $trunk_name.=$trunkname.'-';
+                                        $trunk_name .= $trunkname . '-';
                                     }
                                 }
 
@@ -264,40 +267,42 @@ class CustomerRateSheetGenerator extends Command {
                                 }
 
                             } else if (isset($joboptions->isMerge) && $joboptions->isMerge ==0 &&  isset($joboptions->Trunks) && is_array($joboptions->Trunks)) {
-
+//maybe this condition will never match
 
 
                                 foreach ($joboptions->Trunks as $trunk) {
                                     if (in_array($trunk, $trunks)) {
                                         $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
+                                        $timezonename = Timezones::find($joboptions->Timezones)->Title;
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "')");
+                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $joboptions->Timezones . "')");
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                        if(empty($excel_data)){
-                                            Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
-                                            throw new Exception('No rate sheet data found against trunk: '.$trunkname);
+                                        if (empty($excel_data)) {
+                                            $msg = 'No rate sheet data found against account: ' . $account->AccountName . ' trunk: ' . $trunkname . ' timezone: ' . $timezonename;
+                                            Log::info($msg);
+                                            throw new Exception($msg);
                                         }
                                         $excel_data = json_decode(json_encode($excel_data), true);
-                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
+                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $joboptions->Timezones, $file_name, $excel_data);
                                         $data['excel_data'] = $excel_data;
                                         /*Customer trunk */
-                                        $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
+                                        $customertrunkprefix = CustomerTrunk::where(['AccountID' => $account->AccountID, 'TrunkID' => $trunk, 'Status' => 1])->pluck('Prefix');
                                         $data['Account']->trunkprefix = $customertrunkprefix;
                                         $data['Account']->trunk_name = $trunkname;
 
-                                        $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
-                                        $file_name .= '.'.$downloadtype;
+                                        $this->generateexcel($file_name, $data, $local_dir, $downloadtype);
+                                        $file_name .= '.' . $downloadtype;
                                         Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
-                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
+                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $joboptions->Timezones);
                                         Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                         /*Customer trunk */
                                         //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
                                         $account->trunkprefix = $customertrunkprefix;
                                         $account->trunk_name = $trunkname;
-                                        $sheetstatusupdate = $this->sendRateSheet($JobID,$job,$ProcessID,$joboptions,$local_dir,$file_name,$account,$CompanyID,$userInfo,$Company,$countcust,$countuser,$errorscustomer,$errorslog,$errorsuser);
+                                        $sheetstatusupdate = $this->sendRateSheet($JobID, $job, $ProcessID, $joboptions, $local_dir, $file_name, $account, $CompanyID, $userInfo, $Company, $countcust, $countuser, $errorscustomer, $errorslog, $errorsuser);
                                         extract($sheetstatusupdate);
-                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath,$CompanyID)) {
+                                        if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath, $CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
                                         Log::info('job is merge 0 ' . $JobID);
@@ -310,16 +315,18 @@ class CustomerRateSheetGenerator extends Command {
 
                                 if(in_array($joboptions->Trunks,$trunks)) {
                                     $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->Trunks))->pluck('Trunk');
+                                    $timezonename = Timezones::find($joboptions->Timezones)->Title;
                                     Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                    $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "')");
+                                    $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "','" . $joboptions->Timezones . "')");
                                     if(empty($excel_data)){
-                                        Log::info('No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname);
-                                        throw new Exception('No rate sheet data found against trunk: '.$trunkname);
+                                        $msg = 'No rate sheet data found against account: '.$account->AccountName.' trunk: '.$trunkname . ' timezone: ' . $timezonename;
+                                        Log::info($msg);
+                                        throw new Exception($msg);
                                     }
                                     Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                     $excel_data = json_decode(json_encode($excel_data), true);
-                                    $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $file_name, $excel_data);
+                                    $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $joboptions->Timezones, $file_name, $excel_data);
                                     $data['excel_data'] = $excel_data;
                                     /*Customer trunk */
                                     $customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
@@ -329,7 +336,7 @@ class CustomerRateSheetGenerator extends Command {
                                     $this->generateexcel($file_name, $data, $local_dir,$downloadtype);
                                     $file_name .= '.'.$downloadtype;
                                     Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
-                                    RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname);
+                                    RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $joboptions->Timezones);
                                     Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                     /*Customer trunk */
                                     //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
