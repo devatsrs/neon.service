@@ -95,7 +95,7 @@ class AccountBalance extends Model
                             if ($BlockingAccount->Blocked == 0) {
                                 Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
 
-                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID);
+                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,1);
                             }
                         } else {
                             $response = $pbx->unBlockAccount($param);
@@ -107,7 +107,7 @@ class AccountBalance extends Model
                             }
                             if ($BlockingAccount->Blocked == 1) {
                                 Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
-                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID);
+                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,0);
                             }
                         }
                     }
@@ -134,7 +134,7 @@ class AccountBalance extends Model
         return $error_message;
     }
 
-    public static function SendAccountBlockingEmail($CompanyID,$AccountID){
+    public static function SendAccountBlockingEmail($CompanyID,$AccountID,$Blocked){
         $CustomerEmail = '';
         $CompanyName = Company::getName($CompanyID);
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
@@ -143,7 +143,11 @@ class AccountBalance extends Model
             $CustomerEmail = $Account->BillingEmail;
         }
         $CustomerEmail = explode(",", $CustomerEmail);
-        $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'PBXAccountBlockEmail', $Account->LanguageID);
+        if($Blocked==1){
+            $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'PBXAccountBlockEmail', $Account->LanguageID);
+        }else{
+            $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'PBXAccountUnBlockEmail', $Account->LanguageID);
+        }
         if (!empty($CustomerEmail) && !empty($EmailTemplate) && !empty($EmailTemplate->Status)) {
             foreach ($CustomerEmail as $singleemail) {
                 $singleemail = trim($singleemail);

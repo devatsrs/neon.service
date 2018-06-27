@@ -136,12 +136,12 @@ class SippySQLAccountUsage extends Command {
             $response = json_decode(json_encode($response), true);
             if (!empty($response)) {
                 if (!isset($response['faultCode'])) {
-                    Log::error('call count ' . count($response));
                     /**
                      * Insert Customer CDR to temp table
                      */
                     if (isset($response['cdrs_response'])) {
                         foreach ($response['cdrs_response'] as $cdr_rows) {
+                            Log::error('call count customer ' . count($cdr_rows));
                             foreach ($cdr_rows as $cdr_row) {
                                 if (($IpBased == 0 && !empty($cdr_row['i_account'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip']))) {
 
@@ -196,6 +196,7 @@ class SippySQLAccountUsage extends Command {
                     if (isset($response['cdrs_response_connection'])) {
                         $IpBased = 0;
                         foreach ($response['cdrs_response_connection'] as $cdr_rows) {
+                            Log::error('call count vendor ' . count($cdr_rows));
                             foreach ($cdr_rows as $cdr_row) {
                                 if (($IpBased == 0 && !empty($cdr_row['i_account_debug'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip']))) {
                                     $uddata = array();
@@ -231,7 +232,7 @@ class SippySQLAccountUsage extends Command {
                                     if ($data_countv > $insertLimit && !empty($InserVData)) {
                                         DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
                                         $InserVData = array();
-                                        $data_count = 0;
+                                        $data_countv = 0;
                                     }
                                     $data_countv++;
                                 }

@@ -593,6 +593,7 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_NOTES")}}</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -603,11 +604,12 @@
                     <tr>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($row['PaymentDate']))}}</td>
                         <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                        <td class="leftalign">{{$row['Notes']}}</td>
                     </tr>
                 @endforeach
                 <tr>
                     <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
-                    <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
+                    <td class="leftalign total" colspan="2">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
                 </tr>
                 </tbody>
             </table>

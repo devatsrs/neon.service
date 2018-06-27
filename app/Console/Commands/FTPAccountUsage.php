@@ -310,22 +310,22 @@ class FTPAccountUsage extends Command
                                         $cdrdata['AccountIP'] = '';
                                         $cdrdata['AccountName'] = '';
                                         $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountCLI'] = '';
+                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
                                     } else if ($NameFormat == 'IP') {
                                         $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
                                         $cdrdata['AccountName'] = '';
                                         $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
+                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
                                     }else if ($NameFormat == 'CLI') {
                                         $cdrdata['AccountIP'] = '';
                                         $cdrdata['AccountName'] = '';
                                         $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
+                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
                                     }else{
                                         $cdrdata['AccountIP'] = '';
                                         $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
                                         $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
+                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
                                     }
 
                                 }
