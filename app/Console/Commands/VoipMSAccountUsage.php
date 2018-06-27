@@ -127,8 +127,6 @@ class VoipMSAccountUsage extends Command {
             }
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
-            $param['start_date_ymd'] = '2018-06-19';
-            $param['end_date_ymd'] = '2018-06-20';
 
             Log::error(print_r($param, true));
 
