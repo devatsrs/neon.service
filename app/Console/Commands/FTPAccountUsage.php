@@ -153,8 +153,8 @@ class FTPAccountUsage extends Command
             if(isset($GatewaySetting->RateFormat) && $GatewaySetting->RateFormat){
                 $RateFormat = $GatewaySetting->RateFormat;
             }
-            if(isset($GatewaySetting->Authentication) && $GatewaySetting->Authentication){
-                $NameFormat = $GatewaySetting->Authentication;
+            if(isset($GatewaySetting->NameFormat) && $GatewaySetting->NameFormat){
+                $NameFormat = $GatewaySetting->NameFormat;
             }
 
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = $SpecifyRate = $RateMethod = '' ;
@@ -306,27 +306,16 @@ class FTPAccountUsage extends Command
 
                                 if (isset($attrselection->Account) && !empty($attrselection->Account)  && isset($temp_row[$attrselection->Account])) {
                                     $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                                    if ($NameFormat == 'NUB') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
-                                    } else if ($NameFormat == 'IP') {
-                                        $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
-                                    }else if ($NameFormat == 'CLI') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
-                                    }else{
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $cdrdata['cli'];
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+
+                                    $AuthenticationValue = $temp_row[$attrselection->Account];
+                                    if($NameFormat == 'CLI'){
+                                        $AuthenticationValue =  $cdrdata['cli']; // for apply_translation_rule
                                     }
+                                    TempUsageDetail::ApplyGatewayAuthenticationRule($NameFormat,$cdrdata,$AuthenticationValue);
 
                                 }
 
