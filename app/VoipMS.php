@@ -90,7 +90,7 @@ class VoipMS{
         if(count(self::$config) && isset(self::$config['api_url']) &&  isset(self::$config['username'])  && isset(self::$config['password'])){
             $addparams['start_date_ymd'] = str_replace(" ","%20",$addparams['start_date_ymd']);
             $addparams['end_date_ymd'] = str_replace(" ","%20",$addparams['end_date_ymd']);
-            $api_url = self::$config['api_url'].'?method=getCDR&api_username='.self::$config['username'].'&api_password='.self::$config['password'].'&date_from='.$addparams['start_date_ymd'].'&date_to='.$addparams['end_date_ymd'].'&answered=1&timezone=0';
+            $api_url = self::$config['api_url'].'?method=getCDR&api_username='.self::$config['username'].'&api_password='.self::$config['password'].'&date_from='.$addparams['start_date_ymd'].'&date_to='.$addparams['end_date_ymd'].'&answered=1&noanswer=1&failed=1&busy=1&timezone=0';
             self::$cli->get($api_url);
             if(isset(self::$cli->response) && self::$cli->response != '') {
                 $ResponseArray = json_decode(self::$cli->response, true);
