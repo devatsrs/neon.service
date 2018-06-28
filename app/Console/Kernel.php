@@ -110,6 +110,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\FTPAccountUsage',
 		'App\Console\Commands\ProcessCallCharges',
 		'App\Console\Commands\SippySQLAccountUsage',
+		'App\Console\Commands\VoipMSAccountUsage',
 
 	];
 
