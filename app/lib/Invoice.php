@@ -619,7 +619,7 @@ class Invoice extends \Eloquent {
 
                 if($arrSignature["UseDigitalSignature"]==true){
                     $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
-                    $mypdfsignerOutput=RemoteSSH::run('PortableSigner  -n     -t '.$local_file.'      -o '.$newlocal_file.'     -s '.$arrSignature["signaturePath"].'digitalsignature.pfx -c "Signed after 4 alterations" -r "Approved for publication" -l "Department of Dermatology" -p Welcome100');
+                    $mypdfsignerOutput=RemoteSSH::run($companyID, 'PortableSigner  -n     -t '.$local_file.'      -o '.$newlocal_file.'     -s '.$arrSignature["signaturePath"].'digitalsignature.pfx -c "Signed after 4 alterations" -r "Approved for publication" -l "Department of Dermatology" -p Welcome100');
                     Log::info($mypdfsignerOutput);
                     if(file_exists($newlocal_file)){
                         RemoteSSH::run($companyID, 'rm '.$local_file);
