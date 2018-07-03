@@ -226,6 +226,7 @@ class Invoice extends \Eloquent {
         if($ManualInvoice==1){
             $StartDate = $LastInvoiceDate;
             $EndDate =  date("Y-m-d 23:59:59", strtotime( "-1 Day", strtotime($NextInvoiceDate)));
+            $FirstInvoiceSend=0;
         }else{
             $FirstInvoiceSend=Invoice::isFirstInvoiceSend($CompanyID,$AccountID,$ServiceID);
             $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
@@ -762,6 +763,7 @@ class Invoice extends \Eloquent {
             log::info('Invoice History Created');
             $InvoiceHistory = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$AccountID,"ServiceID"=>$ServiceID])->First();
         }
+        $BillingCycleType = $InvoiceHistory->BillingCycleType;
         $StartDate=$InvoiceHistory->LastChargeDate;
         $EndDate=$InvoiceHistory->NextChargeDate;
         $EndDate =  date("Y-m-d 23:59:59", strtotime($EndDate));
@@ -774,6 +776,12 @@ class Invoice extends \Eloquent {
             $UsageStartDate='';
             $UsageEndDate='';
         }
+
+        if($BillingCycleType == 'manual'){
+            $StartDate = $UsageStartDate;
+            $EndDate =  date("Y-m-d 23:59:59", strtotime($UsageEndDate));
+        }
+        Log::info('BillingCycleType : ' . $BillingCycleType.' - '.'StartDate : ' . $StartDate.' - '.'EndDate : '.$EndDate);
 
         /**
         $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
@@ -1503,7 +1511,8 @@ class Invoice extends \Eloquent {
 
             $BillingType = AccountBilling::getBillingType($AccountID);
             $AccountBilling = AccountBilling::getBilling($AccountID,$ServiceID);
-            if($BillingType == AccountBilling::BILLINGTYPE_PREPAID){
+            $BillingCycleType = $AccountBilling->BillingCycleType;
+            if($BillingType == AccountBilling::BILLINGTYPE_PREPAID && $BillingCycleType != 'manual'){
                 $InvoiceStartDate = date("Y-m-d", strtotime( "+1 Day",strtotime($EndDate)));
                 $InvoiceEndDate = date("Y-m-d", strtotime( "-1 Day",strtotime(next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($InvoiceStartDate)))));
             }else{
@@ -1864,7 +1873,9 @@ class Invoice extends \Eloquent {
                     Log::info('LastInvoiceDate '.$LastInvoiceDate.' NextInvoiceDate '.$NextInvoiceDate);
                     Log::info('LastChargeDate '.$LastChargeDate.' NextChargeDate '.$NextChargeDate);
 
-                    if (!empty($NextInvoiceDate)) {
+                    $BillingCycleType = $AccountBillings->BillingCycleType;
+
+                    if (!empty($NextInvoiceDate) && $BillingCycleType != 'manual') {
 
                         $EndDate = date("Y-m-d", strtotime("-1 Day", strtotime($NextInvoiceDate)));
 
@@ -2423,7 +2434,8 @@ class Invoice extends \Eloquent {
         if(!empty($Account)){
             $BillingStartDate=$Account->BillingStartDate;
             $NextInvoiceDate=$Account->NextInvoiceDate;
-            if($BillingStartDate==$NextInvoiceDate){
+            $BillingCycleType=$Account->BillingCycleType;
+            if($BillingStartDate==$NextInvoiceDate && $BillingCycleType != 'manual'){
                 $invocie_count =  Account::getInvoiceCount($AccountID);
                 if($invocie_count==0){
                     $FirstInvoice=1;
