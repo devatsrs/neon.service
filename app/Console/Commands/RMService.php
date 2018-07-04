@@ -62,6 +62,7 @@ class RMService extends Command {
                 'PendingBulkMailSend',
                 'PortVendorSheet',
                 'CDRRecalculate',
+                'VendorCDRRecalculate',
                 'PendingInvoiceUsageFileGeneration',
                 'PendingCustomerRateSheet',
                 'InvoiceRegenerate',
@@ -154,6 +155,15 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " cdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            foreach($allpending['data']['VendorCDRRecalculate'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." vendorcdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " vendorcdrrecal " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

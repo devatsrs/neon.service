@@ -111,6 +111,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ProcessCallCharges',
 		'App\Console\Commands\SippySQLAccountUsage',
 		'App\Console\Commands\VoipMSAccountUsage',
+		'App\Console\Commands\VendorCDRRecalculate',
 
 	];
 
