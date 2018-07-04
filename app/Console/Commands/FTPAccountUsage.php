@@ -23,6 +23,7 @@ use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\Trunk;
+use App\Lib\UsageDetail;
 use App\Lib\UsageDownloadFiles;
 use App\SippySSH;
 use Illuminate\Console\Command;
@@ -152,11 +153,11 @@ class FTPAccountUsage extends Command
             if(isset($GatewaySetting->RateFormat) && $GatewaySetting->RateFormat){
                 $RateFormat = $GatewaySetting->RateFormat;
             }
-            if(isset($GatewaySetting->Authentication) && $GatewaySetting->Authentication){
-                $NameFormat = $GatewaySetting->Authentication;
+            if(isset($GatewaySetting->NameFormat) && $GatewaySetting->NameFormat){
+                $NameFormat = $GatewaySetting->NameFormat;
             }
 
-            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
+            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = $SpecifyRate = $RateMethod = '' ;
             if(!empty($GatewaySetting->CLITranslationRule)){
                 $CLITranslationRule = $GatewaySetting->CLITranslationRule;
             }
@@ -165,6 +166,12 @@ class FTPAccountUsage extends Command
             }
             if(!empty($GatewaySetting->PrefixTranslationRule)){
                 $PrefixTranslationRule = $GatewaySetting->PrefixTranslationRule;
+            }
+            if(!empty($GatewaySetting->SpecifyRate)){
+                $SpecifyRate = $GatewaySetting->SpecifyRate;
+            }
+            if(!empty($GatewaySetting->RateMethod)){
+                $RateMethod = $GatewaySetting->RateMethod;
             }
             TempUsageDetail::applyDiscountPlan();
 
@@ -261,6 +268,8 @@ class FTPAccountUsage extends Command
                                 }
                                 if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0   && isset($temp_row[$attrselection->cost]) ) {
                                     $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                } else if ($RateCDR == 1 && !empty($SpecifyRate) && $RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
+                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
                                 } else if ($RateCDR == 1) {
                                     $cdrdata['cost'] = 0;
                                 }
@@ -297,27 +306,16 @@ class FTPAccountUsage extends Command
 
                                 if (isset($attrselection->Account) && !empty($attrselection->Account)  && isset($temp_row[$attrselection->Account])) {
                                     $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                                    if ($NameFormat == 'NUB') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountCLI'] = '';
-                                    } else if ($NameFormat == 'IP') {
-                                        $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
-                                    }else if ($NameFormat == 'CLI') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
-                                    }else{
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+
+                                    $AuthenticationValue = $temp_row[$attrselection->Account];
+                                    if($NameFormat == 'CLI'){
+                                        $AuthenticationValue =  $cdrdata['cli']; // for apply_translation_rule
                                     }
+                                    TempUsageDetail::ApplyGatewayAuthenticationRule($NameFormat,$cdrdata,$AuthenticationValue);
 
                                 }
 
@@ -350,27 +348,6 @@ class FTPAccountUsage extends Command
                                         $cdrdata['billed_duration'] = 0;
                                         $cdrdata['billed_second'] = 0;
                                     }
-                                    if ($call_type == 'both' && $RateCDR == 1) {
-
-                                        /**
-                                         * Inbound Entry
-                                         */
-                                        $cdrdata['cost'] = 0;
-                                        $cdrdata['is_inbound'] = 1;
-
-                                        /**
-                                         * Outbound Entry
-                                         */
-                                        $data_outbound = $cdrdata;
-
-                                        $data_outbound['cli'] = !empty($cdrdata['cli']) ? $cdrdata['cli'] : '';
-                                        $data_outbound['cld'] = !empty($cdrdata['cld']) ? $cdrdata['cld'] : '';
-                                        $data_outbound['cost'] = !empty($cdrdata['cost']) ? $cdrdata['cost'] : 0;
-                                        $data_outbound['is_inbound'] = 0;
-                                        $batch_insert_array[] = $data_outbound;
-                                        $data_count++;
-
-                                    }
 
                                     $batch_insert_array[] = $cdrdata;
 
@@ -388,6 +365,11 @@ class FTPAccountUsage extends Command
                                 }
                             }
                         }// loop over
+                        if(!empty($batch_insert_array)){
+                            Log::info('Batch insert start - afterloop count' . count($batch_insert_array));
+                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($batch_insert_array);
+                            $batch_insert_array = [];
+                        }
 
                     }catch(Exception $e){
 
@@ -418,6 +400,12 @@ class FTPAccountUsage extends Command
             Log::error(' ========================== ftp transaction end =============================');
             //ProcessCDR
 
+            // $SpecifyRate is present dont ReRate CDR as we already added margin.
+            if ($RateCDR == 1 && !empty($SpecifyRate)) {
+                if(TempUsageDetail::update_cost_with_margin($RateMethod,$SpecifyRate,$temptableName,$processID)){
+                    $RateCDR = 0;
+                }
+            }
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
             if (count($skiped_account_data)) {

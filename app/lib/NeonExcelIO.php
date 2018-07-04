@@ -506,7 +506,7 @@ class NeonExcelIO
             array_shift($excel_data_rr);
             array_shift($excel_data_rr);
 
-            $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+            $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
             $excel_data_sheet[] = $excel_data_rr;
 
@@ -562,7 +562,7 @@ class NeonExcelIO
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
 
             if(is_amazon($CompanyID) == true) {
-                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $upload_path = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
                 $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
                 file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
                 $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
@@ -712,7 +712,7 @@ class NeonExcelIO
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
 
             if(is_amazon($CompanyID) == true) {
-                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $upload_path = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
                 $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
                 file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
                 $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
@@ -761,7 +761,7 @@ class NeonExcelIO
                         array_shift($excel_data_rr);
                         array_shift($excel_data_rr);
 
-                        $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+                        $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
                         $excel_data_sheet[] = $excel_data_rr;
 
@@ -1027,12 +1027,12 @@ class NeonExcelIO
                 if(!empty($this->Sheet)) {
                     $objPHPExcelReader->setActiveSheetIndexByName($this->Sheet);
                 }
-
                 $ActiveSheet = $objPHPExcelReader->getActiveSheet();
                 $drow = $ActiveSheet->getHighestDataRow();
                 $dcol = $ActiveSheet->getHighestDataColumn();
+
                 $start_row = intval($data["start_row"]) + 1;
-                $end_row   = ($drow - intval($data["end_row"]));
+                $end_row = ($drow - intval($data["end_row"]));
 
                 Log::info('start row : ' . $start_row);
                 Log::info('highest row : ' . $drow . ' and highest col : ' . $dcol);
@@ -1043,9 +1043,8 @@ class NeonExcelIO
                 $process_time1 = strtotime($end_time1) - strtotime($start_time1);
                 Log::info('rangeToArray function call time : ' . $process_time1 . ' Seconds');
 
-                //Log::info(print_r(array_slice($allRows,0,10),true));
-
-                $file_name = substr($file_name, 0, strrpos($file_name, '.')) . '.csv';
+                //$file_name = substr($file_name, 0, strrpos($file_name, '.')) . '.csv';
+                $file_name = substr($file_name, 0, strrpos($file_name, '.')) .'_'.$this->Sheet.'.csv';
                 $end_time = date('Y-m-d H:i:s');
                 $process_time = strtotime($end_time) - strtotime($start_time);
                 Log::info('Convert to csv read time : ' . $process_time . ' Seconds');
@@ -1053,19 +1052,20 @@ class NeonExcelIO
 
                 $header_rows = $footer_rows = array();
                 $char_arr = array_combine(range('a','z'),range(1,26));
-                if($start_row > 0) {
-                    for($i=0;$i<intval($data["start_row"]);$i++) {
+
+                if ($start_row > 0) {
+                    for ($i = 0; $i < intval($data["start_row"]); $i++) {
                         $row = array();
-                        for($j=0;$j<=$char_arr[strtolower($dcol)]-1;$j++) {
+                        for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 1; $j++) {
                             $row[$j] = "";
                         }
                         $header_rows[$i] = $row;
                     }
                 }
-                if(intval($data["end_row"]) > 0) {
-                    for($i=0;$i<intval($data["end_row"]);$i++) {
+                if (intval($data["end_row"]) > 0) {
+                    for ($i = 0; $i < intval($data["end_row"]); $i++) {
                         $row = array();
-                        for($j=0;$j<=$char_arr[strtolower($dcol)]-2;$j++) {
+                        for ($j = 0; $j <= $char_arr[strtolower($dcol)] - 2; $j++) {
                             $row[$j] = "";
                         }
                         $footer_rows[$i] = $row;

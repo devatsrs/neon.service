@@ -370,6 +370,9 @@ class Helper{
 	    $replace_array['Logo'] = '<img src="'.$replace_array['Logo'].'" />';
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
        $Signature = '';
        if(!empty($JobLoggedUser)){
            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;

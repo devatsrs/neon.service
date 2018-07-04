@@ -60,4 +60,30 @@ class Payment extends \Eloquent{
         }
     }
 
+    public static function GetBillingPeriodPayments($InvoiceID,$AccountID){
+        $PaymentData=array();
+        $InvoiceDetail=InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductType'=>Product::USAGE])->first();
+        if(!empty($InvoiceDetail)){
+            $StartDate=$InvoiceDetail->StartDate;
+            $EndDate=$InvoiceDetail->EndDate;
+            if(!empty($StartDate) && !empty($EndDate)){
+                $EndDate=$InvoiceDetail->EndDate;
+                $EndDate =  date("Y-m-d 00:00:00", strtotime( "+1 Day", strtotime($EndDate)));
+
+                $Payments=Payment::whereBetween('PaymentDate', [$StartDate, $EndDate])->where(['PaymentType'=>'Payment In','Recall'=>0,'AccountID'=>$AccountID])->orderBy('PaymentDate', 'desc')->get();
+                if(!empty($Payments) && count($Payments)>0){
+                    foreach($Payments as $payment){
+                        $temp=array();
+                        $temp['PaymentDate']=$payment->PaymentDate;
+                        $temp['Amount']=$payment->Amount;
+                        $temp['Notes']=$payment->Notes;
+                        $temp['PaymentMethod']=$payment->PaymentMethod;
+                        $PaymentData[]=$temp;
+                    }
+                }
+            }
+        }
+        return $PaymentData;
+    }
+
 } 

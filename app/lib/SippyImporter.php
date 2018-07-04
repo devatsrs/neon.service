@@ -10,6 +10,7 @@ namespace App\Lib;
 
 //use App\Lib\SippySFTP;
 use App\Sippy;
+use App\SippySSH;
 use \Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Webpatser\Uuid\Uuid;
@@ -37,8 +38,8 @@ class SippyImporter
     public static function getAccountsDetail($addparams = array())
     {
         $response = array();
-        $currency = Currency::getCurrencyDropdownIDList();
-        $country = Country::getCountryDropdownList();
+        $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
+        $country = Country::getCountryDropdownList($addparams['CompanyID']);
 
         $TimeZone = 'GMT';
         date_default_timezone_set($TimeZone);
@@ -51,6 +52,7 @@ class SippyImporter
             if (!isset($account_list['faultCode'])) {
                 if (isset($account_list['accounts'])) {
                     Log::info('customers : '.print_r(count($account_list['accounts']), true));
+                   // Log::info('customers list : '.print_r(($account_list['accounts']), true));
 
                     $tempItemData = $tempSippyItemData = array();
                     $batch_insert_array = $batch_insert_sippy_array = array();
@@ -59,9 +61,10 @@ class SippyImporter
                         $CompanyID = $addparams['CompanyID'];
                         $ProcessID = $addparams['ProcessID'];
                         foreach ((array)$account_list['accounts'] as $row_account) {
-                            $count1 = DB::table('tblAccount')->where(["AccountName" => $row_account['username'], "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
-                            $count2 = DB::table('tblAccountSippy')->where(["username" => $row_account['username'],"i_account" => $row_account['i_account'],"CompanyID"=>$CompanyID])->count();
-                            if($count1==0 && $count2==0){
+                            //$count1 = DB::table('tblAccount')->where(["AccountName" => $row_account['username'], "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
+                            //$count2 = DB::table('tblAccountSippy')->where(["username" => $row_account['username'],"i_account" => $row_account['i_account'],"CompanyID"=>$CompanyID])->count();
+                            //if($count1==0 && $count2==0){
+                            if(true){
                                 $params['i_account'] = $row_account['i_account'];
                                 $account_detail = $sippy->getAccountInfo($params);
 
@@ -145,8 +148,8 @@ class SippyImporter
     public static function getVendorsDetail($addparams = array())
     {
         $response = array();
-        $currency = Currency::getCurrencyDropdownIDList();
-        $country = Country::getCountryDropdownList();
+        $currency = Currency::getCurrencyDropdownIDList($addparams['CompanyID']);
+        $country = Country::getCountryDropdownList($addparams['CompanyID']);
 
         $TimeZone = 'GMT';
         date_default_timezone_set($TimeZone);
@@ -159,6 +162,7 @@ class SippyImporter
             if (!isset($vendor_list['faultCode'])) {
                 if (isset($vendor_list['vendors'])) {
                     Log::info('vendors : '.print_r(count($vendor_list['vendors']), true));
+                    //Log::info('vendors list : '.print_r(($vendor_list['vendors']), true));
 
                     $tempItemData = $tempSippyItemData = array();
                     $batch_insert_array = $batch_insert_sippy_array = array();
@@ -167,9 +171,9 @@ class SippyImporter
                         $CompanyID = $addparams['CompanyID'];
                         $ProcessID = $addparams['ProcessID'];
                         foreach ((array)$vendor_list['vendors'] as $row_vendor) {
-                            $count1 = DB::table('tblAccount')->where(["AccountName" => $row_vendor['name'], "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
-                            $count2 = DB::table('tblAccountSippy')->where(["username" => $row_vendor['name'],"i_vendor" => $row_vendor['i_vendor'],"CompanyID"=>$CompanyID])->count();
-                            if($count1==0 && $count2==0){
+                            //$count1 = DB::table('tblAccount')->where(["AccountName" => $row_vendor['name'], "AccountType" => 1,"CompanyId"=>$CompanyID])->count();
+                            //$count2 = DB::table('tblAccountSippy')->where(["username" => $row_vendor['name'],"i_vendor" => $row_vendor['i_vendor'],"CompanyID"=>$CompanyID])->count();
+                            if(true){
                                 $params['i_vendor'] = $row_vendor['i_vendor'];
                                 $vendor_detail = $sippy->getVendorInfo($params);
 
@@ -571,7 +575,7 @@ class SippyImporter
         $data["importprocessid"] = $ProcessID;
         $data["criteria"] = 1;
         $data["companygatewayid"] = $CompanyGatewayID;
-        $data["gateway"] = 'sippy';
+        $data["gateway"] =  SippySSH::$GatewayName;
 
         $JobID = Job::CreateJob($CompanyID,'MGA',$data);
 

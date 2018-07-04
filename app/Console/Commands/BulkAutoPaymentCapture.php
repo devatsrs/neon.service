@@ -96,10 +96,11 @@ class BulkAutoPaymentCapture extends Command {
         /**  Loop through account Outstanding.*/
 
         $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
-            ->select('tblAccountBilling.AccountID','tblAccountBilling.AutoPaymentSetting','tblAccount.*')
+            ->select('tblAccountBilling.AccountID','tblAccountBilling.AutoPaymentSetting','tblAccountBilling.AutoPayMethod','tblAccount.*')
             ->where(array('CompanyID'=>$CompanyID,'Status'=>1,'Billing'=>1,"AccountType"=>1))
             ->whereNotNull('AutoPaymentSetting')
             ->where('AutoPaymentSetting','<>','never')
+            ->where('AutoPayMethod','<>','0')
             ->get();
 
         /**  Create a Job */
@@ -125,8 +126,17 @@ class BulkAutoPaymentCapture extends Command {
             if(!empty($Accounts) && count($Accounts)>0) {
                 foreach ($Accounts as $account) {
                     $AccountID=$account->AccountID;
+                    $AccountBalanceGateway=0;
+                    $AutoPayMethod = $account->AutoPayMethod;
+                    if($AutoPayMethod==AccountBilling::ACCOUNT_BALANCE){
+                        $AccountBalanceGateway=1;
+                    }
                     $AutoPaymentSetting=$account->AutoPaymentSetting;
                     $PaymentMethod=$account->PaymentMethod;
+                    if($AccountBalanceGateway==1){
+                        $PaymentMethod='AccountBalance';
+                    }
+                    log::info('PaymentMethod - '.count($PaymentMethod));
 
                     $PaymentDueInDays=1;
                     /**
@@ -147,20 +157,34 @@ class BulkAutoPaymentCapture extends Command {
                     if(!empty($unPaidInvoices)) {
 
                         if (!empty($PaymentMethod)) {
-                            $PaymentGatewayID = PaymentGateway::getPaymentGatewayIDByName($PaymentMethod);
+                            if($PaymentMethod=='AccountBalance'){
+                                $PaymentGatewayID = 1;
+                            }else{
+                                $PaymentGatewayID = PaymentGateway::getPaymentGatewayIDByName($PaymentMethod);
+                            }
+
                             if (!empty($PaymentGatewayID)) {
-                                $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
                                 $VerifyStatus = 1;
-                                if(!empty($CustomerProfile) && $PaymentMethod=='StripeACH'){
-                                    $StripeObj = json_decode($CustomerProfile->Options);
-                                    if(empty($StripeObj->VerifyStatus) || $StripeObj->VerifyStatus!=='verified'){
-                                        $VerifyStatus = 0;
+                                if($PaymentMethod=='AccountBalance') {
+                                    $CustomerProfile=1;
+                                }else{
+                                    $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
+                                    if (!empty($CustomerProfile) && $PaymentMethod == 'StripeACH') {
+                                        $StripeObj = json_decode($CustomerProfile->Options);
+                                        if (empty($StripeObj->VerifyStatus) || $StripeObj->VerifyStatus !== 'verified') {
+                                            $VerifyStatus = 0;
+                                        }
                                     }
                                 }
                                 if (!empty($CustomerProfile) && $VerifyStatus=='1') {
                                     $PaymentGateway = $PaymentMethod;
-                                    $AccountPaymentProfileID = $CustomerProfile->AccountPaymentProfileID;
-                                    $options = json_decode($CustomerProfile->Options);
+                                    if($PaymentMethod=='AccountBalance') {
+                                        $AccountPaymentProfileID=0;
+                                        $options = (object) array();
+                                    }else {
+                                        $AccountPaymentProfileID = $CustomerProfile->AccountPaymentProfileID;
+                                        $options = json_decode($CustomerProfile->Options);
+                                    }
 
                                     $outstanginamount = 0;
                                     $fullnumber = '';
@@ -204,7 +228,9 @@ class BulkAutoPaymentCapture extends Command {
                                             $paymentdata['updated_at'] = date('Y-m-d H:i:s');
                                             $paymentdata['CreatedBy'] = $CreatedBy;
                                             $paymentdata['ModifyBy'] = $CreatedBy;
-                                            Payment::insert($paymentdata);
+                                            if($PaymentMethod!='AccountBalance') {
+                                                Payment::insert($paymentdata);
+                                            }
                                             $transactiondata = array();
                                             $transactiondata['CompanyID'] = $account->CompanyId;
                                             $transactiondata['AccountID'] = $account->AccountID;
@@ -310,18 +336,18 @@ class BulkAutoPaymentCapture extends Command {
                                             $Emaildata['PaymentMethod'] = $PaymentMethod;
                                             $Emaildata['Currency'] = Currency::getCurrencyCode($account->CurrencyId);
                                             $Emaildata['Notes'] = $transactionResponse['transaction_notes'];
-                                            /**
+
                                             $CustomerEmail = '';
                                             if ($EMAIL_TO_CUSTOMER == 1) {
                                                 $CustomerEmail = $account->BillingEmail;
                                             }
                                             $CustomerEmail = explode(",", $CustomerEmail);
                                             $EmailTemplateStatus = EmailsTemplates::CheckEmailTemplateStatus(Payment::AUTOINVOICETEMPLATE, $CompanyID);
-
+                                            log::info('EmailTemplat Status '.$EmailTemplateStatus);
                                             if (!empty($CustomerEmail) && !empty($EmailTemplateStatus)) {
                                                 $staticdata = array();
                                                 $staticdata['PaidAmount'] = floatval($Invoiceid->RemaingAmount);
-                                                $staticdata['PaidStatus'] = 'Success';
+                                                $staticdata['PaidStatus'] = 'Failed';
                                                 $staticdata['PaymentMethod'] = $PaymentMethod;
                                                 $staticdata['PaymentNotes'] = $transactionResponse['transaction_notes'];
 
@@ -337,6 +363,7 @@ class BulkAutoPaymentCapture extends Command {
                                                             $Emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Payment::AUTOINVOICETEMPLATE, $CompanyID);
                                                         }
                                                         $customeremail_status = Helper::sendMail($body, $Emaildata, 0);
+                                                        log::info('Customer EmailTemplat Status '.print_r($customeremail_status,true));
                                                         if (!empty($customeremail_status['status'])) {
                                                             $JobLoggedUser = User::find($UserID);
                                                             $statuslog = Helper::account_email_log($CompanyID, $AccountID, $Emaildata, $customeremail_status, $JobLoggedUser, '', $JobID);
@@ -345,7 +372,7 @@ class BulkAutoPaymentCapture extends Command {
                                                     }
                                                 }
                                             }
-                                            */
+
 
                                             $NotificationEmails = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoicePaidByCustomer]);
                                             $emailArray = explode(',', $NotificationEmails);
@@ -407,7 +434,6 @@ class BulkAutoPaymentCapture extends Command {
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'Payment Received  Successfully';
         }
-
         Job::where(["JobID" => $JobID])->update($jobdata);
         $job = Job::find($JobID);
         Job::send_job_status_email($job, $CompanyID);

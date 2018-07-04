@@ -20,6 +20,15 @@
 			#frontinvoice .desc {
                 text-align: right;
             }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
 <style type="text/css">
@@ -59,6 +68,14 @@
     tfoot {
         display: table-row-group
     }
+    @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+    img.signatureImage {
+        position: absolute;
+        z-index: 99999;
+        top: {{isset($arrSignature["DigitalSignature"]->positionTop)?$arrSignature["DigitalSignature"]->positionTop:0}}px;
+        left: {{isset($arrSignature["DigitalSignature"]->positionLeft)?$arrSignature["DigitalSignature"]->positionLeft:0}}px;
+    }
+    @endif
 </style>
 <div class="inovicebody">
     <!-- logo and invoice from section start-->
@@ -79,6 +96,9 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
+    $AllTaxSummary = array();
+    $AllTaxCount=0;
+    $AllPayment=0;
     $is_sub = $is_charge = false;
     $total_usage= $total_sub = $total_add = 0;
     foreach($InvoiceDetail as $ProductRow){
@@ -106,11 +126,17 @@
     $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
     $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
+    $Terms = $Invoice->Terms;
+    $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
+    $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
     ?>
 
 
 
     <main>
+        @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+            <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
+        @endif
         <div id="details" class="clearfix">
             <div id="client" class="pull-left flip">
                 <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
@@ -157,7 +183,7 @@
                         <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
                 @else
                     <?php $colspan = 2; ?>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}Usage</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
                     <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
@@ -210,6 +236,13 @@
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
+                    <?php
+                    $tempsummary['Title']=$InvoiceTaxRate->Title;
+                    $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
+                    $AllTaxSummary[]=$tempsummary;
+                    $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
+                    ?>
+                @endforeach
                 <tr>
                     @if(!empty($VisibleColumns))
                         @if($colspan > 0)
@@ -218,10 +251,9 @@
                     @else
                         <td colspan="2"></td>
                     @endif
-                    <td>{{$InvoiceTaxRate->Title}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
                 </tr>
-                @endforeach
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -301,7 +333,7 @@
     <!-- adevrtisement and terms section start-->
     <div id="thanksadevertise">
         <div class="invoice-left">
-            <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+            <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
         </div>
     </div>
     <!-- adevrtisement and terms section end -->
@@ -316,8 +348,8 @@
     <main>
         @if($total_usage != 0)
         <div class="ChargesTitle clearfix">
-            <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
-            <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+            <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</div>
         </div>
         <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
             <thead>
@@ -351,8 +383,8 @@
 
         @if($is_sub)
             <div class="ChargesTitle clearfix">
-                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
-                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</div>
+                <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -387,8 +419,8 @@
 
         @if($is_charge)
             <div class="ChargesTitle clearfix">
-                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
-                <div class="text-right pull-right flip">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</div>
+                <div class="text-right pull-right flip col-harf">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</div>
             </div>
 
             <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
@@ -465,7 +497,7 @@
                                 $totalCalls  += $row['NoOfCalls'];
                                 $totalDuration  += $row['DurationInSec'];
                                 $totalBillDuration  += $row['BillDurationInSec'];
-                                $totalTotalCharges  += $row['ChargedAmount'];
+                                $totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                                 ?>
                                 <tr>
                                     @foreach($usage_data_table['header'] as $table_h_row)
@@ -478,9 +510,9 @@
                                         }
                                         ?>
                                         @if($table_h_row['Title'] == 'ChargedAmount')
-                                            <td class="{{$classname}}">{{$CurrencySymbol}}{{ number_format($row['ChargedAmount'],$RoundChargesAmount)}}</td>
+                                                <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
                                         @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-											<td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format(($row['ChargedAmount']/$row['BillDurationInSec'])*60,$RoundChargesAmount) : 0}}</td>
+											<td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format($row['AvgRatePerMin'],$RoundChargesAmount) : 0}}</td>
                                         @else
                                             <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                         @endif
@@ -538,7 +570,7 @@
 							@foreach($usage_data as $row)
                                 <?php
                                 $totalBillDuration  +=  $row['BillDuration'];
-                                $totalTotalCharges  += $row['ChargedAmount'];
+								$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
                                 ?>
                                 <tr>
                                     @foreach($usage_data_table['header'] as $table_h_row)
@@ -580,6 +612,67 @@
 
         @endif
 		@endif
+    @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
+        <div class="page_break"></div>
+        @if(count($AllTaxSummary)>0)
+        <div class="ChargesTitle clearfix">
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
+        </div>
+
+        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+            <thead>
+            <tr>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($AllTaxSummary as $row)
+                <tr>
+                    <td class="leftalign">{{$row['Title']}}</td>
+                    <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+            </tr>
+            </tbody>
+        </table>
+        @endif
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && count($payment_data)>0)
+            <div class="ChargesTitle clearfix">
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
+            </div>
+
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_NOTES")}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($payment_data as $row)
+                    <?php
+                    $AllPayment  += str_replace(',','',$row['Amount']);
+                    ?>
+                    <tr>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($row['PaymentDate']))}}</td>
+                        <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                        <td class="leftalign">{{$row['Notes']}}</td>
+                    </tr>
+                @endforeach
+                <tr>
+                    <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                    <td class="leftalign total" colspan="2">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
+                </tr>
+                </tbody>
+            </table>
+        @endif
+
+    @endif
 
         @if(!empty($ManagementReports) && $total_usage != 0)
             <div class="page_break"></div>

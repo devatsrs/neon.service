@@ -219,10 +219,11 @@ Please check below error messages while re-rating cdrs.
         $is_inbound = $is_outbound = $is_failed= false;
 
 
-        if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
+        //imedia only outbound. 0 = outbound and 1 = inbound
+        if(isset($userfield) && (strpos($userfield,"inbound") !== false  || $userfield ==1) ) {
             $is_inbound = true;
         }
-        if(isset($userfield) && strpos($userfield,"outbound") !== false ) {
+        if(isset($userfield) && (strpos($userfield,"outbound") !== false || $userfield ==0)) {
             $is_outbound = true;
         }
         /** if user field is blocked call any reason make duration zero */
@@ -256,7 +257,7 @@ Please check below error messages while re-rating cdrs.
         $today = date('Y-m-d');
         $todaytime = date('Y-m-d H:i:s');
         $Accounts = DB::table('tblAccountDiscountPlan')->where('EndDate','<=',$today)
-            ->get(['AccountID','DiscountPlanID','ServiceID','EndDate','Type']);
+            ->get(['AccountID','DiscountPlanID','ServiceID','EndDate','Type','AccountSubscriptionID','AccountName','AccountCLI','SubscriptionDiscountPlanID']);
         foreach($Accounts as $Account){
             $ServiceID = $Account->ServiceID;
             $Manualcount = AccountBilling::where(['AccountID'=>$Account->AccountID,'BillingCycleType'=>'manual'])->count();
@@ -276,12 +277,20 @@ Please check below error messages while re-rating cdrs.
             if($Manualcount == 0 && !empty($BillingCycleType)) {
                 $days = getBillingDay(strtotime($Account->EndDate), $BillingCycleType, $BillingCycleValue); // monthly : 30 or 31 days
                 $NextInvoiceDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($Account->EndDate));
+                log::info('next invoice date');
+                log::info($NextInvoiceDate);
                 $getdaysdiff = getdaysdiff($NextInvoiceDate, $today); //
+                log::info('getdaysdiff');
+                log::info($getdaysdiff);
                 $DayDiff = $getdaysdiff > 0 ? intval($getdaysdiff) : 0;
+                $AccountSubscriptionID = $Account->AccountSubscriptionID;
+                $AccountName=empty($Account->AccountName) ? '' : $Account->AccountName;
+                $AccountCLI=empty($Account->AccountCLI) ? '' : $Account->AccountCLI;
+                $SubscriptionDiscountPlanID=empty($Account->SubscriptionDiscountPlanID) ? 0 : $Account->SubscriptionDiscountPlanID;
                 // Apply new fresh or reset Discount Plan from 0 UsedSeconds
                 // if apply from 15th in between month . billing cycle thresold will be half. ie 1000 to 500
-                Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID)");
-                DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID));
+                Log::info("call prc_setAccountDiscountPlan ($Account->AccountID,$Account->DiscountPlanID,$Account->Type,$days,$DayDiff,'RMScheduler',$todaytime,$ServiceID,$AccountSubscriptionID,$AccountName,$AccountCLI,$SubscriptionDiscountPlanID)");
+                DB::select('call prc_setAccountDiscountPlan(?,?,?,?,?,?,?,?,?,?,?,?)', array($Account->AccountID, intval($Account->DiscountPlanID), intval($Account->Type), $days, $DayDiff, 'RMScheduler', $todaytime, $ServiceID,$AccountSubscriptionID,$AccountName,$AccountCLI,$SubscriptionDiscountPlanID));
             }else{
                 Log::info("No biiling setup");
             }
@@ -343,5 +352,66 @@ Please check below ip auto added.
                 ))->where('RateDate', '<', date("Y-m-d"))->update(array('SentStatus' => 1));
             }
         }
+    }
+
+    public static function update_cost_with_margin($RateMethod,$ReRateMargin,$temptableName,$ProcessID) {
+
+        if($RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
+
+            if (!empty($ReRateMargin)) {
+
+                $ReRateMargin = trim($ReRateMargin);
+
+                if (strpos($ReRateMargin, "p") !== FALSE) {
+
+                    //$sql = "UPDATE `" . $temptableName . "` SET cost  = cost +  (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';"; // Note: cost + requested by imedia to remove
+                    $sql = "UPDATE `" . $temptableName . "` SET cost  = (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
+                    DB::connection('sqlsrvcdr')->statement($sql);
+                    return true;
+
+                } else {
+
+                    $sql = "UPDATE `" . $temptableName . "` SET cost  = " . $ReRateMargin . " WHERE ProcessID = '" . $ProcessID . "';";
+                    DB::connection('sqlsrvcdr')->statement($sql);
+                    return true;
+
+                }
+            }
+        }
+        return false;
+    }
+
+
+    // set field base on authentication rule applied in gateway
+    public static function ApplyGatewayAuthenticationRule($NameFormat,&$data , $AuthenticationValue , $spitby='-') {
+
+        switch ($NameFormat){
+            case  'NAMENUB':
+                $_AuthenticationValue = explode($spitby,$AuthenticationValue);
+                $data['AccountName']    =  $_AuthenticationValue[0];
+                $data['AccountNumber']  =  $_AuthenticationValue[1];
+                break;
+            case  'NUBNAME':
+                $_AuthenticationValue = explode($spitby,$AuthenticationValue);
+                $data['AccountNumber']  =  $_AuthenticationValue[0];
+                $data['AccountName']    =  $_AuthenticationValue[1];
+                break;
+            case  'NAME':
+                $data['AccountName'] =  $AuthenticationValue;
+                break;
+            case  'NUB':
+                $data['AccountNumber'] =  $AuthenticationValue;
+                break;
+            case  'IP':
+                $data['AccountIP'] =  $AuthenticationValue;
+                break;
+            case  'CLI':
+                $data['AccountCLI'] =  $AuthenticationValue;
+                break;
+            case  'Other':
+                $data['AccountName'] =  $AuthenticationValue;
+                break;
+        }
+
     }
 }

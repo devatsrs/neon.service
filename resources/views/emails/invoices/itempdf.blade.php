@@ -20,6 +20,15 @@
             #frontinvoice .desc {
                 text-align: right;
             }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
     <style type="text/css">
@@ -41,6 +50,15 @@
             }
         }
         .page_break{page-break-after: always;}
+        @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+        img.signatureImage {
+            position: absolute;
+            z-index: 99999;
+            top: {{isset($arrSignature["DigitalSignature"]->positionTop)?$arrSignature["DigitalSignature"]->positionTop:0}}px;
+            left: {{isset($arrSignature["DigitalSignature"]->positionLeft)?$arrSignature["DigitalSignature"]->positionLeft:0}}px;
+        }
+        @endif
+
     </style>
 
     <div class="inovicebody">
@@ -63,10 +81,17 @@
         $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
         $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
         $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
+
+        $Terms = $Invoice->Terms;
+        $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
+        $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
         ?>
 
 
         <main>
+            @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+                <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
+            @endif
             <div id="details" class="clearfix">
                 <div id="client" class="pull-left flip">
                     <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
@@ -140,7 +165,7 @@
         <!-- adevrtisement and terms section start-->
         <div id="thanksadevertise">
             <div class="invoice-left">
-                <p><a class="form-control pull-left" style="height: auto">{{nl2br($Invoice->Terms)}}</a></p>
+                <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
             </div>
         </div>
         <!-- adevrtisement and terms section end -->

@@ -27,7 +27,9 @@ class AmazonS3 {
         'INVOICE_UPLOAD' =>  'Invoices',
 		'EMAIL_ATTACHMENT'=>'EmailAttachment',
 		'REPORT_ATTACHMENT'=>'ReportAttachment',
-		'DIGITAL_SIGNATURE_KEY'=>'DigitalSignature'
+		'DIGITAL_SIGNATURE_KEY'=>'DigitalSignature',
+        'GATEWAY_KEY'=>'GatewayKey',
+
     );
 
     // Instantiate an S3 client
@@ -244,4 +246,13 @@ class AmazonS3 {
         return $return;
     }
 
+    static function download($CompanyID,$key,$destination){
+        $path = self::unSignedUrl($key,$CompanyID);
+        if (strpos($path, "https://") !== false) {
+            $file = $destination;
+            file_put_contents($file, file_get_contents($path));
+        }
+        return $path;
+
+    }
 } 

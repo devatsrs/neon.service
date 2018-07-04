@@ -1,7 +1,9 @@
 <?php
 namespace App;
 
+use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanyGateway;
 use App\Lib\Gateway;
 use Collective\Remote\RemoteFacade;
 use \Exception;
@@ -29,10 +31,32 @@ class FTPGateway{
             }
         }
 
-        if(isset($this->config['protocol_type']) && $this->config['protocol_type'] == Gateway::SSH_FILE_TRANSFER) {
+        if(isset(self::$config['protocol_type']) && self::$config['protocol_type'] == Gateway::SSH_FILE_TRANSFER) {
 
             if (count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])) {
                 Config::set('remote.connections.production', self::$config);
+
+                if(isset(self::$config["key"]) && !empty(self::$config["key"]) ) {
+
+                    $CompanyID = CompanyGateway::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('CompanyID');
+                    $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+                    $full_key_path = $UPLOADPATH   . "/" . self::$config["key"];
+
+                    if(!file_exists($full_key_path)) {
+                        $path = AmazonS3::download($CompanyID, self::$config["key"], $full_key_path);
+                        $full_key_path = "";
+                        if (file_exists($path)) {
+                            $full_key_path = $path;
+                        } else {
+
+                        }
+                    }
+
+                    Config::set('remote.connections.production.key',   $full_key_path);
+
+                }
+
+
             }
         }else {
 
@@ -68,7 +92,10 @@ class FTPGateway{
             $filename = array();
             $files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $FileNameRule = self::DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"]) && !empty(trim($addparams["FileNameRule"]))){
+            if(isset($addparams["FileNameRule"])){
+                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
+            }
+            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
                 $FileNameRule =  $addparams["FileNameRule"];
             }
             foreach((array)$files as $file){
