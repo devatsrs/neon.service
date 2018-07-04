@@ -120,7 +120,7 @@ class CompanyGateway extends \Eloquent {
             Schema::connection('sqlsrvcdr')->dropIfExists($temp_tblRetailUsageDetail_TableName);
             $temp_tblRetailUsageDetail_Create = "CREATE TABLE IF NOT EXISTS `".$temp_tblRetailUsageDetail_TableName."` (
                                         `TempRetailUsageDetailID` INT(11) NOT NULL AUTO_INCREMENT,
-                                        `TempUsageDetailID` INT(11) NOT NULL,
+                                        `TempUsageDetailID` BIGINT(20) NOT NULL,
                                         `ID`  BIGINT(20) NULL DEFAULT NULL ,
                                         `cc_type` TINYINT(1) NOT NULL DEFAULT '0',
                                         `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
