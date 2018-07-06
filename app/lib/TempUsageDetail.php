@@ -219,10 +219,11 @@ Please check below error messages while re-rating cdrs.
         $is_inbound = $is_outbound = $is_failed= false;
 
 
-        if(isset($userfield) && strpos($userfield,"inbound") !== false ) {
+        //imedia only outbound. 0 = outbound and 1 = inbound
+        if(isset($userfield) && (strpos($userfield,"inbound") !== false  || $userfield ==1) ) {
             $is_inbound = true;
         }
-        if(isset($userfield) && strpos($userfield,"outbound") !== false ) {
+        if(isset($userfield) && (strpos($userfield,"outbound") !== false || $userfield ==0)) {
             $is_outbound = true;
         }
         /** if user field is blocked call any reason make duration zero */
@@ -363,7 +364,8 @@ Please check below ip auto added.
 
                 if (strpos($ReRateMargin, "p") !== FALSE) {
 
-                    $sql = "UPDATE `" . $temptableName . "` SET cost  = cost +  (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
+                    //$sql = "UPDATE `" . $temptableName . "` SET cost  = cost +  (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';"; // Note: cost + requested by imedia to remove
+                    $sql = "UPDATE `" . $temptableName . "` SET cost  = (cost * REPLACE('" . $ReRateMargin . "','p','')/100) WHERE ProcessID = '" . $ProcessID . "';";
                     DB::connection('sqlsrvcdr')->statement($sql);
                     return true;
 
@@ -377,5 +379,39 @@ Please check below ip auto added.
             }
         }
         return false;
+    }
+
+
+    // set field base on authentication rule applied in gateway
+    public static function ApplyGatewayAuthenticationRule($NameFormat,&$data , $AuthenticationValue , $spitby='-') {
+
+        switch ($NameFormat){
+            case  'NAMENUB':
+                $_AuthenticationValue = explode($spitby,$AuthenticationValue);
+                $data['AccountName']    =  $_AuthenticationValue[0];
+                $data['AccountNumber']  =  $_AuthenticationValue[1];
+                break;
+            case  'NUBNAME':
+                $_AuthenticationValue = explode($spitby,$AuthenticationValue);
+                $data['AccountNumber']  =  $_AuthenticationValue[0];
+                $data['AccountName']    =  $_AuthenticationValue[1];
+                break;
+            case  'NAME':
+                $data['AccountName'] =  $AuthenticationValue;
+                break;
+            case  'NUB':
+                $data['AccountNumber'] =  $AuthenticationValue;
+                break;
+            case  'IP':
+                $data['AccountIP'] =  $AuthenticationValue;
+                break;
+            case  'CLI':
+                $data['AccountCLI'] =  $AuthenticationValue;
+                break;
+            case  'Other':
+                $data['AccountName'] =  $AuthenticationValue;
+                break;
+        }
+
     }
 }
