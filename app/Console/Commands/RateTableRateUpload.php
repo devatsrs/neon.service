@@ -96,8 +96,6 @@ class RateTableRateUpload extends Command
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
 
-                    $Timezones = Timezones::getTimezonesIDList(1);
-
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
@@ -243,179 +241,200 @@ class RateTableRateUpload extends Command
                         }
 
                         $error = array();
-                        foreach ($results as $temp_row) {
-                            if ($csvoption->Firstrow == 'data') {
-                                array_unshift($temp_row, null);
-                                unset($temp_row[0]);
-                            }
 
-                            foreach ($temp_row as $key => $value) {
-                                $key = str_replace("\r",'',$key);
-                                $key = str_replace("\n",'',$key);
-                                $temp_row[$key] = $value;
-                            }
+                        //get how many rates mapped against timezones
+                        $RatesKeys = array_key_exists_wildcard((array)$attrselection,'Rate*');
 
-                            $tempratetabledata = array();
-                            $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
-                            $tempratetabledata['ProcessId'] = (string)$ProcessID;
-
-                            //check empty row
-                            $checkemptyrow = array_filter(array_values($temp_row));
-                            if (!empty($checkemptyrow)) {
-                                if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
-                                    if(!empty($attrselection->CountryCode)) {
-                                        $selection_CountryCode = $attrselection->CountryCode;
-                                    } else if(!empty($attrselection2->CountryCode)) {
-                                        $selection_CountryCode = $attrselection2->CountryCode;
+                        $lineno1 = $lineno;
+                        foreach ($RatesKeys as $key => $RateColumn) {
+                            // check if rate is mapped against timezone
+                            if (!empty($attrselection->$RateColumn)) {
+                                $lineno = $lineno1;
+                                foreach ($results as $temp_row) {
+                                    if ($csvoption->Firstrow == 'data') {
+                                        array_unshift($temp_row, null);
+                                        unset($temp_row[0]);
                                     }
-                                    if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
-                                        $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
-                                    } else {
-                                        $tempratetabledata['CountryCode'] = '';
-                                    }
-                                }
 
-                                if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
-                                    if(!empty($attrselection->Code)) {
-                                        $selection_Code = $attrselection->Code;
-                                    } else if(!empty($attrselection2->Code)) {
-                                        $selection_Code = $attrselection2->Code;
+                                    foreach ($temp_row as $key => $value) {
+                                        $key = str_replace("\r", '', $key);
+                                        $key = str_replace("\n", '', $key);
+                                        $temp_row[$key] = $value;
                                     }
-                                    if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
-                                        $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (!empty($tempvendordata['CountryCode'])) {
-                                        $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
-                                    } else {
-                                        $error[] = 'Code is blank at line no:' . $lineno;
-                                    }
-                                }
 
-                                if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
-                                    if(!empty($attrselection->Description)) {
-                                        $selection_Description = $attrselection->Description;
-                                    } else if(!empty($attrselection2->Description)) {
-                                        $selection_Description = $attrselection2->Description;
-                                    }
-                                    if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
-                                        $tempratetabledata['Description'] = $temp_row[$selection_Description];
-                                    } else {
-                                        $error[] = 'Description is blank at line no:' . $lineno;
-                                    }
-                                }
+                                    $tempratetabledata = array();
+                                    $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
+                                    $tempratetabledata['ProcessId'] = (string)$ProcessID;
 
-                                /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
-                                    $tempratetabledata['CurrencyID'] = $attrselection->FromCurrency;
-                                }*/
+                                    //check empty row
+                                    $checkemptyrow = array_filter(array_values($temp_row));
+                                    if (!empty($checkemptyrow)) {
+                                        if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
+                                            if (!empty($attrselection->CountryCode)) {
+                                                $selection_CountryCode = $attrselection->CountryCode;
+                                            } else if (!empty($attrselection2->CountryCode)) {
+                                                $selection_CountryCode = $attrselection2->CountryCode;
+                                            }
+                                            if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                                $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
+                                            } else {
+                                                $tempratetabledata['CountryCode'] = '';
+                                            }
+                                        }
 
-                                if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                                    if (empty($temp_row[$attrselection->Action])) {
-                                        $tempratetabledata['Change'] = 'I';
-                                    } else {
-                                        $action_value = $temp_row[$attrselection->Action];
-                                        if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete))) {
-                                            $tempratetabledata['Change'] = 'D';
-                                        } else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
-                                            $tempratetabledata['Change'] = 'U';
-                                        } else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
-                                            $tempratetabledata['Change'] = 'I';
+                                        if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
+                                            if (!empty($attrselection->Code)) {
+                                                $selection_Code = $attrselection->Code;
+                                            } else if (!empty($attrselection2->Code)) {
+                                                $selection_Code = $attrselection2->Code;
+                                            }
+                                            if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                                $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                            } else if (!empty($tempratetabledata['CountryCode'])) {
+                                                $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                                            } else {
+                                                $error[] = 'Code is blank at line no:' . $lineno;
+                                            }
+                                        }
+
+                                        if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
+                                            if (!empty($attrselection->Description)) {
+                                                $selection_Description = $attrselection->Description;
+                                            } else if (!empty($attrselection2->Description)) {
+                                                $selection_Description = $attrselection2->Description;
+                                            }
+                                            if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
+                                                $tempratetabledata['Description'] = $temp_row[$selection_Description];
+                                            } else {
+                                                $error[] = 'Description is blank at line no:' . $lineno;
+                                            }
+                                        }
+
+                                        /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
+                                            $tempratetabledata['CurrencyID'] = $attrselection->FromCurrency;
+                                        }*/
+
+                                        if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                            if (empty($temp_row[$attrselection->Action])) {
+                                                $tempratetabledata['Change'] = 'I';
+                                            } else {
+                                                $action_value = $temp_row[$attrselection->Action];
+                                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete))) {
+                                                    $tempratetabledata['Change'] = 'D';
+                                                } else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
+                                                    $tempratetabledata['Change'] = 'U';
+                                                } else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                                    $tempratetabledata['Change'] = 'I';
+                                                } else {
+                                                    $tempratetabledata['Change'] = 'I';
+                                                }
+                                            }
+
                                         } else {
                                             $tempratetabledata['Change'] = 'I';
                                         }
-                                    }
 
-                                } else {
-                                    $tempratetabledata['Change'] = 'I';
-                                }
-
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
-                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                    if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                        $tempratetabledata['Rate'] = trim($temp_row[$attrselection->Rate]);
-                                    } else {
-                                        $error[] = 'Rate is not numeric at line no:' . $lineno;
-                                    }
-                                }elseif($tempratetabledata['Change'] == 'D') {
-                                    $tempratetabledata['Rate'] = 0;
-                                }elseif($tempratetabledata['Change'] != 'D') {
-                                    $error[] = 'Rate is blank at line no:'.$lineno;
-                                }
-
-                                if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
-                                    if(!empty($attrselection->EffectiveDate)) {
-                                        $selection_EffectiveDate = $attrselection->EffectiveDate;
-                                        $selection_dateformat = $attrselection->DateFormat;
-                                    } else if(!empty($attrselection2->EffectiveDate)) {
-                                        $selection_EffectiveDate = $attrselection2->EffectiveDate;
-                                        $selection_dateformat = $attrselection2->DateFormat;
-                                    }
-
-                                    if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
-                                        try {
-                                            $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
-                                        } catch (\Exception $e) {
-                                            $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                        if (isset($attrselection->$RateColumn) && !empty($attrselection->$RateColumn)) {
+                                            $temp_row[$attrselection->$RateColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$RateColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
+                                            if (is_numeric(trim($temp_row[$attrselection->$RateColumn]))) {
+                                                $tempratetabledata['Rate'] = trim($temp_row[$attrselection->$RateColumn]);
+                                            } else {
+                                                $error[] = 'Rate is not numeric at line no:' . $lineno;
+                                            }
+                                        } elseif ($tempratetabledata['Change'] == 'D') {
+                                            $tempratetabledata['Rate'] = 0;
+                                        } elseif ($tempratetabledata['Change'] != 'D') {
+                                            $error[] = 'Rate is blank at line no:' . $lineno;
                                         }
-                                    } elseif (empty($selection_EffectiveDate)) {
-                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                                    } elseif ($tempratetabledata['Change'] == 'D') {
-                                        $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                                    } elseif ($tempratetabledata['Change'] != 'D') {
-                                        $error[] = 'EffectiveDate is blank at line no:' . $lineno;
-                                    }
-                                } else {
-                                    $tempratetabledata['EffectiveDate'] = date('Y-m-d');
-                                }
 
-                                if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
-                                    try {
-                                        $tempratetabledata['EndDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
-                                    }catch (\Exception $e){
-                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
-                                    }
-                                }
+                                        if (!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
+                                            if (!empty($attrselection->EffectiveDate)) {
+                                                $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                                $selection_dateformat = $attrselection->DateFormat;
+                                            } else if (!empty($attrselection2->EffectiveDate)) {
+                                                $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                                $selection_dateformat = $attrselection2->DateFormat;
+                                            }
 
-                                if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                    $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
-                                }
-                                if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                    $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
-                                }
-                                if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                    $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
-                                }
-                                if (!empty($DialStringId)) {
-                                    if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
-                                        $tempratetabledata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
-                                    } else {
-                                        $tempratetabledata['DialStringPrefix'] = '';
-                                    }
-                                }
+                                            if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
+                                                try {
+                                                    $tempratetabledata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
+                                                } catch (\Exception $e) {
+                                                    $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                                }
+                                            } elseif (empty($selection_EffectiveDate)) {
+                                                $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                            } elseif ($tempratetabledata['Change'] == 'D') {
+                                                $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                            } elseif ($tempratetabledata['Change'] != 'D') {
+                                                $error[] = 'EffectiveDate is blank at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempratetabledata['EffectiveDate'] = date('Y-m-d');
+                                        }
 
-                                if(!empty($templateoptions->TimezonesID)) {
-                                    $tempratetabledata['TimezonesID'] = $templateoptions->TimezonesID;
-                                } else if (!empty($attrselection->Timezones)) {
-                                    if(array_key_exists($temp_row[$attrselection->Timezones],$Timezones)) {
-                                        $tempratetabledata['TimezonesID'] = $Timezones[$temp_row[$attrselection->Timezones]];
-                                    } else {
-                                        $error[] = 'Timezones not match at line no:' . $lineno;
-                                    }
-                                } else {
-                                    $error[] = 'Timezones is blank at line no:' . $lineno;
-                                }
+                                        if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
+                                            try {
+                                                $tempratetabledata['EndDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
+                                            } catch (\Exception $e) {
+                                                $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                            }
+                                        }
 
-                                if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && isset($tempratetabledata['TimezonesID']) && ( isset($tempratetabledata['Rate'])  || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
-                                    if(isset($tempratetabledata['EndDate'])) {
-                                        $batch_insert_array[] = $tempratetabledata;
-                                    } else {
-                                        $batch_insert_array2[] = $tempratetabledata;
+                                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                            $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                        }
+                                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                            $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
+                                        }
+                                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                            $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
+                                        }
+                                        if (!empty($DialStringId)) {
+                                            if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
+                                                $tempratetabledata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                            } else {
+                                                $tempratetabledata['DialStringPrefix'] = '';
+                                            }
+                                        }
+
+                                        if ($RateColumn == 'Rate') {
+                                            $tempdata['TimezonesID'] = 1;
+                                        } else {
+                                            $TID = explode('-', $RateColumn)[1];
+                                            $tempratetabledata['TimezonesID'] = $TID;
+                                        }
+
+                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['Rate']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                            if (isset($tempratetabledata['EndDate'])) {
+                                                $batch_insert_array[] = $tempratetabledata;
+                                            } else {
+                                                $batch_insert_array2[] = $tempratetabledata;
+                                            }
+                                            $counter++;
+                                        }
                                     }
-                                    $counter++;
-                                }
-                            }
-                            if ($counter == $bacth_insert_limit) {
+                                    if ($counter == $bacth_insert_limit) {
+                                        Log::info('Batch insert start');
+                                        Log::info('global counter' . $lineno);
+                                        Log::info('insertion start');
+                                        TempRateTableRate::insert($batch_insert_array);
+                                        TempRateTableRate::insert($batch_insert_array2);
+                                        Log::info('insertion end');
+                                        $batch_insert_array = [];
+                                        $batch_insert_array2 = [];
+                                        $counter = 0;
+                                    }
+                                    $lineno++;
+                                } // loop over
+                            } // if rate is mapped against timezone condition
+
+                            if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                                 Log::info('Batch insert start');
                                 Log::info('global counter' . $lineno);
                                 Log::info('insertion start');
+                                Log::info('last batch insert ' . count($batch_insert_array));
+                                Log::info('last batch insert 2 ' . count($batch_insert_array2));
                                 TempRateTableRate::insert($batch_insert_array);
                                 TempRateTableRate::insert($batch_insert_array2);
                                 Log::info('insertion end');
@@ -423,19 +442,8 @@ class RateTableRateUpload extends Command
                                 $batch_insert_array2 = [];
                                 $counter = 0;
                             }
-                            $lineno++;
-                        }
+                        } // $Ratekeys loop over
 
-                        if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
-                            Log::info('Batch insert start');
-                            Log::info('global counter' . $lineno);
-                            Log::info('insertion start');
-                            Log::info('last batch insert ' . count($batch_insert_array));
-                            Log::info('last batch insert 2 ' . count($batch_insert_array2));
-                            TempRateTableRate::insert($batch_insert_array);
-                            TempRateTableRate::insert($batch_insert_array2);
-                            Log::info('insertion end');
-                        }
                     } else {
                         $ProcessID = $joboptions->ProcessID;
                     }
