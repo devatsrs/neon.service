@@ -401,8 +401,7 @@ class RateTableRateUpload extends Command
                                         if ($RateColumn == 'Rate') {
                                             $tempdata['TimezonesID'] = 1;
                                         } else {
-                                            $TID = explode('-', $RateColumn)[1];
-                                            $tempratetabledata['TimezonesID'] = $TID;
+                                            $tempratetabledata['TimezonesID'] = substr($RateColumn, 4);
                                         }
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['Rate']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {

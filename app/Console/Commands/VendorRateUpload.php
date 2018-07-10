@@ -449,8 +449,7 @@ class VendorRateUpload extends Command
                                         if ($RateColumn == 'Rate') {
                                             $tempdata['TimezonesID'] = 1;
                                         } else {
-                                            $TID = explode('-', $RateColumn)[1];
-                                            $tempvendordata['TimezonesID'] = $TID;
+                                            $tempvendordata['TimezonesID'] = substr($RateColumn, 4);
                                         }
 
                                         if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && (isset($tempvendordata['Rate']) || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
