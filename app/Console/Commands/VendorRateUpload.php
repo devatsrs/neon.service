@@ -100,8 +100,6 @@ class VendorRateUpload extends Command
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
 
-                    $Timezones = Timezones::getTimezonesIDList(1);
-
                     if (isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)) {
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
                         $templateoptions = json_decode($uploadtemplate->Options);
@@ -278,195 +276,213 @@ class VendorRateUpload extends Command
                             }
                         }
 
-                        foreach ($results as $index => $temp_row) {
+                        //get how many rates mapped against timezones
+                        $RatesKeys = array_key_exists_wildcard((array)$attrselection,'Rate*');
 
-                            if ($csvoption->Firstrow == 'data') {
-                                array_unshift($temp_row, null);
-                                unset($temp_row[0]);
-                            }
+                        $lineno1 = $lineno;
+                        foreach ($RatesKeys as $key => $RateColumn) {
+                            // check if rate is mapped against timezone
+                            if(!empty($attrselection->$RateColumn)) {
+                                $lineno = $lineno1;
+                                foreach ($results as $index => $temp_row) {
 
-                            foreach ($temp_row as $key => $value) {
-                                $key = str_replace("\r",'',$key);
-                                $key = str_replace("\n",'',$key);
-                                $temp_row[$key] = $value;
-                            }
-
-                            $tempvendordata = array();
-                            $tempvendordata['codedeckid'] = $joboptions->codedeckid;
-                            $tempvendordata['ProcessId'] = (string)$ProcessID;
-
-                            //check empty row
-                            $checkemptyrow = array_filter(array_values($temp_row));
-                            if (!empty($checkemptyrow)) {
-                                if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
-                                    if(!empty($attrselection->CountryCode)) {
-                                        $selection_CountryCode = $attrselection->CountryCode;
-                                    } else if(!empty($attrselection2->CountryCode)) {
-                                        $selection_CountryCode = $attrselection2->CountryCode;
+                                    if ($csvoption->Firstrow == 'data') {
+                                        array_unshift($temp_row, null);
+                                        unset($temp_row[0]);
                                     }
-                                    if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
-                                        $tempvendordata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
-                                    } else {
-                                        $tempvendordata['CountryCode'] = '';
-                                    }
-                                }
 
-                                if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
-                                    if(!empty($attrselection->Code)) {
-                                        $selection_Code = $attrselection->Code;
-                                    } else if(!empty($attrselection2->Code)) {
-                                        $selection_Code = $attrselection2->Code;
+                                    foreach ($temp_row as $key => $value) {
+                                        $key = str_replace("\r", '', $key);
+                                        $key = str_replace("\n", '', $key);
+                                        $temp_row[$key] = $value;
                                     }
-                                    if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
-                                        $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
-                                    } else if (!empty($tempvendordata['CountryCode'])) {
-                                        $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
-                                    } else {
-                                        $error[] = 'Code is blank at line no:' . $lineno;
-                                    }
-                                }
 
-                                if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
-                                    if(!empty($attrselection->Description)) {
-                                        $selection_Description = $attrselection->Description;
-                                    } else if(!empty($attrselection2->Description)) {
-                                        $selection_Description = $attrselection2->Description;
-                                    }
-                                    if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
-                                        $tempvendordata['Description'] = $temp_row[$selection_Description];
-                                    } else {
-                                        $error[] = 'Description is blank at line no:' . $lineno;
-                                    }
-                                }
+                                    $tempvendordata = array();
+                                    $tempvendordata['codedeckid'] = $joboptions->codedeckid;
+                                    $tempvendordata['ProcessId'] = (string)$ProcessID;
 
-                                /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
-                                    $tempvendordata['CurrencyID'] = $attrselection->FromCurrency;
-                                }*/
+                                    //check empty row
+                                    $checkemptyrow = array_filter(array_values($temp_row));
+                                    if (!empty($checkemptyrow)) {
+                                        if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
+                                            if (!empty($attrselection->CountryCode)) {
+                                                $selection_CountryCode = $attrselection->CountryCode;
+                                            } else if (!empty($attrselection2->CountryCode)) {
+                                                $selection_CountryCode = $attrselection2->CountryCode;
+                                            }
+                                            if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+                                                $tempvendordata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
+                                            } else {
+                                                $tempvendordata['CountryCode'] = '';
+                                            }
+                                        }
 
-                                if (isset($attrselection->Action) && !empty($attrselection->Action)) {
-                                    if (empty($temp_row[$attrselection->Action])) {
-                                        $tempvendordata['Change'] = 'I';
-                                    } else {
-                                        $action_value = $temp_row[$attrselection->Action];
-                                        if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete))) {
-                                            $tempvendordata['Change'] = 'D';
-                                        } else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
-                                            $tempvendordata['Change'] = 'U';
-                                        } else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
-                                            $tempvendordata['Change'] = 'I';
+                                        if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
+                                            if (!empty($attrselection->Code)) {
+                                                $selection_Code = $attrselection->Code;
+                                            } else if (!empty($attrselection2->Code)) {
+                                                $selection_Code = $attrselection2->Code;
+                                            }
+                                            if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                                $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
+                                            } else if (!empty($tempvendordata['CountryCode'])) {
+                                                $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                                            } else {
+                                                $error[] = 'Code is blank at line no:' . $lineno;
+                                            }
+                                        }
+
+                                        if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
+                                            if (!empty($attrselection->Description)) {
+                                                $selection_Description = $attrselection->Description;
+                                            } else if (!empty($attrselection2->Description)) {
+                                                $selection_Description = $attrselection2->Description;
+                                            }
+                                            if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
+                                                $tempvendordata['Description'] = $temp_row[$selection_Description];
+                                            } else {
+                                                $error[] = 'Description is blank at line no:' . $lineno;
+                                            }
+                                        }
+
+                                        /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
+                                            $tempvendordata['CurrencyID'] = $attrselection->FromCurrency;
+                                        }*/
+
+                                        if (isset($attrselection->Action) && !empty($attrselection->Action)) {
+                                            if (empty($temp_row[$attrselection->Action])) {
+                                                $tempvendordata['Change'] = 'I';
+                                            } else {
+                                                $action_value = $temp_row[$attrselection->Action];
+                                                if (isset($attrselection->ActionDelete) && !empty($attrselection->ActionDelete) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionDelete))) {
+                                                    $tempvendordata['Change'] = 'D';
+                                                } else if (isset($attrselection->ActionUpdate) && !empty($attrselection->ActionUpdate) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionUpdate))) {
+                                                    $tempvendordata['Change'] = 'U';
+                                                } else if (isset($attrselection->ActionInsert) && !empty($attrselection->ActionInsert) && trim(strtolower($action_value)) == trim(strtolower($attrselection->ActionInsert))) {
+                                                    $tempvendordata['Change'] = 'I';
+                                                } else {
+                                                    $tempvendordata['Change'] = 'I';
+                                                }
+                                            }
+
                                         } else {
                                             $tempvendordata['Change'] = 'I';
                                         }
-                                    }
 
-                                } else {
-                                    $tempvendordata['Change'] = 'I';
-                                }
-
-                                if (isset($attrselection->Rate) && !empty($attrselection->Rate)) {
-                                    $temp_row[$attrselection->Rate] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->Rate]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                    if (is_numeric(trim($temp_row[$attrselection->Rate]))) {
-                                        $tempvendordata['Rate'] = trim($temp_row[$attrselection->Rate]);
-                                    } else {
-                                        $error[] = 'Rate is not numeric at line no:' . $lineno;
-                                    }
-                                }elseif($tempvendordata['Change'] == 'D') {
-                                    $tempvendordata['Rate'] = 0;
-                                }elseif($tempvendordata['Change'] != 'D') {
-                                    $error[] = 'Rate is blank at line no:'.$lineno;
-                                }
-
-                                if(!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
-                                    if(!empty($attrselection->EffectiveDate)) {
-                                        $selection_EffectiveDate = $attrselection->EffectiveDate;
-                                        $selection_dateformat = $attrselection->DateFormat;
-                                    } else if(!empty($attrselection2->EffectiveDate)) {
-                                        $selection_EffectiveDate = $attrselection2->EffectiveDate;
-                                        $selection_dateformat = $attrselection2->DateFormat;
-                                    }
-
-                                    if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
-                                        try {
-                                            $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
-                                        } catch (\Exception $e) {
-                                            $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                        if (isset($attrselection->$RateColumn) && !empty($attrselection->$RateColumn)) {
+                                            $temp_row[$attrselection->$RateColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$RateColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
+                                            if (is_numeric(trim($temp_row[$attrselection->$RateColumn]))) {
+                                                $tempvendordata['Rate'] = trim($temp_row[$attrselection->$RateColumn]);
+                                            } else {
+                                                $error[] = 'Rate is not numeric at line no:' . $lineno;
+                                            }
+                                        } elseif ($tempvendordata['Change'] == 'D') {
+                                            $tempvendordata['Rate'] = 0;
+                                        } elseif ($tempvendordata['Change'] != 'D') {
+                                            $error[] = 'Rate is blank at line no:' . $lineno;
                                         }
-                                    } elseif (empty($selection_EffectiveDate)) {
-                                        $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                                    } elseif ($tempvendordata['Change'] == 'D') {
-                                        $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                                    } elseif ($tempvendordata['Change'] != 'D') {
-                                        $error[] = 'EffectiveDate is blank at line no:' . $lineno;
-                                    }
-                                } else {
-                                    $tempvendordata['EffectiveDate'] = date('Y-m-d');
-                                }
 
-                                if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
-                                    try {
-                                        $tempvendordata['EndDate'] = formatSmallDate(str_replace( '/','-',$temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
-                                    }catch (\Exception $e){
-                                        $error[] = 'Date format is Wrong  at line no:'.$lineno;
-                                    }
-                                }
+                                        if (!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
+                                            if (!empty($attrselection->EffectiveDate)) {
+                                                $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                                $selection_dateformat = $attrselection->DateFormat;
+                                            } else if (!empty($attrselection2->EffectiveDate)) {
+                                                $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                                $selection_dateformat = $attrselection2->DateFormat;
+                                            }
 
-                                if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                    $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
-                                }
-                                if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                    $tempvendordata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
-                                }
-                                if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                    $tempvendordata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
-                                }
-                                if (isset($attrselection->Preference) && !empty($attrselection->Preference)) {
-                                    $tempvendordata['Preference'] = trim($temp_row[$attrselection->Preference]);
-                                }
-                                if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
-                                    $Forbidden = trim($temp_row[$attrselection->Forbidden]);
-                                    if ($Forbidden == '0') {
-                                        $tempvendordata['Forbidden'] = 'UB';
-                                    } elseif ($Forbidden == '1') {
-                                        $tempvendordata['Forbidden'] = 'B';
-                                    } else {
-                                        $tempvendordata['Forbidden'] = '';
-                                    }
-                                }
-                                if (!empty($DialStringId)) {
-                                    if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
-                                        $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
-                                    } else {
-                                        $tempvendordata['DialStringPrefix'] = '';
-                                    }
-                                }
+                                            if (isset($selection_EffectiveDate) && !empty($selection_EffectiveDate) && !empty($temp_row[$selection_EffectiveDate])) {
+                                                try {
+                                                    $tempvendordata['EffectiveDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$selection_EffectiveDate]), $selection_dateformat);
+                                                } catch (\Exception $e) {
+                                                    $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                                }
+                                            } elseif (empty($selection_EffectiveDate)) {
+                                                $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                                            } elseif ($tempvendordata['Change'] == 'D') {
+                                                $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                                            } elseif ($tempvendordata['Change'] != 'D') {
+                                                $error[] = 'EffectiveDate is blank at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempvendordata['EffectiveDate'] = date('Y-m-d');
+                                        }
 
-                                if(!empty($templateoptions->TimezonesID)) {
-                                    $tempvendordata['TimezonesID'] = $templateoptions->TimezonesID;
-                                } else if (!empty($attrselection->Timezones)) {
-                                    if(array_key_exists($temp_row[$attrselection->Timezones],$Timezones)) {
-                                        $tempvendordata['TimezonesID'] = $Timezones[$temp_row[$attrselection->Timezones]];
-                                    } else {
-                                        $error[] = 'Timezones not match at line no:' . $lineno;
-                                    }
-                                } else {
-                                    $error[] = 'Timezones is blank at line no:' . $lineno;
-                                }
+                                        if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
+                                            try {
+                                                $tempvendordata['EndDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
+                                            } catch (\Exception $e) {
+                                                $error[] = 'Date format is Wrong  at line no:' . $lineno;
+                                            }
+                                        }
 
-                                if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && isset($tempvendordata['TimezonesID']) && ( isset($tempvendordata['Rate'])  || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
-                                    if(isset($tempvendordata['EndDate'])) {
-                                        $batch_insert_array[] = $tempvendordata;
-                                    } else {
-                                        $batch_insert_array2[] = $tempvendordata;
-                                    }
-                                    $counter++;
-                                }
-                            }
-                           
+                                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
+                                            $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                        }
+                                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
+                                            $tempvendordata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
+                                        }
+                                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
+                                            $tempvendordata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
+                                        }
+                                        if (isset($attrselection->Preference) && !empty($attrselection->Preference)) {
+                                            $tempvendordata['Preference'] = trim($temp_row[$attrselection->Preference]);
+                                        }
+                                        if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
+                                            $Forbidden = trim($temp_row[$attrselection->Forbidden]);
+                                            if ($Forbidden == '0') {
+                                                $tempvendordata['Forbidden'] = 'UB';
+                                            } elseif ($Forbidden == '1') {
+                                                $tempvendordata['Forbidden'] = 'B';
+                                            } else {
+                                                $tempvendordata['Forbidden'] = '';
+                                            }
+                                        }
+                                        if (!empty($DialStringId)) {
+                                            if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
+                                                $tempvendordata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
+                                            } else {
+                                                $tempvendordata['DialStringPrefix'] = '';
+                                            }
+                                        }
 
-                            if ($counter == $bacth_insert_limit) {
+                                        if ($RateColumn == 'Rate') {
+                                            $tempdata['TimezonesID'] = 1;
+                                        } else {
+                                            $tempvendordata['TimezonesID'] = substr($RateColumn, 4);
+                                        }
+
+                                        if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && (isset($tempvendordata['Rate']) || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
+                                            if (isset($tempvendordata['EndDate'])) {
+                                                $batch_insert_array[] = $tempvendordata;
+                                            } else {
+                                                $batch_insert_array2[] = $tempvendordata;
+                                            }
+                                            $counter++;
+                                        }
+                                    }
+
+                                    if ($counter == $bacth_insert_limit) {
+                                        Log::info('Batch insert start');
+                                        Log::info('global counter' . $lineno);
+                                        Log::info('insertion start');
+                                        TempVendorRate::insert($batch_insert_array);
+                                        TempVendorRate::insert($batch_insert_array2);
+                                        Log::info('insertion end');
+                                        $batch_insert_array = [];
+                                        $batch_insert_array2 = [];
+                                        $counter = 0;
+                                    }
+                                    $lineno++;
+                                } // loop over
+                            } // if rate is mapped against timezone condition
+
+                            if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                                 Log::info('Batch insert start');
                                 Log::info('global counter' . $lineno);
                                 Log::info('insertion start');
+                                Log::info('last batch insert ' . count($batch_insert_array));
+                                Log::info('last batch insert 2 ' . count($batch_insert_array2));
                                 TempVendorRate::insert($batch_insert_array);
                                 TempVendorRate::insert($batch_insert_array2);
                                 Log::info('insertion end');
@@ -474,19 +490,8 @@ class VendorRateUpload extends Command
                                 $batch_insert_array2 = [];
                                 $counter = 0;
                             }
-                            $lineno++;
-                        } // loop over
+                        } // $Ratekeys loop over
 
-                        if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
-                            Log::info('Batch insert start');
-                            Log::info('global counter' . $lineno);
-                            Log::info('insertion start');
-                            Log::info('last batch insert ' . count($batch_insert_array));
-                            Log::info('last batch insert 2 ' . count($batch_insert_array2));
-                            TempVendorRate::insert($batch_insert_array);
-                            TempVendorRate::insert($batch_insert_array2);
-                            Log::info('insertion end');
-                        }
                     } else {
                         $ProcessID = $joboptions->ProcessID;
                     }
