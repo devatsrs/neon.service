@@ -223,6 +223,7 @@ class QuickBook {
 	public function CreateCustomer($AccountID){
 		$response = array();
 		$Account = Account::find($AccountID);
+		$Account = $Account[0];
 		$AccountName = $Account->AccountName;
 		$count = $this->CheckCustomer($AccountID);
 		Log::info('-- count --'.print_r($count,true));
@@ -333,6 +334,7 @@ class QuickBook {
 
 	public function CheckCustomer($AccountID){
 		$Account = Account::find($AccountID);
+		$Account = $Account[0];
 		$AccountName = $Account->AccountName;
 		Log::info('Checkcustomer');
 		$Context = $this->Context;
@@ -518,6 +520,114 @@ class QuickBook {
 		}
 
 		return $itemid;
+	}
+	public function addPayments($Options){
+		Log::info('-- QuickBook Add Payments --');
+		$response = array();
+		if ($this->is_quickbook($Options['CompanyID'])){
+			if ($this->quickbooks_is_connected) {
+				$Payments = $Options['Payments'];
+
+				if(!empty($Payments) && count($Payments)>0){
+					foreach($Payments as $Payment){
+						if(!empty($Payment))
+							$response[] = $this->CreatePayments($Payment);
+					}
+				}
+			}
+		}
+		Log::info('-- QuickBook End Payments --');
+		return $response;
+	}
+
+	public function CreatePayments($PaymentID){
+
+		Log::info('Payment ID : '.print_r($PaymentID,true));
+		$response = array();
+		$PaymentData = Payment::find($PaymentID);
+		if(!empty($PaymentData->InvoiceID)) {
+			$InvoiceID = $PaymentData->InvoiceID;
+			$Invoices = Invoice::find($InvoiceID);
+			$InvoiceFullNumber = $Invoices->FullInvoiceNumber;
+			//$count = $this->CheckInvoice($InvoiceFullNumber);
+			//$CustomerID = $this->getCustomerId($Invoices->AccountID);
+			$Account = Account::find($Invoices->AccountID);
+			$AccountName = $Account->AccountName;
+
+			Log::info('-- Create Payments --'.print_r($InvoiceFullNumber,true));
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			//get invoice count from Quickbook
+			$InvoiceService = new \QuickBooks_IPP_Service_Invoice();
+			$invoicecount = $InvoiceService->query($Context, $realm, "SELECT count(*) FROM Invoice WHERE DocNumber = '".$InvoiceFullNumber."' ");
+			if($invoicecount > 0) {
+
+				//get invoice details from Quickbook
+				$invoicedetails = $InvoiceService->query($Context, $realm, "SELECT Id FROM Invoice WHERE DocNumber = '" . $InvoiceFullNumber . "' ");
+				$q_invoiceid = $invoicedetails[0]->getId();
+				Log::info('Quickbook Invoice ID : ' . print_r($q_invoiceid, true));
+
+				//get customer details from Quickbook
+				$CustomerService = new \QuickBooks_IPP_Service_Customer();
+				$customers = $CustomerService->query($Context, $realm, "SELECT Id FROM Customer WHERE FullyQualifiedName = '" . $AccountName . "' ");
+				$q_customerid = $customers[0]->getId();
+				Log::info('Quickbook Customer ID : ' . print_r($q_customerid, true));
+
+				$PaymentService = new \QuickBooks_IPP_Service_Payment();
+				// Create payment object
+				$Payment = new \QuickBooks_IPP_Object_Payment();
+				$Payment->setPaymentRefNum($PaymentData->PaymentID);
+				$PaymentDate = date('Y-m-d', strtotime($PaymentData->PaymentDate));
+				$Payment->setTxnDate($PaymentDate);
+				$Payment->setTotalAmt($PaymentData->Amount);
+
+				// Create line for payment (this details what it's applied to)
+				$Line = new \QuickBooks_IPP_Object_Line();
+				$Line->setAmount($PaymentData->Amount);
+
+				// The line has a LinkedTxn node which links to the actual invoice
+				$LinkedTxn = new \QuickBooks_IPP_Object_LinkedTxn();
+				$LinkedTxn->setTxnId($q_invoiceid);
+				$LinkedTxn->setTxnType('Invoice');
+				$Line->setLinkedTxn($LinkedTxn);
+				$Payment->addLine($Line);
+				$Payment->setCustomerRef($q_customerid);
+
+				//Log::info('-- Invoice Object --'.print_r($Invoice,true));
+
+				if ($resp = $PaymentService->add($Context, $realm, $Payment)) {
+					if (!empty($resp)) {
+						$resp = str_replace('{-', '', $resp);
+						$resp = str_replace('}', '', $resp);
+					}
+
+					/**
+					 * Insert Data in QuickBookLog
+					 */
+					$quickbooklogdata = array();
+					$quickbooklogdata['Note'] = $PaymentID . ' ' . QuickBookLog::$log_status[QuickBookLog::PAYMENT] . ' (Quickbookid : ' . $resp . ') Created';
+					$quickbooklogdata['created_at'] = date("Y-m-d H:i:s");
+					$quickbooklogdata['Type'] = QuickBookLog::PAYMENT;
+					QuickBookLog::insert($quickbooklogdata);
+
+					Log::info('-- Create Payment id (Quickbook) --' . print_r($resp, true));
+
+					$response['Success'] = $PaymentID . '(Payment) is created';
+				} else {
+					$response['error'] = $PaymentID . '(Payment) is failed To create';
+					$response['error_reason'] = $PaymentService->lastError($Context);
+					Log::info('-- Create Payment Error --' . print_r($PaymentService->lastError($Context), true));
+				}
+			}
+			else {
+				$response['error'] = $PaymentID . '(Payment) is failed To create';
+				$response['error_reason'] = 'Invoice Not Found in Quickbook';
+			}
+		}
+		Log::info('-- Create Payment Done --');
+		//Log::info(print_r($response,true));
+		return $response;
 	}
 
 	public function addInvoices($Options){
