@@ -88,7 +88,8 @@ class RMService extends Command {
                 'VendorMorSheetDownload',
                 'XeroInvoicePost',
                 'CustomerM2SheetDownload',
-                'VendorM2SheetDownload'
+                'VendorM2SheetDownload',
+                'QuickBookPaymentsPost'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -440,6 +441,17 @@ class RMService extends Command {
                     }
                 }
             }
+            //Quickbook Payments Post
+            foreach($allpending['data']['QuickBookPaymentsPost'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." quickbookpaymentspost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " quickbookpaymentspost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
         }catch(\Exception $e){
             Log::error($e);
         }
