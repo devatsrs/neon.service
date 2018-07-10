@@ -10,7 +10,8 @@ class QuickBookLog extends \Eloquent {
     const ACCOUNT = 1;
     const INVOICE = 2;
     const PRODUCT = 3;
+    const PAYMENT = 4;
 
-    public static $log_status = array(self::ACCOUNT=>'Account',self::INVOICE=>'Invoice',self::PRODUCT=>'Product');
+    public static $log_status = array(self::ACCOUNT=>'Account',self::INVOICE=>'Invoice',self::PRODUCT=>'Product',self::PAYMENT=>'Payment');
 
 } 
