@@ -582,17 +582,28 @@ class Invoice extends \Eloquent {
             }else{
                 $arrSignature["UseDigitalSignature"]=false;
             }
-
+            /**
+             * $InvoiceTemplate->DefaultTemplate = 0=>default template(template 1) , 1=>template 2
+            */
 
             if(!empty($Invoice->RecurringInvoiceID)) {
                 $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','RoundChargesCDR','data','print_type','language','arrSignature'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
-                $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language', 'arrSignature'))->render();
+                if($InvoiceTemplate->DefaultTemplate ==1){
+                    $body = View::make('emails.invoices.template2pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                }else{
+                    $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                }
             }else {
-                $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                if($InvoiceTemplate->DefaultTemplate ==1){
+                    $body = View::make('emails.invoices.template2defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                }else{
+                    $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                }
+
             }
             $body = htmlspecialchars_decode($body);
-            $footer = View::make('emails.invoices.pdffooter', compact('Invoice', 'Account'))->render();
+            $footer = View::make('emails.invoices.pdffooter', compact('Invoice', 'Account','InvoiceTemplate'))->render();
             $footer = htmlspecialchars_decode($footer);
 
             $header = View::make('emails.invoices.pdfheader', compact('Invoice'))->render();
@@ -634,6 +645,8 @@ class Invoice extends \Eloquent {
             }
             Log::info($output);
             Log::info($local_htmlfile);
+            Log::info($header_html);
+            Log::info($footer_html);
             @unlink($local_htmlfile);
             @unlink($header_html);
             @unlink($footer_html);

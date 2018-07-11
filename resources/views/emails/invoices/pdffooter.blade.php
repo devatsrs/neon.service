@@ -21,7 +21,9 @@
     ?>
     <!-- footer section start -->
     <div id="pdf_footer">
-        {{nl2br($FooterTerm_message)}}
+        @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==0)
+         {{nl2br($FooterTerm_message)}}
+        @endif
 
     </div>
     <!-- footer section start -->

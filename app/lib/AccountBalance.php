@@ -210,10 +210,30 @@ class AccountBalance extends Model
         $InvoiceInAmountTotal = $result['data']['InvoiceInAmountTotal'];
         $PaymentOutAmountTotal = $result['data']['PaymentOutAmountTotal'];
 
-        $InvoiceOutAmountTotal = ($InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal <> 0) ? $InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal : 0;
-        $PaymentInAmountTotal = ($PaymentInAmountTotal[0]->PaymentInAmountTotal <> 0) ? $PaymentInAmountTotal[0]->PaymentInAmountTotal : 0;
-        $InvoiceInAmountTotal = ($InvoiceInAmountTotal[0]->InvoiceInAmountTotal <> 0) ? $InvoiceInAmountTotal[0]->InvoiceInAmountTotal : 0;
-        $PaymentOutAmountTotal = ($PaymentOutAmountTotal[0]->PaymentOutAmountTotal <> 0) ? $PaymentOutAmountTotal[0]->PaymentOutAmountTotal : 0;
+        if(!empty($InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal)){
+            $InvoiceOutAmountTotal = ($InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal <> 0) ? $InvoiceOutAmountTotal[0]->InvoiceOutAmountTotal : 0;
+        }else{
+            $InvoiceOutAmountTotal = 0;
+        }
+        if(!empty($PaymentInAmountTotal[0]->PaymentInAmountTotal)){
+            $PaymentInAmountTotal = ($PaymentInAmountTotal[0]->PaymentInAmountTotal <> 0) ? $PaymentInAmountTotal[0]->PaymentInAmountTotal : 0;
+        }else{
+            $PaymentInAmountTotal = 0;
+        }
+        if(!empty($InvoiceInAmountTotal[0]->InvoiceInAmountTotal)){
+            $InvoiceInAmountTotal = ($InvoiceInAmountTotal[0]->InvoiceInAmountTotal <> 0) ? $InvoiceInAmountTotal[0]->InvoiceInAmountTotal : 0;
+        }else{
+            $InvoiceInAmountTotal = 0;
+        }
+        if(!empty($PaymentOutAmountTotal[0]->PaymentOutAmountTotal)){
+            $PaymentOutAmountTotal = ($PaymentOutAmountTotal[0]->PaymentOutAmountTotal <> 0) ? $PaymentOutAmountTotal[0]->PaymentOutAmountTotal : 0;
+        }else{
+            $PaymentOutAmountTotal = 0;
+        }
+
+
+
+
 
         $OffsetBalance = ($InvoiceOutAmountTotal - $PaymentInAmountTotal) - ($InvoiceInAmountTotal - $PaymentOutAmountTotal);
 
