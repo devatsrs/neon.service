@@ -85,6 +85,11 @@
         $Terms = $Invoice->Terms;
         $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
         $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
+
+        $FooterTerm = $Invoice->FooterTerm;
+        $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
+        $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
+        $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
         ?>
 
 
@@ -169,4 +174,13 @@
             </div>
         </div>
         <!-- adevrtisement and terms section end -->
+        <!-- footer section -->
+        @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==1)
+         <div id="thanksadevertise">
+             <div class="invoice-left">
+                 <p><a class="form-control pull-left" style="height: auto">{{nl2br($FooterTerm_message)}}</a></p>
+            </div>
+        </div>
+        @endif
+        <!-- footer section end -->
 @stop
