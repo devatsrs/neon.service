@@ -1835,44 +1835,53 @@ class Invoice extends \Eloquent {
         Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
         if (count($AccountOneOffCharges)) {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
-                Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
-                $LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
-                if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
-                    $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
+				
+				$OneOffcount = InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,
+                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Price'=>$AccountOneOffCharge->Price,'Qty'=>$AccountOneOffCharge->Qty]
+                )->count();
+				
+                Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID.' - InvoiceAddedornot '.$OneOffcount);
+				
+				if($OneOffcount==1) {
+					//Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
+					$LineTotal = ($AccountOneOffCharge->Price)*$AccountOneOffCharge->Qty;
+					if($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2){
+						$AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
 
-                    if($AccountOneOffCharge->TaxRateID){
-                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID)->first();
-                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
-                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->count() == 0) {
-                            InvoiceTaxRate::create(array(
-                                "InvoiceID" => $InvoiceID,
-                                "TaxRateID" => $AccountOneOffCharge->TaxRateID,
-                                "TaxAmount" => $TotalTax,
-                                "Title" => $TaxRate->Title,
-                            ));
-                        }else{
-                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->pluck('TaxAmount');
-                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
-                        }
-                    }
-                    if($AccountOneOffCharge->TaxRateID2){
-                        $TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID2)->first();
-                        $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
-                        if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->count() == 0) {
-                            InvoiceTaxRate::create(array(
-                                "InvoiceID" => $InvoiceID,
-                                "TaxRateID" => $AccountOneOffCharge->TaxRateID2,
-                                "TaxAmount" => $TotalTax,
-                                "Title" => $TaxRate->Title,
-                            ));
-                        }else{
-                            $TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->pluck('TaxAmount');
-                            InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
-                        }
-                    }
+						if($AccountOneOffCharge->TaxRateID){
+							$TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID)->first();
+							$TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+							if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->count() == 0) {
+								InvoiceTaxRate::create(array(
+									"InvoiceID" => $InvoiceID,
+									"TaxRateID" => $AccountOneOffCharge->TaxRateID,
+									"TaxAmount" => $TotalTax,
+									"Title" => $TaxRate->Title,
+								));
+							}else{
+								$TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->pluck('TaxAmount');
+								InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+							}
+						}
+						if($AccountOneOffCharge->TaxRateID2){
+							$TaxRate = TaxRate::where("TaxRateID",$AccountOneOffCharge->TaxRateID2)->first();
+							$TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
+							if(InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->count() == 0) {
+								InvoiceTaxRate::create(array(
+									"InvoiceID" => $InvoiceID,
+									"TaxRateID" => $AccountOneOffCharge->TaxRateID2,
+									"TaxAmount" => $TotalTax,
+									"Title" => $TaxRate->Title,
+								));
+							}else{
+								$TaxAmount = InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->pluck('TaxAmount');
+								InvoiceTaxRate::where(['InvoiceID'=>$InvoiceID,'TaxRateID'=>$AccountOneOffCharge->TaxRateID2])->update(array('TaxAmount'=>$TotalTax+$TaxAmount));
+							}
+						}
 
-                    Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
-                }
+						Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
+					}
+				}
 
             }
         } //Subscription over
