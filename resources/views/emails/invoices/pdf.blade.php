@@ -119,6 +119,11 @@
     $Terms = $Invoice->Terms;
     $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
     $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
+
+    $FooterTerm = $Invoice->FooterTerm;
+    $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
+    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
+    $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
     ?>
 
 
@@ -136,7 +141,7 @@
                 <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
                 <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
-                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceFrom))}} - {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceTo))}}</div>
                 @endif
             </div>
         </div>
@@ -255,6 +260,16 @@
         </div>
     </div>
     <!-- adevrtisement and terms section end -->
+
+    <!-- footer section start-->
+    @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==1)
+    <div id="thanksadevertise">
+        <div class="invoice-left">
+            <p><a class="form-control pull-left" style="height: auto">{{nl2br($FooterTerm_message)}}</a></p>
+        </div>
+    </div>
+    @endif
+    <!-- footer section end -->
 
     <!-- need to impliment service brack login -->
     @if($InvoiceTemplate->ServiceSplit==0)
@@ -594,7 +609,7 @@
             </tbody>
         </table>
         @endif
-        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && count($payment_data)>0)
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0)
             <div class="ChargesTitle clearfix">
                 <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
             </div>
