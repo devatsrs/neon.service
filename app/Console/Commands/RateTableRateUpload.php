@@ -243,12 +243,21 @@ class RateTableRateUpload extends Command
                         $error = array();
 
                         //get how many rates mapped against timezones
-                        $RatesKeys = array_key_exists_wildcard((array)$attrselection,'Rate*');
+                        $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
                         $lineno1 = $lineno;
-                        foreach ($RatesKeys as $key => $RateColumn) {
+                        foreach ($AllTimezones as $TimezoneID => $Title) {
+                            $id = $TimezoneID == 1 ? '' : $TimezoneID;
+                            $Rate1Column            = 'Rate'.$id;
+                            $RateNColumn            = 'RateN'.$id;
+                            $Interval1Column        = 'Interval1'.$id;
+                            $IntervalNColumn        = 'IntervalN'.$id;
+                            $PreferenceColumn       = 'Preference'.$id;
+                            $ConnectionFeeColumn    = 'ConnectionFee'.$id;
+                            $ForbiddenColumn        = 'Forbidden'.$id;
+
                             // check if rate is mapped against timezone
-                            if (!empty($attrselection->$RateColumn)) {
+                            if (!empty($attrselection->$Rate1Column)) {
                                 $lineno = $lineno1;
                                 foreach ($results as $temp_row) {
                                     if ($csvoption->Firstrow == 'data') {
@@ -334,10 +343,10 @@ class RateTableRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
-                                        if (isset($attrselection->$RateColumn) && !empty($attrselection->$RateColumn)) {
-                                            $temp_row[$attrselection->$RateColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$RateColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                            if (is_numeric(trim($temp_row[$attrselection->$RateColumn]))) {
-                                                $tempratetabledata['Rate'] = trim($temp_row[$attrselection->$RateColumn]);
+                                        if (isset($attrselection->$Rate1Column) && !empty($attrselection->$Rate1Column)) {
+                                            $temp_row[$attrselection->$Rate1Column] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$Rate1Column]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
+                                            if (is_numeric(trim($temp_row[$attrselection->$Rate1Column]))) {
+                                                $tempratetabledata['Rate'] = trim($temp_row[$attrselection->$Rate1Column]);
                                             } else {
                                                 $error[] = 'Rate is not numeric at line no:' . $lineno;
                                             }
@@ -345,6 +354,12 @@ class RateTableRateUpload extends Command
                                             $tempratetabledata['Rate'] = 0;
                                         } elseif ($tempratetabledata['Change'] != 'D') {
                                             $error[] = 'Rate is blank at line no:' . $lineno;
+                                        }
+
+                                        if (isset($attrselection->$RateNColumn) && !empty($attrselection->$RateNColumn)) {
+                                            $tempratetabledata['RateN'] = trim($temp_row[$attrselection->$RateNColumn]);
+                                        } else if(isset($tempratetabledata['Rate'])) {
+                                            $tempratetabledata['RateN'] = $tempratetabledata['Rate'];
                                         }
 
                                         if (!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
@@ -381,14 +396,14 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
-                                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                            $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                        if (isset($attrselection->$ConnectionFeeColumn) && !empty($attrselection->$ConnectionFeeColumn)) {
+                                            $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->$ConnectionFeeColumn]);
                                         }
-                                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                            $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
+                                        if (isset($attrselection->$Interval1Column) && !empty($attrselection->$Interval1Column)) {
+                                            $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->$Interval1Column]));
                                         }
-                                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                            $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
+                                        if (isset($attrselection->$IntervalNColumn) && !empty($attrselection->$IntervalNColumn)) {
+                                            $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->$IntervalNColumn]));
                                         }
                                         if (!empty($DialStringId)) {
                                             if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
@@ -398,11 +413,7 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
-                                        if ($RateColumn == 'Rate') {
-                                            $tempdata['TimezonesID'] = 1;
-                                        } else {
-                                            $tempratetabledata['TimezonesID'] = substr($RateColumn, 4);
-                                        }
+                                        $tempratetabledata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['Rate']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
@@ -417,8 +428,12 @@ class RateTableRateUpload extends Command
                                         Log::info('Batch insert start');
                                         Log::info('global counter' . $lineno);
                                         Log::info('insertion start');
-                                        TempRateTableRate::insert($batch_insert_array);
-                                        TempRateTableRate::insert($batch_insert_array2);
+                                        if(!empty($batch_insert_array)) {
+                                            TempRateTableRate::insert($batch_insert_array);
+                                        }
+                                        if(!empty($batch_insert_array2)) {
+                                            TempRateTableRate::insert($batch_insert_array2);
+                                        }
                                         Log::info('insertion end');
                                         $batch_insert_array = [];
                                         $batch_insert_array2 = [];
@@ -434,8 +449,12 @@ class RateTableRateUpload extends Command
                                 Log::info('insertion start');
                                 Log::info('last batch insert ' . count($batch_insert_array));
                                 Log::info('last batch insert 2 ' . count($batch_insert_array2));
-                                TempRateTableRate::insert($batch_insert_array);
-                                TempRateTableRate::insert($batch_insert_array2);
+                                if(!empty($batch_insert_array)) {
+                                    TempRateTableRate::insert($batch_insert_array);
+                                }
+                                if(!empty($batch_insert_array2)) {
+                                    TempRateTableRate::insert($batch_insert_array2);
+                                }
                                 Log::info('insertion end');
                                 $batch_insert_array = [];
                                 $batch_insert_array2 = [];
