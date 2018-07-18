@@ -1,7 +1,7 @@
 @extends('layout.print')
 
 @section('content')
-    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/invoicestyle.css'}}" />
+    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/template2invoicestyle.css'}}" />
     @if(isset($language->is_rtl) && $language->is_rtl=="Y")
         <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap-rtl.min.css'}}" />
         <style type="text/css">
@@ -28,6 +28,12 @@
             }
             .rightalign {
                 text-align: left;
+            }
+            .summaryright{
+                float: left;
+            }
+            .summaryleft{
+                float: right;
             }
         </style>
     @endif
@@ -130,11 +136,33 @@
     $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
     $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
 
+    $AllUsageTotal=0;
+    $AllSubTotal=0;
+    $AllAddTotal=0;
+    foreach($service_data as $service){
+        $AllUsageTotal+=number_format($service['usage_cost'],$RoundChargesAmount);
+        $AllSubTotal+=number_format($service['sub_cost'],$RoundChargesAmount);
+        $AllAddTotal+=number_format($service['add_cost'],$RoundChargesAmount);
+    }
+    if(count($InvoiceTaxRates)){
+        foreach($InvoiceTaxRates as $InvoiceTaxRate){
+            $tempsummary['Title']=$InvoiceTaxRate->Title;
+            $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
+            $AllTaxSummary[]=$tempsummary;
+            $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
+        }
+    }
+
     $FooterTerm = $Invoice->FooterTerm;
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
     $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
     $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
 
+    if(!empty($payment_data)){
+        foreach($payment_data as $row){
+            $AllPayment  += str_replace(',','',$row['Amount']);
+        }
+    }
     ?>
 
 
@@ -158,201 +186,66 @@
             </div>
         </div>
 
-        <!-- content of front page section start -->
 
-        <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
-            <thead>
+            <div style="clear:both;"></div>
+            <!-- content of front page section start -->
+            <div class="summaryleft" id="summarysection">
+                <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUMMARY_OF_CHARGES")}}</h2>
+                <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BROUGHT_FORWARD")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CURRENT_CHARGES")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_DUE")}}</b></td>
+                        <td class=""><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
+                    </tr>
+                </table>
+                <br><br>
+                <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CURRENT_CHARGES_DETAILS")}}</h2>
+                <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_USAGE_CHARGES")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($AllUsageTotal,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_RECURRING_CHARGES")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($AllSubTotal,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($AllAddTotal,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_TAXES")}}</td>
+                        <td class="">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+                    </tr>
+                    <tr>
+                        <td class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</b></td>
+                        <td class=""><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="summaryright"  id="summarysection">
+                {{nl2br($return_terms)}}
+            </div>
+            <div style="clear:both;"></div>
 
-
-            <?php $VisibleColumns = (array)json_decode($InvoiceTemplate->VisibleColumns); $colspan = 0; ?>
-            <tr>
-                @if(!empty($VisibleColumns))
-                    @if(isset($VisibleColumns['Description']) && $VisibleColumns['Description'] == 1 && !empty($InvoiceTemplate->ItemDescription))
-                        <?php $colspan++; ?>
-                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</b></th>
-                    @endif
-                    @if(isset($VisibleColumns['Usage']) && $VisibleColumns['Usage'] == 1)
-                        <?php $colspan++; ?>
-                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
-                    @endif
-                    @if(isset($VisibleColumns['Recurring']) && $VisibleColumns['Recurring'] == 1)
-                        <?php $colspan++; ?>
-                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
-                    @endif
-                    @if(isset($VisibleColumns['Additional']) && $VisibleColumns['Additional'] == 1)
-                        <?php $colspan++; ?>
-                        <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
-                    @endif
-                    @if($colspan == 0)
-                        <th class="desc"></th>
-                    @endif
-                        <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
-                @else
-                    <?php $colspan = 2; ?>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_USAGE")}}</b></th>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_RECURRING")}}</b></th>
-                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</b></th>
-                    <th class="total leftsideview"><b>{{cus_lang("TABLE_TOTAL")}}</b></th>
-                @endif
-            </tr>
-            </thead>
-            <tbody>
-
-            <tr>
-                @if(!empty($VisibleColumns))
-                    @if(isset($VisibleColumns['Description']) && $VisibleColumns['Description'] == 1 && !empty($InvoiceTemplate->ItemDescription))
-                        <td class="desc">{{$InvoiceTemplate->ItemDescription}}</td>
-                    @endif
-                    @if(isset($VisibleColumns['Usage']) && $VisibleColumns['Usage'] == 1)
-                        <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
-                    @endif
-                    @if(isset($VisibleColumns['Recurring']) && $VisibleColumns['Recurring'] == 1)
-                        <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
-                    @endif
-                    @if(isset($VisibleColumns['Additional']) && $VisibleColumns['Additional'] == 1)
-                        <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
-                    @endif
-                    @if($colspan == 0)
-                        <td class="desc"></td>
-                    @endif
-                        <td class="total leftsideview">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
-                @else
-                    <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_usage,$RoundChargesAmount)}}</td>
-                    <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_sub,$RoundChargesAmount)}}</td>
-                    <td class="desc leftsideview">{{$CurrencySymbol}}{{number_format($total_add,$RoundChargesAmount)}}</td>
-                    <td class="total leftsideview">{{$CurrencySymbol}}{{number_format($total_usage+$total_sub+$total_add,$RoundChargesAmount)}}</td>
-                @endif
-            </tr>
-
-
-
-            </tbody>
-            <tfoot>
-            <?php $colspan--; ?>
-            <tr>
-                @if(!empty($VisibleColumns))
-                    @if($colspan > 0)
-                        <td colspan="{{$colspan}}"></td>
-                    @endif
-                @else
-                    <td colspan="2"></td>
-                @endif
-                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</td>
-                <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
-            </tr>
-            @if(count($InvoiceTaxRates))
-                @foreach($InvoiceTaxRates as $InvoiceTaxRate)
-                    <?php
-                    $tempsummary['Title']=$InvoiceTaxRate->Title;
-                    $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
-                    $AllTaxSummary[]=$tempsummary;
-                    $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
-                    ?>
-                @endforeach
-                <tr>
-                    @if(!empty($VisibleColumns))
-                        @if($colspan > 0)
-                            <td colspan="{{$colspan}}"></td>
-                        @endif
-                    @else
-                        <td colspan="2"></td>
-                    @endif
-                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
-                </tr>
-            @endif
-            @if($Invoice->TotalDiscount > 0)
-                <tr>
-                    @if(!empty($VisibleColumns))
-                        @if($colspan > 0)
-                            <td colspan="{{$colspan}}"></td>
-                        @endif
-                    @else
-                        <td colspan="2"></td>
-                    @endif
-                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($Invoice->TotalDiscount,$RoundChargesAmount)}}</td>
-                </tr>
-            @endif
-            @if($InvoiceTemplate->ShowPrevBal)
-                <tr>
-                    @if(!empty($VisibleColumns))
-                        @if($colspan > 0)
-                            <td colspan="{{$colspan}}"></td>
-                        @endif
-                    @else
-                        <td colspan="2"></td>
-                    @endif
-                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BROUGHT_FORWARD")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($Invoice->PreviousBalance,$RoundChargesAmount)}}</td>
-                </tr>
-            @endif
-            <tr>
-                @if(!empty($VisibleColumns))
-                    @if($colspan > 0)
-                        <td colspan="{{$colspan}}"></td>
-                    @endif
-                @else
-                    <td colspan="2"></td>
-                @endif
-                <td>
-					@if(!$InvoiceTemplate->ShowPrevBal)
-						<b>
-					@endif
-					
-					{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}
-					
-					@if(!$InvoiceTemplate->ShowPrevBal)
-						</b>				
-					@endif
-				</td>
-                <td class="subtotal leftsideview">
-                    @if(!$InvoiceTemplate->ShowPrevBal)
-                        <b>
-                    @endif
-
-                    {{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}
-
-                    @if(!$InvoiceTemplate->ShowPrevBal)
-                        </b>
-                    @endif
-                </td>
-            </tr>
-            @if($InvoiceTemplate->ShowPrevBal)
-                <tr>
-                    @if(!empty($VisibleColumns))
-                        @if($colspan > 0)
-                            <td colspan="{{$colspan}}"></td>
-                        @endif
-                    @else
-                        <td colspan="2"></td>
-                    @endif
-                    <td><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_DUE")}}</b></td>
-                    <td class="subtotal leftsideview"><b>{{$CurrencySymbol}}{{number_format($Invoice->TotalDue,$RoundChargesAmount)}}</b></td>
-                </tr>
-            @endif
-            </tfoot>
-        </table>
-        <!-- content of front page section end -->
     </main>
-
-    <!-- adevrtisement and terms section start-->
-    <div id="thanksadevertise">
-        <div class="invoice-left">
-            <p><a class="form-control pull-left" style="height: auto">{{nl2br($return_terms)}}</a></p>
-        </div>
-    </div>
-    <!-- adevrtisement and terms section end -->
-
-    <!-- footer section start-->
+    <!-- footer section -->
     @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==1)
         <div id="thanksadevertise">
             <div class="invoice-left">
                 <p><a class="form-control pull-left" style="height: auto">{{nl2br($FooterTerm_message)}}</a></p>
             </div>
         </div>
-        @endif
+    @endif
     <!-- footer section end -->
+    <!-- content of front page section end -->
 
     @if($total_usage != 0 || $is_sub || $is_charge)
     <div class="page_break"> </div>
