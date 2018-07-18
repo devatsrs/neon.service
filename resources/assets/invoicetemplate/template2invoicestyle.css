@@ -24,7 +24,7 @@ a {
   color: #000000 !important;
   background: #FFFFFF;
   font-size: 11px;
-  font-family: Source Sans Pro;
+  font-family: DejaVu Sans;
 }
 
 header {
@@ -186,7 +186,7 @@ table th {
 }
 
 #thanks{
-  font-size: 2em;
+  font-size: 5px;
   margin-bottom: 50px;
 }
 
