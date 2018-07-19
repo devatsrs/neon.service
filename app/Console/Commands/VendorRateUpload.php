@@ -277,12 +277,20 @@ class VendorRateUpload extends Command
                         }
 
                         //get how many rates mapped against timezones
-                        $RatesKeys = array_key_exists_wildcard((array)$attrselection,'Rate*');
-
+                        $AllTimezones = Timezones::getTimezonesIDList();//all timezones
                         $lineno1 = $lineno;
-                        foreach ($RatesKeys as $key => $RateColumn) {
+                        foreach ($AllTimezones as $TimezoneID => $Title) {
+                            $id = $TimezoneID == 1 ? '' : $TimezoneID;
+                            $Rate1Column            = 'Rate'.$id;
+                            $RateNColumn            = 'RateN'.$id;
+                            $Interval1Column        = 'Interval1'.$id;
+                            $IntervalNColumn        = 'IntervalN'.$id;
+                            $PreferenceColumn       = 'Preference'.$id;
+                            $ConnectionFeeColumn    = 'ConnectionFee'.$id;
+                            $ForbiddenColumn        = 'Forbidden'.$id;
+
                             // check if rate is mapped against timezone
-                            if(!empty($attrselection->$RateColumn)) {
+                            if(!empty($attrselection->$Rate1Column)) {
                                 $lineno = $lineno1;
                                 foreach ($results as $index => $temp_row) {
 
@@ -369,10 +377,10 @@ class VendorRateUpload extends Command
                                             $tempvendordata['Change'] = 'I';
                                         }
 
-                                        if (isset($attrselection->$RateColumn) && !empty($attrselection->$RateColumn)) {
-                                            $temp_row[$attrselection->$RateColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$RateColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                            if (is_numeric(trim($temp_row[$attrselection->$RateColumn]))) {
-                                                $tempvendordata['Rate'] = trim($temp_row[$attrselection->$RateColumn]);
+                                        if (isset($attrselection->$Rate1Column) && !empty($attrselection->$Rate1Column)) {
+                                            $temp_row[$attrselection->$Rate1Column] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$Rate1Column]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
+                                            if (is_numeric(trim($temp_row[$attrselection->$Rate1Column]))) {
+                                                $tempvendordata['Rate'] = trim($temp_row[$attrselection->$Rate1Column]);
                                             } else {
                                                 $error[] = 'Rate is not numeric at line no:' . $lineno;
                                             }
@@ -380,6 +388,12 @@ class VendorRateUpload extends Command
                                             $tempvendordata['Rate'] = 0;
                                         } elseif ($tempvendordata['Change'] != 'D') {
                                             $error[] = 'Rate is blank at line no:' . $lineno;
+                                        }
+
+                                        if (isset($attrselection->$RateNColumn) && !empty($attrselection->$RateNColumn)) {
+                                            $tempvendordata['RateN'] = trim($temp_row[$attrselection->$RateNColumn]);
+                                        } else if(isset($tempvendordata['Rate'])) {
+                                            $tempvendordata['RateN'] = $tempvendordata['Rate'];
                                         }
 
                                         if (!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
@@ -416,20 +430,20 @@ class VendorRateUpload extends Command
                                             }
                                         }
 
-                                        if (isset($attrselection->ConnectionFee) && !empty($attrselection->ConnectionFee)) {
-                                            $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->ConnectionFee]);
+                                        if (isset($attrselection->$ConnectionFeeColumn) && !empty($attrselection->$ConnectionFeeColumn)) {
+                                            $tempvendordata['ConnectionFee'] = trim($temp_row[$attrselection->$ConnectionFeeColumn]);
                                         }
-                                        if (isset($attrselection->Interval1) && !empty($attrselection->Interval1)) {
-                                            $tempvendordata['Interval1'] = intval(trim($temp_row[$attrselection->Interval1]));
+                                        if (isset($attrselection->$Interval1Column) && !empty($attrselection->$Interval1Column)) {
+                                            $tempvendordata['Interval1'] = intval(trim($temp_row[$attrselection->$Interval1Column]));
                                         }
-                                        if (isset($attrselection->IntervalN) && !empty($attrselection->IntervalN)) {
-                                            $tempvendordata['IntervalN'] = intval(trim($temp_row[$attrselection->IntervalN]));
+                                        if (isset($attrselection->$IntervalNColumn) && !empty($attrselection->$IntervalNColumn)) {
+                                            $tempvendordata['IntervalN'] = intval(trim($temp_row[$attrselection->$IntervalNColumn]));
                                         }
-                                        if (isset($attrselection->Preference) && !empty($attrselection->Preference)) {
-                                            $tempvendordata['Preference'] = trim($temp_row[$attrselection->Preference]);
+                                        if (isset($attrselection->$PreferenceColumn) && !empty($attrselection->$PreferenceColumn)) {
+                                            $tempvendordata['Preference'] = trim($temp_row[$attrselection->$PreferenceColumn]);
                                         }
-                                        if (isset($attrselection->Forbidden) && !empty($attrselection->Forbidden)) {
-                                            $Forbidden = trim($temp_row[$attrselection->Forbidden]);
+                                        if (isset($attrselection->$ForbiddenColumn) && !empty($attrselection->$ForbiddenColumn)) {
+                                            $Forbidden = trim($temp_row[$attrselection->$ForbiddenColumn]);
                                             if ($Forbidden == '0') {
                                                 $tempvendordata['Forbidden'] = 'UB';
                                             } elseif ($Forbidden == '1') {
@@ -446,11 +460,7 @@ class VendorRateUpload extends Command
                                             }
                                         }
 
-                                        if ($RateColumn == 'Rate') {
-                                            $tempdata['TimezonesID'] = 1;
-                                        } else {
-                                            $tempvendordata['TimezonesID'] = substr($RateColumn, 4);
-                                        }
+                                        $tempvendordata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempvendordata['Code']) && isset($tempvendordata['Description']) && (isset($tempvendordata['Rate']) || $tempvendordata['Change'] == 'D') && isset($tempvendordata['EffectiveDate'])) {
                                             if (isset($tempvendordata['EndDate'])) {
@@ -466,8 +476,12 @@ class VendorRateUpload extends Command
                                         Log::info('Batch insert start');
                                         Log::info('global counter' . $lineno);
                                         Log::info('insertion start');
-                                        TempVendorRate::insert($batch_insert_array);
-                                        TempVendorRate::insert($batch_insert_array2);
+                                        if(!empty($batch_insert_array)) {
+                                            TempVendorRate::insert($batch_insert_array);
+                                        }
+                                        if(!empty($batch_insert_array2)) {
+                                            TempVendorRate::insert($batch_insert_array2);
+                                        }
                                         Log::info('insertion end');
                                         $batch_insert_array = [];
                                         $batch_insert_array2 = [];
@@ -483,8 +497,12 @@ class VendorRateUpload extends Command
                                 Log::info('insertion start');
                                 Log::info('last batch insert ' . count($batch_insert_array));
                                 Log::info('last batch insert 2 ' . count($batch_insert_array2));
-                                TempVendorRate::insert($batch_insert_array);
-                                TempVendorRate::insert($batch_insert_array2);
+                                if(!empty($batch_insert_array)) {
+                                    TempVendorRate::insert($batch_insert_array);
+                                }
+                                if(!empty($batch_insert_array2)) {
+                                    TempVendorRate::insert($batch_insert_array2);
+                                }
                                 Log::info('insertion end');
                                 $batch_insert_array = [];
                                 $batch_insert_array2 = [];
