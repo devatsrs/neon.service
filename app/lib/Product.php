@@ -75,12 +75,7 @@ class Product extends \Eloquent {
                 }
                 unset($report_settings['StartTime']);
                 $report_settings['NextRunTime'] = next_run_time($report_settings);
-                $StartDate = $report_settings['LastRunTime'];
-                $EndDate = date("Y-m-d H:i:s", strtotime($report_settings['NextRunTime']) - 1);
-                $VAccountIDs = isset($settings['VAccountID']) ? implode(',', $settings['VAccountID']) : '';
 
-                //$StartDate = '2016-12-01';$EndDate = '2016-12-03';
-                $VAccountIDs = explode(',', $VAccountIDs);
                 /** send only if vendor not empty */
 
                 $query = "CALL prc_getLowStockItemsAlert(".$CompanyID.")";
@@ -92,8 +87,7 @@ class Product extends \Eloquent {
                     //$settings['EmailType'] = AccountEmailLog::VendorBalanceReport;
                     NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID,'0' ,$settings);
                 }
-
-
+                
                 NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert', $settings['NextRunTime']);
             }
         }
