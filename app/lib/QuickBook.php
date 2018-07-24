@@ -715,15 +715,16 @@ class QuickBook {
 
 						foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
 							$Title = $InvoiceTaxRate->Title;
-							$TaxId = $this->GetTaxDetail('Extra Tax');
-							$TaxRateId = $this->GetTaxRateDetail($Title);
-
+							//for multiple tax try
+							//$TaxId = $this->GetTaxDetail($Title);
+							//$TaxRateId = $this->GetTaxRateDetail($Title);
+/*
 							if (empty($TaxId)) {
 								$response['error'] = $InvoiceFullNumber . '(Invoice) is failed To create';
 								$response['error_reason'] = $Title . '(Tax Not created in quickbook)';
 								return $response;
 							}
-
+*/
 /*
 							$TaxLine = new \QuickBooks_IPP_Object_TaxLine();
 							$TaxLine->setDetailType('TaxLineDetail');
@@ -737,35 +738,45 @@ class QuickBook {
 							//$TaxLineDetail->setNetAmountTaxable($total);
 							$TaxLine->addTaxLineDetail($TaxLineDetail);
 							$TaxLineDetail->addLine($TaxLine);*/
-							$TaxAmount[] = $InvoiceTaxRate->TaxAmount;
+
+							//for multiple tax try
+							//$TaxAmount[] = $InvoiceTaxRate->TaxAmount;
+							$TaxAmount = $InvoiceTaxRate->TaxAmount;
 						}
 					}
 
-
 					$Invoice->setCustomerMemo($Memo);
 					$Invoice->setPrivateNote($Memo);
-
-					/*$SalesTax = new \QuickBooks_IPP_Object_SalesTax();
-					$SalesTax->setTaxable('true');
-					$SalesTax->setSalesTaxCodeId($TaxId);
-					//$SalesTax->setSalesTaxCodeName('Extra Tax');
-					$Invoice->addSalesTax($TotalSalesTax);*/
 
 					$Line->addSalesItemLineDetail($SalesItemLineDetail);
 					$Invoice->addLine($Line);
 
 				}
 			}
-			$TotalSalesTax = array_sum($TaxAmount);
-			Log::info('-- $TotalSalesTax  --'.print_r($TotalSalesTax,true));
+
+			$TaxId = $this->GetTaxDetail($Title);
+			if (empty($TaxId)) {
+				$response['error'] = $InvoiceFullNumber . '(Invoice) is failed To create';
+				$response['error_reason'] = $Title . '(Tax Not created in quickbook)';
+				return $response;
+			}
+			//for multiple tax try
+			//$TotalSalesTax = array_sum($TaxAmount);
+			$TotalSalesTax = $TaxAmount;
+			//Log::info('-- $TotalSalesTax  --'.print_r($TotalSalesTax,true));
 			$TxnTaxDetail = new \QuickBooks_IPP_Object_TxnTaxDetail();
 			$TxnTaxDetail->setTxnTaxCodeRef($TaxId);
 			$TxnTaxDetail->setTotalTax($TotalSalesTax);
 			$Invoice->addTxnTaxDetail($TxnTaxDetail);
 
+			$SalesTax = new \QuickBooks_IPP_Object_SalesTax();
+			$SalesTax->setTaxable('true');
+			$SalesTax->setSalesTaxCodeId($TaxId);
+			$Invoice->addSalesTax($TotalSalesTax);
+
 			$Invoice->setCustomerRef($CustomerID);
 
-			Log::info('-- Invoice Object --'.print_r($Invoice,true));
+			//Log::info('-- Invoice Object --'.print_r($Invoice,true));
 
 			if ($resp = $InvoiceService->add($Context, $realm, $Invoice))
 			{
