@@ -413,7 +413,9 @@ protected $server;
 			Log::info("connectiong:".$email);
 			$aFolder = $connected->getFolders();
 			foreach($aFolder as $oFolder){
-
+				if($oFolder->fullName!="INBOX"){
+					continue;
+				}
 				$LastEmailReadDateTime = TicketGroups::getLatestTicketEmailReceivedDateTime($CompanyID,$GroupID);
 
 				if(!empty($LastEmailReadDateTime)){
