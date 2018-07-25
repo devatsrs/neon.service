@@ -22,7 +22,7 @@ class Service extends \Eloquent {
         return Service::where(array('CompanyID'=>$CompanyID,'ServiceType'=>$ServiceType))->pluck('ServiceID');
     }
     public static function getGatewayServiceID($CompanyGatewayID){
-        return Service::where(array('CompanyGatewayID'=>$CompanyGatewayID))->pluck('ServiceID');
+        return Service::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->pluck('ServiceID');
     }
 
     public static function getServiceName($ServiceID){
