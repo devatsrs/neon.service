@@ -68,10 +68,10 @@ class VoipNow{
                               ELSE
                                   ch.did
                               END as cli,
-                              CASE WHEN flow = 'in' THEN
-                                  ch.did
-                              ELSE
+                              CASE WHEN flow = 'out' THEN
                                   ch.extension_number
+                              ELSE
+                                  ch.did
                               END as cld,
                               ch.id as ID ,ch.start as connect_time ,ch.duration,ch.duration as billed_second,ch.costres as cost,ch.disposion AS disposition,prefix,ch.flow AS userfield
                     from call_history ch
