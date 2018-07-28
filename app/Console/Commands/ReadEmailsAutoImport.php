@@ -76,7 +76,9 @@ class ReadEmailsAutoImport extends Command
 			/** @var \Webklex\IMAP\Folder $oFolder */
 
 			foreach($aFolder as $oFolder) {
-
+				  if($oFolder->fullName!="INBOX"){
+					continue;
+				  }
 				  if (!empty($LastEmailReadDateTime)) {
 				 	 $LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
 				 	 $aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);

@@ -1,6 +1,11 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\View;
+
+
 class Product extends \Eloquent {
     protected $connection = 'sqlsrv2';
     protected $fillable = [];
@@ -42,5 +47,49 @@ class Product extends \Eloquent {
         $products[Product::ONEOFFCHARGE] = $items;
         $products[Product::SUBSCRIPTION] = BillingSubscription::getAllSubscriptionsNames($CompanyID);
         return $products;
+    }
+    /** send LowStockReminder report to specified emails*/
+    public static function LowStockReminder($CompanyID, $ProcessID){
+        $Alerts = Alert::where(array('CompanyID' => $CompanyID, 'AlertGroup' => 'call','AlertType'=>'Low_stock_reminder', 'Status' => 1))->orderby('AlertType', 'asc')->get();
+        foreach ($Alerts as $Alert) {
+            $settings = $report_settings = json_decode($Alert->Settings, true);
+            $settings['ProcessID'] = $ProcessID;
+            $settings['Subject'] = $Alert->Name;
+            if (cal_next_runtime($settings) == date('Y-m-d H:i:00')) {
+                if (!isset($settings['LastRunTime'])) {
+                    if ($settings['Time'] == 'MINUTE') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' minute'));
+                    } else if ($settings['Time'] == 'HOUR') {
+                        $settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $settings['Interval'] . ' hour'));
+                    } else if ($settings['Time'] == 'DAILY') {
+                        $settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $settings['Interval'] . ' day'));
+                    }
+                    $settings['NextRunTime'] = next_run_time($settings);
+                }
+                if ($report_settings['Time'] == 'MINUTE') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' minute'));
+                } else if ($report_settings['Time'] == 'HOUR') {
+                    $report_settings['LastRunTime'] = date("Y-m-d H:00:00", strtotime('-' . $report_settings['Interval'] . ' hour'));
+                } else if ($report_settings['Time'] == 'DAILY') {
+                    $report_settings['LastRunTime'] = date("Y-m-d 00:00:00", strtotime('-' . $report_settings['Interval'] . ' day'));
+                }
+                unset($report_settings['StartTime']);
+                $report_settings['NextRunTime'] = next_run_time($report_settings);
+
+                /** send only if vendor not empty */
+
+                $query = "CALL prc_getLowStockItemsAlert(".$CompanyID.")";
+                //Log::info($query);
+                $AlertItems = DB::connection('sqlsrv2')->select($query);
+                if (!empty($AlertItems)) {
+                    //Log::info(print_r($AlertItems,true));
+                    $settings['EmailMessage'] = View::make('emails.lowstockreminder', compact('AlertItems'))->render();
+                    //$settings['EmailType'] = AccountEmailLog::VendorBalanceReport;
+                    NeonAlert::SendReminderToEmail($CompanyID, $Alert->AlertID,'0' ,$settings);
+                }
+                
+                NeonAlert::UpdateNextRunTime($Alert->AlertID, 'Settings', 'Alert', $settings['NextRunTime']);
+            }
+        }
     }
 }
