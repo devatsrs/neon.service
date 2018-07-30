@@ -175,7 +175,7 @@ class EmailsTemplates{
 			$array['CompanyCity']					=   $CompanyData->City;
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
 			$array['CompanyCountry']				=   $CompanyData->Country;	
-			$array['Logo'] 							= "<img src='".\App\Lib\CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL')."/assets/images/logo@2x.png' />";
+			$array['Logo'] 							= 	"<img src='".getCompanyLogo($CompanyID)."' />";
 			return $array;
 	}
 	

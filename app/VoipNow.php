@@ -53,10 +53,33 @@ class VoipNow{
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
 
-                $query = "select c.company AS username,ch.caller_info AS originator_ip,ch.partyid as cld,ch.callerid as cli, ch.id as ID ,ch.start as connect_time ,ch.duration,ch.duration as billed_second,ch.costres as cost,ch.disposion AS disposition,prefix,ch.flow AS userfield
+                /*
+                    * ----flow => in----------
+                    partyid  => cli
+                    did => cld
+                    ----flow = out------------------
+                    did => cli
+                    extension_number => cld
+               */
+
+                    $query = "select c.company AS username,ch.caller_info AS originator_ip,
+                              CASE WHEN ch.flow = 'in' THEN
+                                  ch.partyid
+                              ELSE
+                                  ch.callerid
+                              END as cli,
+                              CASE WHEN ch.flow = 'out' THEN
+                                  ch.partyid
+							  ELSE
+                                  ch.did
+                              END as cld,
+                              ch.id as ID ,ch.start as connect_time ,ch.duration,ch.duration as billed_second,ch.costres as cost,ch.disposion AS disposition,prefix,ch.flow AS userfield
                     from call_history ch
                     inner join client c on ch.client_client_id = c.id
-                    where `start` >= '" . $addparams['start_date_ymd'] . "' and `start` < '" . $addparams['end_date_ymd'] . "'";
+                    where `start` >= '" . $addparams['start_date_ymd'] . "' and `start` < '" . $addparams['end_date_ymd'] . "'
+                    and calltype = 'out'";
+                // | calltype // | out      || local    || elocal   |
+                //out = external
 
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
