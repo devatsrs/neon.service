@@ -63,14 +63,14 @@ class VoipNow{
                */
 
                     $query = "select c.company AS username,ch.caller_info AS originator_ip,
-                              CASE WHEN flow = 'in' THEN
+                              CASE WHEN ch.flow = 'in' THEN
                                   ch.partyid
                               ELSE
-                                  ch.did
+                                  ch.callerid
                               END as cli,
-                              CASE WHEN flow = 'out' THEN
-                                  ch.extension_number
-                              ELSE
+                              CASE WHEN ch.flow = 'out' THEN
+                                  ch.partyid
+							  ELSE
                                   ch.did
                               END as cld,
                               ch.id as ID ,ch.start as connect_time ,ch.duration,ch.duration as billed_second,ch.costres as cost,ch.disposion AS disposition,prefix,ch.flow AS userfield
