@@ -22,7 +22,7 @@
 		"cartalyst/stripe-laravel": "2.0.*",
 		"calcinai/xero-php": "^1.6",
 		"phpoffice/phpexcel": "^1.8",
-		"webklex/laravel-imap":"1.0.5.8",
+		"webklex/laravel-imap":"1.1.2",
 		"nicolab/php-ftp-client": "^1.4"
 
     },
