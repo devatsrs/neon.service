@@ -19,8 +19,9 @@ class TicketImportRuleConditionType extends \Eloquent  {
     const STATUS = 'status';
     const AGENT = 'agent';
     const GROUP = 'group';
+	const TYPE = 'type';
 
-    static $DifferentCondtionsArray = array(self::PRIORITY ,self::STATUS,self::AGENT,self::GROUP);
+    static $DifferentCondtionsArray = array(self::PRIORITY ,self::STATUS,self::AGENT,self::GROUP,self::TYPE);
 
     protected $enable_cache = true;
     protected $cache_name = "TicketImportRuleConditionType";
@@ -126,6 +127,14 @@ class TicketImportRuleConditionType extends \Eloquent  {
         }
         return false;
     }
+	
+	function isType($TicketImportRuleConditionTypeID) {
+
+        if($this->get($TicketImportRuleConditionTypeID) == self::TYPE){
+            return true;
+        }
+        return false;
+    }
 
     function validate($TicketData,$TicketImportRuleConditionTypeID,$Operand,$Value) {
 
@@ -169,6 +178,9 @@ class TicketImportRuleConditionType extends \Eloquent  {
             } else if ($this->isGroup($TicketImportRuleConditionTypeID)) {
                 $field = $TicketData["Group"];
                 Log::info("Group " . $field);
+            } else if ($this->isType($TicketImportRuleConditionTypeID)) {
+                $field = $TicketData["Type"];
+                Log::info("Type " . $field);
             }
 
             if (TicketImportRuleCondition::field($field)->operand($Operand)->value($Value)->check()) {
