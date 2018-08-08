@@ -3,31 +3,32 @@
  * Created by PhpStorm.
  * User: srs2
  * Date: 25/05/2015
- * Time: 06:58 
+ * Time: 06:58
  */
 
 namespace App\Console\Commands;
 
 
-use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
-use App\Lib\Customer;
-use App\Lib\Gateway;
+use App\Lib\Job;
+use App\Lib\JobStatus;
+use App\Lib\JobType;
+use App\Lib\SippySFTP;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
-class CustomerRateFileExport  extends Command {
+class SippyRateFileStatus  extends Command {
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'customerratefileexport';
+    protected $name = 'sippyratefilestatus';
 
     /**
      * The console command description.
@@ -70,18 +71,44 @@ class CustomerRateFileExport  extends Command {
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-        Log::useFiles(storage_path() . '/logs/customerratefileexport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
-
-        $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-        $GatewayID = CompanyGateway::find($CompanyGatewayID)->GatewayID;
-        $Gateway = Gateway::getGatewayName($GatewayID);
+        $response = array();
+        Log::useFiles(storage_path() . '/logs/sippyratefilestatus-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
         try {
-            if($Gateway == 'SippySFTP') { //sippy
-                $response = Customer::generatePushSippyRateFile($CompanyID, $cronsetting);
-            } else {
-                $response = Customer::generateCustomerFile($CompanyID, $cronsetting);
+            $jobType        = JobType::where(["Code" => 'SRP'])->get(["JobTypeID", "Title"]);
+            $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
+            $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+            $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobTypeID'=>$JobTypeID,'JobStatusID'=>$JobStatusID]);
+
+            foreach ($PendingFiles as $PendingFile) {
+                $Options = json_decode($PendingFile->Options);
+                $token = isset($Options->token) ? $Options->token : '';
+
+                $addparam['token'] = $token;
+                $result = SippySFTP::getUploadStatus($token);
+
+                if (!empty($result) && !isset($result['faultCode'])) {
+                    if (!empty($result['result']) && strtoupper($result['result']) == 'OK') {
+                        if ($result['status'] == 'success') {//will change this
+                            $newJobStatus = JobStatus::where(["Code" => "S"])->get(["JobStatusID"]);
+                            $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
+                            Job::find($PendingFile->JobID)->update(['JobStatusID' => $NewJobStatusID]);
+                            $response['message'][] = 'File Upload Success for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                        } else if ($result['status'] == 'failed') {//will change this
+                            $newJobStatus = JobStatus::where(["Code" => "F"])->get(["JobStatusID"]);
+                            $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
+                            Job::find($PendingFile->JobID)->update(['JobStatusID' => $NewJobStatusID]);
+                            $response['message'][] = 'File Upload failed for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                        }
+                    } else {
+                        $response['error'][] = 'Error while getting status for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                    }
+                } else {
+                    $response['error'][] = 'Error : Job:'. $PendingFile->Title.' JobID:'.$PendingFile->JobID.' faultCode '.$result['faultCode'].' faultString '.$result['faultString'];
+                }
             }
+
             $final_array = array_merge($response['error'],$response['message']);
             if(count($response['error'])){
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;

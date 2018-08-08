@@ -113,6 +113,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\SippySQLAccountUsage',
 		'App\Console\Commands\VoipMSAccountUsage',
 		'App\Console\Commands\VendorCDRRecalculate',
+		'App\Console\Commands\SippyRateFileStatus',
 
 	];
 
