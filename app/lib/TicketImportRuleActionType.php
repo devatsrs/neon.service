@@ -17,6 +17,7 @@ class TicketImportRuleActionType extends \Eloquent  {
     const SET_STATUS = 'set_status';
     const SET_AGENT = 'set_agent';
     const SET_GROUP = 'set_group';
+	const SET_TYPE = 'set_type';
 
     protected $enable_cache = true;
     protected $cache_name = "TicketImportRuleActionType";
@@ -101,6 +102,14 @@ class TicketImportRuleActionType extends \Eloquent  {
         }
         return false;
     }
+	
+	function isSetType($TicketImportRuleActionTypeID){
+
+        if($this->get($TicketImportRuleActionTypeID) == self::SET_TYPE){
+            return true;
+        }
+        return false;
+    }
 
     public function doActions($TicketImportRuleID,$TicketData) {
 
@@ -149,6 +158,10 @@ class TicketImportRuleActionType extends \Eloquent  {
 
                     TicketsTable::setTicketFieldValue($TicketID,"Group",$Value);
                     $log[] = TicketImportRuleActionType::SET_GROUP;
+                } else if ($this->isSetType($TicketImportRuleActionTypeID)) {
+
+                    TicketsTable::setTicketFieldValue($TicketID,"Type",$Value);
+                    $log[] = TicketImportRuleActionType::SET_TYPE;
                 }
             }
         }
