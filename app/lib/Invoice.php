@@ -1874,7 +1874,7 @@ class Invoice extends \Eloquent {
         return $Response;
     }
 
-    public static function GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID)
+    public static function GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$SingleInvoice)
     {
         $skip_accounts = array();
         $today = date("Y-m-d");
@@ -1882,9 +1882,9 @@ class Invoice extends \Eloquent {
         $count=0;
 
         do {
-            $query = "CALL prc_getBillingAccounts(?,?,?)";
-            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
-            Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            $query = "CALL prc_getBillingAccounts(?,?,?,?)";
+            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts),$SingleInvoice));
+            Log::info("Call prc_getBillingAccounts($CompanyID,$today,'".implode(',',$skip_accounts)."','".$SingleInvoice."')");
             log::info(print_r($Accounts,true));
             $Accounts = json_decode(json_encode($Accounts),true);
 
@@ -2043,7 +2043,7 @@ class Invoice extends \Eloquent {
             } // Loop over
             //Log::info($skip_accounts);
             //Break; //if generate only one invoice per account
-        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
+        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts),$SingleInvoice))));
 
 
 		$response['errors'] = $errors;
