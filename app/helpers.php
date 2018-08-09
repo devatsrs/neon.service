@@ -403,6 +403,9 @@ function getdaysdiff($date1,$date2){
     $date2 = new DateTime($date2);
     return $date2->diff($date1)->format("%R%a");
 }
+/**
+ * /^011//,/^0//,/[0-9]{10}$/1$0/ for US customer for voipnow to append 1 when strlen(cld) =10
+ * */
 function apply_translation_rule($TranslationRule,$call_string){
     $replacement =$patternrules = array();
     if(!empty($TranslationRule)){

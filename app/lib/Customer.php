@@ -255,4 +255,146 @@ class Customer extends \Eloquent {
         return $response;
     }
 
+    public static function generatePushSippyRateFile($CompanyID,$cronsetting){
+        $response['error']  = $response['message']  = array();
+        $file_count         = 0;
+        $FileLocation       = $cronsetting['FileLocation'];
+        $CompanyGatewayID   = $cronsetting['CompanyGatewayID'];
+        $Effective          = 'Now';
+        $CustomDate         = date('Y-m-d');
+        if(!empty($cronsetting['Effective'])){
+            $Effective = $cronsetting['Effective'];
+        }
+        if (isset($cronsetting["customers"]) && !empty($cronsetting["customers"])) {
+            $accounts_array = $cronsetting["customers"];
+
+            $account = Account::join('tblCustomerTrunk', 'tblAccount.AccountID', '=', 'tblCustomerTrunk.AccountID')
+                ->join('tblTrunk', 'tblTrunk.TrunkID', '=', 'tblCustomerTrunk.TrunkID');
+            $account->where([
+                "tblAccount.CompanyId" => $CompanyID,
+                "tblAccount.AccountType" => 1,
+                "tblAccount.VerificationStatus" => Account::VERIFIED,
+                "tblCustomerTrunk.Status" => 1,
+                "tblTrunk.Status" => 1,
+            ]);
+            $account->whereIN('tblAccount.AccountID',$accounts_array);
+        }else{
+            $account = Account::join('tblCustomerTrunk', 'tblAccount.AccountID', '=', 'tblCustomerTrunk.AccountID')
+                ->join('tblTrunk', 'tblTrunk.TrunkID', '=', 'tblCustomerTrunk.TrunkID');
+            $account->where([
+                "tblAccount.CompanyId" => $CompanyID,
+                "tblAccount.AccountType" => 1,
+                "tblAccount.VerificationStatus" => Account::VERIFIED,
+                "tblCustomerTrunk.Status" => 1,
+                "tblTrunk.Status" => 1,
+            ]);
+        }
+        $destination = $FileLocation.'/'.$CompanyGatewayID;
+        if (!file_exists($destination)) {
+            mkdir($destination, 0777, true);
+        }
+        $accounts = $account->distinct()->select('tblAccount.*')->get();
+        $Timezones = Timezones::getTimezonesIDList();
+
+        $SippySFTP = new SippySFTP($CompanyGatewayID);
+
+        foreach ($accounts as $account) {
+            $TrunkIDs   = CustomerTrunk::where('AccountID',$account->AccountID)->lists('TrunkID');
+            $TrunkNames = Trunk::whereIn('TrunkID',$TrunkIDs)->lists('Trunk');
+            $TrunkIDs   = implode(',',$TrunkIDs);
+            $TrunkNames = implode(',',$TrunkNames);
+
+            foreach ($Timezones as $TimezoneID => $TimezoneTitle) {
+                try {
+                    DB::beginTransaction();
+
+                    $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
+                    $local_file = $destination . '/customer_' . $file_name.'_'.$TimezoneTitle.'_'.'.csv';
+
+                    $query = "CALL  prc_WSGenerateSippySheet ('" .$account->AccountID . "','" . $TrunkIDs."'," . $TimezoneID.",'".$Effective."','".$CustomDate."')";
+                    Log::info($query);
+                    $excel_data = DB::select($query);
+                    if(count($excel_data) > 0) {
+                        $excel_data = json_decode(json_encode($excel_data), true);
+
+                        //Fix .333 to 0.333 on following column
+                        foreach ($excel_data as $key => $excel_val) {
+                            foreach (['Price 1', 'Price N'] as $field) {
+                                $excel_data[$key][$field] = number_format($excel_val[$field], 9, '.', '');
+                            }
+                        }
+
+                        // generate and write data to csv file
+                        $NeonExcel = new NeonExcelIO($local_file);
+                        $NeonExcel->write_csv($excel_data);
+
+                        $response['message'][] = ' File Generated account: ' . $account->AccountName . ' trunk: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle;
+                        $file_count++;
+
+                        $addparam['i_upload_type'] = 1;//$SippySFTP->getDictionary();
+
+                        $options = array();
+                        try{
+                            $result = $SippySFTP->getUploadToken($addparam);
+                            if (!empty($result) && !isset($result['faultCode'])) {
+                                if(!empty($result['token'])){
+                                    //pending code to upload file
+                                    $fileparam['token'] = $result['token'];
+                                    $fileparam['url']   = $result['url'];
+                                    $fileparam['file']  = $local_file;
+                                    $upload = $SippySFTP->uploadFile($fileparam);
+
+                                    $options['token']  = $result['token'];
+                                    $options['url']    = $result['url'];
+
+                                    $jobType    = JobType::where(["Code" => 'SRP'])->get(["JobTypeID", "Title"]);
+                                    $jobStatus  = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
+                                    $jobdata['CompanyID']       = $CompanyID;
+                                    $jobdata['AccountID']       = $account->AccountID;
+                                    $jobdata['OutputFilePath']  = $local_file;
+                                    $jobdata["JobTypeID"]       = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+                                    $jobdata["JobStatusID"]     = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+                                    $jobdata["Title"]           = $account->AccountName . ' ' . $TimezoneTitle . ' ' . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
+                                    $jobdata["Description"]     = $account->AccountName . ' ' . $TimezoneTitle . ' ' . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
+                                    $jobdata['CreatedBy']       = 'System';
+                                    $jobdata["Options"]         = json_encode($options);
+                                    $jobdata["created_at"]      = date('Y-m-d H:i:s');
+                                    $jobdata["updated_at"]      = date('Y-m-d H:i:s');
+                                    $JobID = Job::insertGetId($jobdata);
+
+                                    $response['message'][] = ' File uploaded against account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle;
+
+                                    DB::commit();
+                                    Log::info('transaction commit ');
+                                } else {
+                                    $response['error'][] = 'token not generated in sippy for account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle;
+                                }
+                            } else {
+                                $response['error'][] = 'account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle.' faultCode '.$result['faultCode'].' faultString '.$result['faultString'];
+                            }
+                        }catch (\Exception $e) {
+                            Log::error($e);
+                            $response['error'][] = 'account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle.' Error '.$e->getMessage();
+                        }
+                    } else {
+                        $response['message'][] = ' No data found against account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle;
+                        Log::info('No data found against account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle);
+                    }
+                } catch (\Exception $e) {
+                    $response['error'][] = 'account: ' . $account->AccountName . ' trunks: ' . $TrunkNames . ' timezone: ' . $TimezoneTitle.' Error '.$e->getMessage();
+                    try {
+                        DB::rollback();
+                    } catch (\Exception $err) {
+                        Log::error($err);
+                    }
+                    Log::error('Account' . $account->AccountName . ' exception ' . $e);
+                }
+            }
+        }
+
+        if($file_count){
+            $response['message'][] = 'Total '.$file_count.' files generated';
+        }
+        return $response;
+    }
 }
