@@ -62,7 +62,10 @@ class Payment extends \Eloquent{
 
     public static function GetBillingPeriodPayments($InvoiceID,$AccountID){
         $PaymentData=array();
-        $InvoiceDetail=InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductType'=>Product::USAGE])->first();
+        $InvoiceDetail=InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductType'=>Product::FIRST_PERIOD])->first();
+        if(empty($InvoiceDetail)){
+            $InvoiceDetail=InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductType'=>Product::USAGE])->first();
+        }
         if(!empty($InvoiceDetail)){
             $StartDate=$InvoiceDetail->StartDate;
             $EndDate=$InvoiceDetail->EndDate;
