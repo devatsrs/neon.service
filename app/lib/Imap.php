@@ -716,7 +716,8 @@ protected $server;
 							$ticketID 			  =  	TicketsTable::insertGetId($logData);
 
 							// --------------- check for TicketImportRule ----------------
-							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$toMail,]);
+							//@TODO: add all the data which TicketImportRule::check function requires
+							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
 								$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 							} catch ( \Exception $ex){
@@ -770,7 +771,7 @@ protected $server;
 
 
 							// --------------- check for TicketImportRule ----------------
-							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail]);
+							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
 								$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 							} catch ( \Exception $ex){
