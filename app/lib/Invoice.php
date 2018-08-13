@@ -2806,7 +2806,7 @@ class Invoice extends \Eloquent {
                             $paymentdata['PaymentMethod'] = 'Account Balance';
                             $paymentdata['CurrencyID'] = $account->CurrencyId;
                             $paymentdata['PaymentType'] = 'Payment In';
-                            $paymentdata['Notes'] = 'Usage Call Charges';
+                            $paymentdata['Notes'] = 'Usage Call Charges ('.$StartDate.' to '.$EndDate.')';
                             $paymentdata['Amount'] = floatval($Amount);
                             $paymentdata['Status'] = 'Approved';
                             $paymentdata['created_at'] = date('Y-m-d H:i:s');
@@ -3081,10 +3081,10 @@ class Invoice extends \Eloquent {
             // if Next Invoice Date is future's date then get Dates from tblInvoice
             // if invoice is generated for the period then get dates from tblInvoice
             $LastInvoice = Invoice::join('tblInvoiceDetail','tblInvoice.InvoiceID','=','tblInvoiceDetail.InvoiceID')
-                                    ->where(['tblInvoice.AccountID'=>$AccountID,'tblInvoiceDetail.ProductType'=>2,'tblInvoice.IssueDate'=>$today])
+                                    ->where(['tblInvoice.AccountID'=>$AccountID,'tblInvoiceDetail.ProductType'=>Product::USAGE,'tblInvoice.IssueDate'=>$today])
                                     ->orderBy('tblInvoiceDetail.StartDate','asc')
                                     ->select(['tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate']);
-            Log::info($LastInvoice->count());
+            //Log::info($LastInvoice->count());
             if($LastInvoice->count() > 0) {
                 $LastInvoice        = $LastInvoice->first();
                 $StartDate          = $LastInvoice->StartDate;
@@ -3113,7 +3113,7 @@ class Invoice extends \Eloquent {
             $AllInvoicePeriods[0]['NextChargeDate'] = date('Y-m-d', strtotime($NextInvoiceDate . ' - 1 day'));
             while ($NextInvoiceDate < $today) {
                 $temp = array();
-                $temp['AccountID'] = 111;
+                $temp['AccountID'] = $AccountID;
                 $temp['AccountBillingID'] = $AccountBilling->AccountBillingID;
                 $temp['BillingCycleType'] = $BillingCycleType;
                 $temp['BillingCycleValue'] = $BillingCycleValue;
