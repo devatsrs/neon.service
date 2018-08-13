@@ -1874,7 +1874,7 @@ class Invoice extends \Eloquent {
         return $Response;
     }
 
-    public static function GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID)
+    public static function GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$SingleInvoice)
     {
         $skip_accounts = array();
         $today = date("Y-m-d");
@@ -1882,9 +1882,9 @@ class Invoice extends \Eloquent {
         $count=0;
 
         do {
-            $query = "CALL prc_getBillingAccounts(?,?,?)";
-            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)));
-            Log::info("Call prc_getBillingAccounts($CompanyID,$today,".implode(',',$skip_accounts).")");
+            $query = "CALL prc_getBillingAccounts(?,?,?,?)";
+            $Accounts = DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts),$SingleInvoice));
+            Log::info("Call prc_getBillingAccounts($CompanyID,$today,'".implode(',',$skip_accounts)."','".$SingleInvoice."')");
             log::info(print_r($Accounts,true));
             $Accounts = json_decode(json_encode($Accounts),true);
 
@@ -2043,7 +2043,7 @@ class Invoice extends \Eloquent {
             } // Loop over
             //Log::info($skip_accounts);
             //Break; //if generate only one invoice per account
-        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts)))));
+        } while (count(DB::select($query,array($CompanyID,$today,implode(',',$skip_accounts),$SingleInvoice))));
 
 
 		$response['errors'] = $errors;
@@ -3031,8 +3031,9 @@ class Invoice extends \Eloquent {
     }*/
     public static function getInvoiceperiodsFromLastInvoiceDateToTillNow($AccountID,$ServiceID){
         $AllInvoicePeriods = array();
-        $today1 = '2018-08-06';//date('Y-m-d');
-        $today2 = '2018-08-08';//date('Y-m-d');
+        $today = date('Y-m-d');
+        /*$today1 = '2018-08-06';//date('Y-m-d');
+        $today2 = '2018-08-08';//date('Y-m-d');*/
 
         // check in tblPayment if any entries exist then take last usage dates from it
         $PaymentStatus1 = DB::connection('sqlsrv2')
@@ -3076,11 +3077,11 @@ class Invoice extends \Eloquent {
 
             $LastInvoiceDate    = date('Y-m-d',strtotime($EndtDate.' + 1 day'));
             $NextInvoiceDate    = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($LastInvoiceDate));
-        } else if($AccountBilling->NextInvoiceDate > $today2 && $AccountBilling->LastInvoiceDate == $today1) {
+        } else if($AccountBilling->NextInvoiceDate > $today && $AccountBilling->LastInvoiceDate == $today) {
             // if Next Invoice Date is future's date then get Dates from tblInvoice
             // if invoice is generated for the period then get dates from tblInvoice
             $LastInvoice = Invoice::join('tblInvoiceDetail','tblInvoice.InvoiceID','=','tblInvoiceDetail.InvoiceID')
-                                    ->where(['tblInvoice.AccountID'=>$AccountID,'tblInvoiceDetail.ProductType'=>2,'tblInvoice.IssueDate'=>$today2])
+                                    ->where(['tblInvoice.AccountID'=>$AccountID,'tblInvoiceDetail.ProductType'=>2,'tblInvoice.IssueDate'=>$today])
                                     ->orderBy('tblInvoiceDetail.StartDate','asc')
                                     ->select(['tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate']);
             Log::info($LastInvoice->count());
@@ -3101,7 +3102,7 @@ class Invoice extends \Eloquent {
             $NextInvoiceDate    = $AccountBilling->NextInvoiceDate;
         }
 
-        if($NextInvoiceDate <= $today1) {
+        if($NextInvoiceDate <= $today) {
             $AllInvoicePeriods[0]['AccountID'] = $AccountID;
             $AllInvoicePeriods[0]['AccountBillingID'] = $AccountBilling->AccountBillingID;
             $AllInvoicePeriods[0]['BillingCycleType'] = $BillingCycleType;
@@ -3110,7 +3111,7 @@ class Invoice extends \Eloquent {
             $AllInvoicePeriods[0]['NextInvoiceDate'] = $NextInvoiceDate;
             $AllInvoicePeriods[0]['LastChargeDate'] = $LastInvoiceDate;
             $AllInvoicePeriods[0]['NextChargeDate'] = date('Y-m-d', strtotime($NextInvoiceDate . ' - 1 day'));
-            while ($NextInvoiceDate < $today1) {
+            while ($NextInvoiceDate < $today) {
                 $temp = array();
                 $temp['AccountID'] = 111;
                 $temp['AccountBillingID'] = $AccountBilling->AccountBillingID;
@@ -3118,7 +3119,7 @@ class Invoice extends \Eloquent {
                 $temp['BillingCycleValue'] = $BillingCycleValue;
                 $temp['LastInvoiceDate'] = $NextInvoiceDate;
                 $NextBillingDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($NextInvoiceDate));
-                if ($NextBillingDate <= $today1) {
+                if ($NextBillingDate <= $today) {
                     $temp['NextInvoiceDate'] = $NextBillingDate;
                     $temp['LastChargeDate'] = $temp['LastInvoiceDate'];
                     $temp['NextChargeDate'] = date('Y-m-d', strtotime($NextBillingDate . ' - 1 day'));
