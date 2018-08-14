@@ -57,6 +57,7 @@ class ImportProduct extends Command {
         $error = array();
         foreach ($results as $temp_row) {
             //check empty row
+            $temp_row = filterArrayRemoveNewLines($temp_row);
             $checkemptyrow = array_filter(array_values($temp_row));
             if(!empty($checkemptyrow)){
                 $tempItemData = array();
