@@ -150,7 +150,8 @@ class InvoiceGenerator extends Command {
                 }
             }else{
                 /** regular invoice start */
-                $response = Invoice::GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID);
+                $SingleInvoice = 0;
+                $response = Invoice::GenerateInvoice($CompanyID,$InvoiceGenerationEmail,$ProcessID, $JobID,$SingleInvoice);
                 $errors = isset($response['errors'])?$response['errors']:array();
                 $message = isset($response['message'])?$response['message']:array();
 
