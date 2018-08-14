@@ -208,6 +208,7 @@ class ImportAccount extends Command {
                                 unset($temp_row[0]);
 
                             }
+                            $temp_row = filterArrayRemoveNewLines($temp_row);
                             $tempItemData = array();
                             $checkemptyrow = array_filter(array_values($temp_row));
                             if(!empty($checkemptyrow)) {

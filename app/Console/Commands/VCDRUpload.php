@@ -144,6 +144,8 @@ class VCDRUpload extends Command
                         array_unshift($temp_row, null);
                         unset($temp_row[0]);
                     }
+                    $temp_row = filterArrayRemoveNewLines($temp_row);
+
                     $cdrdata = array();
                     $cdrdata['ProcessID'] = $ProcessID;
                     $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
