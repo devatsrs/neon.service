@@ -128,6 +128,7 @@ class DialStringUpload extends Command
                             unset($temp_row[0]);
 
                         }
+                        $temp_row = filterArrayRemoveNewLines($temp_row);
                         $tempdialstringdata = array();
                         $tempdialstringdata['DialStringID'] = $joboptions->DialStringID;
                         $tempdialstringdata['ProcessId'] = (string) $ProcessID;
