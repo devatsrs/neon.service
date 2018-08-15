@@ -335,7 +335,14 @@ class AccountBalance extends Model
                                 }
                                 // check date - next invoice date = today or grater , renewal day = today or less today
                                 if($NextInvoiceDate >= $Today && $Today >=$CheckInvoiceDate){
-                                    $response = Invoice::getFutureInvoiceTotal($CompanyID,$AccountBillingID,0);
+                                    $InvoicePeriod=array();
+                                    $AccountBilling=AccountBilling::find($AccountBillingID);
+                                    $InvoicePeriod['AccountBillingID'] = $AccountBillingID;
+                                    $InvoicePeriod['LastInvoiceDate'] = $AccountBilling->LastInvoiceDate;
+                                    $InvoicePeriod['NextInvoiceDate'] = $AccountBilling->NextInvoiceDate;
+                                    $InvoicePeriod['LastChargeDate'] = $AccountBilling->LastChargeDate;
+                                    $InvoicePeriod['NextChargeDate'] = $AccountBilling->NextChargeDate;
+                                    $response = Invoice::getFutureInvoiceTotal($CompanyID,$InvoicePeriod,0);
                                     $GrandTotal=$response['GrandTotal'];
                                     $SubTotal=$response['SubTotal'];
                                     $AccountBalance  = AccountBalance::getAccountBalance($CompanyID,$AccountID);
