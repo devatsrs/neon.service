@@ -764,7 +764,7 @@ function getCompanyLogo($CompanyID){
     if(!empty($result)){
 
         if(!empty($result->Logo)){
-            $path = \App\Lib\AmazonS3::preSignedUrl($result->Logo,$CompanyID);
+            $path = \App\Lib\AmazonS3::unSignedUrl($result->Logo,$CompanyID);
             if(strpos($path, "https://") !== false){
                 $logo_url = $path;
             }else if(!empty($path)){
