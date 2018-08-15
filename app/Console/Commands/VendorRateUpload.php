@@ -299,11 +299,12 @@ class VendorRateUpload extends Command
                                         unset($temp_row[0]);
                                     }
 
-                                    foreach ($temp_row as $key => $value) {
+                                    /*foreach ($temp_row as $key => $value) {
                                         $key = str_replace("\r", '', $key);
                                         $key = str_replace("\n", '', $key);
                                         $temp_row[$key] = $value;
-                                    }
+                                    }*/
+                                    $temp_row = filterArrayRemoveNewLines($temp_row);
 
                                     $tempvendordata = array();
                                     $tempvendordata['codedeckid'] = $joboptions->codedeckid;
