@@ -157,7 +157,7 @@ class SippySQLAccountUsage extends Command {
                                     $uddata['AccountName'] = '';
                                     $uddata['AccountNumber'] = $cdr_row['i_account'];
                                     $uddata['AccountCLI'] = '';
-                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['connect_time']));
+                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['setup_time']));
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['disconnect_time']));
                                     $uddata['cost'] = (float)$cdr_row['cost'];
                                     $uddata['cld'] = apply_translation_rule($CLDTranslationRule, $cdr_row['cld_in']);
@@ -211,7 +211,7 @@ class SippySQLAccountUsage extends Command {
                                     $uddata['AccountName'] = '';
                                     $uddata['AccountNumber'] = $cdr_row['i_account_debug'];
                                     $uddata['AccountCLI'] = '';
-                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['connect_time']));
+                                    $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['setup_time']));
                                     $uddata['disconnect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['disconnect_time']));
                                     $uddata['selling_cost'] = 0; // # is provided only in the cdrs table
                                     $uddata['buying_cost'] = (float)$cdr_row['cost'];
@@ -246,11 +246,11 @@ class SippySQLAccountUsage extends Command {
                 }
 
                 date_default_timezone_set(Config::get('app.timezone'));
-
+                /*
                 Log::info("sippy CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) start");
                 $rows_updated = DB::connection('sqlsrvcdr')->select("CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' )");
                 Log::info("sippy CALL  prc_updateSippyCustomerSetupTime ('" . $processID . "', '".$temptableName."','".$tempVendortable."' ) end");
-
+                */
                 /** delete duplicate id from customer*/
                 Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
                 DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
@@ -288,14 +288,6 @@ class SippySQLAccountUsage extends Command {
                 $filedetail .= '<br>Vendor From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $vtotaldata_count;
                 $filedetail .= '<br>Customer From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $totaldata_count;
 
-                date_default_timezone_set(Config::get('app.timezone'));
-                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
-                $logdata['CompanyID'] = $CompanyID;
-                $logdata['start_time'] = $param['start_date_ymd'];
-                $logdata['end_time'] = $param['end_date_ymd'];
-                $logdata['created_at'] = date('Y-m-d H:i:s');
-                $logdata['ProcessID'] = $processID;
-                TempUsageDownloadLog::insert($logdata);
 
                 Log::error("SippySQL CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
                 DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
@@ -305,6 +297,15 @@ class SippySQLAccountUsage extends Command {
                 DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
                 DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '" . $tempVendortable . "')");
                 Log::error('SippySQL prc_insertCDR end');
+
+                date_default_timezone_set(Config::get('app.timezone'));
+                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $logdata['CompanyID'] = $CompanyID;
+                $logdata['start_time'] = $param['start_date_ymd'];
+                $logdata['end_time'] = $param['end_date_ymd'];
+                $logdata['created_at'] = date('Y-m-d H:i:s');
+                $logdata['ProcessID'] = $processID;
+                TempUsageDownloadLog::insert($logdata);
 
                 DB::connection('sqlsrvcdr')->commit();
                 DB::connection('sqlsrv2')->commit();

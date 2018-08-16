@@ -403,6 +403,9 @@ function getdaysdiff($date1,$date2){
     $date2 = new DateTime($date2);
     return $date2->diff($date1)->format("%R%a");
 }
+/**
+ * /^011//,/^0//,/[0-9]{10}$/1$0/ for US customer for voipnow to append 1 when strlen(cld) =10
+ * */
 function apply_translation_rule($TranslationRule,$call_string){
     $replacement =$patternrules = array();
     if(!empty($TranslationRule)){
@@ -764,9 +767,8 @@ function getCompanyLogo($CompanyID){
             $path = \App\Lib\AmazonS3::unSignedUrl($result->Logo,$CompanyID);
             if(strpos($path, "https://") !== false){
                 $logo_url = $path;
-            }else{
-                $file = $result->Logo;
-                $logo_url = MakeWebUrl($CompanyID,$file);
+            }else if(!empty($path)){
+                $logo_url = get_image_data($path);
             }
         }
     }
@@ -774,7 +776,17 @@ function getCompanyLogo($CompanyID){
 }
 
 function filterArrayRemoveNewLines($arr) { // remove new lines (/r/n) etc...
-    return preg_replace('/s+/', ' ', trim($arr));
+    //return preg_replace('/s+/', ' ', trim($arr));
+    foreach ($arr as $key => $value) {
+        $oldkey = $key;
+        /*$key = str_replace("\r", '', $key);
+        $key = str_replace("\n", '', $key);*/
+        $key = preg_replace('/\s+/', ' ',$key);
+        $arr[$key] = $value;
+        if($key != $oldkey)
+            unset($arr[$oldkey]);
+    }
+    return $arr;
 }
 
 function array_key_exists_wildcard ( $arr, $search ) {

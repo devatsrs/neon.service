@@ -139,6 +139,7 @@ class ItemUpload extends Command {
                             unset($temp_row[0]);
 
                         }
+                        $temp_row = filterArrayRemoveNewLines($temp_row);
                         $tempservice=1;
                         $tempItemData = array();
                         $DynamicFields = array();

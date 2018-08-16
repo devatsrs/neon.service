@@ -150,6 +150,7 @@ class ImportAccountIp extends Command {
                                 unset($temp_row[0]);
 
                             }
+                            $temp_row = filterArrayRemoveNewLines($temp_row);
                             $tempservice=1;
                             $tempItemData = array();
                             $checkemptyrow = array_filter(array_values($temp_row));

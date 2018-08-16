@@ -441,7 +441,7 @@ protected $server;
 						$senderName = $sender[0]->personal;
 						$to = $email->getTo();
 						$toMail=$to[0]->mail;
-						$MessageId = $email->getMessageId();
+						$MessageId = '<'.$email->getMessageId().'>';
 						$aAttachmentCount = $email->getAttachments()->count();
 						$cc = $email->getCc();
 						$cc = EmailServiceProvider::getCC($cc);
@@ -450,9 +450,16 @@ protected $server;
 						$bcc = $email->getBcc();
 						$bcc = EmailServiceProvider::getCC($bcc);
 						$in_reply_to = $email->getInReplyTo();
+						if(!empty($in_reply_to)){
+							$in_reply_to = '<'.$in_reply_to.'>';
+						}
+						$references   = explode(' ',$email->getReferences());						
 						$Subject = $email->getSubject();
 						$header = $email->getHeader();
 						$message = 	$email->getHTMLBody(true);
+						if(!$email->hasHTMLBody() || empty(trim($message))){
+							$message = 	"<pre>".$email->getTextBody()."</pre>";
+						}
 						$Extra = $message;
 
 						Log::info("Subject -  " . $Subject);
@@ -486,24 +493,39 @@ protected $server;
 
 						//-- check in reply to with previous email
 						// if exists then don't check for auto reply
-						$in_reply_tos   = explode(' ',$in_reply_to);
-						foreach($in_reply_tos as $in_reply_to_id){
-							if(!empty($in_reply_to_id)){
-								$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to_id)->first();
-								if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
-									$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
-									if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
-										break;
-									}
-									if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
-										$msg_parent = '';
-										break;
+						if(!empty($in_reply_to)){
+							$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
+							if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
+								$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
+								if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
+									$msg_parent = '';
+								}
+							}
+						}
+						Log::info("in_reply_to");
+						Log::info($in_reply_to);
+						
+						if(empty($msg_parent)){
+							foreach($references as $references_id){
+								if(!empty($references_id)){
+									$msg_parent   	=		AccountEmailLog::where("MessageID",$references_id)->first();
+									if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
+										$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
+										if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
+											break;
+										}
+										if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
+											$msg_parent = '';
+											break;
+										}
 									}
 								}
 							}
 						}
-						Log::info("in_reply_tos");
-						Log::info($in_reply_tos);
+						Log::info("references");
+						Log::info(print_r($references, true));
+						Log::info("msg_parent");
+						Log::info(print_r($msg_parent, true));
 
 						//$msg_parentconversation   	=		  TicketsConversation::where("MessageID",$in_reply_to)->first();
 						// Split on \n  for priority
@@ -694,7 +716,8 @@ protected $server;
 							$ticketID 			  =  	TicketsTable::insertGetId($logData);
 
 							// --------------- check for TicketImportRule ----------------
-							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$toMail,]);
+							//@TODO: add all the data which TicketImportRule::check function requires
+							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
 								$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 							} catch ( \Exception $ex){
@@ -748,7 +771,7 @@ protected $server;
 
 
 							// --------------- check for TicketImportRule ----------------
-							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail]);
+							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
 								$TicketImportRuleResult = TicketImportRule::check($CompanyID,$ticketRuleData);
 							} catch ( \Exception $ex){
@@ -1066,6 +1089,7 @@ protected $server;
 	public static function get_original_plain_subject($subject = '') {
 
 		$find = [
+			"/RE: Test Mail  RE:/", // to test in staging						
 			"/^RE:/",
 			"/^Re:/",
 			"/^FWD:/",
