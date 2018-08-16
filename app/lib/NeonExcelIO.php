@@ -553,7 +553,7 @@ class NeonExcelIO
             $replace_array['CurrencySymbol'] = "";
         }
 
-        $header_data = template_var_replace($header_data,$replace_array);
+        $header_data = template_var_replace($header_data,$replace_array, $CompanyID);
 
         $RateSheetTemplate = CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate') != 'Invalid Key' ? json_decode(CompanySetting::getKeyVal($CompanyID,'RateSheetTemplate')) : '';
         $RateSheetTemplateFile = '';
@@ -616,7 +616,7 @@ class NeonExcelIO
                 for($j=0;$j<6;$j++) {
                     $col = $this->num2char($j);
                     $excel_header = $ActiveSheetTemplate->getCell($col.''.$i);
-                    $excel_header = template_var_replace($excel_header,$replace_array);
+                    $excel_header = template_var_replace($excel_header,$replace_array, $CompanyID);
                     $excel_header = str_replace('{{CurrentDate}}',date('d-m-Y'),$excel_header);
                     if(preg_match('/{{CurrentDate(.*?)}}/',$excel_header,$date_placeholder)) {
                         $date_format = explode('|',$date_placeholder[0]);
@@ -638,7 +638,7 @@ class NeonExcelIO
                 for($j=0;$j<6;$j++) {
                     $col = $this->num2char($j);
                     $excel_footer = $ActiveSheetTemplate->getCell($col.''.$i);
-                    $excel_footer = template_var_replace($excel_footer,$replace_array);
+                    $excel_footer = template_var_replace($excel_footer,$replace_array, $CompanyID);
                     $ActiveSheetTemplate->setCellValue($col.''.$i,$excel_footer);
                 }
             }
@@ -856,7 +856,7 @@ class NeonExcelIO
                     for($j=0;$j<6;$j++) {
                         $col = $this->num2char($j);
                         $excel_header = $ActiveSheetTemplate->getCell($col.''.$i);
-                        $excel_header = template_var_replace($excel_header,$replace_array);
+                        $excel_header = template_var_replace($excel_header,$replace_array, $CompanyID);
                         $excel_header = str_replace('{{CurrentDate}}',date('d-m-Y'),$excel_header);
                         if(preg_match('/{{CurrentDate(.*?)}}/',$excel_header,$date_placeholder)) {
                             $date_format = explode('|',$date_placeholder[0]);
@@ -878,7 +878,7 @@ class NeonExcelIO
                     for($j=0;$j<6;$j++) {
                         $col = $this->num2char($j);
                         $excel_footer = $ActiveSheetTemplate->getCell($col.''.$i);
-                        $excel_footer = template_var_replace($excel_footer,$replace_array);
+                        $excel_footer = template_var_replace($excel_footer,$replace_array, $CompanyID);
                         $ActiveSheetTemplate->setCellValue($col.''.$i,$excel_footer);
                     }
                 }
@@ -919,7 +919,7 @@ class NeonExcelIO
                     }
                     array_walk($header_data , 'custom_replace');
                     $replace_array = Helper::create_replace_array($data['Account'],array());
-                    $header_data = template_var_replace($header_data,$replace_array);
+                    $header_data = template_var_replace($header_data,$replace_array, $CompanyID);
 
                     Log::info($trunk . " sheet index " . $sheet_index );
                     if($sheet_index == 1){

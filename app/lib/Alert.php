@@ -397,8 +397,8 @@ class Alert extends \Eloquent{
                                 $EmailTemplate 	= EmailTemplate::getSystemEmailTemplate($CompanyID, 'AccountBalanceEmailReminder', $Account->LanguageID);
                                 $EmailMessage 	= $EmailTemplate->TemplateBody;
                                 $replace_array 	= Helper::create_replace_array($Account, array());
-                                $EmailMessage 	= template_var_replace($EmailMessage, $replace_array);
-                                $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array);
+                                $EmailMessage 	= template_var_replace($EmailMessage, $replace_array, $CompanyID);
+                                $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array, $CompanyID);
                                 $EmailFrom 	    = $EmailTemplate->EmailFrom;
 
                                 $emailsTo[] = $Settings->ReminderEmail;
