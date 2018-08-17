@@ -113,16 +113,16 @@
     $message = $InvoiceTemplate->InvoiceTo;
 
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
-    $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array, $Account->CompanyId);
+    $text = \App\Lib\Invoice::getInvoiceToByAccount($message,$replace_array);
     $return_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
 
     $Terms = $Invoice->Terms;
-    $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array, $Account->CompanyId);
+    $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
     $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
 
     $FooterTerm = $Invoice->FooterTerm;
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
-    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array, $Account->CompanyId);
+    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
     $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
     ?>
 

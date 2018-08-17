@@ -2162,8 +2162,7 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static function getInvoiceToByAccount($Message,$replace_array, $CompanyID){
-        $replace_array=template_decimal_var_replace($replace_array, $CompanyID);
+    public static function getInvoiceToByAccount($Message,$replace_array){
         $extra = [
             '{AccountName}',
             '{FirstName}',
