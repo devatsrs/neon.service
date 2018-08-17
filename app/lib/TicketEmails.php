@@ -114,10 +114,10 @@ class TicketEmails{
         return $replace_array;
     }	
 	
-	protected function template_var_replace($EmailMessage,$replace_array){
+	protected function template_var_replace($EmailMessage,$replace_array, $CompanyID){
 		
 		$replace_array 	=	$this->SetBasicFields($replace_array);
-		
+		$replace_array	=	template_decimal_var_replace($replace_array, $CompanyID);
 		$extra = [
 			'{{Subject}}',
 			'{{TicketID}}',
@@ -198,8 +198,8 @@ class TicketEmails{
 		$Requester = self::remove_group_emails_from_array($this->CompanyID,$Requester);
 
 		$replace_array				= 		$this->ReplaceArray($this->TicketData); 
-		$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-		$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
+		$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array,$this->CompanyID);
+		$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array,$this->CompanyID);
 		$emailData['Subject']		=		$finalSubject;
 		$emailData['Message'] 		= 		$finalBody;
 		$emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -238,8 +238,8 @@ class TicketEmails{
 			
 			
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
             $emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -274,8 +274,8 @@ class TicketEmails{
 
 			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$Groupagents 				= 		TicketGroupAgents::get_group_agents($this->TicketData->Group,0,'EmailAddress');
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
@@ -317,8 +317,8 @@ class TicketEmails{
 
 			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -404,8 +404,8 @@ class TicketEmails{
 
 				$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 				$replace_array = $this->ReplaceArray($this->TicketData);
-				$finalBody = $this->template_var_replace($this->EmailTemplate->TemplateBody, $replace_array);
-				$finalSubject = $this->template_var_replace($this->EmailTemplate->Subject, $replace_array);
+				$finalBody = $this->template_var_replace($this->EmailTemplate->TemplateBody, $replace_array, $this->CompanyID);
+				$finalSubject = $this->template_var_replace($this->EmailTemplate->Subject, $replace_array, $this->CompanyID);
 				$emailData['Subject'] = $finalSubject;
 				$emailData['Message'] = $finalBody;
 				$emailData['CompanyID'] = $this->CompanyID;
@@ -503,8 +503,8 @@ class TicketEmails{
 
 			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -542,8 +542,8 @@ class TicketEmails{
 
 			$this->EmailTemplate  		=		EmailTemplate::getSystemEmailTemplate($this->CompanyID, $this->slug, $LanguageID);
 		 	$replace_array				= 		$this->ReplaceArray($this->TicketData);
-		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);				
+		    $finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$emailData['Subject']		=		$finalSubject;
             $emailData['Message'] 		= 		$finalBody;
             $emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -659,8 +659,8 @@ class TicketEmails{
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
-			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
+			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$emailData['Subject']		=		$finalSubject;
 			$emailData['Message'] 		= 		$finalBody;
 			$emailData['CompanyID'] 	= 		$this->CompanyID;
@@ -723,8 +723,8 @@ class TicketEmails{
 			$emailto = self::remove_group_emails_from_array($this->CompanyID,$emailto);
 
 			$replace_array				= 		$this->ReplaceArray($this->TicketData);
-			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array);
-			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array);	
+			$finalBody 					= 		$this->template_var_replace($this->EmailTemplate->TemplateBody,$replace_array, $this->CompanyID);
+			$finalSubject				= 		$this->template_var_replace($this->EmailTemplate->Subject,$replace_array, $this->CompanyID);
 			$emailData['Subject']		=		$finalSubject;
 			$emailData['Message'] 		= 		$finalBody;
 			$emailData['CompanyID'] 	= 		$this->CompanyID;

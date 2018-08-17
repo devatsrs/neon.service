@@ -234,7 +234,8 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR, $RerateAccounts=0){
     }
 return $area_prefix;
 }
-function template_var_replace($EmailMessage,$replace_array){
+function template_var_replace($EmailMessage,$replace_array, $CompanyID){
+    $replace_array=template_decimal_var_replace($replace_array, $CompanyID);
     $extra = [
         '{{AccountName}}',
         '{{FirstName}}',
@@ -283,6 +284,20 @@ function template_var_replace($EmailMessage,$replace_array){
         }
     }
     return $EmailMessage;
+}
+
+function template_decimal_var_replace($replace_array, $CompanyID){
+    $RoundChargesAmount = \App\Lib\Helper::get_round_decimal_places($CompanyID);
+
+    foreach($replace_array as $key=>$value){
+        if(is_numeric($value)) {
+            $value=number_format($value, $RoundChargesAmount);
+            if($value){
+                $replace_array[$key] = $value;
+            }
+        }
+    }
+    return $replace_array;
 }
 
 function combile_url_path($url, $path){
