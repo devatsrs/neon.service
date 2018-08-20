@@ -799,7 +799,7 @@ function array_key_exists_wildcard ( $arr, $search ) {
 }
 
 function getCompanyDecimalPlaces($CompanyID, $value=""){
-    $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+    $RoundChargesAmount = \App\Lib\CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
     $RoundChargesAmount=($RoundChargesAmount !='Invalid Key')?$RoundChargesAmount:2;
 
     if(!empty($value) && is_numeric($value)){
