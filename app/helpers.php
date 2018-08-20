@@ -797,3 +797,18 @@ function array_key_exists_wildcard ( $arr, $search ) {
 
     return preg_grep( $search, array_keys( $arr ) );
 }
+
+function getCompanyDecimalPlaces($CompanyID, $value=""){
+    $RoundChargesAmount = CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+    $RoundChargesAmount=($RoundChargesAmount !='Invalid Key')?$RoundChargesAmount:2;
+
+    if(!empty($value) && is_numeric($value)){
+        $formatedValue=number_format($value, $RoundChargesAmount);
+        if($formatedValue){
+            return $formatedValue;
+        }
+        return $value;
+    }else{
+        return $RoundChargesAmount;
+    }
+}
