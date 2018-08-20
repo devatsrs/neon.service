@@ -109,7 +109,7 @@ class EmailsTemplates{
 			
 			$extraDefault	=	EmailsTemplates::$fields;
 			$extra 			= 	array_merge($extraDefault,$extraSpecific);
-			
+
 			foreach($extra as $item){
 				$item_name = str_replace(array('{','}'),array('',''),$item);
 				if(array_key_exists($item_name,$replace_array)) {
@@ -151,7 +151,7 @@ class EmailsTemplates{
 				'{{RateGeneratorName}}',					
 				'{{CompanyName}}',
 			];
-		
+
 		foreach($extra as $item){
 			$item_name = str_replace(array('{','}'),array('',''),$item);
 			if(array_key_exists($item_name,$replace_array)) {					
