@@ -111,8 +111,9 @@ class SippyRateFileStatus  extends Command {
                         $Status = !empty($Options['status']) ? $Options['status'] : '';
                         if($Status != $result['status']) {
                             $Options['status'] = $result['status'];
+                            $JobStatusMessage = $result['status'];
                             $Options = json_encode($Options,true);
-                            $Job->update(['JobStatusID' => $NewJobStatusID,'Options'=>$Options]);
+                            $Job->update(['JobStatusID' => $NewJobStatusID,'JobStatusMessage' => $JobStatusMessage,'Options'=>$Options]);
                         }
                     } else {
                         $response['error'][] = 'Error while getting status for Job : '. $PendingFile->Title.', JobID'.$PendingFile->JobID;

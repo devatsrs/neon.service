@@ -369,6 +369,7 @@ class Customer extends \Eloquent {
                                         $jobdata["Title"] = $account->AccountName . ' ' . $TimezoneTitle . ' ' . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
                                         $jobdata["Description"] = $account->AccountName . ' ' . $TimezoneTitle . ' ' . (isset($jobType[0]->Title) ? $jobType[0]->Title : '');
                                         $jobdata['CreatedBy'] = 'System';
+                                        $jobdata['JobStatusMessage'] = 'INIT_TOKEN';
                                         $jobdata["Options"] = json_encode($options,true);
                                         $jobdata["created_at"] = date('Y-m-d H:i:s');
                                         $jobdata["updated_at"] = date('Y-m-d H:i:s');
@@ -416,7 +417,7 @@ class Customer extends \Eloquent {
     public static function getSippyTariffID($AccountID, $CompanyGatewayID){
         $Account    = Account::find($AccountID);
         $AuthRule   = DB::table('tblAccountAuthenticate')->where(['AccountID' => $AccountID]);
-Log::info('Authenticating Account : '.$Account->AccountName);
+        Log::info('Authenticating Account : '.$Account->AccountName);
         $AuthRuleName = $AuthRuleValue = '';
         if($AuthRule->count() > 0) {
             $AuthRule = $AuthRule->first();
