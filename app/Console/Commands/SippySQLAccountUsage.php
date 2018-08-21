@@ -397,11 +397,20 @@ class SippySQLAccountUsage extends Command {
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
+        $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute',strtotime($endtime)));  //date('Y-m-d H:i:s');
+        return $endtime;
+
+        //$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+        /*$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->orderby('TempUsageDownloadLogID', 'desc')->limit(1)->pluck("end_time");
+        return $endtime; */
+
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
         if ($minutes <= $usageinterval) {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
+            Log::info("here - "  . $endtime);
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-01 00:00:00');
