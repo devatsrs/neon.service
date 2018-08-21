@@ -359,7 +359,7 @@ class Customer extends \Eloquent {
                                         $options['status'] = 'INIT_TOKEN';
                                         $options['CompanyGatewayID'] = $CompanyGatewayID;
 
-                                        $jobType = JobType::where(["Code" => 'SRP'])->get(["JobTypeID", "Title"]);
+                                        $jobType = JobType::where(["Code" => 'SCRP'])->get(["JobTypeID", "Title"]);
                                         $jobStatus = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
                                         $jobdata['CompanyID'] = $CompanyID;
                                         $jobdata['AccountID'] = $account->AccountID;

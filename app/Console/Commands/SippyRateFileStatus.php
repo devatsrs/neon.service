@@ -77,7 +77,7 @@ class SippyRateFileStatus  extends Command {
 
         try {
             $response['error']  = $response['message']  = array();
-            $jobType        = JobType::where(["Code" => 'SRP'])->get(["JobTypeID", "Title"]);
+            $jobType        = JobType::where(["Code" => 'SCRP'])->get(["JobTypeID", "Title"]);
             $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
             $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
             $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
