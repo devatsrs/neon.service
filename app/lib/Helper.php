@@ -319,6 +319,7 @@ class Helper{
     }
 
    public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
+       $RoundChargesAmount=getCompanyDecimalPlaces($Account->CompanyId);
        $replace_array = array();
        $replace_array['AccountName'] = $Account->AccountName;
        $replace_array['FirstName'] = $Account->FirstName;
@@ -331,7 +332,7 @@ class Helper{
        $replace_array['State'] = $Account->State;
        $replace_array['PostCode'] = $Account->PostCode;
        $replace_array['Country'] = $Account->Country;
-       $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID),$RoundChargesAmount);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
@@ -349,8 +350,11 @@ class Helper{
         $replace_array['Logo'] = '<img src="'.getCompanyLogo($Account->CompanyId).'" />';
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
        $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
        $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
        $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
        $Signature = '';
        if(!empty($JobLoggedUser)){
