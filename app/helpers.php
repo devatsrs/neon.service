@@ -234,8 +234,7 @@ function sippy_vos_areaprefix($area_prefix,$RateCDR, $RerateAccounts=0){
     }
 return $area_prefix;
 }
-function template_var_replace($EmailMessage,$replace_array, $CompanyID){
-    $replace_array=template_decimal_var_replace($replace_array, $CompanyID);
+function template_var_replace($EmailMessage,$replace_array){
     $extra = [
         '{{AccountName}}',
         '{{FirstName}}',
@@ -284,20 +283,6 @@ function template_var_replace($EmailMessage,$replace_array, $CompanyID){
         }
     }
     return $EmailMessage;
-}
-
-function template_decimal_var_replace($replace_array, $CompanyID){
-    $RoundChargesAmount = \App\Lib\Helper::get_round_decimal_places($CompanyID);
-
-    foreach($replace_array as $key=>$value){
-        if(is_numeric($value)) {
-            $value=number_format($value, $RoundChargesAmount);
-            if($value){
-                $replace_array[$key] = $value;
-            }
-        }
-    }
-    return $replace_array;
 }
 
 function combile_url_path($url, $path){
@@ -811,4 +796,19 @@ function array_key_exists_wildcard ( $arr, $search ) {
     $search = '/^' . $search . '$/i';
 
     return preg_grep( $search, array_keys( $arr ) );
+}
+
+function getCompanyDecimalPlaces($CompanyID, $value=""){
+    $RoundChargesAmount = \App\Lib\CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+    $RoundChargesAmount=($RoundChargesAmount !='Invalid Key')?$RoundChargesAmount:2;
+
+    if(!empty($value) && is_numeric($value)){
+        $formatedValue=number_format($value, $RoundChargesAmount);
+        if($formatedValue){
+            return $formatedValue;
+        }
+        return $value;
+    }else{
+        return $RoundChargesAmount;
+    }
 }

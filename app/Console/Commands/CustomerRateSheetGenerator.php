@@ -559,8 +559,8 @@ class CustomerRateSheetGenerator extends Command {
             $replace_array['TrunkName'] = empty($account->trunk_name)?'':$account->trunk_name;
 
          //   $joboptions->message = template_var_replace($joboptions->message,$replace_array);
-			$message =  template_var_replace($joboptions->message,$replace_array, $CompanyID);
-            $emaildata['Subject'] =  template_var_replace($emaildata['Subject'],$replace_array, $CompanyID);
+			$message =  template_var_replace($joboptions->message,$replace_array);
+            $emaildata['Subject'] =  template_var_replace($emaildata['Subject'],$replace_array);
             $emaildata['Message'] = $message;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;

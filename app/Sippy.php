@@ -23,6 +23,8 @@ class Sippy{
     private static $cli;
     private static $timeout=0; /* 60 seconds timeout */
 
+    //https://178.62.213.114/xmlapi/xmlapi - api url
+
     public static $GatewayName = "SippySFTP";
 
    public function __construct($CompanyGatewayID){
@@ -328,7 +330,6 @@ class Sippy{
         }
     }
 
-
     public static function getAccountInfo($addparams=array()){
         if(count(self::$config)>0) {
             if(isset($addparams['i_account'])){
@@ -389,6 +390,116 @@ class Sippy{
         if(count(self::$config)>0) {
             $params = array(new xmlrpcval($addparams,'struct'));
             $msg = new xmlrpcmsg('updateAccount', $params);
+            $r = self::$cli->send($msg, self::$timeout);
+            if ($r->faultCode()) {
+                //echo $r->faultCode();echo $r->faultString();exit;
+                error_log("Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                return array('faultCode'=>$r->faultCode(),'faultString'=>$r->faultString());
+            }
+            return $r->value();
+        }
+    }
+
+    public static function getUploadToken($addparams=array()){
+        if(count(self::$config)>0) {
+            //Log::info($addparams);
+            if(isset($addparams['i_upload_type'])){
+                $addparams['i_upload_type'] = new xmlrpcval($addparams["i_upload_type"], "int");
+            }
+            if(isset($addparams['i_customer'])){
+                $addparams['i_customer'] = new xmlrpcval($addparams["i_customer"], "int");
+            }
+            if(isset($addparams['params']['i_tariff'])){
+                $addparams['params']['i_tariff'] = new xmlrpcval($addparams["params"]['i_tariff'], "int");
+                $addparams['params'] = new xmlrpcval($addparams["params"], "struct");
+            }
+            $params = array(new xmlrpcval($addparams,'struct'));
+            $msg = new xmlrpcmsg('getUploadToken', $params);
+
+            $r = self::$cli->send($msg, self::$timeout);
+            if ($r->faultCode()) {
+                //echo $r->faultCode();echo $r->faultString();exit;
+                error_log("Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                return array('faultCode'=>$r->faultCode(),'faultString'=>$r->faultString());
+            }
+            return $r->value();
+        }
+    }
+    public static function uploadFile($addparams=array()){
+        /*if (function_exists('curl_file_create')) { // php 5.5+
+            $cFile = curl_file_create($addparams['file']);
+        } else { //
+            $cFile = '@' . realpath($addparams['file']);
+        }
+        $post = array('file_contents'=> $cFile);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_URL,$addparams['url']);
+        curl_setopt($curl, CURLOPT_POST,1);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $post);
+        //curl_setopt($curl, CURLOPT_VERBOSE, 1);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/octet-stream',
+            'Content-Type: text/plain',
+            'Transfer-Encoding: chunked'
+        ));
+        $result = curl_exec ($curl);
+        curl_close ($curl);
+        return $result;*/
+        exec('cat '.$addparams['file'].' | curl -v -o - --no-buffer -H "Content-Type: application/octet-stream" -k -H "Transfer-Encoding: chunked" "'.$addparams['url'].'" --data-binary @-');
+    }
+    public static function getUploadStatus($addparams=array()){
+        //possible values for status return by api is
+        /*
+            INIT_TOKEN
+            FILE_UPLOADED
+            PROCESSING
+            FAIL
+            DONE
+        */
+        if(count(self::$config)>0) {
+            if(isset($addparams['token'])){
+                $addparams['token'] = new xmlrpcval($addparams["token"], "string");
+            }
+            $params = array(new xmlrpcval($addparams,'struct'));
+            $msg = new xmlrpcmsg('getUploadStatus', $params);
+            $r = self::$cli->send($msg, self::$timeout);
+            if ($r->faultCode()) {
+                //echo $r->faultCode();echo $r->faultString();exit;
+                error_log("Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                return array('faultCode'=>$r->faultCode(),'faultString'=>$r->faultString());
+            }
+            return $r->value();
+        }
+    }
+    public static function getDictionary($addparams=array()){
+        if(count(self::$config)>0) {
+            $addparams['name'] = new xmlrpcval('upload_types', "string");
+            $params = array(new xmlrpcval($addparams,'struct'));
+            $msg = new xmlrpcmsg('getDictionary', $params);
+            $r = self::$cli->send($msg, self::$timeout);
+            if ($r->faultCode()) {
+                //echo $r->faultCode();echo $r->faultString();exit;
+                error_log("Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $r->faultCode() . ", Reason: " . $r->faultString());
+                return array('faultCode'=>$r->faultCode(),'faultString'=>$r->faultString());
+            }
+            return $r->value();
+        }
+    }
+    public static function getCustomerInfo($addparams=array()){
+        if(count(self::$config)>0) {
+            if(isset($addparams['i_customer'])){
+                $addparams['i_customer'] = new xmlrpcval($addparams["i_customer"], "int");
+            }
+            if(isset($addparams['name'])){
+                $addparams['name'] = new xmlrpcval($addparams["name"], "string");
+            }
+            $params = array(new xmlrpcval($addparams,'struct'));
+            $msg = new xmlrpcmsg('getCustomerInfo', $params);
             $r = self::$cli->send($msg, self::$timeout);
             if ($r->faultCode()) {
                 //echo $r->faultCode();echo $r->faultString();exit;

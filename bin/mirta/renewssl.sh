@@ -13,7 +13,7 @@ systemctl stop firewalld
 #service iptables start
 
 #Centos 7+
-systemctl start firewalld
+#systemctl start firewalld
 
 #Given by Leandro
 /var/lib/asterisk/agi-bin/applyGeoIPfirewall.sh

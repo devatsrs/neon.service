@@ -154,8 +154,8 @@ class AccountBalance extends Model
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                     $EmailMessage 	= $EmailTemplate->TemplateBody;
                     $replace_array 	= Helper::create_replace_array($Account, array());
-                    $EmailMessage 	= template_var_replace($EmailMessage, $replace_array, $CompanyID);
-                    $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array, $CompanyID);
+                    $EmailMessage 	= template_var_replace($EmailMessage, $replace_array);
+                    $Subject 		= template_var_replace($EmailTemplate->Subject, $replace_array);
                     $EmailFrom 	    = $EmailTemplate->EmailFrom;
                     $EmailsTo		= $singleemail;
                     $Emaildata = array(

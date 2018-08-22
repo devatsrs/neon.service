@@ -124,6 +124,15 @@ class SippySQLAccountUsage extends Command {
             $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
             $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
 
+            //	Debug only ...
+            $endtime = TempUsageDownloadLog::where(array('CompanyID' => $CompanyID, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+            //start end time
+            $filedetail = "<br>Gateway Current Time:  " . date('Y-m-d H:i:s');
+            $filedetail .= "<br>Last End Time: " . $endtime;
+            $filedetail .= "<br>New Start Time: " . date('Y-m-d H:i:s', strtotime('-10 minute',strtotime($endtime)));
+
+//	Debug only ...
+
             Log::error(print_r($param, true));
 
             $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
@@ -271,11 +280,8 @@ class SippySQLAccountUsage extends Command {
 
                 Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
-                TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '','CurrentRate',0, $RerateAccounts);
+                $skiped_vaccount_data = TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '','CurrentRate',0, $RerateAccounts);
                 $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
-                if (count($skiped_account_data)) {
-                    $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
-                }
 
                 $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
                 $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
@@ -283,8 +289,16 @@ class SippySQLAccountUsage extends Command {
                 DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrvcdr')->beginTransaction();
 
-                //start end time
-                $filedetail = "";
+                if (count($skiped_account_data)) {
+                    $filedetail .= "<br>----------------------------------------";
+                    $filedetail .= implode('<br>', $skiped_account_data);
+                }
+                if (count($skiped_vaccount_data)) {
+                    $filedetail .= "<br>----------------------------------------";
+                    $filedetail .= implode('<br>', $skiped_vaccount_data);
+                }
+                $filedetail .= "<br>----------------------------------------";
+                $filedetail .= "";
                 $filedetail .= '<br>Vendor From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $vtotaldata_count;
                 $filedetail .= '<br>Customer From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $totaldata_count;
 
@@ -383,6 +397,11 @@ class SippySQLAccountUsage extends Command {
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
         $hours = round($seconds / 60 / 60);
+        $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
+        if($endtimefinal > date('Y-m-d H:i:s')){
+            return date('Y-m-d H:i:s');
+        }
+        return $endtimefinal;
 
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
@@ -397,11 +416,22 @@ class SippySQLAccountUsage extends Command {
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
+        $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute',strtotime($endtime)));  //date('Y-m-d H:i:s');
+        if($endtime > date('Y-m-d H:i:s')){
+            return date('Y-m-d H:i:s');
+        }
+
+        //$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
+        /*$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->orderby('TempUsageDownloadLogID', 'desc')->limit(1)->pluck("end_time");
+        return $endtime; */
+
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
         if ($minutes <= $usageinterval) {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
+            Log::info("here - "  . $endtime);
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-01 00:00:00');
