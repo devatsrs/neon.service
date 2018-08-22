@@ -767,9 +767,8 @@ function getCompanyLogo($CompanyID){
             $path = \App\Lib\AmazonS3::unSignedUrl($result->Logo,$CompanyID);
             if(strpos($path, "https://") !== false){
                 $logo_url = $path;
-            }else{
-                $file = $result->Logo;
-                $logo_url = MakeWebUrl($CompanyID,$file);
+            }else if(!empty($path)){
+                $logo_url = get_image_data($path);
             }
         }
     }
@@ -797,4 +796,19 @@ function array_key_exists_wildcard ( $arr, $search ) {
     $search = '/^' . $search . '$/i';
 
     return preg_grep( $search, array_keys( $arr ) );
+}
+
+function getCompanyDecimalPlaces($CompanyID, $value=""){
+    $RoundChargesAmount = \App\Lib\CompanySetting::getKeyVal($CompanyID,'RoundChargesAmount');
+    $RoundChargesAmount=($RoundChargesAmount !='Invalid Key')?$RoundChargesAmount:2;
+
+    if(!empty($value) && is_numeric($value)){
+        $formatedValue=number_format($value, $RoundChargesAmount);
+        if($formatedValue){
+            return $formatedValue;
+        }
+        return $value;
+    }else{
+        return $RoundChargesAmount;
+    }
 }

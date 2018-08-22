@@ -109,7 +109,7 @@ class EmailsTemplates{
 			
 			$extraDefault	=	EmailsTemplates::$fields;
 			$extra 			= 	array_merge($extraDefault,$extraSpecific);
-			
+
 			foreach($extra as $item){
 				$item_name = str_replace(array('{','}'),array('',''),$item);
 				if(array_key_exists($item_name,$replace_array)) {
@@ -151,7 +151,7 @@ class EmailsTemplates{
 				'{{RateGeneratorName}}',					
 				'{{CompanyName}}',
 			];
-		
+
 		foreach($extra as $item){
 			$item_name = str_replace(array('{','}'),array('',''),$item);
 			if(array_key_exists($item_name,$replace_array)) {					
@@ -184,6 +184,7 @@ class EmailsTemplates{
 	}
 	
 	static function setAccountFields($array,$AccountID,$CompanyID,$UserID=0){
+			$RoundChargesAmount=Helper::get_round_decimal_places($CompanyID,$AccountID);
 			$AccoutData 					= 	 Account::find($AccountID);			
 			$array['AccountName']			=	 $AccoutData->AccountName;
 			$array['FirstName']				=	 $AccoutData->FirstName;
@@ -198,8 +199,8 @@ class EmailsTemplates{
 			$array['Country']				=	 $AccoutData->Country;
 			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");		
 			$array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Symbol");
-			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  Helper::get_round_decimal_places($CompanyID,$AccountID));
-			$array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($AccountID);
+			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  $RoundChargesAmount);
+			$array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($AccountID), $RoundChargesAmount);
 			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);	
 			  if(!empty($UserID)){
 				   $UserData = user::find($UserID);
@@ -238,6 +239,7 @@ class EmailsTemplates{
 		$replace_array['InvoiceOutstanding'] = Account::getInvoiceOutstanding($CompanyID, $InvoiceData->AccountID, $InvoiceID, Helper::get_round_decimal_places($CompanyID, $InvoiceData->AccountID));
 
 		$replace_array['PaidAmount'] = empty($staticdata['PaidAmount'])?'':$staticdata['PaidAmount'];
+		$replace_array['PaidAmount'] = number_format($replace_array['PaidAmount'], $RoundChargesAmount);
 		$replace_array['PaidStatus'] = empty($staticdata['PaidStatus'])?'':$staticdata['PaidStatus'];
 		$replace_array['PaymentMethod'] = empty($staticdata['PaymentMethod'])?'':$staticdata['PaymentMethod'];
 		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];
@@ -306,6 +308,7 @@ class EmailsTemplates{
 		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $AccountID);
 
 		$replace_array['PaidAmount'] = empty($staticdata['PaidAmount'])?'':$staticdata['PaidAmount'];
+		$replace_array['PaidAmount'] = number_format($replace_array['PaidAmount'], $RoundChargesAmount);
 		$replace_array['PaidStatus'] = empty($staticdata['PaidStatus'])?'':$staticdata['PaidStatus'];
 		$replace_array['PaymentMethod'] = empty($staticdata['PaymentMethod'])?'':$staticdata['PaymentMethod'];
 		$replace_array['PaymentNotes'] = empty($staticdata['PaymentNotes'])?'':$staticdata['PaymentNotes'];

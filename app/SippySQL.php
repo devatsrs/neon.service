@@ -17,18 +17,18 @@ class SippySQL{
     public function __construct($CompanyGatewayID){
         $setting = GatewayAPI::getSetting($CompanyGatewayID, 'SippySQL');
         foreach ((array)$setting as $configkey => $configval) {
-            if ($configkey == 'password') {
+            if ($configkey == 'dbpassword') {
                 self::$config[$configkey] = Crypt::decrypt($configval);
             } else {
                 self::$config[$configkey] = $configval;
             }
         }
-        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
             extract(self::$config);
             Config::set('database.connections.pgsql.host', $dbserver);
             Config::set('database.connections.pgsql.database', $dbname);
-            Config::set('database.connections.pgsql.username', $username);
-            Config::set('database.connections.pgsql.password', $password);
+            Config::set('database.connections.pgsql.username', $dbusername);
+            Config::set('database.connections.pgsql.password', $dbpassword);
 
         }
     }
@@ -67,19 +67,57 @@ class SippySQL{
                 $response_cdr = array();
                // foreach($tables as $tablename)
                // {
-                    $cdrs_qry = "select cc.i_account,cc.remote_ip,cc.connect_time,cc.disconnect_time,cc.cost,cc.cld_in,cc.cli_in,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
-                    $response_cdr = DB::connection('pgsql')->select($cdrs_qry);
-                    Log::info($cdrs_qry);
+                $cdrs_qry = "select cc.i_account,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_in,cc.cli_in,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
+                $response_cdr = DB::connection('pgsql')->select($cdrs_qry);
+                Log::info($cdrs_qry);
 
-                    $cdrs_conn_qry = "select cc.i_account_debug,cc.remote_ip,cc.connect_time,cc.disconnect_time,cc.cost,cc.cld_out,cc.cli_out,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_connections_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where c.setup_time >= '" . $addparams['start_date_ymd'] . "' and c.setup_time < '" . $addparams['end_date_ymd'] . "' ";
-                    $response_cdr_connection = DB::connection('pgsql')->select($cdrs_conn_qry);
-                    Log::info($cdrs_conn_qry);
+                $cdrs_conn_qry = "select cc.i_account_debug,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_out,cc.cli_out,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_connections_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
+                $response_cdr_connection = DB::connection('pgsql')->select($cdrs_conn_qry);
+                Log::info($cdrs_conn_qry);
 
                     $response['cdrs_response'][] = $response_cdr;
                     $response['cdrs_response_connection'][] = $response_cdr_connection;
                 //}
                 //print_R($response_cdr);exit;
 
+            } catch (Exception $e) {
+                $response['faultString'] = $e->getMessage();
+                $response['faultCode'] = $e->getCode();
+                Log::error("Class Name:" . __CLASS__ . ",Method: " . __METHOD__ . ", Fault. Code: " . $e->getCode() . ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
+
+    public static function getAccountByIP($addparams = array()){
+
+        $response = array();
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+            try {
+                $qry = "select i_account from authentications where remote_ip in (" . $addparams['remote_ip'] . ") limit 1";
+                $response = DB::connection('pgsql')->select($qry);
+                Log::info($qry);
+            } catch (Exception $e) {
+                $response['faultString'] = $e->getMessage();
+                $response['faultCode'] = $e->getCode();
+                Log::error("Class Name:" . __CLASS__ . ",Method: " . __METHOD__ . ", Fault. Code: " . $e->getCode() . ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
+
+    public static function getTariffID($addparams = array()){
+
+        $response = array();
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+            try {
+                $qry = "select i_tariff from billing_plans where i_billing_plan = " . $addparams['i_billing_plan'] . " limit 1";
+                $response = DB::connection('pgsql')->select($qry);
+                Log::info($qry);
             } catch (Exception $e) {
                 $response['faultString'] = $e->getMessage();
                 $response['faultCode'] = $e->getCode();
