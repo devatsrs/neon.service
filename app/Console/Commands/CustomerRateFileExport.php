@@ -77,7 +77,7 @@ class CustomerRateFileExport  extends Command {
         $Gateway = Gateway::getGatewayName($GatewayID);
 
         try {
-            if($Gateway == 'SippySFTP') { //sippy
+            if($Gateway == 'SippySFTP' || $Gateway == 'SippySQL') { //sippy
                 $response = Customer::generatePushSippyRateFile($CompanyID, $cronsetting);
             } else {
                 $response = Customer::generateCustomerFile($CompanyID, $cronsetting);
