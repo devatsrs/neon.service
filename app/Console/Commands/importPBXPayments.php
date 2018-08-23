@@ -106,7 +106,7 @@ class importPBXPayments extends Command {
 					$paymentArr["ProcessID"]=$processID;
 					$paymentArr["Note"]=$row_account["bi_description"];
 					$paymentArr["PaymentDate"]=$row_account["bi_date"];
-					$paymentArr["Amount"]=$row_account["bi_amount"];
+					$paymentArr["Amount"]=abs($row_account["bi_amount"]);
 					$paymentArr["GatewayAccountID"]=$row_account["te_code"];
 
 					$TransactionID=$row_account["bi_id"].$row_account["bi_te_id"].str_replace('-','',$row_account["bi_date"]);
@@ -130,23 +130,20 @@ class importPBXPayments extends Command {
 			$JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
 			Log::info($JobStatusMessage);
 			Log::info(count($JobStatusMessage));
+			$joblogdata['Message'] = "Payment StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']." <br>";
 			if(count($JobStatusMessage) > 1){
 				$prc_error = array();
 				foreach ($JobStatusMessage as $JobStatusMessage1) {
 					$prc_error[] = $JobStatusMessage1['Message'];
 				}
-				$JobMessage = implode('<br>',fix_jobstatus_meassage($prc_error));
-				$response['Status'] = 'success';
-				$response['Message'] = $JobMessage;
+				$JobMessage = implode('<br>',fix_jobstatus_meassage($prc_error));				
+				$joblogdata['Message'] .= $JobMessage;
 
 			}elseif(!empty($JobStatusMessage[0]['Message'])){
-				$JobMessage = $JobStatusMessage[0]['Message'];
-				$response['Status'] = 'success';
-				$response['Message'] = $JobMessage;
+				$JobMessage = $JobStatusMessage[0]['Message'];				
+				$joblogdata['Message'] .= $JobMessage;
 			}
-
-			$joblogdata['Message'] = "Payment StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'];
-
+			 
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			Log::error("pbx payment StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
 			Log::error(' ========================== import pbx payments end =============================');
