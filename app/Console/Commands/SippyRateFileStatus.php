@@ -15,9 +15,10 @@ use App\Lib\CronJobLog;
 use App\Lib\Job;
 use App\Lib\JobStatus;
 use App\Lib\JobType;
-use App\Lib\SippySFTP;
+use App\Sippy;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
 
@@ -75,37 +76,50 @@ class SippyRateFileStatus  extends Command {
         Log::useFiles(storage_path() . '/logs/sippyratefilestatus-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
         try {
-            $jobType        = JobType::where(["Code" => 'SRP'])->get(["JobTypeID", "Title"]);
+            $response['error']  = $response['message']  = array();
+            $jobType        = JobType::where(["Code" => 'SCRP'])->get(["JobTypeID", "Title"]);
             $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
             $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
             $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobTypeID'=>$JobTypeID,'JobStatusID'=>$JobStatusID]);
+            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobTypeID'=>$JobTypeID,'JobStatusID'=>$JobStatusID])
+                                ->where(DB::raw('JSON_EXTRACT(Options, "$.CompanyGatewayID")'),$CompanyGatewayID)
+                                ->get();
+
+            $SippySFTP = new Sippy($CompanyGatewayID);
 
             foreach ($PendingFiles as $PendingFile) {
                 $Options = json_decode($PendingFile->Options);
                 $token = isset($Options->token) ? $Options->token : '';
-
                 $addparam['token'] = $token;
-                $result = SippySFTP::getUploadStatus($token);
+                $result = $SippySFTP->getUploadStatus($addparam);
 
                 if (!empty($result) && !isset($result['faultCode'])) {
                     if (!empty($result['result']) && strtoupper($result['result']) == 'OK') {
-                        if ($result['status'] == 'success') {//will change this
+                        $Job = Job::find($PendingFile->JobID);
+                        if ($result['status'] == 'DONE') {//will change this
                             $newJobStatus = JobStatus::where(["Code" => "S"])->get(["JobStatusID"]);
                             $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
-                            Job::find($PendingFile->JobID)->update(['JobStatusID' => $NewJobStatusID]);
                             $response['message'][] = 'File Upload Success for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
-                        } else if ($result['status'] == 'failed') {//will change this
+                        } else if ($result['status'] == 'FAIL') {//will change this
                             $newJobStatus = JobStatus::where(["Code" => "F"])->get(["JobStatusID"]);
                             $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
-                            Job::find($PendingFile->JobID)->update(['JobStatusID' => $NewJobStatusID]);
                             $response['message'][] = 'File Upload failed for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                        } else {
+                            $NewJobStatusID = $Job->JobStatusID;
+                        }
+                        $Options = json_decode($Job->Options,true);
+                        $Status = !empty($Options['status']) ? $Options['status'] : '';
+                        if($Status != $result['status']) {
+                            $Options['status'] = $result['status'];
+                            $JobStatusMessage = $result['status'];
+                            $Options = json_encode($Options,true);
+                            $Job->update(['JobStatusID' => $NewJobStatusID,'JobStatusMessage' => $JobStatusMessage,'Options'=>$Options]);
                         }
                     } else {
-                        $response['error'][] = 'Error while getting status for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                        $response['error'][] = 'Error while getting status for Job : '. $PendingFile->Title.', JobID'.$PendingFile->JobID;
                     }
                 } else {
-                    $response['error'][] = 'Error : Job:'. $PendingFile->Title.' JobID:'.$PendingFile->JobID.' faultCode '.$result['faultCode'].' faultString '.$result['faultString'];
+                    $response['error'][] = 'Error : Job:'. $PendingFile->Title.', JobID:'.$PendingFile->JobID.', faultCode '.$result['faultCode'].', faultString '.$result['faultString'];
                 }
             }
 
