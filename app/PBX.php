@@ -162,4 +162,26 @@ class PBX{
         return $response;
     }
 
+    public static function getAccountPayments($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $query = "select bi_id, bi_te_id, bi_description, bi_date, bi_amount, te_code
+                          from
+                            bi_billings as bi inner join  te_tenants as te on bi.bi_te_id=te.te_id
+                          where
+                           `bi_date` >= '" . $addparams['start_date_ymd'] . "' and `bi_date` < '" . $addparams['end_date_ymd'] . "'
+                          ";
+                Log::info($query);
+                $response = DB::connection('pbxmysql')->select($query);
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
 }
