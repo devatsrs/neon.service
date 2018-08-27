@@ -76,6 +76,8 @@ class ActiveCronJobEmail extends Command {
         Log::error(' ========================== active cronjob start =============================');
         try {
             $acarray = DB::select('CALL  prc_ActiveCronJobEmail (' . $CompanyID .") ");
+            $Message="";
+            $msg="";
             foreach($acarray as $ac) {
                 if (isset($ac->CronJobID) && $ac->CronJobID > 0) {
 
@@ -106,6 +108,8 @@ class ActiveCronJobEmail extends Command {
 							
                             $emailstatus = CronJob::ActiveCronJobEmailSend($ac);
 
+                            $msg.=$JobTitle." - Running Since ".$minute." min <br>";
+
                             if($emailstatus == -1 ){
 
                                 // Error Email is not setup.
@@ -132,7 +136,14 @@ class ActiveCronJobEmail extends Command {
                     Log::error(' ========================== active cronjob email end =============================');
                 }
             } // foreach end
-            $joblogdata['Message'] = 'Success';
+            if($msg!=''){
+                $Message="Following Cron Jobs are killed : <br>";
+                $Message.=$msg;
+            }else{
+                $Message="No Actions";
+            }
+            //$joblogdata['Message'] = 'Success';
+            $joblogdata['Message'] = $Message;
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
         }catch (\Exception $e) {
