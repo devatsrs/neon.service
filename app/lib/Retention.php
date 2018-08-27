@@ -9,13 +9,13 @@ use \Exception;
 
 class Retention {
 
-    public static function deleteCustomerCDR($CompanyID){
+    public static function deleteCustomerCDR($CompanyID ,$key){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(isset($setting) && $setting!='Invalid Key'){
             $CustomerCDR = json_decode($setting,true);
-            if(!empty($CustomerCDR['CDR']) && (int)$CustomerCDR['CDR'] > 0){
-                $CDRDays = (int)$CustomerCDR['CDR'];
+            if(!empty($CustomerCDR[$key]) && (int)$CustomerCDR[$key] > 0){
+                $CDRDays = (int)$CustomerCDR[$key];
                 $CDRDays = '-'.$CDRDays.' Day';
                 $date = UsageHeader::getMinDateUsageHeader($CompanyID);
                 $startdate = date("Y-m-d", strtotime($date));
@@ -27,7 +27,7 @@ class Retention {
                         $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
                         try {
                             DB::connection('sqlsrvcdr')->beginTransaction();
-                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "')";
+                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "', $key)";
                             Log::info($query);
                             DB::connection('sqlsrvcdr')->statement($query);
                             DB::connection('sqlsrvcdr')->commit();
@@ -51,13 +51,13 @@ class Retention {
         return $error;
     }
 
-    public static function deleteVendorCDR($CompanyID){
+    public static function deleteVendorCDR($CompanyID, $key){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(isset($setting) && $setting!='Invalid Key'){
             $VendorCDR = json_decode($setting,true);
-            if(!empty($VendorCDR['CDR']) && (int)$VendorCDR['CDR'] > 0){
-                $CDRDays = (int)$VendorCDR['CDR'];
+            if(!empty($VendorCDR[$key]) && (int)$VendorCDR[$key] > 0){
+                $CDRDays = (int)$VendorCDR[$key];
                 $CDRDays = '-'.$CDRDays.' Day';
                 $date = UsageHeader::getMinDateVendorCDRHeader($CompanyID);
                 $startdate = date("Y-m-d", strtotime($date));
@@ -69,7 +69,7 @@ class Retention {
                         $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
                         try {
                             DB::connection('sqlsrvcdr')->beginTransaction();
-                            $query = "call prc_deleteVendorCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "')";
+                            $query = "call prc_deleteVendorCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "','" . $key . "')";
                             Log::info($query);
                             DB::connection('sqlsrvcdr')->statement($query);
                             DB::connection('sqlsrvcdr')->commit();
@@ -327,12 +327,16 @@ class Retention {
                     //$bucket = getenv('AWS_BUCKET')
                     $bucket = AmazonS3::getBucket($CompanyID);
                     $amazonpath = 's3://'.$bucket.'/Backup/CDR/';
+                    $AmazonData			=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$AmazoneSlug,$CompanyID);
+                    $AMAZONS3_KEY 		= 	isset($AmazonData->AmazonKey)?$AmazonData->AmazonKey:'';
+                    $AMAZONS3_SECRET 	= 	isset($AmazonData->AmazonSecret)?$AmazonData->AmazonSecret:'';
+                    $AWS_REGION 		= 	isset($AmazonData->AmazonAwsRegion)?$AmazonData->AmazonAwsRegion:'';
                     /**
                      * example
                      * /usr/bin/s3cmd put --recursive /home/autobackup/uk-others-backup s3://neon.backup/
                      */
                     //$UploadCommand = 'solo -port=6001 s3cmd sync '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
-                    $UploadCommand = '/usr/bin/s3cmd put '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
+                    $UploadCommand = '/usr/bin/s3cmd put --recursive --access_key='.$AMAZONS3_KEY.' --secret_key='.$AMAZONS3_SECRET.' --region='.$AWS_REGION.' '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
                     $Upload_Output = RemoteSSH::run($CompanyID,[$UploadCommand]);
                     Log::info('Upload Files to amazon - '.$UploadCommand);
                     Log::info($Upload_Output);
