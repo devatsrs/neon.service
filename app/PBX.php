@@ -184,4 +184,40 @@ class PBX{
         return $response;
     }
 
+    public static function getAccountTenantsID($code){
+        $response = null;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $response  = DB::connection('pbxmysql')->table('te_tenants')->where('te_code', $code)->pluck('te_id');
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    public static function insertBillings($arrInsert=array()){
+        $count = 0;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                foreach($arrInsert as $insert){
+                    $where=array();
+                    $where["bi_date"]=$insert["bi_date"];
+                    $where["bi_description"]=$insert["bi_description"];
+                    $where["bi_amount"]=$insert["bi_amount"];
+                    $where["bi_te_id"]=$insert["bi_te_id"];
+
+                    if(DB::connection('pbxmysql')->table('bi_billings')->where($where)->count()==0){
+                        DB::connection('pbxmysql')->table('bi_billings')->insert($insert);
+                        $count++;
+                    }
+                }
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $count;
+    }
 }
