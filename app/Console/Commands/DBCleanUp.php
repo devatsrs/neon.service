@@ -131,6 +131,10 @@ class DBCleanUp extends Command {
 			$error .= Retention::deleteVendorCDR($CompanyID, "CDRFailedCalls");
 			Log::info('Vendor CDR Delete End.');
 
+			Log::info('RateLog Delete Start.');
+			DB::table('tblTempRateLog')->where(["SentStatus"=>1])->delete();
+			Log::info('RateLog Delete End.');
+
 			Log::info('DBcleanup Done.');
 
 			if(isset($error) && $error != ''){
