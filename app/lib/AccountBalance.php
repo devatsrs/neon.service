@@ -63,6 +63,25 @@ class AccountBalance extends Model
         return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');
     }
 
+    public static function getDynamicfieldValue($CompanyID,$ParentID,$FieldName){
+        $FieldValue = 0;
+        $FieldsID = DB::table('tblDynamicFields')->where(['CompanyID'=>$CompanyID,'FieldSlug'=>$FieldName])->pluck('DynamicFieldsID');
+        if(!empty($FieldsID)){
+            $FieldValue = DB::table('tblDynamicFieldsValue')->where(['ParentID'=>$ParentID,'DynamicFieldsID'=>$FieldsID])->pluck('FieldValue');
+        }
+        return $FieldValue;
+    }
+
+    public static function getDynamicfieldBySlug($CompanyID,$Type,$ParentID,$fieldSlug){
+        $FieldValue=0;
+        $Count = DB::table('tblDynamicFields')->where(['CompanyID'=>$CompanyID,'Type'=>$Type,'Status'=>1,'FieldSlug'=>$fieldSlug])->count();
+        if($Count > 0){
+            $FieldSlug = DB::table('tblDynamicFields')->where(['CompanyID'=>$CompanyID,'Type'=>$Type,'Status'=>1,'FieldSlug'=>$fieldSlug])->pluck('FieldSlug');
+            $FieldValue = AccountBalance::getDynamicfieldValue($CompanyID,$ParentID,$FieldSlug);
+        }
+        return $FieldValue;
+    }
+
     /** blocking account by gateway */
     public static function PBXBlockUnBlockAccount($CompanyID,$GatewayID,$ProcessID){
         $email_message  = array();
@@ -78,41 +97,31 @@ class AccountBalance extends Model
         $BlockingGateways = CompanyGateway::where(array('CompanyID'=>$CompanyID,'GatewayID'=>$GatewayID,'Status'=>1))->get();
         if(!empty($BillingClass) && !empty($BlockingGateways)) {
             foreach ($BlockingGateways as $BlockingGateway) {
-                $pbx = new PBX($BlockingGateway->CompanyGatewayID);
                 $BlockingAccounts = DB::select('CALL prc_GetBlockUnblockAccount(?,?)', array($CompanyID, $BlockingGateway->CompanyGatewayID));
                 foreach ($BlockingAccounts as $BlockingAccount) {
                     if (in_array($BlockingAccount->AccountID, array_column($Accounts, 'AccountID'))) {
                         $param['te_code'] = $BlockingAccount->Number;
+                        $PbxAcctStatus=AccountBalance::getDynamicfieldBySlug($CompanyID,'account',$BlockingAccount->AccountID,'pbxaccountstatus');
+                        $Autoblock=AccountBalance::getDynamicfieldBySlug($CompanyID,'account',$BlockingAccount->AccountID,'autoblock');
 
-                        if ($BlockingAccount->Balance > 0) {
-                            $response = $pbx->blockAccount($param);
-                            if (isset($response['message']) && $response['message'] == 'account blocked') {
-                                $email_message[$BlockingAccount->AccountName] = 'Blocked';
+                        if(isset($Autoblock) && $Autoblock == 1){
+                            if(isset($PbxAcctStatus)){
+                                if($PbxAcctStatus!=$BlockingAccount->Blocked){
+                                    $error_message= AccountBalance::pbxAccountBlocking($BlockingAccount,$param,$PbxAcctStatus,$BlockingGateway->CompanyGatewayID,$CompanyID);
+                                    Log::info("Account ID=".$BlockingAccount->AccountID." ,PbxAcctStatus=".$PbxAcctStatus);
+                                }
                             }
-                            if (isset($response['faultCode'])) {
-                                $error_message = $response;
-                            }
-                            if ($BlockingAccount->Blocked == 0) {
-                                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
-
-                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,1);
-                            }
-                        } else {
-                            $response = $pbx->unBlockAccount($param);
-                            if (isset($response['message']) && $response['message'] == 'account unblocked') {
-                                $email_message[$BlockingAccount->AccountName] = 'Unblocked';
-                            }
-                            if (isset($response['faultCode'])) {
-                                $error_message = $response;
-                            }
-                            if ($BlockingAccount->Blocked == 1) {
-                                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
-                                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,0);
+                        }else{
+                            if ($BlockingAccount->Balance > 0) {
+                                $error_message=AccountBalance::pbxAccountBlocking($BlockingAccount,$param,1,$BlockingGateway->CompanyGatewayID,$CompanyID);
+                                Log::info("==== Blocking due to Balance ====");
+                            } else {
+                                $error_message= AccountBalance::pbxAccountBlocking($BlockingAccount,$param,0,$BlockingGateway->CompanyGatewayID,$CompanyID);
+                                Log::info("==== UnBlocking due to Balance ====");
                             }
                         }
                     }
                 }
-
             }
             $notification_email = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::BlockAccount]);
             $Company = Company::find($CompanyID);
@@ -424,4 +433,45 @@ class AccountBalance extends Model
         }
         return $AccountOutstandingBalance;
     }
+
+    public static function pbxAccountBlocking($BlockingAccount,$param,$blocked,$CompanyGatewayID,$CompanyID){
+        $error_message  = array();
+        $pbx = new PBX($CompanyGatewayID);
+        if($blocked==1){
+            $response = $pbx->blockAccount($param);
+            if (isset($response['message']) && $response['message'] == 'account blocked') {
+                $email_message[$BlockingAccount->AccountName] = 'Blocked';
+            }
+            if (isset($response['faultCode'])) {
+                $error_message = $response;
+                Log::info("===== Error ON Block ===== ");
+                Log::info($error_message);
+            }
+            if ($BlockingAccount->Blocked == 0) {
+                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
+
+                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,1);
+            }
+            Log::info("Account ID=".$BlockingAccount->AccountID." is blocked");
+        }
+
+        if($blocked==0){
+            $response = $pbx->unBlockAccount($param);
+            if (isset($response['message']) && $response['message'] == 'account unblocked') {
+                $email_message[$BlockingAccount->AccountName] = 'Unblocked';
+            }
+            if (isset($response['faultCode'])) {
+                $error_message = $response;
+                Log::info("===== Error ON Unblock ===== ");
+                Log::info($error_message);
+            }
+            if ($BlockingAccount->Blocked == 1) {
+                Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
+                AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,0);
+            }
+            Log::info("Account ID=".$BlockingAccount->AccountID." is UnBlocked");
+        }
+        return $error_message;
+    }
+
 }
