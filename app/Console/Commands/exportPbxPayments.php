@@ -88,8 +88,8 @@ class exportPbxPayments extends Command {
 			$response = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."')");
 			$response = json_decode(json_encode($response), true);
 			Log::info('count ==' . count($response));
-			$InserData = array();
-
+			$InsertData = array();
+			$countInsert=0;
 			if ($response) {
 				foreach ((array)$response as $row_account) {
 					$paymentArr=array();
@@ -99,17 +99,17 @@ class exportPbxPayments extends Command {
 					$TenantsID = $pbx->getAccountTenantsID($row_account["Number"]);
 					if($TenantsID){
 						$paymentArr["bi_te_id"]=$TenantsID;
-						$InserData[]=$paymentArr;
+						$InsertData[]=$paymentArr;
 					}
 				}//loop
 
-				if (!empty($InserData)) {
-					$pbx->insertBillings($InserData);
+				if (!empty($InsertData)) {
+					$countInsert=$pbx->insertBillings($InsertData);
 				}
 				date_default_timezone_set(Config::get('app.timezone'));
 			}
 
-			$joblogdata['Message'] = "Record Insert ".count($InserData);
+			$joblogdata['Message'] = "Record Insert ".$countInsert;
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			Log::error(' ========================== import pbx payments end =============================');
 			DB::connection('sqlsrv2')->commit();
