@@ -198,17 +198,19 @@ class PBX{
     }
 
     public static function insertBillings($arrInsert=array()){
-        $response = null;
+        $count = 0;
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
                 foreach($arrInsert as $insert){
                     $where=array();
                     $where["bi_date"]=$insert["bi_date"];
+                    $where["bi_description"]=$insert["bi_description"];
                     $where["bi_amount"]=$insert["bi_amount"];
                     $where["bi_te_id"]=$insert["bi_te_id"];
 
                     if(DB::connection('pbxmysql')->table('bi_billings')->where($where)->count()==0){
                         DB::connection('pbxmysql')->table('bi_billings')->insert($insert);
+                        $count++;
                     }
                 }
             }catch(Exception $e){
@@ -216,6 +218,6 @@ class PBX{
                 throw new Exception($e->getMessage());
             }
         }
-        return $response;
+        return $count;
     }
 }

@@ -72,7 +72,6 @@ class RateTableGenerator extends Command {
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/ratetablegenerator-'.$JobID.'-'.date('Y-m-d').'.log');
         Log::info('job start '.$JobID);
-        Log::info('job start '.$JobID);
         $emailstatus = array('status'=>0,'message'=>'');
 
         try {
@@ -104,21 +103,69 @@ class RateTableGenerator extends Command {
 
             $Policy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Policy");
             $GroupBy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("GroupBy");
+            $Timezones = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Timezones");
 
-            if($Policy == \LCR::LCR_PREFIX){
-                $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
-                Log::info($query);
-                DB::statement($query);
+            $Timezones = explode(',',$Timezones);
 
-            }else {
-                $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
-                Log::info($query);
-                DB::statement($query);
+            $info = $error = array();
+            $i=0;
+            foreach ($Timezones as $Timezone) {
+                if($Policy == \LCR::LCR_PREFIX){
+                    $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                    Log::info($query);
+                    $JobStatusMessage = DB::select($query);
+                } else {
+                    $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                    Log::info($query);
+                    $JobStatusMessage = DB::select($query);
+                }
 
+                $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                if(count($JobStatusMessage) > 0){
+                    foreach ($JobStatusMessage as $JobStatusMessage1) {
+                        if(is_numeric($JobStatusMessage1['Message'])) {
+                            if($i == 0) {
+                                // if new rate table and multiple timezones then it will give rate table name exist error when it will run second time
+                                // so, we will send RateTableID (which is created for first timezone) to next all timezones
+                                // so, it will generate only one rate table for all timezones
+                                $data['RateTableID'] = $JobStatusMessage1['Message'];
+                                $data['rate_table_name'] = "";
+                            }
+                            $info[] = 'RateTable Created Successfully';
+                        } else {
+                            $error[] = $JobStatusMessage1['Message'];
+                        }
+                    }
+                }
+                $i++;
             }
 
+            $info   = array_unique($info);
+            $error  = array_unique($error);
+            $both   = array_unique(array_merge($error,$info));
 
-
+            if(count($error) > 0 && count($info) > 0) {
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = 'Rate Generation Partially Fail::'.implode(',',$both);
+                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                $jobdata['ModifiedBy'] = 'RMScheduler';
+                Job::where(["JobID" => $JobID])->update($jobdata);
+                Log::error($error);
+            } else if(count($info) > 0) {
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = implode(',',$info);
+                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                $jobdata['ModifiedBy'] = 'RMScheduler';
+                Job::where(["JobID" => $JobID])->update($jobdata);
+                Log::error($error);
+            } else {
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                $jobdata['JobStatusMessage'] = 'Rate Generation Fail::'.implode(',',$error);
+                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                $jobdata['ModifiedBy'] = 'RMScheduler';
+                Job::where(["JobID" => $JobID])->update($jobdata);
+                Log::error($error);
+            }
 
             if($CronJobID > 0) {
                 CronJob::sendRateGenerationEmail($CompanyID,$CronJobID,$JobID,$data['EffectiveDate']);
