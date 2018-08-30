@@ -445,10 +445,12 @@ protected $server;
 						$aAttachmentCount = $email->getAttachments()->count();
 						$cc = $email->getCc();
 						$cc = EmailServiceProvider::getCC($cc);
-						$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
+						$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(", ",$cc));
 						$cc  = implode(",",$cc_);
 						$bcc = $email->getBcc();
 						$bcc = EmailServiceProvider::getCC($bcc);
+						$bcc = TicketEmails::remove_group_emails_from_array($CompanyID,explode(", ",$bcc));
+						$bcc = implode(",",$bcc);
 						$in_reply_to = $email->getInReplyTo();
 						if(!empty($in_reply_to)){
 							$in_reply_to = '<'.$in_reply_to.'>';
