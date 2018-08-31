@@ -259,9 +259,8 @@ class VoipMSAccountUsage extends Command {
             }
         }
         //}
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
