@@ -69,10 +69,8 @@ class ResellerPBXAccountUsage extends Command
         $CompanyID = $arguments["CompanyID"];
         $CronJob = CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
-        $dataactive['Active'] = 1;
-        $dataactive['PID'] = $getmypid;
-        $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
 
         $yesterday_date = date('Y-m-d 23:59:59', strtotime('-1 day'));
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];

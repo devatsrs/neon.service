@@ -504,9 +504,9 @@ class FTPAccountUsage extends Command
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
+
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
