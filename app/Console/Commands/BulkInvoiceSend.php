@@ -143,11 +143,12 @@ class BulkInvoiceSend extends Command {
 										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 								}
                                 $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                                $emaildata['attach']="";
                                 if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
 									$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
 									$TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
 									$attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
-									$emaildata['attach'][] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+									$emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
                                 }
                         	    $status = Helper::sendMail($body, $emaildata,0);
 								}else{$status  = array();}
@@ -173,11 +174,12 @@ class BulkInvoiceSend extends Command {
 								}
 
                                 $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                                $emaildata['attach']="";
                                 if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
                                     $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
 									$TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
 									$attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
-									$emaildata['attach'][] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+									$emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
                                 }                                
                           	  	$customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
                             }
