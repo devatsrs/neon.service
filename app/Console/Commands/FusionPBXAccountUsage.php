@@ -76,6 +76,7 @@ class FusionPBXAccountUsage extends Command {
 
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
 
         try {
             Log::error(' ========================== Fusion PBX transaction start =============================');
