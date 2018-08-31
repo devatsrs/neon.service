@@ -306,4 +306,9 @@ class CompanyGateway extends \Eloquent {
     }
 
 
+    public static function updateProcessID($CronJob,$processID){
+        $CronJob->update(['ProcessID'=>$processID]);
+    }
+
+
 }
