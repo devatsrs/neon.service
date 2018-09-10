@@ -92,6 +92,7 @@ class VoipMSAccountUsage extends Command {
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $accounts = array();
         try {
             Log::error(' ========================== voipms transaction start =============================');
@@ -258,9 +259,8 @@ class VoipMSAccountUsage extends Command {
             }
         }
         //}
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);

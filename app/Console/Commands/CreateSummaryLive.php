@@ -67,7 +67,7 @@ class CreateSummaryLive extends Command{
         Log::useFiles(storage_path() . '/logs/createsummarylive-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            Summary::generateSummary($CompanyID,1);
+            Summary::generateSummary($CompanyID,1,[],$CronJob);
             /** update unbilled amount*/
             AccountBalance::updateAccountUnbilledAmount($CompanyID);
             /** update SOA amount also*/

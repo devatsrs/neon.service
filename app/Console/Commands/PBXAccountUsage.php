@@ -90,6 +90,7 @@ class PBXAccountUsage extends Command
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $accounts = array();
         try {
 
@@ -388,9 +389,8 @@ class PBXAccountUsage extends Command
             }
         }
         //}
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);

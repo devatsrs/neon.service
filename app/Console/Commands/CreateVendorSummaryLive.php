@@ -66,7 +66,7 @@ class CreateVendorSummaryLive extends Command{
         Log::useFiles(storage_path() . '/logs/createvendorsummarylive-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            Summary::generateVendorSummary($CompanyID,1);
+            Summary::generateVendorSummary($CompanyID,1,$CronJob);
             $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 

@@ -108,6 +108,7 @@ class FTPAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -503,9 +504,9 @@ class FTPAccountUsage extends Command
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
+
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);
