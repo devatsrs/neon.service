@@ -349,7 +349,7 @@ class Helper{
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
         $replace_array['Logo'] = '<img src="'.getCompanyLogo($Account->CompanyId).'" />';
 	   
-       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
        $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
        $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
        $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
