@@ -152,7 +152,7 @@ class QuickBookPaymentsPost extends Command {
                         Job::where(["JobID" => $JobID])->update($jobdata);
                     }else{
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = 'Invoice Create Failed';
+                        $jobdata['JobStatusMessage'] = 'Payments Create Failed';
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';

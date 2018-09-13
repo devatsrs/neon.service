@@ -79,6 +79,7 @@ class SippySQLAccountUsage extends Command {
 
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
 
         try {
             Log::error(' ========================== Sippy SQL transaction start =============================');

@@ -615,11 +615,11 @@ protected $server;
 						if($aAttachmentCount>0) {
 							$aAttachment = $email->getAttachments();							
 							foreach ($aAttachment as $oAttachment) {
-								$path_parts = pathinfo($oAttachment->getName());
+								$path_parts = pathinfo(Imap::dataDecode($oAttachment->getName()));
 								if(!array_key_exists("extension", $path_parts)){
 									$path_parts["extension"]="";
 								}
-								$file_name = Imap::dataDecode($path_parts["filename"]) . '-'. date("YmdHis") . '.' . $path_parts["extension"];
+								$file_name = $path_parts["filename"] . '-'. date("YmdHis") . '.' . $path_parts["extension"];
 								$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
 
 								$fullPath = $upload_path . "/". $amazonPath;

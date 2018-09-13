@@ -2866,7 +2866,7 @@ class Invoice extends \Eloquent {
                             $paymentdata['UsageEndDate'] = $InvoicePeriod['NextChargeDate'];
 
                             $PaymentMethod = 'Account Balance';
-                            $AccountOutstandingBalance = AccountBalance::getAccountSOA($CompanyID, $AccountID);
+                            $AccountOutstandingBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
                             $CheckAccountBalance = AccountBalance::CheckAccountBalance($AccountID, $AccountOutstandingBalance, $response['GrandTotal']);
                             $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID, 'EMAIL_TO_CUSTOMER');
                             $Company = Company::find($CompanyID);

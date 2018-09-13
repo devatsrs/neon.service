@@ -191,7 +191,7 @@ class AccountBalance extends Model
         $CompanyID = $data['CompanyID'];
         $AccountID = $data['AccountID'];
         $Amount = $data['GrandTotal'];
-        $AccountOutstandingBalance = AccountBalance::getAccountSOA($CompanyID,$AccountID);
+        $AccountOutstandingBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
         $CheckAccountBalance = AccountBalance::CheckAccountBalance($AccountID,$AccountOutstandingBalance,$Amount);
 
         if(isset($CheckAccountBalance) && $CheckAccountBalance==1){
@@ -260,7 +260,7 @@ class AccountBalance extends Model
         $AccountBalance = AccountBalance::where('AccountID', $AccountID)->first(['AccountID', 'PermanentCredit', 'UnbilledAmount','EmailToCustomer', 'TemporaryCredit', 'TemporaryCreditDateTime', 'BalanceThreshold','BalanceAmount','VendorUnbilledAmount']);
         $UnbilledAmount = $AccountBalance->UnbilledAmount;
         $VendorUnbilledAmount = $AccountBalance->VendorUnbilledAmount;
-        $SOA_Amount = AccountBalance::getAccountSOA($CompanyID,$AccountID);
+        $SOA_Amount = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
         $BalanceAmount = $SOA_Amount+($UnbilledAmount-$VendorUnbilledAmount);
 
         return $BalanceAmount;
@@ -355,7 +355,7 @@ class AccountBalance extends Model
                                     $GrandTotal=$response['GrandTotal'];
                                     $SubTotal=$response['SubTotal'];
                                     $AccountBalance  = AccountBalance::getAccountBalance($CompanyID,$AccountID);
-                                    $AccountExposure = AccountBalance::getAccountBalance($CompanyID,$AccountID);
+                                    $AccountExposure = AccountBalance::getAccountOutstandingBalance($CompanyID,$AccountID);
                                     if($IncludeUnBilledAmount==1){
                                         $AccountOutstandingBalance = $AccountExposure;
                                     }else{
@@ -382,7 +382,7 @@ class AccountBalance extends Model
     }
 
     public static function getAccountBalance($CompanyID,$AccountID){
-        $AccountBalance = AccountBalance::getAccountSOA($CompanyID,$AccountID);
+        $AccountBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
         $BillingType = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingType');
         /**
          * If billing type postpaid it will display as it is
@@ -473,5 +473,7 @@ class AccountBalance extends Model
         }
         return $error_message;
     }
-
+    public static function getBalanceSOAOffsetAmount($AccountID){
+        return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');
+    }
 }
