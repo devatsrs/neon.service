@@ -195,12 +195,21 @@
                     $AllTaxSummary[]=$tempsummary;
                     $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
                     ?>
+                    @if($InvoiceTemplate->ShowTaxesOnSeparatePage==0)
+                        <tr>
+                            <td colspan="2"></td>
+                            <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
+                            <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                        </tr>
+                    @endif
                 @endforeach
-                <tr>
-                    <td colspan="2"></td>
-                    <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
-                </tr>
+                @if($InvoiceTemplate->ShowTaxesOnSeparatePage==1)
+                    <tr>
+                        <td colspan="2"></td>
+                        <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                        <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+                    </tr>
+                @endif
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -581,9 +590,9 @@
         @endif
     @endforeach
 	@endif
-    @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
+    @if((!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0) || (count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1))
         <div class="page_break"></div>
-        @if(count($AllTaxSummary)>0)
+        @if(count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1)
         <div class="ChargesTitle clearfix">
             <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
         </div>
