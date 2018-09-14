@@ -138,7 +138,7 @@ class BulkDisputeSend extends Command {
 
                                 if(!isset($emaildata['EmailFrom'])){
 								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Dispute::EMAILTEMPLATE,$CompanyID);
-                                    Log::info($emaildata['EmailFrom']);exit();
+
 								}
                                 $attachment=$Dispute->Attachment;
                                 if($attachment && $attachment!=''){
