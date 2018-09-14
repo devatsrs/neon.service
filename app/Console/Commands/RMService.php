@@ -89,7 +89,8 @@ class RMService extends Command {
                 'XeroInvoicePost',
                 'CustomerM2SheetDownload',
                 'VendorM2SheetDownload',
-                'QuickBookPaymentsPost'
+                'QuickBookPaymentsPost',
+                'PendingDisputeBulkMailSend'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -448,6 +449,17 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." quickbookpaymentspost " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " quickbookpaymentspost " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+            //dispute BulkMail
+            foreach($allpending['data']['PendingDisputeBulkMailSend'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." bulkdisputesend " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " bulkdisputesend " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

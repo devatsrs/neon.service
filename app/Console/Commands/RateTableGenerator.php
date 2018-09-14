@@ -101,21 +101,24 @@ class RateTableGenerator extends Command {
 
             $data['CompanyID'] = $CompanyID;
 
-            $Policy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Policy");
-            $GroupBy = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("GroupBy");
-            $Timezones = \RateGenerator::where(["RateGeneratorId"=>$data['RateGeneratorId']])->pluck("Timezones");
+            $RateGenerator = \RateGenerator::find($data['RateGeneratorId']);
 
-            $Timezones = explode(',',$Timezones);
+            $Policy = $RateGenerator->Policy;
+            $GroupBy = $RateGenerator->GroupBy;
+            $Timezones = $RateGenerator->Timezones;
+            $IsMerge = $RateGenerator->IsMerge;
 
-            $info = $error = array();
-            $i=0;
-            foreach ($Timezones as $Timezone) {
+            if($IsMerge == 1) { // if merge by timezones
+                $TakePrice = $RateGenerator->TakePrice;
+                $MergeInto = $RateGenerator->MergeInto;
+
+                $info = $error = array();
                 if($Policy == \LCR::LCR_PREFIX){
-                    $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                    $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'" . $Timezones. "','".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',".$IsMerge.",".$TakePrice.",".$MergeInto.")";
                     Log::info($query);
                     $JobStatusMessage = DB::select($query);
                 } else {
-                    $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."')";
+                    $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'" . $Timezones. "','".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',".$IsMerge.",".$TakePrice.",".$MergeInto.")";
                     Log::info($query);
                     $JobStatusMessage = DB::select($query);
                 }
@@ -124,20 +127,46 @@ class RateTableGenerator extends Command {
                 if(count($JobStatusMessage) > 0){
                     foreach ($JobStatusMessage as $JobStatusMessage1) {
                         if(is_numeric($JobStatusMessage1['Message'])) {
-                            if($i == 0) {
-                                // if new rate table and multiple timezones then it will give rate table name exist error when it will run second time
-                                // so, we will send RateTableID (which is created for first timezone) to next all timezones
-                                // so, it will generate only one rate table for all timezones
-                                $data['RateTableID'] = $JobStatusMessage1['Message'];
-                                $data['rate_table_name'] = "";
-                            }
                             $info[] = 'RateTable Created Successfully';
                         } else {
                             $error[] = $JobStatusMessage1['Message'];
                         }
                     }
                 }
-                $i++;
+            } else {
+                $Timezones = explode(',',$Timezones);
+                $info = $error = array();
+                $i=0;
+                foreach ($Timezones as $Timezone) {
+                    if($Policy == \LCR::LCR_PREFIX){
+                        $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',0,0,0)";
+                        Log::info($query);
+                        $JobStatusMessage = DB::select($query);
+                    } else {
+                        $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',0,0,0)";
+                        Log::info($query);
+                        $JobStatusMessage = DB::select($query);
+                    }
+
+                    $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                    if(count($JobStatusMessage) > 0){
+                        foreach ($JobStatusMessage as $JobStatusMessage1) {
+                            if(is_numeric($JobStatusMessage1['Message'])) {
+                                if($i == 0) {
+                                    // if new rate table and multiple timezones then it will give rate table name exist error when it will run second time
+                                    // so, we will send RateTableID (which is created for first timezone) to next all timezones
+                                    // so, it will generate only one rate table for all timezones
+                                    $data['RateTableID'] = $JobStatusMessage1['Message'];
+                                    $data['rate_table_name'] = "";
+                                }
+                                $info[] = 'RateTable Created Successfully';
+                            } else {
+                                $error[] = $JobStatusMessage1['Message'];
+                            }
+                        }
+                    }
+                    $i++;
+                }
             }
 
             $info   = array_unique($info);
