@@ -117,6 +117,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\SingleInvoiceGeneration',
 		'App\Console\Commands\importPBXPayments',
 		'App\Console\Commands\exportPbxPayments',
+		'App\Console\Commands\BulkDisputeSend',
+		
 	];
 
 	/**

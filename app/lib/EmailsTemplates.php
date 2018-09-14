@@ -346,6 +346,59 @@ class EmailsTemplates{
             return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);
         }*/
 	}
+
+	static function SendDisputeSingle($DisputeID,$type="body",$CompanyID,$data = array()){
+		$companyID								=	$CompanyID;
+		$message								=	 "";
+		$replace_array							=	$data;
+		$DisputeData   							=  	Dispute::find($DisputeID);
+		$userID											=	isset($data['UserID'])?$data['UserID']:0;
+		//$InvoiceDetailPeriod 					= 	InvoiceDetail::where(["InvoiceID" => $DisputeID,'ProductType'=>Product::INVOICE_PERIOD])->first();
+
+		$Account 								= 	Account::find($DisputeData->AccountID);
+		$EmailTemplate 							= 	EmailTemplate::getSystemEmailTemplate($companyID, Dispute::EMAILTEMPLATE, $Account->LanguageID );
+
+		$replace_array							=	EmailsTemplates::setCompanyFields($replace_array,$DisputeData->CompanyID);
+		$replace_array 							=	EmailsTemplates::setAccountFields($replace_array,$DisputeData->AccountID,$userID);
+
+		if($type=="subject"){
+			if(isset($postdata['Subject']) && !empty($postdata['Subject'])){
+				$EmailMessage							=	 $postdata['Subject'];
+			}else{
+				$EmailMessage							=	 $EmailTemplate->Subject;
+			}
+		}else{
+			if(isset($postdata['Message']) && !empty($postdata['Message'])){
+				$EmailMessage							=	 $postdata['Message'];
+			}else{
+				$EmailMessage							=	 $EmailTemplate->TemplateBody;
+			}
+		}
+
+		$replace_array['InvoiceNumber']			=	 $DisputeData->InvoiceNo;
+		$replace_array['InvoiceType']			=	 ($DisputeData->InvoiceType == Invoice::INVOICE_IN?'Invoice Received':'Invoice Sent');
+		$RoundChargesAmount 					= 	 Helper::get_round_decimal_places($CompanyID,$DisputeData->AccountID);
+		$replace_array['DisputeAmount']			=	 number_format($DisputeData->DisputeAmount,$RoundChargesAmount);
+
+		$extraSpecific = [
+			'{{InvoiceNumber}}',
+			"{{InvoiceType}}",
+			'{{DisputeAmount}}'
+		];
+
+		$extraDefault	=	EmailsTemplates::$fields;
+
+		$extra = array_merge($extraDefault,$extraSpecific);
+
+		foreach($extra as $item){
+			$item_name = str_replace(array('{','}'),array('',''),$item);
+			if(array_key_exists($item_name,$replace_array)) {
+				$EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
+			}
+		}
+		return $EmailMessage;
+
+	}
 	
 }
 ?>
