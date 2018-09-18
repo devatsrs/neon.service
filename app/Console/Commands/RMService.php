@@ -90,7 +90,8 @@ class RMService extends Command {
                 'CustomerM2SheetDownload',
                 'VendorM2SheetDownload',
                 'QuickBookPaymentsPost',
-                'PendingDisputeBulkMailSend'
+                'PendingDisputeBulkMailSend',
+                'DisputeBulkMail'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -453,7 +454,7 @@ class RMService extends Command {
                 }
             }
 
-            //dispute BulkMail
+            //dispute send
             foreach($allpending['data']['PendingDisputeBulkMailSend'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {
@@ -463,6 +464,18 @@ class RMService extends Command {
                     }
                 }
             }
+
+            //dispute BulkMail
+            foreach($allpending['data']['DisputeBulkMail'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." disputebulkemail " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " disputebulkemail " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
 
         }catch(\Exception $e){
             Log::error($e);
