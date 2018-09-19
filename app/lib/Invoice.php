@@ -480,8 +480,14 @@ class Invoice extends \Eloquent {
 
         $TotalCharges = 0;
         if(!empty($CompanyID) && !empty($AccountID) && !empty($StartDate) && !empty($EndDate) ) {
-            $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
-
+            $IsReseller = Account::where(array('AccountID'=>$AccountID))->pluck('IsReseller');
+            if(empty($IsReseller)){
+                Log::info('Reseller ==> 0');
+                $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
+            }else{
+                Log::info('Reseller ==> 1');
+                $GatewayAccount =  CompanyGateway::where(array('Status'=>1))->get(['CompanyGatewayID']);
+            }
             foreach($GatewayAccount as $GatewayAccountRow) {
                 $GatewayAccountRow['CompanyGatewayID'];
                 $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($GatewayAccountRow['CompanyGatewayID']);
@@ -2104,7 +2110,15 @@ class Invoice extends \Eloquent {
 
         $usage_data = array();
         $ShowZeroCall = 1;
-        $GatewayAccount = GatewayAccount::where(array('AccountID' => $AccountID))->distinct()->get(['CompanyGatewayID']);
+        //$GatewayAccount = GatewayAccount::where(array('AccountID' => $AccountID))->distinct()->get(['CompanyGatewayID']);
+        $IsReseller = Account::where(array('AccountID'=>$AccountID))->pluck('IsReseller');
+        if(empty($IsReseller)){
+            Log::info('Reseller ==> 0');
+            $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
+        }else{
+            Log::info('Reseller ==> 1');
+            $GatewayAccount =  CompanyGateway::where(array('Status'=>1))->get(['CompanyGatewayID']);
+        }
         $AccountBilling = AccountBilling::getBillingClass($AccountID,$ServiceID);
         if(!empty($AccountBilling) && isset($AccountBilling->InvoiceTemplateID)) {
             $InvoiceTemplate = InvoiceTemplate::find($AccountBilling->InvoiceTemplateID);
