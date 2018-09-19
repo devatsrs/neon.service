@@ -497,6 +497,9 @@ protected $server;
 						// if exists then don't check for auto reply
 						if(!empty($in_reply_to)){
 							$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
+							if(empty($msg_parent)){								
+								$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$in_reply_to."', CcMessageID)")->first();
+							}
 							if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 								$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 								if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
@@ -511,6 +514,9 @@ protected $server;
 							foreach($references as $references_id){
 								if(!empty($references_id)){
 									$msg_parent   	=		AccountEmailLog::where("MessageID",$references_id)->first();
+									if(empty($msg_parent)){
+										$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$references_id."', CcMessageID)")->first();
+									}
 									if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 										$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 										if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
