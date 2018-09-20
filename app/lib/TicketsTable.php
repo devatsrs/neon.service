@@ -55,6 +55,20 @@ class TicketsTable extends \Eloquent {
             ->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.FieldValueAgent'=>TicketfieldsValues::$Status_Open])->pluck('ValuesID');			
 			return $ValuesID;
 	}
+
+	static function getWaitingOnCustomerTicketStatus(){
+		//TicketfieldsValues::WHERE
+		$ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+			->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.FieldValueAgent'=>TicketfieldsValues::$Status_waiting_on_customer])->pluck('ValuesID');
+		return $ValuesID;
+	}
+
+	static function getWaitingOnThirdPartyTicketStatus(){
+		//TicketfieldsValues::WHERE
+		$ValuesID =  TicketfieldsValues::join('tblTicketfields','tblTicketfields.TicketFieldsID','=','tblTicketfieldsValues.FieldsID')
+			->where(['tblTicketfields.FieldType'=>Ticketfields::TICKET_SYSTEM_STATUS_FLD])->where(['tblTicketfieldsValues.FieldValueAgent'=>TicketfieldsValues::$Status_Waiting_on_Third_Party])->pluck('ValuesID');
+		return $ValuesID;
+	}
 	
 	
 	static function getTicketStatus($select=1){
