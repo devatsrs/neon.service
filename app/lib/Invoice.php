@@ -612,19 +612,24 @@ class Invoice extends \Eloquent {
              * $InvoiceTemplate->DefaultTemplate = 0=>default template(template 1) , 1=>template 2
              */
 
+            $MultiCurrencies=array();
+            if($InvoiceTemplate->ShowTotalInMultiCurrency==1){
+                $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($companyID,$Account->CurrencyId,$Invoice->GrandTotal,$RoundChargesAmount);
+            }
+
             if(!empty($Invoice->RecurringInvoiceID)) {
-                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','RoundChargesCDR','data','print_type','language','arrSignature'))->render();
+                $body = View::make('emails.invoices.itempdf', compact('Invoice', 'InvoiceDetail', 'Account', 'InvoiceTemplate', 'CurrencyCode', 'logo', 'CurrencySymbol', 'AccountBilling', 'InvoiceTaxRates', 'PaymentDueInDays', 'InvoiceAllTaxRates','RoundChargesAmount','RoundChargesCDR','data','print_type','language','arrSignature','MultiCurrencies'))->render();
             }else if($InvoiceTemplate->GroupByService == 1) {
                 if($InvoiceTemplate->DefaultTemplate ==1){
-                    $body = View::make('emails.invoices.template2pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                    $body = View::make('emails.invoices.template2pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature','MultiCurrencies'))->render();
                 }else{
-                    $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                    $body = View::make('emails.invoices.pdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature','MultiCurrencies'))->render();
                 }
             }else {
                 if($InvoiceTemplate->DefaultTemplate ==1){
-                    $body = View::make('emails.invoices.template2defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                    $body = View::make('emails.invoices.template2defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature','MultiCurrencies'))->render();
                 }else{
-                    $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature'))->render();
+                    $body = View::make('emails.invoices.defaultpdf', compact('Invoice', 'InvoiceDetail', 'InvoiceTaxRates', 'Account', 'InvoiceTemplate', 'usage_data_table', 'CurrencyCode', 'CurrencySymbol', 'logo', 'AccountBilling', 'PaymentDueInDays', 'RoundChargesAmount','RoundChargesCDR','print_type','service_data','ManagementReports','language','payment_data', 'arrSignature','MultiCurrencies'))->render();
                 }
 
             }
@@ -2218,7 +2223,7 @@ class Invoice extends \Eloquent {
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
-        $replace_array['AccountBalance'] = $replace_array['CurrencySign'] ." ". AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+        $replace_array['AccountBalance'] = $replace_array['CurrencySign'] ."". AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
 
 
         return $replace_array;
@@ -3194,5 +3199,38 @@ class Invoice extends \Eloquent {
         }
         //Log::info($AllInvoicePeriods);
         return $AllInvoicePeriods;
+    }
+
+    public static function getTotalAmountInOtherCurrency($CompanyID,$BaseCurrencyID,$Amount,$RoundChargesAmount){
+        $Results=array();
+        $CompanyCurrencyID=Company::where('CompanyID',$CompanyID)->pluck('CurrencyId');
+        if(!empty($CompanyCurrencyID)) {
+            $Currencies = Currency::where('CurrencyId', '<>', $BaseCurrencyID)->get();
+            if (!empty($Currencies) && count($Currencies) > 0) {
+                foreach ($Currencies as $currency) {
+                    $CurrencyID = $currency->CurrencyId;
+                    $ConversionRate = CurrencyConversion::where('CurrencyID', $CurrencyID)->pluck('Value');
+                    $Title = Currency::getCurrencyCode($CurrencyID);
+                    $Symbol = Currency::getCurrencySymbol($CurrencyID);
+                    if (!empty($ConversionRate)) {
+                        $temp = array();
+                        $temp['Title'] = $Title;
+                        if ($BaseCurrencyID == $CompanyCurrencyID) {
+                            $TempAmount = ($Amount * $ConversionRate);
+                            $TempAmount = number_format($TempAmount,$RoundChargesAmount);
+
+                        }else{
+                            $ACConversionRate = CurrencyConversion::where('CurrencyID',$BaseCurrencyID)->pluck('Value');
+                            $TempAmount = ($ConversionRate) * ($Amount/$ACConversionRate);
+                            $TempAmount = number_format($TempAmount,$RoundChargesAmount);
+                        }
+                        $temp['Amount'] = $Symbol . $TempAmount;
+                        $Results[] = $temp;
+                    }
+                }
+
+            }
+        }
+        return $Results;
     }
 }
