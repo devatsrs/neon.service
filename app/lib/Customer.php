@@ -145,8 +145,9 @@ class Customer extends \Eloquent {
                 $account_name = Customer::getName($account->CompanyId,$CompanyGatewayID,$account->AccountID,$account,'customer');
                 if(!empty($account_name['AccountName'])) {
                     DB::beginTransaction();
-                    Log::info("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
-                    $excel_data = DB::select("CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')");
+                    $query = "CALL prc_CustomerRateForExport(" . $account->CompanyId . "," . $account->AccountID . "," . $account->TrunkID . ",'".$account_name['NameFormat']."','".$account_name['AccountName']."','" . $account->Trunk . "','".$account->CustomerTrunkPrefix."','".$Effective."')";
+                    Log::info($query);
+                    $excel_data = DB::select($query);
                     $excel_data = json_decode(json_encode($excel_data), true);
                     $output = Helper::array_to_csv($excel_data);
                     if (empty($excel_data)) {
