@@ -997,7 +997,8 @@ protected $server;
 						}
 						else //reopen ticket if ticket status closed
 						{
-							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()
+								||	$ticketData->Status == TicketsTable::getWaitingOnCustomerTicketStatus() ||	$ticketData->Status == TicketsTable::getWaitingOnThirdPartyTicketStatus()) {
 								TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
 								if(!$skip_email_notification) {
 									new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
