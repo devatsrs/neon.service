@@ -174,6 +174,11 @@
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceFrom))}} - {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceTo))}}</div>
                 @endif
+                @if(!empty($MultiCurrencies))
+                    @foreach($MultiCurrencies as $multiCurrency)
+                        <div class="text-right flip">Grand Total In {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                    @endforeach
+                @endif
             </div>
         </div>
 
