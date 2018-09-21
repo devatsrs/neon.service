@@ -132,8 +132,18 @@ class DBCleanUp extends Command {
 			Log::info('Vendor CDR Delete End.');
 
 			Log::info('RateLog Delete Start.');
-			DB::table('tblTempRateLog')->where(["SentStatus"=>1])->delete();
+			DB::table('tblTempRateLog')->where(["SentStatus"=>1,"CompanyID"=>$CompanyID])->delete();
 			Log::info('RateLog Delete End.');
+
+			Log::info('Archive Old Rate Delete Start.');
+			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate');
+			Log::info('Archive Old Rate Delete End.');
+
+			Log::info('Tickets Delete Start.');
+			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets');
+			Log::info('Tickets Delete End.');
+
+
 
 			Log::info('DBcleanup Done.');
 
