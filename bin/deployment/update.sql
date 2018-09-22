@@ -1,4 +1,5 @@
 USE `Ratemanagement3`;
+set sql_mode='';
 
 INSERT INTO `tblEmailTemplate` (`CompanyID`, `LanguageID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (1, 43, 'AccountBalanceEmailReminder', '{{AccountName}} - Account Balance', '<p>Please find below your account balance details.</p><p>{{AccountBalance}}</p>', '2018-05-22 16:42:31', 'Vasim Seta', '2018-05-23 16:20:17', 'Vasim Seta', NULL, 0, '', 1, 'AccountBalanceEmailReminder', 1, 1, 0);
 INSERT INTO `tblEmailTemplate` (`CompanyID`, `LanguageID`, `TemplateName`, `Subject`, `TemplateBody`, `created_at`, `CreatedBy`, `updated_at`, `ModifiedBy`, `userID`, `Type`, `EmailFrom`, `StaticType`, `SystemType`, `Status`, `StatusDisabled`, `TicketTemplate`) VALUES (1, 43, 'Credit Note Send', 'New credit note {{CreditNotesNumber}} from {{CompanyName}} ', 'Hi {{AccountName}},<br><br>\r\n\r\n\r\n{{CompanyName}} has sent you an credit note of {{CreditnotesGrandTotal}} {{Currency}}, \r\nto download copy of your credit note please click the below link. <br><br>\r\n\r\n\r\n<div>\r\n<!--[if mso]>\r\n<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{CreditNotesLink}}" style="height:30px;v-text-anchor:middle;width:100px;" arcsize="10%" strokecolor="#ff9600" fillcolor="#ff9600">\r\n <w:anchorlock/>\r\n <center style="color:#ffffff;font-family:sans-serif;font-size:13px;font-weight:bold;">View CreditNote</center>\r\n </v:roundrect>\r\n<![endif]--> \r\n<!--[if !mso]><!-- ><![endif]--> \r\n\r\n<a href="{{CreditNotesLink}}" style="background-color:#ff9600;border:2px solid #ff9600;border-radius:4px;color:#ffffff;display:inline-block;font-family:sans-serif;font-size:13px;font-weight:bold;line-height:30px;text-align:center;text-decoration:none;width:100px;-webkit-text-size-adjust:none;mso-hide:all;" title="Link: {{CreditNotesLink}}">View CreditNote</a>\r\n</div>\r\n<br><br>\r\n\r\n\r\n\r\nBest Regards,<br><br>\r\n\r\n\r\n{{CompanyName}}\r\n<br>', '2017-02-13 10:28:29', 'Sumera Saeed', '2017-04-17 11:15:19', 'Sumera Saeed', NULL, 5, 'sumera.staging@code-desk.com', 1, 'CreditNotesSingleSend', 1, 1, 0);
@@ -385,7 +386,7 @@ CREATE TABLE IF NOT EXISTS `tblDynamiclink` (
 ) COLLATE='utf8_unicode_ci' ENGINE=InnoDB;
 
 USE `RMBilling3`;
-
+set sql_mode='';
 ALTER TABLE `tblInvoiceTemplate` ADD COLUMN `IgnoreCallCharge` TINYINT(1) NULL DEFAULT '0' AFTER `ManagementReport`;
 ALTER TABLE `tblInvoiceTemplate` ADD COLUMN `ShowPaymentWidgetInvoice` TINYINT(1) NULL DEFAULT '0' AFTER `IgnoreCallCharge`;
 ALTER TABLE `tblInvoiceTemplate` ADD COLUMN `DefaultTemplate` INT NULL DEFAULT '0' AFTER `ShowPaymentWidgetInvoice`;
