@@ -68,9 +68,9 @@ class importPBXPayments extends Command {
 		$CronJob->update($dataactive);
 
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-		$importdayslimit = $cronsetting['importdayslimit'];
+		$importdayslimit = trim($cronsetting['importdayslimit']);
 
-		if(empty(trim($importdayslimit))){
+		if(empty($importdayslimit)){
 			$importdayslimit=2;
 		}
 //		$importdayslimit=366*2;

@@ -459,7 +459,8 @@ protected $server;
 						$Subject = $email->getSubject();
 						$header = $email->getHeader();
 						$message = 	$email->getHTMLBody(true);
-						if(!$email->hasHTMLBody() || empty(trim($message))){
+						$message = trim($message);
+						if(!$email->hasHTMLBody() || empty($message)){
 							$message = 	"<pre>".$email->getTextBody()."</pre>";
 						}
 						$Extra = $message;
