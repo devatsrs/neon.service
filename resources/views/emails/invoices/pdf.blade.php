@@ -145,7 +145,7 @@
                 @endif
                 @if(!empty($MultiCurrencies))
                     @foreach($MultiCurrencies as $multiCurrency)
-                        <div class="text-right flip">Grand Total In {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                        <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
                     @endforeach
                 @endif
             </div>
