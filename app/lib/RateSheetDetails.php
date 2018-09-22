@@ -12,16 +12,17 @@ class RateSheetDetails extends \Eloquent {
 
     protected  $primaryKey = "RateSheetDetailsID";
 
-    public static function DeleteOldRateSheetDetails($latestVendorSheetID,$customerID,$rateSheetCategory){
-        DB::statement("CALL prc_WSDeleteOldRateSheetDetails('" .$latestVendorSheetID. "','" . $customerID."','" . $rateSheetCategory."')");
+    public static function DeleteOldRateSheetDetails($latestVendorSheetID,$customerID,$rateSheetCategory,$TimezonesID){
+        DB::statement("CALL prc_WSDeleteOldRateSheetDetails('" .$latestVendorSheetID. "','" . $customerID."','" . $rateSheetCategory."','" . $TimezonesID."')");
     }
 
-    public static function SaveToDetail($AccountID,$trunkname,$file_name,$excel_data){
+    public static function SaveToDetail($AccountID,$trunkname,$TimezonesID,$file_name,$excel_data){
         $ratesheetdata = array();
         $ratesheetdata['CustomerID'] = $AccountID;
         $ratesheetdata['DateGenerated'] = date('Y-m-d H:i:s');
         $ratesheetdata['FileName'] = $file_name;
         $ratesheetdata['Level'] = $trunkname;
+        $ratesheetdata['TimezonesID'] = $TimezonesID;
         $RateSheetID = RateSheet::insertGetId($ratesheetdata);
 
         $InserData = array();

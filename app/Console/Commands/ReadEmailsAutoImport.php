@@ -9,6 +9,7 @@ use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\Imap;
 use App\Lib\Job;
 use App\Lib\Trunk;
 use App\Lib\User;
@@ -75,7 +76,9 @@ class ReadEmailsAutoImport extends Command
 			/** @var \Webklex\IMAP\Folder $oFolder */
 
 			foreach($aFolder as $oFolder) {
-
+				  if($oFolder->fullName!="INBOX"){
+					continue;
+				  }
 				  if (!empty($LastEmailReadDateTime)) {
 				 	 $LastEmailReadDateTime = date("Y-m-d H:i:s", strtotime("-1 Hour ", strtotime($LastEmailReadDateTime)));
 				 	 $aMessage = $oFolder->searchMessages([['SINCE', Carbon::parse('' . $LastEmailReadDateTime . '')->format('d M y H:i:s')]]);
@@ -105,39 +108,39 @@ class ReadEmailsAutoImport extends Command
 						Log::info("Already Imported. MailDateTime " . $MailDateTime);
 						continue;
 					}
-
-					$Attachments="";
 					$MatchedAttachmentFileNames = [];
-
+					$AttachmentFileNames = [];
 					if ($aAttachmentCount > 0) {
 
 						$aAttachment = $oMessage->getAttachments();
-						$AttachmentFileNames = [];
-						
+
 						foreach ($aAttachment as $oAttachment) {
 
-							$extension = \File::extension($oAttachment->getName());
-							$file_name = Uuid::generate() . '.' . strtolower($extension);
-							$AttachmentFileNames[] = $file_name;
-
+							$path_parts = pathinfo($oAttachment->getName());
+							if(!array_key_exists("extension", $path_parts)){
+								$path_parts["extension"]="";
+							}
+							$file_name = Imap::dataDecode($path_parts["filename"]) . '-'. date("YmdHis") . '.' . $path_parts["extension"];
 							$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['AUTOIMPORT_UPLOAD'],'',$CompanyID);
+
 							$fullPath = $upload_path . "/". $amazonPath;
+							$filepath2  =  $amazonPath .'/'. $file_name;
 							$oAttachment->save($fullPath, $file_name);
-
-							if(!AmazonS3::upload($fullPath.$file_name,$amazonPath,$CompanyID)){
-								throw new Exception('Error in Amazon upload');
+							if(is_amazon($CompanyID)) {
+								if(!AmazonS3::upload($fullPath.$file_name,$amazonPath,$CompanyID)){
+									throw new Exception('Error in Amazon upload');
+								}
 							}
+							$AttachmentFileNames[] = array("filename"=>$file_name,"filepath"=>$filepath2);
 
-							if (in_array(strtolower($extension), array('xls','csv','xlsx') )) {
-								$MatchedAttachmentFileNames[strtolower(pathinfo($oAttachment->getName(), PATHINFO_FILENAME))] = $file_name;
+							if (in_array(strtolower($path_parts["extension"]), array('xls','csv','xlsx') )) {
+								$MatchedAttachmentFileNames[strtolower($path_parts["filename"])] = $file_name;
 							}
-
 						}
-						$Attachments = implode(", ", $AttachmentFileNames);
-
 					}
+					$Attachments = json_encode($AttachmentFileNames);
 
-					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".addslashes(implode(", ", array_keys($MatchedAttachmentFileNames)))."' )";
+					$query = "call prc_ImportSettingMatch ( '".$CompanyID."', '".$fromMail."','".addslashes($Subject)."', '".addslashes(implode(",", array_keys($MatchedAttachmentFileNames)))."' )";
 					Log::info($query);
 					Log::info($MatchedAttachmentFileNames);
 					$results = DB::select($query);
@@ -244,13 +247,13 @@ class ReadEmailsAutoImport extends Command
 				}
 
 			}
-
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 		}
 		catch (\Exception $e)
 		{
 
 			$this->info('Failed:' . $e->getMessage());
-			$joblogdata['Message'] = 'Error:' . $e->getMessage();
+			$errorEmailMSG .= '<br>Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			Log::error($e);
 			if(!empty($cronsetting['ErrorEmail'])) {
@@ -261,7 +264,6 @@ class ReadEmailsAutoImport extends Command
 		}
 
 		CronJob::deactivateCronJob($CronJob);
-		$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 		$joblogdata['Message'] = $countEmailMSG.$errorEmailMSG;
 		CronJobLog::createLog($CronJobID,$joblogdata);
 		if(!empty($cronsetting['SuccessEmail'])) {

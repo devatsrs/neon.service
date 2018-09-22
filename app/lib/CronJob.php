@@ -306,6 +306,14 @@ class CronJob extends \Eloquent {
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
 		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
 
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
+        $joblogdata['Message'] ='Error: CronJob is terminated, It Was running since ' . $minute . ' minutes.';
+        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+        CronJobLog::insert($joblogdata);
+
         if(!empty($ActiveCronJobEmailTo)) {
 
             $emaildata['KillCommand'] = $KillCommand;
@@ -553,9 +561,12 @@ class CronJob extends \Eloquent {
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
     }
-    public static function deactivateCronJob($CronJob){
+    public static function deactivateCronJob($CronJob1){
+        $CronJob=CronJob::find($CronJob1->CronJobID);
         $dataactive['PID'] = '';
         $dataactive['Active'] = 0;
+        $dataactive['ProcessID'] = '';
+        $dataactive['MysqlPID'] = '';
         $CronJob->update($dataactive);
     }
 

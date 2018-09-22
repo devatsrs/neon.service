@@ -20,6 +20,15 @@
             #frontinvoice .desc {
                 text-align: right;
             }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
 <style type="text/css">
@@ -59,6 +68,14 @@
     tfoot {
         display: table-row-group
     }
+    @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+    img.signatureImage {
+        position: absolute;
+        z-index: 99999;
+        top: {{isset($arrSignature["DigitalSignature"]->positionTop)?$arrSignature["DigitalSignature"]->positionTop:0}}px;
+        left: {{isset($arrSignature["DigitalSignature"]->positionLeft)?$arrSignature["DigitalSignature"]->positionLeft:0}}px;
+    }
+    @endif
 </style>
 <div class="inovicebody">
     <!-- logo and invoice from section start-->
@@ -79,6 +96,9 @@
 
     <?php
     $InvoiceTo =$InvoiceFrom = '';
+    $AllTaxSummary = array();
+    $AllTaxCount=0;
+    $AllPayment=0;
 	$total_usage = 0;
     foreach($InvoiceDetail as $ProductRow){
         if($ProductRow->ProductType == \App\Lib\Product::INVOICE_PERIOD){
@@ -99,10 +119,18 @@
     $Terms = $Invoice->Terms;
     $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
     $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
+
+    $FooterTerm = $Invoice->FooterTerm;
+    $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
+    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
+    $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
     ?>
 
 
     <main>
+        @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+            <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
+        @endif
         <div id="details" class="clearfix">
             <div id="client" class="pull-left flip">
                 <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
@@ -113,7 +141,12 @@
                 <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
                 <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
-                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{$InvoiceFrom}} - {{$InvoiceTo}}</div>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceFrom))}} - {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceTo))}}</div>
+                @endif
+                @if(!empty($MultiCurrencies))
+                    @foreach($MultiCurrencies as $multiCurrency)
+                        <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                    @endforeach
                 @endif
             </div>
         </div>
@@ -161,12 +194,27 @@
             </tr>
             @if(count($InvoiceTaxRates))
                 @foreach($InvoiceTaxRates as $InvoiceTaxRate)
-                <tr>
-                    <td colspan="2"></td>
-                    <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
-                </tr>
+                    <?php
+                    $tempsummary['Title']=$InvoiceTaxRate->Title;
+                    $tempsummary['Amount']=$InvoiceTaxRate->TaxAmount;
+                    $AllTaxSummary[]=$tempsummary;
+                    $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
+                    ?>
+                    @if($InvoiceTemplate->ShowTaxesOnSeparatePage==0)
+                        <tr>
+                            <td colspan="2"></td>
+                            <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
+                            <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                        </tr>
+                    @endif
                 @endforeach
+                @if($InvoiceTemplate->ShowTaxesOnSeparatePage==1)
+                    <tr>
+                        <td colspan="2"></td>
+                        <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                        <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+                    </tr>
+                @endif
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -226,6 +274,16 @@
         </div>
     </div>
     <!-- adevrtisement and terms section end -->
+
+    <!-- footer section start-->
+    @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==1)
+    <div id="thanksadevertise">
+        <div class="invoice-left">
+            <p><a class="form-control pull-left" style="height: auto">{{nl2br($FooterTerm_message)}}</a></p>
+        </div>
+    </div>
+    @endif
+    <!-- footer section end -->
 
     <!-- need to impliment service brack login -->
     @if($InvoiceTemplate->ServiceSplit==0)
@@ -537,7 +595,67 @@
         @endif
     @endforeach
 	@endif
+    @if((!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0) || (count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1))
+        <div class="page_break"></div>
+        @if(count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1)
+        <div class="ChargesTitle clearfix">
+            <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
+        </div>
 
+        <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+            <thead>
+            <tr>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
+                <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($AllTaxSummary as $row)
+                <tr>
+                    <td class="leftalign">{{$row['Title']}}</td>
+                    <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                <td class="leftalign total">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+            </tr>
+            </tbody>
+        </table>
+        @endif
+        @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0)
+            <div class="ChargesTitle clearfix">
+                <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PAYMENT")}}</div>
+            </div>
+
+            <table border="0" cellspacing="0" cellpadding="0" id="backinvoice">
+                <thead>
+                <tr>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_NOTES")}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach($payment_data as $row)
+                    <?php
+                    $AllPayment  += str_replace(',','',$row['Amount']);
+                    ?>
+                    <tr>
+                        <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($row['PaymentDate']))}}</td>
+                        <td class="leftalign">{{$CurrencySymbol}}{{number_format($row['Amount'],$RoundChargesAmount)}}</td>
+                        <td class="leftalign">{{$row['Notes']}}</td>
+                    </tr>
+                @endforeach
+                <tr>
+                    <td class="leftalign total">{{cus_lang("TABLE_TOTAL")}}</td>
+                    <td class="leftalign total" colspan="2">{{$CurrencySymbol}}{{number_format($AllPayment,$RoundChargesAmount)}}</td>
+                </tr>
+                </tbody>
+            </table>
+        @endif
+
+    @endif
     @if(!empty($ManagementReports) && $total_usage != 0)
         <div class="page_break"></div>
         @include('emails.invoices.management_chart')

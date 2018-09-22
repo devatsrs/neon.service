@@ -97,6 +97,7 @@ class VOSAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -286,7 +287,7 @@ class VOSAccountUsage extends Command
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'',$RerateAccounts);
+            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'','CurrentRate',0,$RerateAccounts);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .=  implode('<br>', $skiped_account_data);
@@ -299,20 +300,6 @@ class VOSAccountUsage extends Command
             DB::connection('sqlsrv2')->beginTransaction();
             DB::connection('sqlsrvcdr')->beginTransaction();
 
-            if (!empty($result[0]->min_date)) {
-                $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
-                date_default_timezone_set(Config::get('app.timezone'));
-                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
-                $logdata['CompanyID'] = $CompanyID;
-                $logdata['start_time'] = $result[0]->min_date;
-                $logdata['end_time'] = $result[0]->max_date;
-                $logdata['created_at'] = date('Y-m-d H:i:s');
-                $logdata['ProcessID'] = $processID;
-                TempUsageDownloadLog::insert($logdata);
-
-            } else {
-                $filedetail = '<br> No Data Found!!';
-            }
 
 
             Log::error("VOS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
@@ -329,6 +316,21 @@ class VOSAccountUsage extends Command
             Log::error('vos prc_linkCDR end');*/
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
+
+            if (!empty($result[0]->min_date)) {
+                $filedetail = '<br>From' . date('Y-m-d H:i:00', strtotime($result[0]->min_date)) . ' To ' . date('Y-m-d H:i:00', strtotime($result[0]->max_date)) .' count '. $totaldata_count;
+                date_default_timezone_set(Config::get('app.timezone'));
+                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $logdata['CompanyID'] = $CompanyID;
+                $logdata['start_time'] = $result[0]->min_date;
+                $logdata['end_time'] = $result[0]->max_date;
+                $logdata['created_at'] = date('Y-m-d H:i:s');
+                $logdata['ProcessID'] = $processID;
+                TempUsageDownloadLog::insert($logdata);
+
+            } else {
+                $filedetail = '<br> No Data Found!!';
+            }
 
             DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();

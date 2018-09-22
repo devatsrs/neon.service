@@ -20,6 +20,15 @@
             #frontinvoice .desc {
                 text-align: right;
             }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
     <style type="text/css">
@@ -41,6 +50,15 @@
             }
         }
         .page_break{page-break-after: always;}
+        @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+        img.signatureImage {
+            position: absolute;
+            z-index: 99999;
+            top: {{isset($arrSignature["DigitalSignature"]->positionTop)?$arrSignature["DigitalSignature"]->positionTop:0}}px;
+            left: {{isset($arrSignature["DigitalSignature"]->positionLeft)?$arrSignature["DigitalSignature"]->positionLeft:0}}px;
+        }
+        @endif
+
     </style>
 
     <div class="inovicebody">
@@ -67,10 +85,18 @@
         $Terms = $Invoice->Terms;
         $textTerms = \App\Lib\Invoice::getInvoiceToByAccount($Terms,$replace_array);
         $return_terms = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $textTerms);
+
+        $FooterTerm = $Invoice->FooterTerm;
+        $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
+        $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
+        $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
         ?>
 
 
         <main>
+            @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+                <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
+            @endif
             <div id="details" class="clearfix">
                 <div id="client" class="pull-left flip">
                     <div class="to"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO")}}</b></div>
@@ -80,6 +106,11 @@
                     <h1 class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                    @if(!empty($MultiCurrencies))
+                        @foreach($MultiCurrencies as $multiCurrency)
+                            <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
@@ -148,4 +179,13 @@
             </div>
         </div>
         <!-- adevrtisement and terms section end -->
+        <!-- footer section -->
+        @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==1)
+         <div id="thanksadevertise">
+             <div class="invoice-left">
+                 <p><a class="form-control pull-left" style="height: auto">{{nl2br($FooterTerm_message)}}</a></p>
+            </div>
+        </div>
+        @endif
+        <!-- footer section end -->
 @stop

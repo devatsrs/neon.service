@@ -144,6 +144,8 @@ class VCDRUpload extends Command
                         array_unshift($temp_row, null);
                         unset($temp_row[0]);
                     }
+                    $temp_row = filterArrayRemoveNewLines($temp_row);
+
                     $cdrdata = array();
                     $cdrdata['ProcessID'] = $ProcessID;
                     $cdrdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -244,7 +246,7 @@ class VCDRUpload extends Command
 
                 //ProcessCDR
                 Log::info("ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName)");
-                $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName,'',0);
+                $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID, $ProcessID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName,'','CurrentRate',0,0);
 
                 $result = DB::connection('sqlsrv2')->select("CALL  prc_start_end_time( '" . $ProcessID . "','" . $temptableName . "')");
                 $delet_cdr_account = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$ProcessID)->whereNotNull('AccountID')->groupby('AccountID')->select(DB::raw('max(disconnect_time) as max_date'),DB::raw('MIN(disconnect_time) as min_date'),'AccountID')->get();

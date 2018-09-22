@@ -16,8 +16,9 @@ class PaymentGateway extends \Eloquent {
     const  SagePayDirectDebit	=	4;
     const  FideliPay	=	5;
     const  PeleCard	    =	6;
+    const  MerchantWarrior	    =	7;
 
-    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH',self::FideliPay=>'FideliPay',self::PeleCard=>'PeleCard');
+    public static $paymentgateway_name = array(''=>'' ,self::AuthorizeNet => 'AuthorizeNet',self::Stripe=>'Stripe',self::StripeACH=>'StripeACH',self::FideliPay=>'FideliPay',self::PeleCard=>'PeleCard',self::MerchantWarrior=>'MerchantWarrior');
 
     public static function getName($PaymentGatewayID)
     {
@@ -218,6 +219,7 @@ class PaymentGateway extends \Eloquent {
                 $PeleCarddata['AccountID']      = $account->AccountID;
                 $PeleCarddata['Token']          = $options->Token;
                 $PeleCarddata['CVVNumber']      = $options->CVVNumber;
+                $PeleCarddata['PeleCardID']     = !empty($options->PeleCardID) ? $options->PeleCardID : '';
 
                 $transactionResponse = array();
 
@@ -247,6 +249,106 @@ class PaymentGateway extends \Eloquent {
                 $transactiondata['AccountID'] = $account->AccountID;
                 if(!empty($transaction['transaction_id'])) {
                     $transactiondata['Transaction'] = $transaction['transaction_id'];
+                }
+                $transactiondata['Notes'] = $Notes;
+                if(!empty($transaction['amount'])) {
+                    $transactiondata['Amount'] = floatval($transaction['amount']);
+                }
+                $transactiondata['Status'] = $Status;
+                $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                $transactiondata['CreatedBy'] = "RMScheduler";
+                $transactiondata['ModifyBy'] = "RMScheduler";
+                $transactiondata['Response'] = json_encode($transaction);
+                TransactionLog::insert($transactiondata);
+                return $transactionResponse;
+
+            case self::$paymentgateway_name[self::MerchantWarrior]:
+
+                $MerchantWarriordata = array();
+                $MerchantWarriordata['CompanyID']       = $CompanyID;
+                $MerchantWarriordata['AccountID']       = $account->AccountID;
+                $MerchantWarriordata['GrandTotal']      = $amount;
+                $MerchantWarriordata['InvoiceNumber']   = $options->InvoiceNumber;
+                $MerchantWarriordata['cardID']          = $options->cardID;
+
+                $transactionResponse = array();
+
+                $merchantwarriorpayment = new MerchantWarrior($CompanyID);
+                $transaction = $merchantwarriorpayment->pay_invoice($MerchantWarriordata);
+
+                $Notes = '';
+                if(!empty($transaction['status']) && $transaction['status'] == 'success') {
+                    $Notes = 'MerchantWarrior transaction_id ' . $transaction['transaction_id'];
+                    $Status = TransactionLog::SUCCESS;
+                }else{
+                    $Status = TransactionLog::FAILED;
+                    $Notes = empty($transaction['error']) ? '' : $transaction['response']['responseData']['responseMessage'];
+                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
+                }
+
+                if(!empty($transaction['response_code'])) {
+                    $transactionResponse['response_code'] = $transaction['response_code'];
+                }
+                $transactionResponse['transaction_notes']           = $Notes;
+                $transactionResponse['transaction_payment_method']  = 'CREDIT CARD';
+                $transactionResponse['failed_reason']               = $Notes;
+                if(!empty($transaction['transaction_id'])) {
+                    $transactionResponse['transaction_id'] = $transaction['transaction_id'];
+                }
+                $transactiondata = array();
+                $transactiondata['CompanyID'] = $account->CompanyId;
+                $transactiondata['AccountID'] = $account->AccountID;
+                if(!empty($transaction['transaction_id'])) {
+                    $transactiondata['Transaction'] = $transaction['transaction_id'];
+                }
+                $transactiondata['Notes'] = $Notes;
+                if(!empty($transaction['amount'])) {
+                    $transactiondata['Amount'] = floatval($transaction['amount']);
+                }
+                $transactiondata['Status'] = $Status;
+                $transactiondata['created_at'] = date('Y-m-d H:i:s');
+                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
+                $transactiondata['CreatedBy'] = "RMScheduler";
+                $transactiondata['ModifyBy'] = "RMScheduler";
+                $transactiondata['Response'] = json_encode($transaction);
+                TransactionLog::insert($transactiondata);
+                return $transactionResponse;
+
+            case 'AccountBalance':
+
+                $AccountBalancedata = array();
+                $AccountBalancedata['CompanyID']     = $CompanyID;
+                $AccountBalancedata['GrandTotal']     = $amount;
+                $AccountBalancedata['InvoiceNumber']  = $options->InvoiceNumber;
+                $AccountBalancedata['AccountID']      = $account->AccountID;
+
+                $transactionResponse = array();
+                $transaction = AccountBalance::AutoPayInvoice($AccountBalancedata);
+
+                $Notes = '';
+                if(!empty($transaction['status']) && $transaction['status'] == 'success') {
+                    $Notes = 'Account Balance transaction_id ' . $transaction['id'];
+                    $Status = TransactionLog::SUCCESS;
+                }else{
+                    $Status = TransactionLog::FAILED;
+                    $Notes = empty($transaction['error']) ? '' : $transaction['error'];
+                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
+                }
+                if(!empty($transaction['response_code'])) {
+                    $transactionResponse['response_code'] = $transaction['response_code'];
+                }
+                $transactionResponse['transaction_notes']           = $Notes;
+                $transactionResponse['transaction_payment_method']  = 'Account Balance';
+                $transactionResponse['failed_reason']               = $Notes;
+                if(!empty($transaction['id'])) {
+                    $transactionResponse['transaction_id'] = $transaction['id'];
+                }
+                $transactiondata = array();
+                $transactiondata['CompanyID'] = $account->CompanyId;
+                $transactiondata['AccountID'] = $account->AccountID;
+                if(!empty($transaction['id'])) {
+                    $transactiondata['Transaction'] = $transaction['id'];
                 }
                 $transactiondata['Notes'] = $Notes;
                 if(!empty($transaction['amount'])) {

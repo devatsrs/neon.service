@@ -319,6 +319,7 @@ class Helper{
     }
 
    public static function create_replace_array($Account,$extra_settings,$JobLoggedUser=array()){
+       $RoundChargesAmount=getCompanyDecimalPlaces($Account->CompanyId);
        $replace_array = array();
        $replace_array['AccountName'] = $Account->AccountName;
        $replace_array['FirstName'] = $Account->FirstName;
@@ -331,7 +332,7 @@ class Helper{
        $replace_array['State'] = $Account->State;
        $replace_array['PostCode'] = $Account->PostCode;
        $replace_array['Country'] = $Account->Country;
-       $replace_array['OutstandingIncludeUnbilledAmount'] = AccountBalance::getBalanceAmount($Account->AccountID);
+       $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID),$RoundChargesAmount);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
@@ -346,30 +347,15 @@ class Helper{
 		$replace_array['CompanyCity'] 		= $CompanyData->City;
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
-		$replace_array['Logo'] 				= combile_url_path(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId,'WEB_URL'),'assets/images/logo@2x.png');
-
-		
-        $domain_data  =     parse_url(\App\Lib\CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId,'WEB_URL'));
-		$Host		  = 	$domain_data['host'];
-        $result       =    \Illuminate\Support\Facades\DB::table('tblCompanyThemes')->where(["DomainUrl" => $Host,'ThemeStatus'=>\App\Lib\Themes::ACTIVE])->first();
-
-        if(!empty($result)){
-
-		if(!empty($result->Logo)){           
-				 $path = AmazonS3::unSignedUrl($result->Logo,$Account->CompanyId);  
-                        if(strpos($path, "https://") !== false){
-							$replace_array['Logo'] = $path;
-                        }else{
-
-                            $file = $result->Logo;           
-                            $replace_array['Logo'] = MakeWebUrl($Account->CompanyId,$file); 
-                        }
-				
-            }
-        }
-	    $replace_array['Logo'] = '<img src="'.$replace_array['Logo'].'" />';
+        $replace_array['Logo'] = '<img src="'.getCompanyLogo($Account->CompanyId).'" />';
 	   
-       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getOutstandingAmount($Account->CompanyId,$Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
+       $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
+       $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
+       $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
+       $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
+       $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
        $Signature = '';
        if(!empty($JobLoggedUser)){
            $emaildata['EmailFrom'] = $JobLoggedUser->EmailAddress;

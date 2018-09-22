@@ -148,6 +148,7 @@ class CDRUpload extends Command
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
                         }
+                        $temp_row = filterArrayRemoveNewLines($temp_row);
                         if (isset($attrselection->cli) && !empty($attrselection->cli)) {
                             $CustomerCLI = $temp_row[$attrselection->cli];
                             $checkCustomerCli = DB::select("CALL prc_checkCustomerCli(?,?)",array($CompanyID,$CustomerCLI));
@@ -174,6 +175,9 @@ class CDRUpload extends Command
                             array_unshift($temp_row, null);
                             unset($temp_row[0]);
                         }
+
+                        $temp_row = filterArrayRemoveNewLines($temp_row);
+
                         $cdrdata = array();
                         $cdrdata['ProcessID'] = $ProcessID;
 

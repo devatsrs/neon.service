@@ -223,6 +223,7 @@ class QuickBook {
 	public function CreateCustomer($AccountID){
 		$response = array();
 		$Account = Account::find($AccountID);
+		$Account = $Account[0];
 		$AccountName = $Account->AccountName;
 		$count = $this->CheckCustomer($AccountID);
 		Log::info('-- count --'.print_r($count,true));
@@ -333,6 +334,7 @@ class QuickBook {
 
 	public function CheckCustomer($AccountID){
 		$Account = Account::find($AccountID);
+		$Account = $Account[0];
 		$AccountName = $Account->AccountName;
 		Log::info('Checkcustomer');
 		$Context = $this->Context;
@@ -519,6 +521,114 @@ class QuickBook {
 
 		return $itemid;
 	}
+	public function addPayments($Options){
+		Log::info('-- QuickBook Add Payments --');
+		$response = array();
+		if ($this->is_quickbook($Options['CompanyID'])){
+			if ($this->quickbooks_is_connected) {
+				$Payments = $Options['Payments'];
+
+				if(!empty($Payments) && count($Payments)>0){
+					foreach($Payments as $Payment){
+						if(!empty($Payment))
+							$response[] = $this->CreatePayments($Payment);
+					}
+				}
+			}
+		}
+		Log::info('-- QuickBook End Payments --');
+		return $response;
+	}
+
+	public function CreatePayments($PaymentID){
+
+		Log::info('Payment ID : '.print_r($PaymentID,true));
+		$response = array();
+		$PaymentData = Payment::find($PaymentID);
+		if(!empty($PaymentData->InvoiceID)) {
+			$InvoiceID = $PaymentData->InvoiceID;
+			$Invoices = Invoice::find($InvoiceID);
+			$InvoiceFullNumber = $Invoices->FullInvoiceNumber;
+			//$count = $this->CheckInvoice($InvoiceFullNumber);
+			//$CustomerID = $this->getCustomerId($Invoices->AccountID);
+			$Account = Account::find($Invoices->AccountID);
+			$AccountName = $Account->AccountName;
+
+			Log::info('-- Create Payments --'.print_r($InvoiceFullNumber,true));
+			$Context = $this->Context;
+			$realm = $this->realm;
+
+			//get invoice count from Quickbook
+			$InvoiceService = new \QuickBooks_IPP_Service_Invoice();
+			$invoicecount = $InvoiceService->query($Context, $realm, "SELECT count(*) FROM Invoice WHERE DocNumber = '".$InvoiceFullNumber."' ");
+			if($invoicecount > 0) {
+
+				//get invoice details from Quickbook
+				$invoicedetails = $InvoiceService->query($Context, $realm, "SELECT Id FROM Invoice WHERE DocNumber = '" . $InvoiceFullNumber . "' ");
+				$q_invoiceid = $invoicedetails[0]->getId();
+				Log::info('Quickbook Invoice ID : ' . print_r($q_invoiceid, true));
+
+				//get customer details from Quickbook
+				$CustomerService = new \QuickBooks_IPP_Service_Customer();
+				$customers = $CustomerService->query($Context, $realm, "SELECT Id FROM Customer WHERE FullyQualifiedName = '" . $AccountName . "' ");
+				$q_customerid = $customers[0]->getId();
+				Log::info('Quickbook Customer ID : ' . print_r($q_customerid, true));
+
+				$PaymentService = new \QuickBooks_IPP_Service_Payment();
+				// Create payment object
+				$Payment = new \QuickBooks_IPP_Object_Payment();
+				$Payment->setPaymentRefNum($PaymentData->PaymentID);
+				$PaymentDate = date('Y-m-d', strtotime($PaymentData->PaymentDate));
+				$Payment->setTxnDate($PaymentDate);
+				$Payment->setTotalAmt($PaymentData->Amount);
+
+				// Create line for payment (this details what it's applied to)
+				$Line = new \QuickBooks_IPP_Object_Line();
+				$Line->setAmount($PaymentData->Amount);
+
+				// The line has a LinkedTxn node which links to the actual invoice
+				$LinkedTxn = new \QuickBooks_IPP_Object_LinkedTxn();
+				$LinkedTxn->setTxnId($q_invoiceid);
+				$LinkedTxn->setTxnType('Invoice');
+				$Line->setLinkedTxn($LinkedTxn);
+				$Payment->addLine($Line);
+				$Payment->setCustomerRef($q_customerid);
+
+				//Log::info('-- Invoice Object --'.print_r($Invoice,true));
+
+				if ($resp = $PaymentService->add($Context, $realm, $Payment)) {
+					if (!empty($resp)) {
+						$resp = str_replace('{-', '', $resp);
+						$resp = str_replace('}', '', $resp);
+					}
+
+					/**
+					 * Insert Data in QuickBookLog
+					 */
+					$quickbooklogdata = array();
+					$quickbooklogdata['Note'] = $PaymentID . ' ' . QuickBookLog::$log_status[QuickBookLog::PAYMENT] . ' (Quickbookid : ' . $resp . ') Created';
+					$quickbooklogdata['created_at'] = date("Y-m-d H:i:s");
+					$quickbooklogdata['Type'] = QuickBookLog::PAYMENT;
+					QuickBookLog::insert($quickbooklogdata);
+
+					Log::info('-- Create Payment id (Quickbook) --' . print_r($resp, true));
+
+					$response['Success'] = $PaymentID . '(Payment) is created';
+				} else {
+					$response['error'] = $PaymentID . '(Payment) is failed To create';
+					$response['error_reason'] = $PaymentService->lastError($Context);
+					Log::info('-- Create Payment Error --' . print_r($PaymentService->lastError($Context), true));
+				}
+			}
+			else {
+				$response['error'] = $PaymentID . '(Payment) is failed To create';
+				$response['error_reason'] = 'Invoice Not Found in Quickbook';
+			}
+		}
+		Log::info('-- Create Payment Done --');
+		//Log::info(print_r($response,true));
+		return $response;
+	}
 
 	public function addInvoices($Options){
 		Log::info('-- QuickBook Add Inovice --');
@@ -579,7 +689,7 @@ class QuickBook {
 							return $response;
 						}
 					}
-					$invoicetaxid = $InvoiceDetail->TaxRateID;
+					//$invoicetaxid = $InvoiceDetail->TaxRateID;
 					$amount =  $InvoiceDetail->LineTotal;
 					$UnitePrise = $InvoiceDetail->Price;
 					$Qty = $InvoiceDetail->Qty;
@@ -595,84 +705,74 @@ class QuickBook {
 					$SalesItemLineDetail->setUnitPrice($UnitePrise);
 					$SalesItemLineDetail->setQty($Qty);
 
-					$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID,"TaxRateID" => $invoicetaxid])->get();
+					//$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID,"TaxRateID" => $invoicetaxid])->get();
+					$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID" => $InvoiceID])->get();
 
 					if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0) {
+						$Memo = 'Sales Tax Included ';
+						//if inline item contain tax
+						$SalesItemLineDetail->setTaxCodeRef('TAX');
+
 						foreach ($InvoiceTaxRates as $InvoiceTaxRate) {
 							$Title = $InvoiceTaxRate->Title;
-							$TaxId = $this->GetTaxDetail($Title);
-
+							//for multiple tax try
+							//$TaxId = $this->GetTaxDetail($Title);
+							//$TaxRateId = $this->GetTaxRateDetail($Title);
+/*
 							if (empty($TaxId)) {
 								$response['error'] = $InvoiceFullNumber . '(Invoice) is failed To create';
 								$response['error_reason'] = $Title . '(Tax Not created in quickbook)';
 								return $response;
 							}
+*/
+/*
+							$TaxLine = new \QuickBooks_IPP_Object_TaxLine();
+							$TaxLine->setDetailType('TaxLineDetail');
+							$TaxLine->setAmount($InvoiceTaxRate->TaxAmount);
 
-							$SalesItemLineDetail->setTaxCodeRef($TaxId);
+							$Memo .= ' '.$Title .'=>'.$InvoiceTaxRate->TaxAmount;
+							$TaxLineDetail = new \QuickBooks_IPP_Object_TaxLineDetail();
+							$TaxLineDetail->setTaxRateRef($TaxRateId);
+							$TaxLineDetail->setPerCentBased('false');
+							//$TaxLineDetail->setTaxPercent(8);
+							//$TaxLineDetail->setNetAmountTaxable($total);
+							$TaxLine->addTaxLineDetail($TaxLineDetail);
+							$TaxLineDetail->addLine($TaxLine);*/
+
+							//for multiple tax try
+							//$TaxAmount[] = $InvoiceTaxRate->TaxAmount;
+							$TaxAmount = $InvoiceTaxRate->TaxAmount;
 						}
 					}
 
-					$Line->addSalesItemLineDetail($SalesItemLineDetail);
+					$Invoice->setCustomerMemo($Memo);
+					$Invoice->setPrivateNote($Memo);
 
+					$Line->addSalesItemLineDetail($SalesItemLineDetail);
 					$Invoice->addLine($Line);
 
 				}
 			}
 
-			/*
-			$InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
-			if(!empty($InvoiceTaxRates) && count($InvoiceTaxRates)>0){
-				foreach($InvoiceTaxRates as $InvoiceTaxRate){
-					$Title = $InvoiceTaxRate->Title;
-					$TaxId = $this->GetTaxDetail($Title);
+			$TaxId = $this->GetTaxDetail($Title);
+			if (empty($TaxId)) {
+				$response['error'] = $InvoiceFullNumber . '(Invoice) is failed To create';
+				$response['error_reason'] = $Title . '(Tax Not created in quickbook)';
+				return $response;
+			}
+			//for multiple tax try
+			//$TotalSalesTax = array_sum($TaxAmount);
+			$TotalSalesTax = $TaxAmount;
+			//Log::info('-- $TotalSalesTax  --'.print_r($TotalSalesTax,true));
+			$TxnTaxDetail = new \QuickBooks_IPP_Object_TxnTaxDetail();
+			$TxnTaxDetail->setTxnTaxCodeRef($TaxId);
+			$TxnTaxDetail->setTotalTax($TotalSalesTax);
+			$Invoice->addTxnTaxDetail($TxnTaxDetail);
 
-					if(empty($TaxId)){
-						$response['error'] = $InvoiceFullNumber.'(Invoice) is failed To create';
-						$response['error_reason'] = $Title.'(Tax Not created in quickbook)';
-						return $response;
-					}
-
-
-					$ItemID = $this->getItemId($Title);
-					if(empty($ItemID)){
-						$response['error'] = $InvoiceFullNumber.'(Invoice) is failed To create';
-						$response['error_reason'] = $Title.'(Item Not created in quickbook)';
-						return $response;
-					}
-					$amount =$InvoiceTaxRate->TaxAmount;
-					$UnitePrise =$InvoiceTaxRate->TaxAmount;
-					$Qty = 1;
-
-					$Line = new \QuickBooks_IPP_Object_Line();
-					$Line->setDetailType('SalesItemLineDetail');
-					$Line->setAmount($amount);
-
-					$SalesItemLineDetail = new \QuickBooks_IPP_Object_SalesItemLineDetail();
-					$SalesItemLineDetail->setItemRef($ItemID);
-					$SalesItemLineDetail->setUnitPrice($UnitePrise);
-					$SalesItemLineDetail->setQty($Qty);
-
-					$Line->addSalesItemLineDetail($SalesItemLineDetail);
-
-					$Invoice->addLine($Line);
-				}
-			} */
-
-			/*
-			 example
-			$Line1 = new \QuickBooks_IPP_Object_Line();
-			$Line1->setDetailType('SalesItemLineDetail');
-			$Line1->setAmount(20.0000 * 1.0000 * 0.516129);
-			$Line1->setDescription('Test description goes here.');
-
-			$SalesItemLineDetail1 = new \QuickBooks_IPP_Object_SalesItemLineDetail();
-			$SalesItemLineDetail1->setItemRef('25');
-			$SalesItemLineDetail1->setUnitPrice(20 * 0.516129);
-			$SalesItemLineDetail1->setQty(1.00000);
-
-			$Line1->addSalesItemLineDetail($SalesItemLineDetail1);
-
-			$Invoice->addLine1($Line1); */
+			$SalesTax = new \QuickBooks_IPP_Object_SalesTax();
+			$SalesTax->setTaxable('true');
+			$SalesTax->setSalesTaxCodeId($TaxId);
+			$Invoice->addSalesTax($TotalSalesTax);
 
 			$Invoice->setCustomerRef($CustomerID);
 
@@ -752,12 +852,35 @@ class QuickBook {
 		if(!empty($taxcodes)){
 			$taxcodes = $taxcodes[0];
 			$TaxId = $taxcodes->getId();
-			$TaxId = str_replace('{-','',$TaxId);
-			$TaxId = str_replace('}','',$TaxId);
+			//$TaxId = str_replace('{-','',$TaxId);
+			//$TaxId = str_replace('}','',$TaxId);
 		}
 		Log::info('Tax Id : '.$TaxId);
 		//Log::info(print_r($taxcodes,true));
 		return $TaxId;
+	}
+
+	public function GetTaxRateDetail($TaxName){
+		Log::info('Check Tax Rate: '.$TaxName);
+
+		$TaxRateId = '';
+
+		$TaxCodeService = new \QuickBooks_IPP_Service_TaxCode();
+
+		$Context = $this->Context;
+		$realm = $this->realm;
+
+		$taxrates = $TaxCodeService->query($Context, $realm, "SELECT * FROM TaxRate WHERE Name = '".$TaxName."' ");
+
+		if(!empty($taxrates)){
+			$taxrates = $taxrates[0];
+			$TaxRateId = $taxrates->getId();
+			//$TaxId = str_replace('{-','',$TaxId);
+			//$TaxId = str_replace('}','',$TaxId);
+		}
+		Log::info('Tax Rate Id : '.$TaxRateId);
+		//Log::info(print_r($taxcodes,true));
+		return $TaxRateId;
 	}
 
 	public function addJournals($Options){

@@ -109,6 +109,7 @@ class Account extends \Eloquent {
     // ignore item invoice
     public static function getInvoiceCount($AccountID){
         return (int)Invoice::where(array('AccountID'=>$AccountID))
+            ->where('InvoiceStatus','!=',Invoice::CANCEL)
             ->Where(function($query)
             {
                 $query->whereNull('ItemInvoice')
@@ -191,6 +192,17 @@ class Account extends \Eloquent {
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
         if(!empty($LastRunTime)){
                 $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+        }
+        $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
+    }
+
+
+    public static function FirstBalanceWarning($AccountID,$LastRunTime){
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::BalanceWarning));
+        if(!empty($LastRunTime)){
+            $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);

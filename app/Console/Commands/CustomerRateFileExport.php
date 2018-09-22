@@ -9,10 +9,12 @@
 namespace App\Console\Commands;
 
 
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Customer;
+use App\Lib\Gateway;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -69,8 +71,17 @@ class CustomerRateFileExport  extends Command {
         CronJob::createLog($CronJobID);
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         Log::useFiles(storage_path() . '/logs/customerratefileexport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+
+        $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
+        $GatewayID = CompanyGateway::find($CompanyGatewayID)->GatewayID;
+        $Gateway = Gateway::getGatewayName($GatewayID);
+
         try {
-            $response = Customer::generateCustomerFile($CompanyID,$cronsetting);
+            if($Gateway == 'SippySFTP' || $Gateway == 'SippySQL') { //sippy
+                $response = Customer::generatePushSippyRateFile($CompanyID, $cronsetting);
+            } else {
+                $response = Customer::generateCustomerFile($CompanyID, $cronsetting);
+            }
             $final_array = array_merge($response['error'],$response['message']);
             if(count($response['error'])){
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;

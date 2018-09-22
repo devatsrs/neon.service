@@ -115,12 +115,34 @@ class DBCleanUp extends Command {
 			Log::info('All Old Rate Delete End');
 
 			Log::info('Customer CDR Delete Start.');
-			$error .= Retention::deleteCustomerCDR($CompanyID);
+			$error .= Retention::deleteCustomerCDR($CompanyID, "CDR");
 			Log::info('Customer CDR Delete End.');
 
+
+			Log::info('Customer Failed Call Start.');
+			$error .= Retention::deleteCustomerCDR($CompanyID, "CDRFailedCalls");
+			Log::info('Customer Failed Call Delete End.');
+
 			Log::info('Vendor CDR Delete Start.');
-			$error .= Retention::deleteVendorCDR($CompanyID);
+			$error .= Retention::deleteVendorCDR($CompanyID, "CDR");
 			Log::info('Vendor CDR Delete End.');
+
+			Log::info('Vendor CDR Delete Start.');
+			$error .= Retention::deleteVendorCDR($CompanyID, "CDRFailedCalls");
+			Log::info('Vendor CDR Delete End.');
+
+			Log::info('RateLog Delete Start.');
+			DB::table('tblTempRateLog')->where(["SentStatus"=>1,"CompanyID"=>$CompanyID])->delete();
+			Log::info('RateLog Delete End.');
+
+			Log::info('Archive Old Rate Delete Start.');
+			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate');
+			Log::info('Archive Old Rate Delete End.');
+
+			Log::info('Tickets Delete Start.');
+			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets');
+			Log::info('Tickets Delete End.');
+
 
 
 			Log::info('DBcleanup Done.');

@@ -506,7 +506,7 @@ class NeonExcelIO
             array_shift($excel_data_rr);
             array_shift($excel_data_rr);
 
-            $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+            $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
             $excel_data_sheet[] = $excel_data_rr;
 
@@ -562,7 +562,7 @@ class NeonExcelIO
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
 
             if(is_amazon($CompanyID) == true) {
-                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $upload_path = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
                 $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
                 file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
                 $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
@@ -712,7 +712,7 @@ class NeonExcelIO
             $RateSheetTemplateFile = AmazonS3::preSignedUrl($RateSheetTemplateFile,$CompanyID);
 
             if(is_amazon($CompanyID) == true) {
-                $upload_path = CompanyConfiguration::get('TEMP_PATH');
+                $upload_path = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
                 $temp_file = substr($temp_file, strrpos($temp_file, '/') + 1);
                 file_put_contents($upload_path.'/'.$temp_file, fopen($RateSheetTemplateFile, 'r'));
                 $RateSheetTemplateFile = $upload_path.'/'.$temp_file;
@@ -761,7 +761,7 @@ class NeonExcelIO
                         array_shift($excel_data_rr);
                         array_shift($excel_data_rr);
 
-                        $excel_data_rr['rate per minute (usd)'] = number_format($excel_data_rr['rate per minute (usd)'], 4);
+                        $excel_data_rr['rate per minute (usd)'] = number_format(str_replace(',','',$excel_data_rr['rate per minute (usd)']), 4);
 
                         $excel_data_sheet[] = $excel_data_rr;
 

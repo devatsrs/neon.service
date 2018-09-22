@@ -108,6 +108,7 @@ class FTPAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -153,8 +154,8 @@ class FTPAccountUsage extends Command
             if(isset($GatewaySetting->RateFormat) && $GatewaySetting->RateFormat){
                 $RateFormat = $GatewaySetting->RateFormat;
             }
-            if(isset($GatewaySetting->Authentication) && $GatewaySetting->Authentication){
-                $NameFormat = $GatewaySetting->Authentication;
+            if(isset($GatewaySetting->NameFormat) && $GatewaySetting->NameFormat){
+                $NameFormat = $GatewaySetting->NameFormat;
             }
 
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = $SpecifyRate = $RateMethod = '' ;
@@ -306,27 +307,16 @@ class FTPAccountUsage extends Command
 
                                 if (isset($attrselection->Account) && !empty($attrselection->Account)  && isset($temp_row[$attrselection->Account])) {
                                     $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
-                                    if ($NameFormat == 'NUB') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountCLI'] = '';
-                                    } else if ($NameFormat == 'IP') {
-                                        $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
-                                    }else if ($NameFormat == 'CLI') {
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = '';
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = $temp_row[$attrselection->Account];
-                                    }else{
-                                        $cdrdata['AccountIP'] = '';
-                                        $cdrdata['AccountName'] = $temp_row[$attrselection->Account];
-                                        $cdrdata['AccountNumber'] = '';
-                                        $cdrdata['AccountCLI'] = '';
+                                    $cdrdata['AccountIP'] = '';
+                                    $cdrdata['AccountName'] = '';
+                                    $cdrdata['AccountNumber'] = '';
+                                    $cdrdata['AccountCLI'] = '';
+
+                                    $AuthenticationValue = $temp_row[$attrselection->Account];
+                                    if($NameFormat == 'CLI'){
+                                        $AuthenticationValue =  $cdrdata['cli']; // for apply_translation_rule
                                     }
+                                    TempUsageDetail::ApplyGatewayAuthenticationRule($NameFormat,$cdrdata,$AuthenticationValue);
 
                                 }
 
@@ -514,9 +504,9 @@ class FTPAccountUsage extends Command
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        $dataactive['Active'] = 0;
-        $dataactive['PID'] = '';
-        $CronJob->update($dataactive);
+
+        CronJob::deactivateCronJob($CronJob);
+
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::error("**Email Sent Status ".$result['status']);

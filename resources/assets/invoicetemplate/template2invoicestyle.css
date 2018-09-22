@@ -1,0 +1,312 @@
+@font-face {
+  /*font-family: Source Sans Pro;
+  src: url(SourceSansPro-Regular.ttf);*/
+  font-family: DejaVu Sans;
+  src: url(DejaVuSans.ttf);
+}
+
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+a {
+  color: #000000;
+  text-decoration: none;
+}
+
+.inovicebody {
+  /*position: relative;
+  width: 21cm;  
+  height: 29.7cm;*/
+  margin: 0 auto; 
+  color: #000000 !important;
+  background: #FFFFFF;
+  font-size: 11px;
+  font-family: DejaVu Sans;
+}
+
+header {
+  padding: 10px 0;
+  margin-bottom: 15px;
+  /*border-bottom: 1px solid #AAAAAA;*/
+}
+
+#logo {
+  float: left;
+  margin-top: 8px;
+  width:48%;
+}
+
+#logo img {
+  /*height: 70px;*/
+}
+
+#company {
+  float: right;
+  text-align: right;
+  width:48%;
+}
+
+
+#details {
+  margin-bottom: 20px;
+}
+
+#client {
+  padding-left: 6px;
+  border-left: 3px solid #000000;
+  float: left;
+  width:48%;
+}
+
+#client .to {
+  color: #000000;
+  font-size:16px;
+}
+
+h2.name {
+  font-size:16px;
+  font-weight: normal;
+  margin: 0;
+}
+
+#invoice {
+  float: right;
+  text-align: right;
+  width:48%;
+}
+
+#invoice h1 {
+  color: #000000;
+  font-size: 1.5em;
+  line-height: 1em;
+  font-weight: normal;
+  margin: 0  0 10px 0;
+}
+
+#invoice .date {
+  font-size: 1.1em;
+  color: #000000;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-bottom: 20px;
+}
+
+#frontinvoice th,
+#frontinvoice td {
+  padding: 09px;
+  background: #EEEEEE;
+  /*text-align: center;*/
+  border-bottom: 1px solid #FFFFFF;
+}
+
+
+
+table th {
+  white-space: nowrap;        
+  font-weight: normal;
+}
+
+#frontinvoice td {
+  text-align: right;
+}
+
+#frontinvoice td h3{
+  color: #57B223;
+  font-size: 1.2em;
+  font-weight: normal;
+  margin: 0 0 0.2em 0;
+}
+
+#frontinvoice .no {
+  color: #FFFFFF;
+  font-size: 1.6em;
+  background: #57B223;
+}
+
+#frontinvoice .desc {
+  text-align: left;
+}
+
+#frontinvoice .unit {
+  background: #DDDDDD;
+}
+
+#frontinvoice .qty {
+}
+
+#frontinvoice .total {
+  background: #DDDDDD;
+  text-align: right;
+}
+
+#frontinvoice td.unit,
+#frontinvoice td.qty,
+#frontinvoice td.total {
+  font-size: 1.2em;
+  width:20%;
+}
+
+#frontinvoice tbody tr:last-child td {
+  border: none;
+}
+
+#frontinvoice tfoot td {
+  /*padding: 10px 20px;*/
+  background: #FFFFFF;
+  border-bottom: none;
+  font-size: 1.2em;
+  white-space: nowrap;
+  padding: 6px 09px;
+}
+
+#frontinvoice tfoot tr:first-child td {
+  border-top: none; 
+}
+
+#frontinvoice tfoot tr:last-child td.subtotal{
+  /*font-size: 1.4em;
+  border-top: 1px solid #AAAAAA; */
+
+}
+
+#frontinvoice tfoot tr td:first-child {
+  border: none;
+}
+
+.subtotal {
+	border-bottom: 1px solid #000000 !important; 
+	text-align: center;
+}
+
+#thanks{
+  font-size: 5px;
+  margin-bottom: 50px;
+}
+
+#notices{
+  padding-left: 6px;
+  border-left: 6px solid #0087C3;  
+}
+
+#notices .notice {
+  font-size: 1.2em;
+}
+
+/**
+footer {
+  color: #777777;
+  width: 100%;
+  height: 30px;  
+  
+  bottom: 0;
+  border-top: 1px solid #AAAAAA;
+  padding: 8px 0;
+  text-align: center;
+}*/
+
+#Service {
+  float: left;
+  text-align: left;
+}
+
+#Service h1 {
+  /*color: #0087C3;*/
+  font-size: 2.4em;
+  line-height: 1em;
+  font-weight: normal;
+  margin: 0  0 10px 0;
+}
+
+.ChargesTitle{	
+  font-size: 1.4em;
+  line-height: 1em;
+  font-weight: normal;
+  margin: 0  0 10px 0;
+  background:#DDDDDD;    
+  padding:10px;
+}
+.grey{
+	background:#DDDDDD;
+}
+
+#thanksadevertise{
+	margin: 15px 0 0 0;
+	font-size: 11px;;
+}
+
+.page_break{ padding: 10px 0; page-break-after: always;}
+
+#backinvoice th,#backinvoice td{
+	padding:2px 5px;;	
+	vertical-align:top;
+}
+
+#backinvoice th{
+	border-bottom:1px solid #DDDDDD;
+	font-weight: bold;
+}
+
+.leftalign{
+	text-align:left;
+}
+
+.rightalign{
+	text-align:right;
+}
+
+.centeralign{
+	text-align:center;
+}
+
+.page-body.gray .page-container .main-content,
+.page-body.gray .page-container {
+    background: #ffffff !important;
+}
+
+.invoice-footer{
+  /*border-top: 1px solid #aaaaaa;
+  text-align: center;
+  */
+  bottom: 0;
+  color: #000000;
+  font-size: 10px;
+}
+.left-col {
+  width: 50%;
+  float: left;
+  box-sizing: border-box;
+  padding-right: 5px;
+}
+.right-col {
+  width: 49%;
+  float: right;
+}
+.col-harf{
+  width: 50%;
+  float: left;
+}
+.text-right {
+  text-align: right;
+}
+
+#backinvoice .total{
+  border-top:1px solid #DDDDDD;
+  font-weight: bold;
+}
+
+#summarysection{
+  width: 49%;
+}
+.summaryright{
+  float: right;
+}
+.summaryleft{
+  float: left;
+}

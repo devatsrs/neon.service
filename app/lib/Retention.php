@@ -9,13 +9,13 @@ use \Exception;
 
 class Retention {
 
-    public static function deleteCustomerCDR($CompanyID){
+    public static function deleteCustomerCDR($CompanyID ,$key){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(isset($setting) && $setting!='Invalid Key'){
             $CustomerCDR = json_decode($setting,true);
-            if(!empty($CustomerCDR['CDR']) && (int)$CustomerCDR['CDR'] > 0){
-                $CDRDays = (int)$CustomerCDR['CDR'];
+            if(!empty($CustomerCDR[$key]) && (int)$CustomerCDR[$key] > 0){
+                $CDRDays = (int)$CustomerCDR[$key];
                 $CDRDays = '-'.$CDRDays.' Day';
                 $date = UsageHeader::getMinDateUsageHeader($CompanyID);
                 $startdate = date("Y-m-d", strtotime($date));
@@ -27,7 +27,7 @@ class Retention {
                         $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
                         try {
                             DB::connection('sqlsrvcdr')->beginTransaction();
-                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "')";
+                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "', $key)";
                             Log::info($query);
                             DB::connection('sqlsrvcdr')->statement($query);
                             DB::connection('sqlsrvcdr')->commit();
@@ -51,13 +51,13 @@ class Retention {
         return $error;
     }
 
-    public static function deleteVendorCDR($CompanyID){
+    public static function deleteVendorCDR($CompanyID, $key){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(isset($setting) && $setting!='Invalid Key'){
             $VendorCDR = json_decode($setting,true);
-            if(!empty($VendorCDR['CDR']) && (int)$VendorCDR['CDR'] > 0){
-                $CDRDays = (int)$VendorCDR['CDR'];
+            if(!empty($VendorCDR[$key]) && (int)$VendorCDR[$key] > 0){
+                $CDRDays = (int)$VendorCDR[$key];
                 $CDRDays = '-'.$CDRDays.' Day';
                 $date = UsageHeader::getMinDateVendorCDRHeader($CompanyID);
                 $startdate = date("Y-m-d", strtotime($date));
@@ -69,7 +69,7 @@ class Retention {
                         $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
                         try {
                             DB::connection('sqlsrvcdr')->beginTransaction();
-                            $query = "call prc_deleteVendorCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "')";
+                            $query = "call prc_deleteVendorCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "','" . $key . "')";
                             Log::info($query);
                             DB::connection('sqlsrvcdr')->statement($query);
                             DB::connection('sqlsrvcdr')->commit();
@@ -327,12 +327,16 @@ class Retention {
                     //$bucket = getenv('AWS_BUCKET')
                     $bucket = AmazonS3::getBucket($CompanyID);
                     $amazonpath = 's3://'.$bucket.'/Backup/CDR/';
+                    $AmazonData			=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$AmazoneSlug,$CompanyID);
+                    $AMAZONS3_KEY 		= 	isset($AmazonData->AmazonKey)?$AmazonData->AmazonKey:'';
+                    $AMAZONS3_SECRET 	= 	isset($AmazonData->AmazonSecret)?$AmazonData->AmazonSecret:'';
+                    $AWS_REGION 		= 	isset($AmazonData->AmazonAwsRegion)?$AmazonData->AmazonAwsRegion:'';
                     /**
                      * example
                      * /usr/bin/s3cmd put --recursive /home/autobackup/uk-others-backup s3://neon.backup/
                      */
                     //$UploadCommand = 'solo -port=6001 s3cmd sync '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
-                    $UploadCommand = '/usr/bin/s3cmd put '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
+                    $UploadCommand = '/usr/bin/s3cmd put --recursive --access_key='.$AMAZONS3_KEY.' --secret_key='.$AMAZONS3_SECRET.' --region='.$AWS_REGION.' '.$location.'/'.$BackupName.'.tar.gz '.$amazonpath;
                     $Upload_Output = RemoteSSH::run($CompanyID,[$UploadCommand]);
                     Log::info('Upload Files to amazon - '.$UploadCommand);
                     Log::info($Upload_Output);
@@ -441,4 +445,85 @@ class Retention {
 
 
     }
+
+    public static function deleteArchiveOldRate($CompanyID,$Name){
+        $error = '';
+        $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
+        if(!empty($Name) && isset($setting) && $setting!='Invalid Key'){
+            $Log = json_decode($setting,true);
+            if(!empty($Log[$Name]) && (int)$Log[$Name] > 0) {
+                $LogDays = (int)$Log[$Name];
+                $LogDays = '-' . $LogDays . ' Day';
+                $deletedate = date("Y-m-d", strtotime($LogDays));
+                Log::info("===deleteArchiveOldRate(),DeleteDate=".$deletedate);
+
+                try {
+                    DB::beginTransaction();
+                    $query = "call prc_deleteArchiveOldRate($CompanyID,'" . $deletedate . "')";
+                    Log::info($query);
+                    DB::statement($query);
+                    DB::commit();
+                } catch (\Exception $e) {
+                    try {
+                        DB::rollback();
+                    } catch (\Exception $err) {
+                        Log::error($err);
+                    }
+                    Log::error($e);
+                    Log::info($Name." Log - ".$deletedate);
+                    $error = "Delete '.$Name.' Fail \n\r";
+                }
+            }
+        }
+
+        return $error;
+    }
+
+    public static function deleteTickets($CompanyID,$Name){
+        $error = '';
+        $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
+        if(!empty($Name) && isset($setting) && $setting!='Invalid Key'){
+            $Log = json_decode($setting,true);
+            if(!empty($Log[$Name]) && (int)$Log[$Name] > 0) {
+                $LogDays = (int)$Log[$Name];
+                $LogDays = '-' . $LogDays . ' Day';
+                $deletedate = date("Y-m-d", strtotime($LogDays));
+                Log::info("===deleteTickets(),DeleteDate=".$deletedate);
+
+                try {
+                    DB::beginTransaction();
+                    $query = "call prc_deleteTickets($CompanyID,'" . $deletedate . "')";
+                    Log::info($query);
+                    //DB::statement($query);
+                    $attachments=DB::select($query);
+                    Log::info("==== Attachments ====");
+                    Log::info(print_r($attachments,true));
+                    $Deletecnt=0;
+                    foreach($attachments as $attachment){
+                        $Filesarr=unserialize($attachment->attachment);
+                        foreach($Filesarr as $result){
+                            if(!empty($result['filepath'])){
+                                $Deletecnt++;
+                                AmazonS3::delete($result['filepath'],$CompanyID);
+                            }
+                        }
+                    }
+                    Log::info("Total Files for delete = ".$Deletecnt);
+                    DB::commit();
+                } catch (\Exception $e) {
+                    try {
+                        DB::rollback();
+                    } catch (\Exception $err) {
+                        Log::error($err);
+                    }
+                    Log::error($e);
+                    Log::info($Name." Log - ".$deletedate);
+                    $error = "Delete '.$Name.' Fail \n\r";
+                }
+            }
+        }
+
+        return $error;
+    }
+
 }

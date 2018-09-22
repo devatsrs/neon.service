@@ -65,7 +65,7 @@ class CreateSummary extends Command{
         Log::useFiles(storage_path() . '/logs/createsummary-' . $CompanyID . '-' . date('Y-m-d') . '.log');
         try {
 
-            $error = Summary::generateSummary($CompanyID,0,$cronsetting);
+            $error = Summary::generateSummary($CompanyID,0,$cronsetting,$CronJob);
             if(!empty($error['error'])) {
                 $joblogdata['Message'] = implode('<br>',$error['error']);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;

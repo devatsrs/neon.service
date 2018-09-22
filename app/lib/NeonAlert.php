@@ -7,6 +7,7 @@ class NeonAlert extends \Eloquent {
 
     public static function neon_alerts($CompanyID,$ProcessID){
         $cronjobdata = array();
+
         Log::info('============== LowBalanceReminder START===========');
         try {
             AccountBalance::LowBalanceReminder($CompanyID,$ProcessID);
@@ -15,6 +16,14 @@ class NeonAlert extends \Eloquent {
             $cronjobdata[] = 'Low Balance Reminder Failed';
         }
         Log::info('============== LowBalanceReminder END ===========');
+        Log::info('============== Balance Warning START===========');
+        try {
+            AccountBalance::SendBalanceWarning($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Balance Warning Failed';
+        }
+        Log::info('============== Balance Warning END===========');
         Log::info('============== InvoicePaymentReminder START===========');
         try {
             Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
@@ -67,6 +76,23 @@ class NeonAlert extends \Eloquent {
             $cronjobdata[] = 'Report Schedule Failed';
         }
         Log::info('============== Report Schedule END===========');
+
+        Log::info('============== Account Balance Email Reminder START===========');
+        try {
+            Alert::sendAccountBalanceEmailReminder($CompanyID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Account Balance Email Reminder  Failed';
+        }
+        Log::info('============== Account Balance Email Reminder  END===========');
+        Log::info('============== LowStockReminder alert START===========');
+        try {
+            Product::LowStockReminder($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'LowStockReminder alert failed';
+        }
+        Log::info('============== LowStockReminder alert END===========');
 
         return $cronjobdata;
     }

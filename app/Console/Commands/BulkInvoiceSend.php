@@ -1,5 +1,5 @@
 <?php namespace App\Console\Commands;
-
+use App\Lib\AmazonS3;
 use App\Lib\Account;
 use App\Lib\AccountBilling;
 use App\Lib\BillingClass;
@@ -142,6 +142,14 @@ class BulkInvoiceSend extends Command {
 								if(!isset($emaildata['EmailFrom'])){
 										$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 								}
+                                $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                                $emaildata['attach']="";
+                                if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
+									$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
+									$TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
+									$attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
+									$emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+                                }
                         	    $status = Helper::sendMail($body, $emaildata,0);
 								}else{$status  = array();}
 								
@@ -164,7 +172,16 @@ class BulkInvoiceSend extends Command {
 								if(!isset($emaildata['EmailFrom'])){
 								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 								}
-                          	  $customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
+
+                                $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                                $emaildata['attach']="";
+                                if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
+                                    $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
+									$TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
+									$attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
+									$emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+                                }                                
+                          	  	$customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
                             }
                        }
                     Log::info($customeremail_status);

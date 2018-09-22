@@ -56,9 +56,11 @@ class ReportSchedule extends \Eloquent{
                     $Format = $settings['Format'];
                 }
                 $Reports = explode(',',$ReportSchedule->ReportID);
-                Log::info("Report IDs : ".print_r($Reports,true));
-                foreach($Reports as $ReportID) {
+                //Log::info("Report IDs : ".print_r($Reports,true));
+                $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH');
+                $FilesToDelete = array();
 
+                foreach($Reports as $ReportID) {
                     $web_url = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL') . '/report/export/' . $ReportID . '?StartDate=' . urlencode($StartDate) . '&EndDate=' . urlencode($EndDate) . '&Type=' . $Format . '&Time=' . $settings['Time'];
                     Log::info("Report URL : ".$web_url);
                     $cli = new Curl();
@@ -71,7 +73,12 @@ class ReportSchedule extends \Eloquent{
                     if(!AmazonS3::upload($file_path,$amazonDir,$CompanyID)){
                         throw new \Exception('Error in Amazon upload');
                     }
-                    $settings['attach'][] = $file_path;
+                    // If amazon is on then we need to download file from amazon to local
+                    // because when we upload to amazon it delete from local
+                    $attachTempPath = $FilesToDelete[] = $TEMP_PATH.'/'.$file_name;
+                    $attach = AmazonS3::download($CompanyID,$amazonPath,$attachTempPath);
+                    // if amazon is on then downloaded file path otherwise local filepath
+                    $settings['attach'][] = (strpos($attach, "https://") !== false) ? $attachTempPath : $file_path;
                     $settings['AttachmentPaths'][] = $amazonPath;
                 }
                 $settings['EmailMessage'] = 'Please check attached reports. Start Date: '.$StartDate.' to End Date: '.$EndDate;
@@ -80,6 +87,11 @@ class ReportSchedule extends \Eloquent{
                 $settings['EmailType'] = AccountEmailLog::ReportEmail;
                 ReportSchedule::SendReportEmail($CompanyID, $ReportSchedule->ReportScheduleID, $settings);
                 NeonAlert::UpdateNextRunTime($ReportSchedule->ReportScheduleID, 'Settings', 'ReportSchedule', $settings['NextRunTime']);
+
+                // If amazon is on then we need to delete temp files from local which we have downloaded from amazon above in the loop
+                foreach ($FilesToDelete as $key => $value) {
+                    @unlink($value);
+                }
             }
         }
     }

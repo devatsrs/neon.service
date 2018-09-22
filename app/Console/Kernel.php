@@ -75,6 +75,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\GenerateCustomerRateUpdateFile',
 		'App\Console\Commands\GenerateVendorRateUpdateFile',
 		'App\Console\Commands\QuickBookInvoicePost',		
+		'App\Console\Commands\QuickBookPaymentsPost',		
 		'App\Console\Commands\PBXAccountBlock',
 		'App\Console\Commands\ReadEmailsTickets',
 		'App\Console\Commands\MORAccountUsage',
@@ -108,7 +109,16 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ResellerPBXAccountUsage',
 		'App\Console\Commands\FTPDownloadCDR',
 		'App\Console\Commands\FTPAccountUsage',
-
+		'App\Console\Commands\ProcessCallCharges',
+		'App\Console\Commands\SippySQLAccountUsage',
+		'App\Console\Commands\VoipMSAccountUsage',
+		'App\Console\Commands\VendorCDRRecalculate',
+		'App\Console\Commands\SippyRateFileStatus',
+		'App\Console\Commands\SingleInvoiceGeneration',
+		'App\Console\Commands\importPBXPayments',
+		'App\Console\Commands\exportPbxPayments',
+		'App\Console\Commands\BulkDisputeSend',
+		'App\Console\Commands\DisputeBulkmail',
 
 	];
 
