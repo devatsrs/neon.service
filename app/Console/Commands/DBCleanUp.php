@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
+use App\Lib\CompanyGateway;
 
 class DBCleanUp extends Command {
 
@@ -63,10 +64,13 @@ class DBCleanUp extends Command {
 		$CronJobID = $arguments["CronJobID"];
 
 		$CronJob =  CronJob::find($CronJobID);
-		$dataactive['Active'] = 1;
+		/*$dataactive['Active'] = 1;
 		$dataactive['PID'] = $getmypid;
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::activateCronJob($CronJob);
+		$processID = CompanyGateway::getProcessID();
+		CompanyGateway::updateProcessID($CronJob,$processID);
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error = '';
 
@@ -132,8 +136,18 @@ class DBCleanUp extends Command {
 			Log::info('Vendor CDR Delete End.');
 
 			Log::info('RateLog Delete Start.');
-			DB::table('tblTempRateLog')->where(["SentStatus"=>1])->delete();
+			DB::table('tblTempRateLog')->where(["SentStatus"=>1,"CompanyID"=>$CompanyID])->delete();
 			Log::info('RateLog Delete End.');
+
+			Log::info('Archive Old Rate Delete Start.');
+			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate',$processID);
+			Log::info('Archive Old Rate Delete End.');
+
+			Log::info('Tickets Delete Start.');
+			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets',$processID);
+			Log::info('Tickets Delete End.');
+
+
 
 			Log::info('DBcleanup Done.');
 
@@ -174,9 +188,10 @@ class DBCleanUp extends Command {
 
 		}
 
-		$dataactive['Active'] = 0;
+		/*$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::deactivateCronJob($CronJob);
 		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);

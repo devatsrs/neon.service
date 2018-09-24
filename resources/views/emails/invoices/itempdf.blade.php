@@ -106,6 +106,11 @@
                     <h1 class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate))}}</div>
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($InvoiceTemplate->DateFormat,strtotime($Invoice->IssueDate.' +'.$PaymentDueInDays.' days'))}}</div>
+                    @if(!empty($MultiCurrencies))
+                        @foreach($MultiCurrencies as $multiCurrency)
+                            <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 

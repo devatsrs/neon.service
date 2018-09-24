@@ -459,7 +459,8 @@ protected $server;
 						$Subject = $email->getSubject();
 						$header = $email->getHeader();
 						$message = 	$email->getHTMLBody(true);
-						if(!$email->hasHTMLBody() || empty(trim($message))){
+						$message = trim($message);
+						if(!$email->hasHTMLBody() || empty($message)){
 							$message = 	"<pre>".$email->getTextBody()."</pre>";
 						}
 						$Extra = $message;
@@ -497,6 +498,9 @@ protected $server;
 						// if exists then don't check for auto reply
 						if(!empty($in_reply_to)){
 							$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
+							if(empty($msg_parent)){								
+								$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$in_reply_to."', CcMessageID)")->first();
+							}
 							if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 								$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 								if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
@@ -511,6 +515,9 @@ protected $server;
 							foreach($references as $references_id){
 								if(!empty($references_id)){
 									$msg_parent   	=		AccountEmailLog::where("MessageID",$references_id)->first();
+									if(empty($msg_parent)){
+										$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$references_id."', CcMessageID)")->first();
+									}
 									if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 										$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 										if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
@@ -991,7 +998,8 @@ protected $server;
 						}
 						else //reopen ticket if ticket status closed
 						{
-							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()
+								||	$ticketData->Status == TicketsTable::getWaitingOnCustomerTicketStatus() ||	$ticketData->Status == TicketsTable::getWaitingOnThirdPartyTicketStatus()) {
 								TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
 								if(!$skip_email_notification) {
 									new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));
