@@ -61,9 +61,9 @@ class exportPbxPayments extends Command {
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
 		$CronJob->update($dataactive);
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-		$exportdayslimit = $cronsetting['exportdayslimit'];
+		$exportdayslimit = trim($cronsetting['exportdayslimit']);
 
-		if(empty(trim($exportdayslimit))){
+		if(empty($exportdayslimit)){
 			$exportdayslimit=2;
 		}
 		Log::useFiles(storage_path() . '/logs/exportPbxPayments-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
