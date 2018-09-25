@@ -296,7 +296,7 @@ class Customer extends \Eloquent {
         if (!file_exists($destination)) {
             mkdir($destination, 0777, true);
         }
-        $accounts = $account->distinct()->select('tblAccount.*')->get();
+        $accounts = $account->distinct()->select('tblAccount.CompanyId','tblAccount.AccountID','tblAccount.AccountName','tblAccount.Number','tblTrunk.TrunkID','tblTrunk.Trunk')->get();
         $Timezones = Timezones::getTimezonesIDList();
 
         $SippySFTP = new Sippy($CompanyGatewayID);
@@ -353,6 +353,7 @@ class Customer extends \Eloquent {
                                         $fileparam['token'] = $result['token'];
                                         $fileparam['url'] = $result['url'];
                                         $fileparam['file'] = $local_file;
+                                        $fileparam['CompanyID'] = $CompanyID;
                                         $SippySFTP->uploadFile($fileparam);
 
                                         $options['token'] = $result['token'];

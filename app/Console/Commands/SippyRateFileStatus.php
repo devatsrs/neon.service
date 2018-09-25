@@ -99,11 +99,11 @@ class SippyRateFileStatus  extends Command {
                         if ($result['status'] == 'DONE') {//will change this
                             $newJobStatus = JobStatus::where(["Code" => "S"])->get(["JobStatusID"]);
                             $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
-                            $response['message'][] = 'File Upload Success for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                            $response['message'][] = 'File Upload Success for Job : '. $PendingFile->Title.', JobID : '.$PendingFile->JobID;
                         } else if ($result['status'] == 'FAIL') {//will change this
                             $newJobStatus = JobStatus::where(["Code" => "F"])->get(["JobStatusID"]);
                             $NewJobStatusID = isset($newJobStatus[0]->JobStatusID) ? $newJobStatus[0]->JobStatusID : '';
-                            $response['message'][] = 'File Upload failed for Job : '. $PendingFile->Title.' JobID'.$PendingFile->JobID;
+                            $response['message'][] = 'File Upload failed for Job : '. $PendingFile->Title.', JobID : '.$PendingFile->JobID;
                         } else {
                             $NewJobStatusID = $Job->JobStatusID;
                         }
