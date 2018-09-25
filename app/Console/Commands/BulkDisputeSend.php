@@ -98,9 +98,10 @@ class BulkDisputeSend extends Command {
             $JobLoggedUser = User::find($job->JobLoggedUserID);
             $joboptions = json_decode($job->Options);
             $email_sending_failed = [];
-            $DisputeIDs = array_filter(explode(',', $joboptions->SelectedIDs), 'intval');
+            $DisputeIDs = array_filter(explode(',', $joboptions->DisputeIDs), 'intval');
             if(count($DisputeIDs)>0) {
                 foreach ($DisputeIDs as $DisputeID) {
+                    $attachment="";
                     $Dispute = Dispute::find($DisputeID);
                     $Account = Account::find($Dispute->AccountID);
                     $Currency = Currency::find($Account->CurrencyId);
@@ -138,7 +139,7 @@ class BulkDisputeSend extends Command {
 
                                 if(!isset($emaildata['EmailFrom'])){
 								$emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Dispute::EMAILTEMPLATE,$CompanyID);
-                                    Log::info($emaildata['EmailFrom']);exit();
+
 								}
                                 $attachment=$Dispute->Attachment;
                                 if($attachment && $attachment!=''){
