@@ -310,7 +310,7 @@ class CronJob extends \Eloquent {
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
-        $joblogdata['Message'] ='Error: CronJob is terminated, It Was running since ' . $minute . ' minutes.';
+        $joblogdata['Message'] ='Error: CronJob is terminated by System, It Was running since ' . $minute . ' minutes.';
         $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
         CronJobLog::insert($joblogdata);
 
