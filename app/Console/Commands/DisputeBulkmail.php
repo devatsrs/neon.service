@@ -114,6 +114,7 @@ class DisputeBulkmail extends Command
                         $DisputeEndDate = $criteria->DisputeDate_EndDate!=''?$criteria->DisputeDate_EndDate:'NULL';
                         $InvoiceType = $criteria->InvoiceType == 'All'?'':$criteria->InvoiceType;
                         $Status = isset($criteria->Status) && $criteria->Status != ''?$criteria->Status:'NULL';
+                        $tag =isset($criteria->tag) && $criteria->tag!='' ?$criteria->tag:'';
 
                         $p_disputestart			 =		'NULL';
                         $p_disputeend			 =		'NULL';
@@ -132,7 +133,7 @@ class DisputeBulkmail extends Command
                             $p_disputeend			= 	"'".date("Y-m-d H:i:s")."'";
                         }
 
-                        $query = "call prc_getDisputes (".$CompanyID.",".intval($InvoiceType).",".$AccountID.",".$InvoiceNumber.",".$Status.",".$p_disputestart.",".$p_disputeend.",'','','','',2)";
+                        $query = "call prc_getDisputes (".$CompanyID.",".intval($InvoiceType).",".$AccountID.",".$InvoiceNumber.",".$Status.",".$p_disputestart.",".$p_disputeend.",'','','','',2,'".$tag."')";
                         Log::info($query);
                         $result = DB::connection('sqlsrv2')->select($query);
                         Log::info("-------Results----");
