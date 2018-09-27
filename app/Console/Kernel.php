@@ -116,6 +116,10 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\SippyRateFileStatus',
 		'App\Console\Commands\SingleInvoiceGeneration',
 		'App\Console\Commands\importPBXPayments',
+		'App\Console\Commands\exportPbxPayments',
+		'App\Console\Commands\BulkDisputeSend',
+		'App\Console\Commands\DisputeBulkmail',
+
 	];
 
 	/**

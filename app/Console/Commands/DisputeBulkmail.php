@@ -5,6 +5,7 @@ use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
+use App\Lib\Dispute;
 use App\Lib\Helper;
 use App\Lib\Invoice;
 use App\Lib\InvoiceLog;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Config;
 use App\Lib\Job;
 use Webpatser\Uuid\Uuid;
 
-class InvoiceReminder extends Command
+class DisputeBulkmail extends Command
 {
 
     /**
@@ -26,7 +27,7 @@ class InvoiceReminder extends Command
      *
      * @var string
      */
-    protected $name = 'invoicereminder';
+    protected $name = 'disputebulkemail';
 
     /**
      * The console command description.
@@ -80,6 +81,7 @@ class InvoiceReminder extends Command
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $errors = array();
         $errorslog = array();
+        Log::useFiles(storage_path().'/logs/disputebulkmail-'.$JobID.'-'.date('Y-m-d').'.log');
         try {
             if (!empty($job)) {
                 $JobLoggedUser = User::find($job->JobLoggedUserID);
@@ -103,48 +105,43 @@ class InvoiceReminder extends Command
                     $count = 0;
                     if (!empty($ids)) {
                         $ids = explode(',', $ids);
-                        $invoicequery = Invoice::select('tblInvoice.*');
-                        $invoicequery->where(["tblInvoice.CompanyID" => $CompanyID]);
-                        $invoicequery->whereIn('InvoiceID',$ids);
-                        $result = $invoicequery->get();
+                        $disputequery=Dispute::where('CompanyID',$CompanyID)->whereIn('DisputeID',$ids);
+                        $result = $disputequery->get();
                     } else if (!empty($criteria)) {
-                        $AccountID = $InvoiceNumber = $IssueDateStart = $IssueDateEnd = $InvoiceType = $InvoiceStatus = '';
-                        $Overdue =0;
-                        if(isset($criteria->AccountID) && !empty($criteria->AccountID)) {
-                            $AccountID = $criteria->AccountID;
-                        }
-                        if(isset($criteria->InvoiceNumber) && !empty($criteria->InvoiceNumber)) {
-                            $InvoiceNumber = $criteria->InvoiceNumber;
-                        }
-                        if(isset($criteria->IssueDate) && !empty($criteria->IssueDate)) {
-                            $arr = explode(' - ',$criteria->IssueDate);
-                            $IssueDateStart = $arr[0];
-                            $IssueDateEnd = $arr[1];
-                        }
-                        if(isset($criteria->InvoiceType) && !empty($criteria->InvoiceType)) {
-                            $InvoiceType = $criteria->InvoiceType;
-                        }
-                        if(isset($criteria->InvoiceStatus) && !empty($criteria->InvoiceStatus)) {
-                            $InvoiceStatus = $criteria->InvoiceStatus;
-                        }
-                        if(isset($criteria->Overdue) && !empty($criteria->Overdue)) {
-                            $Overdue = $criteria['Overdue']== 'true'?1:0;
-                        }
-                        $query = $CompanyID.",'".$AccountID."','".$InvoiceNumber."','".$IssueDateStart."','".$IssueDateEnd."','".$InvoiceType."','".$InvoiceStatus."',".$Overdue.",' ',' ',' ',' ',2";
-                        if(isset($criteria->zerovalueinvoice) && !empty($criteria->zerovalueinvoice) && $criteria->zerovalueinvoice=='true'){
-                            $query = $query.',0,1';
-                        }
-                        $query.=",''";//Tag
-                        $query =  "CALL prc_getInvoice(".$query.")";
+                        $AccountID = empty($criteria->AccountID)?'NULL':$criteria->AccountID;
+                        $InvoiceNumber =empty($criteria->InvoiceNo)?'NULL':$criteria->InvoiceNo;
+                        $DisputeStartDate = $criteria->DisputeDate_StartDate!=''?$criteria->DisputeDate_StartDate:'NULL';
+                        $DisputeEndDate = $criteria->DisputeDate_EndDate!=''?$criteria->DisputeDate_EndDate:'NULL';
+                        $InvoiceType = $criteria->InvoiceType == 'All'?'':$criteria->InvoiceType;
+                        $Status = isset($criteria->Status) && $criteria->Status != ''?$criteria->Status:'NULL';
 
+                        $p_disputestart			 =		'NULL';
+                        $p_disputeend			 =		'NULL';
+
+                        if($DisputeStartDate!='' && $DisputeStartDate!='NULL')
+                        {
+                            $p_disputestart		=	"'".$DisputeStartDate."'"; //.' '.$data['p_disputestartTime']."'";
+                        }
+                        if($DisputeEndDate!='' && $DisputeEndDate!='NULL')
+                        {
+                            $p_disputeend			=	"'".$DisputeEndDate."'"; //.' '.$data['p_disputeendtime']."'";
+                        }
+
+                        if($p_disputestart!='NULL' && $p_disputeend=='')
+                        {
+                            $p_disputeend			= 	"'".date("Y-m-d H:i:s")."'";
+                        }
+
+                        $query = "call prc_getDisputes (".$CompanyID.",".intval($InvoiceType).",".$AccountID.",".$InvoiceNumber.",".$Status.",".$p_disputestart.",".$p_disputeend.",'','','','',2)";
+                        Log::info($query);
                         $result = DB::connection('sqlsrv2')->select($query);
-
+                        Log::info("-------Results----");
+                        Log::info(print_r($result,true));
                     }
                     if (!empty($result)) {
-                        foreach ($result as $invoice) {
-                            $Account = Account::find($invoice->AccountID);
-                            //print_r($invoice);
-                            //print_r($Account);exit;
+                        foreach ($result as $dispute) {
+                            $Account = Account::find($dispute->AccountID);
+
                             if (!empty($Account->Email)) {
                                 if($joboptions->test==1){
                                     $emaildata['EmailTo'] = $joboptions->testEmail;
@@ -159,11 +156,7 @@ class InvoiceReminder extends Command
 
                                 $emaildata['EmailToName'] = $Account->AccountName;
 
-                                $InvoiceOutStanding =Account::getInvoiceOutstanding($CompanyID,$Account->AccountID,$invoice->InvoiceID,Helper::get_round_decimal_places($CompanyID,$Account->AccountID));
-
-                                $replace_array['InvoiceNumber'] = $invoice->InvoiceNumber;
-                                $replace_array['InvoiceGrandTotal'] = $invoice->GrandTotal;
-                                $replace_array['InvoiceOutstanding'] = $InvoiceOutStanding;
+                                $replace_array['InvoiceNumber'] = $dispute->InvoiceNo;
                                 $replace_array = Helper::create_replace_array($Account,$replace_array,$JobLoggedUser);
                                 //$joboptions->message = template_var_replace($joboptions->message,$replace_array);
 								$message =  template_var_replace($joboptions->message,$replace_array);

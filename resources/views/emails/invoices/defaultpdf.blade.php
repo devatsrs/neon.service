@@ -155,6 +155,11 @@
                 @if($InvoiceTemplate->ShowBillingPeriod == 1)
                     <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}} {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceFrom))}} - {{ date($InvoiceTemplate->DateFormat,strtotime($InvoiceTo))}}</div>
                 @endif
+                @if(!empty($MultiCurrencies))
+                    @foreach($MultiCurrencies as $multiCurrency)
+                        <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                    @endforeach
+                @endif
             </div>
         </div>
 
@@ -248,18 +253,33 @@
                     $AllTaxSummary[]=$tempsummary;
                     $AllTaxCount+= str_replace(',','',$InvoiceTaxRate->TaxAmount);
                     ?>
-                @endforeach
-                <tr>
-                    @if(!empty($VisibleColumns))
-                        @if($colspan > 0)
-                            <td colspan="{{$colspan}}"></td>
-                        @endif
-                    @else
-                        <td colspan="2"></td>
+                    @if($InvoiceTemplate->ShowTaxesOnSeparatePage==0)
+                        <tr>
+                            @if(!empty($VisibleColumns))
+                                @if($colspan > 0)
+                                    <td colspan="{{$colspan}}"></td>
+                                @endif
+                            @else
+                                <td colspan="2"></td>
+                            @endif
+                            <td>{{$InvoiceTaxRate->Title}}</td>
+                            <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
+                        </tr>
                     @endif
-                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
-                    <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
-                </tr>
+                @endforeach
+                @if($InvoiceTemplate->ShowTaxesOnSeparatePage==1)
+                    <tr>
+                        @if(!empty($VisibleColumns))
+                            @if($colspan > 0)
+                                <td colspan="{{$colspan}}"></td>
+                            @endif
+                        @else
+                            <td colspan="2"></td>
+                        @endif
+                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXES_TOTAL")}}</td>
+                        <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($AllTaxCount,$RoundChargesAmount)}}</td>
+                    </tr>
+                @endif
             @endif
             @if($Invoice->TotalDiscount > 0)
                 <tr>
@@ -626,9 +646,9 @@
 
         @endif
 		@endif
-    @if(!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) || count($AllTaxSummary)>0 )
+    @if((!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0) || (count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1))
         <div class="page_break"></div>
-        @if(count($AllTaxSummary)>0)
+        @if(count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1)
         <div class="ChargesTitle clearfix">
             <div class="pull-left flip col-harf">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TAXE_SUMMARY")}}</div>
         </div>

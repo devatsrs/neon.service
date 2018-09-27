@@ -440,15 +440,21 @@ protected $server;
 						$sender = Imap::dataDecode($email->getSender());
 						$senderName = $sender[0]->personal;
 						$to = $email->getTo();
-						$toMail=$to[0]->mail;
+						if(!empty($to) && isset($to[0]))
+							$toMail=$to[0]->mail;
+						else
+							$toMail=$email;
+
 						$MessageId = '<'.$email->getMessageId().'>';
 						$aAttachmentCount = $email->getAttachments()->count();
 						$cc = $email->getCc();
 						$cc = EmailServiceProvider::getCC($cc);
-						$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(",",$cc));
+						$cc_ = TicketEmails::remove_group_emails_from_array($CompanyID,explode(", ",$cc));
 						$cc  = implode(",",$cc_);
 						$bcc = $email->getBcc();
 						$bcc = EmailServiceProvider::getCC($bcc);
+						$bcc = TicketEmails::remove_group_emails_from_array($CompanyID,explode(", ",$bcc));
+						$bcc = implode(",",$bcc);
 						$in_reply_to = $email->getInReplyTo();
 						if(!empty($in_reply_to)){
 							$in_reply_to = '<'.$in_reply_to.'>';
@@ -457,7 +463,8 @@ protected $server;
 						$Subject = $email->getSubject();
 						$header = $email->getHeader();
 						$message = 	$email->getHTMLBody(true);
-						if(!$email->hasHTMLBody() || empty(trim($message))){
+						$message = trim($message);
+						if(!$email->hasHTMLBody() || empty($message)){
 							$message = 	"<pre>".$email->getTextBody()."</pre>";
 						}
 						$Extra = $message;
@@ -495,6 +502,9 @@ protected $server;
 						// if exists then don't check for auto reply
 						if(!empty($in_reply_to)){
 							$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
+							if(empty($msg_parent)){								
+								$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$in_reply_to."', CcMessageID)")->first();
+							}
 							if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 								$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 								if($msg_parent->TicketID > 0 && $tblTicketCount == 0 ) {
@@ -509,6 +519,9 @@ protected $server;
 							foreach($references as $references_id){
 								if(!empty($references_id)){
 									$msg_parent   	=		AccountEmailLog::where("MessageID",$references_id)->first();
+									if(empty($msg_parent)){
+										$msg_parent   	=		AccountEmailLog::whereRaw("FIND_IN_SET('".$references_id."', CcMessageID)")->first();
+									}
 									if(!empty($msg_parent) && isset($msg_parent->AccountEmailLogID)){
 										$tblTicketCount = TicketsTable::where(["TicketID"=>$msg_parent->TicketID])->count();
 										if($msg_parent->TicketID > 0 && $tblTicketCount > 0 ) {
@@ -613,11 +626,11 @@ protected $server;
 						if($aAttachmentCount>0) {
 							$aAttachment = $email->getAttachments();							
 							foreach ($aAttachment as $oAttachment) {
-								$path_parts = pathinfo($oAttachment->getName());
+								$path_parts = pathinfo(Imap::dataDecode($oAttachment->getName()));
 								if(!array_key_exists("extension", $path_parts)){
 									$path_parts["extension"]="";
 								}
-								$file_name = Imap::dataDecode($path_parts["filename"]) . '-'. date("YmdHis") . '.' . $path_parts["extension"];
+								$file_name = $path_parts["filename"] . '-'. date("YmdHis") . '.' . $path_parts["extension"];
 								$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'],'',$CompanyID);
 
 								$fullPath = $upload_path . "/". $amazonPath;
@@ -724,7 +737,7 @@ protected $server;
 
 								Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
 								Log::error("TicketRuleData");
-								Log::error($ticketRuleData);
+								Log::error(print_r($ticketRuleData,true));
 								Log::error(print_r($ex,true));
 							}
 
@@ -769,7 +782,7 @@ protected $server;
 
 							$ticketData  = TicketsTable::find($parentTicket);
 
-
+							$ticketID = $ticketData->TicketID;
 							// --------------- check for TicketImportRule ----------------
 							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
@@ -778,7 +791,7 @@ protected $server;
 
 								Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
 								Log::error("TicketRuleData");
-								Log::error($ticketRuleData);
+								Log::error(print_r($ticketRuleData,true));
 								Log::error(print_r($ex,true));
 							}
 
@@ -989,7 +1002,8 @@ protected $server;
 						}
 						else //reopen ticket if ticket status closed
 						{
-							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()) {
+							if ($ticketData->Status == TicketsTable::getClosedTicketStatus() || $ticketData->Status == TicketsTable::getResolvedTicketStatus()
+								||	$ticketData->Status == TicketsTable::getWaitingOnCustomerTicketStatus() ||	$ticketData->Status == TicketsTable::getWaitingOnThirdPartyTicketStatus()) {
 								TicketsTable::find($ticketData->TicketID)->update(["Status" => TicketsTable::getOpenTicketStatus()]);
 								if(!$skip_email_notification) {
 									new TicketEmails(array("TicketID" => $ticketData->TicketID, "CompanyID" => $CompanyID, "TriggerType" => array("AgentTicketReopened")));

@@ -17,6 +17,8 @@ class TicketfieldsValues extends \Eloquent {
 	static $Status_Open = 'Open';
 	static $Status_Resolved = 'Resolved';
 	static $Status_UnResolved = 'All UnResolved';
+	static $Status_waiting_on_customer = 'Waiting on Customer';
+	static $Status_Waiting_on_Third_Party = 'Waiting on Third Party';
 
 
 	/*public function getUnResolvedTicketStatus(){

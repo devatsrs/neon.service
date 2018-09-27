@@ -2,6 +2,7 @@
 
 namespace App;
 use App\Lib\GatewayAPI;
+use App\Lib\RemoteSSH;
 use App\Lib\xmlrpc_client;
 use App\Lib\xmlrpcmsg;
 use App\Lib\xmlrpcval;
@@ -448,7 +449,10 @@ class Sippy{
         $result = curl_exec ($curl);
         curl_close ($curl);
         return $result;*/
-        exec('cat '.$addparams['file'].' | curl -v -o - --no-buffer -H "Content-Type: application/octet-stream" -k -H "Transfer-Encoding: chunked" "'.$addparams['url'].'" --data-binary @-');
+        $CompanyID = $addparams['CompanyID'];
+        $command = 'cat '.$addparams['file'].' | curl -v -o - --no-buffer -H "Content-Type: application/octet-stream" -k -H "Transfer-Encoding: chunked" "'.$addparams['url'].'" --data-binary @-';
+        //exec('cat '.$addparams['file'].' | curl -v -o - --no-buffer -H "Content-Type: application/octet-stream" -k -H "Transfer-Encoding: chunked" "'.$addparams['url'].'" --data-binary @-');
+        RemoteSSH::run($CompanyID, $command);
     }
     public static function getUploadStatus($addparams=array()){
         //possible values for status return by api is
