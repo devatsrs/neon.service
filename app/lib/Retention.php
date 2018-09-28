@@ -446,7 +446,7 @@ class Retention {
 
     }
 
-    public static function deleteArchiveOldRate($CompanyID,$Name){
+    public static function deleteArchiveOldRate($CompanyID,$Name,$processID){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(!empty($Name) && isset($setting) && $setting!='Invalid Key'){
@@ -459,7 +459,7 @@ class Retention {
 
                 try {
                     DB::beginTransaction();
-                    $query = "call prc_deleteArchiveOldRate($CompanyID,'" . $deletedate . "')";
+                    $query = "call prc_deleteArchiveOldRate($CompanyID,'" . $deletedate . "','".$processID."')";
                     Log::info($query);
                     DB::statement($query);
                     DB::commit();
@@ -479,7 +479,7 @@ class Retention {
         return $error;
     }
 
-    public static function deleteTickets($CompanyID,$Name){
+    public static function deleteTickets($CompanyID,$Name,$processID){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
         if(!empty($Name) && isset($setting) && $setting!='Invalid Key'){
@@ -492,7 +492,7 @@ class Retention {
 
                 try {
                     DB::beginTransaction();
-                    $query = "call prc_deleteTickets($CompanyID,'" . $deletedate . "')";
+                    $query = "call prc_deleteTickets($CompanyID,'" . $deletedate . "','".$processID."')";
                     Log::info($query);
                     //DB::statement($query);
                     $attachments=DB::select($query);

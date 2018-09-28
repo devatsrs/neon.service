@@ -129,10 +129,10 @@ class CronHelper {
         $CronJob = CronJob::find($CronJobID);
         if(!empty($CronJob) && !empty($CronJob->MysqlPID)){
             $MysqlPID=$CronJob->MysqlPID;
-            $query='SELECT count(*) as cnt FROM INFORMATION_SCHEMA.PROCESSLIST WHERE ID='.$MysqlPID;
+            $query="SELECT count(*) as cnt FROM INFORMATION_SCHEMA.PROCESSLIST WHERE ID='".$MysqlPID."'";
             $MysqlProcess=DB::select($query);
             Log::info("cnt=".$MysqlProcess[0]->cnt);
-                if(!empty($MysqlProcess) && $MysqlProcess[0]->cnt > 0){
+                if(!empty($MysqlProcess) && isset($MysqlProcess[0]->cnt) && $MysqlProcess[0]->cnt > 0){
                     $isExists=1;
                 }
         }
