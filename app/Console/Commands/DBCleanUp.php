@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
+use App\Lib\CompanyGateway;
 
 class DBCleanUp extends Command {
 
@@ -63,10 +64,13 @@ class DBCleanUp extends Command {
 		$CronJobID = $arguments["CronJobID"];
 
 		$CronJob =  CronJob::find($CronJobID);
-		$dataactive['Active'] = 1;
+		/*$dataactive['Active'] = 1;
 		$dataactive['PID'] = $getmypid;
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::activateCronJob($CronJob);
+		$processID = CompanyGateway::getProcessID();
+		CompanyGateway::updateProcessID($CronJob,$processID);
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error = '';
 
@@ -86,9 +90,9 @@ class DBCleanUp extends Command {
 			 * @TODO: need to update as per new tables changes 27-03-18
 			 * */
 
-			Log::info('Delete Old Deleted Tickets.');
-				$error .= Retention::TicketDeleteFromDeleteTable($CompanyID);
-			Log::info('Delete Old Deleted Tickets End.');
+			//Log::info('Delete Old Deleted Tickets.');
+			//	$error .= Retention::TicketDeleteFromDeleteTable($CompanyID);
+			//Log::info('Delete Old Deleted Tickets End.');
 
 			Log::info('Usage Download Log Start.');
 				$error .= Retention::deleteUsageDownloadLog($CompanyID);
@@ -136,11 +140,11 @@ class DBCleanUp extends Command {
 			Log::info('RateLog Delete End.');
 
 			Log::info('Archive Old Rate Delete Start.');
-			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate');
+			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate',$processID);
 			Log::info('Archive Old Rate Delete End.');
 
 			Log::info('Tickets Delete Start.');
-			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets');
+			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets',$processID);
 			Log::info('Tickets Delete End.');
 
 
@@ -184,9 +188,10 @@ class DBCleanUp extends Command {
 
 		}
 
-		$dataactive['Active'] = 0;
+		/*$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::deactivateCronJob($CronJob);
 		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);

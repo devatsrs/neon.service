@@ -440,7 +440,11 @@ protected $server;
 						$sender = Imap::dataDecode($email->getSender());
 						$senderName = $sender[0]->personal;
 						$to = $email->getTo();
-						$toMail=$to[0]->mail;
+						if(!empty($to) && isset($to[0]))
+							$toMail=$to[0]->mail;
+						else
+							$toMail=$email;
+
 						$MessageId = '<'.$email->getMessageId().'>';
 						$aAttachmentCount = $email->getAttachments()->count();
 						$cc = $email->getCc();
@@ -733,7 +737,7 @@ protected $server;
 
 								Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
 								Log::error("TicketRuleData");
-								Log::error($ticketRuleData);
+								Log::error(print_r($ticketRuleData,true));
 								Log::error(print_r($ex,true));
 							}
 
@@ -778,7 +782,7 @@ protected $server;
 
 							$ticketData  = TicketsTable::find($parentTicket);
 
-
+							$ticketID = $ticketData->TicketID;
 							// --------------- check for TicketImportRule ----------------
 							$ticketRuleData = array_merge($logData,["TicketID"=>$ticketData->TicketID,"EmailTo"=>$toMail,"Group"=>$GroupID]);
 							try{
@@ -787,7 +791,7 @@ protected $server;
 
 								Log::error("Error in TicketImportRule::check on TicketID " . $ticketID);
 								Log::error("TicketRuleData");
-								Log::error($ticketRuleData);
+								Log::error(print_r($ticketRuleData,true));
 								Log::error(print_r($ex,true));
 							}
 
