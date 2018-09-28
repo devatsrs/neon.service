@@ -134,6 +134,7 @@ class InvoiceReminder extends Command
                         if(isset($criteria->zerovalueinvoice) && !empty($criteria->zerovalueinvoice) && $criteria->zerovalueinvoice=='true'){
                             $query = $query.',0,1';
                         }
+                        $query.=",''";//Tag
                         $query =  "CALL prc_getInvoice(".$query.")";
 
                         $result = DB::connection('sqlsrv2')->select($query);
