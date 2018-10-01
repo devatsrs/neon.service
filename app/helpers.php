@@ -405,6 +405,7 @@ function getdaysdiff($date1,$date2){
 }
 /**
  * /^011//,/^0//,/[0-9]{10}$/1$0/ for US customer for voipnow to append 1 when strlen(cld) =10
+ *  "/^.*(<.*>).*$/$1/,/<//,/>//" to keep only number inside <> ie. dev <123>
  * */
 function apply_translation_rule($TranslationRule,$call_string){
     $replacement =$patternrules = array();
