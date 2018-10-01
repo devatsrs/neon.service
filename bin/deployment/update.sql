@@ -809,7 +809,7 @@ ThisSP:BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_ArchiveOldCustomerRate
+
 DROP PROCEDURE IF EXISTS `prc_ArchiveOldCustomerRate`;
 DELIMITER //
 CREATE PROCEDURE `prc_ArchiveOldCustomerRate`(
@@ -882,7 +882,7 @@ ThisSP:BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_ArchiveOldRateTableRate
+
 DROP PROCEDURE IF EXISTS `prc_ArchiveOldRateTableRate`;
 DELIMITER //
 CREATE PROCEDURE `prc_ArchiveOldRateTableRate`(
@@ -957,7 +957,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_ArchiveOldVendorRate
+
 DROP PROCEDURE IF EXISTS `prc_ArchiveOldVendorRate`;
 DELIMITER //
 CREATE PROCEDURE `prc_ArchiveOldVendorRate`(
@@ -1024,7 +1024,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_BlockVendorCodes
+
 DROP PROCEDURE IF EXISTS `prc_BlockVendorCodes`;
 DELIMITER //
 CREATE PROCEDURE `prc_BlockVendorCodes`(
@@ -1161,7 +1161,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_ChangeCodeDeckRateTable
+
 DROP PROCEDURE IF EXISTS `prc_ChangeCodeDeckRateTable`;
 DELIMITER //
 CREATE PROCEDURE `prc_ChangeCodeDeckRateTable`(
@@ -1241,7 +1241,7 @@ ThisSP:BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_checkDialstringAndDupliacteCode
+
 DROP PROCEDURE IF EXISTS `prc_checkDialstringAndDupliacteCode`;
 DELIMITER //
 CREATE PROCEDURE `prc_checkDialstringAndDupliacteCode`(
@@ -1678,14 +1678,11 @@ ThisSP:BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_CronJobAllPending
+
 DROP PROCEDURE IF EXISTS `prc_CronJobAllPending`;
 DELIMITER //
 CREATE PROCEDURE `prc_CronJobAllPending`(
 	IN `p_CompanyID` INT
-
-
-
 )
 BEGIN
 	SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
@@ -3624,7 +3621,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure Ratemanagement3.prc_CronJobGeneratePortaSheet
+
 DROP PROCEDURE IF EXISTS `prc_CronJobGeneratePortaSheet`;
 DELIMITER //
 CREATE PROCEDURE `prc_CronJobGeneratePortaSheet`(
@@ -24769,7 +24766,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_InsertTempReRateVendorCDR
+
 DROP PROCEDURE IF EXISTS `prc_InsertTempReRateVendorCDR`;
 DELIMITER //
 CREATE PROCEDURE `prc_InsertTempReRateVendorCDR`(
@@ -24903,7 +24900,7 @@ WHERE
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_ProcesssCDR
+
 DROP PROCEDURE IF EXISTS `prc_ProcesssCDR`;
 DELIMITER //
 CREATE PROCEDURE `prc_ProcesssCDR`(
@@ -25190,7 +25187,7 @@ END//
 DELIMITER ;
 
 
--- Dumping structure for procedure RMBilling3.prc_ProcesssVCDR
+
 DROP PROCEDURE IF EXISTS `prc_ProcesssVCDR`;
 DELIMITER //
 CREATE PROCEDURE `prc_ProcesssVCDR`(
@@ -25594,24 +25591,14 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_StockManageRecurringInvoice
+
 DROP PROCEDURE IF EXISTS `prc_StockManageRecurringInvoice`;
 DELIMITER //
 CREATE PROCEDURE `prc_StockManageRecurringInvoice`(
 	IN `p_CompanyID` INT,
-	IN `p_InvoiceIDs` VARCHAR(200)
-
-,
+	IN `p_InvoiceIDs` VARCHAR(200),
 	IN `p_InvoiceID` INT,
 	IN `p_createdby` VARCHAR(100)
-
-
-
-
-
-
-
-
 )
 BEGIN
 	DECLARE v_Message VARCHAR(200);
@@ -25743,7 +25730,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_UpdateItemTypeStatus
+
 DROP PROCEDURE IF EXISTS `prc_UpdateItemTypeStatus`;
 DELIMITER //
 CREATE PROCEDURE `prc_UpdateItemTypeStatus`(
@@ -25768,13 +25755,11 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_updateSOAOffSet
 DROP PROCEDURE IF EXISTS `prc_updateSOAOffSet`;
 DELIMITER //
 CREATE PROCEDURE `prc_updateSOAOffSet`(
 	IN `p_CompanyID` INT,
 	IN `p_AccountID` INT
-
 )
 BEGIN
 	
@@ -25786,8 +25771,7 @@ BEGIN
 		Amount NUMERIC(18, 8),
 		PaymentType VARCHAR(50),
 		InvoiceType INT,
-		TopUpType VARCHAR(50),
-		CreditNoteType VARCHAR (50)
+		TopUpType VARCHAR(50)
 	);
 	
 	DROP TEMPORARY TABLE IF EXISTS tmp_AccountSOABal;
@@ -25831,20 +25815,10 @@ BEGIN
 	WHERE i.CompanyID = p_CompanyID 
 	AND ( (i.InvoiceType = 2) OR ( i.InvoiceType = 1 AND i.InvoiceStatus NOT IN ( 'cancel' , 'draft' , 'awaiting') )  )
 	AND (p_AccountID = 0 OR  i.AccountID = p_AccountID);
-	
-	INSERT into tmp_AccountSOA(AccountID,Amount,CreditNoteType)
-	SELECT
-		AccountID,
-		(GrandTotal - PaidAmount) as Amount,
-		'creditnote' as TopUpType
-	FROM tblCreditNotes
-	WHERE CompanyID = p_CompanyID 
-	AND CreditNotesStatus IN ('open')
-	AND (p_AccountID = 0 OR  AccountID = p_AccountID);
-	
-	/** SOAOffSet = soa( invoiceOut-PaymentIn - InvoiceIn - PaymentOut)    - topup - creditnotes	 */
+
+	/** SOAOffSet = soa( invoiceOut-PaymentIn - InvoiceIn - PaymentOut)    - topup */
 	INSERT INTO tmp_AccountSOABal
-	SELECT AccountID,(SUM(IF(InvoiceType=1,Amount,0)) -  SUM(IF(PaymentType='Payment In',Amount,0))) - (SUM(IF(InvoiceType=2,Amount,0)) - SUM(IF(PaymentType='Payment Out',Amount,0))) - (SUM(IF(TopUpType='topup',Amount,0))) - (SUM(IF(CreditNoteType='creditnote',Amount,0))) as SOAOffSet
+	SELECT AccountID,(SUM(IF(InvoiceType=1,Amount,0)) -  SUM(IF(PaymentType='Payment In',Amount,0))) - (SUM(IF(InvoiceType=2,Amount,0)) - SUM(IF(PaymentType='Payment Out',Amount,0))) - (SUM(IF(TopUpType='topup',Amount,0))) as SOAOffSet
 	FROM tmp_AccountSOA 
 	GROUP BY AccountID;
 	
@@ -25878,7 +25852,7 @@ BEGIN
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_updateVendorRate
+
 DROP PROCEDURE IF EXISTS `prc_updateVendorRate`;
 DELIMITER //
 CREATE PROCEDURE `prc_updateVendorRate`(
