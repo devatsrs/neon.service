@@ -157,72 +157,53 @@ INSERT INTO `tblTimezones` (`TimezonesID`, `Title`, `FromTime`, `ToTime`, `DaysO
 
 ALTER TABLE `tblVendorRate`
 	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`,
 	DROP INDEX `IXUnique_AccountId_TrunkId_RateId_EffectiveDate`,
 	ADD UNIQUE INDEX `IXUnique_AccountId_TrunkId_RateId_EffectiveDate` (`AccountId`, `TrunkID`, `TimezonesID`, `RateId`, `EffectiveDate`);
 
 ALTER TABLE `tblRateTableRate`
 	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `RateTableId`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`,
 	DROP INDEX `IX_Unique_RateID_RateTableId_EffectiveDate`,
 	ADD UNIQUE INDEX `IX_Unique_RateID_RateTableId_TimezonesID_EffectiveDate` (`RateID`, `RateTableId`, `TimezonesID`, `EffectiveDate`);
 
 ALTER TABLE `tblCustomerRate`
 	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`,
 	DROP INDEX `IXUnique_RateId_CustomerId_TrunkId_EffectiveDate`,
 	ADD UNIQUE INDEX `IXUnique_RateId_CustomerId_TrunkId_TimezonesID_EffectiveDate` (`RateID`, `CustomerID`, `TrunkID`, `TimezonesID`, `EffectiveDate`);
 
 ALTER TABLE `tblVendorRateArchive`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblRateTableRateArchive`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `RateTableId`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `RateTableId`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblCustomerRateArchive`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblTempVendorRate`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `CountryCode`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `CountryCode`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblTempRateTableRate`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `CountryCode`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `CountryCode`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblVendorRateChangeLog`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `TrunkID`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblRateTableRateChangeLog`
-	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `RateTableId`;
+	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `RateTableId`,
+	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblRateSheet`
 	ADD COLUMN `TimezonesID` INT(11) NOT NULL DEFAULT '1' AFTER `Level`;
 
-ALTER TABLE `tblTempVendorRate`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblTempRateTableRate`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblVendorRateChangeLog`
-	ADD COLUMN `RateN` DECIMAL(18,6) NULL DEFAULT NULL AFTER `Rate`;
-
-ALTER TABLE `tblRateTableRateChangeLog`
-	ADD COLUMN `RateN` DECIMAL(18,6) NULL DEFAULT NULL AFTER `Rate`;
-
-ALTER TABLE `tblVendorRate`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblRateTableRate`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblCustomerRate`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblVendorRateArchive`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblRateTableRateArchive`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
-
-ALTER TABLE `tblCustomerRateArchive`
-	ADD COLUMN `RateN` DECIMAL(18,6) NOT NULL DEFAULT '0.000000' AFTER `Rate`;
 
 ALTER TABLE `tblVendorPreference`
 	ADD COLUMN `TimezonesID` INT(11) NOT NULL AFTER `TrunkID`,
@@ -22106,7 +22087,6 @@ SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_getCreditNoteInvoices
 DROP PROCEDURE IF EXISTS `prc_getCreditNoteInvoices`;
 DELIMITER //
 CREATE PROCEDURE `prc_getCreditNoteInvoices`(
@@ -22116,13 +22096,13 @@ CREATE PROCEDURE `prc_getCreditNoteInvoices`(
 	IN `p_RowspPage` INT
 )
 BEGIN
-DECLARE v_OffSet_ int;
+	DECLARE v_OffSet_ int;
 
-SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+	SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 
-SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
+	SET v_OffSet_ = (p_PageNumber * p_RowspPage) - p_RowspPage;
 
-DROP TEMPORARY TABLE IF EXISTS tmp_CreditNotes_;
+	DROP TEMPORARY TABLE IF EXISTS tmp_CreditNotes_;
 	CREATE TEMPORARY TABLE IF NOT EXISTS tmp_CreditNotes_(
 		InvoiceID int,		
 		FullInvoiceNumber varchar(100),
@@ -22132,39 +22112,38 @@ DROP TEMPORARY TABLE IF EXISTS tmp_CreditNotes_;
 		AccountID int
 	);
 
-		INSERT INTO tmp_CreditNotes_
-		select 
-			`tblInvoice`.`InvoiceID`,
- 			`tblInvoice`.`FullInvoiceNumber`,
-  			`tblInvoice`.`IssueDate`,
-   		`tblInvoice`.`GrandTotal`,
-			(select IFNULL(SUM(Amount),0) from tblPayment where tblPayment.InvoiceID=tblInvoice.InvoiceID and tblPayment.Recall=0) as TotalPayment,
-			p_AccountID as AccountID
-			from `tblInvoice` 
-			where `tblInvoice`.`AccountID` = p_AccountID 
-			and `tblInvoice`.`GrandTotal` <> 0 
-		  	and (p_InvoiceNumber = '' OR ( p_InvoiceNumber != '' AND `tblInvoice`.`FullInvoiceNumber` = p_InvoiceNumber))
-			and `tblInvoice`.`InvoiceStatus` in ('partially_paid','send','awaiting');
+	INSERT INTO tmp_CreditNotes_
+	SELECT 
+		InvoiceID,
+		IFNULL(FullInvoiceNumber,'') AS FullInvoiceNumber,
+		IssueDate,
+		GrandTotal,
+		(SELECT IFNULL(SUM(Amount),0) FROM tblPayment WHERE tblPayment.InvoiceID=tblInvoice.InvoiceID AND tblPayment.Recall=0) as TotalPayment,
+		p_AccountID as AccountID
+	FROM tblInvoice 
+	WHERE AccountID = p_AccountID 
+		AND GrandTotal <> 0 
+		AND (p_InvoiceNumber = '' OR ( p_InvoiceNumber != '' AND FullInvoiceNumber = p_InvoiceNumber))
+		AND InvoiceStatus in ('partially_paid','send','awaiting');
+		
+		
+	SELECT 	*
+		FROM tmp_CreditNotes_
+	WHERE GrandTotal > TotalPayment 			
+		LIMIT p_RowspPage OFFSET v_OffSet_;		
+		 
+	SELECT
+		COUNT(*) AS totalcount
+	FROM
+		tmp_CreditNotes_ cn
+	WHERE cn.GrandTotal > cn.TotalPayment;
 			
-			
-			select 	*
-			from `tmp_CreditNotes_`
-			where `tmp_CreditNotes_`.`GrandTotal` > `tmp_CreditNotes_`.`TotalPayment` 
-			
-			 LIMIT p_RowspPage OFFSET v_OffSet_;		
-			 
-		 SELECT
-            COUNT(*) AS totalcount
-        FROM
-        tmp_CreditNotes_ cn
-        INNER JOIN Ratemanagement3.tblAccount ac ON ac.AccountID = cn.AccountID;
-			
-			SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+	SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
 END//
 DELIMITER ;
 
--- Dumping structure for procedure RMBilling3.prc_getCreditNotes
+
 DROP PROCEDURE IF EXISTS `prc_getCreditNotes`;
 DELIMITER //
 CREATE PROCEDURE `prc_getCreditNotes`(
