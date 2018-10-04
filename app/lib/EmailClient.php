@@ -62,7 +62,7 @@ class EmailClient
         //Get all Mailboxes
 
         /** @var \Webklex\IMAP\Support\FolderCollection $aFolder */
-        return $aFolder = $oClient->getFolders();
+        return $aFolder = $oClient->getFolders(false);
     }
 
 }
