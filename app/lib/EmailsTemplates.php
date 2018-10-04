@@ -38,6 +38,7 @@ class EmailsTemplates{
 				"{{CompanyPostCode}}",
 				"{{CompanyCountry}}",
 				"{{Logo}}",
+				"{{CreditnotesGrandTotal}}"
 				);
 	
 	 public function __construct($data = array()){
@@ -123,6 +124,75 @@ class EmailsTemplates{
 				return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);	
 			}*/
 }
+
+	static function SendCreditNotesSingle($slug,$CreditNotesID,$type="body",$data = array(),$postdata = array()){
+
+		//print_r($data);exit;
+		$message								=	"";
+		$CreditNotesData  							=  	CreditNotes::find($CreditNotesID);
+		$replace_array							=	$data;
+		$replace_array							=	EmailsTemplates::setCompanyFields($replace_array,$CreditNotesData->CompanyID);
+		$replace_array 							=	EmailsTemplates::setAccountFields($replace_array,$CreditNotesData->AccountID,$CreditNotesData->CompanyID);
+		$AccoutData 							=	Account::find($CreditNotesData->AccountID);
+		$EmailTemplate 							= 	EmailTemplate::getSystemEmailTemplate($AccoutData->CompanyId, $slug, $AccoutData->LanguageID);
+
+		$CreditNotesNumber			=   $data['CreditNoteNumber'];
+
+		if($type=="subject"){
+			if(isset($postdata['Subject']) && !empty($postdata['Subject'])){
+				$EmailMessage							=	 $postdata['Subject'];
+			}else{
+				$EmailMessage							=	 $EmailTemplate->Subject;
+			}
+		}else{
+			if(isset($postdata['Message']) && !empty($postdata['Message'])){
+				$EmailMessage							=	 $postdata['Message'];
+			}else{
+				$EmailMessage							=	 $EmailTemplate->TemplateBody;
+			}
+		}
+
+
+		$replace_array['CompanyName']			=	 Company::getName($CreditNotesData->CompanyID);
+		/*if(isset($data['CreditNotesURL'])){
+			$replace_array['CreditNotesLink'] 		= 	 $data['CreditNotesURL'];
+		}else{
+			$replace_array['CreditNotesLink'] 		= 	 URL::to('/creditnotes/'.$CreditNotesID.'/creditnotes_preview');
+		}*/
+
+		$replace_array['CreditNotesNumber']		=	 isset($data['CreditNotesNumber'])?$data['CreditNotesNumber']:$CreditNotesNumber;
+		$RoundChargesAmount 					= 	 Helper::get_round_decimal_places($CreditNotesData->CompanyID,$CreditNotesData->AccountID);
+		$replace_array['CreditnotesGrandTotal']	=	 number_format($CreditNotesData->GrandTotal,$RoundChargesAmount);
+		//$replace_array['Comment']				=	 isset($data['Comment'])?$data['Comment']:EmailsTemplates::GetCreditNotesComments($CreditNotesID);
+
+
+		$extraSpecific = [
+			'{{CreditNotesNumber}}',
+			'{{CreditnotesGrandTotal}}',
+			"{{CreditNotesLink}}",
+			"{{Comment}}",
+			"{{Message}}",
+		];
+
+
+		$extraDefault	=	EmailsTemplates::$fields;
+
+		$extra = array_merge($extraDefault,$extraSpecific);
+
+
+		foreach($extra as $item){
+			$item_name = str_replace(array('{','}'),array('',''),$item);
+			if(array_key_exists($item_name,$replace_array)) {
+				$EmailMessage = str_replace($item,$replace_array[$item_name],$EmailMessage);
+			}
+		}
+		return $EmailMessage;
+
+		/*	return array("error"=>"","status"=>"success","data"=>$EmailMessage,"from"=>$EmailTemplate->EmailFrom);
+        }catch (Exception $ex){
+            return array("error"=>$ex->getMessage(),"status"=>"failed","data"=>"","from"=>$EmailTemplate->EmailFrom);
+        }*/
+	}
 	 
 	
 	protected function SetError($error){
