@@ -298,6 +298,9 @@ class Helper{
             $Company = Company::find($CompanyID);
             $User = User::getDummyUserInfo($CompanyID, $Company);
         }
+        if(empty($emaildata['EmailFrom'])) {
+            $emaildata['EmailFrom'] = $User->EmailAddress;
+        }
 		$status['message_id'] 	=  isset($status['message_id'])?$status['message_id']:"";
 		$status['attach'] 	=  isset($emaildata['attach'])?$emaildata['attach']:"";
 		$status['AttachmentPaths'] 	=  isset($emaildata['AttachmentPaths'])?$emaildata['AttachmentPaths']:"";
@@ -306,7 +309,7 @@ class Helper{
             'JobID' => $JobID,
             'User' => $User,
             'EmailType' => $EmailType,
-            'EmailFrom' => $User->EmailAddress,
+            'EmailFrom' => $emaildata['EmailFrom'],
             'EmailTo' => $emaildata['EmailTo'],
             'Subject' => $emaildata['Subject'],
             'Message' => $status['body'],
