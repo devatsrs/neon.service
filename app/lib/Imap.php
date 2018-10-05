@@ -411,7 +411,7 @@ protected $server;
 		$connected=$objEmailClient->connect();
 		if($connected){
 			Log::info("connectiong:".$email);
-			$aFolder = $connected->getFolders();
+			$aFolder = $connected->getFolders(false);
 			foreach($aFolder as $oFolder){
 				if($oFolder->fullName!="INBOX"){
 					continue;

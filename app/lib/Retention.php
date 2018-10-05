@@ -27,7 +27,7 @@ class Retention {
                         $start = date('Y-m-d', strtotime('+1 day', strtotime($start)));
                         try {
                             DB::connection('sqlsrvcdr')->beginTransaction();
-                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "', $key)";
+                            $query = "call prc_deleteCustomerCDRByRetention($CompanyID,'" . $Start_Cdr_Date . "', '".$key."')";
                             Log::info($query);
                             DB::connection('sqlsrvcdr')->statement($query);
                             DB::connection('sqlsrvcdr')->commit();
