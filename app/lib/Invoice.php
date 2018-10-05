@@ -1183,6 +1183,7 @@ class Invoice extends \Eloquent {
                         $emaildata['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                         $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
                         $emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
+                        $emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 
                         $status = Helper::sendMail($body, $emaildata,0);
                         //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
@@ -1215,8 +1216,9 @@ class Invoice extends \Eloquent {
                     }
 
                     $User = '';
-                    if (!@empty($Account->Owner)) {
-                        $User = User::find($Account->Owner);
+                    $UserID = Job::find($JobID)->JobLoggedUserID;
+                    if (!empty($UserID) && $UserID > 0) {
+                        $User = User::find($UserID);
                     }
                     /** log emails against account */
                     $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $emaildata, $status, $User, $ProcessID, $JobID);
