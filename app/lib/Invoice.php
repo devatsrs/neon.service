@@ -1263,9 +1263,9 @@ class Invoice extends \Eloquent {
         Log::info(' SubTotal ' . $SubTotal);
         Log::info(' SubTotalWithouttaxTotal ' . $SubTotalWithoutTax);
         if($OnlyUsageCallCharge==1) {
-            $TotalTax = Invoice::insertInvoiceUsageTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+            $TotalTax = Invoice::insertInvoiceUsageTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal+$SubTotalWithoutTax, $AdditionalChargeTax, $ServiceID);
         }else{
-            $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+            $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal+$SubTotalWithoutTax, $AdditionalChargeTax, $ServiceID);
         }
         //$TotalTax += $AdditionalChargeTax; // Additional Tax from AdditionalCharge
 
