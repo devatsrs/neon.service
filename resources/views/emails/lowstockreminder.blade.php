@@ -24,7 +24,7 @@
             <td>{{$AlertItem->Name}}</td>
             <td>{{$AlertItem->Code}}</td>
             <td>{{$AlertItem->Stock}}</td>
-            <td>{{$AlertItem->Low_stock_level}}</td>
+            <td>{{$AlertItem->LowStockLevel}}</td>
         </tr>
     @endforeach
     </tbody>

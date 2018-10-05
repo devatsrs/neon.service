@@ -25,6 +25,7 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\VOSAccountUsage',
         'App\Console\Commands\VOSDownloadCDR',
         'App\Console\Commands\BulkInvoiceSend',
+        'App\Console\Commands\BulkCreditNoteSend',
         'App\Console\Commands\PortaVendorSheet',
 		'App\Console\Commands\VendorMorSheet',
         'App\Console\Commands\DBFixing',
