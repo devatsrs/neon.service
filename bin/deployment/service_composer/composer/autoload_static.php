@@ -76,6 +76,10 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         array (
             'League\\Flysystem\\' => 17,
         ),
+        'J' => 
+        array (
+            'JakubOnderka\\PhpConsoleColor\\' => 29,
+        ),
         'I' => 
         array (
             'Illuminate\\' => 11,
@@ -195,6 +199,10 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'League\\Flysystem\\' => 
         array (
             0 => __DIR__ . '/..' . '/league/flysystem/src',
+        ),
+        'JakubOnderka\\PhpConsoleColor\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src',
         ),
         'Illuminate\\' => 
         array (
@@ -371,10 +379,6 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
             array (
                 0 => __DIR__ . '/..' . '/jakub-onderka/php-console-highlighter/src',
             ),
-            'JakubOnderka\\PhpConsoleColor' => 
-            array (
-                0 => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src',
-            ),
             'JMS\\Serializer' => 
             array (
                 0 => __DIR__ . '/..' . '/jms/serializer/src',
@@ -472,6 +476,7 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Console\\Commands\\AutoInvoiceReminder' => __DIR__ . '/../..' . '/app/Console/Commands/AutoInvoiceReminder.php',
         'App\\Console\\Commands\\AutoTransactionsLogEmail' => __DIR__ . '/../..' . '/app/Console/Commands/AutoTransactionsLogEmail.php',
         'App\\Console\\Commands\\BulkAutoPaymentCapture' => __DIR__ . '/../..' . '/app/Console/Commands/BulkAutoPaymentCapture.php',
+        'App\\Console\\Commands\\BulkCreditNoteSend' => __DIR__ . '/../..' . '/app/Console/Commands/BulkCreditNoteSend.php',
         'App\\Console\\Commands\\BulkDisputeSend' => __DIR__ . '/../..' . '/app/Console/Commands/BulkDisputeSend.php',
         'App\\Console\\Commands\\BulkInvoiceSend' => __DIR__ . '/../..' . '/app/Console/Commands/BulkInvoiceSend.php',
         'App\\Console\\Commands\\BulkLeadMailSend' => __DIR__ . '/../..' . '/app/Console/Commands/BulkLeadMailSend.php',
@@ -625,6 +630,8 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'App\\Lib\\CompanySetting' => __DIR__ . '/../..' . '/app/lib/CompanySetting.php',
         'App\\Lib\\Contact' => __DIR__ . '/../..' . '/app/lib/Contact.php',
         'App\\Lib\\Country' => __DIR__ . '/../..' . '/app/lib/Country.php',
+        'App\\Lib\\CreditNotes' => __DIR__ . '/../..' . '/app/lib/CreditNotes.php',
+        'App\\Lib\\CreditNotesLog' => __DIR__ . '/../..' . '/app/lib/CreditNotesLog.php',
         'App\\Lib\\CronHelper' => __DIR__ . '/../..' . '/app/lib/CronHelper.php',
         'App\\Lib\\CronJob' => __DIR__ . '/../..' . '/app/lib/CronJob.php',
         'App\\Lib\\CronJobLog' => __DIR__ . '/../..' . '/app/lib/CronJobLog.php',
@@ -3153,8 +3160,8 @@ class ComposerStaticInit590e70dd7d1036a77112195bccbdd455
         'JMS\\Serializer\\XmlDeserializationVisitor' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/XmlDeserializationVisitor.php',
         'JMS\\Serializer\\XmlSerializationVisitor' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/XmlSerializationVisitor.php',
         'JMS\\Serializer\\YamlSerializationVisitor' => __DIR__ . '/..' . '/jms/serializer/src/JMS/Serializer/YamlSerializationVisitor.php',
-        'JakubOnderka\\PhpConsoleColor\\ConsoleColor' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/JakubOnderka/PhpConsoleColor/ConsoleColor.php',
-        'JakubOnderka\\PhpConsoleColor\\InvalidStyleException' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/JakubOnderka/PhpConsoleColor/InvalidStyleException.php',
+        'JakubOnderka\\PhpConsoleColor\\ConsoleColor' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/ConsoleColor.php',
+        'JakubOnderka\\PhpConsoleColor\\InvalidStyleException' => __DIR__ . '/..' . '/jakub-onderka/php-console-color/src/InvalidStyleException.php',
         'JakubOnderka\\PhpConsoleHighlighter\\Highlighter' => __DIR__ . '/..' . '/jakub-onderka/php-console-highlighter/src/JakubOnderka/PhpConsoleHighlighter/Highlighter.php',
         'JsonSerializable' => __DIR__ . '/..' . '/nesbot/carbon/src/JsonSerializable.php',
         'LCR' => __DIR__ . '/../..' . '/app/lib/LCR.php',

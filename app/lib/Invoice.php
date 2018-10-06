@@ -1183,6 +1183,7 @@ class Invoice extends \Eloquent {
                         $emaildata['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
                         $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,$singleemail,$emaildata);
                         $emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,$singleemail,$emaildata);
+                        $emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
 
                         $status = Helper::sendMail($body, $emaildata,0);
                         //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
@@ -1215,8 +1216,9 @@ class Invoice extends \Eloquent {
                     }
 
                     $User = '';
-                    if (!@empty($Account->Owner)) {
-                        $User = User::find($Account->Owner);
+                    $UserID = Job::find($JobID)->JobLoggedUserID;
+                    if (!empty($UserID) && $UserID > 0) {
+                        $User = User::find($UserID);
                     }
                     /** log emails against account */
                     $statuslog = Helper::account_email_log($CompanyID, $Account->AccountID, $emaildata, $status, $User, $ProcessID, $JobID);
@@ -1261,9 +1263,9 @@ class Invoice extends \Eloquent {
         Log::info(' SubTotal ' . $SubTotal);
         Log::info(' SubTotalWithouttaxTotal ' . $SubTotalWithoutTax);
         if($OnlyUsageCallCharge==1) {
-            $TotalTax = Invoice::insertInvoiceUsageTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+            $TotalTax = Invoice::insertInvoiceUsageTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal+$SubTotalWithoutTax, $AdditionalChargeTax, $ServiceID);
         }else{
-            $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal, $AdditionalChargeTax, $ServiceID);
+            $TotalTax = Invoice::insertInvoiceTaxRate($Invoice->InvoiceID, $Invoice->AccountID, $SubTotal+$SubTotalWithoutTax, $AdditionalChargeTax, $ServiceID);
         }
         //$TotalTax += $AdditionalChargeTax; // Additional Tax from AdditionalCharge
 

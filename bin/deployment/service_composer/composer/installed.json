@@ -1387,35 +1387,35 @@
     },
     {
         "name": "jakub-onderka/php-console-color",
-        "version": "0.1",
-        "version_normalized": "0.1.0.0",
+        "version": "v0.2",
+        "version_normalized": "0.2.0.0",
         "source": {
             "type": "git",
             "url": "https://github.com/JakubOnderka/PHP-Console-Color.git",
-            "reference": "e0b393dacf7703fc36a4efc3df1435485197e6c1"
+            "reference": "d5deaecff52a0d61ccb613bb3804088da0307191"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/JakubOnderka/PHP-Console-Color/zipball/e0b393dacf7703fc36a4efc3df1435485197e6c1",
-            "reference": "e0b393dacf7703fc36a4efc3df1435485197e6c1",
+            "url": "https://api.github.com/repos/JakubOnderka/PHP-Console-Color/zipball/d5deaecff52a0d61ccb613bb3804088da0307191",
+            "reference": "d5deaecff52a0d61ccb613bb3804088da0307191",
             "shasum": ""
         },
         "require": {
-            "php": ">=5.3.2"
+            "php": ">=5.4.0"
         },
         "require-dev": {
             "jakub-onderka/php-code-style": "1.0",
-            "jakub-onderka/php-parallel-lint": "0.*",
+            "jakub-onderka/php-parallel-lint": "1.0",
             "jakub-onderka/php-var-dump-check": "0.*",
-            "phpunit/phpunit": "3.7.*",
+            "phpunit/phpunit": "~4.3",
             "squizlabs/php_codesniffer": "1.*"
         },
-        "time": "2014-04-08T15:00:19+00:00",
+        "time": "2018-09-29T17:23:10+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {
-            "psr-0": {
-                "JakubOnderka\\PhpConsoleColor": "src/"
+            "psr-4": {
+                "JakubOnderka\\PhpConsoleColor\\": "src/"
             }
         },
         "notification-url": "https://packagist.org/downloads/",
@@ -1425,8 +1425,7 @@
         "authors": [
             {
                 "name": "Jakub Onderka",
-                "email": "jakub.onderka@gmail.com",
-                "homepage": "http://www.acci.cz"
+                "email": "jakub.onderka@gmail.com"
             }
         ]
     },
@@ -4114,23 +4113,23 @@
     },
     {
         "name": "symfony/css-selector",
-        "version": "v3.4.15",
-        "version_normalized": "3.4.15.0",
+        "version": "v3.4.17",
+        "version_normalized": "3.4.17.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/css-selector.git",
-            "reference": "edda5a6155000ff8c3a3f85ee5c421af93cca416"
+            "reference": "3503415d4aafabc31cd08c3a4ebac7f43fde8feb"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/css-selector/zipball/edda5a6155000ff8c3a3f85ee5c421af93cca416",
-            "reference": "edda5a6155000ff8c3a3f85ee5c421af93cca416",
+            "url": "https://api.github.com/repos/symfony/css-selector/zipball/3503415d4aafabc31cd08c3a4ebac7f43fde8feb",
+            "reference": "3503415d4aafabc31cd08c3a4ebac7f43fde8feb",
             "shasum": ""
         },
         "require": {
             "php": "^5.5.9|>=7.0.8"
         },
-        "time": "2018-07-26T09:06:28+00:00",
+        "time": "2018-10-02T16:33:53+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -4232,8 +4231,8 @@
     },
     {
         "name": "symfony/event-dispatcher",
-        "version": "v2.8.45",
-        "version_normalized": "2.8.45.0",
+        "version": "v2.8.46",
+        "version_normalized": "2.8.46.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/event-dispatcher.git",
@@ -4294,24 +4293,24 @@
     },
     {
         "name": "symfony/filesystem",
-        "version": "v2.8.45",
-        "version_normalized": "2.8.45.0",
+        "version": "v2.8.46",
+        "version_normalized": "2.8.46.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/filesystem.git",
-            "reference": "0b252f4e25b7da17abb5a98eb60755b71d082c9c"
+            "reference": "91f194c5ec8d2ad5ce417a218ce3c46909e92f4d"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/filesystem/zipball/0b252f4e25b7da17abb5a98eb60755b71d082c9c",
-            "reference": "0b252f4e25b7da17abb5a98eb60755b71d082c9c",
+            "url": "https://api.github.com/repos/symfony/filesystem/zipball/91f194c5ec8d2ad5ce417a218ce3c46909e92f4d",
+            "reference": "91f194c5ec8d2ad5ce417a218ce3c46909e92f4d",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.9",
             "symfony/polyfill-ctype": "~1.8"
         },
-        "time": "2018-08-07T09:12:42+00:00",
+        "time": "2018-09-24T08:04:37+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -4534,17 +4533,17 @@
     },
     {
         "name": "symfony/intl",
-        "version": "v2.8.45",
-        "version_normalized": "2.8.45.0",
+        "version": "v2.8.46",
+        "version_normalized": "2.8.46.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/intl.git",
-            "reference": "b94b1f5bcc9d3323c53b584b9acaa254b313bb91"
+            "reference": "e2f147048380b3ee953787a59132330e39cbd39a"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/intl/zipball/b94b1f5bcc9d3323c53b584b9acaa254b313bb91",
-            "reference": "b94b1f5bcc9d3323c53b584b9acaa254b313bb91",
+            "url": "https://api.github.com/repos/symfony/intl/zipball/e2f147048380b3ee953787a59132330e39cbd39a",
+            "reference": "e2f147048380b3ee953787a59132330e39cbd39a",
             "shasum": ""
         },
         "require": {
@@ -4558,7 +4557,7 @@
         "suggest": {
             "ext-intl": "to use the component with locales other than \"en\""
         },
-        "time": "2018-07-26T16:13:28+00:00",
+        "time": "2018-09-21T14:33:46+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
