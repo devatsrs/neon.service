@@ -328,7 +328,7 @@ class CronJob extends \Eloquent {
             $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
             $emaildata['EmailToName'] = '';
             $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
-            $emaildata['Url'] = $WEBURL . '/activejob';
+            $emaildata['Url'] = $WEBURL . '/cronjob_monitor';
 
             $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
             return $emailstatus;
@@ -413,7 +413,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = $WEBURL . '/activejob';
+        $emaildata['Url'] = $WEBURL . '/cronjob_monitor';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }
