@@ -108,7 +108,7 @@ class PBX{
                         or ( userfield = '' AND  IFNULL(cc_type ,'') <> 'OUTNOCHARGE' )  /*-- Ignore Internal call*/
                         )
                     AND ( dst<>'h' or duration <> 0 ) /*-- given by mirta*/
-                    IFNULL(cc_type ,'') <> 'OUTNOCHARGE'
+                    AND IFNULL(cc_type ,'') <> 'OUTNOCHARGE'
                     and prevuniqueid=''
                     group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode,IFNULL(cc_type ,'')
                     "; // and userfield like '%outbound%'  removed for inbound calls
