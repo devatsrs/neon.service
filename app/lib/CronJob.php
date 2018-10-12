@@ -289,6 +289,7 @@ class CronJob extends \Eloquent {
         $LastRunTime = $CronJob->LastRunTime;
         $ComanyName = Company::getName($CompanyID);
         $PID = $CronJob->PID;
+        $MysqlPID = $CronJob->MysqlPID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
         $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
@@ -302,9 +303,21 @@ class CronJob extends \Eloquent {
             $KillCommand = 'Taskkill /PID '.$PID.' /F';
         }
 
+        if($MysqlPID!=''){
+            try{
+                $MysqlProcess=DB::select("SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST where ID=".$MysqlPID);
+                if(!empty($MysqlProcess)){
+                    terminateMysqlProcess($MysqlPID);
+                }
+            }catch (\Exception $err) {
+                Log::error($err);
+            }
+
+        }
+
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
-		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
+		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00'),"MysqlPID"=>"","ProcessID"=>""]);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
