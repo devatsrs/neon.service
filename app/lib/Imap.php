@@ -25,142 +25,7 @@ protected $server;
 		 }
 	 }
 	 
-	 function ReadEmails($CompanyID) {
-		 
-		$email 		= 	$this->email;
-		$password 	= 	$this->password;		
-		$server		=	$this->server;
-		try {
-			$inbox  	= 	imap_open("{".$server."}", $email, $password);
-		} catch (\Exception $e) {
-			throw $e;
-		}
-		$emails 	= 	imap_search($inbox,'UNSEEN');
 
-		if($emails){
-			
-			/* begin output var */
-			$output = ''; 
-			
-			/* start from bottom */
-		 	$emails =  array_reverse($emails);
-		
-			
-			/* for every email... */
-			foreach($emails as $key => $email_number){
-				
-				$MatchType	 =   ''; $MatchID = '';
-				
-				/* get information specific to this email */
-				$overview 		= 		imap_fetch_overview($inbox,$email_number,0);    
-				//$message		=		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1));
-				//$header   	=  		imap_fetchheader($inbox,$email_number);
-				$structure		= 		imap_fetchstructure($inbox, $email_number); 
-				$message_id   	= 		isset($overview[0]->message_id)?$overview[0]->message_id:'';
-				$references   	=  		isset($overview[0]->references)?$overview[0]->references:'';
-				$in_reply_to  	= 		isset($overview[0]->in_reply_to)?$overview[0]->in_reply_to:$message_id;
-				$overview_subject   =   isset($overview[0]->subject)?Imap::dataDecode($overview[0]->subject):'';
-				$msg_parent   	=		AccountEmailLog::where("MessageID",$in_reply_to)->first();
-
-			
-				if(!empty($msg_parent)){ // if email is reply of an email
-					if($msg_parent->EmailParent==0){
-						$parent = $msg_parent->AccountEmailLogID;                        
-					}else{
-						$parent = $msg_parent->EmailParent;
-					}
-					$parent_account =  $msg_parent->AccountID;
-					$parent_UserID  =  $msg_parent->UserID;
-					$AccountData    =   DB::table('tblAccount')->where(["AccountID" => $parent_account])->get(array("AccountName"));
-					$Accountname    =  isset($AccountData[0]->AccountName)?' ('.($AccountData[0]->AccountName).')':'';
-					$AccountTitle	=  $this->GetNametxt($overview[0]->from).$Accountname;
-				}
-				else
-				{					
-					// if email is not a reply of an email then search email in account,leads,contacts
-					$parent_account 	= 	 0;
-					$parent_UserID  	= 	 0;
-					$parent 			= 	 0; // no parent by default		
-					
-					$MatchArray  		  =     $this->findEmailAddress($this->GetEmailtxt($overview[0]->from));
-					$MatchType	 		  =     $MatchArray['MatchType'];
-					$MatchID	 		  =	    $MatchArray['MatchID'];
-					if($MatchArray['AccountID']){
-						$parent_account = 	 $MatchArray['AccountID'];					
-					}
-					$AccountTitle		  =	    !empty($MatchArray['AccountTitle'])?$MatchArray['AccountTitle']:$this->GetNametxt($overview[0]->from);	
-                }
-
-				$attachmentsDB 		  =		$this->ReadAttachments($structure,$inbox,$email_number,$CompanyID); //saving attachments				
-				
-				if(isset($attachmentsDB) && count($attachmentsDB)>0){
-					$AttachmentPaths  =		serialize($attachmentsDB);
-					//$message		  =		$this->GetMessageBody(quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2))); //if email has attachment then read 1.2 message part else read 1		
-					
-				}else{
-					//$message		  =		quoted_printable_decode(imap_fetchbody($inbox, $email_number, 1.2));					
-					$AttachmentPaths  = 	serialize([]);										
-				}
-			
-				/*$message64		  = 	base64_decode($message);  //base 64 encoded msgs
-				if((strlen($message64)>0) &&  (strpos($message64,"<html")>-1)){
-						$message 	  = 	$message64;
-						Log::info("msg64");
-						Log::info($message64);	
-				}*/
-				
-			 	$message = 	$this->getBody($inbox,$email_number);
-				if(!empty($message)){
-					$message =  $this->GetMessageBody($message);
-				}
-			
-                $from   = $this->GetEmailtxt($overview[0]->from);
-				$to 	= $this->GetEmailtxt($overview[0]->to);
-
-				$message = html_entity_decode($message);
-
-				$logData = ['EmailFrom'=> $from,
-				"EmailfromName"=>!empty($AccountTitle)?$AccountTitle:$this->GetNametxt($overview[0]->from),
-				'Subject'=>$overview_subject,
-				'Message'=>$message,
-				'CompanyID'=>$CompanyID,
-				"MessageID"=>$message_id,
-				"EmailParent" => $parent,
-				"AccountID" => $parent_account,				
-				"AttachmentPaths"=>$AttachmentPaths,
-				"EmailID"=>$email_number,
-				"EmailCall"=>Messages::Received,
-                "UserID" => $parent_UserID,
-                 "created_at"=>date('Y-m-d H:i:s'),
-				 "EmailTo"=>$to
-				];			
-				$EmailLog   =  AccountEmailLog::insertGetId($logData);
-				if($parent){ 					
-          			AccountEmailLog::find($parent)->update(array("updated_at"=>date('Y-m-d H:i:s')));
-				}
-				
-				$title = "Received from ".$AccountTitle." (".$from." )";
-				
-					 $data   = array(
-						"CompanyID"=>$CompanyID,
-						"AccountID"=> $parent_account,
-						"Title"=>$title,
-						"MsgLoggedUserID"=>$parent_UserID,
-						"Description"=>$overview_subject,
-						"MatchType"=>$MatchType,
-						"MatchID"=>$MatchID,
-						"EmailID"=>$EmailLog
-					);  
-                    Messages::logMsgRecord($data);
-				
-				//$status = imap_setflag_full($inbox, $email_number, "\\Seen \\Flagged", ST_UID); //email staus seen
-				imap_setflag_full($inbox,imap_uid($inbox,$email_number),"\\SEEN",ST_UID);
-			}			
-		} 		
-		/* close the connection */
-		imap_close($inbox);
-	}
-	
 	function ReadAttachments($emailMessage,$email_number,$CompanyID)
 	{
 		$attachmentsDB = array();
@@ -405,13 +270,18 @@ protected $server;
 	 * @param $GroupID
 	 * @throws \Exception
 	 */
+
+	// Microsoft shared office 365 fix
+	//https://github.com/Webklex/laravel-imap/issues/100 version 		"webklex/laravel-imap": "1.1.2"
+	//https://github.com/Webklex/laravel-imap/issues/78
+	//https://stackoverflow.com/questions/28481028/access-office356-shared-mailbox-with-php
 	function ReadTicketEmails($CompanyID,$server,$port,$IsSsl,$email,$password,$GroupID){
 		$AllEmails  =   Messages::GetAllSystemEmails();
 		$objEmailClient = new EmailClient(array('username'=>$email,"host"=>$server,"port"=>$port,"IsSSL"=>$IsSsl,"password"=>$password));
 		$connected=$objEmailClient->connect();
 		if($connected){
 			Log::info("connectiong:".$email);
-			$aFolder = $connected->getFolders(false);
+			$aFolder = $connected->getFolders(false,"INBOX");
 			foreach($aFolder as $oFolder){
 				if($oFolder->fullName!="INBOX"){
 					continue;
