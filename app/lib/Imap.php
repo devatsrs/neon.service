@@ -411,6 +411,7 @@ protected $server;
 		$connected=$objEmailClient->connect();
 		if($connected){
 			Log::info("connectiong:".$email);
+			$group_email = $email;
 			$aFolder = $connected->getFolders(false);
 			foreach($aFolder as $oFolder){
 				if($oFolder->fullName!="INBOX"){
@@ -443,7 +444,7 @@ protected $server;
 						if(!empty($to) && isset($to[0]))
 							$toMail=$to[0]->mail;
 						else
-							$toMail=$email;
+							$toMail=$group_email;
 
 						$MessageId = '<'.$email->getMessageId().'>';
 						$aAttachmentCount = $email->getAttachments()->count();
