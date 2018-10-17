@@ -62,11 +62,8 @@ class FTPSGateway{
             $files = $this->ftp->nlist($this->config['cdr_folder']);
 
             $FileNameRule = $this->DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"])){
-                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
-            }
-            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
-                $FileNameRule =  $addparams["FileNameRule"];
+            if(isset(self::$config['FileNameRule'])  && !empty(self::$config["FileNameRule"]) ){
+                $FileNameRule = trim(self::$config["FileNameRule"]);
             }
             foreach((array)$files as $file){
                 if(strpos($file,$FileNameRule) !== false){
