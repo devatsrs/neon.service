@@ -813,3 +813,9 @@ function getCompanyDecimalPlaces($CompanyID, $value=""){
         return $RoundChargesAmount;
     }
 }
+
+function terminateMysqlProcess($pid){
+    $cmd="KILL ".$pid;
+    DB::connection('sqlsrv2')->select($cmd);
+
+}
