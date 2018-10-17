@@ -221,4 +221,25 @@ class PBX{
         }
         return $count;
     }
+
+    // delete from pbx which is recall payment in neon
+    public static function deleteRecallID($paymentArr=array()){
+        $response = null;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+
+                $where=array();
+                $where["bi_date"]=$paymentArr["bi_date"];
+                $where["bi_te_id"]=$paymentArr["bi_te_id"];
+                $where["bi_description"]=$paymentArr["bi_description"];
+                if(DB::connection('pbxmysql')->table('bi_billings')->where($where)->count()>0){
+                    DB::connection('pbxmysql')->table('bi_billings')->where($where)->delete();
+                }
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
 }
