@@ -157,6 +157,9 @@ class VoipMSAccountUsage extends Command {
                         $data['duration'] = $row_account['seconds'];
                         $data['disposition'] = $row_account['disposition'];
 
+                        //its fix for supertec for inbound calls
+                        $data['is_inbound'] = $row_account['description'] == 'Inbound DID' ? 1 : 0;
+
                         $data['AccountIP'] = '';
                         $data['AccountName'] = '';
                         $data['AccountNumber'] = $row_account['account'];

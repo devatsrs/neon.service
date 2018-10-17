@@ -85,7 +85,9 @@ class exportPbxPayments extends Command {
 			$start_date = date('Y-m-d 00:00:00', strtotime('-'.$exportdayslimit.' day'));
 			Log::error(print_r($start_date, true));
 
-			$response = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."')");
+			/** Start insert payment in pbx */
+
+			$response = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."',0)");
 			$response = json_decode(json_encode($response), true);
 			Log::info('count ==' . count($response));
 			$InsertData = array();
@@ -106,8 +108,31 @@ class exportPbxPayments extends Command {
 				if (!empty($InsertData)) {
 					$countInsert=$pbx->insertBillings($InsertData);
 				}
-				date_default_timezone_set(Config::get('app.timezone'));
 			}
+			/** End insert payment in pbx */
+
+			/** Start Delete recall payment in pbx */
+
+			$recallresponse = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."',1)");
+			$recallresponse = json_decode(json_encode($recallresponse), true);
+			Log::info('Recall count ==' . count($recallresponse));
+			if(!empty($recallresponse)) {
+				foreach ((array)$recallresponse as $row_account) {
+					$paymentArr=array();
+					$paymentArr["bi_description"]=$row_account["Notes"];
+					$paymentArr["bi_date"]=$row_account["PaymentDate"];
+					$paymentArr["bi_amount"]=abs($row_account["Amount"]);
+					$TenantsID = $pbx->getAccountTenantsID($row_account["Number"]);
+					if(!empty($TenantsID)){
+						$paymentArr["bi_te_id"]=$TenantsID;
+						$pbx->deleteRecallID($paymentArr);
+					}
+				}
+			}
+
+			/** End Delete recall payment in pbx */
+
+			date_default_timezone_set(Config::get('app.timezone'));
 
 			$joblogdata['Message'] = "Record Insert ".$countInsert;
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
