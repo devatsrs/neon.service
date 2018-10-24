@@ -561,7 +561,9 @@ class Invoice extends \Eloquent {
                 $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID,$ServiceID);
                 $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,$ServiceID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
-                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->groupBy("TaxRateID")->get();
             }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
