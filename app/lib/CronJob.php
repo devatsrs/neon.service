@@ -289,6 +289,7 @@ class CronJob extends \Eloquent {
         $LastRunTime = $CronJob->LastRunTime;
         $ComanyName = Company::getName($CompanyID);
         $PID = $CronJob->PID;
+        $MysqlPID = $CronJob->MysqlPID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
         $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
@@ -302,9 +303,21 @@ class CronJob extends \Eloquent {
             $KillCommand = 'Taskkill /PID '.$PID.' /F';
         }
 
+        if($MysqlPID!=''){
+            try{
+                $MysqlProcess=DB::select("SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST where ID=".$MysqlPID);
+                if(!empty($MysqlProcess)){
+                    terminateMysqlProcess($MysqlPID);
+                }
+            }catch (\Exception $err) {
+                Log::error($err);
+            }
+
+        }
+
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
-		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
+		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00'),"MysqlPID"=>"","ProcessID"=>""]);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
@@ -328,7 +341,7 @@ class CronJob extends \Eloquent {
             $emaildata['EmailTo'] = $ActiveCronJobEmailTo;
             $emaildata['EmailToName'] = '';
             $emaildata['Subject'] = $JobTitle . ' is terminated, Was running since ' . $minute . ' minutes.';
-            $emaildata['Url'] = $WEBURL . '/activejob';
+            $emaildata['Url'] = $WEBURL . '/cronjob_monitor';
 
             $emailstatus = Helper::sendMail('emails.ActiveCronJobEmailSend', $emaildata);
             return $emailstatus;
@@ -413,7 +426,7 @@ class CronJob extends \Eloquent {
         $emaildata['LastRunningBehindTime'] = $LastCdrBehindEmailSendTime;
         $emaildata['LastRunningBehindDuration'] = $LastCdrBehindDuration;
         $emaildata['RunningBehindDuration'] = $CdrRunningBehindDuration;
-        $emaildata['Url'] = $WEBURL . '/activejob';
+        $emaildata['Url'] = $WEBURL . '/cronjob_monitor';
         $result = Helper::sendMail('emails.cronjobcdrbehindemail', $emaildata);
         return $result;
     }

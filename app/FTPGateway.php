@@ -60,7 +60,7 @@ class FTPGateway{
             }
         }else {
 
-            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['port'])  && isset(self::$config['ssl'])   && isset(self::$config['passive_mode']) && isset(self::$config['password'])){
+            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
                 self::$FTPSGatewayObj  = new FTPSGateway($CompanyGatewayID);
             }
         }
@@ -92,12 +92,10 @@ class FTPGateway{
             $filename = array();
             $files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $FileNameRule = self::DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"])){
-                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
+            if(isset(self::$config['FileNameRule'])  && !empty(self::$config["FileNameRule"]) ){
+                $FileNameRule = trim(self::$config["FileNameRule"]);
             }
-            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
-                $FileNameRule =  $addparams["FileNameRule"];
-            }
+
             foreach((array)$files as $file){
                 if(strpos($file,$FileNameRule) !== false){
                     $filename[] =$file;
