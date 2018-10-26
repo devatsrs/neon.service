@@ -28,7 +28,17 @@ class FTPSGateway{
                 $this->config[$configkey] = $configval;
             }
         }
-        if(count($this->config) && isset($this->config['host']) && isset($this->config['username']) && isset($this->config['port'])  && isset($this->config['ssl'])   && isset($this->config['passive_mode']) && isset($this->config['password'])){
+        if(count($this->config) && isset($this->config['host']) && isset($this->config['username']) && isset($this->config['password'])){
+
+            if(!isset($this->config['port'])){
+                $this->config['port'] = "21";
+            }
+            if(!isset($this->config['ssl'])){
+                $this->config['ssl'] = 0;
+            }
+            if(!isset($this->config['passive_mode'])){
+                $this->config['passive_mode'] = 0;
+            }
 
             $this->ftp = new \FtpClient\FtpClient();
             $this->ftp->connect($this->config['host'], boolval($this->config['ssl']), $this->config['port']);
@@ -62,15 +72,12 @@ class FTPSGateway{
             $files = $this->ftp->nlist($this->config['cdr_folder']);
 
             $FileNameRule = $this->DEFAULT_FILENAME;
-            if(isset($addparams["FileNameRule"])){
-                $addparams["FileNameRule"]=trim($addparams["FileNameRule"]);
-            }
-            if(isset($addparams["FileNameRule"]) && !empty($addparams["FileNameRule"])){
-                $FileNameRule =  $addparams["FileNameRule"];
+            if(isset($this->config['FileNameRule'])  && !empty($this->config["FileNameRule"]) ){
+                $FileNameRule = trim($this->config["FileNameRule"]);
             }
             foreach((array)$files as $file){
                 if(strpos($file,$FileNameRule) !== false){
-                    $filename[] =$file;
+                    $filename[] =  basename($file);
                 }
             }
             asort($filename);
@@ -97,7 +104,7 @@ class FTPSGateway{
     public function downloadCDR($addparams=array()){
         $status = false;
         if(count($this->config) && isset($this->config['host']) && isset($this->config['username']) && isset($this->config['password'])){
-            $status = $this->ftp->get($addparams['download_path'] . $addparams['filename'],$this->config['cdr_folder'] .'/'. $addparams['filename'], FTP_ASCII  );
+            $status = $this->ftp->get($addparams['download_path'] . basename($addparams['filename']),$this->config['cdr_folder'] .'/'. basename($addparams['filename']), FTP_ASCII  );
             if(isset($addparams['download_temppath'])){
                 $this->ftp->get( $addparams['download_temppath'] . $addparams['filename'],$this->config['cdr_folder'] .'/'. $addparams['filename'], FTP_ASCII  );
             }

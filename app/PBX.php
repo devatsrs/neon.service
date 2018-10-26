@@ -97,7 +97,7 @@ class PBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,cc_type,disposition
+                $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,IFNULL(cc_type ,'') as cc_type,disposition
                     from asteriskcdrdb.cdr c
                     left outer join asterisk.cc_callcosts cc on
                      c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) ) /*-- Given by mirta same as in their front end.*/
@@ -105,11 +105,12 @@ class PBX{
                     AND (
                            userfield like '%outbound%'
                         or userfield like '%inbound%'
-                        or ( userfield = '' AND  cc_type <> 'OUTNOCHARGE' )  /*-- Ignore Internal call*/
+                        or ( userfield = '' AND  IFNULL(cc_type ,'') <> 'OUTNOCHARGE' )  /*-- Ignore Internal call*/
                         )
                     AND ( dst<>'h' or duration <> 0 ) /*-- given by mirta*/
+                    AND IFNULL(cc_type ,'') <> 'OUTNOCHARGE'
                     and prevuniqueid=''
-                    group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode,cc_type
+                    group by ID,c.`start`,c.`end`,realsrc,firstdst,duration,billsec,userfield,uniqueid,prevuniqueid,lastdst,dst,pincode,IFNULL(cc_type ,'')
                     "; // and userfield like '%outbound%'  removed for inbound calls
                 Log::info($query);
                 $response = DB::connection('pbxmysql')->select($query);
@@ -219,5 +220,26 @@ class PBX{
             }
         }
         return $count;
+    }
+
+    // delete from pbx which is recall payment in neon
+    public static function deleteRecallID($paymentArr=array()){
+        $response = null;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+
+                $where=array();
+                $where["bi_date"]=$paymentArr["bi_date"];
+                $where["bi_te_id"]=$paymentArr["bi_te_id"];
+                $where["bi_description"]=$paymentArr["bi_description"];
+                if(DB::connection('pbxmysql')->table('bi_billings')->where($where)->count()>0){
+                    DB::connection('pbxmysql')->table('bi_billings')->where($where)->delete();
+                }
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
     }
 }
