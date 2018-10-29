@@ -1791,7 +1791,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
 
                 $OneOffcount = InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,
-                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Price'=>$AccountOneOffCharge->Price,'Qty'=>$AccountOneOffCharge->Qty]
+                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Qty'=>$AccountOneOffCharge->Qty]
                 )->count();
 
                 Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID.' - InvoiceAddedornot '.$OneOffcount);
