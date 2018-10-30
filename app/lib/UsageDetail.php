@@ -78,4 +78,61 @@ class UsageDetail extends \Eloquent {
     }
 
 
+    /**
+     * @param $cronsetting
+     * @param $CompanyGatewayID
+     * @param $CronJobID
+     * @return array
+     */
+    public static function reimpoertCDRByStartDate($cronsetting,$CompanyGatewayID,$CronJobID,$CompanyID,$processID){
+        Log::info("===== ReImport CDR By StartDate =========");
+        $ReturnData=array();
+        $CronJob = CronJob::find($CronJobID);
+        $StartDate = trim($cronsetting['CDRImportStartDate']);
+
+        $prc="CALL prc_deleteCDRFromDate('".$StartDate."',".$CompanyGatewayID.",".$processID.")";
+        Log::info($prc);
+        DB::connection('sqlsrvcdr')->select($prc);
+
+        $cronsetting['CDRImportStartDate'] = '';
+        $cronsetting = json_encode($cronsetting);
+
+        if($CronJob->update(['Settings'=>$cronsetting])){
+
+            $ReturnData['CronJobStatus']=CronJob::CRON_SUCCESS;
+            $ReturnData['Message'] = "Data deleted From ".$StartDate." to Current Date time.<br>";
+            Log::info("==== Reimport CDR Success From ".$StartDate);
+
+        }else{
+
+            Log::info("=====ReimportCDR Fail to update======");
+            $ReturnData['CronJobStatus'] = CronJob::CRON_FAIL;
+            $ReturnData['Message'] = "Something Went Wrong";
+
+        }
+
+        self::addTempUsageDownloadLog($CompanyID,$CompanyGatewayID,$StartDate);
+
+        return $ReturnData;
+
+    }
+
+    public static function addTempUsageDownloadLog($CompanyID,$CompanyGatewayID,$StartDate){
+        $LogCount=TempUsageDownloadLog::where(array('CompanyID' => $CompanyID, 'CompanyGatewayID' => $CompanyGatewayID))->count();
+
+        if($LogCount === 0 ){
+            $TempUsageLogdata=array();
+            $TempUsageLogdata['CompanyGatewayID'] = $CompanyGatewayID;
+            $TempUsageLogdata['CompanyID'] = $CompanyID;
+            $TempUsageLogdata['start_time'] = $StartDate;
+            $TempUsageLogdata['end_time'] = $StartDate;
+            $logdata['created_at'] = date('Y-m-d H:i:s');
+            $TempUsageLogdata['ProcessID'] = "##RESET##";
+
+            TempUsageDownloadLog::insert($TempUsageLogdata);
+
+        }
+
+    }
+
 }

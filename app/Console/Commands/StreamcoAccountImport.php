@@ -6,6 +6,7 @@ use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\UsageDetail;
 use App\Streamco;
 use Exception;
 use Illuminate\Console\Command;
@@ -72,17 +73,25 @@ class StreamcoAccountImport extends Command {
         try {
             Log::error(' ========================== streamco transaction start =============================');
             CronJob::createLog($CronJobID);
-            $streamco = new Streamco($CompanyGatewayID);
 
-            // starts import accounts
-            $addparams['CompanyGatewayID'] = $CompanyGatewayID;
-            $addparams['CompanyID'] = $CompanyID;
-            $addparams['ProcessID'] = $processID;
-            $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
-            Account::importStreamcoAccounts($streamco,$addparams);
+            if(isset($cronsetting['CDRImportStartDate']) && trim($cronsetting['CDRImportStartDate'])!=''){
+
+                $result=UsageDetail::reimpoertCDRByStartDate($cronsetting,$CompanyGatewayID,$CronJobID,$CompanyID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] = $result['Message'];
+
+            }else {
+                $streamco = new Streamco($CompanyGatewayID);
+
+                // starts import accounts
+                $addparams['CompanyGatewayID'] = $CompanyGatewayID;
+                $addparams['CompanyID'] = $CompanyID;
+                $addparams['ProcessID'] = $processID;
+                $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
+                Account::importStreamcoAccounts($streamco, $addparams);
 //            Account::importStreamcoTrunks($streamco,$addparams);
-            // ends import accounts
-
+                // ends import accounts
+            }
         } catch (\Exception $e) {
             try {
                 DB::rollback();
