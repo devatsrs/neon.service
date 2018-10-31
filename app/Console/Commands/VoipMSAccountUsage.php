@@ -194,7 +194,12 @@ class VoipMSAccountUsage extends Command {
                             }
                         }
                     }
-                }
+                
+            } else {
+                throw new Exception($response['faultCode']);
+            }
+
+ 
 
                 if (!empty($InserData)) {
                     DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);

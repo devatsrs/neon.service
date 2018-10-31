@@ -108,9 +108,11 @@ class CompanyGateway extends \Eloquent {
                                     `userfield` VARCHAR(255) NULL DEFAULT NULL ,
                                     `cc_type` TINYINT(1) NULL DEFAULT NULL ,
                                     `customer_trunk_type` VARCHAR(255) NULL DEFAULT NULL ,
+                                    `TimezonesID` INT(11) NULL DEFAULT NULL,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
                                     INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
+                                    INDEX `IX_CDR_Timezone` (`TimezonesID`),
                                     INDEX `IX_ID` (`ID`)
                                 )
                                 ENGINE=InnoDB ; ';
@@ -202,9 +204,11 @@ class CompanyGateway extends \Eloquent {
                 `ProcessID`  BIGINT(20) UNSIGNED NULL DEFAULT NULL ,
                 `is_rerated` TINYINT(1) NULL DEFAULT 0,
                 `vendor_trunk_type` VARCHAR(255) NULL DEFAULT NULL ,
+                `TimezonesID` INT(11) NULL DEFAULT NULL,
                  PRIMARY KEY (`TempVendorCDRID`),
                  INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
                  INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
+                 INDEX `IX_CDR_Timezone` (`TimezonesID`),
                  INDEX `IX_ID` (`ID`)
                  )COLLATE=\'utf8_unicode_ci\' ENGINE=InnoDB ; ';
             DB::connection('sqlsrvcdr')->statement($sql_create_table);
