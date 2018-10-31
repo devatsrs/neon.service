@@ -78,61 +78,89 @@ class UsageDetail extends \Eloquent {
     }
 
 
-    /**
+    /** Delete CDR from Given Date to Current Date
      * @param $cronsetting
      * @param $CompanyGatewayID
      * @param $CronJobID
      * @return array
      */
-    public static function reimpoertCDRByStartDate($cronsetting,$CompanyGatewayID,$CronJobID,$CompanyID,$processID){
-        Log::info("===== ReImport CDR By StartDate =========");
+    public static function reImportCDRByStartDate($cronsetting,$CronJobID,$processID){
+
         $ReturnData=array();
         $CronJob = CronJob::find($CronJobID);
+        $CompanyID = $CronJob->CompanyID;
         $StartDate = trim($cronsetting['CDRImportStartDate']);
+        $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
 
-        $prc="CALL prc_deleteCDRFromDate('".$StartDate."',".$CompanyGatewayID.",".$processID.")";
-        Log::info($prc);
-        DB::connection('sqlsrvcdr')->select($prc);
+        //@TODO: Add transaction Start
+        //@TODO: try catch
 
-        $cronsetting['CDRImportStartDate'] = '';
-        $cronsetting = json_encode($cronsetting);
+        try{
 
-        if($CronJob->update(['Settings'=>$cronsetting])){
+            Log::info("===== ReImport CDR By StartDate =========");
 
-            $ReturnData['CronJobStatus']=CronJob::CRON_SUCCESS;
-            $ReturnData['Message'] = "Data deleted From ".$StartDate." to Current Date time.<br>";
-            Log::info("==== Reimport CDR Success From ".$StartDate);
+            DB::connection('sqlsrvcdr')->beginTransaction();
 
-        }else{
+            $EndDate = date("Y-m-d");
+            $prc="CALL prc_deleteCDRFromDate('".$StartDate."',".$CompanyGatewayID.",".$processID.",'".$EndDate."')";
+            DB::connection('sqlsrvcdr')->select($prc);
+            Log::info($prc);
 
-            Log::info("=====ReimportCDR Fail to update======");
+            DB::connection('sqlsrvcdr')->commit();
+
+            Log::info("===== End ReImport CDR By StartDate =========");
+
+            //Remove start date when cdr deleted.
+            $cronsetting['CDRImportStartDate'] = '';
+            $cronsetting = json_encode($cronsetting);
+
+            DB::connection('sqlsrv2')->beginTransaction();
+
+            TempUsageDownloadLog::addStartEntryForNewGateway($CompanyID,$CompanyGatewayID,$StartDate);
+
+            DB::connection('sqlsrv2')->commit();
+
+            if($CronJob->update(['Settings'=>$cronsetting])){
+
+                $ReturnData['CronJobStatus']=CronJob::CRON_SUCCESS;
+                $ReturnData['Message'] = "Data deleted From ".$StartDate." to Current Date time.<br>";
+                Log::info("==== Reimport CDR Success From ".$StartDate);
+
+            }else{
+
+                Log::info("=====ReimportCDR Fail to update======");
+                $ReturnData['CronJobStatus'] = CronJob::CRON_FAIL;
+                $ReturnData['Message'] = "Something Went Wrong";
+
+            }
+
+        }catch(\Exception $e){
+
+            Log::info("===== Exception catch in CDR Reimport ======");
+            Log::error($e);
+
+            try {
+
+                DB::connection('sqlsrv2')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
+
+            } catch (\Exception $err) {
+
+                Log::error($err);
+
+            }
+
             $ReturnData['CronJobStatus'] = CronJob::CRON_FAIL;
-            $ReturnData['Message'] = "Something Went Wrong";
+            $ReturnData['Message'] = 'Error:'.$e->getMessage();
 
         }
 
-        self::addTempUsageDownloadLog($CompanyID,$CompanyGatewayID,$StartDate);
+
+        //@TODO: Add transaction end
 
         return $ReturnData;
 
     }
 
-    public static function addTempUsageDownloadLog($CompanyID,$CompanyGatewayID,$StartDate){
-        $LogCount=TempUsageDownloadLog::where(array('CompanyID' => $CompanyID, 'CompanyGatewayID' => $CompanyGatewayID))->count();
-
-        if($LogCount === 0 ){
-            $TempUsageLogdata=array();
-            $TempUsageLogdata['CompanyGatewayID'] = $CompanyGatewayID;
-            $TempUsageLogdata['CompanyID'] = $CompanyID;
-            $TempUsageLogdata['start_time'] = $StartDate;
-            $TempUsageLogdata['end_time'] = $StartDate;
-            $logdata['created_at'] = date('Y-m-d H:i:s');
-            $TempUsageLogdata['ProcessID'] = "##RESET##";
-
-            TempUsageDownloadLog::insert($TempUsageLogdata);
-
-        }
-
-    }
 
 }

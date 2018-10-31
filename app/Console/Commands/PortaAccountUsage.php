@@ -101,7 +101,7 @@ class PortaAccountUsage extends Command {
 
             if(isset($cronsetting['CDRImportStartDate']) && trim($cronsetting['CDRImportStartDate'])!=''){
 
-                $result =  UsageDetail::reimpoertCDRByStartDate($cronsetting,$CompanyGatewayID,$CronJobID,$CompanyID,$processID);
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
 
                 $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
                 $joblogdata['Message'] .= $result['Message'];

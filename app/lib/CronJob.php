@@ -23,6 +23,8 @@ class CronJob extends \Eloquent {
     const  YEARLY = 6;
     const  CUSTOM = 7;
 
+    const JOBDAY_DAILY = 'DAILY';
+
     const  CRON_SUCCESS = 1;
     const  CRON_FAIL = 2;
 	const  RATEEMAILTEMPLATE = 'CronRateSheetEmail';
@@ -55,9 +57,9 @@ class CronJob extends \Eloquent {
                     }
                     $dayname = strtoupper(date('D'));
 
-                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
-                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
                     }
 
@@ -77,9 +79,9 @@ class CronJob extends \Eloquent {
                         }
                     }
                     $dayname = strtoupper(date('D'));
-                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
-                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
                     }
                     If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:00')){
@@ -97,9 +99,9 @@ class CronJob extends \Eloquent {
                         }
                     }
                     $dayname = strtoupper(date('D'));
-                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
-                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
                     }
                     If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:00')){
@@ -118,9 +120,9 @@ class CronJob extends \Eloquent {
                     }
 
                     $dayname = strtoupper(date('D'));
-                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
-                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
                     }
                     If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:00')){
@@ -143,9 +145,9 @@ class CronJob extends \Eloquent {
                         }
                     }
                     $dayname = strtoupper(date('D'));
-                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+                    if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
-                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+                    }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                         $strtotime = 0;
                     }
                     If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:s',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:s')){
@@ -161,9 +163,9 @@ class CronJob extends \Eloquent {
                 $strtotime += 7*60*60*24;
             }
             $dayname = strtoupper(date('D'));
-            if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array('DAILY',$cronsetting->JobDay)){
+            if(isset($cronsetting->JobDay) && is_array($cronsetting->JobDay) && !in_array($dayname,$cronsetting->JobDay) && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                 $strtotime = 0;
-            }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array('DAILY',$cronsetting->JobDay)){
+            }else if(isset($cronsetting->JobDay) && !is_array($cronsetting->JobDay) && $cronsetting->JobDay != $dayname && !in_array(self::JOBDAY_DAILY,$cronsetting->JobDay)){
                 $strtotime = 0;
             }
             If(isset($cronsetting->JobStartTime) && date('Y-m-d H:i:00',strtotime(date('Y-m-d ').$cronsetting->JobStartTime)) > date('Y-m-d H:i:00')) {

@@ -74,24 +74,17 @@ class StreamcoAccountImport extends Command {
             Log::error(' ========================== streamco transaction start =============================');
             CronJob::createLog($CronJobID);
 
-            if(isset($cronsetting['CDRImportStartDate']) && trim($cronsetting['CDRImportStartDate'])!=''){
+            $streamco = new Streamco($CompanyGatewayID);
 
-                $result=UsageDetail::reimpoertCDRByStartDate($cronsetting,$CompanyGatewayID,$CronJobID,$CompanyID,$processID);
-                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
-                $joblogdata['Message'] = $result['Message'];
-
-            }else {
-                $streamco = new Streamco($CompanyGatewayID);
-
-                // starts import accounts
-                $addparams['CompanyGatewayID'] = $CompanyGatewayID;
-                $addparams['CompanyID'] = $CompanyID;
-                $addparams['ProcessID'] = $processID;
-                $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
-                Account::importStreamcoAccounts($streamco, $addparams);
+            // starts import accounts
+            $addparams['CompanyGatewayID'] = $CompanyGatewayID;
+            $addparams['CompanyID'] = $CompanyID;
+            $addparams['ProcessID'] = $processID;
+            $addparams['ImportDate'] = date('Y-m-d H:i:s.000');
+            Account::importStreamcoAccounts($streamco, $addparams);
 //            Account::importStreamcoTrunks($streamco,$addparams);
-                // ends import accounts
-            }
+            // ends import accounts
+
         } catch (\Exception $e) {
             try {
                 DB::rollback();
