@@ -140,7 +140,7 @@ class VendorCDRRecalculate extends Command {
                     $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($skiped_account_data));
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
                 } else {
-                    $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';
+                    $jobdata['JobStatusMessage'] = 'Vendor CDR ReRated Successfully';
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
                 //if(count($skiped_account_data) == 0) {
