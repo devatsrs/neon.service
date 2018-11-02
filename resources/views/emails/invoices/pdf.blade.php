@@ -334,10 +334,10 @@
             <tr>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
             </tr>
             </thead>
@@ -347,10 +347,10 @@
                     <tr>
                         <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                         <td class="leftalign">{{$ProductRow->Description}}</td>
-                        <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
-                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                        <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
+                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
                     </tr>
                 @endif
@@ -370,10 +370,11 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -383,10 +384,15 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
-                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
-                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -406,9 +412,10 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
-                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -418,9 +425,14 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                             <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
-                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
