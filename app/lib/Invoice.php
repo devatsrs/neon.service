@@ -561,7 +561,9 @@ class Invoice extends \Eloquent {
                 $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID,$ServiceID);
                 $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,$ServiceID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
-                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->groupBy("TaxRateID")->get();
             }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
@@ -1789,7 +1791,7 @@ class Invoice extends \Eloquent {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
 
                 $OneOffcount = InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,
-                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Price'=>$AccountOneOffCharge->Price,'Qty'=>$AccountOneOffCharge->Qty]
+                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Qty'=>$AccountOneOffCharge->Qty]
                 )->count();
 
                 Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID.' - InvoiceAddedornot '.$OneOffcount);
