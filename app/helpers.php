@@ -273,7 +273,8 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{CurrencySymbol}}",
         "{{AccountBalance}}",
         "{{AccountExposure}}",
-        "{{AccountBlocked}}"
+        "{{AccountBlocked}}",
+        "{{InvoiceLink}}"
     ];
 
     foreach($extra as $item){
@@ -782,7 +783,7 @@ function filterArrayRemoveNewLines($arr) { // remove new lines (/r/n) etc...
         $oldkey = $key;
         /*$key = str_replace("\r", '', $key);
         $key = str_replace("\n", '', $key);*/
-        $key = preg_replace('/\s+/', ' ',$key);
+        $key = trim(preg_replace('/\s+/', ' ',$key));
         $arr[$key] = $value;
         if($key != $oldkey)
             unset($arr[$oldkey]);
