@@ -775,7 +775,7 @@ class Invoice extends \Eloquent {
 
                              $Title = $TaxRate->Title . ' (Subscription)';*/
                             foreach($InvoiceDetails as $InvoiceDetail){
-                                $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
+                                $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'AccountSubscriptionID'=>$InvoiceDetail->AccountSubscriptionID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
                                 if($ExemptTax == 0) {
 
                                     $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $InvoiceDetail->LineTotal);
@@ -1377,9 +1377,11 @@ class Invoice extends \Eloquent {
                         if ($AlreadyBilled == 1) {
                             log::info($AccountSubscription->InvoiceDescription . ' ' . $SubscriptionStartDate . ' ' . $SubscriptionEndDate . ' is already charged');
                         }
+                    }else{
+                        $SubscriptionStartDate = $StartDate;
                     }
 
-                    if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$StartDate)) {
+                    if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$SubscriptionStartDate)) {
                         Log::info( 'First Time + Advance Billing - Yes' );
 
                         /**
