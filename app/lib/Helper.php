@@ -342,7 +342,14 @@ class Helper{
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
-	   
+
+       if(isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])){
+           $WEBURL = CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId, 'WEB_URL');
+           $replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $extra_settings['InvoiceID'] . '/cview?email='.$Account->Email;
+       }else{
+           $replace_array['InvoiceLink']='';
+       }
+
 	    $CompanyData						= Company::find($Account->CompanyId);	   
 	    $replace_array['CompanyAddress1'] 	= $CompanyData->Address1;
 		$replace_array['CompanyAddress2'] 	= $CompanyData->Address2;
