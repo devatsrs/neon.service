@@ -308,10 +308,8 @@ class Customer extends \Eloquent {
             Log::info($result_i_tariff);
 
             if(!isset($result_i_tariff['error']) && !empty($result_i_tariff['i_tariff'])) {
-                $TrunkIDs = CustomerTrunk::where('AccountID', $account->AccountID)->lists('TrunkID');
-                $TrunkNames = Trunk::whereIn('TrunkID', $TrunkIDs)->lists('Trunk');
-                $TrunkIDs = implode(',', $TrunkIDs);
-                $TrunkNames = implode(',', $TrunkNames);
+                $TrunkID = $account->TrunkID;
+                $TrunkNames = Trunk::find($TrunkID)->Trunk;
 
                 foreach ($Timezones as $TimezoneID => $TimezoneTitle) {
                     try {
@@ -320,7 +318,7 @@ class Customer extends \Eloquent {
                         $file_name = Job::getfileName($account->AccountID, $account->TrunkID, '');
                         $local_file = $destination . '/customer_' . $file_name . '_' . $TimezoneTitle . '.csv';
 
-                        $query = "CALL prc_WSGenerateSippySheet ('" . $account->AccountID . "','" . $TrunkIDs . "'," . $TimezoneID . ",'" . $Effective . "','" . $CustomDate . "')";
+                        $query = "CALL prc_WSGenerateSippySheet ('" . $account->AccountID . "','" . $TrunkID . "'," . $TimezoneID . ",'" . $Effective . "','" . $CustomDate . "')";
                         Log::info($query);
                         $excel_data = DB::select($query);
                         if (count($excel_data) > 0) {
