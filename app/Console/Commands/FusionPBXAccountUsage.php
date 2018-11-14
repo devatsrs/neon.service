@@ -140,8 +140,11 @@ class FusionPBXAccountUsage extends Command {
                         if ($companysetting->NameFormat == 'NUB') {
                             $data['GatewayAccountID'] = $row_account['username'];
                         }
+                        if ($companysetting->NameFormat == 'NAME') {
+                            $data['GatewayAccountID'] = $row_account['domain_description'];
+                        }
                         $data['AccountIP'] = '';
-                        $data['AccountName'] = '';
+                        $data['AccountName'] = $row_account['domain_description'];
                         $data['AccountNumber'] = $row_account['username'];
                         //$data['AccountCLI'] = '';
                         $data['connect_time'] = $row_account['connect_time'];
