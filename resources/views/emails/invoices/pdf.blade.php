@@ -124,6 +124,15 @@
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
     $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
     $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
+    // if cdrtype is detailcdr and calltype is active than we need to display inbound usage and outbound usage separate in detail section. otherwise it will as it is
+    $DisplayCallType=0;
+    $CallTypeData = array('NoCallType');
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR){
+        $DisplayCallType=\App\Lib\InvoiceTemplate::DisplayCallType($usage_data_table['header']);
+        if($DisplayCallType==1){
+            $CallTypeData= array('OutBound','InBound');
+        }
+    }
     ?>
 
 
@@ -451,30 +460,27 @@
             <div class="page_break"></div>
             <br />
             <br />
-
-
-                <header class="clearfix">
-                    @if(!empty($service['servicetitleshow']))
-                        <div id="Service">
-                            <h1>{{$service['name']}}</h1>
-                            @if(!empty($service['servicedescription']))
-                                {{nl2br($service['servicedescription'])}}
-                            @endif
-                        </div>
-                    @else
-                        <div id="Service">
-                            @if(!empty($service['servicedescription']))
-                                <h2> {{nl2br($service['servicedescription'])}} </h2>
-                            @endif
-                        </div>
-                    @endif
-                </header>
-                <main>
-                    <div class="ChargesTitle clearfix">
-                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+            <header class="clearfix">
+                @if(!empty($service['servicetitleshow']))
+                    <div id="Service">
+                        <h1>{{$service['name']}}</h1>
+                        @if(!empty($service['servicedescription']))
+                            {{nl2br($service['servicedescription'])}}
+                        @endif
                     </div>
-
+                @else
+                    <div id="Service">
+                        @if(!empty($service['servicedescription']))
+                            <h2> {{nl2br($service['servicedescription'])}} </h2>
+                        @endif
+                    </div>
+                @endif
+            </header>
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
+            <main>
+                <div class="ChargesTitle clearfix">
+                    <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
@@ -542,10 +548,19 @@
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>
                 </table>
+            </main>
             @endif
 
-
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR)
+            <main>
+                @foreach($CallTypeData as $key=>$Value)
+                <div class="ChargesTitle clearfix">
+                    @if($Value=='NoCallType')
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                    @else
+                        <div class="pull-left flip">{{$Value}} {{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                    @endif
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
@@ -561,10 +576,18 @@
                         @endforeach
                     </tr>
                     <?php
-                    $totalBillDuration=0;
-                    $totalTotalCharges=0;
+                        $totalBillDuration=0;
+                        $totalTotalCharges=0;
+                        $CallTypeColumn='';
+                        if($Value=='InBound'){
+                            $CallTypeColumn='Incoming';
+                        }
+                        if($Value=='OutBound'){
+                            $CallTypeColumn='Outgoing';
+                        }
                     ?>
                     @foreach($usage_data_table['data'][$ServiceID] as $row)
+                    @if($row['CallType']==$CallTypeColumn || $DisplayCallType==0)
                         <?php
                         $totalBillDuration  +=  $row['BillDuration'];
 						$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
@@ -588,6 +611,7 @@
                                 @endif
                             @endforeach
                         </tr>
+                        @endif
                     @endforeach
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
@@ -600,10 +624,9 @@
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>
                 </table>
+                @endforeach
+            </main>
             @endif
-                </main>
-
-
         @endif
     @endforeach
 	@endif
