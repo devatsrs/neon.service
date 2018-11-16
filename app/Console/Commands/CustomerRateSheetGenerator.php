@@ -597,7 +597,7 @@ class CustomerRateSheetGenerator extends Command {
             $emaildata['attach'] = $local_dir . basename($file_name);
             $emaildata['EmailTo'] = explode(',', $userInfo->EmailAddress);
             $emaildata['EmailToName'] = $userInfo->FirstName . ' ' . $userInfo->LastName;
-            $emaildata['Subject'] = "Rate Notification – ".$account->AccountName." (".$account->trunk_name.") (".date('Y-m-d').")";
+            $emaildata['Subject'] = $job->Title . ' ' . $account->RateEmail;
             $emaildata['CompanyName'] = $Company->CompanyName;
             $emaildata['CompanyID'] = $CompanyID;
 			if(isset($joboptions->email_from))
