@@ -334,20 +334,23 @@ class PortaAccountUsage extends Command {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
 
+        if (empty($endtime)) {
+            return date('Y-m-01 00:00:00');
+        }
+
         $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute',strtotime($endtime)));  //date('Y-m-d H:i:s');
         if($endtime > date('Y-m-d H:i:s')){
             return date('Y-m-d H:i:s');
         }
 
-        $current = strtotime(date('Y-m-d H:i:s'));
+        return $endtime;
+
+       /* $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
         if ($minutes <= $usageinterval) {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
         }
-        if (empty($endtime)) {
-            $endtime = date('Y-m-01 00:00:00');
-        }
-        return $endtime;
+        return $endtime;*/
     }
 }
