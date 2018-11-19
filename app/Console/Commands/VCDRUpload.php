@@ -187,9 +187,12 @@ class VCDRUpload extends Command
                         }else if($RateCDR == 1){
                             $cdrdata['buying_cost'] = 0;
                         }
+                        if (!empty($attrselection->area_prefix)) {
+                            $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
+                        }
                         if (!empty($attrselection->sellcost)) {
                             if (!empty($joboptions->RateCDR) && !empty($attrselection->area_prefix) && !empty($joboptions->TrunkID) && $joboptions->TrunkID > 0) {
-                                $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
+                                //$cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
                                 $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->TrunkID))->Pluck('trunk');
                                 $RateFormat = Company::CHARGECODE;
                             } else {
