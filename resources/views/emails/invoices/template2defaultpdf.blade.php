@@ -482,7 +482,12 @@
                         @if($Value=='NoCallType')
                             <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
                         @else
-                            <div class="pull-left flip">{{$Value}} {{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                            @if($Value=='OutBound')
+                                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Outgoing</div>
+                            @endif
+                            @if($Value=='InBound')
+                                <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Incoming</div>
+                            @endif
                         @endif
                     </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
