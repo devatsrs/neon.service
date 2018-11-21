@@ -319,29 +319,35 @@ class PortaAccountUsage extends Command {
 
         $seconds = strtotime(date('Y-m-d 00:00:00')) - strtotime($startdate);
         $hours = round($seconds / 60 / 60);
-
-        if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
-        } else {
-            $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $usageinterval * 60);
+        $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
+        if($endtimefinal > date('Y-m-d H:i:s')){
+            return date('Y-m-d H:i:s');
         }
-
         return $endtimefinal;
+
     }
 
     public static function getStartDate($companyid, $CompanyGatewayID, $CronJobID)
     {
         $endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
+        $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute',strtotime($endtime)));  //date('Y-m-d H:i:s');
+        if($endtime > date('Y-m-d H:i:s')){
+            return date('Y-m-d H:i:s');
+        }
+
+        $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
         $minutes = round($seconds / 60);
         if ($minutes <= $usageinterval) {
             $endtime = date('Y-m-d H:i:s', strtotime('-'.$usageinterval.' minute'));  //date('Y-m-d H:i:s');
+            Log::info("here - "  . $endtime);
         }
         if (empty($endtime)) {
             $endtime = date('Y-m-01 00:00:00');
         }
         return $endtime;
     }
+    
 }
