@@ -155,6 +155,15 @@
             $AllPayment  += str_replace(',','',$row['Amount']);
         }
     }
+    // if cdrtype is detailcdr and calltype is active than we need to display inbound usage and outbound usage separate in detail section. otherwise it will as it is
+    $DisplayCallType=0;
+    $CallTypeData = array('NoCallType');
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR){
+        $DisplayCallType=\App\Lib\InvoiceTemplate::DisplayCallType($usage_data_table['header']);
+        if($DisplayCallType==1){
+            $CallTypeData= array('OutBound','InBound');
+        }
+    }
     ?>
 
 
@@ -291,10 +300,10 @@
             <tr>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
             </tr>
             </thead>
@@ -304,10 +313,10 @@
                     <tr>
                         <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                         <td class="leftalign">{{$ProductRow->Description}}</td>
-                        <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
-                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                        <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
+                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="rightalign leftsideview">{{number_format($service['usage_cost'],$RoundChargesAmount)}}</td>
                     </tr>
                 @endif
@@ -327,10 +336,11 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -340,10 +350,15 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
-                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
-                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -363,9 +378,10 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
-                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -375,9 +391,14 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                             <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
-                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -396,30 +417,28 @@
             <div class="page_break"></div>
             <br />
             <br />
-
-
-                <header class="clearfix">
-                    @if(!empty($service['servicetitleshow']))
-                        <div id="Service">
-                            <h1>{{$service['name']}}</h1>
-                            @if(!empty($service['servicedescription']))
-                                {{nl2br($service['servicedescription'])}}
-                            @endif
-                        </div>
-                    @else
-                        <div id="Service">
-                            @if(!empty($service['servicedescription']))
-                                <h2> {{nl2br($service['servicedescription'])}} </h2>
-                            @endif
-                        </div>
-                    @endif
-                </header>
-                <main>
-                    <div class="ChargesTitle clearfix">
-                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+            <header class="clearfix">
+                @if(!empty($service['servicetitleshow']))
+                    <div id="Service">
+                        <h1>{{$service['name']}}</h1>
+                        @if(!empty($service['servicedescription']))
+                            {{nl2br($service['servicedescription'])}}
+                        @endif
                     </div>
+                @else
+                    <div id="Service">
+                        @if(!empty($service['servicedescription']))
+                            <h2> {{nl2br($service['servicedescription'])}} </h2>
+                        @endif
+                    </div>
+                @endif
+            </header>
 
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
+            <main>
+                <div class="ChargesTitle clearfix">
+                    <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
@@ -487,10 +506,24 @@
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>
                 </table>
+            </main>
             @endif
 
-
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR)
+            <main>
+            @foreach($CallTypeData as $key=>$Value)
+                <div class="ChargesTitle clearfix">
+                    @if($Value=='NoCallType')
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                    @else
+                        @if($Value=='OutBound')
+                            <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Outgoing</div>
+                        @endif
+                        @if($Value=='InBound')
+                            <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Incoming</div>
+                        @endif
+                    @endif
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
                         @foreach($usage_data_table['header'] as $row)
@@ -506,10 +539,18 @@
                         @endforeach
                     </tr>
                     <?php
-                    $totalBillDuration=0;
-                    $totalTotalCharges=0;
+                        $totalBillDuration=0;
+                        $totalTotalCharges=0;
+                        $CallTypeColumn='';
+                        if($Value=='InBound'){
+                            $CallTypeColumn='Incoming';
+                        }
+                        if($Value=='OutBound'){
+                            $CallTypeColumn='Outgoing';
+                        }
                     ?>
                     @foreach($usage_data_table['data'][$ServiceID] as $row)
+                    @if($row['CallType']==$CallTypeColumn || $DisplayCallType==0)
                         <?php
                         $totalBillDuration  +=  $row['BillDuration'];
 						$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
@@ -533,6 +574,7 @@
                                 @endif
                             @endforeach
                         </tr>
+                    @endif
                     @endforeach
                     <tr>
                         <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
@@ -545,10 +587,9 @@
                         <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
                     </tr>
                 </table>
+            @endforeach
+            </main>
             @endif
-                </main>
-
-
         @endif
     @endforeach
 	@endif
