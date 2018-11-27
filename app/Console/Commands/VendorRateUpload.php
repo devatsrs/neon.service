@@ -337,7 +337,7 @@ class VendorRateUpload extends Command
                                             } else if (!empty($attrselection2->Code)) {
                                                 $selection_Code = $attrselection2->Code;
                                             }
-                                            if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                            if (isset($selection_Code) && !empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
                                                 $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
                                             } else if (!empty($tempvendordata['CountryCode'])) {
                                                 $tempvendordata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
