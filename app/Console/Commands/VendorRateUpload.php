@@ -310,6 +310,7 @@ class VendorRateUpload extends Command
                                         $temp_row[$key] = $value;
                                     }*/
                                     $temp_row = filterArrayRemoveNewLines($temp_row);
+                                    $temp_row = removeSpaceFromArrayKey($temp_row);
 
                                     $tempvendordata = array();
                                     $tempvendordata['codedeckid'] = $joboptions->codedeckid;
@@ -320,9 +321,9 @@ class VendorRateUpload extends Command
                                     if (!empty($checkemptyrow)) {
                                         if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
                                             if (!empty($attrselection->CountryCode)) {
-                                                $selection_CountryCode = $attrselection->CountryCode;
+                                                $selection_CountryCode = trim($attrselection->CountryCode);
                                             } else if (!empty($attrselection2->CountryCode)) {
-                                                $selection_CountryCode = $attrselection2->CountryCode;
+                                                $selection_CountryCode = trim($attrselection2->CountryCode);
                                             }
                                             if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
                                                 $tempvendordata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
@@ -333,9 +334,9 @@ class VendorRateUpload extends Command
 
                                         if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
                                             if (!empty($attrselection->Code)) {
-                                                $selection_Code = $attrselection->Code;
+                                                $selection_Code = trim($attrselection->Code);
                                             } else if (!empty($attrselection2->Code)) {
-                                                $selection_Code = $attrselection2->Code;
+                                                $selection_Code = trim($attrselection2->Code);
                                             }
                                             if (isset($selection_Code) && !empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
                                                 $tempvendordata['Code'] = trim($temp_row[$selection_Code]);
@@ -348,9 +349,9 @@ class VendorRateUpload extends Command
 
                                         if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
                                             if (!empty($attrselection->Description)) {
-                                                $selection_Description = $attrselection->Description;
+                                                $selection_Description = trim($attrselection->Description);
                                             } else if (!empty($attrselection2->Description)) {
-                                                $selection_Description = $attrselection2->Description;
+                                                $selection_Description = trim($attrselection2->Description);
                                             }
                                             if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
                                                 $tempvendordata['Description'] = $temp_row[$selection_Description];
@@ -404,10 +405,10 @@ class VendorRateUpload extends Command
 
                                         if (!empty($attrselection->EffectiveDate) || !empty($attrselection2->EffectiveDate)) {
                                             if (!empty($attrselection->EffectiveDate)) {
-                                                $selection_EffectiveDate = $attrselection->EffectiveDate;
+                                                $selection_EffectiveDate = trim($attrselection->EffectiveDate);
                                                 $selection_dateformat = $attrselection->DateFormat;
                                             } else if (!empty($attrselection2->EffectiveDate)) {
-                                                $selection_EffectiveDate = $attrselection2->EffectiveDate;
+                                                $selection_EffectiveDate = trim($attrselection2->EffectiveDate);
                                                 $selection_dateformat = $attrselection2->DateFormat;
                                             }
 
