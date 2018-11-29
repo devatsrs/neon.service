@@ -820,3 +820,12 @@ function terminateMysqlProcess($pid){
     DB::connection('sqlsrv2')->select($cmd);
 
 }
+
+function removeSpaceFromArrayKey($arr=array()){
+    if(!empty($arr)){
+        $a = array_map('trim', array_keys($arr));
+        $b = array_map('trim', $arr);
+        $arr = array_combine($a, $b);
+    }
+    return $arr;
+}
