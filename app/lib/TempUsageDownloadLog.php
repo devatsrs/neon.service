@@ -46,4 +46,30 @@ class TempUsageDownloadLog extends \Eloquent {
         $StartDate =  TempUsageDownloadLog::where(['CompanyID'=>$CompanyID])->min('start_time');
         return $StartDate;
     }
+
+
+    /** Add TempUsageDownloadLog entry if New Gateway Setup
+     * @param $CompanyID
+     * @param $CompanyGatewayID
+     * @param $StartDate
+     */
+    public static function addStartEntryForNewGateway($CompanyID,$CompanyGatewayID,$StartDate){
+
+        if(TempUsageDownloadLog::where(array('CompanyID' => $CompanyID, 'CompanyGatewayID' => $CompanyGatewayID))->count() === 0 ){
+
+            $TempUsageLogdata = array();
+
+            $TempUsageLogdata['CompanyGatewayID'] = $CompanyGatewayID;
+            $TempUsageLogdata['CompanyID'] = $CompanyID;
+            $TempUsageLogdata['start_time'] = $StartDate;
+            $TempUsageLogdata['end_time'] = $StartDate;
+            $logdata['created_at'] = date('Y-m-d H:i:s');
+            $TempUsageLogdata['ProcessID'] = "##START##";
+
+            TempUsageDownloadLog::insert($TempUsageLogdata);
+
+        }
+
+    }
+
 }

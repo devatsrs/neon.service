@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\UsageDetail;
 use App\SippySQL;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
@@ -84,23 +85,33 @@ class SippySQLAccountUsage extends Command {
         try {
             Log::error(' ========================== Sippy SQL transaction start =============================');
             CronJob::createLog($CronJobID);
+
+            if(isset($cronsetting['CDRImportStartDate']) && !empty($cronsetting['CDRImportStartDate'])){
+
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] .= $result['Message'];
+                goto end_of_cronjob;
+                // break cron job after CDR Delete
+            }
+
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
 
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+            if (isset($companysetting->RateCDR) && $companysetting->RateCDR) {
                 $RateCDR = $companysetting->RateCDR;
             }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+            if (isset($companysetting->RateFormat) && $companysetting->RateFormat) {
                 $RateFormat = $companysetting->RateFormat;
             }
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
+            if (!empty($companysetting->CLITranslationRule)) {
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
-            if(!empty($companysetting->CLDTranslationRule)){
+            if (!empty($companysetting->CLDTranslationRule)) {
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if(!empty($companysetting->PrefixTranslationRule)){
+            if (!empty($companysetting->PrefixTranslationRule)) {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
@@ -115,10 +126,9 @@ class SippySQLAccountUsage extends Command {
                 date_default_timezone_set('GMT'); // just to use e in date() function
             }
 
-            try{
-                $this->createAccountJobLog($CompanyID,$CompanyGatewayID);
-            }
-            catch (Exception $ex ) {
+            try {
+                $this->createAccountJobLog($CompanyID, $CompanyGatewayID);
+            } catch (Exception $ex) {
                 Log::error($ex);
             }
 
@@ -130,7 +140,7 @@ class SippySQLAccountUsage extends Command {
             //start end time
             $filedetail = "<br>Gateway Current Time:  " . date('Y-m-d H:i:s');
             $filedetail .= "<br>Last End Time: " . $endtime;
-            $filedetail .= "<br>New Start Time: " . date('Y-m-d H:i:s', strtotime('-10 minute',strtotime($endtime)));
+            $filedetail .= "<br>New Start Time: " . date('Y-m-d H:i:s', strtotime('-10 minute', strtotime($endtime)));
 
 //	Debug only ...
 
@@ -281,11 +291,11 @@ class SippySQLAccountUsage extends Command {
 
                 Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
-                $skiped_vaccount_data = TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '','CurrentRate',0, $RerateAccounts);
+                $skiped_vaccount_data = TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '', 'CurrentRate', 0, $RerateAccounts);
                 $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
 
-                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
-                $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID',$processID)->count();
+                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
+                $vtotaldata_count = DB::connection('sqlsrvcdr')->table($tempVendortable)->where('ProcessID', $processID)->count();
 
                 DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrvcdr')->beginTransaction();
@@ -300,8 +310,8 @@ class SippySQLAccountUsage extends Command {
                 }
                 $filedetail .= "<br>----------------------------------------";
                 $filedetail .= "";
-                $filedetail .= '<br>Vendor From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $vtotaldata_count;
-                $filedetail .= '<br>Customer From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) .' count '. $totaldata_count;
+                $filedetail .= '<br>Vendor From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) . ' count ' . $vtotaldata_count;
+                $filedetail .= '<br>Customer From ' . date('Y-m-d H:i:s', strtotime($param['start_date_ymd'])) . ' To ' . date('Y-m-d H:i:s', strtotime($param['end_date_ymd'])) . ' count ' . $totaldata_count;
 
 
                 Log::error("SippySQL CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
@@ -332,8 +342,7 @@ class SippySQLAccountUsage extends Command {
                 DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
 
                 TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
-            }
-            else{
+            } else {
                 //start end time
                 date_default_timezone_set(Config::get('app.timezone'));
                 $logdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -345,9 +354,10 @@ class SippySQLAccountUsage extends Command {
                 TempUsageDownloadLog::insert($logdata);
 
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-                $joblogdata['Message'] .= 'No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd'];
-                Log::error('No CDR Records Found From '. $param['start_date_ymd'] .' To '.  $param['end_date_ymd']);
+                $joblogdata['Message'] .= 'No CDR Records Found From ' . $param['start_date_ymd'] . ' To ' . $param['end_date_ymd'];
+                Log::error('No CDR Records Found From ' . $param['start_date_ymd'] . ' To ' . $param['end_date_ymd']);
             }
+
         } catch (Exception $e) {
             try {
                 DB::rollback();
@@ -378,6 +388,9 @@ class SippySQLAccountUsage extends Command {
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
+
+        end_of_cronjob:
+
         CronJobLog::createLog($CronJobID,$joblogdata);
         CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
