@@ -31,7 +31,7 @@ class Xero {
 
 		Log::info('-- Xero Api Check --');
 		$this->set_connection($CompanyID);
-    }
+	}
 
 	public function set_connection($CompanyID){
 		$is_xero = SiteIntegration::CheckIntegrationConfiguration(true, SiteIntegration::$XeroSlug,$CompanyID);
@@ -338,7 +338,7 @@ class Xero {
 					//$invoice->setCurrencyCode('GBP');
 					$invoice->setStatus('Draft');
 					//$invoice->setLineAmountType('NoTax');
-					
+
 					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->first();
 					log::info("badal". print_r($data, true));
 					log::info("InvoiceTaxRate". print_r($InvoiceTaxRate, true));
@@ -348,65 +348,77 @@ class Xero {
 
 							$Description = $lineItem['Title'].' - '.$lineItem['Description'];
 							$line->setDescription($Description);
-							$ProductName = product::getProductName($lineItem['ProductID'],$lineItem['ProductType']);	
-							log::info("ProductName". print_r($ProductName, true));							
+							$ProductName = product::getProductName($lineItem['ProductID'],$lineItem['ProductType']);
+							log::info("ProductName". print_r($ProductName, true));
 							$ItemCode = $this->SearchItem($ProductName);
 							if(!empty($ItemCode))
 							{
 								$line->setItemCode($ItemCode);
 							}
-							
+
+							//check if Percentage overall tax is entered (not line tax)
 							if (!empty($InvoiceTaxRate)) {
 								$taxratesdata = $XeroContext->load('Accounting\\TaxRate')
-								->where('Name', $InvoiceTaxRate->Title)
-								->where('Status', 'ACTIVE')
-								->execute();
-								log::info("test1 ". print_r($taxratesdata, true));								
-								
-								if(count($taxratesdata) == 0)
-								{								
-									$taxratesdata = $XeroContext->load('Accounting\\TaxRate')
-									->where('Name', $lineItem['TaxRateName'])
+									->where('Name', $InvoiceTaxRate->Title)
 									->where('Status', 'ACTIVE')
 									->execute();
-									log::info("test2 ". print_r($taxratesdata, true));									
+								log::info("test1 ". print_r($taxratesdata, true));
+
+								if(count($taxratesdata) == 0)
+								{
+									$taxratesdata = $XeroContext->load('Accounting\\TaxRate')
+										->where('Name', $lineItem['TaxRateName'])
+										->where('Status', 'ACTIVE')
+										->execute();
+									log::info("test2 ". print_r($taxratesdata, true));
 								}
 							}
 							else{
 								$taxratesdata = $XeroContext->load('Accounting\\TaxRate')
-								->where('Name', $lineItem['TaxRateName'])
-								->execute();
+									->where('Name', $lineItem['TaxRateName'])
+									->execute();
 								log::info("test3 ". print_r($taxratesdata, true));
-							}							
+							}
 							log::info("count-taxratesdata ". count($taxratesdata));
 							if(count($taxratesdata) > 0)
-							{												
+							{
 								$line->setTaxType($taxratesdata[0]->TaxType);
 							}
 							else{
-								$FlatStatus = TaxRate::getTaxFlatStatus($InvoiceTaxRate->TaxRateID);
-								if($FlatStatus == 1){									
-									log::info("TaxAmount ". print_r($lineItem['TaxAmount'], true));	
-									$line->setTaxAmount($lineItem['TaxAmount']);
+								//check if Flat overall tax is entered (not line tax)
+								if($InvoiceTaxRate->InvoiceDetailID == 0)
+								{
+									$FlatStatus = TaxRate::getTaxFlatStatus($InvoiceTaxRate->TaxRateID);
+									if($FlatStatus == 1){
+										log::info("TaxAmount ". print_r($InvoiceTaxRate->TaxAmount, true));
+										$line->setTaxAmount($InvoiceTaxRate->TaxAmount);
+									}
+								}
+								else{
+									$FlatStatus = TaxRate::getTaxFlatStatus($InvoiceTaxRate->TaxRateID);
+									if($FlatStatus == 1){
+										log::info("TaxAmount ". print_r($lineItem['TaxAmount'], true));
+										$line->setTaxAmount($lineItem['TaxAmount']);
+									}
 								}
 							}
-							
+
 							if(isset($lineItem['AccountMappingName']) && $lineItem['AccountMappingName'] != '')
 							{
 								$InvoiceItemAccount = $this->getAccountMapping($lineItem['AccountMappingName']);
-								log::info("InvoiceItemAccount ". print_r($InvoiceItemAccount, true));	
+								log::info("InvoiceItemAccount ". print_r($InvoiceItemAccount, true));
 								$line->setAccountCode($InvoiceItemAccount['Code']);
 							}
 							//$line->setTaxAmount($taxratesdata[0]->EffectiveRate);
 							//$line->setItemCode('112');
 							$line->setQuantity($lineItem['Qty']);
 							$line->setUnitAmount($lineItem['Price']);
-							
+
 							$line->setLineAmount($lineItem['LineTotal']);
 							if($lineItem['DiscountType'] != 'Flat')
 							{
 								$line->setDiscountRate($lineItem['DiscountAmount']); // Percentage
-							}					
+							}
 
 							// Add the line to the order
 							$invoice->addLineItem($line);
@@ -482,7 +494,7 @@ class Xero {
 		//Log::info(print_r($response,true));
 		return $response;
 	}
-	
+
 	public function SearchItem($ProductName){
 
 		Log::info('SearchItem : '.$ProductName);
@@ -503,7 +515,7 @@ class Xero {
 			}
 			log::info("$ItemCode".print_r($ItemCode,true));
 		}
-		
+
 		return $Response;
 
 	}
@@ -918,7 +930,7 @@ class Xero {
 
 	/**
 	 * Xero Payment Import
-	*/
+	 */
 	public function GetAndInsertPayment($date){
 		$response = array();
 		$data = array();
