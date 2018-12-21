@@ -120,6 +120,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\exportPbxPayments',
 		'App\Console\Commands\BulkDisputeSend',
 		'App\Console\Commands\DisputeBulkmail',
+		'App\Console\Commands\RoutingEngine',
 
 	];
 
