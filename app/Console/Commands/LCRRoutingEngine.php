@@ -55,13 +55,20 @@ class LCRRoutingEngine extends Command {
 	 * @return mixed
 	 */
     public function handle() {
+        
+        
+        CronHelper::before_cronrun($this->name, $this );
+
+        $arguments = $this->argument();
+        $CompanyID = $arguments["CompanyID"];
+        $CronJobID = $arguments["CronJobID"];
+        
+        $CronJob =  CronJob::find($CronJobID);
+        
         try{
             
-            CronHelper::before_cronrun($this->name, $this );
-
-            $arguments = $this->argument();
-            $CompanyID = $arguments["CompanyID"];
-            $CronJobID = $arguments["CronJobID"];
+            
+            
             
            // $trunk = DB::table('tblTrunk')->where(array('CompanyId'=>$CompanyID));
             //$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
@@ -323,10 +330,27 @@ class LCRRoutingEngine extends Command {
                 }
                 
             echo "DONE With LCRRoutingEngine";
+            
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            
             Log::info('Run Cron.');
         }catch (\Exception $e){
+            Log::info('LCRRoutingEngine Error.');
 
-        }
+            Log::error($e);
+            $this->info('Failed:' . $e->getMessage());
+            $joblogdata['Message'] ='Error:'.$e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            CronJobLog::insert($joblogdata);
+            if(!empty($cronsetting['ErrorEmail'])) {
+
+                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                    Log::error("**Email Sent Status " . $result['status']);
+                    Log::error("**Email Sent message " . $result['message']);
+            }
+
+
+    }
     }
 
 }
