@@ -207,15 +207,15 @@ class LCRRoutingEngine extends Command {
                                             . ",'".$CLDTranslationRule."'"
                                             . ",'".$VendorName."')";
                                     echo "\n";echo "\n";
-                                    DB::connection('neon_routingengine')->statement($sql);
-//                                    $select = "select LCRHeaderID from tblLCRDetail where LCRHeaderID='".$LCRHeaderID."' AND  VendorID='".$VendorID."' ";
-//                                    $result = DB::connection('neon_routingengine')->getPdo()->query($select);
-//                                    $firstResult    = $result->fetch(\PDO::FETCH_ASSOC);
-//                                    if(count($firstResult)>0 && $firstResult['LCRHeaderID']!=''){
-//                                        //Do Nothing for duplicate
-//                                    }else{
-//                                        DB::connection('neon_routingengine')->statement($sql);
-//                                    }
+                                    //DB::connection('neon_routingengine')->statement($sql);
+                                    $select = "select LCRHeaderID from tblLCRDetail where LCRHeaderID='".$LCRHeaderID."' AND  VendorID='".$VendorID."' ";
+                                    $result = DB::connection('neon_routingengine')->getPdo()->query($select);
+                                    $firstResult    = $result->fetch(\PDO::FETCH_ASSOC);
+                                    if(count($firstResult)>0 && $firstResult['LCRHeaderID']!=''){
+                                        //Do Nothing for duplicate
+                                    }else{
+                                        DB::connection('neon_routingengine')->statement($sql);
+                                    }
                                     //$tblLCRDetailID=DB::getPdo()->lastInsertId();
                                     //--------------------------------------------------
                             
@@ -299,7 +299,16 @@ class LCRRoutingEngine extends Command {
                                             . ",'".$CLITranslationRule."'"
                                             . ",'".$CLDTranslationRule."'"
                                             . ",'".$VendorName."')";
-                                    DB::connection('neon_routingengine')->statement($sql);
+                                     
+                                        $select = "select LCRHeaderID from tblLCRDetail where LCRHeaderID='".$LCRHeaderID."' AND  VendorID='".$VendorID."' ";
+                                        $result = DB::connection('neon_routingengine')->getPdo()->query($select);
+                                        $firstResult    = $result->fetch(\PDO::FETCH_ASSOC);
+                                        if(count($firstResult)>0 && $firstResult['LCRHeaderID']!=''){
+                                            //Do Nothing for duplicate
+                                        }else{
+                                            DB::connection('neon_routingengine')->statement($sql);
+                                        }
+                                    
                                     //$tblLCRHeaderID=DB::getPdo()->lastInsertId();
                                     //--------------------------------------------------
                             
