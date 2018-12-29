@@ -126,8 +126,10 @@ class LCRRoutingEngine extends Command {
                             if(count($firstResult)>0 && $firstResult['LCRPolicy']!=''){
                                 //Do Nothing for duplicate
                             }else{
+                                Log::useFiles(storage_path() . '/logs/lcrroutingengine-6a-$CurrencyId:' .$CurrencyId.'-'. date('Y-m-d') . '.log');
                                 $LCRHeader =RoutingEngine::create($tempItemData);
                                 $LCRHeaderID    =   $LCRHeader['LCRHeaderID'];
+                                Log::useFiles(storage_path() . '/logs/lcrroutingengine-6b-Timezone:' .$LCRHeaderID.'-'. date('Y-m-d') . '.log');
                             }
                         }catch (Exception $err) {
                             Log::useFiles(storage_path() . '/logs/lcrroutingengine-9-Error:' .$err.'-'. date('Y-m-d') . '.log');
