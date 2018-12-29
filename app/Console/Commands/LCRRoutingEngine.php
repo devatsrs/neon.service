@@ -68,11 +68,10 @@ class LCRRoutingEngine extends Command {
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         
-        Log::useFiles(storage_path() . '/logs/lcrroutingengine-companyid:' . $CompanyID . '-cronjobid'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/lcrroutingengine-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
             
-            Log::useFiles(storage_path() . '/logs/lcrroutingengine-1-' . date('Y-m-d') . '.log');
             
            // $trunk = DB::table('tblTrunk')->where(array('CompanyId'=>$CompanyID));
             //$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
@@ -90,6 +89,7 @@ class LCRRoutingEngine extends Command {
             $selectCurrency = "select CurrencyId,CompanyId from tblCurrency where CompanyId=$CompanyID";
             $resultCurrency = DB::connection('sqlsrv')->getPdo()->query($selectCurrency);
             $Currency = $resultCurrency->fetchAll(\PDO::FETCH_ASSOC);
+            
             Log::useFiles(storage_path() . '/logs/lcrroutingengine-2-' . date('Y-m-d') . '.log');
             
             $lcrArr = array('LCR'=>'2','LCR + PREFIX'=>'1');
@@ -97,17 +97,21 @@ class LCRRoutingEngine extends Command {
             foreach ($TrunkList as $key1 => $value1) {
                // "TRUNK: ".$value1['Trunk']."----";
                 echo $TrunkVal = $value1['Trunk'];
+                Log::useFiles(storage_path() . '/logs/lcrroutingengine-3-Trunk:' .$TrunkVal.'-'. date('Y-m-d') . '.log');
                  //LCR Loop
                 foreach ($Currency as $keyc => $valuec) {
                     echo $CurrencyId = $valuec['CurrencyId'];
+                    Log::useFiles(storage_path() . '/logs/lcrroutingengine-4-CurrencyId:' .$CurrencyId.'-'. date('Y-m-d') . '.log');
                     foreach ($lcrArr as $key => $value) {
                     echo "LCR:".$value."----";
+                    Log::useFiles(storage_path() . '/logs/lcrroutingengine-5-LCR:' .$value.'-'. date('Y-m-d') . '.log');
                     $LCRPolicy=$value;
                     //Get TimeZONE LIST
                     foreach ($Timezones as $key2 => $value2) {
                         echo "Timezones: ".$value2['Title']."---";echo "\n";
                         $Timezone=$value2['TimezonesID'];
                         //Insert the Records--------------------------------
+                        Log::useFiles(storage_path() . '/logs/lcrroutingengine-6-Timezone:' .$Timezone.'-'. date('Y-m-d') . '.log');
                         $tempItemData = array();
                         $tempItemData['LCRPolicy'] =$key;
                         $tempItemData['Date'] =$TodayDate;
@@ -126,10 +130,11 @@ class LCRRoutingEngine extends Command {
                                 $LCRHeaderID    =   $LCRHeader['LCRHeaderID'];
                             }
                         }catch (Exception $err) {
+                            Log::useFiles(storage_path() . '/logs/lcrroutingengine-9-Error:' .$err.'-'. date('Y-m-d') . '.log');
                             echo ($err);
                         }
                         $logID=$CurrencyId.' - '.$value1['TrunkID'].' - '.$key.' - '.$value2['TimezonesID'];
-                        Log::useFiles(storage_path() . '/logs/lcrroutingengine-4-' .$logID.'-'. date('Y-m-d') . '.log');
+                        Log::useFiles(storage_path() . '/logs/lcrroutingengine-7-' .$logID.'-'. date('Y-m-d') . '.log');
                         //--------------------------------------------------
                         if($LCRHeaderID!=''){
                             //Insert Records in tblLCRDetail
