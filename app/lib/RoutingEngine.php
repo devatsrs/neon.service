@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 
 
 class RoutingEngine extends \Eloquent {
+    
     protected $connection = 'neon_routingengine';
     protected $fillable = [];
     protected $guarded = array('LCRHeaderID');
