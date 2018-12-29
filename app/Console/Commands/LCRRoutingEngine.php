@@ -64,11 +64,11 @@ class LCRRoutingEngine extends Command {
         $CronJobID = $arguments["CronJobID"];
         
         $CronJob =  CronJob::find($CronJobID);
-        Log::useFiles(storage_path() . '/logs/lcrroutingengine-' . $CronJob . '-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/lcrroutingengine-companyid:' . $CompanyID . '-cronjobid'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
             
-            Log::useFiles(storage_path() . '/logs/lcrroutingengine-Ines-' . date('Y-m-d') . '.log');
+            Log::useFiles(storage_path() . '/logs/lcrroutingengine-1-' . date('Y-m-d') . '.log');
             
            // $trunk = DB::table('tblTrunk')->where(array('CompanyId'=>$CompanyID));
             //$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
@@ -86,7 +86,8 @@ class LCRRoutingEngine extends Command {
             $selectCurrency = "select CurrencyId,CompanyId from tblCurrency where CompanyId=$CompanyID";
             $resultCurrency = DB::connection('sqlsrv')->getPdo()->query($selectCurrency);
             $Currency = $resultCurrency->fetchAll(\PDO::FETCH_ASSOC);
-
+            Log::useFiles(storage_path() . '/logs/lcrroutingengine-2-' . date('Y-m-d') . '.log');
+            
             $lcrArr = array('LCR'=>'2','LCR + PREFIX'=>'1');
             //Get Trunk List
             foreach ($TrunkList as $key1 => $value1) {
@@ -123,8 +124,8 @@ class LCRRoutingEngine extends Command {
                         }catch (Exception $err) {
                             echo ($err);
                         }
-
-
+                        $logID=$CurrencyId.' - '.$value1['TrunkID'].' - '.$key.' - '.$value2['TimezonesID'];
+                        Log::useFiles(storage_path() . '/logs/lcrroutingengine-4-' .$logID.'-'. date('Y-m-d') . '.log');
                         //--------------------------------------------------
                         if($LCRHeaderID!=''){
                             //Insert Records in tblLCRDetail
