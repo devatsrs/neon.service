@@ -56,7 +56,7 @@ class LCRRoutingEngine extends Command {
 	 */
     public function handle() {
         
-        
+        Log::useFiles(storage_path() . '/logs/lcrroutingengine-Start-' . date('Y-m-d') . '.log');
         CronHelper::before_cronrun($this->name, $this );
 
         $arguments = $this->argument();
@@ -64,11 +64,11 @@ class LCRRoutingEngine extends Command {
         $CronJobID = $arguments["CronJobID"];
         
         $CronJob =  CronJob::find($CronJobID);
-        
+        Log::useFiles(storage_path() . '/logs/lcrroutingengine-' . $CronJob . '-' . date('Y-m-d') . '.log');
         try{
             
             
-            
+            Log::useFiles(storage_path() . '/logs/lcrroutingengine-Ines-' . date('Y-m-d') . '.log');
             
            // $trunk = DB::table('tblTrunk')->where(array('CompanyId'=>$CompanyID));
             //$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
@@ -350,8 +350,10 @@ class LCRRoutingEngine extends Command {
             
             Log::info('Run Cron.');
         }catch (\Exception $e){
+            Log::useFiles(storage_path() . '/logs/lcrroutingengine-Error-' . date('Y-m-d') . '.log');
             Log::info('LCRRoutingEngine Error.');
-
+            Log::useFiles(storage_path() . '/logs/lcrroutingengine-Error-' . date('Y-m-d') . '.log');
+            
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] ='Error:'.$e->getMessage();
