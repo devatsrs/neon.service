@@ -64,6 +64,10 @@ class LCRRoutingEngine extends Command {
         $CronJobID = $arguments["CronJobID"];
         
         $CronJob =  CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings,true);
+        CronJob::activateCronJob($CronJob);
+        CronJob::createLog($CronJobID);
+        
         Log::useFiles(storage_path() . '/logs/lcrroutingengine-companyid:' . $CompanyID . '-cronjobid'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
@@ -352,7 +356,7 @@ class LCRRoutingEngine extends Command {
             Log::info('Run Cron.');
         }catch (\Exception $e){
             Log::useFiles(storage_path() . '/logs/lcrroutingengine-Error-' . date('Y-m-d') . '.log');
-            Log::info('LCRRoutingEngine Error.');
+            //Log::info('LCRRoutingEngine Error.');
             Log::useFiles(storage_path() . '/logs/lcrroutingengine-Error-' . date('Y-m-d') . '.log');
             
             Log::error($e);
