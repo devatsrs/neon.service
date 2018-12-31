@@ -71,16 +71,16 @@ class RoutingRoutingProfileRate extends Command {
         Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             $tempItemData = array();
-            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate ()');
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
                 if(isset($RoutingData->RoutingProfileID)){
                     $tempItemData['RoutingProfileID']   = $RoutingData->RoutingProfileID;
                 }
-                if(isset($RoutingData->CompanyId)){
-                    $tempItemData['CompanyId']          = $RoutingData->CompanyId;
+                if(isset($RoutingData->CompanyID)){
+                    $tempItemData['CompanyId']          = $RoutingData->CompanyID;
                 }
-                if(isset($RoutingData->TrunkId)){
-                    $tempItemData['TrunkId'] = $RoutingData->TrunkId;
+                if(isset($RoutingData->TrunkID)){
+                    $tempItemData['TrunkId'] = $RoutingData->TrunkID;
                 }
                 if(isset($RoutingData->VendorID)){
                     $tempItemData['VendorID'] = $RoutingData->VendorID;
@@ -116,13 +116,13 @@ class RoutingRoutingProfileRate extends Command {
                 if(isset($RoutingData->AuthenticationMode)){
                     $tempItemData['AuthenticationMode'] = $RoutingData->AuthenticationMode;
                 }
-                if(isset($RoutingData->CLITranslationRule)){
-                    $tempItemData['CLITranslationRule'] = $RoutingData->CLITranslationRule;
+                if(isset($RoutingData->CLIRule)){
+                    $tempItemData['CLITranslationRule'] = $RoutingData->CLIRule;
                 }
-                if(isset($RoutingData->CLDTranslationRule)){
-                    $tempItemData['CLDTranslationRule'] = $RoutingData->CLDTranslationRule;
+                if(isset($RoutingData->CLDRule)){
+                    $tempItemData['CLDTranslationRule'] = $RoutingData->CLDRule;
                 }
-                if(isset($RoutingData->CLDTranslationRule)){
+                if(isset($RoutingData->VendorName)){
                     $tempItemData['VendorName'] = $RoutingData->VendorName;
                 }
                 if(isset($RoutingData->Trunk)){
