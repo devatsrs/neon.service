@@ -74,7 +74,7 @@ class RoutingRoutingProfileRate extends Command {
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
                 if(isset($RoutingData->RoutingProfileID)){
-                    $tempItemData['RoutingProfileID']   = $RoutingData->RoutingProfileID;
+                    $tempItemData['RoutingProfileId']   = $RoutingData->RoutingProfileID;
                 }
                 if(isset($RoutingData->CompanyID)){
                     $tempItemData['CompanyId']          = $RoutingData->CompanyID;
