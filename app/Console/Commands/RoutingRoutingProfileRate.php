@@ -143,10 +143,13 @@ class RoutingRoutingProfileRate extends Command {
                 if(isset($RoutingData->RoutingCategoryOrder)){
                     $tempItemData['RoutingCategoryOrder'] = $RoutingData->RoutingCategoryOrder;
                 }
+                
+                $RoutingProfileRate = RoutingProfileRate::create($tempItemData);
+                $id    =   $RoutingProfileRate['id'];
+            
             }
             
-            $RoutingProfileRate = RoutingProfileRate::create($tempItemData);
-            $id    =   $RoutingProfileRate['id'];
+            
                         
             echo "DONE With RoutingProfileRates";
             
