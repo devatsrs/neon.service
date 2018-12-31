@@ -13,21 +13,21 @@ use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\CompanyGateway;
 
-class RoutingRoutingProfileRate extends Command {
+class RoutingVendorRate extends Command {
 
 	/**
 	 * The console command name.
 	 *
 	 * @var string
 	 */
-	protected $name = 'routingprofilerate';
+	protected $name = 'routingvendorrate';
 
 	/**
 	 * The console command description.
 	 *
 	 * @var string
 	 */
-	protected $description = 'RoutingProfileRate Command description.';
+	protected $description = 'Routing Vendor Rate Command description.';
 
 	protected function getArguments()
 	{
@@ -68,16 +68,14 @@ class RoutingRoutingProfileRate extends Command {
         CronJob::createLog($CronJobID);
         
         //print_r($cronsetting);die();
-        Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             $tempItemData = array();
-            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
-                if(isset($RoutingData->RoutingProfileID)){
-                    $tempItemData['RoutingProfileId']   = $RoutingData->RoutingProfileID;
-                }
-                if(isset($RoutingData->CompanyID)){
-                    $tempItemData['CompanyId']          = $RoutingData->CompanyID;
+                
+                if(isset($RoutingData->CompanyId)){
+                    $tempItemData['CompanyId']          = $RoutingData->CompanyId;
                 }
                 if(isset($RoutingData->TrunkID)){
                     $tempItemData['TrunkId'] = $RoutingData->TrunkID;
@@ -128,6 +126,9 @@ class RoutingRoutingProfileRate extends Command {
                 if(isset($RoutingData->Trunk)){
                     $tempItemData['Trunk'] = $RoutingData->Trunk;
                 }
+                if(isset($RoutingData->TrunkPrefix)){
+                    $tempItemData['TrunkPrefix'] = $RoutingData->TrunkPrefix;
+                }
                 if(isset($RoutingData->VendorConnectionName)){
                     $tempItemData['VendorConnectionName'] = $RoutingData->VendorConnectionName;
                 }
@@ -140,26 +141,23 @@ class RoutingRoutingProfileRate extends Command {
                 if(isset($RoutingData->TimezoneId)){
                     $tempItemData['TimezoneId'] = $RoutingData->TimezoneId;
                 }
-                if(isset($RoutingData->RoutingCategoryOrder)){
-                    $tempItemData['RoutingCategoryOrder'] = $RoutingData->RoutingCategoryOrder;
-                }
                 
-                $RoutingProfileRate = RoutingProfileRate::create($tempItemData);
+                $RoutingProfileRate = VendorRate::create($tempItemData);
                 $id    =   $RoutingProfileRate['id'];
             
             }
             
             
                         
-            echo "DONE With RoutingProfileRates";
+            echo "DONE With Routing Vendor Rate ";
             
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             
             Log::info('Run Cron.');
         }catch (\Exception $e){
-            Log::useFiles(storage_path() . '/logs/RoutingProfileRates-Error-' . date('Y-m-d') . '.log');
+            Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
             //Log::info('LCRRoutingEngine Error.');
-            Log::useFiles(storage_path() . '/logs/RoutingProfileRates-Error-' . date('Y-m-d') . '.log');
+            Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
             
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
