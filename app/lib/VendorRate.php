@@ -16,6 +16,7 @@ class VendorRate extends \Eloquent {
     public $timestamps = false;
 
     const ITEM = 1;
+    
     const USAGE = 2;
     const SUBSCRIPTION = 3;
     const ONEOFFCHARGE =4;
