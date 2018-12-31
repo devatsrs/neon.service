@@ -2,7 +2,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\Summary;
-use App\Lib\RoutingProfileRate;
+use App\Lib\VendorRate;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
