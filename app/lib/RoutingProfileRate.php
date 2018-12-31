@@ -10,9 +10,9 @@ class RoutingProfileRate extends \Eloquent {
     
     protected $connection = 'neon_routingengine';
     protected $fillable = [];
-    protected $guarded = array('RoutingProfileId');
+    protected $guarded = array('id');
     protected $table = 'tblRoutingProfileRate';
-    public  $primaryKey = "RoutingProfileId"; //Used in BasedController
+    public  $primaryKey = "id"; //Used in BasedController
     public $timestamps = false;
 
     const ITEM = 1;
