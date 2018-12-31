@@ -13,7 +13,7 @@ use \Exception;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\CompanyGateway;
 
-class RoutingProfileRate extends Command {
+class RoutingRoutingProfileRate extends Command {
 
 	/**
 	 * The console command name.
@@ -67,6 +67,7 @@ class RoutingProfileRate extends Command {
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         
+        //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             $tempItemData = array();
