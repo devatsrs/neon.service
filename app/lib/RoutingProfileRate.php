@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 
-class RoutingEngine extends \Eloquent {
+class RoutingProfileRate extends \Eloquent {
     
     protected $connection = 'neon_routingengine';
     protected $fillable = [];
-    protected $guarded = array('LCRHeaderID');
-    protected $table = 'tblLCRHeader';
-    public  $primaryKey = "LCRHeaderID"; //Used in BasedController
+    protected $guarded = array('id');
+    protected $table = 'tblRoutingProfileRate';
+    public  $primaryKey = "id"; //Used in BasedController
     public $timestamps = false;
 
     const ITEM = 1;
