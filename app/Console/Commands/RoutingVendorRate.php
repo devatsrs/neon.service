@@ -140,10 +140,11 @@ class RoutingVendorRate extends Command {
                 }
                 if(isset($RoutingData->Preference)){
                     $tempItemData['Preference'] = $RoutingData->Preference;
+                    if(trim($tempItemData['Preference'])==""){
+                        $tempItemData['Preference']=5;
+                    }
                 }
-                if(trim($tempItemData['Preference'])==""){
-                    $tempItemData['Preference']=5;
-                }
+                
                 if(isset($RoutingData->TimezoneId)){
                     $tempItemData['TimezoneId'] = $RoutingData->TimezoneId;
                 }
