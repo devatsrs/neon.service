@@ -73,9 +73,10 @@ class RoutingRoutingProfileRate extends Command {
             
             DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
             
-            $tempItemData = array();
+            
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
+                $tempItemData = array();
                 if(isset($RoutingData->RoutingProfileID)){
                     $tempItemData['RoutingProfileId']   = $RoutingData->RoutingProfileID;
                 }

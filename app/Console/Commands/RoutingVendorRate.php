@@ -73,10 +73,10 @@ class RoutingVendorRate extends Command {
             
             DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
             
-            $tempItemData = array();
+            
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
-                
+                $tempItemData = array();
                 if(isset($RoutingData->CompanyId)){
                     $tempItemData['CompanyId']          = $RoutingData->CompanyId;
                 }
