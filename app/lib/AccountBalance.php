@@ -500,4 +500,14 @@ class AccountBalance extends Model
     public static function getBalanceSOAOffsetAmount($AccountID){
         return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');
     }
+
+    public static function getNewAccountExposure($AccountID){
+        $SOA_Amount = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
+        $response = AccountBalance::where('AccountID', $AccountID)->first(['AccountID', 'PermanentCredit', 'UnbilledAmount', 'EmailToCustomer', 'TemporaryCredit', 'TemporaryCreditDateTime', 'BalanceThreshold', 'BalanceAmount', 'VendorUnbilledAmount']);
+        $UnbilledAmount = empty($response->UnbilledAmount) ? 0 : $response->UnbilledAmount;
+        $VendorUnbilledAmount = empty($response->VendorUnbilledAmount) ? 0 : $response->VendorUnbilledAmount;
+        $AccountBalance = $SOA_Amount + ($UnbilledAmount - $VendorUnbilledAmount);
+        $AccountBalance = number_format($AccountBalance, get_round_decimal_places($AccountID));
+        return $AccountBalance;
+    }
 }
