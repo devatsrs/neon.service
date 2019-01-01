@@ -70,6 +70,9 @@ class RoutingRoutingProfileRate extends Command {
         //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
+            
+            DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
+            
             $tempItemData = array();
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
@@ -136,6 +139,9 @@ class RoutingRoutingProfileRate extends Command {
                 }
                 if(isset($RoutingData->Preference)){
                     $tempItemData['Preference'] = $RoutingData->Preference;
+                }
+                if(trim($tempItemData['Preference'])==""){
+                    $tempItemData['Preference']=5;
                 }
                 if(isset($RoutingData->TimezoneId)){
                     $tempItemData['TimezoneId'] = $RoutingData->TimezoneId;

@@ -70,6 +70,9 @@ class RoutingVendorRate extends Command {
         //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
+            
+            DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
+            
             $tempItemData = array();
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate()');
             foreach ($GetRoutingInfo as $RoutingData) {
@@ -137,6 +140,9 @@ class RoutingVendorRate extends Command {
                 }
                 if(isset($RoutingData->Preference)){
                     $tempItemData['Preference'] = $RoutingData->Preference;
+                }
+                if(trim($tempItemData['Preference'])==""){
+                    $tempItemData['Preference']=5;
                 }
                 if(isset($RoutingData->TimezoneId)){
                     $tempItemData['TimezoneId'] = $RoutingData->TimezoneId;
