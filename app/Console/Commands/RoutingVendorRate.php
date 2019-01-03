@@ -73,15 +73,15 @@ class RoutingVendorRate extends Command {
             
             DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
             
-            DB::beginTransaction();
             try {
                 $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate()');
+                $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             } catch (Exception $ex) {
-                DB::rollback();
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
             }
             echo "DONE With Routing Vendor Rate ";
             
-            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            
             
             Log::info('Run Cron.');
         }catch (\Exception $e){
