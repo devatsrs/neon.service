@@ -73,98 +73,19 @@ class RoutingRoutingProfileRate extends Command {
             
             DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
             
-            DB::beginTransaction();
+            //DB::beginTransaction();
             try {
                 $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
-                DB::commit();
+                //DB::commit();
+                $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             } catch (Exception $ex) {
-                DB::rollback();
+               /// DB::rollback();
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
             }
-//            foreach ($GetRoutingInfo as $RoutingData) {
-//                $tempItemData = array();
-//                if(isset($RoutingData->RoutingProfileID)){
-//                    $tempItemData['RoutingProfileId']   = $RoutingData->RoutingProfileID;
-//                }
-//                if(isset($RoutingData->CompanyID)){
-//                    $tempItemData['CompanyId']          = $RoutingData->CompanyID;
-//                }
-//                if(isset($RoutingData->TrunkID)){
-//                    $tempItemData['TrunkId'] = $RoutingData->TrunkID;
-//                }
-//                if(isset($RoutingData->VendorID)){
-//                    $tempItemData['VendorID'] = $RoutingData->VendorID;
-//                }
-//                if(isset($RoutingData->OriginationCode)){
-//                    $tempItemData['OriginationCode'] = $RoutingData->OriginationCode;
-//                }
-//                if(isset($RoutingData->DestinationCode)){
-//                    $tempItemData['DestinationCode'] = $RoutingData->DestinationCode;
-//                }
-//                if(isset($RoutingData->Rate)){
-//                    $tempItemData['Rate'] = $RoutingData->Rate;
-//                }
-//                if(isset($RoutingData->ConnectionFee)){
-//                    $tempItemData['ConnectionFee'] = $RoutingData->ConnectionFee;
-//                }
-//                if(isset($RoutingData->IP)){
-//                    $tempItemData['IP'] = $RoutingData->IP;
-//                }
-//                if(isset($RoutingData->Port)){
-//                    $tempItemData['Port'] = $RoutingData->Port;
-//                }
-//                if(isset($RoutingData->Username)){
-//                    $tempItemData['Username'] = $RoutingData->Username;
-//                }
-//                
-//                if(isset($RoutingData->Password)){
-//                    $tempItemData['Password'] = $RoutingData->Password;
-//                }
-//                if(isset($RoutingData->SipHeader)){
-//                    $tempItemData['SipHeader'] = $RoutingData->SipHeader;
-//                }
-//                if(isset($RoutingData->AuthenticationMode)){
-//                    $tempItemData['AuthenticationMode'] = $RoutingData->AuthenticationMode;
-//                }
-//                if(isset($RoutingData->CLIRule)){
-//                    $tempItemData['CLITranslationRule'] = $RoutingData->CLIRule;
-//                }
-//                if(isset($RoutingData->CLDRule)){
-//                    $tempItemData['CLDTranslationRule'] = $RoutingData->CLDRule;
-//                }
-//                if(isset($RoutingData->VendorName)){
-//                    $tempItemData['VendorName'] = $RoutingData->VendorName;
-//                }
-//                if(isset($RoutingData->Trunk)){
-//                    $tempItemData['Trunk'] = $RoutingData->Trunk;
-//                }
-//                if(isset($RoutingData->VendorConnectionName)){
-//                    $tempItemData['VendorConnectionName'] = $RoutingData->VendorConnectionName;
-//                }
-//                if(isset($RoutingData->Currency)){
-//                    $tempItemData['Currency'] = $RoutingData->Currency;
-//                }
-//                if(isset($RoutingData->Preference)){
-//                    $tempItemData['Preference'] = $RoutingData->Preference;
-//                    if(trim($tempItemData['Preference'])==""){
-//                        $tempItemData['Preference']=5;
-//                    }
-//                }
-//                
-//                if(isset($RoutingData->TimezoneId)){
-//                    $tempItemData['TimezoneId'] = $RoutingData->TimezoneId;
-//                }
-//                if(isset($RoutingData->RoutingCategoryOrder)){
-//                    $tempItemData['RoutingCategoryOrder'] = $RoutingData->RoutingCategoryOrder;
-//                }
-//                
-//                $RoutingProfileRate = RoutingProfileRate::create($tempItemData);
-//                $id    =   $RoutingProfileRate['id'];
-//            
-//            }
                         
             echo "DONE With RoutingProfileRates";
             
-            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            
             
             Log::info('Run Cron.');
         }catch (\Exception $e){
