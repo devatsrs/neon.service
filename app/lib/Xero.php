@@ -558,7 +558,7 @@ class Xero {
 				{
 					$InvoiceData['AccountMappingName'] = $XeroData['Items'][$InvoiceDetail->ProductID];
 				}
-				else
+				if($Title == 'Subscriptions')
 				{
 					$InvoiceData['AccountMappingName'] = $XeroData['Subscriptions'][$InvoiceDetail->ProductID];
 				}
