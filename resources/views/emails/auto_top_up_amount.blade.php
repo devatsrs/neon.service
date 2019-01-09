@@ -27,9 +27,9 @@
 
                 @foreach($SuccessDepositAccounts as $SuccessDepositAccount)
                     <tr>
-                    <td width="20%" align="center">{{$SuccessDepositAccount->AccountID}}</td>
-                    <td width="20%" align="center">{{$SuccessDepositAccount->AccountName}}</td>
-                    <td width="60%" align="center">{{$SuccessDepositAccount->Amount}}</td>
+                    <td width="20%" align="center">{{$SuccessDepositAccount["AccountID"]}}</td>
+                    <td width="20%" align="center">{{$SuccessDepositAccount["AccountName"]}}</td>
+                    <td width="60%" align="center">{{$SuccessDepositAccount["Amount"]}}</td>
                     </tr>
                 @endforeach
 
@@ -79,9 +79,9 @@
 
                 @foreach($ErrorDepositFundAccounts as $ErrorDepositFundAccount)
                     <tr>
-                    <td width="20%" align="center">{{$ErrorDepositFundAccount->AccountID}}</td>
-                    <td width="20%" align="center">{{$ErrorDepositFundAccount->AccountName}}</td>
-                    <td width="60%" align="center">{{print_r($ErrorDepositFundAccount->Response,true)}}</td>
+                    <td width="20%" align="center">{{$ErrorDepositFundAccount["AccountID"]}}</td>
+                    <td width="20%" align="center">{{$ErrorDepositFundAccount["AccountName"]}}</td>
+                    <td width="60%" align="center">{{print_r($ErrorDepositFundAccount["Response"],true)}}</td>
                     </tr>
                 @endforeach
 
