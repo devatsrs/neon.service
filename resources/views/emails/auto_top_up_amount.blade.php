@@ -14,7 +14,7 @@
     <div id="content">
         <p>
             Successfull Top Up Account Details
-            <table width="100%">
+            <table width="100%" border="1">
                 <thead>
                     <tr>
                         <th width="20%" align="center">Account ID</th>
@@ -66,7 +66,7 @@
         <br/>
         <p>
             General Error
-        <table width="100%">
+        <table width="100%" border="1">
             <thead>
             <tr>
                 <th width="20%" align="center">Account ID</th>

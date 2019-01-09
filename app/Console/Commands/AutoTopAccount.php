@@ -259,8 +259,12 @@ class AutoTopAccount extends Command {
 		//$query = 'query?query='.urlencode('Select * from Customer');
 		//$query = 'account/1';
 
+		if ($this::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "api/depositFund";
+		}else {
+			$url = $CompanyConfiguration . "/api/depositFund";
+		}
 
-		$url = $CompanyConfiguration . "api/depositFund";
 		Log::info("calldepositFundAPI :" . $url);
 		$curl = curl_init();
 
