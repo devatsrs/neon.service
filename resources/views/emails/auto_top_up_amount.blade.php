@@ -12,8 +12,15 @@
     $ErrorDepositFundAccounts = $data['ErrorDepositFund'];
     ?>
     <div id="content">
-        <p>
-            Successfull Top Up Account Details
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
+            <tr>
+                <td>
+                    Successfull Top Up Account Details
+                </td>
+            </tr>
+        </table>
+
             <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
                 <thead>
                     <tr>
@@ -36,10 +43,17 @@
 
             </tbody>
             </table>
-        </p>
+
         <br/>
-        <p>
-           Failed Top Up Account Details
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
+            <tr>
+                <td>
+                    Failed Top Up Account Details
+                </td>
+            </tr>
+        </table>
+
         <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <thead>
             <tr>
@@ -62,10 +76,17 @@
 
             </tbody>
         </table>
-        </p>
+
         <br/>
-        <p>
-            General Error
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
+            <tr>
+                <td>
+                    General Error
+                </td>
+            </tr>
+        </table>
+
         <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <thead>
             <tr>
@@ -88,7 +109,7 @@
 
             </tbody>
         </table>
-        </p>
+        
     </div>
 
 </div>
