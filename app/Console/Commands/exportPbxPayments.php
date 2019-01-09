@@ -87,7 +87,7 @@ class exportPbxPayments extends Command {
 
 			/** Start insert payment in pbx */
 
-			$response = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."',0)");
+			$response = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment(".$CompanyID.",'".$start_date."',0)");
 			$response = json_decode(json_encode($response), true);
 			Log::info('count ==' . count($response));
 			$InsertData = array();
@@ -97,7 +97,7 @@ class exportPbxPayments extends Command {
 					$paymentArr=array();
 					$paymentArr["bi_description"]=$row_account["Notes"];
 					$paymentArr["bi_date"]=$row_account["PaymentDate"];
-					$paymentArr["bi_amount"]=abs($row_account["Amount"]);
+					$paymentArr["bi_amount"]=$row_account["Amount"];
 					$TenantsID = $pbx->getAccountTenantsID($row_account["Number"]);
 					if($TenantsID){
 						$paymentArr["bi_te_id"]=$TenantsID;
@@ -113,7 +113,7 @@ class exportPbxPayments extends Command {
 
 			/** Start Delete recall payment in pbx */
 
-			$recallresponse = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment('".$start_date."',1)");
+			$recallresponse = DB::connection('sqlsrv2')->select("call prc_getPBXExportPayment(".$CompanyID.",'".$start_date."',1)");
 			$recallresponse = json_decode(json_encode($recallresponse), true);
 			Log::info('Recall count ==' . count($recallresponse));
 			if(!empty($recallresponse)) {
@@ -121,7 +121,7 @@ class exportPbxPayments extends Command {
 					$paymentArr=array();
 					$paymentArr["bi_description"]=$row_account["Notes"];
 					$paymentArr["bi_date"]=$row_account["PaymentDate"];
-					$paymentArr["bi_amount"]=abs($row_account["Amount"]);
+					$paymentArr["bi_amount"]=$row_account["Amount"];
 					$TenantsID = $pbx->getAccountTenantsID($row_account["Number"]);
 					if(!empty($TenantsID)){
 						$paymentArr["bi_te_id"]=$TenantsID;

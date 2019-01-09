@@ -117,7 +117,7 @@ class AccountBalance extends Model
                                 }
                             }
                         }else{
-                            if ($BlockingAccount->Balance > 0) {
+                            if ($BlockingAccount->Balance < 0) {
                                 $response=AccountBalance::pbxAccountBlocking($BlockingAccount,$param,1,$BlockingGateway->CompanyGatewayID,$CompanyID);
                                 if(!empty($response['AccountName']) && !empty($response['BlockedStatus'])){
                                     $email_message[$response['AccountName']]=$response['BlockedStatus'];
@@ -209,14 +209,14 @@ class AccountBalance extends Model
 
         if(isset($CheckAccountBalance) && $CheckAccountBalance==1){
             $response['response_code'] = 1;
-            $response['status'] = 'Success';
+            $response['status'] = 'success';
             $response['id'] = '1';
             $response['note'] = 'Account Balance Payment Success';
             $response['amount'] = $Amount;
             $response['response'] = array();
         }else{
             $response['response_code'] = 1;
-            $response['status'] = 'Success';
+            $response['status'] = 'success';
             $response['id'] = '1';
             $response['note'] = 'Account Balance Payment Success';
             $response['amount'] = $Amount;
@@ -402,11 +402,13 @@ class AccountBalance extends Model
          */
         if(isset($BillingType)){
             if($BillingType==AccountBilling::BILLINGTYPE_PREPAID){
+                $AccountBalance = AccountBalanceLog::getPrepaidAccountBalance($AccountID);
+                /*
                 if($AccountBalance<0){
                     $AccountBalance=abs($AccountBalance);
                 }else{
                     $AccountBalance=($AccountBalance) * -1;
-                }
+                }*/
             }
             /*
             else{
@@ -419,6 +421,7 @@ class AccountBalance extends Model
                 $AccountBalance=0;
             }
         }
+        $AccountBalance = number_format($AccountBalance,Helper::get_round_decimal_places($CompanyID,$AccountID));
         return $AccountBalance;
     }
 
@@ -466,6 +469,9 @@ class AccountBalance extends Model
                 Log::info("===== Error ON Block ===== ");
                 Log::info($error_message);
             }
+            if($BlockingAccount->IsReseller==1){
+                AccountBalance::pbxResellerBlocking($BlockingAccount->AccountID,$blocked,$CompanyGatewayID);
+            }
             if ($BlockingAccount->Blocked == 0) {
                 Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 1));
 
@@ -486,6 +492,9 @@ class AccountBalance extends Model
                 Log::info("===== Error ON Unblock ===== ");
                 Log::info($error_message);
             }
+            if($BlockingAccount->IsReseller==1){
+                AccountBalance::pbxResellerBlocking($BlockingAccount->AccountID,$blocked,$CompanyGatewayID);
+            }
             if ($BlockingAccount->Blocked == 1) {
                 Account::where('AccountID', $BlockingAccount->AccountID)->update(array('Blocked' => 0));
                 AccountBalance::SendAccountBlockingEmail($CompanyID, $BlockingAccount->AccountID,0);
@@ -499,5 +508,51 @@ class AccountBalance extends Model
     }
     public static function getBalanceSOAOffsetAmount($AccountID){
         return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');
+    }
+
+    public static function getNewAccountExposure($AccountID){
+        $SOA_Amount = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
+        $response = AccountBalance::where('AccountID', $AccountID)->first(['AccountID', 'PermanentCredit', 'UnbilledAmount', 'EmailToCustomer', 'TemporaryCredit', 'TemporaryCreditDateTime', 'BalanceThreshold', 'BalanceAmount', 'VendorUnbilledAmount']);
+        $UnbilledAmount = empty($response->UnbilledAmount) ? 0 : $response->UnbilledAmount;
+        $VendorUnbilledAmount = empty($response->VendorUnbilledAmount) ? 0 : $response->VendorUnbilledAmount;
+        $AccountBalance = $SOA_Amount + ($UnbilledAmount - $VendorUnbilledAmount);
+        $AccountBalance = number_format($AccountBalance, get_round_decimal_places($AccountID));
+        return $AccountBalance;
+    }
+
+    public static function pbxResellerBlocking($AccountID,$blocked,$CompanyGatewayID){
+        $ResellerAccounts = Reseller::getResellerAccountsByAccountID($AccountID,$CompanyGatewayID);
+        if(!empty($ResellerAccounts)){
+            foreach($ResellerAccounts as $ResellerAccount){
+                $param['te_code'] = $ResellerAccount->Number;
+                $AccountName=$ResellerAccount->AccountName;
+                $pbx = new PBX($CompanyGatewayID);
+                if($blocked==1){
+                    $response = $pbx->blockAccount($param);
+                    if (isset($response['faultCode'])) {
+                        $error_message = $response;
+                        Log::info($AccountName." ===== Error ON Block ===== ");
+                        Log::info($error_message);
+                    }
+                    if ($ResellerAccount->Blocked == 0) {
+                        Account::where('AccountID', $ResellerAccount->AccountID)->update(array('Blocked' => 1));
+                    }
+                    Log::info($AccountName." is blocked");
+                }
+
+                if($blocked==0){
+                    $response = $pbx->unBlockAccount($param);
+                    if (isset($response['faultCode'])) {
+                        $error_message = $response;
+                        Log::info($AccountName." ===== Error ON Unblock ===== ");
+                        Log::info($error_message);
+                    }
+                    if ($ResellerAccount->Blocked == 1) {
+                        Account::where('AccountID', $ResellerAccount->AccountID)->update(array('Blocked' => 0));
+                    }
+                    Log::info($AccountName." is UnBlocked");
+                }
+            }
+        }
     }
 }
