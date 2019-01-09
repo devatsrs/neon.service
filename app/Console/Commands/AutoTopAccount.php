@@ -180,6 +180,15 @@ class AutoTopAccount extends Command {
 		return $result;
 	}
 
+	function endsWith($haystack, $needle) {
+		// search forward starting from end minus needle length characters
+		if ($needle === '') {
+			return true;
+		}
+		$diff = \strlen($haystack) - \strlen($needle);
+		return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
+	}
+
 	public function callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
@@ -189,8 +198,11 @@ class AutoTopAccount extends Command {
 		//$query = 'query?query='.urlencode('Select * from Customer');
 		//$query = 'account/1';
 
-
-		$url = $CompanyConfiguration . "api/checkBalance";
+		if ($this::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "api/checkBalance";
+		}else {
+			$url = $CompanyConfiguration . "/api/checkBalance";
+		}
 		Log::info("Check Balacnce URL :" . $url);
 		$curl = curl_init();
 
