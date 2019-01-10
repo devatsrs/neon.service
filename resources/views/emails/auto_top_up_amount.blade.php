@@ -24,7 +24,7 @@
             <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
                 <thead>
                     <tr>
-                        <th width="20%" align="center">Account ID</th>
+                        <th width="20%" align="center">Account Number</th>
                         <th width="20%" align="center">Account Name</th>
                         <th width="60%" align="center">Deposit Amount</th>
                     </tr>
@@ -34,7 +34,7 @@
 
                 @foreach($SuccessDepositAccounts as $SuccessDepositAccount)
                     <tr>
-                    <td width="20%" align="center">{{$SuccessDepositAccount["AccountID"]}}</td>
+                    <td width="20%" align="center">{{$SuccessDepositAccount["Number"]}}</td>
                     <td width="20%" align="center">{{$SuccessDepositAccount["AccountName"]}}</td>
                     <td width="60%" align="center">{{$SuccessDepositAccount["Amount"]}}</td>
                     </tr>
@@ -57,7 +57,7 @@
         <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <thead>
             <tr>
-                <th width="20%" align="center">Account ID</th>
+                <th width="20%" align="center">Account Number</th>
                 <th width="20%" align="center">Account Name</th>
                 <th width="60%" align="center">Failed Reason</th>
             </tr>
@@ -67,7 +67,7 @@
 
                 @foreach($FailureDepositFundAccounts as $FailureDepositFundAccount)
                     <tr>
-                    <td width="20%" align="center">{{$FailureDepositFundAccount["AccountID"]}}</td>
+                    <td width="20%" align="center">{{$FailureDepositFundAccount["Number"]}}</td>
                     <td width="20%" align="center">{{$FailureDepositFundAccount["AccountName"]}}</td>
                     <td width="60%" align="center">{{print_r($FailureDepositFundAccount["Response"]->message)}}</td>
                     </tr>
@@ -90,7 +90,7 @@
         <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <thead>
             <tr>
-                <th width="20%" align="center">Account ID</th>
+                <th width="20%" align="center">Account Number</th>
                 <th width="20%" align="center">Account Name</th>
                 <th width="60%" align="center">Failed Reason</th>
             </tr>
@@ -100,7 +100,7 @@
 
                 @foreach($ErrorDepositFundAccounts as $ErrorDepositFundAccount)
                     <tr>
-                    <td width="20%" align="center">{{$ErrorDepositFundAccount["AccountID"]}}</td>
+                    <td width="20%" align="center">{{$ErrorDepositFundAccount["Number"]}}</td>
                     <td width="20%" align="center">{{$ErrorDepositFundAccount["AccountName"]}}</td>
                     <td width="60%" align="center">{{print_r($ErrorDepositFundAccount["Response"],true)}}</td>
                     </tr>
