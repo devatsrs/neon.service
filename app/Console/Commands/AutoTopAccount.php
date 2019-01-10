@@ -87,7 +87,7 @@ class AutoTopAccount extends Command {
 				->select(['AccountName','tblAccount.AccountID','MinThreshold','TopupAmount'])
 				->where('tblAccountPaymentAutomation.AutoTopup','=', 1)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
-			Log::info('$rate table query.' . $AutoPaymentAccountList->toSql());
+			Log::info('Auto Top Up Query.' . $AutoPaymentAccountList->toSql());
 			$AutoPaymentAccountList = $AutoPaymentAccountList->get();
 			Log::info('DONE With AutoTopAccount.' . count($AutoPaymentAccountList));
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
