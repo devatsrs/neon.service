@@ -8,6 +8,7 @@ use App\Lib\Summary;
 use App\Lib\RoutingProfileRate;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
+use App\Lib\NeonAPI;
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\Notification;
@@ -79,7 +80,7 @@ class AutoTopAccount extends Command {
         CronJob::createLog($CronJobID);
         
         //print_r($cronsetting);die();
-        Log::useFiles(storage_path() . '/logs/AutoTopAccount-companyid-'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/AutoTopAccount-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 
 			$AutoPaymentAccountList = Account::
@@ -191,120 +192,65 @@ class AutoTopAccount extends Command {
 
 	public function callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
+		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
 		$topUpAmount = false;
-		//https://appcenter.intuit.com/Playground/OAuth/AccessGranted?ia=true&oauth_token=lvprdco5CjnH7fx5z6P9RRHFm9AUrRHhhoH3UdCwjoGRrLEv&oauth_verifier=0hzsvq6&realmId=193514449127769&dataSource=QBO
-		//$query = 'query?query='.urlencode('Select * from Customer');
-		//$query = 'account/1';
-
-		if ($this::endsWith($CompanyConfiguration,"/")) {
-			$url = $CompanyConfiguration . "api/account/checkBalance";
-		}else {
-			$url = $CompanyConfiguration . "/api/account/checkBalance";
-		}
-		Log::info("Check Balacnce URL :" . $url);
-		$curl = curl_init();
-
 		$postdata = array(
 			'AccountID'                => $AutoPaymentAccount->AccountID
 		);
+		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "/";
+		}
+		Log::info("Balance API URL" . $url);
+		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
 
-		$auth = base64_encode(getenv("NEON_USER_NAME") . ':' . getenv("NEON_USER_PASSWORD"));
-		curl_setopt_array($curl, array(
-			CURLOPT_URL => $url,
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_ENCODING => "",
-			CURLOPT_MAXREDIRS => 10,
-			CURLOPT_TIMEOUT => 30,
-			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => "POST",
-			CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
-			CURLOPT_HTTPHEADER => array(
-				"accept: application/json",
-				"authorization: Basic " . $auth,
-			),
-		));
-
-		$response = curl_exec($curl);
-		$err = curl_error($curl);
-
-		curl_close($curl);
-
-		if ($err) {
-			$accountresponse["error"] = $err;
-			$topUpAmount = false;
-			Log::info(print_r($accountresponse,true));
+		if (isset($APIresponse["error"])) {
+			return $topUpAmount = false;
 			//echo "cURL Error #:" . $err;
 		} else {
-			//$accountresponse["response"] = $response;
-			$response = json_decode($response);
-			Log::info(print_r($response,true));
+			$response = json_decode($APIresponse["response"]);
+			Log::info(print_r($APIresponse["response"],true));
 			if ($response->status == "success" &&
-				$response->data->amount > $AutoPaymentAccount->MinThreshold) {
+				$response->data->amount >= $AutoPaymentAccount->MinThreshold) {
 				$topUpAmount = true;
 				return $topUpAmount;
 			}
-			//echo $response->data->amount;
+
 		}
 	}
 
 	public function calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
+		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
 		$topUpAmount = false;
 		$DepositAccount = array();
-		//https://appcenter.intuit.com/Playground/OAuth/AccessGranted?ia=true&oauth_token=lvprdco5CjnH7fx5z6P9RRHFm9AUrRHhhoH3UdCwjoGRrLEv&oauth_verifier=0hzsvq6&realmId=193514449127769&dataSource=QBO
-		//$query = 'query?query='.urlencode('Select * from Customer');
-		//$query = 'account/1';
-
-		if ($this::endsWith($CompanyConfiguration,"/")) {
-			$url = $CompanyConfiguration . "api/account/depositFund";
-		}else {
-			$url = $CompanyConfiguration . "/api/account/depositFund";
-		}
-
-		Log::info("calldepositFundAPI :" . $url);
-		$curl = curl_init();
-
 		$postdata = array(
 			'AccountID'                => $AutoPaymentAccount->AccountID,
 			'Amount'                => $AutoPaymentAccount->TopupAmount
 		);
 
-		$auth = base64_encode(getenv("NEON_USER_NAME") . ':' . getenv("NEON_USER_PASSWORD"));
-		curl_setopt_array($curl, array(
-			CURLOPT_URL => $url,
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_ENCODING => "",
-			CURLOPT_MAXREDIRS => 10,
-			CURLOPT_TIMEOUT => 30,
-			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			CURLOPT_CUSTOMREQUEST => "POST",
-			CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
-			CURLOPT_HTTPHEADER => array(
-				"accept: application/json",
-				"authorization: Basic " . $auth,
-			),
-		));
 
-		$response = curl_exec($curl);
-		$err = curl_error($curl);
+		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "/";
+		}
+		Log::info("Balance API URL" . $url);
+		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
 
-		curl_close($curl);
 
-		if ($err) {
-			$accountresponse["error"] = $err;
+		if (isset($APIresponse["error"])) {
+			//$accountresponse["error"] = $err;
 			$topUpAmount = false;
-			Log::info(print_r($accountresponse,true));
+			Log::info(print_r($APIresponse["error"],true));
 			$DepositAccount[0] = "error";
-			$DepositAccount[1] = $err;
+			$DepositAccount[1] = $APIresponse["error"];
 
 			//echo "cURL Error #:" . $err;
 		} else {
 			//$accountresponse["response"] = $response;
-			$response = json_decode($response);
+			$response = json_decode($APIresponse["response"]);
 			Log::info(print_r($response,true));
 			if ($response->status == "success") {
 				$DepositAccount[0] = "success";
