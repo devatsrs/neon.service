@@ -199,9 +199,9 @@ class AutoTopAccount extends Command {
 		//$query = 'account/1';
 
 		if ($this::endsWith($CompanyConfiguration,"/")) {
-			$url = $CompanyConfiguration . "api/checkBalance";
+			$url = $CompanyConfiguration . "api/account/checkBalance";
 		}else {
-			$url = $CompanyConfiguration . "/api/checkBalance";
+			$url = $CompanyConfiguration . "/api/account/checkBalance";
 		}
 		Log::info("Check Balacnce URL :" . $url);
 		$curl = curl_init();
@@ -260,9 +260,9 @@ class AutoTopAccount extends Command {
 		//$query = 'account/1';
 
 		if ($this::endsWith($CompanyConfiguration,"/")) {
-			$url = $CompanyConfiguration . "api/depositFund";
+			$url = $CompanyConfiguration . "api/account/depositFund";
 		}else {
-			$url = $CompanyConfiguration . "/api/depositFund";
+			$url = $CompanyConfiguration . "/api/account/depositFund";
 		}
 
 		Log::info("calldepositFundAPI :" . $url);
