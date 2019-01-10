@@ -126,6 +126,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\RoutingVendorRate',
 		'App\Console\Commands\ActiveCallBalanceAlert',
 		'App\Console\Commands\AccountBalanceGenerator',
+		'App\Console\Commands\RateTableDIDRateUpload',
 
 	];
 
