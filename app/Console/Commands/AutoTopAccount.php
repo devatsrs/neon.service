@@ -8,7 +8,6 @@ use App\Lib\Summary;
 use App\Lib\RoutingProfileRate;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
-use App\Lib\NeonAPI;
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\Notification;
@@ -199,11 +198,11 @@ class AutoTopAccount extends Command {
 		$postdata = array(
 			'AccountID'                => $AutoPaymentAccount->AccountID
 		);
-		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+		if (!$this::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";
 		}
 		Log::info("Balance API URL" . $url);
-		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
+		$APIresponse = $this::callAPI($postdata,"api/account/checkBalance",$url);
 
 		if (isset($APIresponse["error"])) {
 			return $topUpAmount = false;
@@ -233,11 +232,11 @@ class AutoTopAccount extends Command {
 		);
 
 
-		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+		if (!$this::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";
 		}
 		Log::info("Balance API URL" . $url);
-		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
+		$APIresponse = $this::callAPI($postdata,"api/account/depositFund",$url);
 
 
 		if (isset($APIresponse["error"])) {
@@ -264,5 +263,44 @@ class AutoTopAccount extends Command {
 		}
 
 		return $DepositAccount;
+	}
+
+
+
+
+	public static function callAPI($postdata,$call_method,$api_url)
+	{
+		$url = $api_url . $call_method;
+		Log::info("Call API URL :" . $url);
+		$APIresponse = array();
+		$curl = curl_init();
+		$auth = base64_encode(getenv("NEON_USER_NAME") . ':' . getenv("NEON_USER_PASSWORD"));
+		curl_setopt_array($curl, array(
+			CURLOPT_URL => $url,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => "",
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => "POST",
+			CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
+			CURLOPT_HTTPHEADER => array(
+				"accept: application/json",
+				"authorization: Basic " . $auth,
+			),
+		));
+
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+
+		curl_close($curl);
+
+		if ($err) {
+			$APIresponse["error"] = $err;
+		} else {
+			$APIresponse["response"] = $response;
+		}
+
+		return $APIresponse;
 	}
 }
