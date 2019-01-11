@@ -133,11 +133,12 @@ class AutoTopAccount extends Command {
 				Log::info('No Account IDs found for the auto top up.');
 			}
 
+			CronJob::CronJobSuccessEmailSend($CronJobID);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
             echo "DONE With AutoTopAccount";
 
-			CronJob::CronJobSuccessEmailSend($CronJobID);
+
 			//Log::info('routingList:Get the routing list user company.' . $CompanyID);
             Log::info('Run Cron.');
         }catch (\Exception $e){
