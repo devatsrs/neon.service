@@ -15,7 +15,7 @@ class Helper{
 		else{
 			$body  = $view;
 		}
-
+        Log::info('Email Body.' . $body);
 	
 		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		

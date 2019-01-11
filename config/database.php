@@ -109,6 +109,17 @@ return [
 			'prefix'    => '',
 			'strict'    => false,
         ],
+		/** Routing Database **/
+		'sqlsrvrouting' => [
+			'driver'   => 'mysql',
+			'host'     => env('DB_HOSTROUTING', 'localhost'),
+			'database' => env('DB_DATABASEROUTING', 'forge'),
+			'username' => env('DB_USERNAMEROUTING', 'forge'),
+			'password' => substr(env('DB_PASSWORDROUTING', ''),5),
+			'charset'   => 'utf8',
+			'collation' => 'utf8_unicode_ci',
+			'prefix'   => '',
+		],
         'pbxmysql' => [
             'driver'    => 'mysql',
             'host'      => env('DB_HOSTPBX', 'localhost'),
