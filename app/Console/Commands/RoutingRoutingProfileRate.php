@@ -106,7 +106,10 @@ class RoutingRoutingProfileRate extends Command {
             }
 
 
-    }
+        }
+        
+        CronJob::deactivateCronJob($CronJob);
+        CronHelper::after_cronrun($this->name, $this);
     }
 
 }
