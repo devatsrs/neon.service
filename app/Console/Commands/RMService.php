@@ -77,6 +77,7 @@ class RMService extends Command {
                 'VendorVOSSheetDownload',
                 'RateTableGeneration',
                 'RateTableFileUpload',
+                'RateTableDIDFileUpload',
                 'VendorCDRUpload',
                 //'getSippyDownloadCommand',
 				'ImportAccount',
@@ -304,6 +305,17 @@ class RMService extends Command {
                     }
                 }
             }
+
+            foreach($allpending['data']['RateTableDIDFileUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." ratetabledidfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetabledidfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
             foreach($allpending['data']['VendorCDRUpload'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(getenv('APP_OS') == 'Linux') {

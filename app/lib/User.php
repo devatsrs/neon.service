@@ -32,6 +32,14 @@ class User extends \Eloquent {
         }
 
     }
+
+    public static function get_user_password($UserEmailID){
+
+        $userInfo = User::where(["EmailAddress" => $UserEmailID])->select(["password"])->first();
+
+        return $userInfo->password;
+
+    }
 	
 	    public static function getUserIDByUserName($CompanyID,$Name){
         /*$users = User::where(["CompanyID"=>$CompanyID,"Status"=>'1'])->get();
