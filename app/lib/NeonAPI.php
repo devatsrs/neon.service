@@ -2,6 +2,8 @@
 namespace App\Lib;
 
 use \Illuminate\Support\Facades\Log;
+use App\Lib\User;
+use Illuminate\Support\Facades\Crypt;
 class NeonAPI
 {
 
@@ -24,7 +26,7 @@ class NeonAPI
         Log::info("Call API URL :" . $url);
         $APIresponse = array();
         $curl = curl_init();
-        $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . getenv("NEON_USER_PASSWORD"));
+        $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -47,8 +49,10 @@ class NeonAPI
 
         if ($err) {
             $APIresponse["error"] = $err;
+            Log::info("Call API URL :" . print_r($err,true));
         } else {
             $APIresponse["response"] = $response;
+            Log::info("Call API URL :" . print_r($response,true));
         }
 
         return $APIresponse;
