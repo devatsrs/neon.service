@@ -71,18 +71,33 @@ class RoutingRoutingProfileRate extends Command {
         Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
-            DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
-            
+            //Put data into temp tables
+            DB::connection('neon_routingengine')->table('tblTempRoutingProfileRate')->truncate();
             //DB::beginTransaction();
+            $exceptionFlag='S';
             try {
-                $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate()');
+                $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(1)');
                 //DB::commit();
-                $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+               // $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             } catch (Exception $ex) {
                /// DB::rollback();
-                $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
+                //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
+                $exceptionFlag='E';
             }
-                        
+             
+            //Put data into tables
+            if($exceptionFlag=='S'){
+                DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
+                //DB::beginTransaction();
+                try {
+                    $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(2)');
+                    //DB::commit();
+                    $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+                } catch (Exception $ex) {
+                   /// DB::rollback();
+                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
+                }
+            }
             echo "DONE With RoutingProfileRates";
             
             
