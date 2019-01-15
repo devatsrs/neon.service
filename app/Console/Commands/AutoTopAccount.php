@@ -85,7 +85,7 @@ class AutoTopAccount extends Command {
 
 			$AutoPaymentAccountList = Account::
 			Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
-				->select(['AccountName','tblAccount.AccountID','MinThreshold','TopupAmount'])
+				->select(['AccountName','tblAccount.AccountID','Number','MinThreshold','TopupAmount'])
 				->where('tblAccountPaymentAutomation.AutoTopup','=', 1)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
 			Log::info('Auto Top Up Query.' . $AutoPaymentAccountList->toSql());
@@ -103,6 +103,7 @@ class AutoTopAccount extends Command {
 						$successRecord = array();
 						$successRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 						$successRecord["AccountName"] = $AutoPaymentAccount->AccountName;
+						$successRecord["Number"] = $AutoPaymentAccount->Number;
 						$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
 						$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
 						Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
@@ -110,6 +111,7 @@ class AutoTopAccount extends Command {
 						$failedRecord = array();
 						$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 						$failedRecord["AccountName"] = $AutoPaymentAccount->AccountName;
+						$failedRecord["Number"] = $AutoPaymentAccount->Number;
 						$failedRecord["Response"] = $DepositAccount[1];
 						$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
 						Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
@@ -117,6 +119,7 @@ class AutoTopAccount extends Command {
 						$errorRecord = array();
 						$errorRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 						$errorRecord["AccountName"] = $AutoPaymentAccount->AccountName;
+						$errorRecord["Number"] = $AutoPaymentAccount->Number;
 						$errorRecord["Response"] = $DepositAccount[1];
 						$ErrorDepositFund[count($ErrorDepositFund) + 1] = $errorRecord;
 					}
@@ -129,9 +132,13 @@ class AutoTopAccount extends Command {
 			}else {
 				Log::info('No Account IDs found for the auto top up.');
 			}
-            echo "DONE With AutoTopAccount";
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
+			CronJob::deactivateCronJob($CronJob);
+			CronHelper::after_cronrun($this->name, $this);
+            echo "DONE With AutoTopAccount";
+
+
 			//Log::info('routingList:Get the routing list user company.' . $CompanyID);
             Log::info('Run Cron.');
         }catch (\Exception $e){
