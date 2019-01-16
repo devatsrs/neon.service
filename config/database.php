@@ -109,6 +109,17 @@ return [
 			'prefix'    => '',
 			'strict'    => false,
         ],
+		/** Routing Database **/
+		'sqlsrvrouting' => [
+			'driver'   => 'mysql',
+			'host'     => env('DB_HOSTROUTING', 'localhost'),
+			'database' => env('DB_DATABASEROUTING', 'forge'),
+			'username' => env('DB_USERNAMEROUTING', 'forge'),
+			'password' => substr(env('DB_PASSWORDROUTING', ''),5),
+			'charset'   => 'utf8',
+			'collation' => 'utf8_unicode_ci',
+			'prefix'   => '',
+		],
         'pbxmysql' => [
             'driver'    => 'mysql',
             'host'      => env('DB_HOSTPBX', 'localhost'),
@@ -134,7 +145,20 @@ return [
 				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;'
 			]
 		],
-
+            'neon_routingengine' => [
+			'driver'    => 'mysql',
+			'host'      => env('DB_HOSTRoutingEngine', 'localhost'),
+			'database'  => env('DB_DATABASERoutingEngine', 'forge'),
+			'username'  => env('DB_USERNAMERoutingEngine', 'forge'),
+			'password'  => substr(env('DB_PASSWORDRoutingEngine', ''),5),
+			'charset'   => 'utf8',
+			'collation' => 'utf8_unicode_ci',
+			'prefix'    => '',
+			'strict'    => false,
+			'options' => [
+				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;'
+			]
+		],
 		'vosmysql' => [
 			'driver'   => 'mysql',
 			'host'     => env('DB_HOSTVOS', 'localhost'),

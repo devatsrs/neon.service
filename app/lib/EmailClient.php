@@ -10,6 +10,7 @@ class EmailClient
     protected $host;
     protected $port;
     protected $IsSSL = 'TLS';
+    protected $encryption = '';
     protected $validate_cert = 'false';
     protected $username;
     protected $password;
@@ -21,6 +22,7 @@ class EmailClient
         }
         if($this->IsSSL == 1 ){
             $this->IsSSL='ssl';
+            $this->encryption='ssl';
             $this->validate_cert='true';
         }
     }
@@ -31,6 +33,7 @@ class EmailClient
             'host' => $inboxSetting[0]->host,
             'port' => $inboxSetting[0]->port,
             'IsSSL' => $inboxSetting[0]->IsSSL==1?'ssl':'tls',
+            'encryption' => $inboxSetting[0]->IsSSL==1?'ssl':'',
             'validate_cert' => $inboxSetting[0]->IsSSL==1? 'true':'false',
             'username' => $inboxSetting[0]->username,
             'password' => $inboxSetting[0]->password,
@@ -49,6 +52,7 @@ class EmailClient
             'port' => $this->port,
 			'IsSSL' => $this->IsSSL,
             'validate_cert' => $this->validate_cert,
+            "encryption" => $this->encryption,
             'username' => $this->username,
             'password' => $this->password,
         ]);

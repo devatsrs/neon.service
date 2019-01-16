@@ -6,6 +6,7 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Gateway;
+use App\Lib\Reseller;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
@@ -65,11 +66,17 @@ class PBXAccountBlock extends Command
         $ProcessID = CompanyGateway::getProcessID();
         try {
 
-            $GatewayID = Gateway::getGatewayID('PBX');
-            $error_message = AccountBalance::PBXBlockUnBlockAccount($CompanyID,$GatewayID,$ProcessID);
-            if(isset($error_message['faultString'])){
-                $joblogdata['Message'] = $error_message['faultString'];
-                $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            $Result = Reseller::isResellerAndAccountBlock($CompanyID);
+            if($Result==0) {
+                $GatewayID = Gateway::getGatewayID('PBX');
+                $error_message = AccountBalance::PBXBlockUnBlockAccount($CompanyID, $GatewayID, $ProcessID);
+                if (isset($error_message['faultString'])) {
+                    $joblogdata['Message'] = $error_message['faultString'];
+                    $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                } else {
+                    $joblogdata['Message'] = 'Success';
+                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                }
             }else{
                 $joblogdata['Message'] = 'Success';
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;

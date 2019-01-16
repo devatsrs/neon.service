@@ -122,8 +122,12 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\DisputeBulkmail',
 		'App\Console\Commands\LCRRoutingEngine',
 		'App\Console\Commands\RoutingRoutingProfileRate',
+		'App\Console\Commands\AutoTopAccount',
 		'App\Console\Commands\RoutingVendorRate',
 		'App\Console\Commands\ActiveCallBalanceAlert',
+		'App\Console\Commands\AccountBalanceGenerator',
+		'App\Console\Commands\RateTableDIDRateUpload',
+                'App\Console\Commands\PushUpdatedRatesRoutingengine',
 
 	];
 
