@@ -126,7 +126,7 @@ WHERE vc.Active = 1
 		AND ( rtr.EndDate IS NULL OR  rtr.EndDate > NOW() )   
 		AND rtr.Blocked = 0
 		AND rp.`Status` = 1";
-                $result1 = DB::connection('neon_routingengine')->getPdo()->query($qry);
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
                 $RoutingProfileRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
                 foreach ($RoutingProfileRate as $key2 => $value2) {
                     $RoutingProfileId=$value2['RoutingProfileID'];
