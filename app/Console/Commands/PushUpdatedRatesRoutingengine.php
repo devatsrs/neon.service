@@ -72,7 +72,7 @@ class PushUpdatedRatesRoutingengine extends Command {
         try{
             
             
-            $select = "select * from tblTempRateAudit where section_update = tblAccount ";
+            $select = "select * from tblTempRateAudit where section_update = 'tblAccount' ";
             $result = DB::connection('neon_routingengine')->getPdo()->query($select);
             $accountList = $result->fetchAll(\PDO::FETCH_ASSOC);
             foreach ($accountList as $key1 => $value1) {
