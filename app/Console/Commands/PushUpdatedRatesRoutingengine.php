@@ -249,7 +249,7 @@ FROM tblVendorConnection vc
                     $VendorID=$value3['VendorID'];
                     $OriginationCode=$value3['OriginationCode'];
                     $DestinationCode=$value3['DestinationCode'];
-                    $CompanyID=$value3['CompanyID'];
+                    $CompanyID=$value3['CompanyId'];
                     $RoutingCategoryID=$value3['RoutingCategoryID'];
                     
                     
@@ -315,8 +315,14 @@ FROM tblVendorConnection vc
                     }
                     
                 }
+                
+                //Delete the Row
+                $deletequeyMain = "delete from tblTempRateAudit where AccountID =$AccountID AND IsVendor =$IsVendor";
+                DB::connection('neon_routingengine')->statement($deletequeyMain);
             }
             
+            
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::info('Run Cron.');
         }catch (\Exception $e){
             Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
