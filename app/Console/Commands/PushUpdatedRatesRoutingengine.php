@@ -242,7 +242,7 @@ FROM tblVendorConnection vc
 			AND EffectiveDate <= NOW() 
 		AND ( rtr.EndDate IS NULL OR  rtr.EndDate > NOW() )   
 		AND rtr.Blocked = 0;";
-                $result1 = DB::connection('neon_routingengine')->getPdo()->query($qry);
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
                 $VendorRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
                 foreach ($VendorRate as $key3 => $value3) {
                     $TrunkID=$value3['TrunkID'];
