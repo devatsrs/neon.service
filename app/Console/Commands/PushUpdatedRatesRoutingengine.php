@@ -704,7 +704,7 @@ class PushUpdatedRatesRoutingengine extends Command {
 		AND v.CurrencyId IS NOT NULL
 		AND v.IsVendor = 1
 		AND EffectiveDate <= NOW() 
-		AND RateTableId = $RateTableId AND rp.`Status` = 1";
+		AND rtr.RateTableId = $RateTableId AND rp.`Status` = 1";
                 $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
                 $RoutingProfileRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
                 foreach ($RoutingProfileRate as $key2 => $value2) {
@@ -813,7 +813,7 @@ class PushUpdatedRatesRoutingengine extends Command {
                     AND v.IsVendor = 1
                     AND v.CurrencyId IS NOT NULL
 			AND EffectiveDate <= NOW() 
-                    AND RateTableId = $RateTableId";
+                    AND rtr.RateTableId = $RateTableId";
                 
                 $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
                 $VendorRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
