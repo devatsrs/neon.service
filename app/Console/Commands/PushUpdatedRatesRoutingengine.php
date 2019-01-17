@@ -54,6 +54,7 @@ class PushUpdatedRatesRoutingengine extends Command {
 	 *
 	 * @return mixed
 	 */
+        
     public function handle() {
         
         CronHelper::before_cronrun($this->name, $this );
@@ -71,54 +72,85 @@ class PushUpdatedRatesRoutingengine extends Command {
         Log::useFiles(storage_path() . '/logs/pushupdatedratesroutingengine-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
+            //after tblVendorConnection_update
+            $select = "select * from tblTempRateAudit where (section_update = 'tblRateTableRate') ";
+            $result = DB::connection('neon_routingengine')->getPdo()->query($select);
+            $accountRate = $result->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($accountRate as $key1 => $value1) {
+                $RateTableId = $value1['RateTableId'];
+                $this->after_tblVendorConnection_update($RateTableId,$value1);
+            }
             
-            $select = "select * from tblTempRateAudit where section_update = 'tblAccount' ";
+            //after tblRouting ProfileCategory update
+            $select = "select * from tblTempRateAudit where (section_update = 'tblRoutingProfileCategory') ";
+            $result = DB::connection('neon_routingengine')->getPdo()->query($select);
+            $accountRate = $result->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($accountRate as $key1 => $value1) {
+                $RoutingProfileID = $value1['UpdatedId'];
+                $this->after_tblRoutingProfileCategory_update($RoutingProfileID,$value1);
+            }
+            
+            //after tblRoutingProfile update
+            $select = "select * from tblTempRateAudit where (section_update = 'tblRoutingProfile') ";
+            $result = DB::connection('neon_routingengine')->getPdo()->query($select);
+            $accountRate = $result->fetchAll(\PDO::FETCH_ASSOC);
+            foreach ($accountRate as $key1 => $value1) {
+                $RateTableId = $value1['RateTableId'];
+                $this->after_tblRoutingProfile_update($RateTableId,$value1);
+            }
+            
+            $select = "select * from tblTempRateAudit where (section_update = 'tblAccount' || section_update = 'tblVendorConnection') ";
             $result = DB::connection('neon_routingengine')->getPdo()->query($select);
             $accountList = $result->fetchAll(\PDO::FETCH_ASSOC);
             foreach ($accountList as $key1 => $value1) {
-                echo $IsVendor = $value1['IsVendor'];
-                $Status = $value1['Status'];$AccountID = $value1['AccountID'];
+                
+                
+                $IsVendor = $value1['IsVendor'];
+                $Status = $value1['Status'];
+                $AccountID = $value1['AccountID'];
+                
+                
                 
                 //Update/Del/Insert Account
                 $qry="SELECT rp.RoutingProfileID,
-	vc.TrunkID ,
-	v.AccountID AS `VendorID` ,
-	origRate.Code AS `OriginationCode` ,
-	destRate.Code AS `DestinationCode` ,
-	rtr.`Rate` ,
-	rtr.`ConnectionFee` ,
-	vc.`IP` ,
-	vc.`Port` ,
-	vc.`Username` ,
-	vc.`Password` ,
-	vc.`SipHeader` ,
-	vc.`AuthenticationMode` ,
-	vc.CLIRule ,
-	vc.CLDRule ,
-	v.AccountName AS `VendorName` ,
-	trunk.`Trunk` ,
-	vc.CallPrefix AS `TrunkPrefix` ,
-	vc.Name AS `VendorConnectionName` ,
-	curr.Code AS `Currency` ,
-	rtr.Preference ,
-	rtr.TimezonesID AS `TimezoneId` ,
-	rpc.`Order` AS RoutingCategoryOrder,
-	rp.CompanyID,rc.Name,rc.RoutingCategoryID
-FROM 
-speakintelligentRouting.tblRoutingProfile rp
-	JOIN speakintelligentRouting.tblRoutingProfileCategory rpc ON rp.RoutingProfileID = rpc.RoutingProfileID 
-	JOIN tblRateTableRate rtr ON rpc.RoutingCategoryID =  rtr.RoutingCategoryID
-	JOIN speakintelligentRouting.tblRoutingCategory rc ON rpc.RoutingCategoryID =  rc.RoutingCategoryID		
-	JOIN tblRateTable rt ON  rtr.RateTableID = rt.RateTableId
-		AND rt.CompanyId = rp.CompanyID  
-	JOIN tblVendorConnection vc ON rt.RateTableId = vc.RateTableID
-	JOIN tblAccount v ON vc.AccountId = v.AccountId 
-			AND v.CompanyId = rp.CompanyID  
-	JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId
-	JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
-	LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
-	LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
-WHERE vc.Active = 1 
+                        vc.TrunkID ,
+                        v.AccountID AS `VendorID` ,
+                        origRate.Code AS `OriginationCode` ,
+                        destRate.Code AS `DestinationCode` ,
+                        rtr.`Rate` ,
+                        rtr.`ConnectionFee` ,
+                        vc.`IP` ,
+                        vc.`Port` ,
+                        vc.`Username` ,
+                        vc.`Password` ,
+                        vc.`SipHeader` ,
+                        vc.`AuthenticationMode` ,
+                        vc.CLIRule ,
+                        vc.CLDRule ,
+                        v.AccountName AS `VendorName` ,
+                        trunk.`Trunk` ,
+                        vc.CallPrefix AS `TrunkPrefix` ,
+                        vc.Name AS `VendorConnectionName` ,
+                        curr.Code AS `Currency` ,
+                        rtr.Preference ,
+                        rtr.TimezonesID AS `TimezoneId` ,
+                        rpc.`Order` AS RoutingCategoryOrder,
+                        rp.CompanyID,rc.Name,rc.RoutingCategoryID
+                FROM 
+                speakintelligentRouting.tblRoutingProfile rp
+                        JOIN speakintelligentRouting.tblRoutingProfileCategory rpc ON rp.RoutingProfileID = rpc.RoutingProfileID 
+                        JOIN tblRateTableRate rtr ON rpc.RoutingCategoryID =  rtr.RoutingCategoryID
+                        JOIN speakintelligentRouting.tblRoutingCategory rc ON rpc.RoutingCategoryID =  rc.RoutingCategoryID		
+                        JOIN tblRateTable rt ON  rtr.RateTableID = rt.RateTableId
+                                AND rt.CompanyId = rp.CompanyID  
+                        JOIN tblVendorConnection vc ON rt.RateTableId = vc.RateTableID
+                        JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                                        AND v.CompanyId = rp.CompanyID  
+                        JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId
+                        JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                        LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                        LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+                WHERE vc.Active = 1 
 		AND vc.RateTypeID = 1
 		AND v.AccountID = $AccountID		
 		AND v.CurrencyId IS NOT NULL
@@ -136,12 +168,19 @@ WHERE vc.Active = 1
                     $DestinationCode=$value2['DestinationCode'];
                     $CompanyID=$value2['CompanyID'];$RoutingCategoryID=$value2['RoutingCategoryID'];
                     
-                    if($IsVendor=='0' || $Status=='0'){
+                    if(($IsVendor=='0' || $Status=='0') && $value1['section_update']=='tblAccount'){
                         $deletequey = "delete from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
                         . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
                         . " AND RoutingCategoryID=$RoutingCategoryID ";
                         DB::connection('neon_routingengine')->statement($deletequey);
                     }else{
+                        //If anything update in tblVendorConnection table
+                        if($value1['section_update']=='tblVendorConnection'){
+                            $deletequey = "delete from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                            . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                            . " AND RoutingCategoryID=$RoutingCategoryID ";
+                        }
+                
                         //Set Array
                         $DataArray              = array();
                         $DataArray['RoutingProfileId']=$value2['RoutingProfileID'];
@@ -202,40 +241,40 @@ WHERE vc.Active = 1
                 
                 //Update/Del/tblVendorRate
                 $qry="SELECT 
-	vc.TrunkID ,
-	v.AccountID AS `VendorID` ,
-	origRate.Code AS `OriginationCode` ,
-	destRate.Code AS `DestinationCode` ,
-	rtr.`Rate` ,
-	rtr.`ConnectionFee` ,
-	vc.`IP` ,
-	vc.`Port` ,
-	vc.`Username` ,
-	vc.`Password` ,
-	vc.`SipHeader` ,
-	vc.`AuthenticationMode` ,
-	vc.CLIRule ,
-	vc.CLDRule ,
-	v.AccountName AS `VendorName` ,
-	trunk.`Trunk` ,
-	vc.CallPrefix AS `TrunkPrefix` ,
-	vc.Name AS `VendorConnectionName` ,
-	curr.Code AS `Currency` ,
-	COALESCE(rtr.Preference,5) AS Preference ,
-	rtr.TimezonesID AS `TimezoneId` ,
-	v.CompanyId,rc.Name,rc.RoutingCategoryID
-FROM tblVendorConnection vc
-	JOIN tblAccount v ON vc.AccountId = v.AccountId 
-	JOIN tblRateTable rt ON  vc.RateTableID = rt.RateTableId
-			AND v.CompanyId = rt.CompanyId
-	JOIN tblRateTableRate rtr ON  rtr.RateTableID = rt.RateTableId
-	JOIN speakintelligentRouting.tblRoutingCategory rc ON rtr.RoutingCategoryID =  rc.RoutingCategoryID
-	JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId		
-	JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
-	LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
-	LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
-		
-	WHERE vc.Active = 1 
+                    vc.TrunkID ,
+                    v.AccountID AS `VendorID` ,
+                    origRate.Code AS `OriginationCode` ,
+                    destRate.Code AS `DestinationCode` ,
+                    rtr.`Rate` ,
+                    rtr.`ConnectionFee` ,
+                    vc.`IP` ,
+                    vc.`Port` ,
+                    vc.`Username` ,
+                    vc.`Password` ,
+                    vc.`SipHeader` ,
+                    vc.`AuthenticationMode` ,
+                    vc.CLIRule ,
+                    vc.CLDRule ,
+                    v.AccountName AS `VendorName` ,
+                    trunk.`Trunk` ,
+                    vc.CallPrefix AS `TrunkPrefix` ,
+                    vc.Name AS `VendorConnectionName` ,
+                    curr.Code AS `Currency` ,
+                    COALESCE(rtr.Preference,5) AS Preference ,
+                    rtr.TimezonesID AS `TimezoneId` ,
+                    v.CompanyId,rc.Name,rc.RoutingCategoryID
+            FROM tblVendorConnection vc
+                    JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                    JOIN tblRateTable rt ON  vc.RateTableID = rt.RateTableId
+                                    AND v.CompanyId = rt.CompanyId
+                    JOIN tblRateTableRate rtr ON  rtr.RateTableID = rt.RateTableId
+                    JOIN speakintelligentRouting.tblRoutingCategory rc ON rtr.RoutingCategoryID =  rc.RoutingCategoryID
+                    JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId		
+                    JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                    LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                    LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+
+                    WHERE vc.Active = 1 
 		AND vc.RateTypeID = 1
 		AND v.AccountID = $AccountID
 		AND v.CurrencyId IS NOT NULL
@@ -254,12 +293,20 @@ FROM tblVendorConnection vc
                     
                     
                     ///---------------------------------------------------------
-                    if($IsVendor=='0' || $Status=='0'){
+                    if(($IsVendor=='0' || $Status=='0') && $value1['section_update']=='tblAccount'){
                         $deletequey = "delete from tblVendorRate where CompanyId =$CompanyID "
                         . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
                         . " AND RoutingCategoryID=$RoutingCategoryID ";
                         DB::connection('neon_routingengine')->statement($deletequey);
                     }else{
+                        
+                        //If anything update in tblVendorConnection table
+                        if($value1['section_update']=='tblVendorConnection'){
+                            $deletequey = "delete from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                            . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                            . " AND RoutingCategoryID=$RoutingCategoryID ";
+                        }
+                        
                         //Set Array
                         $DataArray              = array();
                         $DataArray['CompanyId']=$value2['CompanyID'];
@@ -317,10 +364,11 @@ FROM tblVendorConnection vc
                 }
                 
                 //Delete the Row
-                $deletequeyMain = "delete from tblTempRateAudit where AccountID =$AccountID AND IsVendor =$IsVendor";
+                $deletequeyMain = "delete from tblTempRateAudit where AccountID =$AccountID";
                 DB::connection('neon_routingengine')->statement($deletequeyMain);
             }
             
+            //
             
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             Log::info('Run Cron.');
@@ -346,6 +394,497 @@ FROM tblVendorConnection vc
     
         CronJob::deactivateCronJob($CronJob);
         CronHelper::after_cronrun($this->name, $this);
+    }
+    public function after_tblRoutingProfile_update($RoutingProfileID,$value1){
+        
+                $Status = $value1['Status'];
+                //Update/Del/Insert Account
+                $qry="SELECT rp.RoutingProfileID,
+                        vc.TrunkID ,
+                        v.AccountID AS `VendorID` ,
+                        origRate.Code AS `OriginationCode` ,
+                        destRate.Code AS `DestinationCode` ,
+                        rtr.`Rate` ,
+                        rtr.`ConnectionFee` ,
+                        vc.`IP` ,
+                        vc.`Port` ,
+                        vc.`Username` ,
+                        vc.`Password` ,
+                        vc.`SipHeader` ,
+                        vc.`AuthenticationMode` ,
+                        vc.CLIRule ,
+                        vc.CLDRule ,
+                        v.AccountName AS `VendorName` ,
+                        trunk.`Trunk` ,
+                        vc.CallPrefix AS `TrunkPrefix` ,
+                        vc.Name AS `VendorConnectionName` ,
+                        curr.Code AS `Currency` ,
+                        rtr.Preference ,
+                        rtr.TimezonesID AS `TimezoneId` ,
+                        rpc.`Order` AS RoutingCategoryOrder,
+                        rp.CompanyID,rc.Name,rc.RoutingCategoryID
+                FROM 
+                speakintelligentRouting.tblRoutingProfile rp
+                        JOIN speakintelligentRouting.tblRoutingProfileCategory rpc ON rp.RoutingProfileID = rpc.RoutingProfileID 
+                        JOIN tblRateTableRate rtr ON rpc.RoutingCategoryID =  rtr.RoutingCategoryID
+                        JOIN speakintelligentRouting.tblRoutingCategory rc ON rpc.RoutingCategoryID =  rc.RoutingCategoryID		
+                        JOIN tblRateTable rt ON  rtr.RateTableID = rt.RateTableId
+                                AND rt.CompanyId = rp.CompanyID  
+                        JOIN tblVendorConnection vc ON rt.RateTableId = vc.RateTableID
+                        JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                                        AND v.CompanyId = rp.CompanyID  
+                        JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId
+                        JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                        LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                        LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+                WHERE vc.Active = 1 
+		AND vc.RateTypeID = 1
+		AND v.Status = 1		
+		AND v.CurrencyId IS NOT NULL
+		AND v.IsVendor = 1
+		AND EffectiveDate <= NOW() 
+		AND ( rtr.EndDate IS NULL OR  rtr.EndDate > NOW() )   
+		AND rtr.Blocked = 0
+		AND rp.RoutingProfileID =$RoutingProfileID";
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
+                $RoutingProfileRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
+                
+                foreach ($RoutingProfileRate as $key2 => $value2) {
+                    $RoutingProfileId=$value2['RoutingProfileID'];
+                    $TrunkID=$value2['TrunkID'];
+                    $VendorID=$value2['VendorID'];
+                    $OriginationCode=$value2['OriginationCode'];
+                    $DestinationCode=$value2['DestinationCode'];
+                    $CompanyID=$value2['CompanyID'];$RoutingCategoryID=$value2['RoutingCategoryID'];
+                    
+                    if(($Status=='0')){
+                        $deletequey = "delete from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                        . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                        . " AND RoutingCategoryID=$RoutingCategoryID ";
+                        DB::connection('neon_routingengine')->statement($deletequey);
+                    }else{
+                       
+                        //Set Array
+                        $DataArray              = array();
+                        $DataArray['RoutingProfileId']=$value2['RoutingProfileID'];
+                        $DataArray['CompanyId']=$value2['CompanyID'];
+                        $DataArray['TrunkId']=$value2['TrunkID'];
+                        $DataArray['VendorID']=$value2['VendorID'];
+                        $DataArray['OriginationCode']=$value2['OriginationCode'];
+                        $DataArray['DestinationCode']=$value2['DestinationCode'];
+                        $DataArray['Rate']=$value2['Rate'];
+                        $DataArray['ConnectionFee']=$value2['ConnectionFee'];
+                        $DataArray['IP']=$value2['IP'];
+                        $DataArray['Port']=$value2['Port'];
+                        $DataArray['Username']=$value2['Username'];
+                        $DataArray['Password']=$value2['Password'];
+                        $DataArray['SipHeader']=$value2['SipHeader'];
+                        $DataArray['AuthenticationMode']=$value2['AuthenticationMode'];
+                        $DataArray['CLITranslationRule']=$value2['CLIRule'];
+                        $DataArray['CLDTranslationRule']=$value2['CLDRule'];
+                        $DataArray['VendorName']=$value2['VendorName'];
+                        $DataArray['Trunk']=$value2['Trunk'];
+                        $DataArray['TrunkPrefix']=$value2['TrunkPrefix'];
+                        $DataArray['VendorConnectionName']=$value2['VendorConnectionName'];
+                        $DataArray['Currency']=$value2['Currency'];
+                        $DataArray['Preference']=$value2['Preference'];
+                        $DataArray['TimezoneId']=$value2['TimezoneId'];
+                        $DataArray['Location']='';
+                        $DataArray['RoutingCategoryOrder']=$value2['RoutingCategoryOrder'];
+                        $DataArray['selectionCode']='';
+                        $DataArray['RoutingCategoryID']=$value2['RoutingCategoryID'];
+                        $DataArray['CategoryName']=$value2['Name'];
+                        $qryParts = array();
+                        foreach ($DataArray as $keyTbl => $valueTbl) {
+                            $qryParts[] = "`" . $keyTbl . "` = '".$valueTbl."'";
+                        }
+                            
+                        $selectVendorID = "select VendorID from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                        . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                        . " AND RoutingCategoryID=$RoutingCategoryID ";;
+                        $resultHave = DB::connection('neon_routingengine')->getPdo()->query($selectVendorID);
+                        $firstResultRoutingProfileRate = $resultHave->fetch(\PDO::FETCH_ASSOC);
+                        $VendorIDRoutingProfileRate = $firstResultRoutingProfileRate['VendorID'];
+                        if($VendorIDRoutingProfileRate!=''){
+                            
+                            $querytblRoutingProfileRate = "UPDATE tblRoutingProfileRate SET ";
+                            $sqlUpdate = $querytblRoutingProfileRate . implode(",", $qryParts) . " WHERE RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                            . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode ";
+                            DB::connection('neon_routingengine')->statement($sqlUpdate);
+                            
+                        }else{
+                            
+                            $querytblRoutingProfileRate = "INSERT INTO tblRoutingProfileRate SET ";
+                            $sqlInsert = $querytblRoutingProfileRate . implode(",", $qryParts) . " ";
+                            DB::connection('neon_routingengine')->statement($sqlInsert);
+                            
+                        }
+                    }
+                }
+                
+                //Delete the Row
+                $deletequeyMain = "delete from tblTempRateAudit where UpdatedId =$RoutingProfileID and section_update='tblRoutingProfile'";
+                DB::connection('neon_routingengine')->statement($deletequeyMain);
+                Log::useFiles(storage_path() . '/logs/after_tblRoutingProfile_update- $RoutingProfileID:'.$RoutingProfileID.'-' . date('Y-m-d') . '.log');
+    }
+    public function after_tblRoutingProfileCategory_update($RoutingProfileID,$value1){
+        
+                
+                //Update/Del/Insert Account
+                $qry="SELECT rp.RoutingProfileID,
+                        vc.TrunkID ,
+                        v.AccountID AS `VendorID` ,
+                        origRate.Code AS `OriginationCode` ,
+                        destRate.Code AS `DestinationCode` ,
+                        rtr.`Rate` ,
+                        rtr.`ConnectionFee` ,
+                        vc.`IP` ,
+                        vc.`Port` ,
+                        vc.`Username` ,
+                        vc.`Password` ,
+                        vc.`SipHeader` ,
+                        vc.`AuthenticationMode` ,
+                        vc.CLIRule ,
+                        vc.CLDRule ,
+                        v.AccountName AS `VendorName` ,
+                        trunk.`Trunk` ,
+                        vc.CallPrefix AS `TrunkPrefix` ,
+                        vc.Name AS `VendorConnectionName` ,
+                        curr.Code AS `Currency` ,
+                        rtr.Preference ,
+                        rtr.TimezonesID AS `TimezoneId` ,
+                        rpc.`Order` AS RoutingCategoryOrder,
+                        rp.CompanyID,rc.Name,rc.RoutingCategoryID
+                FROM 
+                speakintelligentRouting.tblRoutingProfile rp
+                        JOIN speakintelligentRouting.tblRoutingProfileCategory rpc ON rp.RoutingProfileID = rpc.RoutingProfileID 
+                        JOIN tblRateTableRate rtr ON rpc.RoutingCategoryID =  rtr.RoutingCategoryID
+                        JOIN speakintelligentRouting.tblRoutingCategory rc ON rpc.RoutingCategoryID =  rc.RoutingCategoryID		
+                        JOIN tblRateTable rt ON  rtr.RateTableID = rt.RateTableId
+                                AND rt.CompanyId = rp.CompanyID  
+                        JOIN tblVendorConnection vc ON rt.RateTableId = vc.RateTableID
+                        JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                                        AND v.CompanyId = rp.CompanyID  
+                        JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId
+                        JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                        LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                        LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+                WHERE vc.Active = 1 
+		AND vc.RateTypeID = 1
+		AND v.Status = 1		
+		AND v.CurrencyId IS NOT NULL
+		AND v.IsVendor = 1
+		AND EffectiveDate <= NOW() 
+		AND ( rtr.EndDate IS NULL OR  rtr.EndDate > NOW() )   
+		AND rtr.Blocked = 0
+		AND rp.`Status` = 1 AND rp.RoutingProfileID =$RoutingProfileID ";
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
+                $RoutingProfileRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($RoutingProfileRate as $key2 => $value2) {
+                    $RoutingProfileId=$value2['RoutingProfileID'];
+                    $TrunkID=$value2['TrunkID'];
+                    $VendorID=$value2['VendorID'];
+                    $OriginationCode=$value2['OriginationCode'];
+                    $DestinationCode=$value2['DestinationCode'];
+                    $CompanyID=$value2['CompanyID'];$RoutingCategoryID=$value2['RoutingCategoryID'];
+                    
+                    {
+                        //Set Array
+                        $DataArray              = array();
+                        $DataArray['RoutingProfileId']=$value2['RoutingProfileID'];
+                        $DataArray['CompanyId']=$value2['CompanyID'];
+                        $DataArray['TrunkId']=$value2['TrunkID'];
+                        $DataArray['VendorID']=$value2['VendorID'];
+                        $DataArray['OriginationCode']=$value2['OriginationCode'];
+                        $DataArray['DestinationCode']=$value2['DestinationCode'];
+                        $DataArray['Rate']=$value2['Rate'];
+                        $DataArray['ConnectionFee']=$value2['ConnectionFee'];
+                        $DataArray['IP']=$value2['IP'];
+                        $DataArray['Port']=$value2['Port'];
+                        $DataArray['Username']=$value2['Username'];
+                        $DataArray['Password']=$value2['Password'];
+                        $DataArray['SipHeader']=$value2['SipHeader'];
+                        $DataArray['AuthenticationMode']=$value2['AuthenticationMode'];
+                        $DataArray['CLITranslationRule']=$value2['CLIRule'];
+                        $DataArray['CLDTranslationRule']=$value2['CLDRule'];
+                        $DataArray['VendorName']=$value2['VendorName'];
+                        $DataArray['Trunk']=$value2['Trunk'];
+                        $DataArray['TrunkPrefix']=$value2['TrunkPrefix'];
+                        $DataArray['VendorConnectionName']=$value2['VendorConnectionName'];
+                        $DataArray['Currency']=$value2['Currency'];
+                        $DataArray['Preference']=$value2['Preference'];
+                        $DataArray['TimezoneId']=$value2['TimezoneId'];
+                        $DataArray['Location']='';
+                        $DataArray['RoutingCategoryOrder']=$value2['RoutingCategoryOrder'];
+                        $DataArray['selectionCode']='';
+                        $DataArray['RoutingCategoryID']=$value2['RoutingCategoryID'];
+                        $DataArray['CategoryName']=$value2['Name'];
+                        $qryParts = array();
+                        foreach ($DataArray as $keyTbl => $valueTbl) {
+                            $qryParts[] = "`" . $keyTbl . "` = '".$valueTbl."'";
+                        }
+                            
+                        $selectVendorID = "select VendorID from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                        . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                        . " AND RoutingCategoryID=$RoutingCategoryID ";;
+                        $resultHave = DB::connection('neon_routingengine')->getPdo()->query($selectVendorID);
+                        $firstResultRoutingProfileRate = $resultHave->fetch(\PDO::FETCH_ASSOC);
+                        $VendorIDRoutingProfileRate = $firstResultRoutingProfileRate['VendorID'];
+                        if($VendorIDRoutingProfileRate!=''){
+                            
+                            $querytblRoutingProfileRate = "UPDATE tblRoutingProfileRate SET ";
+                            $sqlUpdate = $querytblRoutingProfileRate . implode(",", $qryParts) . " WHERE RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                            . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode ";
+                            DB::connection('neon_routingengine')->statement($sqlUpdate);
+                            
+                        }else{
+                            
+                            $querytblRoutingProfileRate = "INSERT INTO tblRoutingProfileRate SET ";
+                            $sqlInsert = $querytblRoutingProfileRate . implode(",", $qryParts) . " ";
+                            DB::connection('neon_routingengine')->statement($sqlInsert);
+                            
+                        }
+                    }
+                }
+                
+                //Update/Del/tblVendorRate
+                
+                //Delete the Row
+                $deletequeyMain = "delete from tblTempRateAudit where UpdatedId =$RoutingProfileID and section_update='tblRoutingProfileCategory'";
+                DB::connection('neon_routingengine')->statement($deletequeyMain);
+                
+                Log::useFiles(storage_path() . '/logs/after_tblRoutingProfileCategory_update- RoutingProfileID:'.$RoutingProfileID.'-' . date('Y-m-d') . '.log');
+    }
+    public function after_tblVendorConnection_update($RateTableId,$value1){
+        
+                Log::useFiles(storage_path() . '/logs/after_tblVendorConnection_update-$RateTableId:'.$RateTableId.'-' . date('Y-m-d') . '.log');
+       
+                //Update/Del/Insert Account
+                $qry="SELECT rp.RoutingProfileID,
+                        vc.TrunkID ,
+                        v.AccountID AS `VendorID` ,
+                        origRate.Code AS `OriginationCode` ,
+                        destRate.Code AS `DestinationCode` ,
+                        rtr.`Rate` ,
+                        rtr.`ConnectionFee` ,
+                        vc.`IP` ,
+                        vc.`Port` ,
+                        vc.`Username` ,
+                        vc.`Password` ,
+                        vc.`SipHeader` ,
+                        vc.`AuthenticationMode` ,
+                        vc.CLIRule ,
+                        vc.CLDRule ,
+                        v.AccountName AS `VendorName` ,
+                        trunk.`Trunk` ,
+                        vc.CallPrefix AS `TrunkPrefix` ,
+                        vc.Name AS `VendorConnectionName` ,
+                        curr.Code AS `Currency` ,
+                        rtr.Preference ,
+                        rtr.TimezonesID AS `TimezoneId` ,
+                        rpc.`Order` AS RoutingCategoryOrder,
+                        rp.CompanyID,rc.Name,rc.RoutingCategoryID
+                FROM 
+                speakintelligentRouting.tblRoutingProfile rp
+                        JOIN speakintelligentRouting.tblRoutingProfileCategory rpc ON rp.RoutingProfileID = rpc.RoutingProfileID 
+                        JOIN tblRateTableRate rtr ON rpc.RoutingCategoryID =  rtr.RoutingCategoryID
+                        JOIN speakintelligentRouting.tblRoutingCategory rc ON rpc.RoutingCategoryID =  rc.RoutingCategoryID		
+                        JOIN tblRateTable rt ON  rtr.RateTableID = rt.RateTableId
+                                AND rt.CompanyId = rp.CompanyID  
+                        JOIN tblVendorConnection vc ON rt.RateTableId = vc.RateTableID
+                        JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                                        AND v.CompanyId = rp.CompanyID  
+                        JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId
+                        JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                        LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                        LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+                WHERE vc.Active = 1 
+		AND vc.RateTypeID = 1
+		AND v.Status = 1		
+		AND v.CurrencyId IS NOT NULL
+		AND v.IsVendor = 1
+		AND EffectiveDate <= NOW() 
+		AND rtr.RateTableId = $RateTableId AND rp.`Status` = 1";
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
+                $RoutingProfileRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($RoutingProfileRate as $key2 => $value2) {
+                    $RoutingProfileId=$value2['RoutingProfileID'];
+                    $TrunkID=$value2['TrunkID'];
+                    $VendorID=$value2['VendorID'];
+                    $OriginationCode=$value2['OriginationCode'];
+                    $DestinationCode=$value2['DestinationCode'];
+                    $CompanyID=$value2['CompanyID'];$RoutingCategoryID=$value2['RoutingCategoryID'];
+                    
+                        //Set Array
+                        $DataArray              = array();
+                        $DataArray['RoutingProfileId']=$value2['RoutingProfileID'];
+                        $DataArray['CompanyId']=$value2['CompanyID'];
+                        $DataArray['TrunkId']=$value2['TrunkID'];
+                        $DataArray['VendorID']=$value2['VendorID'];
+                        $DataArray['OriginationCode']=$value2['OriginationCode'];
+                        $DataArray['DestinationCode']=$value2['DestinationCode'];
+                        $DataArray['Rate']=$value2['Rate'];
+                        $DataArray['ConnectionFee']=$value2['ConnectionFee'];
+                        $DataArray['IP']=$value2['IP'];
+                        $DataArray['Port']=$value2['Port'];
+                        $DataArray['Username']=$value2['Username'];
+                        $DataArray['Password']=$value2['Password'];
+                        $DataArray['SipHeader']=$value2['SipHeader'];
+                        $DataArray['AuthenticationMode']=$value2['AuthenticationMode'];
+                        $DataArray['CLITranslationRule']=$value2['CLIRule'];
+                        $DataArray['CLDTranslationRule']=$value2['CLDRule'];
+                        $DataArray['VendorName']=$value2['VendorName'];
+                        $DataArray['Trunk']=$value2['Trunk'];
+                        $DataArray['TrunkPrefix']=$value2['TrunkPrefix'];
+                        $DataArray['VendorConnectionName']=$value2['VendorConnectionName'];
+                        $DataArray['Currency']=$value2['Currency'];
+                        $DataArray['Preference']=$value2['Preference'];
+                        $DataArray['TimezoneId']=$value2['TimezoneId'];
+                        $DataArray['Location']='';
+                        $DataArray['RoutingCategoryOrder']=$value2['RoutingCategoryOrder'];
+                        $DataArray['selectionCode']='';
+                        $DataArray['RoutingCategoryID']=$value2['RoutingCategoryID'];
+                        $DataArray['CategoryName']=$value2['Name'];
+                        $qryParts = array();
+                        foreach ($DataArray as $keyTbl => $valueTbl) {
+                            $qryParts[] = "`" . $keyTbl . "` = '".$valueTbl."'";
+                        }
+                            
+                        $selectVendorID = "select VendorID from tblRoutingProfileRate where RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                        . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                        . " AND RoutingCategoryID=$RoutingCategoryID ";;
+                        $resultHave = DB::connection('neon_routingengine')->getPdo()->query($selectVendorID);
+                        $firstResultRoutingProfileRate = $resultHave->fetch(\PDO::FETCH_ASSOC);
+                        $VendorIDRoutingProfileRate = $firstResultRoutingProfileRate['VendorID'];
+                        if($VendorIDRoutingProfileRate!=''){
+                            
+                            $querytblRoutingProfileRate = "UPDATE tblRoutingProfileRate SET ";
+                            $sqlUpdate = $querytblRoutingProfileRate . implode(",", $qryParts) . " WHERE RoutingProfileId =$RoutingProfileId AND CompanyId =$CompanyID "
+                            . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode ";
+                            DB::connection('neon_routingengine')->statement($sqlUpdate);
+                            
+                        }else{
+                            
+                            $querytblRoutingProfileRate = "INSERT INTO tblRoutingProfileRate SET ";
+                            $sqlInsert = $querytblRoutingProfileRate . implode(",", $qryParts) . " ";
+                            DB::connection('neon_routingengine')->statement($sqlInsert);
+                            
+                        }
+                }
+                
+                //Update/Del/tblVendorRate
+                $qry="SELECT 
+                    vc.TrunkID ,
+                    v.AccountID AS `VendorID` ,
+                    origRate.Code AS `OriginationCode` ,
+                    destRate.Code AS `DestinationCode` ,
+                    rtr.`Rate` ,
+                    rtr.`ConnectionFee` ,
+                    vc.`IP` ,
+                    vc.`Port` ,
+                    vc.`Username` ,
+                    vc.`Password` ,
+                    vc.`SipHeader` ,
+                    vc.`AuthenticationMode` ,
+                    vc.CLIRule ,
+                    vc.CLDRule ,
+                    v.AccountName AS `VendorName` ,
+                    trunk.`Trunk` ,
+                    vc.CallPrefix AS `TrunkPrefix` ,
+                    vc.Name AS `VendorConnectionName` ,
+                    curr.Code AS `Currency` ,
+                    COALESCE(rtr.Preference,5) AS Preference ,
+                    rtr.TimezonesID AS `TimezoneId` ,
+                    v.CompanyId,rc.Name,rc.RoutingCategoryID
+            FROM tblVendorConnection vc
+                    JOIN tblAccount v ON vc.AccountId = v.AccountId 
+                    JOIN tblRateTable rt ON  vc.RateTableID = rt.RateTableId
+                                    AND v.CompanyId = rt.CompanyId
+                    JOIN tblRateTableRate rtr ON  rtr.RateTableID = rt.RateTableId
+                    JOIN speakintelligentRouting.tblRoutingCategory rc ON rtr.RoutingCategoryID =  rc.RoutingCategoryID
+                    JOIN tblRate destRate  ON  rtr.RateID = destRate.RateId		
+                    JOIN tblCurrency curr  ON  rt.CurrencyID = curr.CurrencyId
+                    LEFT JOIN tblTrunk trunk  ON  vc.TrunkID = trunk.TrunkID 
+                    LEFT JOIN tblRate origRate ON rtr.OriginationRateID = origRate.RateID
+
+                    WHERE vc.Active = 1 
+                    AND vc.RateTypeID = 1
+                    AND v.Status = 1
+                    AND v.IsVendor = 1
+                    AND v.CurrencyId IS NOT NULL
+			AND EffectiveDate <= NOW() 
+                    AND rtr.RateTableId = $RateTableId";
+                
+                $result1 = DB::connection('sqlsrv')->getPdo()->query($qry);
+                $VendorRate = $result1->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($VendorRate as $key3 => $value3) {
+                    $TrunkID=$value3['TrunkID'];
+                    $VendorID=$value3['VendorID'];
+                    $OriginationCode=$value3['OriginationCode'];
+                    $DestinationCode=$value3['DestinationCode'];
+                    $CompanyID=$value3['CompanyId'];
+                    $RoutingCategoryID=$value3['RoutingCategoryID'];
+                    
+                    ///---------------------------------------------------------
+                    //Set Array
+                    $DataArray              = array();
+                    $DataArray['CompanyId']=$value2['CompanyID'];
+                    $DataArray['TrunkId']=$value2['TrunkID'];
+                    $DataArray['VendorID']=$value2['VendorID'];
+                    $DataArray['OriginationCode']=$value2['OriginationCode'];
+                    $DataArray['DestinationCode']=$value2['DestinationCode'];
+                    $DataArray['Rate']=$value2['Rate'];
+                    $DataArray['ConnectionFee']=$value2['ConnectionFee'];
+                    $DataArray['IP']=$value2['IP'];
+                    $DataArray['Port']=$value2['Port'];
+                    $DataArray['Username']=$value2['Username'];
+                    $DataArray['Password']=$value2['Password'];
+                    $DataArray['SipHeader']=$value2['SipHeader'];
+                    $DataArray['AuthenticationMode']=$value2['AuthenticationMode'];
+                    $DataArray['CLITranslationRule']=$value2['CLIRule'];
+                    $DataArray['CLDTranslationRule']=$value2['CLDRule'];
+                    $DataArray['VendorName']=$value2['VendorName'];
+                    $DataArray['Trunk']=$value2['Trunk'];
+                    $DataArray['TrunkPrefix']=$value2['TrunkPrefix'];
+                    $DataArray['VendorConnectionName']=$value2['VendorConnectionName'];
+                    $DataArray['Currency']=$value2['Currency'];
+                    $DataArray['Preference']=$value2['Preference'];
+                    $DataArray['TimezoneId']=$value2['TimezoneId'];
+                    $DataArray['RoutingCategoryID']=$value2['RoutingCategoryID'];
+                    $DataArray['CategoryName']=$value2['Name'];
+
+                    $qryParts = array();
+                    foreach ($DataArray as $keyTbl => $valueTbl) {
+                        $qryParts[] = "`" . $keyTbl . "` = '".$valueTbl."'";
+                    }
+
+                    $selectVendorID = "select VendorID from tblVendorRate where CompanyId =$CompanyID "
+                    . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode "
+                    . " AND RoutingCategoryID=$RoutingCategoryID ";;
+                    $resultHave = DB::connection('neon_routingengine')->getPdo()->query($selectVendorID);
+                    $firstResultRoutingProfileRate = $resultHave->fetch(\PDO::FETCH_ASSOC);
+                    $VendorIDRoutingProfileRate = $firstResultRoutingProfileRate['VendorID'];
+                    if($VendorIDRoutingProfileRate!=''){
+
+                        $querytblRoutingProfileRate = "UPDATE tblVendorRate SET ";
+                        $sqlUpdate = $querytblRoutingProfileRate . implode(",", $qryParts) . " WHERE CompanyId =$CompanyID "
+                        . " AND TrunkId =$TrunkID AND VendorID=$VendorID AND OriginationCode=$OriginationCode  AND DestinationCode=$DestinationCode ";
+                        DB::connection('neon_routingengine')->statement($sqlUpdate);
+
+                    }else{
+
+                        $querytblRoutingProfileRate = "INSERT INTO tblVendorRate SET ";
+                        $sqlInsert = $querytblRoutingProfileRate . implode(",", $qryParts) . " ";
+                        DB::connection('neon_routingengine')->statement($sqlInsert);
+
+                    }
+                }
+                
+                //Delete the Row
+                $deletequeyMain = "delete from tblTempRateAudit where RateTableId =$RateTableId";
+                DB::connection('neon_routingengine')->statement($deletequeyMain);
+                
+                Log::useFiles(storage_path() . '/logs/after_tblVendorConnection end update - RateTableId:'.$RateTableId.'-' . date('Y-m-d') . '.log');
     }
 
 }
