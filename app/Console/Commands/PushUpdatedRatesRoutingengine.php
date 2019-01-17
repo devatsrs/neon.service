@@ -525,6 +525,7 @@ class PushUpdatedRatesRoutingengine extends Command {
                 //Delete the Row
                 $deletequeyMain = "delete from tblTempRateAudit where UpdatedId =$RoutingProfileID and section_update='tblRoutingProfile'";
                 DB::connection('neon_routingengine')->statement($deletequeyMain);
+                Log::useFiles(storage_path() . '/logs/after_tblRoutingProfile_update- $RoutingProfileID:'.$RoutingProfileID.'-' . date('Y-m-d') . '.log');
     }
     public function after_tblRoutingProfileCategory_update($RoutingProfileID,$value1){
         
@@ -651,10 +652,13 @@ class PushUpdatedRatesRoutingengine extends Command {
                 //Delete the Row
                 $deletequeyMain = "delete from tblTempRateAudit where UpdatedId =$RoutingProfileID and section_update='tblRoutingProfileCategory'";
                 DB::connection('neon_routingengine')->statement($deletequeyMain);
+                
+                Log::useFiles(storage_path() . '/logs/after_tblRoutingProfileCategory_update- RoutingProfileID:'.$RoutingProfileID.'-' . date('Y-m-d') . '.log');
     }
     public function after_tblVendorConnection_update($RateTableId,$value1){
         
-                
+                Log::useFiles(storage_path() . '/logs/after_tblVendorConnection_update-$RateTableId:'.$RateTableId.'-' . date('Y-m-d') . '.log');
+       
                 //Update/Del/Insert Account
                 $qry="SELECT rp.RoutingProfileID,
                         vc.TrunkID ,
@@ -879,6 +883,8 @@ class PushUpdatedRatesRoutingengine extends Command {
                 //Delete the Row
                 $deletequeyMain = "delete from tblTempRateAudit where RateTableId =$RateTableId";
                 DB::connection('neon_routingengine')->statement($deletequeyMain);
+                
+                Log::useFiles(storage_path() . '/logs/after_tblVendorConnection end update - RateTableId:'.$RateTableId.'-' . date('Y-m-d') . '.log');
     }
 
 }
