@@ -85,7 +85,7 @@ class RoutingVendorRate extends Command {
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(2)');
             
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-            $joblogdata['Message'] = 'Success';
+            $joblogdata['Message'] = 'tblVendorRate Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
             
