@@ -68,38 +68,29 @@ class RoutingVendorRate extends Command {
         CronJob::createLog($CronJobID);
         
         Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RoutingVendorRate';
         try{
-            $exceptionFlag='S'; //S for success
+            
+            DB::connection('neon_routingengine')->beginTransaction();
+            CronJob::createLog($CronJobID);
+            
             DB::connection('neon_routingengine')->table('tblTempVendorRate')->truncate();
-            try {
-                $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(1)');
-                //$result = CronJob::CronJobSuccessEmailSend($CronJobID);
-            } catch (Exception $ex) {
-                //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
-                $exceptionFlag='E'; //E for error
-                Log::useFiles(storage_path() . '/logs/RoutingVendorRateError:prc_RoutingVendorRate1'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
-            }
-            echo "DONE With Routing Vendor Rate ";
-            Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(1)');
+            
             //Put data into tables
-            if($exceptionFlag=='S'){
-                DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
-                //DB::beginTransaction();
-                try {
-                    $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(2)');
-                    $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-                } catch (Exception $ex) {
-                    //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
-                    $exceptionFlag='S';
-                    Log::useFiles(storage_path() . '/logs/RoutingVendorRateError:prc_RoutingVendorRate2'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
-                }
-            }
+            DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(2)');
             
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
             
-            Log::info('Run Cron.');
+            DB::connection('neon_routingengine')->commit(); 
+            
         }catch (\Exception $e){
-            Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
-            //Log::info('LCRRoutingEngine Error.');
             Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
             
             Log::error($e);
