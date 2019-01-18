@@ -72,7 +72,7 @@ class RoutingRoutingProfileRate extends Command {
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
-        $joblogdata['created_by'] = 'RoutingProfileRates';
+        $joblogdata['created_by'] = 'RMScheduler';
         try{
             DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);

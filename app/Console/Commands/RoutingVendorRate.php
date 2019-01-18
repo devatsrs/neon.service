@@ -71,7 +71,7 @@ class RoutingVendorRate extends Command {
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
-        $joblogdata['created_by'] = 'RoutingVendorRate';
+        $joblogdata['created_by'] = 'RMScheduler';
         try{
             
             DB::connection('neon_routingengine')->beginTransaction();
@@ -84,12 +84,12 @@ class RoutingVendorRate extends Command {
             DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(2)');
             
-            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-            $joblogdata['Message'] = 'tblVendorRate Successfully Done';
+            $joblogdata['Message'] = 'VendorRate Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
-            
             DB::connection('neon_routingengine')->commit(); 
+            
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             
         }catch (\Exception $e){
             Log::useFiles(storage_path() . '/logs/RoutingVendorRate-Error-' . date('Y-m-d') . '.log');
