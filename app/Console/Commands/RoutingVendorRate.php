@@ -67,20 +67,20 @@ class RoutingVendorRate extends Command {
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         
-        //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             $exceptionFlag='S'; //S for success
-            DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
+            DB::connection('neon_routingengine')->table('tblTempVendorRate')->truncate();
             try {
                 $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingVendorRate(1)');
                 //$result = CronJob::CronJobSuccessEmailSend($CronJobID);
             } catch (Exception $ex) {
                 //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
                 $exceptionFlag='E'; //E for error
+                Log::useFiles(storage_path() . '/logs/RoutingVendorRateError:prc_RoutingVendorRate1'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
             }
             echo "DONE With Routing Vendor Rate ";
-            
+            Log::useFiles(storage_path() . '/logs/RoutingVendorRate-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
             //Put data into tables
             if($exceptionFlag=='S'){
                 DB::connection('neon_routingengine')->table('tblVendorRate')->truncate();
@@ -91,6 +91,7 @@ class RoutingVendorRate extends Command {
                 } catch (Exception $ex) {
                     //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
                     $exceptionFlag='S';
+                    Log::useFiles(storage_path() . '/logs/RoutingVendorRateError:prc_RoutingVendorRate2'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
                 }
             }
             

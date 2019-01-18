@@ -81,7 +81,7 @@ class RoutingRoutingProfileRate extends Command {
                // $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             } catch (Exception $ex) {
                /// DB::rollback();
-                //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
                 $exceptionFlag='E';
             }
              
