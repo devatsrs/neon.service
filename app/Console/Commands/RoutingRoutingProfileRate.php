@@ -84,6 +84,7 @@ class RoutingRoutingProfileRate extends Command {
             DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
             $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(2)');
             
+            $joblogdata['Message'] = 'Success';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
             DB::connection('neon_routingengine')->commit();
