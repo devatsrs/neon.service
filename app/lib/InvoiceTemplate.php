@@ -30,4 +30,13 @@ class InvoiceTemplate extends \Eloquent {
 
     }
 
+    public static function DisplayCallType($dataarrays){
+        $CallType=0;
+        foreach($dataarrays as $us){
+            if($us['Title']=='CallType' && $us['Status']==1){
+                $CallType=1;
+            }
+        }
+        return $CallType;
+    }
 }

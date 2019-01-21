@@ -78,4 +78,89 @@ class UsageDetail extends \Eloquent {
     }
 
 
+    /** Delete CDR from Given Date to Current Date
+     * @param $cronsetting
+     * @param $CompanyGatewayID
+     * @param $CronJobID
+     * @return array
+     */
+    public static function reImportCDRByStartDate($cronsetting,$CronJobID,$processID){
+
+        $ReturnData=array();
+        $CronJob = CronJob::find($CronJobID);
+        $CompanyID = $CronJob->CompanyID;
+        $StartDate = trim($cronsetting['CDRImportStartDate']);
+        $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
+
+        //@TODO: Add transaction Start
+        //@TODO: try catch
+
+        try{
+
+            Log::info("===== ReImport CDR By StartDate =========");
+
+            DB::connection('sqlsrvcdr')->beginTransaction();
+
+            $EndDate = date("Y-m-d");
+            $prc="CALL prc_deleteCDRFromDate('".$StartDate."',".$CompanyGatewayID.",".$processID.",'".$EndDate."')";
+            DB::connection('sqlsrvcdr')->select($prc);
+            Log::info($prc);
+
+            DB::connection('sqlsrvcdr')->commit();
+
+            Log::info("===== End ReImport CDR By StartDate =========");
+
+            //Remove start date when cdr deleted.
+            $cronsetting['CDRImportStartDate'] = '';
+            $cronsetting = json_encode($cronsetting);
+
+            DB::connection('sqlsrv2')->beginTransaction();
+
+            TempUsageDownloadLog::addStartEntryForNewGateway($CompanyID,$CompanyGatewayID,$StartDate);
+
+            DB::connection('sqlsrv2')->commit();
+
+            if($CronJob->update(['Settings'=>$cronsetting])){
+
+                $ReturnData['CronJobStatus']=CronJob::CRON_SUCCESS;
+                $ReturnData['Message'] = "Data deleted From ".$StartDate." to Current Date time.<br>";
+                Log::info("==== Reimport CDR Success From ".$StartDate);
+
+            }else{
+
+                Log::info("=====ReimportCDR Fail to update======");
+                $ReturnData['CronJobStatus'] = CronJob::CRON_FAIL;
+                $ReturnData['Message'] = "Something Went Wrong";
+
+            }
+
+        }catch(\Exception $e){
+
+            Log::info("===== Exception catch in CDR Reimport ======");
+            Log::error($e);
+
+            try {
+
+                DB::connection('sqlsrv2')->rollback();
+                DB::connection('sqlsrvcdr')->rollback();
+
+            } catch (\Exception $err) {
+
+                Log::error($err);
+
+            }
+
+            $ReturnData['CronJobStatus'] = CronJob::CRON_FAIL;
+            $ReturnData['Message'] = 'Error:'.$e->getMessage();
+
+        }
+
+
+        //@TODO: Add transaction end
+
+        return $ReturnData;
+
+    }
+
+
 }
