@@ -27,7 +27,7 @@ class RoutingEngineData extends Command {
 	 *
 	 * @var string
 	 */
-	protected $description = 'Routing Data Command description.';
+	protected $description = 'Routing Engine Data Command description.';
 
 	protected function getArguments()
 	{
