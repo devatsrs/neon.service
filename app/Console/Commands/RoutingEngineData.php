@@ -20,7 +20,7 @@ class RoutingEngineData extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'routingdata';
+	protected $name = 'routingenginedata';
 
 	/**
 	 * The console command description.
