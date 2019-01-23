@@ -18,6 +18,8 @@ use App\Lib\Helper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
+use App\Lib\RateTable;
+use App\Lib\RateType;
 use App\Lib\User;
 use Box\Spout\Common\Type;
 use Box\Spout\Writer\WriterFactory;
@@ -119,7 +121,10 @@ class PortaVendorSheet extends Command {
                 }
             }
 
-            $query = "CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."')";
+            $AppliedToVendor=RateTable::APPLIED_TO_VENDOR;
+            $VoiceCallTypeID=RateType::getRateTypeIDBySlug(RateType::SLUG_VOICECALL);
+
+            $query = "CALL  prc_CronJobGeneratePortaVendorSheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."',".$AppliedToVendor.",".$VoiceCallTypeID.")";
             Log::info($query);
             $excel_data = DB::select($query);
 
