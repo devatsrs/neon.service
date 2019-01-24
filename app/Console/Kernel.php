@@ -125,6 +125,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\AutoTopAccount',
 		'App\Console\Commands\RoutingVendorRate',
                 'App\Console\Commands\RoutingData',
+                'App\Console\Commands\RoutingEngineData',
 		'App\Console\Commands\ActiveCallBalanceAlert',
 		'App\Console\Commands\AccountBalanceGenerator',
 		'App\Console\Commands\RateTableDIDRateUpload',
