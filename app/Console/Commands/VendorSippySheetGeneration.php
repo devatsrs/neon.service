@@ -2,6 +2,8 @@
 
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
+use App\Lib\RateTable;
+use App\Lib\RateType;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\AmazonS3;
@@ -80,7 +82,9 @@ class VendorSippySheetGeneration extends Command {
                 }
             }
 
-            $query = "CALL  prc_WSGenerateVendorSippySheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."')";
+            $AppliedToVendor=RateTable::APPLIED_TO_VENDOR;
+            $VoiceCallTypeID=RateType::getRateTypeIDBySlug(RateType::SLUG_VOICECALL);
+            $query = "CALL  prc_WSGenerateVendorSippySheet ('" .$job->AccountID . "','" . $tunkids."'," . $timezoneid.",'".$Effective."','".$CustomDate."',".$AppliedToVendor.",".$VoiceCallTypeID.")";
             Log::info($query);
             $excel_data = DB::select($query);
             $excel_data = json_decode(json_encode($excel_data),true);

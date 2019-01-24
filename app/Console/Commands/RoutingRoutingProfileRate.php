@@ -69,58 +69,42 @@ class RoutingRoutingProfileRate extends Command {
         
         //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/RoutingProfileRates-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
         try{
+            DB::connection('neon_routingengine')->beginTransaction();
+            CronJob::createLog($CronJobID);
             
             //Put data into temp tables
             DB::connection('neon_routingengine')->table('tblTempRoutingProfileRate')->truncate();
-            //DB::beginTransaction();
-            $exceptionFlag='S';
-            try {
-                $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(1)');
-                //DB::commit();
-               // $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-            } catch (Exception $ex) {
-               /// DB::rollback();
-                //$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
-                $exceptionFlag='E';
-            }
-             
-            //Put data into tables
-            if($exceptionFlag=='S'){
-                DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
-                //DB::beginTransaction();
-                try {
-                    $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(2)');
-                    //DB::commit();
-                    $result = CronJob::CronJobSuccessEmailSend($CronJobID);
-                } catch (Exception $ex) {
-                   /// DB::rollback();
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
-                }
-            }
-            echo "DONE With RoutingProfileRates";
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(1)');
             
+            DB::connection('neon_routingengine')->table('tblRoutingProfileRate')->truncate();
+            $GetRoutingInfo = DB::connection('sqlsrv')->select('call prc_RoutingRoutingProfileRate(2)');
             
+            $joblogdata['Message'] = 'tblRoutingProfileRate Successfully Done';
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            CronJobLog::insert($joblogdata);
+            DB::connection('neon_routingengine')->commit();
             
-            Log::info('Run Cron.');
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            
         }catch (\Exception $e){
-            Log::useFiles(storage_path() . '/logs/RoutingProfileRates-Error-' . date('Y-m-d') . '.log');
-            //Log::info('LCRRoutingEngine Error.');
-            Log::useFiles(storage_path() . '/logs/RoutingProfileRates-Error-' . date('Y-m-d') . '.log');
             
+            Log::useFiles(storage_path() . '/logs/RoutingProfileRates-Error-' . date('Y-m-d') . '.log');
+            DB::connection('neon_routingengine')->rollback();
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
             if(!empty($cronsetting['ErrorEmail'])) {
-
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
-                    Log::error("**Email Sent Status " . $result['status']);
-                    Log::error("**Email Sent message " . $result['message']);
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                Log::error("**Email Sent Status " . $result['status']);
+                Log::error("**Email Sent message " . $result['message']);
             }
-
-
         }
         
         CronJob::deactivateCronJob($CronJob);
