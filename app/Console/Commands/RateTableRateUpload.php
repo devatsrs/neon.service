@@ -418,7 +418,7 @@ class RateTableRateUpload extends Command
                                             } else if (!empty($attrselection2->Code)) {
                                                 $selection_Code = $attrselection2->Code;
                                             }
-                                            if (isset($selection_Code) && !empty($selection_Code) && trim($temp_row[$selection_Code]) != '') {
+                                            if (isset($selection_Code) && !empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
                                                 $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
                                             } else if (!empty($tempratetabledata['CountryCode'])) {
                                                 $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
@@ -477,7 +477,7 @@ class RateTableRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
-                                        if (isset($attrselection->$Rate1Column) && !empty($attrselection->$Rate1Column)) {
+                                        if (!empty($attrselection->$Rate1Column) && isset($temp_row[$attrselection->$Rate1Column])) {
                                             $temp_row[$attrselection->$Rate1Column] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$Rate1Column]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
                                             if (is_numeric(trim($temp_row[$attrselection->$Rate1Column]))) {
                                                 $tempratetabledata['Rate'] = trim($temp_row[$attrselection->$Rate1Column]);
@@ -490,7 +490,7 @@ class RateTableRateUpload extends Command
                                             $error[] = 'Rate is blank at line no:' . $lineno;
                                         }
 
-                                        if (isset($attrselection->$RateNColumn) && !empty($attrselection->$RateNColumn)) {
+                                        if (!empty($attrselection->$RateNColumn) && isset($temp_row[$attrselection->$RateNColumn])) {
                                             $tempratetabledata['RateN'] = trim($temp_row[$attrselection->$RateNColumn]);
                                         } else if(isset($tempratetabledata['Rate'])) {
                                             $tempratetabledata['RateN'] = $tempratetabledata['Rate'];
@@ -522,7 +522,7 @@ class RateTableRateUpload extends Command
                                             $tempratetabledata['EffectiveDate'] = date('Y-m-d');
                                         }
 
-                                        if (isset($attrselection->EndDate) && !empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
+                                        if (!empty($attrselection->EndDate) && !empty($temp_row[$attrselection->EndDate])) {
                                             try {
                                                 $tempratetabledata['EndDate'] = formatSmallDate(str_replace('/', '-', $temp_row[$attrselection->EndDate]), $attrselection->DateFormat);
                                             } catch (\Exception $e) {
@@ -530,21 +530,21 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
-                                        if (isset($attrselection->$ConnectionFeeColumn) && !empty($attrselection->$ConnectionFeeColumn)) {
+                                        if (!empty($attrselection->$ConnectionFeeColumn) && isset($temp_row[$attrselection->$ConnectionFeeColumn])) {
                                             $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->$ConnectionFeeColumn]);
                                         }
-                                        if (isset($attrselection->$Interval1Column) && !empty($attrselection->$Interval1Column)) {
+                                        if (!empty($attrselection->$Interval1Column) && isset($temp_row[$attrselection->$Interval1Column])) {
                                             $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->$Interval1Column]));
                                         }
-                                        if (isset($attrselection->$IntervalNColumn) && !empty($attrselection->$IntervalNColumn)) {
+                                        if (!empty($attrselection->$IntervalNColumn) && isset($temp_row[$attrselection->$IntervalNColumn])) {
                                             $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->$IntervalNColumn]));
                                         }
 
-                                        if (isset($attrselection->$PreferenceColumn) && !empty($attrselection->$PreferenceColumn)) {
+                                        if (!empty($attrselection->$PreferenceColumn) && isset($temp_row[$attrselection->$PreferenceColumn])) {
                                             $tempratetabledata['Preference'] = trim($temp_row[$attrselection->$PreferenceColumn]) == '' ? NULL : trim($temp_row[$attrselection->$PreferenceColumn]);
                                         }
 
-                                        if (isset($attrselection->$BlockedColumn) && !empty($attrselection->$BlockedColumn)) {
+                                        if (!empty($attrselection->$BlockedColumn) && isset($temp_row[$attrselection->$BlockedColumn])) {
                                             $Blocked = trim($temp_row[$attrselection->$BlockedColumn]);
                                             if ($Blocked == '0') {
                                                 $tempratetabledata['Blocked'] = '0';
@@ -555,12 +555,12 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
-                                        if (isset($attrselection->$RoutingCategory) && !empty($attrselection->$RoutingCategory)) {
+                                        if (!empty($attrselection->$RoutingCategory) && isset($temp_row[$attrselection->$RoutingCategory])) {
                                             $tempratetabledata['RoutingCategoryID'] = isset($RoutingCategories[trim($temp_row[$attrselection->$RoutingCategory])]) ? $RoutingCategories[trim($temp_row[$attrselection->$RoutingCategory])] : NULL;
                                         }
 
                                         if (!empty($DialStringId)) {
-                                            if (isset($attrselection->DialStringPrefix) && !empty($attrselection->DialStringPrefix)) {
+                                            if (!empty($attrselection->DialStringPrefix) && isset($temp_row[$attrselection->DialStringPrefix])) {
                                                 $tempratetabledata['DialStringPrefix'] = trim($temp_row[$attrselection->DialStringPrefix]);
                                             } else {
                                                 $tempratetabledata['DialStringPrefix'] = '';
