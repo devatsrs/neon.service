@@ -142,12 +142,12 @@ class PushSalesPricesERP extends Command {
 							}
 							$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs,0,strlen($ServiceTemplateInboundTariffs) - 1);
 
-							$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = 'Vietnam') as countryPrefix,orgination.Code as orginationCode
- 					from tblRateTableDIDRate didRate,tblTimezones timeZ,tblRate orgination where
+							$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = 'Vietnam') as countryPrefix,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode
+ 					from tblRateTableDIDRate didRate,tblTimezones timeZ where
 										didRate.RateID in (select RateID from tblRate where description = '" .$ProductResponse->countryName ."' and
 										 Code = concat((select Prefix from tblCountry where Country = '" .$ProductResponse->countryName . "'), '" . $ProductResponse->prefixName ."'))
 										   and RateTableId in (". $ServiceTemplateInboundTariffs .")  and
-										    timeZ.TimezonesID = didRate.TimezonesID and orgination.RateID = didRate.OriginationRateID";
+										    timeZ.TimezonesID = didRate.TimezonesID";
 
 
 							Log::info('$ServiceTemapleInboundTariff query.' . $Query);
