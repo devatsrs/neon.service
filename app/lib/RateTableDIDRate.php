@@ -1,5 +1,5 @@
 <?php
-namespace App\Lib;
+namespace app\lib;
 class RateTableDIDRate extends \Eloquent {
 
     protected $fillable = [];

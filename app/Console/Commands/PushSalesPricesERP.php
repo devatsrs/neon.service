@@ -5,7 +5,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
-use App\lib\DynamicFields;
+use App\Lib\DynamicFields;
 use App\Lib\ServiceTemplate;
 use App\Lib\ServiceTemapleSubscription;
 use App\Lib\ServiceTemapleInboundTariff;
