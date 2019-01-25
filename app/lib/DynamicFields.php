@@ -1,5 +1,5 @@
 <?php
-namespace App\Lib;
+namespace App\lib;
 class DynamicFields extends \Eloquent {
 
     protected $guarded = array('DynamicFieldsID');

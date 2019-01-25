@@ -5,7 +5,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
-use App\Lib\DynamicFields;
+use App\lib\DynamicFields;
 use App\Lib\ServiceTemplate;
 use App\Lib\ServiceTemapleSubscription;
 use App\Lib\ServiceTemapleInboundTariff;
@@ -78,6 +78,7 @@ class PushSalesPricesERP extends Command {
 
 		);
 		//php artisan PushSalesPricesERP 1 346
+		//php artisan PushSalesPricesERP 1 268
         CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
 		$FailureDepositFund = array();
