@@ -78,6 +78,7 @@ class PushSalesPricesERP extends Command {
 
 		);
 		//php artisan PushSalesPricesERP 1 346
+		//php artisan PushSalesPricesERP 1 268
         CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
 		$FailureDepositFund = array();
@@ -104,7 +105,7 @@ class PushSalesPricesERP extends Command {
 		//$apiPricing = array;
 		//$APIResponse ;
         //print_r($cronsetting);die();
-       // Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 
 
@@ -119,7 +120,7 @@ class PushSalesPricesERP extends Command {
 			} else {
 				$ProductResponses = json_decode($APIResponse["response"]);
 				Log::info('PushSalesPricesERP .' . count($ProductResponses));
-				$fieldName = 'ProductSIProductRef';
+				$fieldName = 'ProductProductID';
 
 				$Query = "select ParentID from tblDynamicFieldsValue where ";
 				$DynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'serviceTemplate','Status'=>1,'FieldSlug'=>$fieldName])->pluck('DynamicFieldsID');
