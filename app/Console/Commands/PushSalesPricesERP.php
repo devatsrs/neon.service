@@ -120,7 +120,7 @@ class PushSalesPricesERP extends Command {
 			} else {
 				$ProductResponses = json_decode($APIResponse["response"]);
 				Log::info('PushSalesPricesERP .' . count($ProductResponses));
-				$fieldName = 'ProductSIProductRef';
+				$fieldName = 'ProductProductID';
 
 				$Query = "select ParentID from tblDynamicFieldsValue where ";
 				$DynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'serviceTemplate','Status'=>1,'FieldSlug'=>$fieldName])->pluck('DynamicFieldsID');
