@@ -75,7 +75,7 @@ class RoutingData extends Command {
         try{
             
             //Start Transaction
-            DB::connection('neon_routingenginenew')->beginTransaction();
+            DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
 
             //Run The Procedure
@@ -85,7 +85,7 @@ class RoutingData extends Command {
             $joblogdata['Message'] = 'RoutingData Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             CronJobLog::insert($joblogdata);
-            DB::connection('neon_routingenginenew')->commit(); 
+            DB::connection('neon_routingengine')->commit(); 
             
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
             

@@ -123,6 +123,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\LCRRoutingEngine',
 		'App\Console\Commands\RoutingRoutingProfileRate',
 		'App\Console\Commands\AutoTopAccount',
+		'App\Console\Commands\PushSalesPricesERP',
 		'App\Console\Commands\RoutingVendorRate',
                 'App\Console\Commands\RoutingData',
                 'App\Console\Commands\RoutingEngineData',
