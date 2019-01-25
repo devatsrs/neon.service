@@ -105,7 +105,7 @@ class PushSalesPricesERP extends Command {
 		//$apiPricing = array;
 		//$APIResponse ;
         //print_r($cronsetting);die();
-       // Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 
 
