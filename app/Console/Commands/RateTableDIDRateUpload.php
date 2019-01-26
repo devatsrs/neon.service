@@ -485,6 +485,16 @@ class RateTableDIDRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
+                                        if (!empty($attrselection->CityTariff)) {
+                                            if (!empty($temp_row[$attrselection->CityTariff])) {
+                                                $tempratetabledata['CityTariff'] = $temp_row[$attrselection->CityTariff];
+                                            } else {
+                                                $tempratetabledata['CityTariff'] = '';
+                                            }
+                                        } else {
+                                            $tempratetabledata['CityTariff'] = '';
+                                        }
+
                                         if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
                                         } else {
