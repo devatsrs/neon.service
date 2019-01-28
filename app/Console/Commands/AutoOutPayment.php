@@ -180,9 +180,9 @@ class AutoOutPayment extends Command {
 			$autoOutPayment[0] = "error";
 			$autoOutPayment[1] = $APIresponse["error"];
 		} else {
-			$response = json_decode($APIresponse["response"]);
+			$response = json_decode($APIresponse["response"], true);
 			Log::info(print_r($response, true));
-			$autoOutPayment[0] = $response->status == "200" ? "success" : "failed";
+			$autoOutPayment[0] = @$response['status'] == "200" ? "success" : "failed";
 			$autoOutPayment[1] = $response;
 		}
 
