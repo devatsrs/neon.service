@@ -104,8 +104,11 @@ class NeonProductImport extends Command {
                     $productdata['city_tariff'] = $city_tariff;
                                         
                     $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
+                    $ServiceTemplateName = ServiceTemplate::where(['Name'=>$ProductResponse->name])->pluck('Name');
                     if (!empty($ServiceTemplateId)) {
                         ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
+                    }else if (!empty($ServiceTemplateName)) {
+                        ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
                     }else{
                         ServiceTemplate::insert($productdata);
                     }
