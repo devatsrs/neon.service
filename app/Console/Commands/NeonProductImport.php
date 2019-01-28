@@ -2,6 +2,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
+use App\Lib\ServiceTemplate;
 use App\Lib\Summary;
 use App\Lib\VendorRate;
 use Illuminate\Console\Command;
@@ -57,6 +58,7 @@ class NeonProductImport extends Command {
 	 */
     public function handle() {
         
+        
         CronHelper::before_cronrun($this->name, $this );
 
         $arguments = $this->argument();
@@ -78,21 +80,37 @@ class NeonProductImport extends Command {
             //Start Transaction
            // DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
-
+            $ServiceId = $cronsetting['ServiceId'];
             $Getdata = array();
             $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
             if (isset($APIResponse["error"])) {
                 Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
             } else {
                 $ProductResponses = json_decode($APIResponse["response"]);
-                Log::info('neonproductimport .' . count($ProductResponses));
-                Log::info('neon product import Array .' . print_r($APIResponse["error"]));
-                $fieldName = 'neonproductimport';
+                
                 foreach($ProductResponses as $ProductResponse) {
-
+                    
+                    $productdata = array();
+                    $productdata['ServiceTemplateId'] = $ProductResponse->productId;
+                    $productdata['ServiceId']       = $ServiceId;
+                    $productdata['Name']            = $ProductResponse->name;
+                    $city_tariff='';
+                    if (!empty($ProductResponse->cityName)) {
+                        $city_tariff=$ProductResponse->cityName;
+                    }else{
+                        $city_tariff=$ProductResponse->tariff;
+                    }
+                    $productdata['city_tariff'] = $city_tariff;
+                                        
+                    $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
+                    if (!empty($ServiceTemplateId)) {
+                        ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
+                    }else{
+                        ServiceTemplate::insert($productdata);
+                    }
                 }
             }
-            
+            Log::info('neonproductimport Next step in  api/Products service.');
             //Track The Log          
             $joblogdata['Message'] = 'neonproductimport Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
