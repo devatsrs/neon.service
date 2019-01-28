@@ -94,6 +94,7 @@ class NeonProductImport extends Command {
                     $productdata['ServiceTemplateId'] = $ProductResponse->productId;
                     $productdata['ServiceId']       = $ServiceId;
                     $productdata['Name']            = $ProductResponse->name;
+                    $productdata['CurrencyId']            = 9;
                     $city_tariff='';
                     if (!empty($ProductResponse->cityName)) {
                         $city_tariff=$ProductResponse->cityName;
