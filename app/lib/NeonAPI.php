@@ -28,7 +28,7 @@ class NeonAPI
         $curl = curl_init();
 
 
-        echo ' ' . Crypt::decrypt('eyJpdiI6IjRmZnRBQ1lKTm5ySEFlSU9hUHhha1E9PSIsInZhbHVlIjoiKytSU3JUK3FIdzRZaXhJRzhaNFwvbXc9PSIsIm1hYyI6IjllMmVhM2E1M2RkNzdlNjM5YmY3NGI2ZWUwMGQ1MDNmYjNjNmQwY2M2Y2Q1YWEwZGM5Nzg1NWU2OTBmYzQyOGEifQ==') . ' ';
+        echo ' ' . Crypt::decrypt('eyJpdiI6IkEyNXQzN3NMMXdxNlBCNkxaTDBZVXc9PSIsInZhbHVlIjoiMjNxdUJwVTE1SFBpUmJRNmsweG5LQT09IiwibWFjIjoiMDhjN2Y1NGIwNmViZTU3ODA4OWI0NGQ5MWZkMDNiNjQ4MTIxZDc3M2FjMTMyMzFkMGZjOTk3ZTIyZGI5MWU4NiJ9') . ' ';
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
@@ -70,7 +70,6 @@ class NeonAPI
 
 
         echo ' Get Request ';
-        $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => 1,
@@ -119,9 +118,6 @@ class NeonAPI
 
 
         echo ' Post Request ';
-        // echo 'Authorization:"Bearer ' . 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU0MzQwMTc0OCwiZXhwIjoxNTc0OTM3NzQ4LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlZlbmRvck1hbmFnZXIifQ.jdVEkXjR2q8swx8OFDNLQhJNSCtzM6y1P_TohN6ql-U' . '"';
-
-        $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => 1,
