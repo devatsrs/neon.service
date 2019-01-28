@@ -485,6 +485,16 @@ class RateTableDIDRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
+                                        if (!empty($attrselection->CityTariff)) {
+                                            if (!empty($temp_row[$attrselection->CityTariff])) {
+                                                $tempratetabledata['CityTariff'] = $temp_row[$attrselection->CityTariff];
+                                            } else {
+                                                $tempratetabledata['CityTariff'] = '';
+                                            }
+                                        } else {
+                                            $tempratetabledata['CityTariff'] = '';
+                                        }
+
                                         if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
                                         } else {
@@ -823,61 +833,106 @@ class RateTableDIDRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    $query = "CALL  prc_WSProcessRateTableDIDRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$DialStringId."','".$dialcode_separator."',".$seperatecolumn.",".$CurrencyID.",".$joboptions->radio_list_option.",'".$p_UserName."')";
-                    Log::info("start ".$query);
+                    if(!empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) || !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping)) {
+                        $CountryMapping             = !empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) ? 1 : 0;
+                        $OriginationCountryMapping  = !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping) ? 1 : 0;
 
-                    try{
-                        DB::beginTransaction();
-                        $JobStatusMessage = DB::select($query);
-                        Log::info("end ".$query);
-                        DB::commit();
+                        $query_CM = "CALL prc_WSMapCountryRateTableDIDRate ('" . $ProcessID . "','".$CountryMapping."','".$OriginationCountryMapping."')";
 
-                        $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
-                        Log::info($JobStatusMessage);
-                        Log::info(count($JobStatusMessage));
-                        if(!empty($error) || count($JobStatusMessage) > 1){
-                            $prc_error = array();
-                            foreach ($JobStatusMessage as $JobStatusMessage1) {
-                                $prc_error[] = $JobStatusMessage1['Message'];
-                                if(strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !==false){
-                                    $duplicatecode = 1;
+                        // map country against rates with tblCountry table, if not found then throw error - if option is checked at upload time
+                        Log::info('Start '.$query_CM);
+                        try {
+                            DB::beginTransaction();
+                            $JobStatusMessage_CM = DB::select($query_CM);
+                            Log::info('End ' . $query_CM);
+                            DB::commit();
+
+                            $JobStatusMessage_CM = array_reverse(json_decode(json_encode($JobStatusMessage_CM), true));
+                            Log::info($JobStatusMessage_CM);
+                            Log::info(count($JobStatusMessage_CM));
+
+                            if(count($JobStatusMessage_CM) >= 1){
+                                $prc_error_CM = array();
+                                foreach ($JobStatusMessage_CM as $JobStatusMessage_CM1) {
+                                    $prc_error_CM[] = $JobStatusMessage_CM1['Message'];
                                 }
-                            }
-                            $job = Job::find($JobID);
-                            if($duplicatecode == 1){
-                                $error = array_merge($prc_error,$error);
-                                unset($error[0]);
-                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+
+                                //unset($error[0]);
+                                $jobdata['message'] = implode('<br>',fix_jobstatus_meassage($prc_error_CM));
                                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
-                            }else{
-                                $error = array_merge($prc_error,$error);
-                                $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
-                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                                $jobdata['status'] = "failed";
+                                Job::where(["JobID" => $JobID])->update($jobdata);
                             }
-                            //$jobdata['JobStatusMessage'] = implode(',\n\r',$error);
-                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                            $jobdata['ModifiedBy'] = 'RMScheduler';
-                            Log::info($jobdata);
+                        } catch ( Exception $err ) {
+                            DB::rollback();
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                            $jobdata['message'] = 'Exception: ' . $err->getMessage();
+                            $jobdata['status'] = "failed";
                             Job::where(["JobID" => $JobID])->update($jobdata);
-                        }elseif(!empty($JobStatusMessage[0]['Message'])){
-                            $job = Job::find($JobID);
-                            $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
-                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                            $jobdata['ModifiedBy'] = 'RMScheduler';
-                            Job::where(["JobID" => $JobID])->update($jobdata);
+                            Log::error($err);
                         }
 
-                    }catch ( Exception $err ){
-                        DB::rollback();
-                        Log::error($err);
+                    }
 
-                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                        $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
-                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                        $jobdata['ModifiedBy'] = 'RMScheduler';
-                        Job::where(["JobID" => $JobID])->update($jobdata);
-                        Log::error($err);
+                    // if no error from prc_WSMapCountryRateTableDIDRate then only further process
+                    if(empty($jobdata)) {
+
+                        $query = "CALL  prc_WSProcessRateTableDIDRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','" . $DialStringId . "','" . $dialcode_separator . "'," . $seperatecolumn . "," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                        Log::info("start " . $query);
+
+                        try {
+                            DB::beginTransaction();
+                            $JobStatusMessage = DB::select($query);
+                            Log::info("end " . $query);
+                            DB::commit();
+
+                            $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage), true));
+                            Log::info($JobStatusMessage);
+                            Log::info(count($JobStatusMessage));
+                            if (!empty($error) || count($JobStatusMessage) > 1) {
+                                $prc_error = array();
+                                foreach ($JobStatusMessage as $JobStatusMessage1) {
+                                    $prc_error[] = $JobStatusMessage1['Message'];
+                                    if (strpos($JobStatusMessage1['Message'], 'DUPLICATE CODE') !== false) {
+                                        $duplicatecode = 1;
+                                    }
+                                }
+                                $job = Job::find($JobID);
+                                if ($duplicatecode == 1) {
+                                    $error = array_merge($prc_error, $error);
+                                    unset($error[0]);
+                                    $jobdata['JobStatusMessage'] = implode(',\n\r', fix_jobstatus_meassage($error));
+                                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                                } else {
+                                    $error = array_merge($prc_error, $error);
+                                    $jobdata['JobStatusMessage'] = implode(',\n\r', fix_jobstatus_meassage($error));
+                                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
+                                }
+                                //$jobdata['JobStatusMessage'] = implode(',\n\r',$error);
+                                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                                $jobdata['ModifiedBy'] = 'RMScheduler';
+                                Log::info($jobdata);
+                                Job::where(["JobID" => $JobID])->update($jobdata);
+                            } elseif (!empty($JobStatusMessage[0]['Message'])) {
+                                $job = Job::find($JobID);
+                                $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
+                                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                                $jobdata['ModifiedBy'] = 'RMScheduler';
+                                Job::where(["JobID" => $JobID])->update($jobdata);
+                            }
+
+                        } catch (Exception $err) {
+                            DB::rollback();
+                            Log::error($err);
+
+                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                            $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
+                            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                            $jobdata['ModifiedBy'] = 'RMScheduler';
+                            Job::where(["JobID" => $JobID])->update($jobdata);
+                            Log::error($err);
+                        }
                     }
 
                 }

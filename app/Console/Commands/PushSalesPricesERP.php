@@ -5,7 +5,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
-use App\lib\DynamicFields;
+use App\Lib\DynamicFields;
 use App\Lib\ServiceTemplate;
 use App\Lib\ServiceTemapleSubscription;
 use App\Lib\ServiceTemapleInboundTariff;
@@ -105,7 +105,7 @@ class PushSalesPricesERP extends Command {
 		//$apiPricing = array;
 		//$APIResponse ;
         //print_r($cronsetting);die();
-       // Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 
 
@@ -120,7 +120,7 @@ class PushSalesPricesERP extends Command {
 			} else {
 				$ProductResponses = json_decode($APIResponse["response"]);
 				Log::info('PushSalesPricesERP .' . count($ProductResponses));
-				$fieldName = 'ProductSIProductRef';
+				$fieldName = 'ProductProductID';
 
 				$Query = "select ParentID from tblDynamicFieldsValue where ";
 				$DynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'serviceTemplate','Status'=>1,'FieldSlug'=>$fieldName])->pluck('DynamicFieldsID');
@@ -142,12 +142,12 @@ class PushSalesPricesERP extends Command {
 							}
 							$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs,0,strlen($ServiceTemplateInboundTariffs) - 1);
 
-							$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = 'Vietnam') as countryPrefix,orgination.Code as orginationCode
- 					from tblRateTableDIDRate didRate,tblTimezones timeZ,tblRate orgination where
+							$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = 'Vietnam') as countryPrefix,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode
+ 					from tblRateTableDIDRate didRate,tblTimezones timeZ where
 										didRate.RateID in (select RateID from tblRate where description = '" .$ProductResponse->countryName ."' and
 										 Code = concat((select Prefix from tblCountry where Country = '" .$ProductResponse->countryName . "'), '" . $ProductResponse->prefixName ."'))
 										   and RateTableId in (". $ServiceTemplateInboundTariffs .")  and
-										    timeZ.TimezonesID = didRate.TimezonesID and orgination.RateID = didRate.OriginationRateID";
+										    timeZ.TimezonesID = didRate.TimezonesID";
 
 
 							Log::info('$ServiceTemapleInboundTariff query.' . $Query);
