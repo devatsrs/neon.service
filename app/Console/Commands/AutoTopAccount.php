@@ -203,13 +203,16 @@ class AutoTopAccount extends Command {
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
 		$topUpAmount = false;
-		$postdata = array(
-			'AccountID'                => $AutoPaymentAccount->AccountID
-		);
+		//$postdata = array(
+		//	'AccountID'                => $AutoPaymentAccount->AccountID
+		//);
+		$postdata['AccountID'] = $AutoPaymentAccount->AccountID;
+		$postdata = json_encode($postdata,true);
 		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";
 		}
 		Log::info("Balance API URL" . $url);
+
 		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
 
 		if (isset($APIresponse["error"])) {
@@ -234,11 +237,14 @@ class AutoTopAccount extends Command {
 		$accountresponse = array();
 		$topUpAmount = false;
 		$DepositAccount = array();
-		$postdata = array(
-			'AccountID'                => $AutoPaymentAccount->AccountID,
-			'Amount'                => $AutoPaymentAccount->TopupAmount
-		);
+		//$postdata = array(
+		//	'AccountID'                => $AutoPaymentAccount->AccountID,
+		//	'Amount'                => $AutoPaymentAccount->TopupAmount
+		//);
 
+		$postdata['AccountID'] = $AutoPaymentAccount->AccountID;
+		$postdata['Amount'] = $AutoPaymentAccount->TopupAmount;
+		$postdata = json_encode($postdata,true);
 
 		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";

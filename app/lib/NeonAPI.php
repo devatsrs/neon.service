@@ -38,7 +38,7 @@ class NeonAPI
             CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
+            CURLOPT_POSTFIELDS => $postdata,
             CURLOPT_HTTPHEADER => array(
                 "accept: application/json",
                 "authorization: Basic " . $auth,
