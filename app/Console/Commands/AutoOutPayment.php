@@ -93,14 +93,14 @@ class AutoOutPayment extends Command {
 					$failedRecord = array();
 					$failedRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
 					$failedRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
-					$failedRecord["Response"] = $AutoOutPaymentAccount[1];
+					$failedRecord["Response"] = $OutPaymentAccount[1];
 					$FailureOutPayment[count($FailureOutPayment) + 1] = $failedRecord;
 					Log::info('Call the auto out payment API $AutoOutPaymentAccount failed.' . count($FailureOutPayment));
 				} elseif ($OutPaymentAccount[0] == "error") {
 					$errorRecord = array();
 					$errorRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
 					$errorRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
-					$errorRecord["Response"] = $AutoOutPaymentAccount[1];
+					$errorRecord["Response"] = $OutPaymentAccount[1];
 					$ErrorOutPayment[count($ErrorOutPayment) + 1] = $errorRecord;
 				}
 			}
