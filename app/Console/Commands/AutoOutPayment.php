@@ -162,7 +162,7 @@ class AutoOutPayment extends Command {
 	 */
 	public function callOutPaymentApi($AutoPaymentAccount,$CompanyConfiguration)
 	{
-		$CompanyConfiguration = 'http://localhost/neon/web/staging/public';
+		//$CompanyConfiguration = 'http://localhost/neon/web/staging/public';
 		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$autoOutPayment = array();
