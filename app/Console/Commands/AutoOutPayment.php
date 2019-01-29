@@ -116,10 +116,6 @@ class AutoOutPayment extends Command {
                 Log::info('No Account IDs found for the auto out payment.');
             }
 
-            if (count($SuccessOutPayment) > 0) {
-                $this::OutPaymentCustomerNotification($CompanyID, $SuccessOutPayment);
-            }
-
             CronJob::CronJobSuccessEmailSend($CronJobID);
             CronJob::deactivateCronJob($CronJob);
             CronHelper::after_cronrun($this->name, $this);
@@ -230,50 +226,4 @@ class AutoOutPayment extends Command {
         return $result;
     }
 
-    /**
-     * @param $CompanyID
-     * @param $emails
-     */
-    public static function OutPaymentCustomerNotification($CompanyID,$emails){
-
-        $status = EmailsTemplates::CheckEmailTemplateStatus(Account::OutPaymentEmailTemplate, $CompanyID);
-        if($status != false) {
-            $CompanyName = Company::getName($CompanyID);
-            foreach ($emails as $email) {
-                $Account = Account::find($email['AccountID']);
-                $Currency = Currency::find($Account->CurrencyId);
-                $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
-                $emaildata = array(
-                    'CompanyName' => $CompanyName,
-                    'Currency' => $CurrencyCode,
-                    'CompanyID' => $CompanyID,
-                    'OutPaymentAmount' => $email['Amount'],
-                );
-
-                $emaildata['EmailToName'] = $Account->AccountName;
-                $body = EmailsTemplates::setOutPaymentPlaceholder($Account, 'body', $CompanyID, $emaildata);
-                $emaildata['Subject'] = EmailsTemplates::setOutPaymentPlaceholder($Account, "subject", $CompanyID, $emaildata);
-                if (!isset($emaildata['EmailFrom'])) {
-                    $emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Account::OutPaymentEmailTemplate, $CompanyID);
-                }
-
-                $CustomerEmail = $Account->BillingEmail;
-                if($CustomerEmail != '') {
-                    $CustomerEmail = explode(",", $CustomerEmail);
-                    $customeremail_status['status'] = 0;
-                    $customeremail_status['message'] = '';
-                    $customeremail_status['body'] = '';
-                    foreach ($CustomerEmail as $singleemail) {
-                        $singleemail = trim($singleemail);
-                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                            $emaildata['EmailTo'][] = $singleemail;
-                        }
-                    }
-                    Log::info("============ EmailData ===========");
-                    Log::info($emaildata);
-                    $customeremail_status = Helper::sendMail($body, $emaildata, 0);
-                }
-            }
-        }
-    }
 }
