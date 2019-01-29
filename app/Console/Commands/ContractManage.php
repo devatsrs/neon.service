@@ -52,7 +52,6 @@ class ContractManage extends Command {
 	 */
 	public function handle()
 	{
-		echo 'Hi';
 		CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
 		$FailureDepositFund = array();
