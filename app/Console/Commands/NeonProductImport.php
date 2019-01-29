@@ -4,6 +4,7 @@ use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
 use App\Lib\ServiceTemplate;
 use App\Lib\DynamicFieldsValue;
+use App\Lib\DynamicFields;
 use App\Lib\Summary;
 use App\Lib\Company;
 use App\Lib\VendorRate;
@@ -83,55 +84,63 @@ class NeonProductImport extends Command {
            // DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
             $ServiceId = $cronsetting['ServiceId'];
-            $ProductID = $cronsetting['ProductID'];
             
-            $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+            //ProductID this field name will be unique 
+            // we will not give any 
+            $FieldsProductID = $cronsetting['ProductID'];
+            $ProductID = Company::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
-            $Getdata = array();
-            $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
-            if (isset($APIResponse["error"])) {
-                Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
-            } else {
-                $ProductResponses = json_decode($APIResponse["response"]);
+            if (!empty($ProductID)) {
                 
-                foreach($ProductResponses as $ProductResponse) {
-                    
-                    $productdata = array();
-                    $productdata['ServiceTemplateId'] = $ProductResponse->productId;
-                    $productdata['ServiceId']       = $ServiceId;
-                    $productdata['Name']            = $ProductResponse->name;
-                    $productdata['CurrencyId']            = $CurrencyId;
-                    $city_tariff='';
-                    if (!empty($ProductResponse->cityName)) {
-                        $city_tariff=$ProductResponse->cityName;
-                    }else{
-                        $city_tariff=$ProductResponse->tariff;
-                    }
-                    $productdata['city_tariff'] = $city_tariff;
-                                        
-                    $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
-                    $ServiceTemplateName = ServiceTemplate::where(['Name'=>$ProductResponse->name])->pluck('Name');
-                    if (!empty($ServiceTemplateId)) {
-                        ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
-                    }else if (!empty($ServiceTemplateName)) {
-                        ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
-                    }else{
-                        ServiceTemplate::insert($productdata);
-                        //--Custom filed value
-                    }
-                    $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->pluck('DynamicFieldsID');
-                    //SI product daynamin feild
-                    $dyndata = array();
-                    $dyndata['CompanyID']           = $CompanyID;
-                    $dyndata['ParentID']            = $ProductResponse->productId;
-                    $dyndata['DynamicFieldsID']     = $ProductID;
-                    $dyndata['FieldValue']          = $ProductResponse->productId;
-                    if (!empty($DynamicFieldsID)) {
-                        DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->update($dyndata);
-                    }else{
-                        DynamicFieldsValue::insert($dyndata);
+                $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+                $Getdata = array();
+                $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
+                if (isset($APIResponse["error"])) {
+                    Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
+                } else {
+                    $ProductResponses = json_decode($APIResponse["response"]);
+
+                    foreach($ProductResponses as $ProductResponse) {
+
+                        $productdata = array();
+                        $productdata['ServiceTemplateId'] = $ProductResponse->productId;
+                        $productdata['ServiceId']       = $ServiceId;
+                        $productdata['Name']            = $ProductResponse->name;
+                        $productdata['CurrencyId']            = $CurrencyId;
+                        $city_tariff='';
+                        if (!empty($ProductResponse->cityName)) {
+                            $city_tariff=$ProductResponse->cityName;
+                        }else{
+                            $city_tariff=$ProductResponse->tariff;
+                        }
+                        $productdata['city_tariff'] = $city_tariff;
+
+                        $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
+                        $ServiceTemplateName = ServiceTemplate::where(['Name'=>$ProductResponse->name])->pluck('Name');
+                        if (!empty($ServiceTemplateId)) {
+                            ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
+                        }else if (!empty($ServiceTemplateName)) {
+                            ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
+                        }else{
+                            ServiceTemplate::insert($productdata);
+                            //--Custom filed value
+                        }
+                        $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->pluck('DynamicFieldsID');
+                        //SI product daynamin feild
+                        $dyndata = array();
+                        $dyndata['CompanyID']           = $CompanyID;
+                        $dyndata['ParentID']            = $ProductResponse->productId;
+                        $dyndata['DynamicFieldsID']     = $ProductID;
+                        $dyndata['FieldValue']          = $ProductResponse->productId;
+                        if (!empty($DynamicFieldsID)) {
+                            DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->update($dyndata);
+                        }else{
+                            DynamicFieldsValue::insert($dyndata);
+                        }
                     }
                 }
+            }else{
+                Log::info('neonproductimport Not Find DynamicFieldsID.');
             }
             Log::info('neonproductimport Next step in  api/Products service.');
             //Track The Log          
