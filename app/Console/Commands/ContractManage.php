@@ -67,8 +67,7 @@ class ContractManage extends Command {
 		CronJob::createLog($CronJobID);
 
 		//print_r($cronsetting);die();
-		$var = (storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
-		echo $var;
+		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 			$CancelContractManage = "CALL prc_Cancel_Contract_Manage()";
 			$selectCancelContract  = DB::select($CancelContractManage);
