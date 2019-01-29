@@ -88,7 +88,7 @@ class NeonProductImport extends Command {
             //ProductID this field name will be unique 
             // we will not give any 
             $FieldsProductID = $cronsetting['ProductID'];
-            $ProductID = Company::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
+            $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
             if (!empty($ProductID)) {
                 
