@@ -68,6 +68,8 @@ class ContractManage extends Command {
 		//print_r($cronsetting);die();
 		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
+			CronJob::createLog($CronJobID);
+
 			$CancelContractManage = "CALL prc_Cancel_Contract_Manage()";
 			$selectCancelContract  = DB::select($CancelContractManage);
 
@@ -126,7 +128,9 @@ class ContractManage extends Command {
 				DB::table('tblAccountServiceHistory')->insert($InsertRenewalHistory);
 				var_dump($Renewal);
 			}
-
+			$joblogdata['Message'] = 'Contract Manage Successfully Done';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
