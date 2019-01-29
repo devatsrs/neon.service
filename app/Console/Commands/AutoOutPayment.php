@@ -68,10 +68,11 @@ class AutoOutPayment extends Command {
 		try {
 			$AutoOutPaymentList =  Account::Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
 				->Join('tblAccountBalance','tblAccount.AccountID','=','tblAccountBalance.AccountID')
-				->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount'])
+				->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPayment'])
 				->where('tblAccount.CompanyID','=', $CompanyID)
 				->where('tblAccountPaymentAutomation.AutoOutpayment','=', 1)
-				->where('tblAccountPaymentAutomation.OutPaymentThreshold','>=', 'tblAccountBalance.OutPayment')
+				->where('tblAccountPaymentAutomation.OutPaymentThreshold','>', 0)
+				->where('tblAccountPaymentAutomation.OutPaymentAmount','>', 0)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
 
 			Log::info('Auto Out Payment Query.' . $AutoOutPaymentList->toSql());
@@ -81,29 +82,32 @@ class AutoOutPayment extends Command {
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
 			foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
-				$OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount,$CompanyConfiguration);
-				if ($OutPaymentAccount[0] == "success") {
-					$successRecord = array();
-					$successRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
-					$successRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
-					$successRecord["Amount"] = $AutoOutPaymentAccount->OutPaymentAmount;
-					$SuccessOutPayment[count($SuccessOutPayment) + 1] = $successRecord;
-					Log::info('Call the auto out payment API $AutoOutPaymentAccount success.' . count($SuccessOutPayment));
-				} elseif ($OutPaymentAccount[0] == "failed") {
-					$failedRecord = array();
-					$failedRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
-					$failedRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
-					$failedRecord["Response"] = $OutPaymentAccount[1];
-					$FailureOutPayment[count($FailureOutPayment) + 1] = $failedRecord;
-					Log::info('Call the auto out payment API $AutoOutPaymentAccount failed.' . count($FailureOutPayment));
-				} elseif ($OutPaymentAccount[0] == "error") {
-					$errorRecord = array();
-					$errorRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
-					$errorRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
-					$errorRecord["Response"] = $OutPaymentAccount[1];
-					$ErrorOutPayment[count($ErrorOutPayment) + 1] = $errorRecord;
+				if((float)$AutoOutPaymentAccount->OutPayment >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
+					$OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount, $CompanyConfiguration);
+					if ($OutPaymentAccount[0] == "success") {
+						$successRecord = array();
+						$successRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
+						$successRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
+						$successRecord["Amount"] = $AutoOutPaymentAccount->OutPaymentAmount;
+						$SuccessOutPayment[count($SuccessOutPayment) + 1] = $successRecord;
+						Log::info('Call the auto out payment API $AutoOutPaymentAccount success.' . count($SuccessOutPayment));
+					} elseif ($OutPaymentAccount[0] == "failed") {
+						$failedRecord = array();
+						$failedRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
+						$failedRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
+						$failedRecord["Response"] = $OutPaymentAccount[1];
+						$FailureOutPayment[count($FailureOutPayment) + 1] = $failedRecord;
+						Log::info('Call the auto out payment API $AutoOutPaymentAccount failed.' . count($FailureOutPayment));
+					} elseif ($OutPaymentAccount[0] == "error") {
+						$errorRecord = array();
+						$errorRecord["AccountID"] = $AutoOutPaymentAccount->AccountID;
+						$errorRecord["AccountName"] = $AutoOutPaymentAccount->AccountName;
+						$errorRecord["Response"] = $OutPaymentAccount[1];
+						$ErrorOutPayment[count($ErrorOutPayment) + 1] = $errorRecord;
+					}
 				}
 			}
+
 			if (count($AutoOutPaymentList) > 0) {
 				$this::AutoOutPaymentNotification($CompanyID, $SuccessOutPayment, $FailureOutPayment, $ErrorOutPayment);
 			} else {
@@ -158,7 +162,7 @@ class AutoOutPayment extends Command {
 	 */
 	public function callOutPaymentApi($AutoPaymentAccount,$CompanyConfiguration)
 	{
-		//$CompanyConfiguration = 'http://localhost/neon/web/staging/public';
+		$CompanyConfiguration = 'http://localhost/neon/web/staging/public';
 		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$autoOutPayment = array();
@@ -182,7 +186,7 @@ class AutoOutPayment extends Command {
 		} else {
 			$response = json_decode($APIresponse["response"], true);
 			Log::info(print_r($response, true));
-			$autoOutPayment[0] = @$response['status'] == "200" ? "success" : "failed";
+			$autoOutPayment[0] = isset($response['data']['RequestFundID']) ? "success" : "failed";
 			$autoOutPayment[1] = $response;
 		}
 
