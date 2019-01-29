@@ -3,7 +3,9 @@
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
 use App\Lib\ServiceTemplate;
+use App\Lib\DynamicFieldsValue;
 use App\Lib\Summary;
+use App\Lib\Company;
 use App\Lib\VendorRate;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
@@ -65,6 +67,13 @@ class NeonProductImport extends Command {
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
         
+        $cid = Currency::getCurrencyId($CompanyID,trim($temp_row[$attrselection->Currency]));
+                                    if(!empty($cid) && $cid>0){
+                                        $tempItemData['Currency'] = $cid;
+                                    }else{
+                                        $tempItemData['Currency'] = '';
+                                    }
+                                    
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
@@ -81,6 +90,10 @@ class NeonProductImport extends Command {
            // DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
             $ServiceId = $cronsetting['ServiceId'];
+            $ProductID = $cronsetting['ProductID'];
+            
+            $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+            
             $Getdata = array();
             $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
             if (isset($APIResponse["error"])) {
@@ -94,7 +107,7 @@ class NeonProductImport extends Command {
                     $productdata['ServiceTemplateId'] = $ProductResponse->productId;
                     $productdata['ServiceId']       = $ServiceId;
                     $productdata['Name']            = $ProductResponse->name;
-                    $productdata['CurrencyId']            = 9;
+                    $productdata['CurrencyId']            = $CurrencyId;
                     $city_tariff='';
                     if (!empty($ProductResponse->cityName)) {
                         $city_tariff=$ProductResponse->cityName;
@@ -111,6 +124,19 @@ class NeonProductImport extends Command {
                         ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
                     }else{
                         ServiceTemplate::insert($productdata);
+                        //--Custom filed value
+                    }
+                    $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->pluck('DynamicFieldsID');
+                    //SI product daynamin feild
+                    $dyndata = array();
+                    $dyndata['CompanyID']           = $CompanyID;
+                    $dyndata['ParentID']            = $ProductResponse->productId;
+                    $dyndata['DynamicFieldsID']     = $ProductID;
+                    $dyndata['FieldValue']          = $ProductResponse->productId;
+                    if (!empty($DynamicFieldsID)) {
+                        DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->update($dyndata);
+                    }else{
+                        DynamicFieldsValue::insert($dyndata);
                     }
                 }
             }
