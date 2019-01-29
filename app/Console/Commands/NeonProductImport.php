@@ -66,13 +66,6 @@ class NeonProductImport extends Command {
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
-        
-        $cid = Currency::getCurrencyId($CompanyID,trim($temp_row[$attrselection->Currency]));
-                                    if(!empty($cid) && $cid>0){
-                                        $tempItemData['Currency'] = $cid;
-                                    }else{
-                                        $tempItemData['Currency'] = '';
-                                    }
                                     
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
