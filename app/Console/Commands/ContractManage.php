@@ -50,7 +50,7 @@ class ContractManage extends Command {
 	 *
 	 * @return mixed
 	 */
-	public function fire()
+	public function handle()
 	{
 		CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
@@ -141,6 +141,7 @@ class ContractManage extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);
 			if(!empty($cronsetting['ErrorEmail'])) {
+
 
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$ex);
 				Log::error("**Email Sent Status " . $result['status']);
