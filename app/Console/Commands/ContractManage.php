@@ -129,6 +129,7 @@ class ContractManage extends Command {
 
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
+			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 		}
 		catch(Exception $ex){
 			Log::useFiles(storage_path() . '/logs/ContractManage-Error-' . date('Y-m-d') . '.log');
