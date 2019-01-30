@@ -133,6 +133,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\RateTableDIDRateUpload',
 		'App\Console\Commands\PushUpdatedRatesRoutingengine',
 		'App\Console\Commands\ContractManage',
+		'App\Console\Commands\AutoOutPayment',
 
 	];
 
