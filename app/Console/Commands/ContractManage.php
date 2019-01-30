@@ -26,7 +26,7 @@ class ContractManage extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'ContractManage';
+	protected $name = 'contractmanage';
 
 	/**
 	 * The console command description.
