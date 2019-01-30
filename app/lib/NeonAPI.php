@@ -68,7 +68,6 @@ class NeonAPI
         $APIresponse = array();
         $curl = curl_init();
 
-
         echo ' Get Request ';
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
