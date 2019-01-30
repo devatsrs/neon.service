@@ -127,9 +127,12 @@ class ContractManage extends Command {
 				Log::info('Contract Manage Account Service ID For Renewal Contract'. " " . print_r($Renewal,true));
 			}
 			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'Contract Manage Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
+
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
@@ -142,6 +145,8 @@ class ContractManage extends Command {
 			Log::error($ex);
 			//$this->info('Failed:' . $ex->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] ='Error:'.$ex->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);
