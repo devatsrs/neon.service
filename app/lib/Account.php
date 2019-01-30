@@ -46,7 +46,7 @@ class Account extends \Eloquent {
                 case Account::DETAIL_CDR:
                     if(Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()) {
                         $excel = Excel::load(Config::get('app.temp_location') . basename($filepath), function ($reader) {
-                        })->first()->toArray();
+                            })->first()->toArray();
                         $excel_array_key = array_keys($excel);
                         $required_array_key = Account::$req_cdr_detail_column;
                         if ($single > 0) {
@@ -63,7 +63,7 @@ class Account extends \Eloquent {
                 case Account::SUMMARY_CDR:
                     if(Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()) {
                         $excel = Excel::load(Config::get('app.temp_location') . basename($filepath), function ($reader) {
-                        })->first()->toArray();
+                            })->first()->toArray();
                         $excel_array_key = array_keys($excel);
                         $required_array_key = Account::$req_cdr_summary_column;
                         if ($single > 0) {
@@ -114,7 +114,7 @@ class Account extends \Eloquent {
             ->Where(function($query)
             {
                 $query->whereNull('ItemInvoice')
-                    ->orwhere('ItemInvoice', '!=', 1);
+                ->orwhere('ItemInvoice', '!=', 1);
 
             })->count();
     }
@@ -133,6 +133,15 @@ class Account extends \Eloquent {
             return $Outstanding;
         }
     }
+
+    public static function getOutPayment($AccountID){
+        $OutPaymentAmount ='';
+        $AccountAutomation = \AccountPaymentAutomation::where('AccountID', $AccountID)->first();
+        if($AccountAutomation != false)
+            $OutPaymentAmount = $AccountAutomation->OutPaymentAmount;
+        return $OutPaymentAmount;
+    }
+
     public static function getInvoiceOutstanding($CompanyID,$AccountID,$Invoiceids,$decimal_places = 2){
         $query = "CALL prc_getPaymentPendingInvoice('". $CompanyID  . "',  '". $AccountID  . "',0,0)";
         $InvoiceOutstandingResult = DB::connection('sqlsrv2')->select($query);
@@ -145,15 +154,6 @@ class Account extends \Eloquent {
         $Outstanding= number_format($Outstanding,$decimal_places,'.', '');
         return $Outstanding;
     }
-    public static function getOutPayment($AccountID){
-        $OutPaymentAmount ='';
-        $AccountAutomation = \AccountPaymentAutomation::where('AccountID', $AccountID)->first();
-        if($AccountAutomation != false)
-            $OutPaymentAmount = $AccountAutomation->OutPaymentAmount;
-        return $OutPaymentAmount;
-    }
-
-
     public static function getAccountOwnerEmail($Account){
         $AccountManagerEmail ='';
         if(!empty($Account->Owner))
@@ -165,7 +165,7 @@ class Account extends \Eloquent {
     }
     public static function getAccountEmailCount($AccountID,$EmailType){
         $count =  AccountEmailLog::
-        where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
+            where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
@@ -201,7 +201,7 @@ class Account extends \Eloquent {
 
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
         if(!empty($LastRunTime)){
-            $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
