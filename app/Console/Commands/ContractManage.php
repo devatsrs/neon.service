@@ -80,9 +80,9 @@ class ContractManage extends Command {
 
 					array_push($ID,$sel->AccountServiceID);
 					$InsertCancelHistory[] = [
-						'Date' => DATE('y-m-d'),
+						'Date' => date('Y-m-d H:i:s'),
 						'Action' => 'Contract Cancel',
-						'ActionBy' => 'System',
+						'ActionBy' => $sel->UserName,
 						'AccountServiceID' => $sel->AccountServiceID
 					];
 					DB::table('tblAccountServiceCancelContract')->where('AccountServiceID',$sel->AccountServiceID)->delete();
@@ -91,14 +91,8 @@ class ContractManage extends Command {
 				$data = array();
 				$data['CancelContractStatus'] = 1;
 
-				$AutoRenewal = array();
-				$AutoRenewal['AutoRenewal'] = 0;
-
-
 				/** Update The Status Of Contract In Account Service Table */
 				DB::table('tblAccountService')->whereIn('AccountServiceID',$ID)->update($data);
-				/** Change Cancel Contract Status In AccountService Table */
-				DB::table('tblAccountServiceContract')->whereIn('AccountServiceID',$ID)->update($AutoRenewal);
 				/** Save History In History Table */
 				DB::table('tblAccountServiceHistory')->insert($InsertCancelHistory);
 				}
@@ -114,7 +108,7 @@ class ContractManage extends Command {
 					$Renewal['ContractEndDate'] = date('y-m-d', strtotime($sel->ContractEndDate.' + '.$sel->Duration.' Months'));
 					DB::table('tblAccountServiceContract')->where('AccountServiceID',$sel->AccountServiceID)->update($Renewal);
 					$InsertRenewalHistory[] = [
-						'Date' => DATE('y-m-d'),
+						'Date' => date('Y-m-d H:i:s'),
 						'Action' => 'Contract Renew',
 						'ActionBy' => 'System',
 						'AccountServiceID' => $sel->AccountServiceID

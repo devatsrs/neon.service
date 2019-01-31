@@ -90,7 +90,7 @@ class NeonProductImport extends Command {
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
-            if (!empty($ProductID)) {
+            if (!empty($ProductID)) { 
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
                 $Getdata = array();
