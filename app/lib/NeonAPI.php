@@ -28,7 +28,7 @@ class NeonAPI
         $curl = curl_init();
 
 
-        echo ' ' . Crypt::decrypt('eyJpdiI6IjRmZnRBQ1lKTm5ySEFlSU9hUHhha1E9PSIsInZhbHVlIjoiKytSU3JUK3FIdzRZaXhJRzhaNFwvbXc9PSIsIm1hYyI6IjllMmVhM2E1M2RkNzdlNjM5YmY3NGI2ZWUwMGQ1MDNmYjNjNmQwY2M2Y2Q1YWEwZGM5Nzg1NWU2OTBmYzQyOGEifQ==') . ' ';
+        //echo ' ' . Crypt::decrypt('eyJpdiI6IjRmZnRBQ1lKTm5ySEFlSU9hUHhha1E9PSIsInZhbHVlIjoiKytSU3JUK3FIdzRZaXhJRzhaNFwvbXc9PSIsIm1hYyI6IjllMmVhM2E1M2RkNzdlNjM5YmY3NGI2ZWUwMGQ1MDNmYjNjNmQwY2M2Y2Q1YWEwZGM5Nzg1NWU2OTBmYzQyOGEifQ==') . ' ';
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
@@ -68,9 +68,9 @@ class NeonAPI
         $APIresponse = array();
         $curl = curl_init();
 
-        echo ' Get Request ';
+        //echo ' Get Request ';
         try{
-            $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
+            //$auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
             curl_setopt_array($curl, array(
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => 1,
@@ -87,29 +87,29 @@ class NeonAPI
                     'Authorization:Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU0MzQwMTc0OCwiZXhwIjoxNTc0OTM3NzQ4LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlZlbmRvck1hbmFnZXIifQ.jdVEkXjR2q8swx8OFDNLQhJNSCtzM6y1P_TohN6ql-U',
                 ),
             ));
-
+            Log::info("Before curl_exec:" . $url);
             $response = curl_exec($curl);
             $err = curl_error($curl);
-
+            Log::info("Next curl_exec:" . $url);
             $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
             $header = substr($response, 0, $header_size);
             $body = substr($response, $header_size);
-
+            Log::info("curl_close" . $url);
             curl_close($curl);
+            if ($err) {
+                $APIresponse["error"] = $err;
+                Log::info("Call API URL Error:" . print_r($err,true));
+            } else {
+                $APIresponse["response"] = $body;
+                Log::info("Call API URL Success:");
+              // Log::info("Call API URL Success:" . print_r($response,true));
+            }
+            return $APIresponse;
         }catch (\Exception $e){
             $this->info('GET API Error:' . $e->getMessage());
-        }
-        if ($err) {
-            $APIresponse["error"] = $err;
-            Log::info("Call API URL Error:" . print_r($err,true));
-        } else {
-            $APIresponse["response"] = $body;
-            Log::info("Call API URL Success body:" . $body);
-            //Log::info("Call API URL Success 1:" . $response);
-          // Log::info("Call API URL Success:" . print_r($response,true));
-        }
+            return $APIresponse["error"]="error";        
 
-        return $APIresponse;
+        }
     }
 
     public static function callPostAPI($postdata,$PricingJSONInput,$call_method,$api_url)
