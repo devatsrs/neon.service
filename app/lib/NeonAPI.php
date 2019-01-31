@@ -106,7 +106,7 @@ class NeonAPI
             }
             return $APIresponse;
         }catch (\Exception $e){
-            $this->info('GET API Error:' . $e->getMessage());
+            Log::error('GET API Error:' . $e->getMessage());
             return $APIresponse["error"]="error";        
 
         }
