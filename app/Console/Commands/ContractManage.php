@@ -26,7 +26,7 @@ class ContractManage extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'ContractManage';
+	protected $name = 'contractmanage';
 
 	/**
 	 * The console command description.
@@ -65,7 +65,6 @@ class ContractManage extends Command {
 		CronJob::activateCronJob($CronJob);
 		CronJob::createLog($CronJobID);
 
-		//print_r($cronsetting);die();
 		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
 			CronJob::createLog($CronJobID);
@@ -81,26 +80,19 @@ class ContractManage extends Command {
 
 					array_push($ID,$sel->AccountServiceID);
 					$InsertCancelHistory[] = [
-						'Date' => DATE('y-m-d'),
+						'Date' => date('Y-m-d H:i:s'),
 						'Action' => 'Contract Cancel',
-						'ActionBy' => 'System',
+						'ActionBy' => $sel->UserName,
 						'AccountServiceID' => $sel->AccountServiceID
 					];
 					DB::table('tblAccountServiceCancelContract')->where('AccountServiceID',$sel->AccountServiceID)->delete();
 				}
-				var_dump($ID);
-
+				Log::info('Contract Manage Account Service ID For Cancel Contract'. " " . print_r($ID,true));
 				$data = array();
 				$data['CancelContractStatus'] = 1;
 
-				$AutoRenewal = array();
-				$AutoRenewal['AutoRenewal'] = 0;
-
-
 				/** Update The Status Of Contract In Account Service Table */
 				DB::table('tblAccountService')->whereIn('AccountServiceID',$ID)->update($data);
-				/** Change Cancel Contract Status In AccountService Table */
-				DB::table('tblAccountServiceContract')->whereIn('AccountServiceID',$ID)->update($AutoRenewal);
 				/** Save History In History Table */
 				DB::table('tblAccountServiceHistory')->insert($InsertCancelHistory);
 				}
@@ -111,13 +103,12 @@ class ContractManage extends Command {
 			if(count($selectRenewalContract) > 0){
 				$Renewal = array();
 				$InsertRenewalHistory = array();
-				//$InsertRenewalHistory = array();
 
 				foreach($selectRenewalContract as $sel){
 					$Renewal['ContractEndDate'] = date('y-m-d', strtotime($sel->ContractEndDate.' + '.$sel->Duration.' Months'));
 					DB::table('tblAccountServiceContract')->where('AccountServiceID',$sel->AccountServiceID)->update($Renewal);
 					$InsertRenewalHistory[] = [
-						'Date' => DATE('y-m-d'),
+						'Date' => date('Y-m-d H:i:s'),
 						'Action' => 'Contract Renew',
 						'ActionBy' => 'System',
 						'AccountServiceID' => $sel->AccountServiceID
@@ -126,11 +117,16 @@ class ContractManage extends Command {
 				}
 
 				DB::table('tblAccountServiceHistory')->insert($InsertRenewalHistory);
-				var_dump($Renewal);
+
+				Log::info('Contract Manage Account Service ID For Renewal Contract'. " " . print_r($Renewal,true));
 			}
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'Contract Manage Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
+
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
@@ -141,7 +137,10 @@ class ContractManage extends Command {
 			Log::useFiles(storage_path() . '/logs/ContractManage-Error-' . date('Y-m-d') . '.log');
 
 			Log::error($ex);
-			$this->info('Failed:' . $ex->getMessage());
+			//$this->info('Failed:' . $ex->getMessage());
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] ='Error:'.$ex->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);

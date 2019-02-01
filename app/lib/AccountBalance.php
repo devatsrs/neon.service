@@ -555,4 +555,20 @@ class AccountBalance extends Model
             }
         }
     }
+
+    /**
+     * This function only for prepaid account
+    **/
+    public static function getAccountBalanceWithActiveCall($AccountID){
+
+        $AccountBalance = AccountBalanceLog::getPrepaidAccountBalance($AccountID);
+        $ActiveBalance = ActiveCall::where(['AccountID'=>$AccountID])->sum('Cost');
+
+        $AccountBalance = empty($AccountBalance)?0:$AccountBalance;
+        $ActiveBalance = empty($ActiveBalance)?0:$ActiveBalance;
+
+        $TotalAmount = $AccountBalance - $ActiveBalance;
+
+        return $TotalAmount;
+    }
 }
