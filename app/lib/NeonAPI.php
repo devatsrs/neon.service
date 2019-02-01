@@ -56,9 +56,11 @@ class NeonAPI
 
         if ($httpcode != 200) {
             $APIresponse["error"] = $response;
+            $APIresponse["HTTP_CODE"] = $httpcode;
             Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
+            $APIresponse["HTTP_CODE"] = $httpcode;
             Log::info("Call API URL Sucess:" . print_r($response,true));
         }
 

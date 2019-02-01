@@ -280,8 +280,9 @@ class AutoTopAccount extends Command {
 		} else {
 			//$accountresponse["response"] = $response;
 			$response = json_decode($APIresponse["response"]);
-			Log::info(print_r($response,true));
-			if ($response->status == "success") {
+			Log::info("Succcess" . print_r($response,true));
+			$responseCode = $APIresponse["HTTP_CODE"];
+			if ($responseCode == 200) {
 				$DepositAccount[0] = "success";
 				$DepositAccount[1] = $response;
 			} else {
