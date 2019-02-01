@@ -136,7 +136,7 @@ class Account extends \Eloquent {
 
     public static function getOutPayment($AccountID){
         $OutPaymentAmount ='';
-        $AccountAutomation = \AccountPaymentAutomation::where('AccountID', $AccountID)->first();
+        $AccountAutomation = AccountPaymentAutomation::where('AccountID', $AccountID)->first();
         if($AccountAutomation != false)
             $OutPaymentAmount = $AccountAutomation->OutPaymentAmount;
         return $OutPaymentAmount;
