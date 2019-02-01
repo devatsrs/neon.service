@@ -858,16 +858,14 @@ class RateTableDIDRateUpload extends Command
                                 }
 
                                 //unset($error[0]);
-                                $jobdata['message'] = implode('<br>',fix_jobstatus_meassage($prc_error_CM));
+                                $jobdata['JobStatusMessage'] = implode('<br>',fix_jobstatus_meassage($prc_error_CM));
                                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
-                                $jobdata['status'] = "failed";
                                 Job::where(["JobID" => $JobID])->update($jobdata);
                             }
                         } catch ( Exception $err ) {
                             DB::rollback();
                             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                            $jobdata['message'] = 'Exception: ' . $err->getMessage();
-                            $jobdata['status'] = "failed";
+                            $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
                             Job::where(["JobID" => $JobID])->update($jobdata);
                             Log::error($err);
                         }
