@@ -9,7 +9,6 @@
     <?php
     $SuccessDepositAccounts = $data['SuccessDepositAccount'];
     $FailureDepositFundAccounts = $data['FailureDepositFund'];
-    $ErrorDepositFundAccounts = $data['ErrorDepositFund'];
     ?>
     <div id="content">
 
@@ -70,39 +69,6 @@
                     <td width="20%" align="center">{{$FailureDepositFundAccount["Number"]}}</td>
                     <td width="20%" align="center">{{$FailureDepositFundAccount["AccountName"]}}</td>
                     <td width="60%" align="center">{{print_r($FailureDepositFundAccount["Response"]->message)}}</td>
-                    </tr>
-                @endforeach
-
-
-            </tbody>
-        </table>
-
-        <br/>
-
-        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
-            <tr>
-                <td>
-                    General Error
-                </td>
-            </tr>
-        </table>
-
-        <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
-            <thead>
-            <tr>
-                <th width="20%" align="center">Account Number</th>
-                <th width="20%" align="center">Account Name</th>
-                <th width="60%" align="center">Failed Reason</th>
-            </tr>
-            </thead>
-            <tbody>
-
-
-                @foreach($ErrorDepositFundAccounts as $ErrorDepositFundAccount)
-                    <tr>
-                    <td width="20%" align="center">{{$ErrorDepositFundAccount["Number"]}}</td>
-                    <td width="20%" align="center">{{$ErrorDepositFundAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{print_r($ErrorDepositFundAccount["Response"],true)}}</td>
                     </tr>
                 @endforeach
 

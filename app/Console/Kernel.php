@@ -134,6 +134,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\PushUpdatedRatesRoutingengine',
 		'App\Console\Commands\ContractManage',
 		'App\Console\Commands\AutoOutPayment',
+		'App\Console\Commands\UpdateActiveCallCost',
 
 	];
 

@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\AccountPaymentAutomation;
 use App\Lib\Company;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -84,25 +85,34 @@ class ActiveCallBalanceAlert extends Command {
                 //BalanceAlert
                 $LowBalanceArr=$ErrorAccount=array();
 
-                $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
+                /**
+                 * This cronjob will check (accountbalance - live call balance) of Account (Active Call)
+                 * if account balance is zero or less than it first we will check auto top on or not
+                 * if auto top up or error in auto top , we will send api to customer.
+                */
 
-                foreach($ActiveCallAccountIDs as $AccountID){
-                    $AccountBalance = AccountBalance::getNewAccountExposure($AccountID);
-                    if($AccountBalance <= 0){
-                        log::info($APIURL);
-                        $UUIDS=ActiveCall::getUUIDByAccountID($CompanyID,$AccountID);
-                        if(!empty($UUIDS[0])){
-                            $ActiveCallArr=array();
-                            $ActiveCallArr['CustomerID']=$AccountID;
-                            $ActiveCallArr['Balance']=$AccountBalance;
-                            $ActiveCallArr['UUID']=$UUIDS;
-                            $LowBalanceArr[]=$ActiveCallArr;
-                        }else{
-                            $ErrorAccount[]=$AccountID;
+                $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
+                if(!empty($ActiveCallAccountIDs)) {
+                    foreach ($ActiveCallAccountIDs as $AccountID) {
+                        $AccountBalance = AccountBalance::getAccountBalanceWithActiveCall($AccountID);
+                        if ($AccountBalance <= 0) {
+                            /** check auto top up is on or not */
+
+                            log::info($APIURL);
+                            $UUIDS = ActiveCall::getUUIDByAccountID($CompanyID, $AccountID);
+                            if (!empty($UUIDS[0])) {
+                                $ActiveCallArr = array();
+                                $ActiveCallArr['CustomerID'] = $AccountID;
+                                $ActiveCallArr['Balance'] = $AccountBalance;
+                                $ActiveCallArr['UUID'] = $UUIDS;
+                                $LowBalanceArr[] = $ActiveCallArr;
+                            } else {
+                                $ErrorAccount[] = $AccountID;
+                            }
+
                         }
 
                     }
-
                 }
 
                 //Log::info(print_r($LowBalanceArr,true));die;

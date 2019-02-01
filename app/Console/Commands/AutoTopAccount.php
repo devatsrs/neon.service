@@ -6,7 +6,7 @@
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
 use App\Lib\Summary;
-use App\Lib\RoutingProfileRate;
+use App\Lib\AccountPaymentAutomation;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
 use App\Lib\Account;
@@ -15,7 +15,7 @@ use App\Lib\Notification;
 use App\Lib\Helper;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronJobLog;
-use App\Lib\Retention;
+use App\Lib\AccountBalance;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use \Exception;
@@ -69,7 +69,6 @@ class AutoTopAccount extends Command {
         CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
 		$FailureDepositFund = array();
-		$ErrorDepositFund = array();
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
@@ -86,51 +85,46 @@ class AutoTopAccount extends Command {
 			$AutoPaymentAccountList = Account::
 			Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
 				->select(['AccountName','tblAccount.AccountID','Number','MinThreshold','TopupAmount'])
+				->where(['tblAccount.Status'=>1,'tblAccount.CompanyId'=>$CompanyID])
 				->where('tblAccountPaymentAutomation.AutoTopup','=', 1)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
-			Log::info('Auto Top Up Query.' . $AutoPaymentAccountList->toSql());
 			$AutoPaymentAccountList = $AutoPaymentAccountList->get();
-			Log::info('DONE With AutoTopAccount.' . count($AutoPaymentAccountList));
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
-			Log::info('$CompanyConfiguration .' . $CompanyConfiguration);
-			foreach($AutoPaymentAccountList as  $AutoPaymentAccount) {
-				if ($this::callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)) {
-					Log::info('Call the deposit API .');
-					$DepositAccount = $this::calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration);
-					Log::info('Call the deposit API $DepositAccount.' . print_r($DepositAccount,true));
-					Log::info('Call the deposit API $DepositAccount.' . $DepositAccount[0]);
-					if ($DepositAccount[0] == "success") {
-						$successRecord = array();
-						$successRecord["AccountID"] = $AutoPaymentAccount->AccountID;
-						$successRecord["AccountName"] = $AutoPaymentAccount->AccountName;
-						$successRecord["Number"] = $AutoPaymentAccount->Number;
-						$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
-						$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
-						Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
-					}else if ($DepositAccount[0] == "failed") {
-						$failedRecord = array();
-						$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
-						$failedRecord["AccountName"] = $AutoPaymentAccount->AccountName;
-						$failedRecord["Number"] = $AutoPaymentAccount->Number;
-						$failedRecord["Response"] = $DepositAccount[1];
-						$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
-						Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
-					}else if ($DepositAccount[0] == "error") {
-						$errorRecord = array();
-						$errorRecord["AccountID"] = $AutoPaymentAccount->AccountID;
-						$errorRecord["AccountName"] = $AutoPaymentAccount->AccountName;
-						$errorRecord["Number"] = $AutoPaymentAccount->Number;
-						$errorRecord["Response"] = $DepositAccount[1];
-						$ErrorDepositFund[count($ErrorDepositFund) + 1] = $errorRecord;
+			if(!empty($AutoPaymentAccountList) && !empty($CompanyConfiguration)) {
+				foreach ($AutoPaymentAccountList as $AutoPaymentAccount) {
+					$AccountBalance = AccountBalance::getAccountBalanceWithActiveCall($AutoPaymentAccount->AccountID);
+					if ($AccountBalance >= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
+						$DepositAccount = AccountPaymentAutomation::calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration);
+						if (!empty($DepositAccount)) {
+							if ($DepositAccount['status'] == "success") {
+								$successRecord = array();
+								$successRecord["AccountID"] = $AutoPaymentAccount->AccountID;
+								$successRecord["AccountName"] = $AutoPaymentAccount->AccountName;
+								$successRecord["Number"] = $AutoPaymentAccount->Number;
+								$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
+								$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
+								Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
+							} else if ($DepositAccount['status'] == "failed") {
+								$failedRecord = array();
+								$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
+								$failedRecord["AccountName"] = $AutoPaymentAccount->AccountName;
+								$failedRecord["Number"] = $AutoPaymentAccount->Number;
+								$failedRecord["Response"] = $DepositAccount['response'];
+								$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
+								Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
+							}
+						}
 					}
+
 				}
 
-			}
-
-			if (count($AutoPaymentAccountList) > 0) {
-				$this::AutoTopUpNotification($CompanyID, $SuccessDepositAccount, $FailureDepositFund, $ErrorDepositFund);
-			}else {
-				Log::info('No Account IDs found for the auto top up.');
+				if (count($AutoPaymentAccountList) > 0) {
+					if (count($FailureDepositFund) > 0 || count($SuccessDepositAccount)) {
+						AccountPaymentAutomation::AutoTopUpNotification($CompanyID, $SuccessDepositAccount, $FailureDepositFund);
+					}
+				} else {
+					Log::info('No Account IDs found for the auto top up.');
+				}
 			}
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
@@ -142,16 +136,9 @@ class AutoTopAccount extends Command {
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
-            echo "DONE With AutoTopAccount";
-
-
 			//Log::info('routingList:Get the routing list user company.' . $CompanyID);
             Log::info('Run Cron.');
         }catch (\Exception $e){
-            Log::useFiles(storage_path() . '/logs/AutoTopAccount-Error-' . date('Y-m-d') . '.log');
-            //Log::info('LCRRoutingEngine Error.');
-            Log::useFiles(storage_path() . '/logs/AutoTopAccount-Error-' . date('Y-m-d') . '.log');
-            
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
@@ -161,14 +148,14 @@ class AutoTopAccount extends Command {
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
             if(!empty($cronsetting['ErrorEmail'])) {
-
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
-                    Log::error("**Email Sent Status " . $result['status']);
-                    Log::error("**Email Sent message " . $result['message']);
+				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+				Log::error("**Email Sent Status " . $result['status']);
+				Log::error("**Email Sent message " . $result['message']);
             }
-
+  	  }
 
     }
+
     }
 
 	public static function AutoTopUpNotification($CompanyID,$SuccessDepositAccounts,$FailureDepositFundAccounts,$ErrorDepositFundAccounts){
@@ -299,5 +286,6 @@ class AutoTopAccount extends Command {
 			return [];
 		}
 	}
+
 
 }
