@@ -134,6 +134,12 @@ class AutoTopAccount extends Command {
 			}
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
+			$joblogdata['Message'] = 'AutoTopAccount Successfully Done';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
             echo "DONE With AutoTopAccount";
@@ -148,6 +154,9 @@ class AutoTopAccount extends Command {
             
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
@@ -199,6 +208,7 @@ class AutoTopAccount extends Command {
 
 	public function callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
+		try{
 		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
@@ -216,22 +226,27 @@ class AutoTopAccount extends Command {
 		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
 
 		if (isset($APIresponse["error"])) {
+
 			return $topUpAmount = false;
 			//echo "cURL Error #:" . $err;
 		} else {
 			$response = json_decode($APIresponse["response"]);
 			Log::info(print_r($APIresponse["response"],true));
-			if ($response->status == "success" &&
-				$response->data->amount >= $AutoPaymentAccount->MinThreshold) {
+			if (!empty($response->amount) && $response->amount >= $AutoPaymentAccount->MinThreshold) {
 				$topUpAmount = true;
 				return $topUpAmount;
 			}
 
 		}
+		}catch (\Exception $e){
+			Log::error("Balance API URL" . $e->getTraceAsString());
+			return false;
+		}
 	}
 
 	public function calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
+		try{
 		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
@@ -256,10 +271,11 @@ class AutoTopAccount extends Command {
 		if (isset($APIresponse["error"])) {
 			//$accountresponse["error"] = $err;
 			$topUpAmount = false;
-			Log::info(print_r($APIresponse["error"],true));
+			$response = json_decode($APIresponse["error"]);
+			//Log::info(print_r($APIresponse["error"],true));
 			$DepositAccount[0] = "error";
-			$DepositAccount[1] = $APIresponse["error"];
-
+			$DepositAccount[1] = $response->ErrorMessage;
+			Log::info("error " . print_r($DepositAccount,true));
 			//echo "cURL Error #:" . $err;
 		} else {
 			//$accountresponse["response"] = $response;
@@ -277,10 +293,10 @@ class AutoTopAccount extends Command {
 		}
 
 		return $DepositAccount;
+		}catch (\Exception $e){
+			Log::error("Balance API URL" . $e->getTraceAsString());
+			return [];
+		}
 	}
-
-
-
-
 
 }
