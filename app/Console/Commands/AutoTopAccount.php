@@ -128,6 +128,12 @@ class AutoTopAccount extends Command {
 			}
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
+			$joblogdata['Message'] = 'AutoTopAccount Successfully Done';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
 			//Log::info('routingList:Get the routing list user company.' . $CompanyID);
@@ -135,6 +141,9 @@ class AutoTopAccount extends Command {
         }catch (\Exception $e){
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
@@ -146,5 +155,137 @@ class AutoTopAccount extends Command {
   	  }
 
     }
+
+    }
+
+	public static function AutoTopUpNotification($CompanyID,$SuccessDepositAccounts,$FailureDepositFundAccounts,$ErrorDepositFundAccounts){
+
+		$emaildata = array();
+
+		$ComanyName = Company::getName($CompanyID);
+
+		$emaildata['SuccessDepositAccount'] = $SuccessDepositAccounts;
+		$emaildata['FailureDepositFund'] = $FailureDepositFundAccounts;
+		$emaildata['ErrorDepositFund'] = $ErrorDepositFundAccounts;
+
+		$AutoTopUpNotificationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::AutoTopAccount]);
+		Log::info("$AutoTopUpNotificationEmail .." . $AutoTopUpNotificationEmail);
+
+		$emaildata['CompanyID'] = $CompanyID;
+		$emaildata['CompanyName'] = $ComanyName;
+		$emaildata['EmailTo'] = $AutoTopUpNotificationEmail;
+		$emaildata['EmailToName'] = '';
+		$emaildata['Subject'] = 'Auto Top Up Notification Email';
+		//$emaildata['Message'] = $Message;
+		Log::info("AutoTopUpNotificationEmail 1" . count($emaildata['SuccessDepositAccount']));
+		Log::info("AutoTopUpNotificationEmail 2" . count($emaildata['FailureDepositFund']));
+		Log::info("AutoTopUpNotificationEmail 3" . count($emaildata['ErrorDepositFund']));
+		$result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
+		return $result;
+	}
+
+	function endsWith($haystack, $needle) {
+		// search forward starting from end minus needle length characters
+		if ($needle === '') {
+			return true;
+		}
+		$diff = \strlen($haystack) - \strlen($needle);
+		return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
+	}
+
+	public function callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)
+	{
+		try{
+		$url = $CompanyConfiguration;
+		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
+		$accountresponse = array();
+		$topUpAmount = false;
+		//$postdata = array(
+		//	'AccountID'                => $AutoPaymentAccount->AccountID
+		//);
+		$postdata['AccountID'] = $AutoPaymentAccount->AccountID;
+		$postdata = json_encode($postdata,true);
+		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "/";
+		}
+		Log::info("Balance API URL" . $url);
+
+		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
+
+		if (isset($APIresponse["error"])) {
+
+			return $topUpAmount = false;
+			//echo "cURL Error #:" . $err;
+		} else {
+			$response = json_decode($APIresponse["response"]);
+			Log::info(print_r($APIresponse["response"],true));
+			if (!empty($response->amount) && $response->amount >= $AutoPaymentAccount->MinThreshold) {
+				$topUpAmount = true;
+				return $topUpAmount;
+			}
+
+		}
+		}catch (\Exception $e){
+			Log::error("Balance API URL" . $e->getTraceAsString());
+			return false;
+		}
+	}
+
+	public function calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration)
+	{
+		try{
+		$url = $CompanyConfiguration;
+		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
+		$accountresponse = array();
+		$topUpAmount = false;
+		$DepositAccount = array();
+		//$postdata = array(
+		//	'AccountID'                => $AutoPaymentAccount->AccountID,
+		//	'Amount'                => $AutoPaymentAccount->TopupAmount
+		//);
+
+		$postdata['AccountID'] = $AutoPaymentAccount->AccountID;
+		$postdata['Amount'] = $AutoPaymentAccount->TopupAmount;
+		$postdata = json_encode($postdata,true);
+
+		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+			$url = $CompanyConfiguration . "/";
+		}
+		Log::info("Balance API URL" . $url);
+		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
+
+
+		if (isset($APIresponse["error"])) {
+			//$accountresponse["error"] = $err;
+			$topUpAmount = false;
+			$response = json_decode($APIresponse["error"]);
+			//Log::info(print_r($APIresponse["error"],true));
+			$DepositAccount[0] = "error";
+			$DepositAccount[1] = $response->ErrorMessage;
+			Log::info("error " . print_r($DepositAccount,true));
+			//echo "cURL Error #:" . $err;
+		} else {
+			//$accountresponse["response"] = $response;
+			$response = json_decode($APIresponse["response"]);
+			Log::info("Succcess" . print_r($response,true));
+			$responseCode = $APIresponse["HTTP_CODE"];
+			if ($responseCode == 200) {
+				$DepositAccount[0] = "success";
+				$DepositAccount[1] = $response;
+			} else {
+				$DepositAccount[0] = "failed";
+				$DepositAccount[1] = $response;
+
+			}
+			//echo $response->data->amount;
+		}
+
+		return $DepositAccount;
+		}catch (\Exception $e){
+			Log::error("Balance API URL" . $e->getTraceAsString());
+			return [];
+		}
+	}
+
 
 }
