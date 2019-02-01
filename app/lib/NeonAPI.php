@@ -47,15 +47,19 @@ class NeonAPI
 
         $response = curl_exec($curl);
         $err = curl_error($curl);
-
+       // echo $response;
+     //   $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+      //  echo $header_size;
+        $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+      //  echo $httpcode;
         curl_close($curl);
 
-        if ($err) {
-            $APIresponse["error"] = $err;
-            Log::info("Call API URL :" . print_r($err,true));
+        if ($httpcode != 200) {
+            $APIresponse["error"] = $response;
+            Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
-            Log::info("Call API URL :" . print_r($response,true));
+            Log::info("Call API URL Sucess:" . print_r($response,true));
         }
 
         return $APIresponse;
