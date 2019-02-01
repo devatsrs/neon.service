@@ -23,7 +23,7 @@ class NeonAPI
     public static function callAPI($postdata,$call_method,$api_url)
     {
         $url = $api_url . $call_method;
-        Log::info("Call API URL :" . $url);
+        Log::info("Call API URL :" . $url . '  ' . $postdata);
         $APIresponse = array();
         $curl = curl_init();
 

@@ -156,9 +156,10 @@ class AutoTopAccount extends Command {
 
     }
 
-    }
 
-	public static function AutoTopUpNotification($CompanyID,$SuccessDepositAccounts,$FailureDepositFundAccounts,$ErrorDepositFundAccounts){
+
+	public static function AutoTopUpNotification($CompanyID,$SuccessDepositAccounts,$FailureDepositFundAccounts,$ErrorDepositFundAccounts)
+	{
 
 		$emaildata = array();
 
@@ -194,8 +195,8 @@ class AutoTopAccount extends Command {
 	}
 
 	public function callAccountBalanceAPI($AutoPaymentAccount,$CompanyConfiguration)
-	{
-		try{
+{
+	try {
 		$url = $CompanyConfiguration;
 		Log::info("$AutoPaymentAccount .." . $AutoPaymentAccount->AccountID);
 		$accountresponse = array();
@@ -204,13 +205,13 @@ class AutoTopAccount extends Command {
 		//	'AccountID'                => $AutoPaymentAccount->AccountID
 		//);
 		$postdata['AccountID'] = $AutoPaymentAccount->AccountID;
-		$postdata = json_encode($postdata,true);
-		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+		$postdata = json_encode($postdata, true);
+		if (!NeonAPI::endsWith($CompanyConfiguration, "/")) {
 			$url = $CompanyConfiguration . "/";
 		}
 		Log::info("Balance API URL" . $url);
 
-		$APIresponse = NeonAPI::callAPI($postdata,"api/account/checkBalance",$url);
+		$APIresponse = NeonAPI::callAPI($postdata, "api/account/checkBalance", $url);
 
 		if (isset($APIresponse["error"])) {
 
@@ -218,18 +219,19 @@ class AutoTopAccount extends Command {
 			//echo "cURL Error #:" . $err;
 		} else {
 			$response = json_decode($APIresponse["response"]);
-			Log::info(print_r($APIresponse["response"],true));
+			Log::info(print_r($APIresponse["response"], true));
 			if (!empty($response->amount) && $response->amount >= $AutoPaymentAccount->MinThreshold) {
 				$topUpAmount = true;
 				return $topUpAmount;
 			}
 
+
 		}
-		}catch (\Exception $e){
-			Log::error("Balance API URL" . $e->getTraceAsString());
-			return false;
-		}
+	} catch (Exception $e) {
+		Log::error("Balance API URL" . $e->getTraceAsString());
+		return false;
 	}
+}
 
 	public function calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration)
 	{
