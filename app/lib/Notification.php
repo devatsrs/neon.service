@@ -18,6 +18,9 @@ class Notification extends \Eloquent {
     const InvoicePaidByCustomer=8;
     const AutoAddIP=9;
     const AutoTopAccount=11;
+    const ContractEnding=12;
+    const AutoOutPayment=13;
+    const ContractManage = 14;
 
     public static $type = [ Notification::InvoiceCopy=>'Invoice Copy',
         Notification::ReRate=>'Re Rate Log',
@@ -28,7 +31,8 @@ class Notification extends \Eloquent {
         Notification::RetentionDiskSpaceEmail=>'Retention Disk Space Email',
         Notification::InvoicePaidByCustomer=>'Invoice Paid',
         Notification::AutoAddIP=>'Auto Add IP',
-        Notification::AutoTopAccount=>'Auto Top Account'
+        Notification::AutoTopAccount=>'Auto Top Account',
+        Notification::ContractManage=>'Contract Manage'
 
     ];
 

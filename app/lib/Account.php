@@ -15,7 +15,8 @@ class Account extends \Eloquent {
     const  NOT_VERIFIED = 0;
     //const  PENDING_VERIFICATION = 1;
     const  VERIFIED =2;
-
+    const  OutPaymentEmailTemplate ='OutPayment';
+    const  ContractManageEmailTemplate ='Contract Manage';
     const  DETAIL_CDR = 1;
     const  SUMMARY_CDR= 2;
     const  NO_CDR = 3;
@@ -132,6 +133,15 @@ class Account extends \Eloquent {
             return $Outstanding;
         }
     }
+
+    public static function getOutPayment($AccountID){
+        $OutPaymentAmount ='';
+        $AccountAutomation = AccountPaymentAutomation::where('AccountID', $AccountID)->first();
+        if($AccountAutomation != false)
+            $OutPaymentAmount = $AccountAutomation->OutPaymentAmount;
+        return $OutPaymentAmount;
+    }
+
     public static function getInvoiceOutstanding($CompanyID,$AccountID,$Invoiceids,$decimal_places = 2){
         $query = "CALL prc_getPaymentPendingInvoice('". $CompanyID  . "',  '". $AccountID  . "',0,0)";
         $InvoiceOutstandingResult = DB::connection('sqlsrv2')->select($query);

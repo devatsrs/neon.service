@@ -1,6 +1,6 @@
 <?php
 namespace App\Lib;
-
+use Illuminate\Support\Facades\DB;
 class Translation extends \Eloquent {
 	
 	protected $guarded = array('TranslationID');
@@ -77,5 +77,14 @@ class Translation extends \Eloquent {
             $dropdown = array("" => "Select") + $dropdown;
         }
         return $dropdown;
+    }
+
+    public static function get_language_labels($languageCode="en"){
+        $data_langs = DB::table('tblLanguage')
+            ->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
+            ->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
+            ->where(["tblLanguage.ISOCode"=>$languageCode])
+            ->first();
+        return $data_langs;
     }
 }
