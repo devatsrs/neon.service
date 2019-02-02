@@ -1,5 +1,8 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Currency;
+use App\Lib\EmailsTemplates;
+use App\Lib\EmailTemplate;
 use Illuminate\Console\Command;
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
@@ -64,6 +67,8 @@ class ContractManage extends Command {
 		$cronsetting = json_decode($CronJob->Settings,true);
 		CronJob::activateCronJob($CronJob);
 		CronJob::createLog($CronJobID);
+		$CancelContractResult = [];
+		$RenewContractResult = [];
 
 		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try{
@@ -75,7 +80,6 @@ class ContractManage extends Command {
 			if(count($selectCancelContract) > 0){
 				$ID = array();
 				$InsertCancelHistory = array();
-
 				foreach($selectCancelContract as $sel){
 
 					array_push($ID,$sel->AccountServiceID);
@@ -85,8 +89,17 @@ class ContractManage extends Command {
 						'ActionBy' => $sel->UserName,
 						'AccountServiceID' => $sel->AccountServiceID
 					];
+
 					DB::table('tblAccountServiceCancelContract')->where('AccountServiceID',$sel->AccountServiceID)->delete();
+
+					$AccountNameGet = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
+					$CancelContract['AccountName'] = $AccountNameGet->AccountName;
+					$CancelContract['CompanyId'] = $AccountNameGet->CompanyId;
+					$CancelContract['ServiceTitle'] = $sel->ServiceTitle;
+					$CancelContractResult[count($CancelContractResult) + 1] = $CancelContract;
+					var_dump($CancelContractResult);
 				}
+
 				Log::info('Contract Manage Account Service ID For Cancel Contract'. " " . print_r($ID,true));
 				$data = array();
 				$data['CancelContractStatus'] = 1;
@@ -103,9 +116,11 @@ class ContractManage extends Command {
 			if(count($selectRenewalContract) > 0){
 				$Renewal = array();
 				$InsertRenewalHistory = array();
+				$RenewContract = array();
+				$email = array();
 
 				foreach($selectRenewalContract as $sel){
-					$Renewal['ContractEndDate'] = date('y-m-d', strtotime($sel->ContractEndDate.' + '.$sel->Duration.' Months'));
+					$Renewal['ContractEndDate'] = date('y-m-d', strtotime($sel->ContractEndDate.' + '.$sel->Duration.'Months'));
 					DB::table('tblAccountServiceContract')->where('AccountServiceID',$sel->AccountServiceID)->update($Renewal);
 					$InsertRenewalHistory[] = [
 						'Date' => date('Y-m-d H:i:s'),
@@ -114,12 +129,27 @@ class ContractManage extends Command {
 						'AccountServiceID' => $sel->AccountServiceID
 
 					];
+					$AccountNameGet = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
+					$RenewContract['AccountName'] = $AccountNameGet->AccountName;
+					$RenewContract['CompanyId'] = $AccountNameGet->CompanyId;
+					$RenewContract['ServiceTitle'] = $sel->ServiceTitle;
+					$RenewContractResult[count($RenewContractResult) + 1] = $RenewContract;
+
+					$account = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
+					$email['AccountID'] = $account->AccountID;
+					$email['CompanyID'] = $account->CompanyId;
+					$email['ServiceTitle'] = $sel->ServiceTitle;
+					var_dump($email);
+					$this->ContractManageCustomerEmail($email);
 				}
+
 
 				DB::table('tblAccountServiceHistory')->insert($InsertRenewalHistory);
 
 				Log::info('Contract Manage Account Service ID For Renewal Contract'. " " . print_r($Renewal,true));
 			}
+
+			$this::ContractManageNotification($CancelContractResult,$RenewContractResult,$CompanyID);
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
 			$joblogdata['created_by'] = 'RMScheduler';
@@ -159,6 +189,76 @@ class ContractManage extends Command {
 	 *
 	 * @return array
 	 */
+	public static function ContractManageNotification($CancelContract,$RenewContract,$CompanyID)
+	{
+		try {
+			Log::info("ContractManageNotification ");
+			$emaildata = array();
+
+			$ComanyName = Company::getName($CompanyID);
+
+			$emaildata['CancelContract'] = $CancelContract;
+			$emaildata['RenewContract'] = $RenewContract;
+
+			$ContractManageEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::ContractManage]);
+			Log::info("$ContractManageEmail .." . $ContractManageEmail);
+
+			$emaildata['CompanyID'] = $CompanyID;
+			$emaildata['CompanyName'] = $ComanyName;
+			$emaildata['EmailTo'] = $ContractManageEmail;
+			$emaildata['EmailToName'] = '';
+			$emaildata['Subject'] = 'Contract Manage Email';
+			Log::info("ContractManage CancelContract count" . count($emaildata['CancelContract']));
+			Log::info("ContractManage RenewContract count" . count($emaildata['RenewContract']));
+
+			$result = Helper::sendMail('emails.contract_manage', $emaildata);
+			return $result;
+		} catch (Exception $ex) {
+
+			Log::error($ex);
+		}
+	}
+
+	public function ContractManageCustomerEmail($email){
+		$CompanyID = $email['CompanyID'];
+		$status = EmailsTemplates::CheckEmailTemplateStatus(Account::ContractManageEmailTemplate,$CompanyID);
+		if($status != false) {
+			$Account = Account::find($email['AccountID']);
+			$CompanyName = Company::getName($CompanyID);
+			$emaildata = array(
+				'CompanyName' => $CompanyName,
+				'CompanyID' => $CompanyID,
+				'ServiceTitle' => $email['ServiceTitle']
+			);
+			$emaildata['EmailToName'] = $Account->AccountName;
+			$body = EmailsTemplates::setContractManagePlaceholder($Account, 'body', $CompanyID, $emaildata);
+			$emaildata['Subject'] = EmailsTemplates::setContractManagePlaceholder($Account, "subject", $CompanyID, $emaildata);
+			if (!isset($emaildata['EmailFrom'])) {
+				$emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Account::ContractManageEmailTemplate,$CompanyID);
+			}
+
+			$CustomerEmail = $Account->BillingEmail;
+			if($CustomerEmail != '') {
+				$CustomerEmail = explode(",", $CustomerEmail);
+				$customeremail_status['status'] = 0;
+				$customeremail_status['message'] = '';
+				$customeremail_status['body'] = '';
+				foreach ($CustomerEmail as $singleemail) {
+					$singleemail = trim($singleemail);
+					if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+						$emaildata['EmailTo'][] = $singleemail;
+					}
+				}
+				Log::info("============ EmailData ===========");
+				Log::info($emaildata);
+				$customeremail_status = Helper::sendMaiL($body, $emaildata, 0);
+			}
+		}
+		//var_dump($email);
+	}
+
+
+
 	protected function getArguments()
 	{
 		return [
