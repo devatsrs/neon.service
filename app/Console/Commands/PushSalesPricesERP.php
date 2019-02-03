@@ -79,7 +79,7 @@ class PushSalesPricesERP extends Command {
 		$Getdata = array(
 
 		);
-		//php artisan pushsalespriceserp 1 346
+		//Staging php artisan pushsalespriceserp 1 268
 		//php artisan pushsalespriceserp 1 336
         CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
