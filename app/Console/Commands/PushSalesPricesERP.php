@@ -180,64 +180,66 @@ class PushSalesPricesERP extends Command {
 
 					$json_file = json_decode($data_langs->Translation, true);
 					$partnerId = empty($PartnerResult->PartnerID) ? '0': $PartnerResult->PartnerID;
-					foreach($ProductPackages as $ProductPackage) {
-						$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
+					if (!empty($ProductPackage["RateTableId"])) {
+						foreach ($ProductPackages as $ProductPackage) {
+							$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
  												  rate.RateID,timeZ.Title, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
  												     from tblRateTablePKGRate pkgRate, tblRate rate,tblTimezones timeZ
  												        where pkgRate.RateID = rate.RateID and timeZ.TimezonesID = pkgRate.TimezonesID
- 												         	 and (rate.Code = '" .$ProductPackage["Name"] ."') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] .")
+ 												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
  												         	  and (pkgRate.ApprovedStatus = 1) and pkgRate.EffectiveDate <= NOW()";
 
-						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
-						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
+							Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
+							$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
 
-						foreach ($RateTablePKGRates as $RateTablePKGRate) {
-							Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
+							foreach ($RateTablePKGRates as $RateTablePKGRate) {
+								Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
 
-							if (!empty($RateTablePKGRate->OneOffCost)) {
-								$data["priceItemId"] = $RateTablePKGRate->RateID;
-								$data["pricePlanId"] = $pricePlanId;
-								$data["costGroupName"] = "INSTALLATION COSTS – ONE-OFF";
+								if (!empty($RateTablePKGRate->OneOffCost)) {
+									$data["priceItemId"] = $RateTablePKGRate->RateID;
+									$data["pricePlanId"] = $pricePlanId;
+									$data["costGroupName"] = "INSTALLATION COSTS – ONE-OFF";
 
-								$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTablePKGRate->OneOffCost;
-								$data["iso2"] = "English";
-								$data["salesPricePercentage"] = "25";
-								$data["currencySymbol"] = empty($RateTablePKGRate->OneOffCostCurrencySymbol) ? "$" : $RateTablePKGRate->OneOffCostCurrencySymbol;
-								$results[] = $data;
+									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTablePKGRate->OneOffCost;
+									$data["iso2"] = "English";
+									$data["salesPricePercentage"] = "25";
+									$data["currencySymbol"] = empty($RateTablePKGRate->OneOffCostCurrencySymbol) ? "$" : $RateTablePKGRate->OneOffCostCurrencySymbol;
+									$results[] = $data;
+								}
+								if (!empty($RateTablePKGRate->MonthlyCost)) {
+									$data["priceItemId"] = $RateTablePKGRate->RateID;;
+									$data["costGroupName"] = "SUBSCRIPTION COSTS- MONTHLY COST";
+									$data["pricePlanId"] = $pricePlanId;
+									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTablePKGRate->MonthlyCost;
+									$data["iso2"] = "English";
+									$data["salesPricePercentage"] = "25";
+									$data["currencySymbol"] = empty($RateTablePKGRate->MonthlyCostCurrencySymbol) ? "$" : $RateTablePKGRate->MonthlyCostCurrencySymbol;
+									$results[] = $data;
+								}
+
+								if (!empty($RateTablePKGRate->PackageCostPerMinute)) {
+									$data["priceItemId"] = $RateTablePKGRate->RateID;;
+									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+									$data["pricePlanId"] = $pricePlanId;
+									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->PackageCostPerMinute;
+									$data["iso2"] = "English";
+									$data["salesPricePercentage"] = "25";
+									$data["currencySymbol"] = empty($RateTablePKGRate->PackageCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->PackageCostPerMinuteCurrencySymbol;
+									$results[] = $data;
+								}
+								if (!empty($RateTablePKGRate->RecordingCostPerMinute)) {
+									$data["priceItemId"] = $RateTablePKGRate->RateID;;
+									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+									$data["pricePlanId"] = $pricePlanId;
+									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->RecordingCostPerMinute;
+									$data["iso2"] = "English";
+									$data["salesPricePercentage"] = "25";
+									$data["currencySymbol"] = empty($RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol;
+									$results[] = $data;
+								}
+
 							}
-							if (!empty($RateTablePKGRate->MonthlyCost)) {
-								$data["priceItemId"] = $RateTablePKGRate->RateID;;
-								$data["costGroupName"] = "SUBSCRIPTION COSTS- MONTHLY COST";
-								$data["pricePlanId"] = $pricePlanId;
-								$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTablePKGRate->MonthlyCost;
-								$data["iso2"] = "English";
-								$data["salesPricePercentage"] = "25";
-								$data["currencySymbol"] = empty($RateTablePKGRate->MonthlyCostCurrencySymbol) ? "$" : $RateTablePKGRate->MonthlyCostCurrencySymbol;
-								$results[] = $data;
-							}
-
-							if (!empty($RateTablePKGRate->PackageCostPerMinute)) {
-								$data["priceItemId"] = $RateTablePKGRate->RateID;;
-								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-								$data["pricePlanId"] = $pricePlanId;
-								$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->PackageCostPerMinute;
-								$data["iso2"] = "English";
-								$data["salesPricePercentage"] = "25";
-								$data["currencySymbol"] = empty($RateTablePKGRate->PackageCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->PackageCostPerMinuteCurrencySymbol;
-								$results[] = $data;
-							}
-							if (!empty($RateTablePKGRate->RecordingCostPerMinute)) {
-								$data["priceItemId"] = $RateTablePKGRate->RateID;;
-								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-								$data["pricePlanId"] = $pricePlanId;
-								$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->RecordingCostPerMinute;
-								$data["iso2"] = "English";
-								$data["salesPricePercentage"] = "25";
-								$data["currencySymbol"] = empty($RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol;
-								$results[] = $data;
-							}
-
 						}
 					}
 					Log::info('priceItemList package size.' . count($results));
