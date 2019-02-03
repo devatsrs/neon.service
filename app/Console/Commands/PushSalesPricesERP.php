@@ -182,7 +182,9 @@ class PushSalesPricesERP extends Command {
 					$partnerId = empty($PartnerResult->PartnerID) ? '0': $PartnerResult->PartnerID;
 
 						foreach ($ProductPackages as $ProductPackage) {
-							if (!empty($ProductPackage["RateTableId"])) {
+							echo $ProductPackage["RateTableId"];
+							echo strlen($ProductPackage["RateTableId"]);
+							if (isset($ProductPackage["RateTableId"]) && !empty($ProductPackage["RateTableId"])) {
 							$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
  												  rate.RateID,timeZ.Title, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
  												     from tblRateTablePKGRate pkgRate, tblRate rate,tblTimezones timeZ
