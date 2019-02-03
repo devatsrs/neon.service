@@ -180,8 +180,9 @@ class PushSalesPricesERP extends Command {
 
 					$json_file = json_decode($data_langs->Translation, true);
 					$partnerId = empty($PartnerResult->PartnerID) ? '0': $PartnerResult->PartnerID;
-					if (!empty($ProductPackage["RateTableId"])) {
+
 						foreach ($ProductPackages as $ProductPackage) {
+							if (!empty($ProductPackage["RateTableId"])) {
 							$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
  												  rate.RateID,timeZ.Title, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
  												     from tblRateTablePKGRate pkgRate, tblRate rate,tblTimezones timeZ
