@@ -399,7 +399,13 @@ class PushSalesPricesERP extends Command {
 			//Code for PushSalesPriceService
 
 
-
+			CronJob::CronJobSuccessEmailSend($CronJobID);
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
+			$joblogdata['Message'] = 'PushSalesServiceERP Successfully Done';
+			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
             echo "DONE With PushSalesPricesERP";
@@ -414,6 +420,9 @@ class PushSalesPricesERP extends Command {
             
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
+			$joblogdata['CronJobID'] = $CronJobID;
+			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
             CronJobLog::insert($joblogdata);
