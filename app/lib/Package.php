@@ -2,6 +2,7 @@
 namespace App\Lib;
 class Package extends \Eloquent
 {
+    //Package
     protected $guarded = array("PackageId");
 
     protected $table = 'tblPackage';
