@@ -73,7 +73,6 @@ class NeonProductImport extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        echo storage_path();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -105,10 +104,10 @@ class NeonProductImport extends Command {
 
                     foreach($ProductResponses as $ProductResponse) {
                         Log::info('ProductResponse.' . $ProductResponse->isPackage);
+                        var_dump($ProductResponse->isPackage);
                         if($ProductResponse->isPackage == false) {
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
-
                             $productdata = array();
                             $productdata['ServiceId'] = $ServiceId;
                             $productdata['Name'] = $ProductResponse->name;
@@ -130,12 +129,13 @@ class NeonProductImport extends Command {
                             }else {
                                 try {
                                     $ServiceTemplate = ServiceTemplate::create($productdata);
+                                    var_dump('test');
                                 $dyndata = array();
                                 $dyndata['CompanyID'] = $CompanyID;
                                 $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
                                 $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
                                 $dyndata['FieldValue'] = $ProductResponse->productId;
-
+                                    Log::info('Dynamic Field Data.' . $dyndata);
                                 DynamicFieldsValue::insert($dyndata);
                                 }catch(Exception $ex){
                                     Log::error($ex);
