@@ -388,6 +388,7 @@ class PushSalesPricesERP extends Command {
 					}
 
 					if (count($results) > 0) {
+						$Postdata = array();
 						$PricingJSONInput['pricePlanId'] = ++$pricePlanId;
 						$PricingJSONInput['partnerId'] = $partnerId;
 						$PricingJSONInput['productId'] = $productId;
