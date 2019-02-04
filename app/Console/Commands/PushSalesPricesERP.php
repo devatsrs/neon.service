@@ -91,6 +91,10 @@ class PushSalesPricesERP extends Command {
         
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
+		$PriceAPIURL = $cronsetting['PriceAPIURL'];
+		$PriceAPIMethod = $cronsetting['PriceAPIMethod'];
+	//	echo $PriceAPIURL;
+	//	echo $PriceAPIMethod;
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
 		$DynamicFieldsValues = '';
@@ -385,7 +389,7 @@ class PushSalesPricesERP extends Command {
 								$results = array();
 								$data = array();
 
-								$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, "api/Pricing", "http://api-neon.speakintelligence.com/");
+								$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
 								$PricingJSONInput = [];
 
 						//	}
