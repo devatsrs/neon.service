@@ -129,15 +129,15 @@ class NeonProductImport extends Command {
                             }else {
                                 try {
                                     $ServiceTemplate = ServiceTemplate::create($productdata);
-                                    var_dump('test');
                                 $dyndata = array();
                                 $dyndata['CompanyID'] = $CompanyID;
                                 $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
                                 $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
                                 $dyndata['FieldValue'] = $ProductResponse->productId;
-                                    Log::info('Dynamic Field Data.' . $dyndata);
+                                    Log::info('Dynamic Field Data.' . print_r($dyndata));
                                 DynamicFieldsValue::insert($dyndata);
                                 }catch(Exception $ex){
+                                    Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
                                     Log::error($ex);
                                 }
                             }
@@ -161,6 +161,7 @@ class NeonProductImport extends Command {
 
                                     DynamicFieldsValue::insert($dyndata);
                                     } catch (Exception $ex) {
+                                    Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
 
                                     Log::error($ex);
                                     }
