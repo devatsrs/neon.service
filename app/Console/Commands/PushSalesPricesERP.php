@@ -210,7 +210,8 @@ class PushSalesPricesERP extends Command {
 
 									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTablePKGRate->OneOffCost;
 									$data["iso2"] = "English";
-									$data["salesPricePercentage"] = "25";
+									$data["salesPrice"] = $RateTablePKGRate->OneOffCost;
+									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->OneOffCostCurrencySymbol) ? "$" : $RateTablePKGRate->OneOffCostCurrencySymbol;
 									$results[] = $data;
 								}
@@ -220,7 +221,8 @@ class PushSalesPricesERP extends Command {
 									$data["pricePlanId"] = $pricePlanId;
 									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTablePKGRate->MonthlyCost;
 									$data["iso2"] = "English";
-									$data["salesPricePercentage"] = "25";
+									$data["salesPrice"] = $RateTablePKGRate->MonthlyCost;
+									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->MonthlyCostCurrencySymbol) ? "$" : $RateTablePKGRate->MonthlyCostCurrencySymbol;
 									$results[] = $data;
 								}
@@ -231,7 +233,8 @@ class PushSalesPricesERP extends Command {
 									$data["pricePlanId"] = $pricePlanId;
 									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->PackageCostPerMinute;
 									$data["iso2"] = "English";
-									$data["salesPricePercentage"] = "25";
+									$data["salesPrice"] = $RateTablePKGRate->PackageCostPerMinute;
+									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->PackageCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->PackageCostPerMinuteCurrencySymbol;
 									$results[] = $data;
 								}
@@ -241,7 +244,8 @@ class PushSalesPricesERP extends Command {
 									$data["pricePlanId"] = $pricePlanId;
 									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->RecordingCostPerMinute;
 									$data["iso2"] = "English";
-									$data["salesPricePercentage"] = "25";
+									$data["salesPrice"] = $RateTablePKGRate->RecordingCostPerMinute;
+									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol;
 									$results[] = $data;
 								}
@@ -299,7 +303,8 @@ class PushSalesPricesERP extends Command {
 
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTableDIDRate->OneOffCost;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPrice"] = $RateTableDIDRate->OneOffCost;
+										$data["salesPricePercentage"] = "";
 										$data["currencySymbol"] = empty($RateTableDIDRate->OneOffCostCurrencySymbol) ? "$" : $RateTableDIDRate->OneOffCostCurrencySymbol;
 										$results[] = $data;
 									}
@@ -309,7 +314,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_MINUTE'] . '=' . $RateTableDIDRate->CostPerMinute;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPricePercentage"] = "";
+										$data["salesPrice"] = $RateTableDIDRate->CostPerMinute;
 										$data["currencySymbol"] = empty($RateTableDIDRate->CostPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->CostPerMinuteCurrencySymbol;
 										$results[] = $data;
 									}
@@ -320,7 +326,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL'] . '=' . $RateTableDIDRate->OutpaymentPerCall;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPricePercentage"] = "";
+										$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
 										$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerCallCurrency) ? "$" : $RateTableDIDRate->OutpaymentPerCallCurrency;
 										$results[] = $data;
 									}
@@ -330,7 +337,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_MINUTE'] . '=' . $RateTableDIDRate->OutpaymentPerMinute;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerMinute;
+										$data["salesPricePercentage"] = "";
 										$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol;
 										$results[] = $data;
 									}
@@ -341,7 +349,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTableDIDRate->MonthlyCost;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPrice"] = $RateTableDIDRate->MonthlyCost;
+										$data["salesPricePercentage"] = "";
 										$data["currencySymbol"] = empty($RateTableDIDRate->MonthlyCostCurrencySymbol) ? "$" : $RateTableDIDRate->MonthlyCostCurrencySymbol;
 										$results[] = $data;
 									}
@@ -352,7 +361,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER'] . '=' . $RateTableDIDRate->RegistrationCostPerNumber;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPrice"] = $RateTableDIDRate->RegistrationCostPerNumber;
+										$data["salesPricePercentage"] = "";
 										$data["currencySymbol"] = empty($RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol) ? "$" : $RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol;
 										$results[] = $data;
 									}
@@ -362,7 +372,8 @@ class PushSalesPricesERP extends Command {
 										$data["pricePlanId"] = $pricePlanId;
 										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT'] . '=' . $RateTableDIDRate->CollectionCostAmount;
 										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "25";
+										$data["salesPrice"] = $RateTableDIDRate->CollectionCostAmount;
+										$data["salesPricePercentage"] = "";
 										$data["currencySymbol"] = empty($RateTableDIDRate->CollectionCostAmountCurrencySymbol) ? "$" : $RateTableDIDRate->CollectionCostAmountCurrencySymbol;
 										$results[] = $data;
 									}
