@@ -379,25 +379,29 @@ class PushSalesPricesERP extends Command {
 //								'validFrom'=>$validFrom,
 //								'priceItemList'                => $results
 								);
-								$PricingJSONInput['pricePlanId'] = ++$pricePlanId;
-								$PricingJSONInput['partnerId'] = $partnerId;
-								$PricingJSONInput['productId'] = $productId;
-								$PricingJSONInput['pricePlanTypeId'] = $pricePlanTypeId;
-								$PricingJSONInput['validFrom'] = $validFrom;
-								$PricingJSONInput['priceItemList'] = $results;
-								//Log::info('priceItemList json encode.' . print_r($Postdata, true));
-								$PricingJSONInput = json_encode($PricingJSONInput, true);
-								Log::info('priceItemList json encode.' . $PricingJSONInput);
-								$results = array();
-								$data = array();
 
-								$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
-								$PricingJSONInput = [];
 
 						//	}
 						//}
 						//$Query = $Query .'(DynamicFieldsID = ' . $DynamicFieldsID . " and FieldValue='" . $ProductResponse->productId . "')";
 						//$Query = $Query . " OR ";
+					}
+
+					if (count($results) > 0) {
+						$PricingJSONInput['pricePlanId'] = ++$pricePlanId;
+						$PricingJSONInput['partnerId'] = $partnerId;
+						$PricingJSONInput['productId'] = $productId;
+						$PricingJSONInput['pricePlanTypeId'] = $pricePlanTypeId;
+						$PricingJSONInput['validFrom'] = $validFrom;
+						$PricingJSONInput['priceItemList'] = $results;
+						//Log::info('priceItemList json encode.' . print_r($Postdata, true));
+						$PricingJSONInput = json_encode($PricingJSONInput, true);
+						Log::info('priceItemList json encode.' . $PricingJSONInput);
+						$results = array();
+						$data = array();
+
+						$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
+						$PricingJSONInput = [];
 					}
 				}
 			//}
