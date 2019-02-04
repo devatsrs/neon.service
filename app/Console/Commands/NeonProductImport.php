@@ -105,13 +105,11 @@ class NeonProductImport extends Command {
 
                     foreach($ProductResponses as $ProductResponse) {
                         Log::info('ProductResponse.' . $ProductResponse->isPackage);
-                        var_dump($ProductResponse->isPackage);
-                        if($ProductResponse->isPackage == true) {
+                        if($ProductResponse->isPackage == false) {
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
 
                             $productdata = array();
-                           // $productdata['ServiceTemplateId'] = $ProductResponse->productId;
                             $productdata['ServiceId'] = $ServiceId;
                             $productdata['Name'] = $ProductResponse->name;
 
@@ -128,73 +126,46 @@ class NeonProductImport extends Command {
                             $productdata['city_tariff'] = $city_tariff;
 
                             if (!empty($DynamicFieldsParentID)) {
-                               // $productdata['ServiceTemplateId'] = $DynamicFieldsParentID;
                                 ServiceTemplate::where(["ServiceTemplateId" => $DynamicFieldsParentID])->update($productdata);
-                                //$dyndata = array();
-                              ////  $dyndata['CompanyID'] = $CompanyID;
-                              //  $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
-                              //  DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => DynamicFieldsID])->update($dyndata);
-
                             }else {
-
-                                $ServiceTemplate = ServiceTemplate::create($productdata);
+                                try {
+                                    $ServiceTemplate = ServiceTemplate::create($productdata);
                                 $dyndata = array();
                                 $dyndata['CompanyID'] = $CompanyID;
                                 $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
                                 $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
                                 $dyndata['FieldValue'] = $ProductResponse->productId;
-                                DynamicFieldsValue::insert($dyndata);
-                            }
 
-/*
-                            $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId' => $ProductResponse->productId])->pluck('ServiceTemplateId');
-                            $ServiceTemplateName = ServiceTemplate::where(['Name' => $ProductResponse->name])->pluck('Name');
-                            if (!empty($ServiceTemplateId)) {
-                                ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
-                            } else if (!empty($ServiceTemplateName)) {
-                                ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
-                            } else {
-                                ServiceTemplate::insert($productdata);
-                                //--Custom filed value
-                            }
-                            $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'ParentID' => $ProductResponse->productId, 'DynamicFieldsID' => $ProductID])->pluck('DynamicFieldsID');
-                            //SI product daynamin feild
-                            $dyndata = array();
-                            $dyndata['CompanyID'] = $CompanyID;
-                            $dyndata['ParentID'] = $ProductResponse->productId;
-                            $dyndata['DynamicFieldsID'] = $ProductID;
-                            $dyndata['FieldValue'] = $ProductResponse->productId;
-                            if (!empty($DynamicFieldsID)) {
-                                DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'ParentID' => $ProductResponse->productId, 'DynamicFieldsID' => $ProductID])->update($dyndata);
-                            } else {
                                 DynamicFieldsValue::insert($dyndata);
-                            }*/
+                                }catch(Exception $ex){
+                                    Log::error($ex);
+                                }
+                            }
                         }else{
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
-                            //dd($DynamicFieldsID);
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
-
                             $packagedata = array();
                             $packagedata['Name'] = $ProductResponse->name;
-
                             $packagedata['CurrencyId'] = $CurrencyId;
                             $packagedata['CompanyID'] = $CompanyID;
-                            $city_tariff = '';
-
                             if (!empty($DynamicFieldsParentID)) {
                                 Package::where(["PackageId" => $DynamicFieldsParentID])->update($packagedata);
                             }else {
+                                try {
+                                    $Package = Package::create($packagedata);
+                                    $dyndata = array();
+                                    $dyndata['CompanyID'] = $CompanyID;
+                                    $dyndata['ParentID'] = $Package['PackageId'];
+                                    $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+                                    $dyndata['FieldValue'] = $ProductResponse->productId;
 
-                                $Package = Package::create($packagedata);
+                                    DynamicFieldsValue::insert($dyndata);
+                                    } catch (Exception $ex) {
 
-                                $dyndata = array();
-                                $dyndata['CompanyID'] = $CompanyID;
-                                $dyndata['ParentID'] = $Package['PackageId'];
-                                $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
-                                $dyndata['FieldValue'] = $ProductResponse->productId;
-                                DynamicFieldsValue::insert($dyndata);
+                                    Log::error($ex);
+                                    }
+                                }
                             }
-                        }
                     }
                 }
             }else{
