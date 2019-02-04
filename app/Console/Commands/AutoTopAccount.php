@@ -30,7 +30,7 @@ class AutoTopAccount extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'AutoTopAccount';
+	protected $name = 'autotopaccount';
 
 	/**
 	 * The console command description.
@@ -96,7 +96,7 @@ class AutoTopAccount extends Command {
 					if ($AccountBalance >= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
 						$DepositAccount = AccountPaymentAutomation::calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration);
 						if (!empty($DepositAccount)) {
-							if ($DepositAccount['status'] == "success") {
+							if ($DepositAccount[0] == "success") {
 								$successRecord = array();
 								$successRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 								$successRecord["AccountName"] = $AutoPaymentAccount->AccountName;
@@ -104,12 +104,12 @@ class AutoTopAccount extends Command {
 								$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
 								$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
 								Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
-							} else if ($DepositAccount['status'] == "failed") {
+							} else if ($DepositAccount[0] == "failed") {
 								$failedRecord = array();
 								$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 								$failedRecord["AccountName"] = $AutoPaymentAccount->AccountName;
 								$failedRecord["Number"] = $AutoPaymentAccount->Number;
-								$failedRecord["Response"] = $DepositAccount['response'];
+								$failedRecord["Response"] = $DepositAccount[1];
 								$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
 								Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
 							}
@@ -117,6 +117,7 @@ class AutoTopAccount extends Command {
 					}
 
 				}
+
 
 				if (count($AutoPaymentAccountList) > 0) {
 					if (count($FailureDepositFund) > 0 || count($SuccessDepositAccount)) {
