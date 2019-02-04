@@ -3,6 +3,7 @@
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
 use App\Lib\ServiceTemplate;
+use App\Lib\Package;
 use App\Lib\DynamicFieldsValue;
 use App\Lib\DynamicFields;
 use App\Lib\Summary;
@@ -72,18 +73,20 @@ class NeonProductImport extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        
-        Log::useFiles(storage_path() . '/logs/neonproductimport-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        echo storage_path();
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
+
+        Log::useFiles(storage_path() . '/logs/neonproductimport-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
             //Start Transaction
            // DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
             $ServiceId = $cronsetting['ServiceId'];
+            $PackageId = $cronsetting['PackageID'];
             
             //ProductID this field name will be unique 
             // we will not give any 
@@ -101,45 +104,68 @@ class NeonProductImport extends Command {
                     $ProductResponses = json_decode($APIResponse["response"]);
 
                     foreach($ProductResponses as $ProductResponse) {
+                        Log::info('ProductResponse.' . $ProductResponse->isPackage);
+                        if($ProductResponse->isPackage == false) {
+                            $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
+                            $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
 
-                        $productdata = array();
-                        $productdata['ServiceTemplateId'] = $ProductResponse->productId;
-                        $productdata['ServiceId']       = $ServiceId;
-                        $productdata['Name']            = $ProductResponse->name;
-                        
-                        $productdata['country']         = $ProductResponse->countryName;
-                        $productdata['prefixName']      = $ProductResponse->prefixName;
-                        $productdata['CurrencyId']      = $CurrencyId;
-                        $city_tariff='';
-                        if (!empty($ProductResponse->cityName)) {
-                            $city_tariff=$ProductResponse->cityName;
-                        }else{
-                            $city_tariff=$ProductResponse->tariff;
-                        }
-                        $productdata['city_tariff'] = $city_tariff;
+                            $productdata = array();
+                            $productdata['ServiceId'] = $ServiceId;
+                            $productdata['Name'] = $ProductResponse->name;
 
-                        $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
-                        $ServiceTemplateName = ServiceTemplate::where(['Name'=>$ProductResponse->name])->pluck('Name');
-                        if (!empty($ServiceTemplateId)) {
-                            ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
-                        }else if (!empty($ServiceTemplateName)) {
-                            ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
+                            $productdata['country'] = $ProductResponse->countryName;
+                            $productdata['prefixName'] = $ProductResponse->prefixName;
+                            $productdata['CurrencyId'] = $CurrencyId;
+                            $productdata['CompanyID'] = $CompanyID;
+                            $city_tariff = '';
+                            if (!empty($ProductResponse->cityName)) {
+                                $city_tariff = $ProductResponse->cityName;
+                            } else {
+                                $city_tariff = $ProductResponse->tariff;
+                            }
+                            $productdata['city_tariff'] = $city_tariff;
+
+                            if (!empty($DynamicFieldsParentID)) {
+                                ServiceTemplate::where(["ServiceTemplateId" => $DynamicFieldsParentID])->update($productdata);
+                            }else {
+                                try {
+                                    $ServiceTemplate = ServiceTemplate::create($productdata);
+                                $dyndata = array();
+                                $dyndata['CompanyID'] = $CompanyID;
+                                $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
+                                $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+                                $dyndata['FieldValue'] = $ProductResponse->productId;
+
+                                DynamicFieldsValue::insert($dyndata);
+                                }catch(Exception $ex){
+                                    Log::error($ex);
+                                }
+                            }
                         }else{
-                            ServiceTemplate::insert($productdata);
-                            //--Custom filed value
-                        }
-                        $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->pluck('DynamicFieldsID');
-                        //SI product daynamin feild
-                        $dyndata = array();
-                        $dyndata['CompanyID']           = $CompanyID;
-                        $dyndata['ParentID']            = $ProductResponse->productId;
-                        $dyndata['DynamicFieldsID']     = $ProductID;
-                        $dyndata['FieldValue']          = $ProductResponse->productId;
-                        if (!empty($DynamicFieldsID)) {
-                            DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->update($dyndata);
-                        }else{
-                            DynamicFieldsValue::insert($dyndata);
-                        }
+                            $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+                            $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
+                            $packagedata = array();
+                            $packagedata['Name'] = $ProductResponse->name;
+                            $packagedata['CurrencyId'] = $CurrencyId;
+                            $packagedata['CompanyID'] = $CompanyID;
+                            if (!empty($DynamicFieldsParentID)) {
+                                Package::where(["PackageId" => $DynamicFieldsParentID])->update($packagedata);
+                            }else {
+                                try {
+                                    $Package = Package::create($packagedata);
+                                    $dyndata = array();
+                                    $dyndata['CompanyID'] = $CompanyID;
+                                    $dyndata['ParentID'] = $Package['PackageId'];
+                                    $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+                                    $dyndata['FieldValue'] = $ProductResponse->productId;
+
+                                    DynamicFieldsValue::insert($dyndata);
+                                    } catch (Exception $ex) {
+
+                                    Log::error($ex);
+                                    }
+                                }
+                            }
                     }
                 }
             }else{
