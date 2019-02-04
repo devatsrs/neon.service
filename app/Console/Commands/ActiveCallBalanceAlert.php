@@ -132,7 +132,7 @@ class ActiveCallBalanceAlert extends Command {
                     }
                 }else{
                     $joblogdata['Message'] = "No Records Found.";
-                    $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 }
 
 
