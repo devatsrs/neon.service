@@ -284,6 +284,22 @@ class EmailsTemplates{
 			return $array;
 	}
 
+	static function setAccountServiceFields($array,$AccountID,$UserID=0){
+		$AccountServiceData 		= 	 AccountService::find($AccountID);
+		$array['ServiceTitle']		=	 $AccountServiceData['ServiceTitle'];
+
+		if(!empty($UserID)){
+			$UserData = user::find($UserID);
+			if(isset($UserData->EmailFooter) && trim($UserData->EmailFooter) != '')
+			{
+				$array['Signature']= $UserData->EmailFooter;
+			}
+		}else{
+			$array['Signature']= '';
+		}
+		return $array;
+	}
+
 	static function SendAutoPayment($InvoiceID,$type="body",$CompanyID,$singleemail,$staticdata=array(),$data = array())
 	{
 		$message = "";
@@ -375,7 +391,7 @@ class EmailsTemplates{
 		} else {
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
-		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
+		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 
