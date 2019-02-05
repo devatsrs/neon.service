@@ -107,6 +107,9 @@ class PushSalesPricesERP extends Command {
 		$productId = '1';
 		$priceItemId = 1;
 		$pricePlanTypeId = '3';
+		$DiDCategorySaveID = -1;
+		$DiDCategorySaveDescription = '';
+		$SetDiDCategory = 0;
 		$validFrom = date('Y-m-d');
 		$PricingJSONInput = [];
 		//$apiPricing = array;
@@ -114,42 +117,42 @@ class PushSalesPricesERP extends Command {
         //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		Log::info('PriceAPIURL .' .$PriceAPIURL  . ' ' . 'PriceAPIMethod' . ' ' .$PriceAPIMethod);
-		try{
+		try {
 
-/*
-			$results = array();
-			$data = array();
-			$Getdata = array(
+			/*
+                        $results = array();
+                        $data = array();
+                        $Getdata = array(
 
-			);
-			$APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
-			if (isset($APIResponse["error"])) {
-				Log::info('PushSalesPricesERP Error in  api/Products service.' . print_r($APIResponse["error"]));
-			} else {
-				$ProductResponses = json_decode($APIResponse["response"]);
-				Log::info('PushSalesPricesERP .' . count($ProductResponses));*/
-				$fieldName = 'ProductProductID';
-				$AccountFieldName = 'CustomerID';
-				$PackageFieldName = 'PackageID';
-				$DynamicFieldsID = '';
-				$AccountDynamicFieldsID = '';
-				$PackageDynamicFieldsID = '';
+                        );
+                        $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
+                        if (isset($APIResponse["error"])) {
+                            Log::info('PushSalesPricesERP Error in  api/Products service.' . print_r($APIResponse["error"]));
+                        } else {
+                            $ProductResponses = json_decode($APIResponse["response"]);
+                            Log::info('PushSalesPricesERP .' . count($ProductResponses));*/
+			$fieldName = 'ProductProductID';
+			$AccountFieldName = 'CustomerID';
+			$PackageFieldName = 'PackageID';
+			$DynamicFieldsID = '';
+			$AccountDynamicFieldsID = '';
+			$PackageDynamicFieldsID = '';
 
-				$Query = "select ParentID from tblDynamicFieldsValue where ";
-				$DynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'serviceTemplate','Status'=>1,'FieldSlug'=>$fieldName])->pluck('DynamicFieldsID');
-				if(empty($DynamicFieldsID)){
-					Log::info('PushSalesPricesERP:DynamicFieldsID .' .$fieldName . ' Not Found');
-					return;
-				}
-				$AccountDynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'account','Status'=>1,'FieldSlug'=>$AccountFieldName])->pluck('DynamicFieldsID');
-				if(empty($AccountDynamicFieldsID)){
-					Log::info('PushSalesPricesERP:DynamicFieldsID .' .$AccountFieldName . ' Not Found');
-					return;
-				}
+			$Query = "select ParentID from tblDynamicFieldsValue where ";
+			$DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'serviceTemplate', 'Status' => 1, 'FieldSlug' => $fieldName])->pluck('DynamicFieldsID');
+			if (empty($DynamicFieldsID)) {
+				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $fieldName . ' Not Found');
+				return;
+			}
+			$AccountDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'account', 'Status' => 1, 'FieldSlug' => $AccountFieldName])->pluck('DynamicFieldsID');
+			if (empty($AccountDynamicFieldsID)) {
+				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $AccountFieldName . ' Not Found');
+				return;
+			}
 
-			$PackageDynamicFieldsID = DynamicFields::where(['CompanyID'=>$CompanyID,'Type'=>'package','Status'=>1,'FieldSlug'=>$PackageFieldName])->pluck('DynamicFieldsID');
-			if(empty($PackageDynamicFieldsID)){
-				Log::info('PushSalesPricesERP:DynamicFieldsID .' .$PackageFieldName . ' Not Found');
+			$PackageDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'package', 'Status' => 1, 'FieldSlug' => $PackageFieldName])->pluck('DynamicFieldsID');
+			if (empty($PackageDynamicFieldsID)) {
+				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $PackageFieldName . ' Not Found');
 				return;
 			}
 
@@ -162,88 +165,103 @@ class PushSalesPricesERP extends Command {
 			$ProductPackages = $ProductPackages->get();
 
 
-				$PartnerIDQuery = "select reseller.AccountID,(select dfieldsValues.FieldValue from tblDynamicFieldsValue dfieldsValues
+			$PartnerIDQuery = "select reseller.AccountID,(select dfieldsValues.FieldValue from tblDynamicFieldsValue dfieldsValues
  								  where dfieldsValues.DynamicFieldsID= " . $AccountDynamicFieldsID . "
  								   and dfieldsValues.ParentID = reseller.AccountID) PartnerID
   								  from tblReseller reseller";
 
 
-				Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
-				$PartnerResults = DB::select($PartnerIDQuery);
-				$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name,tblServiceTemplate.country,
-								  tblServiceTemplate.prefixName from tblServiceTemapleInboundTariff
+			Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
+			$PartnerResults = DB::select($PartnerIDQuery);
+			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name,tblServiceTemplate.country,
+								  tblServiceTemplate.prefixName,(select CategoryName from tblDIDCategory where DIDCategoryID = tblServiceTemapleInboundTariff.DIDCategoryId) as CategoryDescription from tblServiceTemapleInboundTariff
 								   join tblServiceTemplate on tblServiceTemapleInboundTariff.ServiceTemplateID = tblServiceTemplate.ServiceTemplateId
-								     where tblServiceTemplate.ServiceTemplateId in ( select dfieldsValues.ParentID from tblDynamicFieldsValue dfieldsValues  where dfieldsValues.DynamicFieldsID= " . $DynamicFieldsID .")
-								       and tblServiceTemplate.country is not null and tblServiceTemplate.prefixName is not null";
+								     where tblServiceTemplate.ServiceTemplateId in ( select dfieldsValues.ParentID from tblDynamicFieldsValue dfieldsValues  where dfieldsValues.DynamicFieldsID= " . $DynamicFieldsID . ")
+								       and tblServiceTemplate.country is not null and tblServiceTemplate.prefixName is not null order by tblServiceTemapleInboundTariff.DIDCategoryId";
 
 
-				Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
-				$ProductResponses = DB::select($ProductSelectionQuery);
+			Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
+			$ProductResponses = DB::select($ProductSelectionQuery);
+			$DiDCategorySaveID = '';
+			$SetDiDCategory = 0;
 
-				foreach($PartnerResults as $PartnerResult) {
-					Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
-					$data_langs = Translation::get_language_labels();
+			foreach ($PartnerResults as $PartnerResult) {
+				Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
 
-					$json_file = json_decode($data_langs->Translation, true);
-					$partnerId = empty($PartnerResult->PartnerID) ? '0': $PartnerResult->PartnerID;
 
-						foreach ($ProductPackages as $ProductPackage) {
-							if (!empty($ProductPackage["RateTableId"]) && $ProductPackage["RateTableId"] != 0) {
-							$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
+
+
+				$partnerId = empty($PartnerResult->PartnerID) ? '' : $PartnerResult->PartnerID;
+
+				foreach ($ProductPackages as $ProductPackage) {
+					if (!empty($ProductPackage["RateTableId"]) && $ProductPackage["RateTableId"] != 0) {
+						$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
  												  rate.RateID,timeZ.Title, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
  												     from tblRateTablePKGRate pkgRate, tblRate rate,tblTimezones timeZ
  												        where pkgRate.RateID = rate.RateID and timeZ.TimezonesID = pkgRate.TimezonesID
  												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
  												         	  and (pkgRate.ApprovedStatus = 1) and pkgRate.EffectiveDate <= NOW()";
 
-							Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
-							$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
+						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
+						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
+						$data_langs = DB::table('tblLanguage')
+							->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
+							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
+							->get();
+						Log::info('Loop $data_langs.' . count($data_langs));
+						foreach ($RateTablePKGRates as $RateTablePKGRate) {
+							Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
 
-							foreach ($RateTablePKGRates as $RateTablePKGRate) {
-								Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
+						//	Log::info('Loop $data_langs.' . count($data_langs));
 
-								if (!empty($RateTablePKGRate->OneOffCost)) {
-									$data["priceItemId"] = $RateTablePKGRate->RateID;
-									$data["pricePlanId"] = $pricePlanId;
-									$data["costGroupName"] = "INSTALLATION COSTS – ONE-OFF";
+							foreach ($data_langs as $data_lang) {
+								$json_file = json_decode($data_lang->Translation, true);
+								//if ($data_lang->ISOCode == "es") {
+								//	Log::info('Loop $data_langs.' .  $data_lang->ISOCode . ' ' .$json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST']);
+								//}
+								//Log::info('Loop $data_langs.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] );
+								if (!empty($RateTablePKGRate->OneOffCost) && !empty($json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'])) {
+									$data["priceItemId"] = '';// $RateTablePKGRate->RateID;
+									$data["pricePlanId"] = '';
+									$data["costGroupName"] = "INSTALLATION COSTS";
 
-									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTablePKGRate->OneOffCost;
-									$data["iso2"] = "English";
+									$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
+									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->OneOffCost;
 									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->OneOffCostCurrencySymbol) ? "$" : $RateTablePKGRate->OneOffCostCurrencySymbol;
 									$results[] = $data;
 								}
-								if (!empty($RateTablePKGRate->MonthlyCost)) {
-									$data["priceItemId"] = $RateTablePKGRate->RateID;;
-									$data["costGroupName"] = "SUBSCRIPTION COSTS- MONTHLY COST";
-									$data["pricePlanId"] = $pricePlanId;
-									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTablePKGRate->MonthlyCost;
-									$data["iso2"] = "English";
+								if (!empty($RateTablePKGRate->MonthlyCost) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST"])) {
+									$data["priceItemId"] = '';// $RateTablePKGRate->RateID;;
+									$data["costGroupName"] = "SUBSCRIPTION COSTS";
+									$data["pricePlanId"] = '';
+									$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->MonthlyCost;
 									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->MonthlyCostCurrencySymbol) ? "$" : $RateTablePKGRate->MonthlyCostCurrencySymbol;
 									$results[] = $data;
 								}
 
-								if (!empty($RateTablePKGRate->PackageCostPerMinute)) {
-									$data["priceItemId"] = $RateTablePKGRate->RateID;;
+								if (!empty($RateTablePKGRate->PackageCostPerMinute) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE"])) {
+									$data["priceItemId"] = '';//$RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-									$data["pricePlanId"] = $pricePlanId;
-									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->PackageCostPerMinute;
-									$data["iso2"] = "English";
+									$data["pricePlanId"] = '';
+									$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_PACKAGE_COST_PER_MINUTE"]  . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->PackageCostPerMinute;
 									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->PackageCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->PackageCostPerMinuteCurrencySymbol;
 									$results[] = $data;
 								}
-								if (!empty($RateTablePKGRate->RecordingCostPerMinute)) {
-									$data["priceItemId"] = $RateTablePKGRate->RateID;;
+								if (!empty($RateTablePKGRate->RecordingCostPerMinute) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE"])) {
+									$data["priceItemId"] = '';//$RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-									$data["pricePlanId"] = $pricePlanId;
-									$data["name"] = ',' . $RateTablePKGRate->Title . ',' . $RateTablePKGRate->countryPrefix . '' . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE'] . '=' . $RateTablePKGRate->RecordingCostPerMinute;
-									$data["iso2"] = "English";
+									$data["pricePlanId"] = '';
+									$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_RECORDING_COST_PER_MINUTE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->RecordingCostPerMinute;
 									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol) ? "$" : $RateTablePKGRate->RecordingCostPerMinuteCurrencySymbol;
@@ -253,23 +271,43 @@ class PushSalesPricesERP extends Command {
 							}
 						}
 					}
-					Log::info('priceItemList package size.' . count($results));
-					foreach ($ProductResponses as $ProductResponse) {
+				}
+				Log::info('priceItemList package size.' . count($results));
+				if (count($results) > 0) {
+					$Postdata = array();
+					$PricingJSONInput['pricePlanId'] = '';
+					$PricingJSONInput['partnerId'] = $partnerId;
+					$PricingJSONInput['productId'] = $productId;
+					$PricingJSONInput['pricePlanTypeId'] = "";
+					$PricingJSONInput['validFrom'] = $validFrom;
+					$PricingJSONInput['priceItemList'] = $results;
+					//Log::info('priceItemList json encode.' . print_r($Postdata, true));
+					$PricingJSONInput = json_encode($PricingJSONInput, true);
+					Log::info('priceItemList json encode.' . $PricingJSONInput);
+					$results = array();
+					$data = array();
+
+					$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
+					$PricingJSONInput = [];
+				}
+
+				foreach ($ProductResponses as $ProductResponse) {
+					$DiDCategorySaveDescription = $ProductResponse->CategoryDescription;
 						//Log::info('PushSalesPricesERP .' . $ProductResponse->productId . ' ' . $ProductResponse->name);
-						//$DynamicProductTemplates = DynamicFieldsValue::getDynamicValuesByProductID($CompanyID, $DynamicFieldsID, $ProductResponse->productId);
+					//$DynamicProductTemplates = DynamicFieldsValue::getDynamicValuesByProductID($CompanyID, $DynamicFieldsID, $ProductResponse->productId);
 					//	foreach ($DynamicProductTemplates as $DynamicProductTemplate) {
 					//		$ServiceTemapleInboundTariff = ServiceTemapleInboundTariff::select(['ServiceTemapleInboundTariffId',
 					//			'ServiceTemplateID', 'DIDCategoryId', 'RateTableId'])->where(['ServiceTemplateID' => $DynamicProductTemplate->ParentID]);
 					//		$ServiceTemapleInboundTariffs = $ServiceTemapleInboundTariff->get();
 					//		Log::info('$ServiceTemapleInboundTariff query 123.' . $ProductResponse->productId . ' ' . $DynamicProductTemplate->ParentID . ' ' . count($ServiceTemapleInboundTariffs));
-						//	if (count($ServiceTemapleInboundTariffs) > 0) {
-						//		foreach ($ServiceTemapleInboundTariffs as $ServiceTemapleInboundTariff) {
-						//			$ServiceTemplateInboundTariffs = $ServiceTemplateInboundTariffs . $ServiceTemapleInboundTariff->RateTableId . ',';
-						//		}
-						//		$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs, 0, strlen($ServiceTemplateInboundTariffs) - 1);
+					//	if (count($ServiceTemapleInboundTariffs) > 0) {
+					//		foreach ($ServiceTemapleInboundTariffs as $ServiceTemapleInboundTariff) {
+					//			$ServiceTemplateInboundTariffs = $ServiceTemplateInboundTariffs . $ServiceTemapleInboundTariff->RateTableId . ',';
+					//		}
+					//		$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs, 0, strlen($ServiceTemplateInboundTariffs) - 1);
 
 
-								$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = '" .$ProductResponse->country ."') as countryPrefix,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
+					$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = '" . $ProductResponse->country . "') as countryPrefix,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
 								(select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol,
 								 (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,
 								   (select Symbol from tblCurrency where CurrencyId = CostPerMinuteCurrency  ) as CostPerMinuteCurrencySymbol,
@@ -283,181 +321,230 @@ class PushSalesPricesERP extends Command {
 										    timeZ.TimezonesID = didRate.TimezonesID";
 
 
-								Log::info('$ServiceTemapleInboundTariff query.' . $Query);
-								$RateTableDIDRates = DB::select($Query);
-								//$RateTableDIDRates = $RateTableDIDRates->get();
-								//Log::info('$ServiceTemapleInboundTariff query.' . $ServiceTemapleInboundTariff->toSql());
+					Log::info('$ServiceTemapleInboundTariff query.' . $Query);
+					$RateTableDIDRates = DB::select($Query);
+					//$RateTableDIDRates = $RateTableDIDRates->get();
+					//Log::info('$ServiceTemapleInboundTariff query.' . $ServiceTemapleInboundTariff->toSql());
 
 
-
-								//$system_name='CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL';
-								//Log::info('Translation name.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL']);
-
-								foreach ($RateTableDIDRates as $RateTableDIDRate) {
-									Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
-									$prefixName = $ProductResponse->prefixName;
-									if (!empty($RateTableDIDRate->OneOffCost)) {
-										$data["priceItemId"] = "1";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["costGroupName"] = "INSTALLATION COSTS – ONE-OFF";
-
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] . '=' . $RateTableDIDRate->OneOffCost;
-										$data["iso2"] = "English";
-										$data["salesPrice"] = $RateTableDIDRate->OneOffCost;
-										$data["salesPricePercentage"] = "";
-										$data["currencySymbol"] = empty($RateTableDIDRate->OneOffCostCurrencySymbol) ? "$" : $RateTableDIDRate->OneOffCostCurrencySymbol;
-										$results[] = $data;
-									}
-									if (!empty($RateTableDIDRate->CostPerMinute)) {
-										$data["priceItemId"] = "2";
-										$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_MINUTE'] . '=' . $RateTableDIDRate->CostPerMinute;
-										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "";
-										$data["salesPrice"] = $RateTableDIDRate->CostPerMinute;
-										$data["currencySymbol"] = empty($RateTableDIDRate->CostPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->CostPerMinuteCurrencySymbol;
-										$results[] = $data;
-									}
-
-									if (!empty($RateTableDIDRate->OutpaymentPerCall)) {
-										$data["priceItemId"] = "3";
-										$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL'] . '=' . $RateTableDIDRate->OutpaymentPerCall;
-										$data["iso2"] = "English";
-										$data["salesPricePercentage"] = "";
-										$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
-										$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerCallCurrency) ? "$" : $RateTableDIDRate->OutpaymentPerCallCurrency;
-										$results[] = $data;
-									}
-									if (!empty($RateTableDIDRate->OutpaymentPerMinute)) {
-										$data["priceItemId"] = "4";
-										$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_MINUTE'] . '=' . $RateTableDIDRate->OutpaymentPerMinute;
-										$data["iso2"] = "English";
-										$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerMinute;
-										$data["salesPricePercentage"] = "";
-										$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol;
-										$results[] = $data;
-									}
-
-									if (!empty($RateTableDIDRate->MonthlyCost)) {
-										$data["priceItemId"] = "5";
-										$data["costGroupName"] = "SUBSCRIPTION COSTS- MONTHLY COST";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST'] . '=' . $RateTableDIDRate->MonthlyCost;
-										$data["iso2"] = "English";
-										$data["salesPrice"] = $RateTableDIDRate->MonthlyCost;
-										$data["salesPricePercentage"] = "";
-										$data["currencySymbol"] = empty($RateTableDIDRate->MonthlyCostCurrencySymbol) ? "$" : $RateTableDIDRate->MonthlyCostCurrencySymbol;
-										$results[] = $data;
-									}
-
-									if (!empty($RateTableDIDRate->RegistrationCostPerNumber)) {
-										$data["priceItemId"] = "7";
-										$data["costGroupName"] = "INSTALLATION COSTS – ONE-OFF";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER'] . '=' . $RateTableDIDRate->RegistrationCostPerNumber;
-										$data["iso2"] = "English";
-										$data["salesPrice"] = $RateTableDIDRate->RegistrationCostPerNumber;
-										$data["salesPricePercentage"] = "";
-										$data["currencySymbol"] = empty($RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol) ? "$" : $RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol;
-										$results[] = $data;
-									}
-									if (!empty($RateTableDIDRate->CollectionCostAmount)) {
-										$data["priceItemId"] = "8";
-										$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
-										$data["pricePlanId"] = $pricePlanId;
-										$data["name"] = $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT'] . '=' . $RateTableDIDRate->CollectionCostAmount;
-										$data["iso2"] = "English";
-										$data["salesPrice"] = $RateTableDIDRate->CollectionCostAmount;
-										$data["salesPricePercentage"] = "";
-										$data["currencySymbol"] = empty($RateTableDIDRate->CollectionCostAmountCurrencySymbol) ? "$" : $RateTableDIDRate->CollectionCostAmountCurrencySymbol;
-										$results[] = $data;
-									}
-
+					//$system_name='CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL';
+					//Log::info('Translation name.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL']);
+					foreach ($RateTableDIDRates as $RateTableDIDRate) {
+						Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
+						$prefixName = $ProductResponse->prefixName;
+					 	if ($SetDiDCategory == 1){
+							//Log::info('priceItemList json encode outside compare.' . print_r($ProductResponse,true) . '' . $ProductResponse->DIDCategoryId . ':' .  $DiDCategorySaveID);
+							if ($ProductResponse->DIDCategoryId != $DiDCategorySaveID) {
+							//	Log::info('priceItemList json encode outside compare true.' . $ProductPackage->DIDCategoryId . ':' .  $DiDCategorySaveID . ":" . count($results)) ;
+								if (count($results) > 0) {
+									$Postdata = array();
+									$PricingJSONInput['pricePlanId'] = "";
+									$PricingJSONInput['partnerId'] = $partnerId;
+									$PricingJSONInput['productId'] = $productId;
+									$PricingJSONInput['pricePlanTypeId'] = Helper::getPricePlanTypeID($DiDCategorySaveDescription);
+									$PricingJSONInput['validFrom'] = $validFrom;
+									$PricingJSONInput['priceItemList'] = $results;
+									//Log::info('priceItemList json encode.' . print_r($Postdata, true));
+									$PricingJSONInput = json_encode($PricingJSONInput, true);
+									Log::info('priceItemList json encode outside.' .$ProductPackage->DIDCategoryId. ' ' . $PricingJSONInput);
+									$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
+									$PricingJSONInput = [];
+									$results = array();
+									$data = array();
 								}
 
-								Log::info('priceItemList size.' . count($results));
-								//$apiPricing["priceItemList"] = $results;
-								$Postdata = array(
+							} else {
+								$DiDCategorySaveID = $ProductPackage->DIDCategoryId;
+							}
+						}
+						foreach ($data_langs as $data_lang) {
+							$json_file = json_decode($data_lang->Translation, true);
+							if (!empty($RateTableDIDRate->OneOffCost) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST"])) {
+								$data["priceItemId"] = "";
+								$data["pricePlanId"] = "";
+								$data["costGroupName"] = "INSTALLATION COSTS";
+
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->OneOffCost;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->OneOffCostCurrencySymbol) ? "$" : $RateTableDIDRate->OneOffCostCurrencySymbol;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->CostPerMinute) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_MINUTE"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_MINUTE"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPricePercentage"] = "";
+								$data["salesPrice"] = $RateTableDIDRate->CostPerMinute;
+								$data["currencySymbol"] = empty($RateTableDIDRate->CostPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->CostPerMinuteCurrencySymbol;
+								$results[] = $data;
+							}
+
+							if (!empty($RateTableDIDRate->OutpaymentPerCall) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPricePercentage"] = "";
+								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
+								$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerCallCurrency) ? "$" : $RateTableDIDRate->OutpaymentPerCallCurrency;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->OutpaymentPerMinute) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_MINUTE"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_MINUTE"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerMinute;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol;
+								$results[] = $data;
+							}
+
+							if (!empty($RateTableDIDRate->MonthlyCost) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "SUBSCRIPTION COSTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST"] . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->MonthlyCost;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->MonthlyCostCurrencySymbol) ? "$" : $RateTableDIDRate->MonthlyCostCurrencySymbol;
+								$results[] = $data;
+							}
+
+							if (!empty($RateTableDIDRate->RegistrationCostPerNumber) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "INSTALLATION COSTS";
+								$data["pricePlanId"] = "";
+								//$RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER'] . '=' . $RateTableDIDRate->RegistrationCostPerNumber;
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->RegistrationCostPerNumber;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol) ? "$" : $RateTableDIDRate->RegistrationCostPerNumberCurrencySymbol;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->CollectionCostAmount) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								// $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT'] . '=' . $RateTableDIDRate->CollectionCostAmount;
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title);
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->CollectionCostAmount;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->CollectionCostAmountCurrencySymbol) ? "$" : $RateTableDIDRate->CollectionCostAmountCurrencySymbol;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->CollectionCostPercentage) && !empty($json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_PERCENTAGE"])) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								// $RateTableDIDRate->orginationCode . ',' . $RateTableDIDRate->Title . ',' . $RateTableDIDRate->countryPrefix . $prefixName . ',' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_PERCENTAGE'] . '=' . $RateTableDIDRate->CollectionCostPercentage;
+								$data["name"] = $json_file["CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_PERCENTAGE"]  . (!empty($RateTableDIDRate->orginationCode) ? (" From " . $RateTableDIDRate->orginationCode) : "") . ($RateTableDIDRate->Title == "Default" ? "" : $RateTableDIDRate->Title) . '=';
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = "";
+								$data["salesPricePercentage"] = $RateTableDIDRate->CollectionCostPercentage;
+								$data["currencySymbol"] = "";
+								$results[] = $data;
+							}
+
+
+						}
+					}
+
+					Log::info('priceItemList size.' . count($results));
+					//$apiPricing["priceItemList"] = $results;
+					$Postdata = array(
 //								'pricePlanId' => $pricePlanId,
 //								'partnerId' => $partnerId,
 //								'productId' => $productId,
 //								'pricePlanTypeId'=>$pricePlanTypeId,
 //								'validFrom'=>$validFrom,
 //								'priceItemList'                => $results
-								);
+					);
 
 
-						//	}
-						//}
-						//$Query = $Query .'(DynamicFieldsID = ' . $DynamicFieldsID . " and FieldValue='" . $ProductResponse->productId . "')";
-						//$Query = $Query . " OR ";
+					//	}
+					//}
+					//$Query = $Query .'(DynamicFieldsID = ' . $DynamicFieldsID . " and FieldValue='" . $ProductResponse->productId . "')";
+					//$Query = $Query . " OR ";
+					if ($SetDiDCategory == 0) {
+						//Log::info('priceItemList json encode outside compare0.' . $ProductResponse->DIDCategoryId);
+						$DiDCategorySaveID = $ProductResponse->DIDCategoryId;
+						$SetDiDCategory = 1;
 					}
 
-					if (count($results) > 0) {
-						$Postdata = array();
-						$PricingJSONInput['pricePlanId'] = ++$pricePlanId;
-						$PricingJSONInput['partnerId'] = $partnerId;
-						$PricingJSONInput['productId'] = $productId;
-						$PricingJSONInput['pricePlanTypeId'] = $pricePlanTypeId;
-						$PricingJSONInput['validFrom'] = $validFrom;
-						$PricingJSONInput['priceItemList'] = $results;
-						//Log::info('priceItemList json encode.' . print_r($Postdata, true));
-						$PricingJSONInput = json_encode($PricingJSONInput, true);
-						Log::info('priceItemList json encode.' . $PricingJSONInput);
-						$results = array();
-						$data = array();
 
-						$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
-						$PricingJSONInput = [];
-					}
 				}
-			//}
 
-			//Code for PushSalesPriceService
+				if (count($results) > 0) {
+					$Postdata = array();
+					$PricingJSONInput['pricePlanId'] = "";
+					$PricingJSONInput['partnerId'] = $partnerId;
+					$PricingJSONInput['productId'] = $productId;
+					$PricingJSONInput['pricePlanTypeId'] = Helper::getPricePlanTypeID($DiDCategorySaveDescription);
+					$PricingJSONInput['validFrom'] = $validFrom;
+					$PricingJSONInput['priceItemList'] = $results;
+					//Log::info('priceItemList json encode.' . print_r($Postdata, true));
+					$PricingJSONInput = json_encode($PricingJSONInput, true);
+					Log::info('priceItemList json encode inside.' .$DiDCategorySaveID. ' ' . $PricingJSONInput);
+					$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
+					$PricingJSONInput = [];
+					$results = array();
+					$data = array();
+				}
+			}
+				//}
 
-
-			CronJob::CronJobSuccessEmailSend($CronJobID);
-			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
-			$joblogdata['created_by'] = 'RMScheduler';
-			$joblogdata['Message'] = 'PushSalesServiceERP Successfully Done';
-			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-			CronJobLog::insert($joblogdata);
-			CronJob::deactivateCronJob($CronJob);
-			CronHelper::after_cronrun($this->name, $this);
-            echo "DONE With PushSalesPricesERP";
-
-
-			//Log::info('routingList:Get the routing list user company.' . $CompanyID);
-            Log::info('Run Cron.');
-        }catch (\Exception $e){
-            Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-Error-' . date('Y-m-d') . '.log');
-            //Log::info('LCRRoutingEngine Error.');
-            Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-Error-' . date('Y-m-d') . '.log');
-            
-            Log::error($e);
-            $this->info('Failed:' . $e->getMessage());
-			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
-			$joblogdata['created_by'] = 'RMScheduler';
-            $joblogdata['Message'] ='Error:'.$e->getMessage();
-            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-            CronJobLog::insert($joblogdata);
-            if(!empty($cronsetting['ErrorEmail'])) {
-
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
-                    Log::error("**Email Sent Status " . $result['status']);
-                    Log::error("**Email Sent message " . $result['message']);
-            }
+				//Code for PushSalesPriceService
 
 
-    }
-    }
+				CronJob::CronJobSuccessEmailSend($CronJobID);
+				$joblogdata['CronJobID'] = $CronJobID;
+				$joblogdata['created_at'] = Date('y-m-d');
+				$joblogdata['created_by'] = 'RMScheduler';
+				$joblogdata['Message'] = 'PushSalesServiceERP Successfully Done';
+				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+				CronJobLog::insert($joblogdata);
+				CronJob::deactivateCronJob($CronJob);
+				CronHelper::after_cronrun($this->name, $this);
+				echo "DONE With PushSalesPricesERP";
+
+
+				//Log::info('routingList:Get the routing list user company.' . $CompanyID);
+				Log::info('Run Cron.');
+			}catch(\Exception $e){
+				Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-Error-' . date('Y-m-d') . '.log');
+				//Log::info('LCRRoutingEngine Error.');
+				Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-Error-' . date('Y-m-d') . '.log');
+
+				Log::error($e);
+				$this->info('Failed:' . $e->getMessage());
+				$joblogdata['CronJobID'] = $CronJobID;
+				$joblogdata['created_at'] = Date('y-m-d');
+				$joblogdata['created_by'] = 'RMScheduler';
+				$joblogdata['Message'] = 'Error:' . $e->getMessage();
+				$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+				CronJobLog::insert($joblogdata);
+				if (!empty($cronsetting['ErrorEmail'])) {
+
+					$result = CronJob::CronJobErrorEmailSend($CronJobID, $e);
+					Log::error("**Email Sent Status " . $result['status']);
+					Log::error("**Email Sent message " . $result['message']);
+				}
+
+
+			}
+
+}
+
 
 
 
