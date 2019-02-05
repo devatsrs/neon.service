@@ -10,7 +10,7 @@ class Summary extends \Eloquent {
         $message = array();
 
         if($today == 1){
-            $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'CustomerLive');
+            $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
             if(!empty($CronJob)){
                 CompanyGateway::updateProcessID($CronJob,$UniqueID);
             }
@@ -96,7 +96,7 @@ class Summary extends \Eloquent {
     }
     public static function generateVendorSummary($CompanyID,$today,$CronJob=array()){
         if($today == 1){
-            $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'VendorLive');
+            $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
             $UniquePID=$UniqueID.'vendor';
             if(!empty($CronJob)){
                 CompanyGateway::updateProcessID($CronJob,$UniquePID);
