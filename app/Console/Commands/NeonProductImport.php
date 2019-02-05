@@ -73,6 +73,8 @@ class NeonProductImport extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
+        $DynamicFieldsID ='';
+        $DynamicFieldsParentID = '';
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
