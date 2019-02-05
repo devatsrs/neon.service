@@ -73,7 +73,8 @@ class NeonProductImport extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        echo storage_path();
+        $DynamicFieldsID ='';
+        $DynamicFieldsParentID = '';
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -105,10 +106,12 @@ class NeonProductImport extends Command {
 
                     foreach($ProductResponses as $ProductResponse) {
                         Log::info('ProductResponse.' . $ProductResponse->isPackage);
+                       // var_dump($ProductResponse->isPackage);
                         if($ProductResponse->isPackage == false) {
+                            Log::info('ProductResponse. Template');
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
-
+                            Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
                             $productdata = array();
                             $productdata['ServiceId'] = $ServiceId;
                             $productdata['Name'] = $ProductResponse->name;
@@ -135,13 +138,16 @@ class NeonProductImport extends Command {
                                 $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
                                 $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
                                 $dyndata['FieldValue'] = $ProductResponse->productId;
-
+                                    Log::info('Dynamic Field Data.' . print_r($dyndata));
                                 DynamicFieldsValue::insert($dyndata);
                                 }catch(Exception $ex){
+                                    Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
                                     Log::error($ex);
                                 }
                             }
                         }else{
+                            Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
+                            Log::info('ProductResponse. Package');
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
                             $packagedata = array();
@@ -161,6 +167,7 @@ class NeonProductImport extends Command {
 
                                     DynamicFieldsValue::insert($dyndata);
                                     } catch (Exception $ex) {
+                                    Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
 
                                     Log::error($ex);
                                     }

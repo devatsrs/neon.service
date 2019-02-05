@@ -29,21 +29,31 @@ class AccountPaymentAutomation extends \Eloquent
         }
         $APIresponse = NeonAPI::callAPI($postdata, "api/account/depositFund", $url);
         if (isset($APIresponse["error"])) {
-            $response = json_decode($APIresponse["error"]);
-            //Log::info(print_r($APIresponse["error"],true));
-            $DepositAccount[0] = "failed";
-            $DepositAccount[1] = $response->ErrorMessage;
-        } else {
-            $response = json_decode($APIresponse["response"]);
-            Log::info("Succcess" . print_r($response, true));
-            $responseCode = $APIresponse["HTTP_CODE"];
-            if ($responseCode == 200) {
-                $DepositAccount[0] = "success";
-                $DepositAccount[1] = $response;
-            } else {
+            try {
+                $response = json_decode($APIresponse["error"]);
+                //Log::info(print_r($APIresponse["error"],true));
                 $DepositAccount[0] = "failed";
-                $DepositAccount[1] = $response;
+                $DepositAccount[1] = $response->ErrorMessage;
+            } catch (\Exception $e){
+                $DepositAccount[0] = "failed";
+                $DepositAccount[1] = "Error While Calling API";
+            }
+        } else {
+            try {
+                $response = json_decode($APIresponse["response"]);
+                Log::info("Succcess" . print_r($response, true));
+                $responseCode = $APIresponse["HTTP_CODE"];
+                if ($responseCode == 200) {
+                    $DepositAccount[0] = "success";
+                    $DepositAccount[1] = $response;
+                } else {
+                    $DepositAccount[0] = "failed";
+                    $DepositAccount[1] = $response;
 
+                }
+            }catch (\Exception $e){
+                $DepositAccount[0] = "failed";
+                $DepositAccount[1] = "Error While Calling API";
             }
 
         }
