@@ -104,10 +104,12 @@ class NeonProductImport extends Command {
 
                     foreach($ProductResponses as $ProductResponse) {
                         Log::info('ProductResponse.' . $ProductResponse->isPackage);
-                        var_dump($ProductResponse->isPackage);
+                       // var_dump($ProductResponse->isPackage);
                         if($ProductResponse->isPackage == false) {
+                            Log::info('ProductResponse. Template');
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
+                            Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
                             $productdata = array();
                             $productdata['ServiceId'] = $ServiceId;
                             $productdata['Name'] = $ProductResponse->name;
@@ -142,6 +144,8 @@ class NeonProductImport extends Command {
                                 }
                             }
                         }else{
+                            Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
+                            Log::info('ProductResponse. Package');
                             $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
                             $packagedata = array();
