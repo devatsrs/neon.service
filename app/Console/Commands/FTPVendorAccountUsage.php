@@ -2,14 +2,14 @@
 /**
  * Created by PhpStorm.
  * User: srs2
- * Date: 25/05/2015
+ * Date: 31/01/2019
  * Time: 06:58
  */
 
 namespace App\Console\Commands;
 
 
-use App\FTPGateway;
+use App\FTPVendorGateway;
 use App\FTPSSH;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
@@ -22,6 +22,7 @@ use App\Lib\NeonExcelIO;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\TempVendorCDR;
 use App\Lib\Trunk;
 use App\Lib\UsageDetail;
 use App\Lib\UsageDownloadFiles;
@@ -34,7 +35,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Webpatser\Uuid\Uuid;
 use \Exception;
 
-class FTPAccountUsage extends Command
+class FTPVendorAccountUsage extends Command
 {
 
     /**
@@ -42,7 +43,7 @@ class FTPAccountUsage extends Command
      *
      * @var string
      */
-    protected $name = 'ftpaccountusage';
+    protected $name = 'ftpvendoraccountusage';
 
     /**
      * The console command description.
@@ -116,10 +117,11 @@ class FTPAccountUsage extends Command
         $joblogdata['Message'] = '';
 
         $delete_files = array();
-        $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        //$temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
+        $temptableName =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
-        Log::useFiles(storage_path() . '/logs/ftpaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
-        $FTP_LOCATION =  FTPGateway::getFileLocation($CompanyID);
+        Log::useFiles(storage_path() . '/logs/ftpvendoraccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $FTP_LOCATION =  FTPVendorGateway::getFileLocation($CompanyID);
         try {
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
@@ -130,7 +132,7 @@ class FTPAccountUsage extends Command
             $filenames = UsageDownloadFiles::getFTPGatewayPendingFile($CompanyGatewayID);
 
             /** remove last downloaded only when not minute or second job
-             We should not skipp file when job is running daily.
+            We should not skipp file when job is running daily.
              */
             if($cronsetting["JobTime"] == 'MINUTE'  || $cronsetting["JobTime"] == 'SECONDS'){
                 $lastelse = array_pop($filenames);
@@ -194,7 +196,7 @@ class FTPAccountUsage extends Command
                     $param = array();
                     $param['filename'] = $filename;
 
-                    Log::info("CDR Insert Start ".$filename." processID: ".$processID);
+                    Log::info("VCDR Insert Start ".$filename." processID: ".$processID);
 
                     /** update file status to progress */
                     UsageDownloadFiles::UpdateFileStausToProcess($UsageDownloadFilesID,$processID);
@@ -267,13 +269,13 @@ class FTPAccountUsage extends Command
                                 if (isset($attrselection->cli) && !empty($attrselection->cli)   && isset($temp_row[$attrselection->cli]) ) {
                                     $cdrdata['cli'] = apply_translation_rule($CLITranslationRule, $temp_row[$attrselection->cli]);
                                 }
-                                if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0   && isset($temp_row[$attrselection->cost]) ) {
-                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
-                                } else if ($RateCDR == 1 && !empty($SpecifyRate) && $RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
-                                    $cdrdata['cost'] = $temp_row[$attrselection->cost];
-                                } else if ($RateCDR == 1) {
-                                    $cdrdata['cost'] = 0;
-                                }
+                                /*  if (isset($attrselection->cost) && !empty($attrselection->cost) && $RateCDR == 0   && isset($temp_row[$attrselection->cost]) ) {
+                                      $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                  } else if ($RateCDR == 1 && !empty($SpecifyRate) && $RateMethod == UsageDetail::RATE_METHOD_VALUE_AGAINST_COST) {
+                                      $cdrdata['cost'] = $temp_row[$attrselection->cost];
+                                  } else if ($RateCDR == 1) {
+                                      $cdrdata['cost'] = 0;
+                                  }*/
 
 
                                 if (isset($attrselection->area_prefix) && !empty($attrselection->area_prefix)  && isset($temp_row[$attrselection->area_prefix])) {
@@ -379,7 +381,7 @@ class FTPAccountUsage extends Command
                         UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$e->getMessage());
                     }
 
-                    Log::info("CDR Insert END");
+                    Log::info("VCDR Insert END");
                     $file_count++;
                 } else {
                     break;
@@ -402,13 +404,13 @@ class FTPAccountUsage extends Command
             //ProcessCDR
 
             // $SpecifyRate is present dont ReRate CDR as we already added margin.
-            if ($RateCDR == 1 && !empty($SpecifyRate)) {
+            /*if ($RateCDR == 1 && !empty($SpecifyRate)) {
                 if(TempUsageDetail::update_cost_with_margin($RateMethod,$SpecifyRate,$temptableName,$processID)){
                     $RateCDR = 0;
                 }
-            }
+            }*/
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName);
+            $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,$RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .=  implode('<br>', $skiped_account_data);
             }
@@ -435,14 +437,9 @@ class FTPAccountUsage extends Command
                 $filedetail = '<br> No Data Found!!';
             }
 
-
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("Porta CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-
-            Log::error('ftp prc_insertCDR start'.$processID);
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            Log::error('ftp prc_insertCDR end');
+            Log::error('ftp prc_insertVendorCDR start'.$processID);
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$temptableName."' )");
+            Log::error('ftp prc_insertVendorCDR end');
 
             /** update file process to completed */
             UsageDownloadFiles::UpdateProcessToComplete( $delete_files);
