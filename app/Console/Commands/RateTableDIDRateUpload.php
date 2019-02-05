@@ -320,6 +320,21 @@ class RateTableDIDRateUpload extends Command
 
                         $error = array();
 
+                        $CostComponents = [];
+                        $CostComponents[] = 'OneOffCost';
+                        $CostComponents[] = 'MonthlyCost';
+                        $CostComponents[] = 'CostPerCall';
+                        $CostComponents[] = 'CostPerMinute';
+                        $CostComponents[] = 'SurchargePerCall';
+                        $CostComponents[] = 'SurchargePerMinute';
+                        $CostComponents[] = 'OutpaymentPerCall';
+                        $CostComponents[] = 'OutpaymentPerMinute';
+                        $CostComponents[] = 'Surcharges';
+                        $CostComponents[] = 'Chargeback';
+                        $CostComponents[] = 'CollectionCostAmount';
+                        $CostComponents[] = 'CollectionCostPercentage';
+                        $CostComponents[] = 'RegistrationCostPerNumber';
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -356,7 +371,7 @@ class RateTableDIDRateUpload extends Command
                             $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
 
                             // check if rate is mapped against timezone
-                            if (!empty($attrselection->$MonthlyCostColumn)) {
+                            //if (!empty($attrselection->$MonthlyCostColumn)) {
                                 $lineno = $lineno1;
 
                                 foreach ($results as $temp_row) {
@@ -502,16 +517,9 @@ class RateTableDIDRateUpload extends Command
                                         }
 
                                         if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
-                                            $temp_row[$attrselection->$MonthlyCostColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$MonthlyCostColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                            if (is_numeric(trim($temp_row[$attrselection->$MonthlyCostColumn]))) {
-                                                $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
-                                            } else {
-                                                $error[] = 'Monthly Cost is not numeric at line no:' . $lineno;
-                                            }
-                                        } elseif ($tempratetabledata['Change'] == 'D') {
-                                            $tempratetabledata['MonthlyCost'] = 0;
-                                        } elseif ($tempratetabledata['Change'] != 'D') {
-                                            $error[] = 'Monthly Cost is blank at line no:' . $lineno;
+                                            $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
+                                        } else {
+                                            $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$CostPerCallColumn) && isset($temp_row[$attrselection->$CostPerCallColumn])) {
@@ -578,6 +586,17 @@ class RateTableDIDRateUpload extends Command
                                             $tempratetabledata['RegistrationCostPerNumber'] = trim($temp_row[$attrselection->$RegistrationCostPerNumberColumn]);
                                         } else {
                                             $tempratetabledata['RegistrationCostPerNumber'] = NULL;
+                                        }
+
+                                        $CostComponentsError=1;
+                                        foreach ($CostComponents as $key => $component) {
+                                            if($tempdata[$component] != NULL) {
+                                                $CostComponentsError = 0;
+                                                break;
+                                            }
+                                        }
+                                        if($CostComponentsError==1) {
+                                            $error[] = 'All Cost Component is blank at line no:' . $lineno;
                                         }
 
                                         if (!empty($attrselection->$OneOffCostCurrencyColumn)) {
@@ -780,7 +799,7 @@ class RateTableDIDRateUpload extends Command
 
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
-                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['MonthlyCost']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsError==0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {
@@ -806,7 +825,7 @@ class RateTableDIDRateUpload extends Command
                                     }
                                     $lineno++;
                                 } // loop over
-                            } // if rate is mapped against timezone condition
+//                            } // if rate is mapped against timezone condition
 
                             if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                                 Log::info('Batch insert start');
