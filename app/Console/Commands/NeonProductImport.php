@@ -91,6 +91,7 @@ class NeonProductImport extends Command {
             $APIMethod = $cronsetting['ProductAPIMethod'];
             $APIUrl = $cronsetting['ProductAPIURL'];
             
+            
             //ProductID this field name will be unique 
             // we will not give any 
             $FieldsProductID = $cronsetting['ProductID'];
