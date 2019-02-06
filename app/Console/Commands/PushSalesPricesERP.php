@@ -206,14 +206,14 @@ class PushSalesPricesERP extends Command {
 						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
 						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
-						$data_langs = DB::table('tblLanguage')
-							->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
-							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
-							->get();
+
 						//Log::info('Loop $data_langs.' . count($data_langs));
 						foreach ($RateTablePKGRates as $RateTablePKGRate) {
 							Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
-
+							$data_langs = DB::table('tblLanguage')
+								->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
+								->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
+								->get();
 						//	Log::info('Loop $data_langs.' . count($data_langs));
 
 							foreach ($data_langs as $data_lang) {
@@ -333,7 +333,10 @@ class PushSalesPricesERP extends Command {
 					foreach ($RateTableDIDRates as $RateTableDIDRate) {
 						Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
 						$prefixName = $ProductResponse->prefixName;
-
+						$data_langs = DB::table('tblLanguage')
+							->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
+							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
+							->get();
 					 	if ($SetDiDCategory == 1){
 							//Log::info('priceItemList json encode outside compare.' . print_r($ProductResponse,true) . '' . $ProductResponse->DIDCategoryId . ':' .  $DiDCategorySaveID);
 							if ($ProductResponse->DIDCategoryId != $DiDCategorySaveID) {
