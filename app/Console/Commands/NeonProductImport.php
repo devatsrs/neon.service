@@ -88,8 +88,10 @@ class NeonProductImport extends Command {
             CronJob::createLog($CronJobID);
             $ServiceId = $cronsetting['ServiceId'];
             $PackageId = $cronsetting['PackageID'];
+            $APIMethod = $cronsetting['ProductAPIMethod'];
+            $APIUrl = $cronsetting['ProductAPIURL'];
             
-            //ProductID this field name will be unique 
+            //ProductID this field name will be unique
             // we will not give any 
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
@@ -98,7 +100,7 @@ class NeonProductImport extends Command {
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
                 $Getdata = array();
-                $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
+                $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod, $APIUrl);
                 if (isset($APIResponse["error"])) {
                     Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
                 } else {
@@ -113,7 +115,7 @@ class NeonProductImport extends Command {
                             $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
                             Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
                             $productdata = array();
-                            $productdata['ServiceId'] = $ServiceId;
+                            $productdata['ServiceId'] = $ServiceId[0];
                             $productdata['Name'] = $ProductResponse->name;
 
                             $productdata['country'] = $ProductResponse->countryName;

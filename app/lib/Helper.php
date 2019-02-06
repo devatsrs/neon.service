@@ -10,12 +10,12 @@ class Helper{
     public static function sendMail($view,$data,$ViewType=1){
 		$companyID = $data['CompanyID'];
 		if($ViewType){
-			$body 	=  html_entity_decode(View::make($view,compact('data'))->render()); 
+			$body 	=  html_entity_decode(View::make($view,compact('data'))->render());
 		}
 		else{
 			$body  = $view;
 		}
-        Log::info('Email Body.' . $body);
+
 	
 		if(SiteIntegration::CheckCategoryConfiguration(false,SiteIntegration::$EmailSlug,$companyID)){
 			$status = 	 SiteIntegration::SendMail($view,$data,$companyID,$body);		
@@ -505,5 +505,25 @@ class Helper{
     $data =  AccountEmailLog::insertGetId($logData);
     return $data;
 }
+
+    public static function getPricePlanTypeID($CategoryDesc) {
+
+        if ($CategoryDesc == "Activation") {
+            return "1";
+        }else if ($CategoryDesc == "Termination") {
+            return "2";
+        }else if ($CategoryDesc == "Service") {
+            return "3";
+        }else if ($CategoryDesc == "Registration costs UIFN") {
+            return "4";
+        }else if ($CategoryDesc == "OwnNumberPorting") {
+            return "5";
+        }else if ($CategoryDesc == "OwnNumberActivation") {
+            return "5";
+        }
+
+        return "";
+
+    }
 
 }
