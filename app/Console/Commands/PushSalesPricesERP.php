@@ -360,6 +360,7 @@ class PushSalesPricesERP extends Command {
 							}
 						}
 						$LabelName = '';
+						Log::info('Language Count.' . count($data_langs)) ;
 						foreach ($data_langs as $data_lang) {
 							$LabelName = $ProductResponse->country;
 							$json_file = json_decode($data_lang->Translation, true);
@@ -436,6 +437,8 @@ class PushSalesPricesERP extends Command {
 								$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol;
 								$results[] = $data;
 							}
+							Log::info('$RateTableDIDRate->MonthlyCost.' . $RateTableDIDRate->MonthlyCost.' '.
+								Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST",$LabelName)) ;
 
 							if (!empty($RateTableDIDRate->MonthlyCost) &&
 								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST",$LabelName))) {
@@ -451,6 +454,7 @@ class PushSalesPricesERP extends Command {
 								$data["salesPricePercentage"] = "";
 								$data["currencySymbol"] = empty($RateTableDIDRate->MonthlyCostCurrencySymbol) ? "$" : $RateTableDIDRate->MonthlyCostCurrencySymbol;
 								$results[] = $data;
+								Log::info('$RateTableDIDRate->MonthlyCost.' . count($results));
 							}
 
 							if (!empty($RateTableDIDRate->RegistrationCostPerNumber)
