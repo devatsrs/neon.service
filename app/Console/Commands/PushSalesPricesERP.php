@@ -110,6 +110,7 @@ class PushSalesPricesERP extends Command {
 		$DiDCategorySaveID = -1;
 		$DiDCategorySaveDescription = '';
 		$SetDiDCategory = 0;
+		$data_langs = [];
 		$validFrom = date('Y-m-d');
 		$PricingJSONInput = [];
 		//$apiPricing = array;
@@ -209,7 +210,7 @@ class PushSalesPricesERP extends Command {
 							->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
 							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
 							->get();
-						Log::info('Loop $data_langs.' . count($data_langs));
+						//Log::info('Loop $data_langs.' . count($data_langs));
 						foreach ($RateTablePKGRates as $RateTablePKGRate) {
 							Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
 
