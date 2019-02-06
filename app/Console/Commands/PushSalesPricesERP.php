@@ -338,7 +338,7 @@ class PushSalesPricesERP extends Command {
 							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
 							->get();
 					 	if ($SetDiDCategory == 1){
-							//Log::info('priceItemList json encode outside compare.' . print_r($ProductResponse,true) . '' . $ProductResponse->DIDCategoryId . ':' .  $DiDCategorySaveID);
+							Log::info('priceItemList json encode outside compare.' .  $ProductResponse->DIDCategoryId . ':' .  $DiDCategorySaveID);
 							if ($ProductResponse->DIDCategoryId != $DiDCategorySaveID) {
 							//	Log::info('priceItemList json encode outside compare true.' . $ProductPackage->DIDCategoryId . ':' .  $DiDCategorySaveID . ":" . count($results)) ;
 								if (count($results) > 0) {
@@ -527,9 +527,10 @@ class PushSalesPricesERP extends Command {
 					//$Query = $Query .'(DynamicFieldsID = ' . $DynamicFieldsID . " and FieldValue='" . $ProductResponse->productId . "')";
 					//$Query = $Query . " OR ";
 					if ($SetDiDCategory == 0) {
-						//Log::info('priceItemList json encode outside compare0.' . $ProductResponse->DIDCategoryId);
 						$DiDCategorySaveID = $ProductResponse->DIDCategoryId;
 						$SetDiDCategory = 1;
+						Log::info('priceItemList json encode outside compare0.' . $ProductResponse->DIDCategoryId . ":" . $DiDCategorySaveID);
+
 					}
 
 
