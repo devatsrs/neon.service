@@ -533,13 +533,14 @@ class Helper
         }
     }
 
-    public static function getTranslationTextForKey($json_file, $Key)
+    public static function getTranslationTextForKey($json_file, $Key,$DefaultValue)
     {
         try {
             $Key = str_replace(" ","_",$Key);
             return $json_file[strtoupper($Key)];
         } catch (\Exception $e) {
-            return "";
+            return $DefaultValue;
         }
+        return $DefaultValue;
     }
 }
