@@ -32,7 +32,7 @@ class Notification extends \Eloquent {
         Notification::InvoicePaidByCustomer=>'Invoice Paid',
         Notification::AutoAddIP=>'Auto Add IP',
         Notification::AutoTopAccount=>'Auto Top Account',
-        Notification::ContractManage=>'Contract Manage'
+        Notification::ContractManage=>'Contract'
 
     ];
 
