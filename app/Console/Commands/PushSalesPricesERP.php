@@ -369,7 +369,8 @@ class PushSalesPricesERP extends Command {
 							$LabelName = $ProductResponse->country;
 							$json_file = json_decode($data_lang->Translation, true);
 							Log::info('Language Code.' . $data_lang->ISOCode) ;
-							if (strpos($ProductResponse->ProductName, '800') != false) {
+							//Universal Code Changes
+							if (strpos($ProductResponse->ProductName, '-1') != false) {
 								$LabelName = str_replace(" ","_",$LabelName);
 							}else {
 								$LabelName = '';
