@@ -188,7 +188,8 @@ class PushSalesPricesERP extends Command {
 
 			foreach ($PartnerResults as $PartnerResult) {
 				Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
-
+				$SetDiDCategory = 0;
+				$DiDCategorySaveID = '';
 
 
 
