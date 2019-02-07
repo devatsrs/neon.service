@@ -68,7 +68,7 @@
                     <tr>
                     <td width="20%" align="center">{{$FailureDepositFundAccount["Number"]}}</td>
                     <td width="20%" align="center">{{$FailureDepositFundAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{print_r($FailureDepositFundAccount["Response"]->message)}}</td>
+                    <td width="60%" align="center">{{$FailureDepositFundAccount["Response"]}}</td>
                     </tr>
                 @endforeach
 

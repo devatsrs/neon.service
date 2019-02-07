@@ -320,6 +320,21 @@ class RateTableDIDRateUpload extends Command
 
                         $error = array();
 
+                        $CostComponents = [];
+                        $CostComponents[] = 'OneOffCost';
+                        $CostComponents[] = 'MonthlyCost';
+                        $CostComponents[] = 'CostPerCall';
+                        $CostComponents[] = 'CostPerMinute';
+                        $CostComponents[] = 'SurchargePerCall';
+                        $CostComponents[] = 'SurchargePerMinute';
+                        $CostComponents[] = 'OutpaymentPerCall';
+                        $CostComponents[] = 'OutpaymentPerMinute';
+                        $CostComponents[] = 'Surcharges';
+                        $CostComponents[] = 'Chargeback';
+                        $CostComponents[] = 'CollectionCostAmount';
+                        $CostComponents[] = 'CollectionCostPercentage';
+                        $CostComponents[] = 'RegistrationCostPerNumber';
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -356,7 +371,7 @@ class RateTableDIDRateUpload extends Command
                             $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
 
                             // check if rate is mapped against timezone
-                            if (!empty($attrselection->$MonthlyCostColumn)) {
+                            //if (!empty($attrselection->$MonthlyCostColumn)) {
                                 $lineno = $lineno1;
 
                                 foreach ($results as $temp_row) {
@@ -494,90 +509,113 @@ class RateTableDIDRateUpload extends Command
                                         } else {
                                             $tempratetabledata['CityTariff'] = '';
                                         }
-                                        
+
+                                        $CostComponentsMapped = 0;
+
                                         if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
-                                            $temp_row[$attrselection->$MonthlyCostColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$MonthlyCostColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                            if (is_numeric(trim($temp_row[$attrselection->$MonthlyCostColumn]))) {
-                                                $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
-                                            } else {
-                                                $error[] = 'Monthly Cost is not numeric at line no:' . $lineno;
-                                            }
-                                        } elseif ($tempratetabledata['Change'] == 'D') {
-                                            $tempratetabledata['MonthlyCost'] = 0;
-                                        } elseif ($tempratetabledata['Change'] != 'D') {
-                                            $error[] = 'Monthly Cost is blank at line no:' . $lineno;
+                                            $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
+                                            $CostComponentsMapped++;
+                                        } else {
+                                            $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$CostPerCallColumn) && isset($temp_row[$attrselection->$CostPerCallColumn])) {
                                             $tempratetabledata['CostPerCall'] = trim($temp_row[$attrselection->$CostPerCallColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CostPerCall'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$CostPerMinuteColumn) && isset($temp_row[$attrselection->$CostPerMinuteColumn])) {
                                             $tempratetabledata['CostPerMinute'] = trim($temp_row[$attrselection->$CostPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CostPerMinute'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$SurchargePerCallColumn) && isset($temp_row[$attrselection->$SurchargePerCallColumn])) {
                                             $tempratetabledata['SurchargePerCall'] = trim($temp_row[$attrselection->$SurchargePerCallColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['SurchargePerCall'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$SurchargePerMinuteColumn) && isset($temp_row[$attrselection->$SurchargePerMinuteColumn])) {
                                             $tempratetabledata['SurchargePerMinute'] = trim($temp_row[$attrselection->$SurchargePerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['SurchargePerMinute'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$OutpaymentPerCallColumn) && isset($temp_row[$attrselection->$OutpaymentPerCallColumn])) {
                                             $tempratetabledata['OutpaymentPerCall'] = trim($temp_row[$attrselection->$OutpaymentPerCallColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OutpaymentPerCall'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$OutpaymentPerMinuteColumn) && isset($temp_row[$attrselection->$OutpaymentPerMinuteColumn])) {
                                             $tempratetabledata['OutpaymentPerMinute'] = trim($temp_row[$attrselection->$OutpaymentPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OutpaymentPerMinute'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$SurchargesColumn) && isset($temp_row[$attrselection->$SurchargesColumn])) {
                                             $tempratetabledata['Surcharges'] = trim($temp_row[$attrselection->$SurchargesColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['Surcharges'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$ChargebackColumn) && isset($temp_row[$attrselection->$ChargebackColumn])) {
                                             $tempratetabledata['Chargeback'] = trim($temp_row[$attrselection->$ChargebackColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['Chargeback'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$CollectionCostAmountColumn) && isset($temp_row[$attrselection->$CollectionCostAmountColumn])) {
                                             $tempratetabledata['CollectionCostAmount'] = trim($temp_row[$attrselection->$CollectionCostAmountColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CollectionCostAmount'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$CollectionCostPercentageColumn) && isset($temp_row[$attrselection->$CollectionCostPercentageColumn])) {
                                             $tempratetabledata['CollectionCostPercentage'] = trim($temp_row[$attrselection->$CollectionCostPercentageColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CollectionCostPercentage'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$RegistrationCostPerNumberColumn) && isset($temp_row[$attrselection->$RegistrationCostPerNumberColumn])) {
                                             $tempratetabledata['RegistrationCostPerNumber'] = trim($temp_row[$attrselection->$RegistrationCostPerNumberColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['RegistrationCostPerNumber'] = NULL;
+                                        }
+
+                                        if($CostComponentsMapped > 0) {
+                                            $CostComponentsError = 1;
+                                            foreach ($CostComponents as $key => $component) {
+                                                if ($tempratetabledata[$component] != NULL) {
+                                                    $CostComponentsError = 0;
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            $CostComponentsError = 0;
+                                        }
+                                        if($CostComponentsError==1) {
+                                            $error[] = 'All Cost Component is blank at line no:' . $lineno;
                                         }
 
                                         if (!empty($attrselection->$OneOffCostCurrencyColumn)) {
@@ -780,7 +818,7 @@ class RateTableDIDRateUpload extends Command
 
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
-                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['MonthlyCost']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsError==0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {
@@ -806,7 +844,7 @@ class RateTableDIDRateUpload extends Command
                                     }
                                     $lineno++;
                                 } // loop over
-                            } // if rate is mapped against timezone condition
+//                            } // if rate is mapped against timezone condition
 
                             if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                                 Log::info('Batch insert start');

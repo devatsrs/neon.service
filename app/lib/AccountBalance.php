@@ -6,6 +6,7 @@ use App\PBX;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Lib\AccountBalanceLog;
 
 class AccountBalance extends Model
 {
