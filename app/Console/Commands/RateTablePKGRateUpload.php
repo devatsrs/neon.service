@@ -253,36 +253,46 @@ class RateTablePKGRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
+                                        $CostComponentsMapped = 0;
+
                                         if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
                                             $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn])) {
                                             $tempratetabledata['PackageCostPerMinute'] = trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['PackageCostPerMinute'] = NULL;
                                         }
 
                                         if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn])) {
                                             $tempratetabledata['RecordingCostPerMinute'] = trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['RecordingCostPerMinute'] = NULL;
                                         }
 
-                                        $CostComponentsError=1;
-                                        foreach ($CostComponents as $key => $component) {
-                                            if($tempratetabledata[$component] != NULL) {
-                                                $CostComponentsError = 0;
-                                                break;
+                                        if($CostComponentsMapped > 0) {
+                                            $CostComponentsError = 1;
+                                            foreach ($CostComponents as $key => $component) {
+                                                if ($tempratetabledata[$component] != NULL) {
+                                                    $CostComponentsError = 0;
+                                                    break;
+                                                }
                                             }
+                                        } else {
+                                            $CostComponentsError = 0;
                                         }
                                         if($CostComponentsError==1) {
                                             $error[] = 'All Cost Component is blank at line no:' . $lineno;
