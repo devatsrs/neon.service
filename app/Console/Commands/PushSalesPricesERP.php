@@ -120,18 +120,21 @@ class PushSalesPricesERP extends Command {
 		Log::info('PriceAPIURL .' .$PriceAPIURL  . ' ' . 'PriceAPIMethod' . ' ' .$PriceAPIMethod);
 		try {
 
-			/*
-                        $results = array();
-                        $data = array();
-                        $Getdata = array(
+			//Load Data
 
-                        );
-                        $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
-                        if (isset($APIResponse["error"])) {
-                            Log::info('PushSalesPricesERP Error in  api/Products service.' . print_r($APIResponse["error"]));
-                        } else {
-                            $ProductResponses = json_decode($APIResponse["response"]);
-                            Log::info('PushSalesPricesERP .' . count($ProductResponses));*/
+			/*$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
+
+
+			Log::info('$LoadQuery query.' . $LoadQuery);
+			$LoadQueryResults = DB::select($LoadQuery);
+			foreach($LoadQueryResults as $LoadQueryResult) {
+				$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
+			}
+
+			return;*/
+			//End Load Data
+
+
 			$fieldName = 'ProductProductID';
 			$AccountFieldName = 'CustomerID';
 			$PackageFieldName = 'PackageID';
@@ -188,7 +191,8 @@ class PushSalesPricesERP extends Command {
 
 			foreach ($PartnerResults as $PartnerResult) {
 				Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
-
+				$SetDiDCategory = 0;
+				$DiDCategorySaveID = '';
 
 
 
@@ -314,11 +318,17 @@ class PushSalesPricesERP extends Command {
 								   (select Symbol from tblCurrency where CurrencyId = CostPerMinuteCurrency  ) as CostPerMinuteCurrencySymbol,
 								    (select Symbol from tblCurrency where CurrencyId = OutpaymentPerCallCurrency  ) as OutpaymentPerCallCurrencySymbol,
 								    (select Symbol from tblCurrency where CurrencyId = RegistrationCostPerNumberCurrency  ) as RegistrationCostPerNumberCurrencySymbol,
+								    (select Symbol from tblCurrency where CurrencyId = SurchargePerCallCurrency  ) as SurchargePerCallCurrencySymbol,
+								    (select Symbol from tblCurrency where CurrencyId = SurchargePerMinuteCurrency  ) as SurchargePerMinuteCurrencySymbol,
+								    (select Symbol from tblCurrency where CurrencyId = SurchargesCurrency  ) as SurchargesCurrencyCurrencySymbol,
+								    (select Symbol from tblCurrency where CurrencyId = CostPerCallCurrency  ) as CostPerCallCurrencySymbol,
+								    (select Symbol from tblCurrency where CurrencyId = ChargebackCurrency  ) as ChargebackCurrencySymbol,
 								    (select Symbol from tblCurrency where CurrencyId = CollectionCostAmountCurrency  ) as CollectionCostAmountCurrencySymbol
  					from tblRateTableDIDRate didRate,tblTimezones timeZ where
 										didRate.RateID in (select RateID from tblRate where Code = concat((select Prefix from tblCountry where Country = '" . $ProductResponse->country . "'), '" . $ProductResponse->prefixName . "'))
 										   and RateTableId in (" . $ProductResponse->RateTableId . ")
 										   and didRate.CityTariff = '". $ProductResponse->city_tariff . "'" ."
+										   and didRate.ApprovedStatus = 1 and didRate.EffectiveDate <= NOW()
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
 
@@ -368,7 +378,8 @@ class PushSalesPricesERP extends Command {
 							$LabelName = $ProductResponse->country;
 							$json_file = json_decode($data_lang->Translation, true);
 							Log::info('Language Code.' . $data_lang->ISOCode) ;
-							if (strpos($ProductResponse->ProductName, '800') != false) {
+							//Universal Code Changes
+							if (strpos($ProductResponse->ProductName, 'UIFN') != false) {
 								$LabelName = str_replace(" ","_",$LabelName);
 							}else {
 								$LabelName = '';
@@ -410,6 +421,22 @@ class PushSalesPricesERP extends Command {
 								$results[] = $data;
 							}
 
+							if (!empty($RateTableDIDRate->CostPerCall) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL",$LabelName))) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] =	Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL",$LabelName). '='
+									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "")
+									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title));
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPricePercentage"] = "";
+								$data["salesPrice"] = $RateTableDIDRate->CostPerCall;
+								$data["currencySymbol"] = empty($RateTableDIDRate->CostPerCallCurrencySymbol) ? "$" : $RateTableDIDRate->CostPerCallCurrencySymbol;
+								$results[] = $data;
+							}
+
 							if (!empty($RateTableDIDRate->OutpaymentPerCall) &&
 								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL",$LabelName))) {
 								$data["priceItemId"] = "";
@@ -439,6 +466,23 @@ class PushSalesPricesERP extends Command {
 								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerMinute;
 								$data["salesPricePercentage"] = "";
 								$data["currencySymbol"] = empty($RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->OutpaymentPerMinuteCurrencySymbol;
+								$results[] = $data;
+							}
+
+							if (!empty($RateTableDIDRate->Chargeback) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_CHARGEBACK",$LabelName))) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+
+								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_CHARGEBACK",$LabelName). '='
+									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "")
+									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title));
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPricePercentage"] = "";
+								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
+								$data["currencySymbol"] = empty($RateTableDIDRate->ChargebackCurrencySymbol) ? "$" : $RateTableDIDRate->ChargebackCurrencySymbol;
 								$results[] = $data;
 							}
 							//Log::info('$RateTableDIDRate->MonthlyCost.' . $RateTableDIDRate->MonthlyCost.' '.
@@ -491,19 +535,65 @@ class PushSalesPricesERP extends Command {
 								$data["currencySymbol"] = empty($RateTableDIDRate->CollectionCostAmountCurrencySymbol) ? "$" : $RateTableDIDRate->CollectionCostAmountCurrencySymbol;
 								$results[] = $data;
 							}
-							if (!empty($RateTableDIDRate->CollectionCostPercentage) &&
-								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_PERCENTAGE",$LabelName))) {
+							if (!empty($RateTableDIDRate->CollectionCostAmount) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT",$LabelName))) {
 								$data["priceItemId"] = "";
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
-								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_PERCENTAGE",$LabelName) . '='
+								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT",$LabelName). '='
+									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "") .
+									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title));
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->CollectionCostAmount;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->CollectionCostAmountCurrencySymbol) ? "$" : $RateTableDIDRate->CollectionCostAmountCurrencySymbol;
+								$results[] = $data;
+							}
+
+							if (!empty($RateTableDIDRate->SurchargePerCall) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_CALL",$LabelName))) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_CALL",$LabelName). '='
+									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "") .
+									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title));
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->SurchargePerCall;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->SurchargePerCallCurrencySymbol) ? "$" : $RateTableDIDRate->SurchargePerCallCurrencySymbol;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->SurchargePerMinute) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE",$LabelName))) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE",$LabelName). '='
+									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "") .
+									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title));
+								$data["iso2"] = $data_lang->ISOCode;
+								$data["salesPrice"] = $RateTableDIDRate->SurchargePerMinute;
+								$data["salesPricePercentage"] = "";
+								$data["currencySymbol"] = empty($RateTableDIDRate->SurchargePerMinuteCurrencySymbol) ? "$" : $RateTableDIDRate->SurchargePerMinuteCurrencySymbol;
+								$results[] = $data;
+							}
+							if (!empty($RateTableDIDRate->Surcharges) &&
+								!empty(Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE",$LabelName))) {
+								$data["priceItemId"] = "";
+								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
+								$data["pricePlanId"] = "";
+								$data["name"] = Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE",$LabelName) . '='
 										 . (!empty($RateTableDIDRate->orginationCode) ? (" From " .
 										Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->orginationCode,$RateTableDIDRate->orginationCode). ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_". $RateTableDIDRate->Title,$RateTableDIDRate->Title)) . '=';
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = "";
-								$data["salesPricePercentage"] = $RateTableDIDRate->CollectionCostPercentage;
-								$data["currencySymbol"] = "";
+								$data["salesPricePercentage"] = $RateTableDIDRate->Surcharges;
+								$data["currencySymbol"] = empty($RateTableDIDRate->SurchargesCurrencyCurrencySymbol) ? "$" : $RateTableDIDRate->SurchargesCurrencyCurrencySymbol;
 								$results[] = $data;
 							}
 
