@@ -136,6 +136,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ContractManage',
 		'App\Console\Commands\AutoOutPayment',
 		'App\Console\Commands\UpdateActiveCallCost',
+		'App\Console\Commands\ImportCurrencyExchRates',
 
 	];
 

@@ -59,4 +59,8 @@ class Currency extends \Eloquent {
         return $NewRate;
 
     }
+
+    public function getRate(){
+        return $this->hasOne(CurrencyConversion::class, 'CompanyID', 'CompanyId');
+    }
 }
