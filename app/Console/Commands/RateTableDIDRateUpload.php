@@ -335,6 +335,8 @@ class RateTableDIDRateUpload extends Command
                         $CostComponents[] = 'CollectionCostPercentage';
                         $CostComponents[] = 'RegistrationCostPerNumber';
 
+                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -367,8 +369,6 @@ class RateTableDIDRateUpload extends Command
                             $ChargebackCurrencyColumn                 = 'ChargebackCurrency'.$id;
                             $CollectionCostAmountCurrencyColumn       = 'CollectionCostAmountCurrency'.$id;
                             $RegistrationCostPerNumberCurrencyColumn  = 'RegistrationCostPerNumberCurrency'.$id;
-
-                            $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
 
                             // check if rate is mapped against timezone
                             //if (!empty($attrselection->$MonthlyCostColumn)) {
@@ -818,7 +818,7 @@ class RateTableDIDRateUpload extends Command
 
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
-                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsError==0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {

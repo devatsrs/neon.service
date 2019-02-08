@@ -13,6 +13,7 @@ use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
+use App\Lib\Currency;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
@@ -332,6 +333,8 @@ class RateTableRateUpload extends Command
 
                         $error = array();
 
+                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -346,6 +349,8 @@ class RateTableRateUpload extends Command
                             $ConnectionFeeColumn    = 'ConnectionFee'.$id;
                             $BlockedColumn          = 'Blocked'.$id;
                             $RoutingCategory        = 'RoutingCategory'.$id;
+                            $RateCurrencyColumn     = 'RateCurrency'.$id;
+                            $ConnectionFeeCurrencyColumn = 'ConnectionFeeCurrency'.$id;
 
                             // check if rate is mapped against timezone
                             if (!empty($attrselection->$Rate1Column)) {
@@ -533,6 +538,33 @@ class RateTableRateUpload extends Command
                                         if (!empty($attrselection->$ConnectionFeeColumn) && isset($temp_row[$attrselection->$ConnectionFeeColumn])) {
                                             $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->$ConnectionFeeColumn]);
                                         }
+
+                                        if (!empty($attrselection->$RateCurrencyColumn)) {
+                                            if (array_key_exists($attrselection->$RateCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
+                                                $tempratetabledata['RateCurrency'] = $attrselection->$RateCurrencyColumn;
+                                            } else if (isset($temp_row[$attrselection->$RateCurrencyColumn]) && array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies)) {// if currency selected from file
+                                                $tempratetabledata['RateCurrency'] = array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies);
+                                            } else {
+                                                $tempratetabledata['RateCurrency'] = NULL;
+                                                $error[] = 'Rate Currency is not match at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempratetabledata['RateCurrency'] = NULL;
+                                        }
+
+                                        if (!empty($attrselection->$ConnectionFeeCurrencyColumn)) {
+                                            if (array_key_exists($attrselection->$ConnectionFeeCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
+                                                $tempratetabledata['ConnectionFeeCurrency'] = $attrselection->$ConnectionFeeCurrencyColumn;
+                                            } else if (isset($temp_row[$attrselection->$ConnectionFeeCurrencyColumn]) && array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies)) {// if currency selected from file
+                                                $tempratetabledata['ConnectionFeeCurrency'] = array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies);
+                                            } else {
+                                                $tempratetabledata['ConnectionFeeCurrency'] = NULL;
+                                                $error[] = 'Connection Fee Currency is not match at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempratetabledata['ConnectionFeeCurrency'] = NULL;
+                                        }
+
                                         if (!empty($attrselection->$Interval1Column) && isset($temp_row[$attrselection->$Interval1Column])) {
                                             $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->$Interval1Column]));
                                         }
