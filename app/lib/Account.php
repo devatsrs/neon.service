@@ -207,8 +207,7 @@ class Account extends \Eloquent {
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
     }
-    public static function LowBalanceReminder($AccountID,$email,$LastRunTime){
-
+    public static function LowBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
 
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder,'EmailTo'=>$email));
         if(!empty($LastRunTime)){
