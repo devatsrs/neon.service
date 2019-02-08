@@ -109,6 +109,7 @@ class PushSalesPricesERP extends Command {
 		$pricePlanTypeId = '3';
 		$DiDCategorySaveID = -1;
 		$DiDCategorySaveDescription = '';
+		$SetRateTableEffectiveDate = '';
 		$SetDiDCategory = 0;
 		$data_langs = [];
 		$validFrom = date('Y-m-d');
@@ -178,6 +179,7 @@ class PushSalesPricesERP extends Command {
 			Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
 			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.city_tariff,
+									(select  EffectiveDate  from tblratetablerate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
 								  case when SUBSTRING(tblServiceTemplate.prefixName, 1, 1) = '0' THEN SUBSTRING(tblServiceTemplate.prefixName, 2, LENGTH(tblServiceTemplate.prefixName)) ELSE tblServiceTemplate.prefixName END as prefixName,(select CategoryName from tblDIDCategory where DIDCategoryID = tblServiceTemapleInboundTariff.DIDCategoryId) as CategoryDescription from tblServiceTemapleInboundTariff
 								   join tblServiceTemplate on tblServiceTemapleInboundTariff.ServiceTemplateID = tblServiceTemplate.ServiceTemplateId
 								     where tblServiceTemplate.ServiceTemplateId in ( select dfieldsValues.ParentID from tblDynamicFieldsValue dfieldsValues  where dfieldsValues.DynamicFieldsID= " . $DynamicFieldsID . ")
@@ -201,7 +203,7 @@ class PushSalesPricesERP extends Command {
 				foreach ($ProductPackages as $ProductPackage) {
 					if (!empty($ProductPackage["RateTableId"]) && $ProductPackage["RateTableId"] != 0) {
 						$RateTablePKGRatesQuery = "select pkgRate.OneOffCost, pkgRate.MonthlyCost, pkgRate.PackageCostPerMinute, pkgRate.RecordingCostPerMinute,
- 												  rate.RateID,timeZ.Title, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
+ 												  rate.RateID,timeZ.Title,pkgRate.EffectiveDate, (select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,  (select Symbol from tblCurrency where CurrencyId = PackageCostPerMinuteCurrency  ) as PackageCostPerMinuteCurrencySymbol, (select Symbol from tblCurrency where CurrencyId = RecordingCostPerMinuteCurrency  ) as RecordingCostPerMinuteCurrencySymbol, (select Prefix from tblCountry where CountryID = rate.CountryID) as countryPrefix
  												     from tblRateTablePKGRate pkgRate, tblRate rate,tblTimezones timeZ
  												        where pkgRate.RateID = rate.RateID and timeZ.TimezonesID = pkgRate.TimezonesID
  												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
@@ -343,6 +345,7 @@ class PushSalesPricesERP extends Command {
 					foreach ($RateTableDIDRates as $RateTableDIDRate) {
 						Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
 						$prefixName = $ProductResponse->prefixName;
+						$SetRateTableEffectiveDate = $ProductResponse->TableEffectiveDate;
 						$data_langs = DB::table('tblLanguage')
 							->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
 							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
@@ -357,7 +360,7 @@ class PushSalesPricesERP extends Command {
 									$PricingJSONInput['partnerId'] = $partnerId;
 									$PricingJSONInput['productId'] = $productId;
 									$PricingJSONInput['pricePlanTypeId'] = Helper::getPricePlanTypeID($DiDCategorySaveDescription);
-									$PricingJSONInput['validFrom'] = $validFrom;
+									$PricingJSONInput['validFrom'] = empty($SetRateTableEffectiveDate) ? $validFrom : $SetRateTableEffectiveDate;
 									$PricingJSONInput['priceItemList'] = $results;
 									//Log::info('priceItemList json encode.' . print_r($Postdata, true));
 									$PricingJSONInput = json_encode($PricingJSONInput, true);
@@ -633,7 +636,7 @@ class PushSalesPricesERP extends Command {
 					$PricingJSONInput['partnerId'] = $partnerId;
 					$PricingJSONInput['productId'] = $productId;
 					$PricingJSONInput['pricePlanTypeId'] = Helper::getPricePlanTypeID($DiDCategorySaveDescription);
-					$PricingJSONInput['validFrom'] = $validFrom;
+					$PricingJSONInput['validFrom'] = empty($SetRateTableEffectiveDate) ? $validFrom : $SetRateTableEffectiveDate;;
 					$PricingJSONInput['priceItemList'] = $results;
 					//Log::info('priceItemList json encode.' . print_r($Postdata, true));
 					$PricingJSONInput = json_encode($PricingJSONInput, true);
