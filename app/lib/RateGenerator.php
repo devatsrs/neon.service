@@ -6,8 +6,11 @@ class RateGenerator extends \Eloquent {
     protected $guarded = array();
     protected $table = 'tblRateGenerator';
     protected $primaryKey = "RateGeneratorId";
-	
-	public function raterule()
+
+    const VoiceCall = 1;
+    const DID = 2;
+
+    public function raterule()
     {
         return $this->hasMany('RateRule');
     }
