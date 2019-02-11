@@ -108,7 +108,25 @@ class RateTableGenerator extends Command {
             $Timezones = $RateGenerator->Timezones;
             $IsMerge = $RateGenerator->IsMerge;
 
-            if($IsMerge == 1) { // if merge by timezones
+
+            if($RateGenerator->SelectType == \RateGenerator::DID) { // for DID
+
+                $query = "CALL prc_WSGenerateRateTableDID(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
+                Log::info($query);
+                $JobStatusMessage = DB::select($query);
+
+                $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                if(count($JobStatusMessage) > 0){
+                    foreach ($JobStatusMessage as $JobStatusMessage1) {
+                        if(is_numeric($JobStatusMessage1['Message'])) {
+                            $info[] = 'RateTable Created Successfully';
+                        } else {
+                            $error[] = $JobStatusMessage1['Message'];
+                        }
+                    }
+                }
+
+            }else if($IsMerge == 1) { // if merge by timezones
                 $TakePrice = $RateGenerator->TakePrice;
                 $MergeInto = $RateGenerator->MergeInto;
 
