@@ -35,6 +35,7 @@ class ActiveCall extends \Eloquent {
         $CallRecordingDuration = $ActiveCall->CallRecordingDuration;
         $PackageCostPerMinute= $ActiveCall->PackageCostPerMinute;
         $RecordingCostPerMinute= $ActiveCall->RecordingCostPerMinute;
+        $TaxRateIDs = $ActiveCall->TaxRateIDs;
         /**
          * update duration = current time - connect time
          */
@@ -80,10 +81,21 @@ class ActiveCall extends \Eloquent {
                 if ($RateTableRateID > 0) {
                     $RateTableRate = DB::table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
+                    if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
+                        $ConnectionFee = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
+                    }
                     $Interval1 = $RateTableRate->Interval1;
                     $IntervalN = $RateTableRate->IntervalN;
                     $Rate = $RateTableRate->Rate;
                     $RateN = $RateTableRate->RateN;
+                    if(!empty($RateTableRate->RateCurrency)){
+                        if(!empty($Rate)){
+                            $Rate = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
+                        }
+                        if(!empty($RateN)){
+                            $RateN = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$RateN);
+                        }
+                    }
                     /** cost update */
                     if ($Duration >= $Interval1) {
                         $Cost = ($Rate / 60.0) * $Interval1 + ceil(($Duration - $Interval1) / $IntervalN) * ($RateN / 60.0) * $IntervalN + $ConnectionFee;
@@ -103,6 +115,22 @@ class ActiveCall extends \Eloquent {
 
                 }
                 $Cost = $Cost + $PackageCostPerMinute + $RecordingCostPerMinute;
+
+                /** minimum cost calculation
+                 * if cost is less than minimum cost , cost update as minimum cost
+                 */
+                if(!empty($ActiveCall->RateTableID)) {
+                    $MinimumCallCharge = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('MinimumCallCharge');
+                    if (!empty($MinimumCallCharge)) {
+                        $RateCurrency = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('CurrencyID');
+                        if (!empty($RateCurrency)) {
+                            $MinimumCallCharge = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateCurrency, $MinimumCallCharge);
+                        }
+                        if ($MinimumCallCharge > $Cost) {
+                            $Cost = $MinimumCallCharge;
+                        }
+                    }
+                }
 
                 /** update cost and duration */
 
@@ -209,6 +237,9 @@ class ActiveCall extends \Eloquent {
 
                         $CollectionCostPercentage = isset($RateTableDIDRate->CollectionCostPercentage)?$RateTableDIDRate->CollectionCostPercentage:0;
                         if(!empty($CollectionCostPercentage)){
+                            if(!empty($TaxRateIDs)){
+                                $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
+                            }
                             $CollectionCostPercentage = $Cost * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
                         }
@@ -237,6 +268,23 @@ class ActiveCall extends \Eloquent {
                 log::info('New Cost '.$Cost);
             }
         }
+    }
+
+    public static function getCostWithTaxes($Cost,$TaxRateIDs){
+        $TaxGrandTotal = 0;
+        $TaxRateIDs = explode(",",$TaxRateIDs);
+        if(!empty($TaxRateIDs) && count($TaxRateIDs)>0) {
+            foreach($TaxRateIDs as $TaxRateID) {
+                $TaxRateID = intval($TaxRateID);
+                if($TaxRateID>0){
+                    $TaxAmount=TaxRate::calculateProductTaxAmount($TaxRateID,$Cost);
+                    $TaxGrandTotal += $TaxAmount;
+                }
+            }
+        }
+        $Total = $Cost + $TaxGrandTotal;
+
+        return $Total;
     }
 
 }
