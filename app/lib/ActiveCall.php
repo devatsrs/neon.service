@@ -24,7 +24,7 @@ class ActiveCall extends \Eloquent {
     }
 
     public static function updateActiveCallCost($ActiveCallID){
-        $ActiveCall = ActiveCall::find($ActiveCallID);
+        $ActiveCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->first();
         $AccountID = $ActiveCall->AccountID;
         $CompanyID = $ActiveCall->CompanyID;
         $CompanyCurrency = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
@@ -159,7 +159,7 @@ class ActiveCall extends \Eloquent {
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
 
                 if ($RateTableDIDRateID > 0) {
-                    $RateTableDIDRate = RateTableDIDRate::find($RateTableDIDRateID);
+                    $RateTableDIDRate = RateTableDIDRate::where(['RateTableDIDRateID'=>$RateTableDIDRateID])->first();
 
                     if ($Duration > 0) {
                         /**
