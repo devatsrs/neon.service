@@ -43,20 +43,22 @@ class SippySSH{
             $filename = array();
             //$files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $files =  RemoteFacade::rawlist(self::$config['cdr_folder']);
-            foreach ($files as $key => $row) {
-                $files_sort[$key] = $row['mtime'];
-            }
-            array_multisort($files_sort, SORT_DESC, $files);
-
-            foreach((array)$files as $file){
-                if(strpos($file['filename'],self::$customer_cdr_file_name) !== false || strpos($file['filename'],self::$vendor_cdr_file_name) !== false){
-                    $filename[] =$file['filename'];
+            if(!empty($files)) {
+                foreach ($files as $key => $row) {
+                    $files_sort[$key] = $row['mtime'];
                 }
+                array_multisort($files_sort, SORT_DESC, $files);
+
+                foreach ((array)$files as $file) {
+                    if (strpos($file['filename'], self::$customer_cdr_file_name) !== false || strpos($file['filename'], self::$vendor_cdr_file_name) !== false) {
+                        $filename[] = $file['filename'];
+                    }
+                }
+                //asort($filename);
+                $filename = array_values($filename);
+                //$lastele = array_pop($filename);
+                $response = $filename;
             }
-            //asort($filename);
-            $filename = array_values($filename);
-            //$lastele = array_pop($filename);
-            $response = $filename;
         }
         return $response;
     }
