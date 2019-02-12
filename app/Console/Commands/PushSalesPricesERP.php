@@ -136,7 +136,7 @@ class PushSalesPricesERP extends Command {
 			//End Load Data
 
 
-			$fieldName = 'ProductProductID';
+			$fieldName = 'ProductID';
 			$AccountFieldName = 'CustomerID';
 			$PackageFieldName = 'PackageID';
 			$DynamicFieldsID = '';
@@ -144,9 +144,9 @@ class PushSalesPricesERP extends Command {
 			$PackageDynamicFieldsID = '';
 
 			$Query = "select ParentID from tblDynamicFieldsValue where ";
-			$DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'serviceTemplate', 'Status' => 1, 'FieldSlug' => $fieldName])->pluck('DynamicFieldsID');
-			$AccountDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'account', 'Status' => 1, 'FieldSlug' => $AccountFieldName])->pluck('DynamicFieldsID');
-			$PackageDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'package', 'Status' => 1, 'FieldSlug' => $PackageFieldName])->pluck('DynamicFieldsID');
+			$DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'serviceTemplate', 'Status' => 1, 'FieldName' => $fieldName])->pluck('DynamicFieldsID');
+			$AccountDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'account', 'Status' => 1, 'FieldName' => $AccountFieldName])->pluck('DynamicFieldsID');
+			$PackageDynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'Type' => 'package', 'Status' => 1, 'FieldName' => $PackageFieldName])->pluck('DynamicFieldsID');
 			if (!empty($DynamicFieldsID) && !empty($AccountDynamicFieldsID) && !empty($PackageDynamicFieldsID)) {
 
 			$ProductPackages = Package::
