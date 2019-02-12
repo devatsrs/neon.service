@@ -108,13 +108,12 @@ class RateTableGenerator extends Command {
             $Timezones = $RateGenerator->Timezones;
             $IsMerge = $RateGenerator->IsMerge;
 
-
+            $info = $error = array();
             if($RateGenerator->SelectType == \RateGenerator::DID) { // for DID
 
                 $query = "CALL prc_WSGenerateRateTableDID(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                 Log::info($query);
                 $JobStatusMessage = DB::select($query);
-
                 $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                 if(count($JobStatusMessage) > 0){
                     foreach ($JobStatusMessage as $JobStatusMessage1) {
@@ -130,7 +129,6 @@ class RateTableGenerator extends Command {
                 $TakePrice = $RateGenerator->TakePrice;
                 $MergeInto = $RateGenerator->MergeInto;
 
-                $info = $error = array();
                 if($Policy == \LCR::LCR_PREFIX){
                     $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'" . $Timezones. "','".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',".$IsMerge.",".$TakePrice.",".$MergeInto.")";
                     Log::info($query);
@@ -153,7 +151,6 @@ class RateTableGenerator extends Command {
                 }
             } else {
                 $Timezones = explode(',',$Timezones);
-                $info = $error = array();
                 $i=0;
                 foreach ($Timezones as $Timezone) {
                     if($Policy == \LCR::LCR_PREFIX){
