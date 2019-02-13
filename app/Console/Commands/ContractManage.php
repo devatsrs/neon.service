@@ -358,8 +358,6 @@ class ContractManage extends Command {
 			if (!isset($emaildata['EmailFrom'])) {
 				$emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Account::ContractExpireEmailTemplate,$CompanyID);
 			}
-			$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Account::ContractExpireEmailTemplate, $Account->LanguageID);
-			$EmailMessage 	= $EmailTemplate->TemplateBody;
 
 			$CustomerEmail = $Account->BillingEmail;
 
@@ -387,7 +385,7 @@ class ContractManage extends Command {
 							'CreatedBy' => 'System Notification',
 							'created_at' => date('Y-m-d H:i:s'),
 							'EmailTo' => $Account->BillingEmail,
-							'Message' => $EmailMessage,
+							'Message' => $body,
 							'EmailType' => AccountEmailLog::ContractExpire,
 							'Subject' => 'Customer Contract Expire'
 						);
