@@ -394,8 +394,35 @@ class EmailsTemplates{
 		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
+		$replace_array['ServiceName'] = $data['ServiceName'];
 
-		$extraSpecific = ["{{ServiceTitle}}"];
+		$extraSpecific = ["{{ServiceName}}"];
+
+		$extraDefault = EmailsTemplates::$fields;
+		$extra = array_merge($extraDefault, $extraSpecific);
+
+		foreach ($extra as $item) {
+			$item_name = str_replace(array('{', '}'), array('', ''), $item);
+			if (array_key_exists($item_name, $replace_array)) {
+				$EmailMessage = str_replace($item, $replace_array[$item_name], $EmailMessage);
+			}
+		}
+
+		return $EmailMessage;
+	}
+	static function setContractExpirePlaceholder($Account,$type="body",$CompanyID, $data = [])
+	{
+		$replace_array = $data;
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Account::ContractExpireEmailTemplate, $Account->LanguageID);
+		if ($type == "subject") {
+			$EmailMessage = $EmailTemplate->Subject;
+		} else {
+			$EmailMessage = $EmailTemplate->TemplateBody;
+		}
+		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
+		$replace_array['ServiceName'] = $data['Services'];
+		$extraSpecific = ["{{ServiceName}}"];
 
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);
