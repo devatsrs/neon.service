@@ -241,6 +241,8 @@ class ContractManage extends Command {
 			$joblogdata['Message'] ='Error:'.$ex->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);
+			CronJob::deactivateCronJob($CronJob);
+			CronHelper::after_cronrun($this->name, $this);
 			if(!empty($cronsetting['ErrorEmail'])) {
 
 
