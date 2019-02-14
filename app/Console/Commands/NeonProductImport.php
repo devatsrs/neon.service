@@ -96,9 +96,8 @@ class NeonProductImport extends Command {
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
-            //Insert other Company Packages
-            $this->otherCompanyPackages($CompanyID,$PackageId);
-            die('--');
+            
+            
             if (!empty($ProductID)) { 
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
@@ -185,6 +184,9 @@ class NeonProductImport extends Command {
             }
             
             
+            //Insert other Company Packages
+            $this->otherCompanyPackages($CompanyID,$PackageId);
+            $this->otherCompanyProducts($CompanyID,$FieldsProductID);
             
             Log::info('neonproductimport Next step in  api/Products service.');
             //Track The Log          
@@ -216,43 +218,138 @@ class NeonProductImport extends Command {
         CronHelper::after_cronrun($this->name, $this);
     }
     public function otherCompanyPackages($CompanyID,$PackageId){
-        //$ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
-        //$result = AutoImportSetting::where($arrWhere)->where("AutoImportSettingID",'!=', $AutoImportSettingID)->count();
-        $CompanyList = Company::where("CompanyID",'!=', $CompanyID);
-        $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+        $CompanyList = Company::where("CompanyID",'!=', $CompanyID)->get();
+        
+        $DynamicFieldsIDOld = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+        $DynamicFieldsObj  = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'DynamicFieldsID' => $DynamicFieldsIDOld])->get();
+        
         foreach ($CompanyList as $Company) {
-            $AccountID=$Company->AccountID;
             $CurrencyId=$Company->CurrencyId;
-            $PackageList = Package::where(['CompanyID'=>$CompanyID]);
+            if(empty($CurrencyId)){
+                $CurrencyId=1;
+            }
+            $DynamicFieldsID = DynamicFields::where(['CompanyID' => $Company->CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+            if (!empty($DynamicFieldsID)) {
+            }else {
+                $DynamicFieldsdata = array();
+                $DynamicFieldsdata['Type'] = 'package';
+                $DynamicFieldsdata['FieldDomType'] = 'string';
+                $DynamicFieldsdata['CompanyID'] = $Company->CompanyID;
+                $DynamicFieldsdata['FieldName'] = $PackageId;
+                $DynamicFieldsdata['FieldSlug'] = $PackageId;
+                $DynamicFields = DynamicFields::create($DynamicFieldsdata);
+                $DynamicFieldsID=$DynamicFields['DynamicFieldsID'];
+            }
+            
+            $PackageList = Package::where(['CompanyID'=>$CompanyID])->get();
             foreach ($PackageList as $ProductResponse) {
                 
-                $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $ProductResponse->CompanyID, 'FieldValue' => $ProductResponse->PackageId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
+                $PackageIds = Package::where(['CompanyID' => $Company->CompanyID, 'Name' => $ProductResponse->Name])->pluck('PackageId');
                 $packagedata = array();
                 $packagedata['Name'] = $ProductResponse->Name;
                 $packagedata['CurrencyId'] = $CurrencyId;
-                $packagedata['CompanyID'] = $ProductResponse->CompanyID;
-                if (!empty($DynamicFieldsParentID)) {
-                    Package::where(["PackageId" => $DynamicFieldsParentID])->update($packagedata);
-                }else {
-                    try {
-                        $Package = Package::create($packagedata);
-                        $dyndata = array();
-                        $dyndata['CompanyID'] = $ProductResponse->CompanyID;
-                        $dyndata['ParentID'] = $Package['PackageId'];
-                        $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
-                        $dyndata['FieldValue'] = $ProductResponse->productId;
-
-                        DynamicFieldsValue::insert($dyndata);
-                        } catch (Exception $ex) {
-                        Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
-
-                        Log::error($ex);
-                        }
-                    }
+                $packagedata['CompanyID'] = $Company->CompanyID;
+                
+                 if (!empty($PackageIds)) {
+                 }else{
+                     $Package = Package::create($packagedata);
+                     $PackageIds=$Package['PackageId'];
+                 }
+                
+                    //save dynamic field value
+//                 foreach ($DynamicFieldsObj as $DynamicFieldsRes) {
+//                    $DynamicFieldsParentID          = DynamicFieldsValue::where(['CompanyID' => $Company->CompanyID, 'FieldValue' => $DynamicFieldsRes->FieldValue, 'DynamicFieldsID' => $DynamicFieldsID, 'ParentID' => $PackageIds])->pluck('ParentID');;
+//                    if (!empty($DynamicFieldsParentID)) {
+//                    }else {
+//                        try {
+//                            $dyndata = array();
+//                            $dyndata['CompanyID'] = $Company->CompanyID;
+//                            $dyndata['ParentID'] = $PackageIds;
+//                            $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+//                            $dyndata['FieldValue'] = $DynamicFieldsRes->FieldValue;
+//
+//                            DynamicFieldsValue::insert($dyndata);
+//
+//                        } catch (Exception $ex) {
+//                            print_r($ex);
+//                           die();
+//                        }
+//                    }
+//                 }
                 
                 
             }
         }
-}
+        
+    }
+    public function otherCompanyProducts($CompanyID,$FieldsProductID){
+        $CompanyList = Company::where("CompanyID",'!=', $CompanyID)->get();
+        
+        $DynamicFieldsIDOld = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
+        $DynamicFieldsObj  = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'DynamicFieldsID' => $DynamicFieldsIDOld])->get();
+        
+        foreach ($CompanyList as $Company) {
+            $CurrencyId=$Company->CurrencyId;
+            if(empty($CurrencyId)){
+                $CurrencyId=1;
+            }
+            $DynamicFieldsID = DynamicFields::where(['CompanyID' => $Company->CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
+            if (!empty($DynamicFieldsID)) {
+            }else {
+                $DynamicFieldsdata = array();
+                $DynamicFieldsdata['Type'] = 'package';
+                $DynamicFieldsdata['FieldDomType'] = 'string';
+                $DynamicFieldsdata['CompanyID'] = $Company->CompanyID;
+                $DynamicFieldsdata['FieldName'] = $FieldsProductID;
+                $DynamicFieldsdata['FieldSlug'] = $FieldsProductID;
+                $DynamicFields = DynamicFields::create($DynamicFieldsdata);
+                $DynamicFieldsID=$DynamicFields['DynamicFieldsID'];
+            }
+            
+            $PackageList = ServiceTemplate::where(['CompanyID'=>$CompanyID])->get();
+            foreach ($PackageList as $ProductResponse) {
+                
+                $PackageIds = ServiceTemplate::where(['CompanyID' => $Company->CompanyID, 'Name' => $ProductResponse->Name, 'ServiceId' => $ProductResponse->ServiceId])->pluck('ServiceTemplateId');
+                $productdata = array();
+                $productdata['ServiceId'] = $ProductResponse->ServiceId;
+                $productdata['Name'] = $ProductResponse->name;
+
+                $productdata['country'] = $ProductResponse->country;
+                $productdata['prefixName'] = $ProductResponse->prefixName;
+                $productdata['CurrencyId'] = $CurrencyId;
+                $productdata['CompanyID'] = $Company->CompanyID;
+                $productdata['city_tariff'] = $ProductResponse->city_tariff;
+                
+                 if (!empty($PackageIds)) {
+                 }else{
+                     $Package = ServiceTemplate::create($productdata);
+                     $PackageIds=$Package['ServiceTemplateId'];
+                 }
+                 
+                  //save dynamic field value
+//                 foreach ($DynamicFieldsObj as $DynamicFieldsRes) {
+//                    $DynamicFieldsParentID          = DynamicFieldsValue::where(['CompanyID' => $Company->CompanyID, 'FieldValue' => $DynamicFieldsRes->FieldValue, 'DynamicFieldsID' => $DynamicFieldsID, 'ParentID' => $PackageIds])->pluck('ParentID');;
+//                    if (!empty($DynamicFieldsParentID)) {
+//                    }else {
+//                        try {
+//                            $dyndata = array();
+//                            $dyndata['CompanyID'] = $Company->CompanyID;
+//                            $dyndata['ParentID'] = $PackageIds;
+//                            $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+//                            $dyndata['FieldValue'] = $DynamicFieldsRes->FieldValue;
+//
+//                            DynamicFieldsValue::insert($dyndata);
+//
+//                        } catch (Exception $ex) {
+//                            print_r($ex);
+//                           die();
+//                        }
+//                    }
+//                 }
+                
+            }
+        }
+        
+    }
 
 }
