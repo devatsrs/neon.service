@@ -16,7 +16,8 @@ class Account extends \Eloquent {
     //const  PENDING_VERIFICATION = 1;
     const  VERIFIED =2;
     const  OutPaymentEmailTemplate ='OutPayment';
-    const  ContractManageEmailTemplate ='Contract Manage';
+    const  ContractManageEmailTemplate ='ContractRenewal';
+    const  ContractExpireEmailTemplate = 'ContractExpire';
     const  DETAIL_CDR = 1;
     const  SUMMARY_CDR= 2;
     const  NO_CDR = 3;
@@ -230,6 +231,10 @@ class Account extends \Eloquent {
 
     public static function getAccountName($AccountID){
         return Account::where(["AccountID"=>$AccountID])->pluck('AccountName');
+    }
+
+    public static function getCompanyID($AccountID){
+        return Account::where(["AccountID"=>$AccountID])->pluck('CompanyID');
     }
 
     public static function addAccountAudit($data=array()){

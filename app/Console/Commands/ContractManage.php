@@ -12,6 +12,7 @@ use App\Lib\CronJob;
 use App\Lib\Account;
 use App\Lib\Company;
 use App\Lib\Notification;
+use App\Lib\AccountEmailLog;
 use App\Lib\Helper;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronJobLog;
@@ -69,13 +70,14 @@ class ContractManage extends Command {
 		CronJob::createLog($CronJobID);
 		$CancelContractResult = [];
 		$RenewContractResult = [];
+		$ExpireContractResult = [];
 
 		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
-		try{
+		try {
 			CronJob::createLog($CronJobID);
 
 			$CancelContractManage = "CALL prc_Cancel_Contract_Manage()";
-			$selectCancelContract  = DB::select($CancelContractManage);
+			$selectCancelContract = DB::select($CancelContractManage);
 
 			if(count($selectCancelContract) > 0){
 				$ID = array();
@@ -136,9 +138,11 @@ class ContractManage extends Command {
 					$RenewContractResult[count($RenewContractResult) + 1] = $RenewContract;
 
 					$account = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
+					$serviceName = DB::table('tblService')->where('ServiceID',$sel->ServiceID)->first();
 					$email['AccountID'] = $account->AccountID;
 					$email['CompanyID'] = $account->CompanyId;
 					$email['ServiceTitle'] = $sel->ServiceTitle;
+					$email['ServiceName'] = $serviceName->ServiceName;
 					var_dump($email);
 					$this->ContractManageCustomerEmail($email);
 				}
@@ -148,6 +152,69 @@ class ContractManage extends Command {
 
 				Log::info('Contract Manage Account Service ID For Renewal Contract'. " " . print_r($Renewal,true));
 			}
+			$Alerts = DB::table('tblAlert')->where('AlertType', 'Contract_Reminder')->where('status', 1)->get();
+			foreach ($Alerts as $Alert){
+				$Settings = json_decode($Alert->Settings);
+			if ($Settings->AccountIDs == -1) {
+				$ContractExpire = "CALL prc_getExpireForAdmin('" . '0' . "')";
+			} else {
+				$ContractExpire = "CALL prc_getExpireForAdmin('" . $Settings->AccountIDs . "')";
+			}
+			$selectExpireContract = DB::select($ContractExpire);
+
+			if (count($selectExpireContract) > 0) {
+				$ExpireContract = array();
+				foreach ($selectExpireContract as $sel) {
+					$AccountNameGet = DB::table('tblAccount')->where('AccountID', $sel->AccountID)->first();
+					$ExpireContract['AccountName'] = $AccountNameGet->AccountName;
+					$ExpireContract['CompanyId'] = $AccountNameGet->CompanyId;
+					$ExpireContract['AccountID'] = $sel->AccountID;
+					$ExpireContract['ServiceTitle'] = $sel->ServiceTitle;
+					$ExpireContractResult[count($ExpireContractResult) + 1] = $ExpireContract;
+
+
+				}
+				$this::ContractExpireEmailReminder($CompanyID, $ExpireContractResult, $Settings);
+				$ExpireContractResult = [];
+			}
+			if ($Settings->EmailToAccount == 1) {
+				$emailCustomerdata = [];
+				if ($Settings->AccountIDs == -1) {
+					$CustomerExpireContract = "CALL prc_getExpireContract('" . '0' . "')";
+				} else {
+					$CustomerExpireContract = "CALL prc_getExpireContract('" . $Settings->AccountIDs . "')";
+				}
+
+				$selectCustomerExpireContract = DB::select($CustomerExpireContract);
+
+				if (count($selectCustomerExpireContract) > 0) {
+					foreach ($selectCustomerExpireContract as $sel) {
+						var_dump($sel);
+						$CustomerExpireContractByID = "CALL prc_getExpireContract('" . $sel->AccountID . "')";
+						$selectCustomerExpireContractByID = DB::select($CustomerExpireContractByID);
+						$emailCustomerdata['AccountID'] = $sel->AccountID;
+						$emailCustomerdata['CompanyID'] = Account::getCompanyID($sel->AccountID);
+						$emailCustomerdata['Services'] = "<table width='100%' border='1' cellpadding='0' cellspacing='0' style='border:1px solid #ccc;'>";
+						$emailCustomerdata['Services'] .= "<tr>";
+						$emailCustomerdata['Services'] .= "<th>Account</th>";
+						$emailCustomerdata['Services'] .= "<th>Service Title</th>";
+						$emailCustomerdata['Services'] .= "<th>Service Name</th>";
+						$emailCustomerdata['Services'] .= "</tr>";
+
+						foreach ($selectCustomerExpireContractByID as $selContract) {
+							$serviceNames = DB::table('tblService')->where('ServiceID', $selContract->ServiceID)->first();
+							$emailCustomerdata['Services'] .= "<tr>";
+							$emailCustomerdata['Services'] .= "<td>" . $selContract->AccountID . "</td>";
+							$emailCustomerdata['Services'] .= "<td>" . $selContract->ServiceTitle . "</td>";
+							$emailCustomerdata['Services'] .= "<td>" . $serviceNames->ServiceName . "</td>";
+							$emailCustomerdata['Services'] .= "</tr>";
+						}
+						$emailCustomerdata['Services'] .= "</table>";
+						$this->ContractExpireCustomerEmail($emailCustomerdata);
+					}
+				}
+			}
+		}
 
 			$this::ContractManageNotification($CancelContractResult,$RenewContractResult,$CompanyID);
 			$joblogdata['CronJobID'] = $CronJobID;
@@ -174,6 +241,8 @@ class ContractManage extends Command {
 			$joblogdata['Message'] ='Error:'.$ex->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			CronJobLog::insert($joblogdata);
+			CronJob::deactivateCronJob($CronJob);
+			CronHelper::after_cronrun($this->name, $this);
 			if(!empty($cronsetting['ErrorEmail'])) {
 
 
@@ -228,7 +297,8 @@ class ContractManage extends Command {
 			$emaildata = array(
 				'CompanyName' => $CompanyName,
 				'CompanyID' => $CompanyID,
-				'ServiceTitle' => $email['ServiceTitle']
+				'ServiceTitle' => $email['ServiceTitle'],
+				'ServiceName' => $email['ServiceName'],
 			);
 			$emaildata['EmailToName'] = $Account->AccountName;
 			$body = EmailsTemplates::setContractManagePlaceholder($Account, 'body', $CompanyID, $emaildata);
@@ -257,7 +327,76 @@ class ContractManage extends Command {
 		//var_dump($email);
 	}
 
+	public static function ContractExpireEmailReminder($CompanyID,$ExpireContractResult,$Settings)
+	{
 
+		$Company = Company::find($CompanyID);
+		$TodayDate = date_create(date('Y-m-d'));
+		$emailsTo = $Settings->ReminderEmail;
+		$emaildata = array(
+			'EmailToName' => $Company->CompanyName,
+			'ExpireContracts' => $ExpireContractResult,
+			'EmailTo' => $emailsTo,
+			'CompanyID' => $CompanyID,
+			'CompanyName' => $Company->CompanyName,
+			'Subject' => 'Contract Expire Email'
+		);
+		$emailstatus = Helper::sendMail('emails.ContractExpire', $emaildata);
+	}
+	public function ContractExpireCustomerEmail($email){
+		$CompanyID = $email['CompanyID'];
+		$status = EmailsTemplates::CheckEmailTemplateStatus(Account::ContractExpireEmailTemplate,$CompanyID);
+		if($status != false) {
+			$Account = Account::find($email['AccountID']);
+			$CompanyName = Company::getName($CompanyID);
+			$emaildata = array(
+				'CompanyName' => $CompanyName,
+				'CompanyID' => $CompanyID,
+				'Services' => $email['Services'],
+			);
+			$emaildata['EmailToName'] = $Account->AccountName;
+			$body = EmailsTemplates::setContractExpirePlaceholder($Account, 'body', $CompanyID, $emaildata);
+			$emaildata['Subject'] = EmailsTemplates::setContractExpirePlaceholder($Account, "subject", $CompanyID, $emaildata);
+			if (!isset($emaildata['EmailFrom'])) {
+				$emaildata['EmailFrom'] = EmailsTemplates::GetEmailTemplateFrom(Account::ContractExpireEmailTemplate,$CompanyID);
+			}
+
+			$CustomerEmail = $Account->BillingEmail;
+
+			if($CustomerEmail != '') {
+				$CustomerEmail = explode(",", $CustomerEmail);
+				$customeremail_status['status'] = 0;
+				$customeremail_status['message'] = '';
+				$customeremail_status['body'] = '';
+				foreach ($CustomerEmail as $singleemail) {
+					$singleemail = trim($singleemail);
+					if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+						$emaildata['EmailTo'][] = $singleemail;
+					}
+				}
+				Log::info("============ EmailData ===========");
+				Log::info($emaildata);
+				$EmailLog = DB::table('AccountEmailLog')->where('AccountID', $email['AccountID'])->whereRaw('Date(created_at) = CURDATE()')->where('EmailTo', $Account->BillingEmail)->get();
+				if (!count($EmailLog) > 0){
+					$customeremail_status = Helper::sendMaiL($body, $emaildata, 0);
+					if ($customeremail_status) {
+
+						$logdata = array(
+							'CompanyID' => $CompanyID,
+							'AccountID' => $email['AccountID'],
+							'CreatedBy' => 'System Notification',
+							'created_at' => date('Y-m-d H:i:s'),
+							'EmailTo' => $Account->BillingEmail,
+							'Message' => $body,
+							'EmailType' => AccountEmailLog::ContractExpire,
+							'Subject' => 'Customer Contract Expire'
+						);
+						AccountEmailLog::insert($logdata);
+					}
+				}
+			}
+		}
+	}
 
 	protected function getArguments()
 	{
