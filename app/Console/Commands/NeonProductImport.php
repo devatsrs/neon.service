@@ -96,6 +96,9 @@ class NeonProductImport extends Command {
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
+            //Insert other Company Packages
+            $this->otherCompanyPackages($CompanyID,$PackageId);
+            die('--');
             if (!empty($ProductID)) { 
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
@@ -180,6 +183,9 @@ class NeonProductImport extends Command {
             }else{
                 Log::info('neonproductimport Not Find DynamicFieldsID.');
             }
+            
+            
+            
             Log::info('neonproductimport Next step in  api/Products service.');
             //Track The Log          
             $joblogdata['Message'] = 'neonproductimport Successfully Done';
@@ -209,5 +215,44 @@ class NeonProductImport extends Command {
         CronJob::deactivateCronJob($CronJob);
         CronHelper::after_cronrun($this->name, $this);
     }
+    public function otherCompanyPackages($CompanyID,$PackageId){
+        //$ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
+        //$result = AutoImportSetting::where($arrWhere)->where("AutoImportSettingID",'!=', $AutoImportSettingID)->count();
+        $CompanyList = Company::where("CompanyID",'!=', $CompanyID);
+        $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+        foreach ($CompanyList as $Company) {
+            $AccountID=$Company->AccountID;
+            $CurrencyId=$Company->CurrencyId;
+            $PackageList = Package::where(['CompanyID'=>$CompanyID]);
+            foreach ($PackageList as $ProductResponse) {
+                
+                $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $ProductResponse->CompanyID, 'FieldValue' => $ProductResponse->PackageId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
+                $packagedata = array();
+                $packagedata['Name'] = $ProductResponse->Name;
+                $packagedata['CurrencyId'] = $CurrencyId;
+                $packagedata['CompanyID'] = $ProductResponse->CompanyID;
+                if (!empty($DynamicFieldsParentID)) {
+                    Package::where(["PackageId" => $DynamicFieldsParentID])->update($packagedata);
+                }else {
+                    try {
+                        $Package = Package::create($packagedata);
+                        $dyndata = array();
+                        $dyndata['CompanyID'] = $ProductResponse->CompanyID;
+                        $dyndata['ParentID'] = $Package['PackageId'];
+                        $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+                        $dyndata['FieldValue'] = $ProductResponse->productId;
+
+                        DynamicFieldsValue::insert($dyndata);
+                        } catch (Exception $ex) {
+                        Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
+
+                        Log::error($ex);
+                        }
+                    }
+                
+                
+            }
+        }
+}
 
 }
