@@ -82,7 +82,7 @@ class NeonProductImport extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
 
-        Log::useFiles(storage_path() . '/logs/neonproductimport-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/z_productimport-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
             //Start Transaction
@@ -98,7 +98,8 @@ class NeonProductImport extends Command {
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
             
-            
+            Producttemp::truncate();
+            Packagetemp::truncate();
             
             if (!empty($ProductID)) { 
                 
@@ -106,17 +107,15 @@ class NeonProductImport extends Command {
                 $Getdata = array();
                 $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod, $APIUrl);
                 if (isset($APIResponse["error"])) {
-                    Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
+                    Log::info('z_neonproductimport1 Error in  api/Products service.' . print_r($APIResponse["error"]));
                 } else {
                     $ProductResponses = json_decode($APIResponse["response"]);
 
                     foreach($ProductResponses as $ProductResponse) {
-                        Log::info('ProductResponse.' . $ProductResponse->isPackage);
+                        Log::info('z_ProductResponse2.' . $ProductResponse->isPackage);
                        // var_dump($ProductResponse->isPackage);
                         if($ProductResponse->isPackage == false) {
-                            Log::info('ProductResponse. Template');
-                            Producttemp::truncate();
-                            
+                            Log::info('z_ProductResponse3. Template');
                             $productdata = array();
                             $productdata['ServiceId']   = $ServiceId[0];
                             $productdata['ProductId']   = $ProductResponse->productId;
@@ -166,9 +165,7 @@ class NeonProductImport extends Command {
 //                                }
 //                            }
                         }else{
-                            Log::info('ProductResponse. Package');
-                            Packagetemp::truncate();
-                            
+                            Log::info('z_ProductResponse. Package');
                                 $productdata = array();
                             
                                 $packagedata = array();
@@ -206,15 +203,15 @@ class NeonProductImport extends Command {
                     }
                 }
             }else{
-                Log::info('neonproductimport Not Find DynamicFieldsID.');
+                Log::info('z_neonproductimport5 Not Find DynamicFieldsID.');
             }
             
             
             //Insert other Company Packages
-            $result = DB::connection('sqlsrv2')->select("CALL  Prc_ImportPackagestemp( '" . $CompanyID . "','" . $ProductID . "')");
-            $result = DB::connection('sqlsrv2')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $ProductID . "')");
+            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
+            //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
             
-            Log::info('neonproductimport Next step in  api/Products service.');
+            Log::info('z_neonproductimport Next step in  api/Products service.');
             //Track The Log          
             $joblogdata['Message'] = 'neonproductimport Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;

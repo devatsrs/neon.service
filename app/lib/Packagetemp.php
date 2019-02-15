@@ -3,11 +3,11 @@ namespace App\Lib;
 class Packagetemp extends \Eloquent
 {
     //Package
-    protected $guarded = array("ProductId");
+    protected $guarded = array("id");
 
     protected $table = 'tblPackage_temp';
 
-    protected $primaryKey = "ProductId";
+    protected $primaryKey = "id";
 
 
 }
