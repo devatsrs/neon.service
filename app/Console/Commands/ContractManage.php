@@ -225,6 +225,10 @@ class ContractManage extends Command {
 							$emailCustomerdata['Services'] .= "</table>";
 							$emailCustomerdata['Days'] = $Settings->ContractAlertDays;
 							$emailCustomerdata['AlertID'] = $Alert->AlertID;
+							$emailCustomerdata['ServiceTitle'] = $selContract->ServiceTitle;
+							$emailCustomerdata['ContractStartDate'] = $selContract->ContractStartDate;
+							$emailCustomerdata['ContractEndDate'] = $selContract->ContractEndDate;
+
 							$this->ContractExpireCustomerEmail($emailCustomerdata);
 						}
 					}
@@ -389,7 +393,10 @@ class ContractManage extends Command {
 				'CompanyName' => $CompanyName,
 				'CompanyID' => $CompanyID,
 				'Services' => $email['Services'],
-				'Days' =>  $email['Days']
+				'Days' =>  $email['Days'],
+				'ServiceTitle' => $email['ServiceTitle'],
+				'ContractStartDate' => $email['ContractStartDate'],
+				'ContractEndDate' => $email['ContractEndDate'],
 
 			);
 			$emaildata['EmailToName'] = $Account->AccountName;
