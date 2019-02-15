@@ -124,6 +124,7 @@ class NeonProductImport extends Command {
                             $productdata['prefixName']  = $ProductResponse->prefixName;
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
+                            $packagedata['FieldName']   = $FieldsProductID;
                             $ServiceTemplate            = Producttemp::create($productdata);
                             
                             
@@ -173,6 +174,7 @@ class NeonProductImport extends Command {
                                 $packagedata['Name']        = $ProductResponse->name;
                                 $packagedata['CurrencyId']  = $CurrencyId;
                                 $packagedata['CompanyID']   = $CompanyID;
+                                $packagedata['FieldName']   = $PackageId;
                                 $Packagetemp            = Packagetemp::create($packagedata);
                             
 //                                $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
