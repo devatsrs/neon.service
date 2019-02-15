@@ -392,11 +392,12 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 		$replace_array['ServiceName'] = $data['ServiceName'];
 
-		$extraSpecific = ["{{ServiceName}}"];
+		$extraSpecific = ["{{ServiceName}}","{{ServiceTitle}}"];
 
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);
@@ -420,9 +421,13 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceName'] = $data['Services'];
-		$extraSpecific = ["{{ServiceName}}"];
+		$replace_array['DaysOfExpiry'] = $data['Days'];
+
+
+		$extraSpecific = ["{{DaysOfExpiry}}","{{ServiceName}}"];
 
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);

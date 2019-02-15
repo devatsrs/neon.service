@@ -95,9 +95,11 @@ class ContractManage extends Command {
 					DB::table('tblAccountServiceCancelContract')->where('AccountServiceID',$sel->AccountServiceID)->delete();
 
 					$AccountNameGet = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
+					$serviceName = DB::table('tblService')->where('ServiceID',$sel->ServiceID)->first();
 					$CancelContract['AccountName'] = $AccountNameGet->AccountName;
 					$CancelContract['CompanyId'] = $AccountNameGet->CompanyId;
 					$CancelContract['ServiceTitle'] = $sel->ServiceTitle;
+					$CancelContract['ServiceName'] = $serviceName->ServiceName;
 					$CancelContractResult[count($CancelContractResult) + 1] = $CancelContract;
 					var_dump($CancelContractResult);
 				}
@@ -131,14 +133,16 @@ class ContractManage extends Command {
 						'AccountServiceID' => $sel->AccountServiceID
 
 					];
+					$serviceName = DB::table('tblService')->where('ServiceID',$sel->ServiceID)->first();
 					$AccountNameGet = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
 					$RenewContract['AccountName'] = $AccountNameGet->AccountName;
 					$RenewContract['CompanyId'] = $AccountNameGet->CompanyId;
 					$RenewContract['ServiceTitle'] = $sel->ServiceTitle;
+					$RenewContract['ServiceName'] = $serviceName->ServiceName;
 					$RenewContractResult[count($RenewContractResult) + 1] = $RenewContract;
 
 					$account = DB::table('tblAccount')->where('AccountID',$sel->AccountID)->first();
-					$serviceName = DB::table('tblService')->where('ServiceID',$sel->ServiceID)->first();
+
 					$email['AccountID'] = $account->AccountID;
 					$email['CompanyID'] = $account->CompanyId;
 					$email['ServiceTitle'] = $sel->ServiceTitle;
@@ -153,70 +157,80 @@ class ContractManage extends Command {
 				Log::info('Contract Manage Account Service ID For Renewal Contract'. " " . print_r($Renewal,true));
 			}
 			$Alerts = DB::table('tblAlert')->where('AlertType', 'Contract_Reminder')->where('status', 1)->get();
-			foreach ($Alerts as $Alert){
+			foreach ($Alerts as $Alert) {
 				$Settings = json_decode($Alert->Settings);
-			if ($Settings->AccountIDs == -1) {
-				$ContractExpire = "CALL prc_getExpireForAdmin('" . '0' . "')";
-			} else {
-				$ContractExpire = "CALL prc_getExpireForAdmin('" . $Settings->AccountIDs . "')";
-			}
-			$selectExpireContract = DB::select($ContractExpire);
-
-			if (count($selectExpireContract) > 0) {
-				$ExpireContract = array();
-				foreach ($selectExpireContract as $sel) {
-					$AccountNameGet = DB::table('tblAccount')->where('AccountID', $sel->AccountID)->first();
-					$ExpireContract['AccountName'] = $AccountNameGet->AccountName;
-					$ExpireContract['CompanyId'] = $AccountNameGet->CompanyId;
-					$ExpireContract['AccountID'] = $sel->AccountID;
-					$ExpireContract['ServiceTitle'] = $sel->ServiceTitle;
-					$ExpireContractResult[count($ExpireContractResult) + 1] = $ExpireContract;
-
-
-				}
-				$this::ContractExpireEmailReminder($CompanyID, $ExpireContractResult, $Settings);
-				$ExpireContractResult = [];
-			}
-			if ($Settings->EmailToAccount == 1) {
-				$emailCustomerdata = [];
+				//dd($Settings->ContractAlertDays);
 				if ($Settings->AccountIDs == -1) {
-					$CustomerExpireContract = "CALL prc_getExpireContract('" . '0' . "')";
+					$ContractExpire = "CALL prc_getExpireForAdmin(0   , $Settings->ContractAlertDays )";
 				} else {
-					$CustomerExpireContract = "CALL prc_getExpireContract('" . $Settings->AccountIDs . "')";
+					$ContractExpire = "CALL prc_getExpireForAdmin($Settings->AccountIDs  , $Settings->ContractAlertDays)";
 				}
+				$selectExpireContract = DB::select($ContractExpire);
+//				var_dump($selectExpireContract);
+//				var_dump($Settings);
+//				die;
+				if (count($selectExpireContract) > 0) {
+					$ExpireContract = array();
+					foreach ($selectExpireContract as $sel) {
 
-				$selectCustomerExpireContract = DB::select($CustomerExpireContract);
+						$AccountNameGet = DB::table('tblAccount')->where('AccountID', $sel->AccountID)->first();
+						$serviceNames = DB::table('tblService')->where('ServiceID', $sel->ServiceID)->first();
+						$ExpireContract['AccountName'] = $AccountNameGet->AccountName;
+						$ExpireContract['CompanyId'] = $AccountNameGet->CompanyId;
+						$ExpireContract['AccountID'] = $sel->AccountID;
+						$ExpireContract['ServiceTitle'] = $sel->ServiceTitle;
+						$ExpireContract['serviceNames'] = $serviceNames->ServiceName;
+						$ExpireContractResult[count($ExpireContractResult) + 1] = $ExpireContract;
 
-				if (count($selectCustomerExpireContract) > 0) {
-					foreach ($selectCustomerExpireContract as $sel) {
-						var_dump($sel);
-						$CustomerExpireContractByID = "CALL prc_getExpireContract('" . $sel->AccountID . "')";
-						$selectCustomerExpireContractByID = DB::select($CustomerExpireContractByID);
-						$emailCustomerdata['AccountID'] = $sel->AccountID;
-						$emailCustomerdata['CompanyID'] = Account::getCompanyID($sel->AccountID);
-						$emailCustomerdata['Services'] = "<table width='100%' border='1' cellpadding='0' cellspacing='0' style='border:1px solid #ccc;'>";
-						$emailCustomerdata['Services'] .= "<tr>";
-						$emailCustomerdata['Services'] .= "<th>Account</th>";
-						$emailCustomerdata['Services'] .= "<th>Service Title</th>";
-						$emailCustomerdata['Services'] .= "<th>Service Name</th>";
-						$emailCustomerdata['Services'] .= "</tr>";
 
-						foreach ($selectCustomerExpireContractByID as $selContract) {
-							$serviceNames = DB::table('tblService')->where('ServiceID', $selContract->ServiceID)->first();
+					}
+					$this::ContractExpireEmailReminder($CompanyID, $ExpireContractResult, $Settings);
+					$ExpireContractResult = [];
+				}
+				if ($Settings->EmailToAccount == 1) {
+					$emailCustomerdata = [];
+					if ($Settings->AccountIDs == -1) {
+						$CustomerExpireContract = "CALL prc_getExpireContract( '0'   , $Settings->ContractAlertDays)";
+					} else {
+						$CustomerExpireContract = "CALL prc_getExpireContract($Settings->AccountIDs  , $Settings->ContractAlertDays)";
+					}
+
+					$selectCustomerExpireContract = DB::select($CustomerExpireContract);
+
+					if (count($selectCustomerExpireContract) > 0) {
+						foreach ($selectCustomerExpireContract as $sel) {
+							var_dump($sel);
+							$CustomerExpireContractByID = "CALL prc_getExpireContract( $sel->AccountID , $Settings->ContractAlertDays)";
+							$selectCustomerExpireContractByID = DB::select($CustomerExpireContractByID);
+							$emailCustomerdata['AccountID'] = $sel->AccountID;
+							$emailCustomerdata['CompanyID'] = Account::getCompanyID($sel->AccountID);
+							$emailCustomerdata['Services'] = "<table width='100%' border='1' cellpadding='0' cellspacing='0' style='border:1px solid #ccc;'>";
 							$emailCustomerdata['Services'] .= "<tr>";
-							$emailCustomerdata['Services'] .= "<td>" . $selContract->AccountID . "</td>";
-							$emailCustomerdata['Services'] .= "<td>" . $selContract->ServiceTitle . "</td>";
-							$emailCustomerdata['Services'] .= "<td>" . $serviceNames->ServiceName . "</td>";
+							$emailCustomerdata['Services'] .= "<th>Account</th>";
+							$emailCustomerdata['Services'] .= "<th>Service Title</th>";
+							$emailCustomerdata['Services'] .= "<th>Service Name</th>";
 							$emailCustomerdata['Services'] .= "</tr>";
+
+							foreach ($selectCustomerExpireContractByID as $selContract) {
+								$serviceNames = DB::table('tblService')->where('ServiceID', $selContract->ServiceID)->first();
+								$emailCustomerdata['Services'] .= "<tr>";
+								$emailCustomerdata['Services'] .= "<td>" . $selContract->AccountID . "</td>";
+								$emailCustomerdata['Services'] .= "<td>" . $selContract->ServiceTitle . "</td>";
+								$emailCustomerdata['Services'] .= "<td>" . $serviceNames->ServiceName . "</td>";
+								$emailCustomerdata['Services'] .= "</tr>";
+							}
+							$emailCustomerdata['Services'] .= "</table>";
+							$emailCustomerdata['Days'] = $Settings->ContractAlertDays;
+							$emailCustomerdata['AlertID'] = $Alert->AlertID;
+							$this->ContractExpireCustomerEmail($emailCustomerdata);
 						}
-						$emailCustomerdata['Services'] .= "</table>";
-						$this->ContractExpireCustomerEmail($emailCustomerdata);
 					}
 				}
-			}
-		}
 
-			$this::ContractManageNotification($CancelContractResult,$RenewContractResult,$CompanyID);
+				}
+				if (!empty($CancelContractResult) || !empty($RenewContractResult)) {
+					$this::ContractManageNotification($CancelContractResult, $RenewContractResult, $CompanyID);
+				}
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
 			$joblogdata['created_by'] = 'RMScheduler';
@@ -300,6 +314,7 @@ class ContractManage extends Command {
 				'ServiceTitle' => $email['ServiceTitle'],
 				'ServiceName' => $email['ServiceName'],
 			);
+
 			$emaildata['EmailToName'] = $Account->AccountName;
 			$body = EmailsTemplates::setContractManagePlaceholder($Account, 'body', $CompanyID, $emaildata);
 			$emaildata['Subject'] = EmailsTemplates::setContractManagePlaceholder($Account, "subject", $CompanyID, $emaildata);
@@ -322,10 +337,27 @@ class ContractManage extends Command {
 				Log::info("============ EmailData ===========");
 				Log::info($emaildata);
 				$customeremail_status = Helper::sendMaiL($body, $emaildata, 0);
+
+				$EmailLog = DB::table('AccountEmailLog')->where('AccountID', $email['AccountID'])->whereRaw('Date(created_at) = CURDATE()')->where('EmailTo', $Account->BillingEmail)->where('EmailType',AccountEmailLog::ContractManage)->get();
+				if (!count($EmailLog) > 0){
+
+						$logdata = array(
+							'CompanyID' => $CompanyID,
+							'AccountID' => $email['AccountID'],
+							'CreatedBy' => 'System Notification',
+							'created_at' => date('Y-m-d H:i:s'),
+							'EmailTo' => $Account->BillingEmail,
+							'Message' => $body,
+							'EmailType' => AccountEmailLog::ContractManage,
+							'Subject' => 'Customer Contract Renewal'
+						);
+						AccountEmailLog::insert($logdata);
+					}
+				}
 			}
 		}
 		//var_dump($email);
-	}
+
 
 	public static function ContractExpireEmailReminder($CompanyID,$ExpireContractResult,$Settings)
 	{
@@ -342,6 +374,7 @@ class ContractManage extends Command {
 			'Subject' => 'Contract Expire Email'
 		);
 		$emailstatus = Helper::sendMail('emails.ContractExpire', $emaildata);
+
 	}
 	public function ContractExpireCustomerEmail($email){
 		$CompanyID = $email['CompanyID'];
@@ -353,6 +386,8 @@ class ContractManage extends Command {
 				'CompanyName' => $CompanyName,
 				'CompanyID' => $CompanyID,
 				'Services' => $email['Services'],
+				'Days' =>  $email['Days']
+
 			);
 			$emaildata['EmailToName'] = $Account->AccountName;
 			$body = EmailsTemplates::setContractExpirePlaceholder($Account, 'body', $CompanyID, $emaildata);
@@ -376,7 +411,13 @@ class ContractManage extends Command {
 				}
 				Log::info("============ EmailData ===========");
 				Log::info($emaildata);
-				$EmailLog = DB::table('AccountEmailLog')->where('AccountID', $email['AccountID'])->whereRaw('Date(created_at) = CURDATE()')->where('EmailTo', $Account->BillingEmail)->get();
+				$EmailLog = DB::table('AccountEmailLog')
+					->where('AccountID', $email['AccountID'])
+					->whereRaw('Date(created_at) = CURDATE()')
+					->where('EmailTo', $Account->BillingEmail)
+					->where('EmailType',AccountEmailLog::ContractExpire)
+					->where('MonitoringID',$email['AlertID'])
+					->get();
 				if (!count($EmailLog) > 0){
 					$customeremail_status = Helper::sendMaiL($body, $emaildata, 0);
 					if ($customeremail_status) {
@@ -389,9 +430,10 @@ class ContractManage extends Command {
 							'EmailTo' => $Account->BillingEmail,
 							'Message' => $body,
 							'EmailType' => AccountEmailLog::ContractExpire,
-							'Subject' => 'Customer Contract Expire'
+							'Subject' => 'Customer Contract Expire',
+							'MonitoringID' => $email['AlertID']
 						);
-						AccountEmailLog::insert($logdata);
+						$emailLogId = AccountEmailLog::insert($logdata);
 					}
 				}
 			}
