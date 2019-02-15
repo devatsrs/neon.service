@@ -124,7 +124,7 @@ class NeonProductImport extends Command {
                             $productdata['prefixName']  = $ProductResponse->prefixName;
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
-                            $packagedata['FieldName']   = $FieldsProductID;
+                            $productdata['FieldName']   = $FieldsProductID;
                             $ServiceTemplate            = Producttemp::create($productdata);
                             
                             
