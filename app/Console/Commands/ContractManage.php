@@ -180,6 +180,7 @@ class ContractManage extends Command {
 						$ExpireContract['AccountID'] = $sel->AccountID;
 						$ExpireContract['ServiceTitle'] = $sel->ServiceTitle;
 						$ExpireContract['serviceNames'] = $serviceNames->ServiceName;
+						$ExpireContract['ContractEndDate'] = $sel->ContractEndDate;
 						$ExpireContractResult[count($ExpireContractResult) + 1] = $ExpireContract;
 
 
@@ -209,6 +210,7 @@ class ContractManage extends Command {
 							$emailCustomerdata['Services'] .= "<th>Account</th>";
 							$emailCustomerdata['Services'] .= "<th>Service Title</th>";
 							$emailCustomerdata['Services'] .= "<th>Service Name</th>";
+							$emailCustomerdata['Services'] .= "<th>Contract End Date</th>";
 							$emailCustomerdata['Services'] .= "</tr>";
 
 							foreach ($selectCustomerExpireContractByID as $selContract) {
@@ -217,6 +219,7 @@ class ContractManage extends Command {
 								$emailCustomerdata['Services'] .= "<td>" . $selContract->AccountID . "</td>";
 								$emailCustomerdata['Services'] .= "<td>" . $selContract->ServiceTitle . "</td>";
 								$emailCustomerdata['Services'] .= "<td>" . $serviceNames->ServiceName . "</td>";
+								$emailCustomerdata['Services'] .= "<td>" . $selContract->ContractEndDate . "</td>";
 								$emailCustomerdata['Services'] .= "</tr>";
 							}
 							$emailCustomerdata['Services'] .= "</table>";
