@@ -147,6 +147,8 @@ class ContractManage extends Command {
 					$email['CompanyID'] = $account->CompanyId;
 					$email['ServiceTitle'] = $sel->ServiceTitle;
 					$email['ServiceName'] = $serviceName->ServiceName;
+					$email['ContractStartDate'] = $sel->ContractStartDate;
+					$email['ContractEndDate'] = $sel->ContractEndDate;
 					var_dump($email);
 					$this->ContractManageCustomerEmail($email);
 				}
@@ -320,6 +322,8 @@ class ContractManage extends Command {
 				'CompanyID' => $CompanyID,
 				'ServiceTitle' => $email['ServiceTitle'],
 				'ServiceName' => $email['ServiceName'],
+				'ContractStartDate' => $email['ContractStartDate'],
+				'ContractEndDate' => $email['ContractEndDate']
 			);
 
 			$emaildata['EmailToName'] = $Account->AccountName;

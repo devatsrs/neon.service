@@ -396,8 +396,10 @@ class EmailsTemplates{
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 		$replace_array['ServiceName'] = $data['ServiceName'];
+		$replace_array['ContractEndDate'] = $data['ContractEndDate'];
+		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 
-		$extraSpecific = ["{{ServiceName}}","{{ServiceTitle}}"];
+		$extraSpecific = ["{{ServiceName}}","{{ServiceTitle}}","{{ContractStartDate}}","{{ContractEndDate}}"];
 
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);
