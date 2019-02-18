@@ -154,6 +154,8 @@ class PushSalesPricesERP extends Command {
 				->select(['tblPackage.Name', 'tblPackage.RateTableId',
 					'tblPackage.CurrencyId']);
 			$ProductPackages = $ProductPackages->where(["tblDynamicFieldsValue.DynamicFieldsID" => $PackageDynamicFieldsID]);
+			$ProductPackages = $ProductPackages->where(["tblPackage.CompanyID" => $CompanyID]);
+			$ProductPackages = $ProductPackages->where(["tblPackage.status" => 1]);
 			Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
 			$ProductPackages = $ProductPackages->get();
 
