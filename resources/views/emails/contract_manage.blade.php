@@ -27,8 +27,8 @@
                 <thead>
                 <tr>
                     <th width="20%" align="center">Account Name</th>
+                    <th width="20%" align="center">Service Title</th>
                     <th width="20%" align="center">Service Name</th>
-                    <th width="20%" align="center">Company ID</th>
                     <th width="40%" align="center">Message</th>
                 </tr>
                 </thead>
@@ -37,7 +37,7 @@
                         <tr>
                             <td width="20%" align="center">{{$cancelContract["AccountName"]}}</td>
                             <td width="20%" align="center">{{$cancelContract["ServiceTitle"]}}</td>
-                            <td width="20%" align="center">{{$cancelContract["CompanyId"]}}</td>
+                            <td width="20%" align="center">{{$cancelContract["ServiceName"]}}</td>
                             <td width="40%" align="center">Contract Cancel</td>
                         </tr>
                     @endforeach
@@ -60,8 +60,8 @@
                 <thead>
                 <tr>
                     <th width="20%" align="center">Account Name</th>
+                    <th width="20%" align="center">Service Title</th>
                     <th width="20%" align="center">Service Name</th>
-                    <th width="20%" align="center">Company ID</th>
                     <th width="40%" align="center">Message</th>
                 </tr>
                 </thead>
@@ -70,7 +70,7 @@
                     <tr>
                         <td width="20%" align="center">{{$RenewContract["AccountName"]}}</td>
                         <td width="20%" align="center">{{$RenewContract["ServiceTitle"]}}</td>
-                        <td width="20%" align="center">{{$RenewContract["CompanyId"]}}</td>
+                        <td width="20%" align="center">{{$RenewContract["ServiceName"]}}</td>
                         <td width="40%" align="center">Contract Renew</td>
                     </tr>
                 @endforeach
@@ -81,16 +81,5 @@
     </div>
 
 </div>
-    @if(empty($CancelContracts) && empty($RenewContracts))
-        <div id="content">
-            <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;" class="table table-bordered">
-                <thead>
-                <tr>
-                    <th width="100%" align="center">No Contracts Cancel And Renewed Today!</th>
-                </tr>
-                </thead>
-            </table>
-        </div>
-    @endif
 </body>
 </html>
