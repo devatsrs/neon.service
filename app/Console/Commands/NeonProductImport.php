@@ -213,6 +213,10 @@ class NeonProductImport extends Command {
             $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
             //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
             
+            
+            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducts()");
+            
+            
             Log::info('z_neonproductimport Next step in  api/Products service.');
             //Track The Log          
             $joblogdata['Message'] = 'neonproductimport Successfully Done';
