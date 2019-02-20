@@ -392,10 +392,51 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
 		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
+		$replace_array['ServiceName'] = $data['ServiceName'];
+		$replace_array['ContractEndDate'] = $data['ContractEndDate'];
+		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 
-		$extraSpecific = ["{{ServiceTitle}}"];
+		$extraSpecific = ["{{ServiceName}}","{{ServiceTitle}}","{{ContractStartDate}}","{{ContractEndDate}}"];
+
+		$extraDefault = EmailsTemplates::$fields;
+		$extra = array_merge($extraDefault, $extraSpecific);
+
+		foreach ($extra as $item) {
+			$item_name = str_replace(array('{', '}'), array('', ''), $item);
+			if (array_key_exists($item_name, $replace_array)) {
+				$EmailMessage = str_replace($item, $replace_array[$item_name], $EmailMessage);
+			}
+		}
+
+		return $EmailMessage;
+	}
+	static function setContractExpirePlaceholder($Account,$type="body",$CompanyID, $data = [])
+	{
+		$replace_array = $data;
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Account::ContractExpireEmailTemplate, $Account->LanguageID);
+		if ($type == "subject") {
+			$EmailMessage = $EmailTemplate->Subject;
+		} else {
+			$EmailMessage = $EmailTemplate->TemplateBody;
+		}
+		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
+		$replace_array['ServiceName'] = $data['Services'];
+		$replace_array['DaysOfExpiry'] = $data['Days'];
+		$replace_array['ContractStartDate'] = $data['ContractStartDate'];
+		$replace_array['ContractEndDate'] = $data['ContractEndDate'];
+		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
+
+
+
+
+
+
+		$extraSpecific = ["{{DaysOfExpiry}}","{{ServiceName}}","{{ContractStartDate}}","{{ContractEndDate}}","{{ServiceTitle}}"];
 
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);
