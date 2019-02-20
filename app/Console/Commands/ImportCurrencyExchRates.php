@@ -21,7 +21,7 @@ class ImportCurrencyExchRates extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'europcentralbank {CompanyID} {CronJobID}';
+	protected $name = 'europcentralbank';
 
 	/**
 	 * The console command description.
@@ -113,9 +113,10 @@ class ImportCurrencyExchRates extends Command {
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
 		try {
+			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
 			$cronjob = CronJob::find($CronJobID);
+			CronJob::activateCronJob($cronjob);
             $json = json_decode($cronjob->Settings);
-			CronJob::activateCronJob($CronJob);
 			$url = $json->EuropCentralBank;
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
@@ -129,8 +130,10 @@ class ImportCurrencyExchRates extends Command {
 				}
 			}
 			//echo 'Conversion Rates Imported';
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
+
+			Log::info('UpdateRates finished');
 			CronJob::CronJobSuccessEmailSend($CronJobID);
+			Log::info('Email Send');
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
 			$joblogdata['created_by'] = 'RMScheduler';
