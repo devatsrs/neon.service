@@ -115,6 +115,7 @@ class ImportCurrencyExchRates extends Command {
 		try {
 			$cronjob = CronJob::find($CronJobID);
             $json = json_decode($cronjob->Settings);
+			CronJob::activateCronJob($CronJob);
 			$url = $json->EuropCentralBank;
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
