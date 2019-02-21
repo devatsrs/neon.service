@@ -135,6 +135,9 @@ class NeonProductImport extends Command {
                             if (!empty($ProductResponse->accessTypeName)) {
                                 $productdata['accessType'] = $ProductResponse->accessTypeName;
                             }
+                            if (!empty($ProductResponse->countryCode)) {
+                                $productdata['countryCode'] = $ProductResponse->countryCode;
+                            }
                             $ServiceTemplate            = Producttemp::create($productdata);
                             
                             
