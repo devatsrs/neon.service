@@ -138,9 +138,6 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($cronjob);
-
-
-			Log::info('Successfully Imported All Rates');
 			echo "DONE With CurrencyExchangeRates";
 
 		}catch (\Exception $e){echo $e;
