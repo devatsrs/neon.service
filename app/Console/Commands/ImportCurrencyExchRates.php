@@ -129,11 +129,8 @@ class ImportCurrencyExchRates extends Command {
 					}
 				}
 			}
-			//echo 'Conversion Rates Imported';
 
-			Log::info('UpdateRates finished');
 			CronJob::CronJobSuccessEmailSend($CronJobID);
-			Log::info('Email Send');
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
 			$joblogdata['created_by'] = 'RMScheduler';
@@ -141,9 +138,7 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($cronjob);
-			CronHelper::after_cronrun($this->name, $this);
 			echo "DONE With CurrencyExchangeRates";
-			Log::info('Successfully Imported All Rates');
 
 		}catch (\Exception $e){echo $e;
 			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Error-' . date('Y-m-d') . '.log');
