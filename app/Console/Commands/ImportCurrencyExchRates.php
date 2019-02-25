@@ -21,7 +21,7 @@ class ImportCurrencyExchRates extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'europcentralbank {CompanyID} {CronJobID}';
+	protected $name = 'europcentralbank';
 
 	/**
 	 * The console command description.
@@ -113,7 +113,9 @@ class ImportCurrencyExchRates extends Command {
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
 		try {
+			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
 			$cronjob = CronJob::find($CronJobID);
+			CronJob::activateCronJob($cronjob);
             $json = json_decode($cronjob->Settings);
 			$url = $json->EuropCentralBank;
 			$xml = simplexml_load_file($url);
@@ -127,8 +129,7 @@ class ImportCurrencyExchRates extends Command {
 					}
 				}
 			}
-			//echo 'Conversion Rates Imported';
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
+
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
@@ -137,9 +138,7 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($cronjob);
-			CronHelper::after_cronrun($this->name, $this);
 			echo "DONE With CurrencyExchangeRates";
-			Log::info('Successfully Imported All Rates');
 
 		}catch (\Exception $e){echo $e;
 			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Error-' . date('Y-m-d') . '.log');

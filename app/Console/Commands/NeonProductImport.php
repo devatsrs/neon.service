@@ -125,6 +125,19 @@ class NeonProductImport extends Command {
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
                             $productdata['FieldName']   = $FieldsProductID;
+                            $city_tariff = '';
+                            if (!empty($ProductResponse->cityName)) {
+                                $city_tariff = $ProductResponse->cityName;
+                            } else {
+                                $city_tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
+                            }
+                            $productdata['city_tariff'] = $city_tariff;
+                            if (!empty($ProductResponse->accessTypeName)) {
+                                $productdata['accessType'] = $ProductResponse->accessTypeName;
+                            }
+                            if (!empty($ProductResponse->countryCode)) {
+                                $productdata['countryCode'] = $ProductResponse->countryCode;
+                            }
                             $ServiceTemplate            = Producttemp::create($productdata);
                             
                             
@@ -212,6 +225,10 @@ class NeonProductImport extends Command {
             //Insert other Company Packages
             $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
             //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
+            
+            
+            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducts()");
+            
             
             Log::info('z_neonproductimport Next step in  api/Products service.');
             //Track The Log          
