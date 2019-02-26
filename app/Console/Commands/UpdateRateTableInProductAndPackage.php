@@ -75,7 +75,7 @@
 		 */
 		public function handle() {
 
-			//Staging php artisan updateratetableproductandpackage 1 268
+			//Staging php artisan updateratetableproductandpackage 1 286
 			//php artisan updateratetableproductandpackage 1 349
 			CronHelper::before_cronrun($this->name, $this );
 
@@ -90,7 +90,7 @@
 			CronJob::activateCronJob($CronJob);
 			CronJob::createLog($CronJobID);
 
-				DB::select('CALL UpdateRateTableInProductAndPackage()');
+				DB::select('CALL UpdateRateTableInProductAndPackage(' .$CompanyID. ')');
 		Log::info('UpdateRateTableInProductAndPackage succefully run.');
 					CronJob::CronJobSuccessEmailSend($CronJobID);
 					$joblogdata['CronJobID'] = $CronJobID;
