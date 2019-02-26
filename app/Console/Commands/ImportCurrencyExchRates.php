@@ -113,12 +113,14 @@ class ImportCurrencyExchRates extends Command {
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
 		try {
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
-			$cronjob = CronJob::find($CronJobID);
-			CronJob::activateCronJob($cronjob);
-            $json = json_decode($cronjob->Settings);
+			Log::useFiles(storage_path() . '/logs/europcentralbank-companyid-'.$companyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
+			$CronJob = CronJob::find($CronJobID);
+			$data = CronJob::activateCronJob($CronJob);
+			Log::info($data);
+            $json = json_decode($CronJob->Settings);
 			$url = $json->EuropCentralBank;
 			$time_start = microtime(true);
+			/*
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
 				foreach ($data as $val) {
@@ -132,7 +134,7 @@ class ImportCurrencyExchRates extends Command {
 			}
 			$time_end = microtime(true);
 			$execution_time = ($time_end - $time_start)/60;
-
+*/
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 
@@ -143,8 +145,7 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 
-			CronJob::deactivateCronJob($cronjob);
-			
+			CronJob::deactivateCronJob($CronJob);
 			CronHelper::after_cronrun($this->name, $this);
 			Log::info("Cron Job Completed");
 			echo "DONE With CurrencyExchangeRates";
