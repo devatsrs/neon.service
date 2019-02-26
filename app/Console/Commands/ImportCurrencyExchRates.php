@@ -118,6 +118,7 @@ class ImportCurrencyExchRates extends Command {
 			CronJob::activateCronJob($cronjob);
             $json = json_decode($cronjob->Settings);
 			$url = $json->EuropCentralBank;
+			Log::info($url);
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
 				foreach ($data as $val) {
@@ -138,6 +139,7 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($cronjob);
+			Log::info("Cron Job Completed");
 			echo "DONE With CurrencyExchangeRates";
 
 		}catch (\Exception $e){echo $e;
