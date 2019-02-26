@@ -132,19 +132,19 @@ class ImportCurrencyExchRates extends Command {
 			}
 			$time_end = microtime(true);
 			$execution_time = ($time_end - $time_start)/60;
-			Log::info('Execution Time is '.$execution_time);
+
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
-			Log::info('Execution Time is 1');
+
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'CurrencyExchangeRates Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			CronJobLog::insert($joblogdata);
-			Log::info('Execution Time is 2');
+
 			CronJob::deactivateCronJob($cronjob);
-			Log::info('Execution Time is 3');
+			
 			CronHelper::after_cronrun($this->name, $this);
 			Log::info("Cron Job Completed");
 			echo "DONE With CurrencyExchangeRates";
