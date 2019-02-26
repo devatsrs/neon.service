@@ -118,8 +118,11 @@ class ImportCurrencyExchRates extends Command {
 			$data = CronJob::activateCronJob($CronJob);
 			Log::info($data);
             $json = json_decode($CronJob->Settings);
+			Log::info('Set 1');
 			$url = $json->EuropCentralBank;
+			Log::info('Set 2');
 			$time_start = microtime(true);
+			Log::info('Set 3');
 			/*
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
@@ -135,7 +138,7 @@ class ImportCurrencyExchRates extends Command {
 			$time_end = microtime(true);
 			$execution_time = ($time_end - $time_start)/60;
 */
-
+			Log::info('Set 4');
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 
 			$joblogdata['CronJobID'] = $CronJobID;
@@ -143,9 +146,11 @@ class ImportCurrencyExchRates extends Command {
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'CurrencyExchangeRates Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			Log::info('Set 41');
 			CronJobLog::insert($joblogdata);
-
+			Log::info('Set 42');
 			CronJob::deactivateCronJob($CronJob);
+			Log::info('Set 43');
 			CronHelper::after_cronrun($this->name, $this);
 			Log::info("Cron Job Completed");
 			echo "DONE With CurrencyExchangeRates";
