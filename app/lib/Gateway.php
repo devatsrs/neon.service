@@ -8,6 +8,7 @@ class Gateway extends \Eloquent {
 
     protected  $primaryKey = "GatewayID";
 
+    const GATEWAY_VOS5000 = 'VOS5000';
     const FTP_CLASSIC = "classic";
     const FTP_OVER_TLS_SSL = "ftps"; // FTP over TLS/SSL
     const SSH_FILE_TRANSFER = "ssh"; // SSH File Transfer Protocol
