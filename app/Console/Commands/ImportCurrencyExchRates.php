@@ -118,7 +118,7 @@ class ImportCurrencyExchRates extends Command {
 			CronJob::activateCronJob($cronjob);
             $json = json_decode($cronjob->Settings);
 			$url = $json->EuropCentralBank;
-			Log::info($url);
+			$time_start = microtime(true);
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
 				foreach ($data as $val) {
@@ -130,6 +130,9 @@ class ImportCurrencyExchRates extends Command {
 					}
 				}
 			}
+			$time_end = microtime(true);
+			$execution_time = ($time_end - $time_start)/60;
+			Log::info('Execution Time is '.$execution_time);
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
