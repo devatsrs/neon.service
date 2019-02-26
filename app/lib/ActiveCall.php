@@ -43,7 +43,7 @@ class ActiveCall extends \Eloquent {
         $Date = date('Y-m-d H:i:s');
 
         $Duration = strtotime($Date) - strtotime($ActiveCall->ConnectTime);
-        log::info('Current Date '.$Date.' Old Duration '.$OldDuration.' New Duration '.$Duration);
+        //log::info('Current Date '.$Date.' Old Duration '.$OldDuration.' New Duration '.$Duration);
         if($Duration > $OldDuration) {
 
             $BilledDuration = $Duration;
@@ -143,7 +143,7 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['RecordingCostPerMinute'] = $RecordingCostPerMinute;
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
                 $ActiveCall->update($UpdateData);
-                log::info('New Cost '.$Cost);
+                //log::info('New Cost '.$Cost);
 
             }
             if ($CallType == 'Inbound') {
@@ -265,7 +265,7 @@ class ActiveCall extends \Eloquent {
 
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
                 $ActiveCall->update($UpdateData);
-                log::info('New Cost '.$Cost);
+                //log::info('New Cost '.$Cost);
             }
         }
     }
