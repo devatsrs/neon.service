@@ -577,7 +577,7 @@ class CronJob extends \Eloquent {
         $dataactive['PID'] = $getmypid;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
         $CronJob->update($dataactive);
-        
+
     }
     public static function deactivateCronJob($CronJob1){
         $CronJob=CronJob::find($CronJob1->CronJobID);
