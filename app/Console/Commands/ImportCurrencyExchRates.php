@@ -110,18 +110,10 @@ class ImportCurrencyExchRates extends Command {
 
 	public function handle()
 	{
-		$CronJobID = $this->argument("CronJobID");
-		$companyID = $this->argument("CompanyID");
-		try {
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
-			Log::info('line 1');
-			Log::info('line 2');
-		}catch (\Exception $e){echo $e;
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Error-' . date('Y-m-d') . '.log');
 
-		}
-
-
+		Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-1-' . date('Y-m-d') . '.log');
+        Log::info('line 1');
+		Log::info('line 2');
 
 	}
 
