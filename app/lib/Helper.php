@@ -241,6 +241,9 @@ class Helper
         } else if (!empty($data['AttachmentPaths'])) {
             $logData['AttachmentPaths'] = $data['AttachmentPaths'];
         }
+        if(isset($data['InvoiceNo'])){
+            $logData['InvoiceNo'] = $data['InvoiceNo'];
+        }
         try {
             if ($AccountEmailLog = AccountEmailLog::Create($logData)) {
                 $status['status'] = 1;
@@ -321,6 +324,9 @@ class Helper
             "attach" => $status['attach'],
             "AttachmentPaths" => $status['AttachmentPaths'],
         ];
+        if(isset($emaildata['InvoiceNo'])){
+            $logData['InvoiceNo'] = $emaildata['InvoiceNo'];
+        }
         $statuslog = Helper::email_log($logData);
         return $statuslog;
     }
@@ -348,6 +354,7 @@ class Helper
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId, "VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
 
+
         if (isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])) {
             $WEBURL = CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId, 'WEB_URL');
             $replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $extra_settings['InvoiceID'] . '/cview?email=' . $Account->Email;
@@ -363,6 +370,9 @@ class Helper
         $replace_array['CompanyPostCode'] = $CompanyData->PostCode;
         $replace_array['CompanyCountry'] = $CompanyData->Country;
         $replace_array['Logo'] = '<img src="' . getCompanyLogo($Account->CompanyId) . '" />';
+
+
+
 
         $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
         $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);

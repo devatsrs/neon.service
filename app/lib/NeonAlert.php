@@ -101,6 +101,7 @@ class NeonAlert extends \Eloquent {
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         $Account = Account::find($AccountID);
+
         $AccountManagerEmail = Account::getAccountOwnerEmail($Account);
         if (isset($settings['AccountManager']) && $settings['AccountManager'] == 1 && !empty($AccountManagerEmail)) {
             $settings['ReminderEmail'] .= ',' . $AccountManagerEmail;
@@ -121,8 +122,12 @@ class NeonAlert extends \Eloquent {
                 'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
                 'CompanyID' => $CompanyID,
                 'CompanyName' => $Company->CompanyName,
-                'Message' => $EmailMessage
+                'Message' => $EmailMessage,
+
             );
+            if(isset($settings['InvoiceNumber'])){
+                $emaildata['InvoiceNo'] = $settings['InvoiceNumber'];
+            }
             if(!empty($settings['ReminderEmail'])) {
                 $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
                 $status = Helper::sendMail($email_view, $emaildata);
