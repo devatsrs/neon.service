@@ -111,8 +111,8 @@ class ImportCurrencyExchRates extends Command {
 	public function handle()
 	{
 
-		Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-1' . date('Y-m-d') . '.log');
-        //Log::info('line 1');
+		Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-1-' . date('Y-m-d') . '.log');
+        Log::info('line 1');
 		//Log::info('line 2');
 
 	}
