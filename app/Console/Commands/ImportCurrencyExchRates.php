@@ -113,63 +113,12 @@ class ImportCurrencyExchRates extends Command {
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
 		try {
-			Log::useFiles(storage_path() . '/logs/europcentralbank-companyid-'.$companyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
-			$CronJob = CronJob::find($CronJobID);
-			$data = CronJob::activateCronJob($CronJob);
-			Log::info($data);
-            $json = json_decode($CronJob->Settings);
-			Log::info('Set 1');
-			$url = $json->EuropCentralBank;
-			Log::info('Set 2');
-			$time_start = microtime(true);
-			Log::info('Set 3');
-			/*
-			$xml = simplexml_load_file($url);
-			foreach ($xml as $data) {
-				foreach ($data as $val) {
-					foreach ($val as $value) {
-						$apival = $value['currency'];
-						$rate = $value['rate'];
-						$this->UpdateRates($apival, $companyID, $rate);
-
-					}
-				}
-			}
-			$time_end = microtime(true);
-			$execution_time = ($time_end - $time_start)/60;
-*/
-			Log::info('Set 4');
-			CronJob::CronJobSuccessEmailSend($CronJobID);
-
-			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
-			$joblogdata['created_by'] = 'RMScheduler';
-			$joblogdata['Message'] = 'CurrencyExchangeRates Successfully Done';
-			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-			Log::info('Set 41');
-			CronJobLog::insert($joblogdata);
-			Log::info('Set 42');
-			CronJob::deactivateCronJob($CronJob);
-			Log::info('Set 43');
-			CronHelper::after_cronrun($this->name, $this);
-			Log::info("Cron Job Completed");
-			echo "DONE With CurrencyExchangeRates";
-
+			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
+			Log::info('line 1');
+			Log::info('line 2');
 		}catch (\Exception $e){echo $e;
 			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Error-' . date('Y-m-d') . '.log');
-			$this->info('Failed:' . $e->getMessage());
-			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
-			$joblogdata['created_by'] = 'RMScheduler';
-			$joblogdata['Message'] = 'Error:' . $e->getMessage();
-			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-			CronJobLog::insert($joblogdata);
-			if (!empty($cronsetting['ErrorEmail'])) {
 
-				$result = CronJob::CronJobErrorEmailSend($CronJobID, $e);
-				Log::error("**Email Sent Status " . $result['status']);
-				Log::error("**Email Sent message " . $result['message']);
-			}
 		}
 
 
