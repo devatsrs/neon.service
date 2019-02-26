@@ -115,7 +115,8 @@ class ImportCurrencyExchRates extends Command {
 		try {
 			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
 			$CronJob = CronJob::find($CronJobID);
-			CronJob::activateCronJob($CronJob);
+			$data = CronJob::activateCronJob($CronJob);
+			echo $data;
             $json = json_decode($CronJob->Settings);
 			$url = $json->EuropCentralBank;
 			$time_start = microtime(true);
