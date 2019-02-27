@@ -118,7 +118,7 @@ class PushSalesPricesERP extends Command {
 		//$APIResponse ;
         //print_r($cronsetting);die();
         Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
-		Log::info('PriceAPIURL .' .$PriceAPIURL  . ' ' . 'PriceAPIMethod' . ' ' .$PriceAPIMethod);
+		//Log::info('PriceAPIURL .' .$PriceAPIURL  . ' ' . 'PriceAPIMethod' . ' ' .$PriceAPIMethod);
 		try {
 
 			//Load Data
@@ -156,7 +156,7 @@ class PushSalesPricesERP extends Command {
 			$ProductPackages = $ProductPackages->where(["tblDynamicFieldsValue.DynamicFieldsID" => $PackageDynamicFieldsID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.CompanyID" => $CompanyID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.status" => 1]);
-			Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
+			//Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
 			$ProductPackages = $ProductPackages->get();
 
 
@@ -166,7 +166,7 @@ class PushSalesPricesERP extends Command {
   								  from tblReseller reseller";
 
 
-			Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
+			//Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
 			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.city_tariff,
 									(select  EffectiveDate  from tblRateTableRate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
@@ -176,13 +176,13 @@ class PushSalesPricesERP extends Command {
 								       and tblServiceTemplate.country is not null and tblServiceTemplate.prefixName is not null order by tblServiceTemapleInboundTariff.DIDCategoryId";
 
 
-			Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
+			//Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
 			$ProductResponses = DB::select($ProductSelectionQuery);
 			$DiDCategorySaveID = '';
 			$SetDiDCategory = 0;
 
 			foreach ($PartnerResults as $PartnerResult) {
-				Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
+				//Log::info('$ProductSelectionQuery Account.' . $PartnerResult->AccountID);
 				$SetDiDCategory = 0;
 				$DiDCategorySaveID = '';
 
@@ -198,13 +198,13 @@ class PushSalesPricesERP extends Command {
  												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
  												         	  and (pkgRate.ApprovedStatus = 1) and pkgRate.EffectiveDate <= NOW()";
 
-						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
+						//Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
 						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
 
 						//Log::info('Loop $data_langs.' . count($data_langs));
 						foreach ($RateTablePKGRates as $RateTablePKGRate) {
-							Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
+							//Log::info('tblRateTablePKGRate RateID.' . $RateTablePKGRate->RateID);
 							$data_langs = DB::table('tblLanguage')
 								->select("TranslationID", "tblTranslation.Language", "Translation", "tblLanguage.ISOCode")
 								->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
@@ -268,7 +268,7 @@ class PushSalesPricesERP extends Command {
 						}
 					}
 				}
-				Log::info('priceItemList package size.' . count($results));
+				//Log::info('priceItemList package size.' . count($results));
 				if (count($results) > 0) {
 					$Postdata = array();
 					$PricingJSONInput['pricePlanId'] = '';
@@ -279,7 +279,7 @@ class PushSalesPricesERP extends Command {
 					$PricingJSONInput['priceItemList'] = $results;
 					//Log::info('priceItemList json encode.' . print_r($Postdata, true));
 					$PricingJSONInput = json_encode($PricingJSONInput, true);
-					Log::info('priceItemList json encode.' . $PricingJSONInput);
+					//Log::info('priceItemList json encode.' . $PricingJSONInput);
 					$results = array();
 					$data = array();
 
@@ -323,7 +323,7 @@ class PushSalesPricesERP extends Command {
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
 
-					Log::info('$ServiceTemapleInboundTariff query.' . $Query);
+					//Log::info('$ServiceTemapleInboundTariff query.' . $Query);
 					$RateTableDIDRates = DB::select($Query);
 					//$RateTableDIDRates = $RateTableDIDRates->get();
 					//Log::info('$ServiceTemapleInboundTariff query.' . $ServiceTemapleInboundTariff->toSql());
@@ -340,7 +340,7 @@ class PushSalesPricesERP extends Command {
 							->join('tblTranslation', 'tblLanguage.LanguageID', '=', 'tblTranslation.LanguageID')
 							->get();
 						if ($SetDiDCategory == 1) {
-							Log::info('priceItemList json encode outside compare.' . $ProductResponse->DIDCategoryId . ':' . $DiDCategorySaveID);
+							//Log::info('priceItemList json encode outside compare.' . $ProductResponse->DIDCategoryId . ':' . $DiDCategorySaveID);
 							if ($ProductResponse->DIDCategoryId != $DiDCategorySaveID) {
 								//	Log::info('priceItemList json encode outside compare true.' . $ProductPackage->DIDCategoryId . ':' .  $DiDCategorySaveID . ":" . count($results)) ;
 								if (count($results) > 0) {
@@ -353,7 +353,7 @@ class PushSalesPricesERP extends Command {
 									$PricingJSONInput['priceItemList'] = $results;
 									//Log::info('priceItemList json encode.' . print_r($Postdata, true));
 									$PricingJSONInput = json_encode($PricingJSONInput, true);
-									Log::info('priceItemList json encode outside.' . $ProductPackage->DIDCategoryId . ' ' . $PricingJSONInput);
+									//Log::info('priceItemList json encode outside.' . $ProductPackage->DIDCategoryId . ' ' . $PricingJSONInput);
 									$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
 									$PricingJSONInput = [];
 									$results = array();
@@ -369,7 +369,7 @@ class PushSalesPricesERP extends Command {
 						foreach ($data_langs as $data_lang) {
 							$LabelName = $ProductResponse->country;
 							$json_file = json_decode($data_lang->Translation, true);
-							Log::info('Language Code.' . $data_lang->ISOCode);
+							//Log::info('Language Code.' . $data_lang->ISOCode);
 							//Universal Code Changes
 							if (strpos($ProductResponse->ProductName, 'UIFN') != false) {
 								$LabelName = str_replace(" ", "_", $LabelName);
@@ -606,7 +606,7 @@ class PushSalesPricesERP extends Command {
 						}
 					}
 
-					Log::info('priceItemList size.' . count($results));
+					//Log::info('priceItemList size.' . count($results));
 					//$apiPricing["priceItemList"] = $results;
 					$Postdata = array(
 //								'pricePlanId' => $pricePlanId,
@@ -625,7 +625,7 @@ class PushSalesPricesERP extends Command {
 					if ($SetDiDCategory == 0) {
 						$DiDCategorySaveID = $ProductResponse->DIDCategoryId;
 						$SetDiDCategory = 1;
-						Log::info('priceItemList json encode outside compare0.' . $ProductResponse->DIDCategoryId . ":" . $DiDCategorySaveID);
+					//	Log::info('priceItemList json encode outside compare0.' . $ProductResponse->DIDCategoryId . ":" . $DiDCategorySaveID);
 
 					}
 
@@ -642,7 +642,7 @@ class PushSalesPricesERP extends Command {
 					$PricingJSONInput['priceItemList'] = $results;
 					//Log::info('priceItemList json encode.' . print_r($Postdata, true));
 					$PricingJSONInput = json_encode($PricingJSONInput, true);
-					Log::info('priceItemList json encode inside.' . $DiDCategorySaveID . ' ' . $PricingJSONInput);
+					//Log::info('priceItemList json encode inside.' . $DiDCategorySaveID . ' ' . $PricingJSONInput);
 					$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
 					$PricingJSONInput = [];
 					$results = array();
@@ -658,11 +658,11 @@ class PushSalesPricesERP extends Command {
 				CronJobLog::insert($joblogdata);
 				CronJob::deactivateCronJob($CronJob);
 				CronHelper::after_cronrun($this->name, $this);
-				echo "DONE With PushSalesPricesERP";
+			//	echo "DONE With PushSalesPricesERP";
 		} else {
-				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $fieldName . ' Not Found');
-				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $AccountFieldName . ' Not Found');
-				Log::info('PushSalesPricesERP:DynamicFieldsID .' . $PackageFieldName . ' Not Found');
+			//	Log::info('PushSalesPricesERP:DynamicFieldsID .' . $fieldName . ' Not Found');
+			//	Log::info('PushSalesPricesERP:DynamicFieldsID .' . $AccountFieldName . ' Not Found');
+			//	Log::info('PushSalesPricesERP:DynamicFieldsID .' . $PackageFieldName . ' Not Found');
 				CronJob::CronJobSuccessEmailSend($CronJobID);
 				$joblogdata['CronJobID'] = $CronJobID;
 				$joblogdata['created_at'] = Date('y-m-d');
@@ -673,7 +673,7 @@ class PushSalesPricesERP extends Command {
 				CronJobLog::insert($joblogdata);
 				CronJob::deactivateCronJob($CronJob);
 				CronHelper::after_cronrun($this->name, $this);
-				echo "DONE With PushSalesPricesERP";
+			//	echo "DONE With PushSalesPricesERP";
 
 		}
 				//Code for PushSalesPriceService
@@ -683,7 +683,7 @@ class PushSalesPricesERP extends Command {
 
 
 				//Log::info('routingList:Get the routing list user company.' . $CompanyID);
-				Log::info('Run Cron.');
+			//	Log::info('Run Cron.');
 			}catch(\Exception $e){
 				Log::useFiles(storage_path() . '/logs/PushSalesPricesERP-Error-' . date('Y-m-d') . '.log');
 				//Log::info('LCRRoutingEngine Error.');

@@ -365,7 +365,7 @@ class CronJob extends \Eloquent {
 
         $cronsetting = json_decode($CronJob->Settings,true);
         $SuccessEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] : '';
-        Log::info('Email Send' . $SuccessEmail);
+        //Log::info('Email Send' . $SuccessEmail);
         $emaildata['CompanyID'] = $CompanyID;
         $emaildata['CompanyName'] = $ComanyName;
         $emaildata['EmailTo'] = $SuccessEmail;

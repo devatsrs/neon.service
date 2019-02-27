@@ -23,7 +23,7 @@ class NeonAPI
     public static function callAPI($postdata,$call_method,$api_url)
     {
         $url = $api_url . $call_method;
-        Log::info("Call API URL :" . $url . '  ' . $postdata);
+      //  Log::info("Call API URL :" . $url . '  ' . $postdata);
         $APIresponse = array();
         $curl = curl_init();
 
@@ -57,11 +57,11 @@ class NeonAPI
         if ($httpcode != 200) {
             $APIresponse["error"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-            Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
+          //  Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-            Log::info("Call API URL Sucess:" . print_r($response,true));
+          //  Log::info("Call API URL Sucess:" . print_r($response,true));
         }
 
         return $APIresponse;
