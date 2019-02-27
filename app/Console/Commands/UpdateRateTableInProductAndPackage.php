@@ -91,7 +91,7 @@
 			CronJob::createLog($CronJobID);
 
 				DB::select('CALL UpdateRateTableInProductAndPackage(' .$CompanyID. ')');
-		Log::info('UpdateRateTableInProductAndPackage succefully run.');
+		//Log::info('UpdateRateTableInProductAndPackage succefully run.');
 					CronJob::CronJobSuccessEmailSend($CronJobID);
 					$joblogdata['CronJobID'] = $CronJobID;
 					$joblogdata['created_at'] = Date('y-m-d');
@@ -101,11 +101,11 @@
 					CronJobLog::insert($joblogdata);
 					CronJob::deactivateCronJob($CronJob);
 					CronHelper::after_cronrun($this->name, $this);
-					echo "DONE With updateratetableproductandpackage";
+				//	echo "DONE With updateratetableproductandpackage";
 
 
 					//Log::info('routingList:Get the routing list user company.' . $CompanyID);
-					Log::info('Run Cron.');
+				//	Log::info('Run Cron.');
 				}catch(\Exception $e){
 					Log::useFiles(storage_path() . '/logs/updateratetableproductandpackage-Error-' . date('Y-m-d') . '.log');
 					//Log::info('LCRRoutingEngine Error.');

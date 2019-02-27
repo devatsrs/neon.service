@@ -103,7 +103,7 @@ class AutoTopAccount extends Command {
 								$successRecord["Number"] = $AutoPaymentAccount->Number;
 								$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
 								$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
-								Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
+								//Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
 							} else if ($DepositAccount[0] == "failed") {
 								$failedRecord = array();
 								$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
@@ -111,7 +111,7 @@ class AutoTopAccount extends Command {
 								$failedRecord["Number"] = $AutoPaymentAccount->Number;
 								$failedRecord["Response"] = $DepositAccount[1];
 								$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
-								Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
+								//Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
 							}
 						}
 					}
@@ -179,9 +179,9 @@ class AutoTopAccount extends Command {
 		$emaildata['EmailToName'] = '';
 		$emaildata['Subject'] = 'Auto Top Up Notification Email';
 		//$emaildata['Message'] = $Message;
-		Log::info("AutoTopUpNotificationEmail 1" . count($emaildata['SuccessDepositAccount']));
-		Log::info("AutoTopUpNotificationEmail 2" . count($emaildata['FailureDepositFund']));
-		Log::info("AutoTopUpNotificationEmail 3" . count($emaildata['ErrorDepositFund']));
+		//Log::info("AutoTopUpNotificationEmail 1" . count($emaildata['SuccessDepositAccount']));
+		//Log::info("AutoTopUpNotificationEmail 2" . count($emaildata['FailureDepositFund']));
+		//Log::info("AutoTopUpNotificationEmail 3" . count($emaildata['ErrorDepositFund']));
 		$result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
 		return $result;
 	}
@@ -210,7 +210,7 @@ class AutoTopAccount extends Command {
 		if (!NeonAPI::endsWith($CompanyConfiguration, "/")) {
 			$url = $CompanyConfiguration . "/";
 		}
-		Log::info("Balance API URL" . $url);
+		//Log::info("Balance API URL" . $url);
 
 		$APIresponse = NeonAPI::callAPI($postdata, "api/account/checkBalance", $url);
 
@@ -220,7 +220,7 @@ class AutoTopAccount extends Command {
 			//echo "cURL Error #:" . $err;
 		} else {
 			$response = json_decode($APIresponse["response"]);
-			Log::info(print_r($APIresponse["response"], true));
+			//Log::info(print_r($APIresponse["response"], true));
 			if (!empty($response->amount) && $response->amount >= $AutoPaymentAccount->MinThreshold) {
 				$topUpAmount = true;
 				return $topUpAmount;
@@ -254,7 +254,7 @@ class AutoTopAccount extends Command {
 		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";
 		}
-		Log::info("Balance API URL" . $url);
+		//Log::info("Balance API URL" . $url);
 		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
 
 
@@ -265,12 +265,12 @@ class AutoTopAccount extends Command {
 			//Log::info(print_r($APIresponse["error"],true));
 			$DepositAccount[0] = "error";
 			$DepositAccount[1] = $response->ErrorMessage;
-			Log::info("error " . print_r($DepositAccount,true));
+			//Log::info("error " . print_r($DepositAccount,true));
 			//echo "cURL Error #:" . $err;
 		} else {
 			//$accountresponse["response"] = $response;
 			$response = json_decode($APIresponse["response"]);
-			Log::info("Succcess" . print_r($response,true));
+			//Log::info("Succcess" . print_r($response,true));
 			$responseCode = $APIresponse["HTTP_CODE"];
 			if ($responseCode == 200) {
 				$DepositAccount[0] = "success";
