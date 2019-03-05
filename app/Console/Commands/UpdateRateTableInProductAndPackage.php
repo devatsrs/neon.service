@@ -90,7 +90,7 @@
 			CronJob::activateCronJob($CronJob);
 			CronJob::createLog($CronJobID);
 
-				DB::select('CALL UpdateRateTableInProductAndPackage(' .$CompanyID. ')');
+				DB::select('CALL UpdateRateTableInProductAndPackage()');
 		//Log::info('UpdateRateTableInProductAndPackage succefully run.');
 					CronJob::CronJobSuccessEmailSend($CronJobID);
 					$joblogdata['CronJobID'] = $CronJobID;
