@@ -332,7 +332,7 @@ class PushSalesPricesERP extends Command {
 					//$system_name='CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL';
 					//Log::info('Translation name.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL']);
 					foreach ($RateTableDIDRates as $RateTableDIDRate) {
-						Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
+						//Log::info('$RateTableDIDRate RateID.' . $RateTableDIDRate->RateID);
 						$prefixName = $ProductResponse->prefixName;
 						$SetRateTableEffectiveDate = $ProductResponse->TableEffectiveDate;
 						$data_langs = DB::table('tblLanguage')
@@ -376,6 +376,7 @@ class PushSalesPricesERP extends Command {
 							} else {
 								$LabelName = '';
 							}
+							$FromLabel =  " " . Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_FROM", ''). " ";
 							//Log::info('Label Name.' . $data_lang->ISOCode);
 							//Log::info('Label Name.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST_VIETNAM']);
 							//Log::info('Label Name.' . Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST",$LabelName));
@@ -388,7 +389,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "INSTALLATION COSTS";
 
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" :
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
@@ -405,7 +406,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_MINUTE", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -422,7 +423,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_COST_PER_CALL", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -440,7 +441,7 @@ class PushSalesPricesERP extends Command {
 								$data["pricePlanId"] = "";
 
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_CALL", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -456,7 +457,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_OUTPAYMENT_PER_MINUTE", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -474,7 +475,7 @@ class PushSalesPricesERP extends Command {
 								$data["pricePlanId"] = "";
 
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_CHARGEBACK", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -493,7 +494,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "SUBSCRIPTION COSTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -511,7 +512,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "INSTALLATION COSTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_REGISTERATION_COST_PER_NUMBER", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -527,7 +528,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -543,7 +544,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_COLLECTION_COST_AMOUNT", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -560,7 +561,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_CALL", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -576,7 +577,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title));
 								$data["iso2"] = $data_lang->ISOCode;
@@ -592,7 +593,7 @@ class PushSalesPricesERP extends Command {
 								$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 								$data["pricePlanId"] = "";
 								$data["name"] = Helper::getTranslationText($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_LBL_SURCHARGE", $LabelName) . '='
-									. (!empty($RateTableDIDRate->orginationCode) ? (" From " .
+									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "CUST_PANEL_PAGE_INVOICE_PDF_" . $RateTableDIDRate->Title, $RateTableDIDRate->Title)) . '=';
 								$data["iso2"] = $data_lang->ISOCode;
