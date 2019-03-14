@@ -88,7 +88,7 @@ class PushSalesPricesERP extends Command {
         $arguments = $this->argument();
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
-        
+        //echo str_replace("'", "\\'", "VAL-D'OR");
         $CronJob =  CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings,true);
 		$PriceAPIURL = $cronsetting['PriceAPIURL'];
@@ -318,7 +318,7 @@ class PushSalesPricesERP extends Command {
  					from tblRateTableDIDRate didRate,tblTimezones timeZ where
 										didRate.RateID in (select RateID from tblRate where Code = concat((select Prefix from tblCountry where Country = '" . $ProductResponse->country . "'), '" . $ProductResponse->prefixName . "'))
 										   and RateTableId in (" . $ProductResponse->RateTableId . ")
-										   and didRate.CityTariff = '" . $ProductResponse->city_tariff . "'" . "
+										   and didRate.CityTariff = '" . str_replace("'", "\\'", $ProductResponse->city_tariff) . "'" . "
 										   and didRate.ApprovedStatus = 1 and didRate.EffectiveDate <= NOW()
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
