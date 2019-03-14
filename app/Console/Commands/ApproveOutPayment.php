@@ -74,8 +74,8 @@ class ApproveOutPayment extends Command {
 		try {
 			// Start Date
 			$dt = Carbon::now()->subMonths(2)->toDateString();
-			if(!empty(@$cronsetting['StartDate']) && self::validateDate($cronsetting['StartDate']))
-				$dt = Carbon::createFromFormat('Y-m-d', $cronsetting['StartDate']);
+			if(!empty(@$cronsetting['StartIssueDate']) && self::validateDate($cronsetting['StartIssueDate']))
+				$dt = Carbon::createFromFormat('Y-m-d', $cronsetting['StartIssueDate']);
 
 			// Vendor Invoices
 			$query = Invoice::Join('tblInvoiceDetail','tblInvoice.InvoiceID','=','tblInvoiceDetail.InvoiceID')->select(['tblInvoice.InvoiceID','tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate','tblInvoice.AccountID'])->distinct('tblInvoice.InvoiceID')->where([
