@@ -132,6 +132,11 @@ class CodeDecksUpload extends Command
                             }else{
                                 $error[] = 'description is blank at line no:'.$lineno;
                             }
+							if (isset($row['Type']) && !empty($row['Type'])) {
+                                $tempcodedeckdata['Type'] = $row['Type'];
+                            }else{
+                                $error[] = 'Type is blank at line no:'.$lineno;
+                            }
                             if (isset($row['Interval1']) && !empty($row['Interval1'])) {
                                 $tempcodedeckdata['Interval1'] = $row['Interval1'];
                             }else{
