@@ -134,6 +134,7 @@ class CodeDecksUpload extends Command
                             }
 							if (isset($row['Type']) && !empty($row['Type'])) {
                                 $tempcodedeckdata['Type'] = $row['Type'];
+								Log::info($tempcodedeckdata['Type']);
                             }else{
                                 $error[] = 'Type is blank at line no:'.$lineno;
                             }
