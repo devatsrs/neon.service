@@ -178,6 +178,7 @@ class CodeDecksUpload extends Command
                         Log::info('insertion start');
                         Log::info('count ' . count($batch_insert_array));
                         TempCodeDeck::insert($batch_insert_array);
+						Log::info(json_encode($batch_insert_array));
                         Log::info('insertion end');
                     }
 
