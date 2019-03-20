@@ -11,11 +11,13 @@ namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanySetting;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
+use App\Lib\RateTable;
 use App\Lib\TempRateTablePKGRate;
 use App\Lib\FileUploadTemplate;
 use App\Lib\Timezones;
@@ -92,6 +94,7 @@ class RateTablePKGRateUpload extends Command
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
+                    $rateTable = RateTable::find($joboptions->RateTableID);
 
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
@@ -434,7 +437,12 @@ class RateTablePKGRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    $query = "CALL  prc_WSProcessRateTablePKGRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    $RateApprovalProcess = CompanySetting::getKeyVal($CompanyID,'RateApprovalProcess');
+                    if($RateApprovalProcess == 1 && $rateTable->AppliedTo != RateTable::APPLIED_TO_VENDOR) {
+                        $query = "CALL  prc_WSProcessRateTablePKGRateAA ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    } else {
+                        $query = "CALL  prc_WSProcessRateTablePKGRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    }
                     Log::info("start " . $query);
 
                     try {
