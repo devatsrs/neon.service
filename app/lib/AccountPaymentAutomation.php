@@ -41,7 +41,7 @@ class AccountPaymentAutomation extends \Eloquent
         } else {
             try {
                 $response = json_decode($APIresponse["response"]);
-                Log::info("Succcess" . print_r($response, true));
+                //Log::info("Succcess" . print_r($response, true));
                 $responseCode = $APIresponse["HTTP_CODE"];
                 if ($responseCode == 200) {
                     $DepositAccount[0] = "success";
@@ -74,7 +74,7 @@ class AccountPaymentAutomation extends \Eloquent
 
             $AutoTopUpNotificationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::AutoTopAccount]);
             if (!empty($AutoTopUpNotificationEmail)) {
-                Log::info('Sending email.' . $AutoTopUpNotificationEmail);
+                //Log::info('Sending email.' . $AutoTopUpNotificationEmail);
                 $emaildata['CompanyID'] = $CompanyID;
                 $emaildata['CompanyName'] = $ComanyName;
                 $emaildata['EmailTo'] = $AutoTopUpNotificationEmail;

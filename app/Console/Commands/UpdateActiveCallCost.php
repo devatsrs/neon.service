@@ -83,7 +83,7 @@ class UpdateActiveCallCost extends Command {
 			CronJob::createLog($CronJobID);
 			Log::useFiles(storage_path() . '/logs/updateactivecallcost-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
-			Log::info('Account Balance Start.');
+			//Log::info('Account Balance Start.');
 
 			$ActiveCalls = ActiveCall::orderBy('ActiveCallID')->get();
 			if(!empty($ActiveCalls) && count($ActiveCalls)>0){

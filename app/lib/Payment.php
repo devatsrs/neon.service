@@ -35,7 +35,9 @@ class Payment extends \Eloquent{
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);
+
                         if ($foundkey !== false && check_account_age($settings,$foundkey,$getdaysdiff)) {
+
                             NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
                         }
                     }

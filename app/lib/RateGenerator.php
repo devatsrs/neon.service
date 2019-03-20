@@ -9,6 +9,7 @@ class RateGenerator extends \Eloquent {
 
     const VoiceCall = 1;
     const DID = 2;
+    const Package = 3;
 
     public function raterule()
     {

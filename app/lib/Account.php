@@ -16,6 +16,7 @@ class Account extends \Eloquent {
     //const  PENDING_VERIFICATION = 1;
     const  VERIFIED =2;
     const  OutPaymentEmailTemplate ='OutPayment';
+    const  ApproveOutPaymentEmailTemplate ='ApproveOutPayment';
     const  ContractManageEmailTemplate ='ContractRenewal';
     const  ContractExpireEmailTemplate = 'ContractExpire';
     const  DETAIL_CDR = 1;

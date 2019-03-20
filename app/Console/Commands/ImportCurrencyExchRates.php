@@ -21,7 +21,7 @@ class ImportCurrencyExchRates extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'europcentralbank {CompanyID} {CronJobID}';
+	protected $name = 'europcentralbank';
 
 	/**
 	 * The console command description.
@@ -57,55 +57,55 @@ class ImportCurrencyExchRates extends Command {
 
 	public function UpdateRates($value,$CompanyID, $rate)
 	{
-			$cur = DB::table('tblCurrency')->where(['Code' => $value, 'Status' => 1, 'CompanyId' => $CompanyID])->first();
+		$cur = DB::table('tblCurrency')->where(['Code' => $value, 'Status' => 1, 'CompanyId' => $CompanyID])->first();
 
-			if (count($cur) == 1) {
-				$oldrate = DB::table('tblCurrencyConversion')->where(['CurrencyID' => $cur->CurrencyId, 'CompanyID' => $CompanyID])->first();
-				if(empty($oldrate->Value)){
+		if (count($cur) == 1) {
+			$oldrate = DB::table('tblCurrencyConversion')->where(['CurrencyID' => $cur->CurrencyId, 'CompanyID' => $CompanyID])->first();
+			if(empty($oldrate->Value)){
 
-					$insnewrec = CurrencyConversion::create([
-						'CurrencyID' => $cur->CurrencyId,
+				$insnewrec = CurrencyConversion::create([
+					'CurrencyID' => $cur->CurrencyId,
+					'CompanyID' => $CompanyID,
+					'Value' => $rate,
+					'created_at' => date("Y-m-d H:i:s"),
+					'CreatedBy' => gethostname(),
+					'updated_at' => date("Y-m-d H:i:s"),
+					'ModifiedBy' => gethostname(),
+					'EffectiveDate' => date("Y-m-d H:i:s")
+				]);
+				Log::info($insnewrec);
+			} else {
+				if (number_format((float)$rate, 6) != $oldrate->Value) {
+
+					$rateupd = CurrencyConversion::updateOrCreate([
+						'CurrencyID' => $cur->CurrencyId, 'CompanyID' => $CompanyID
+					], ['CurrencyID' => $cur->CurrencyId,
 						'CompanyID' => $CompanyID,
 						'Value' => $rate,
-						'created_at' => date("Y-m-d H:i:s"),
-						'CreatedBy' => gethostname(),
 						'updated_at' => date("Y-m-d H:i:s"),
-						'ModifiedBy' => gethostname(),
-						'EffectiveDate' => date("Y-m-d H:i:s")
+						'ModifiedBy' => gethostname()
+
 					]);
-					Log::info($insnewrec);
-				} else {
-					if (number_format((float)$rate, 6) != $oldrate->Value) {
+					Log::info($rateupd);
 
-						$rateupd = CurrencyConversion::updateOrCreate([
-							'CurrencyID' => $cur->CurrencyId, 'CompanyID' => $CompanyID
-						], ['CurrencyID' => $cur->CurrencyId,
-							'CompanyID' => $CompanyID,
-							'Value' => $rate,
-							'updated_at' => date("Y-m-d H:i:s"),
-							'ModifiedBy' => gethostname()
-
-						]);
-						Log::info($rateupd);
-
-						if (CurrencyConversionLog::create([
-							'CurrencyID' => $cur->CurrencyId,
-							'CompanyID' => $CompanyID,
-							'EffectiveDate' => date("Y-m-d H:i:s", strtotime($oldrate->EffectiveDate)),
-							'created_at' => date("Y-m-d H:i:s"),
-							'Value' => $oldrate->Value,
-							'CreatedBy' => gethostname()
-						])
-						) {
-							Log::info('Conversionlog Updated');
-						} else {
-							Log::error('Faild to Update ConversionLog');
-						}
+					if (CurrencyConversionLog::create([
+						'CurrencyID' => $cur->CurrencyId,
+						'CompanyID' => $CompanyID,
+						'EffectiveDate' => date("Y-m-d H:i:s", strtotime($oldrate->EffectiveDate)),
+						'created_at' => date("Y-m-d H:i:s"),
+						'Value' => $oldrate->Value,
+						'CreatedBy' => gethostname()
+					])
+					) {
+						Log::info('Conversionlog Updated');
+					} else {
+						Log::error('Faild to Update ConversionLog');
 					}
 				}
 			}
-
 		}
+
+	}
 
 
 	public function handle()
@@ -113,9 +113,12 @@ class ImportCurrencyExchRates extends Command {
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
 		try {
+			CronHelper::before_cronrun($this->name, $this );
 			$cronjob = CronJob::find($CronJobID);
-            $json = json_decode($cronjob->Settings);
+			CronJob::activateCronJob($cronjob);
+			$json = json_decode($cronjob->Settings);
 			$url = $json->EuropCentralBank;
+			$time_start = microtime(true);
 			$xml = simplexml_load_file($url);
 			foreach ($xml as $data) {
 				foreach ($data as $val) {
@@ -127,8 +130,10 @@ class ImportCurrencyExchRates extends Command {
 					}
 				}
 			}
-			//echo 'Conversion Rates Imported';
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Success-' . date('Y-m-d') . '.log');
+			$time_end = microtime(true);
+			$execution_time = ($time_end - $time_start)/60;
+
+
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
@@ -138,11 +143,10 @@ class ImportCurrencyExchRates extends Command {
 			CronJobLog::insert($joblogdata);
 			CronJob::deactivateCronJob($cronjob);
 			CronHelper::after_cronrun($this->name, $this);
+			Log::info("Cron Job Completed");
 			echo "DONE With CurrencyExchangeRates";
-			Log::info('Successfully Imported All Rates');
 
 		}catch (\Exception $e){echo $e;
-			Log::useFiles(storage_path() . '/logs/CurrencyExchangeRate-Error-' . date('Y-m-d') . '.log');
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
 			$joblogdata['created_at'] = Date('y-m-d');
@@ -176,9 +180,9 @@ class ImportCurrencyExchRates extends Command {
 
 	protected function getOptions()
 	{
-		return [
-			['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-		];
+	return [
+	['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
+	];
 	}*/
 
 }

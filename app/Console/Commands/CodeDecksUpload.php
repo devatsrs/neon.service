@@ -132,6 +132,12 @@ class CodeDecksUpload extends Command
                             }else{
                                 $error[] = 'description is blank at line no:'.$lineno;
                             }
+							if (isset($row['Type']) && !empty($row['Type'])) {
+                                $tempcodedeckdata['Type'] = $row['Type'];
+								Log::info($tempcodedeckdata['Type']);
+                            }else{
+                                $error[] = 'Type is blank at line no:'.$lineno;
+                            }
                             if (isset($row['Interval1']) && !empty($row['Interval1'])) {
                                 $tempcodedeckdata['Interval1'] = $row['Interval1'];
                             }else{
@@ -172,6 +178,7 @@ class CodeDecksUpload extends Command
                         Log::info('insertion start');
                         Log::info('count ' . count($batch_insert_array));
                         TempCodeDeck::insert($batch_insert_array);
+						Log::info(json_encode($batch_insert_array));
                         Log::info('insertion end');
                     }
 
