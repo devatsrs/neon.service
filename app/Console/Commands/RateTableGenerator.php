@@ -72,6 +72,7 @@ class RateTableGenerator extends Command {
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/ratetablegenerator-'.$JobID.'-'.date('Y-m-d').'.log');
         Log::info('job start '.$JobID);
+        Log::info('job parameter '.$JobID . ' ' . $CronJobID . ' ' . $CompanyID);
         $emailstatus = array('status'=>0,'message'=>'');
 
         try {
@@ -109,7 +110,24 @@ class RateTableGenerator extends Command {
             $IsMerge = $RateGenerator->IsMerge;
 
             $info = $error = array();
-            if($RateGenerator->SelectType == \RateGenerator::DID) { // for DID
+            if($RateGenerator->SelectType == \RateGenerator::Package) { // for DID
+
+                $query = "CALL prc_WSGenerateRateTablePkg(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
+                Log::info($query);
+                $JobStatusMessage = DB::select($query);
+                $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
+                if(count($JobStatusMessage) > 0){
+                    foreach ($JobStatusMessage as $JobStatusMessage1) {
+                        if(is_numeric($JobStatusMessage1['Message'])) {
+                            Log::info("Rate Generator Zone ." . $JobStatusMessage1['Message']);
+                            $info[] = 'RateTable Created Successfully';
+                        } else {
+                            $error[] = $JobStatusMessage1['Message'];
+                        }
+                    }
+                }
+
+            }else if($RateGenerator->SelectType == \RateGenerator::DID) { // for DID
 
                 $query = "CALL prc_WSGenerateRateTableDID(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                 Log::info($query);
