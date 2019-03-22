@@ -123,17 +123,7 @@ class PushSalesPricesERP extends Command {
 
 			//Load Data
 
-			/*$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
 
-
-			Log::info('$LoadQuery query.' . $LoadQuery);
-			$LoadQueryResults = DB::select($LoadQuery);
-			foreach($LoadQueryResults as $LoadQueryResult) {
-				$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
-			}
-
-			return;*/
-			//End Load Data
 
 
 			$fieldName = 'ProductID';
@@ -289,18 +279,7 @@ class PushSalesPricesERP extends Command {
 
 				foreach ($ProductResponses as $ProductResponse) {
 					$DiDCategorySaveDescription = $ProductResponse->CategoryDescription;
-					//Log::info('PushSalesPricesERP .' . $ProductResponse->productId . ' ' . $ProductResponse->name);
-					//$DynamicProductTemplates = DynamicFieldsValue::getDynamicValuesByProductID($CompanyID, $DynamicFieldsID, $ProductResponse->productId);
-					//	foreach ($DynamicProductTemplates as $DynamicProductTemplate) {
-					//		$ServiceTemapleInboundTariff = ServiceTemapleInboundTariff::select(['ServiceTemapleInboundTariffId',
-					//			'ServiceTemplateID', 'DIDCategoryId', 'RateTableId'])->where(['ServiceTemplateID' => $DynamicProductTemplate->ParentID]);
-					//		$ServiceTemapleInboundTariffs = $ServiceTemapleInboundTariff->get();
-					//		Log::info('$ServiceTemapleInboundTariff query 123.' . $ProductResponse->productId . ' ' . $DynamicProductTemplate->ParentID . ' ' . count($ServiceTemapleInboundTariffs));
-					//	if (count($ServiceTemapleInboundTariffs) > 0) {
-					//		foreach ($ServiceTemapleInboundTariffs as $ServiceTemapleInboundTariff) {
-					//			$ServiceTemplateInboundTariffs = $ServiceTemplateInboundTariffs . $ServiceTemapleInboundTariff->RateTableId . ',';
-					//		}
-					//		$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs, 0, strlen($ServiceTemplateInboundTariffs) - 1);
+
 
 
 					$Query = "select didRate.*,timeZ.Title,didRateCountry.Prefix as countryPrefix,didRateCountry.ISO2 as CountryISO2,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
