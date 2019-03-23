@@ -123,17 +123,7 @@ class PushSalesPricesERP extends Command {
 
 			//Load Data
 
-			/*$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
 
-
-			Log::info('$LoadQuery query.' . $LoadQuery);
-			$LoadQueryResults = DB::select($LoadQuery);
-			foreach($LoadQueryResults as $LoadQueryResult) {
-				$LoadQuery = "select ServiceTemplateId,city_tariff,concat((select Prefix from tblCountry where Country = template.country), case when SUBSTRING(template.prefixName, 1, 1) = '0' THEN SUBSTRING(template.prefixName, 2, LENGTH(template.prefixName)) ELSE template.prefixName END) as Code from tblServiceTemplate template where city_tariff is not null";
-			}
-
-			return;*/
-			//End Load Data
 
 
 			$fieldName = 'ProductID';
@@ -168,7 +158,7 @@ class PushSalesPricesERP extends Command {
 
 			//Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
-			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.city_tariff,
+			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.city_tariff,
 									(select  EffectiveDate  from tblRateTableRate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
 								  case when SUBSTRING(tblServiceTemplate.prefixName, 1, 1) = '0' THEN SUBSTRING(tblServiceTemplate.prefixName, 2, LENGTH(tblServiceTemplate.prefixName)) ELSE tblServiceTemplate.prefixName END as prefixName,(select CategoryName from tblDIDCategory where DIDCategoryID = tblServiceTemapleInboundTariff.DIDCategoryId) as CategoryDescription from tblServiceTemapleInboundTariff
 								   join tblServiceTemplate on tblServiceTemapleInboundTariff.ServiceTemplateID = tblServiceTemplate.ServiceTemplateId
@@ -289,21 +279,10 @@ class PushSalesPricesERP extends Command {
 
 				foreach ($ProductResponses as $ProductResponse) {
 					$DiDCategorySaveDescription = $ProductResponse->CategoryDescription;
-					//Log::info('PushSalesPricesERP .' . $ProductResponse->productId . ' ' . $ProductResponse->name);
-					//$DynamicProductTemplates = DynamicFieldsValue::getDynamicValuesByProductID($CompanyID, $DynamicFieldsID, $ProductResponse->productId);
-					//	foreach ($DynamicProductTemplates as $DynamicProductTemplate) {
-					//		$ServiceTemapleInboundTariff = ServiceTemapleInboundTariff::select(['ServiceTemapleInboundTariffId',
-					//			'ServiceTemplateID', 'DIDCategoryId', 'RateTableId'])->where(['ServiceTemplateID' => $DynamicProductTemplate->ParentID]);
-					//		$ServiceTemapleInboundTariffs = $ServiceTemapleInboundTariff->get();
-					//		Log::info('$ServiceTemapleInboundTariff query 123.' . $ProductResponse->productId . ' ' . $DynamicProductTemplate->ParentID . ' ' . count($ServiceTemapleInboundTariffs));
-					//	if (count($ServiceTemapleInboundTariffs) > 0) {
-					//		foreach ($ServiceTemapleInboundTariffs as $ServiceTemapleInboundTariff) {
-					//			$ServiceTemplateInboundTariffs = $ServiceTemplateInboundTariffs . $ServiceTemapleInboundTariff->RateTableId . ',';
-					//		}
-					//		$ServiceTemplateInboundTariffs = substr($ServiceTemplateInboundTariffs, 0, strlen($ServiceTemplateInboundTariffs) - 1);
 
 
-					$Query = "select didRate.*,timeZ.Title,(select Prefix from tblCountry where Country = '" . $ProductResponse->country . "') as countryPrefix,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
+
+					$Query = "select didRate.*,timeZ.Title,didRateCountry.Prefix as countryPrefix,didRateCountry.ISO2 as CountryISO2,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
 								(select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol,
 								 (select Symbol from tblCurrency where CurrencyId = MonthlyCostCurrency  ) as MonthlyCostCurrencySymbol,
 								   (select Symbol from tblCurrency where CurrencyId = CostPerMinuteCurrency  ) as CostPerMinuteCurrencySymbol,
@@ -315,11 +294,12 @@ class PushSalesPricesERP extends Command {
 								    (select Symbol from tblCurrency where CurrencyId = CostPerCallCurrency  ) as CostPerCallCurrencySymbol,
 								    (select Symbol from tblCurrency where CurrencyId = ChargebackCurrency  ) as ChargebackCurrencySymbol,
 								    (select Symbol from tblCurrency where CurrencyId = CollectionCostAmountCurrency  ) as CollectionCostAmountCurrencySymbol
- 					from tblRateTableDIDRate didRate,tblTimezones timeZ where
+ 					from tblRateTableDIDRate didRate,tblTimezones timeZ,tblCountry didRateCountry where
 										didRate.RateID in (select RateID from tblRate where Code = concat((select Prefix from tblCountry where Country = '" . $ProductResponse->country . "'), '" . $ProductResponse->prefixName . "'))
 										   and RateTableId in (" . $ProductResponse->RateTableId . ")
 										   and didRate.CityTariff = '" . str_replace("'", "\\'", $ProductResponse->city_tariff) . "'" . "
 										   and didRate.ApprovedStatus = 1 and didRate.EffectiveDate <= NOW()
+										   and didRateCountry.Country = '" . $ProductResponse->country . "'
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
 
@@ -367,15 +347,16 @@ class PushSalesPricesERP extends Command {
 						$LabelName = '';
 						//Log::info('Language Count.' . count($data_langs)) ;
 						foreach ($data_langs as $data_lang) {
-							$LabelName = $ProductResponse->country;
+							//$LabelName = $ProductResponse->country;
+							$LabelName = '';
 							$json_file = json_decode($data_lang->Translation, true);
 							//Log::info('Language Code.' . $data_lang->ISOCode);
 							//Universal Code Changes
-							if (strpos($ProductResponse->ProductName, 'UIFN') != false) {
+							/*if (strpos($ProductResponse->ProductName, 'UIFN') != false) {
 								$LabelName = str_replace(" ", "_", $LabelName);
 							} else {
 								$LabelName = '';
-							}
+							}*/
 							$FromLabel =  " " . Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_FROM", ''). " ";
 							//Log::info('Label Name.' . $data_lang->ISOCode);
 							//Log::info('Label Name.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST_VIETNAM']);
@@ -393,6 +374,9 @@ class PushSalesPricesERP extends Command {
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" :
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->OneOffCost;
 								$data["salesPricePercentage"] = "";
@@ -409,6 +393,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPricePercentage"] = "";
 								$data["salesPrice"] = $RateTableDIDRate->CostPerMinute;
@@ -426,6 +413,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPricePercentage"] = "";
 								$data["salesPrice"] = $RateTableDIDRate->CostPerCall;
@@ -444,6 +434,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPricePercentage"] = "";
 								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
@@ -460,6 +453,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerMinute;
 								$data["salesPricePercentage"] = "";
@@ -478,6 +474,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPricePercentage"] = "";
 								$data["salesPrice"] = $RateTableDIDRate->OutpaymentPerCall;
@@ -497,6 +496,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->MonthlyCost;
 								$data["salesPricePercentage"] = "";
@@ -515,6 +517,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->RegistrationCostPerNumber;
 								$data["salesPricePercentage"] = "";
@@ -531,6 +536,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->CollectionCostAmount;
 								$data["salesPricePercentage"] = "";
@@ -549,6 +557,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->SurchargePerCall;
 								$data["salesPricePercentage"] = "";
@@ -565,6 +576,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = $RateTableDIDRate->SurchargePerMinute;
 								$data["salesPricePercentage"] = "";
@@ -581,6 +595,9 @@ class PushSalesPricesERP extends Command {
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title)) . '=';
+								if (!empty($ProductResponse->accessType) && $ProductResponse->accessType == "Universal Number") {
+									$data["name"] = $data["name"] . ' ' . $RateTableDIDRate->CountryISO2;
+								}
 								$data["iso2"] = $data_lang->ISOCode;
 								$data["salesPrice"] = "";
 								$data["salesPricePercentage"] = $RateTableDIDRate->Surcharges;
