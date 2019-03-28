@@ -8,7 +8,8 @@
 
 namespace App\Console\Commands;
 
-
+use App\Lib\CompanyGateway;
+use App\Lib\Gateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
@@ -69,8 +70,15 @@ class VendorRateFileExport  extends Command {
         CronJob::createLog($CronJobID);
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         Log::useFiles(storage_path() . '/logs/vendorratefileexport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+
+        $GatewayID = CompanyGateway::find($CompanyGatewayID)->GatewayID;
+        $Gateway = Gateway::getGatewayName($GatewayID);
         try {
-            $response = Customer::generateVendorFile($CompanyID,$cronsetting);
+            if($Gateway == 'SippySFTP' || $Gateway == 'SippySQL') { //sippy
+                $response = Customer::generatePushVendorSippyRateFile($CompanyID, $cronsetting);
+            } else {
+                $response = Customer::generateVendorFile($CompanyID,$cronsetting);
+            }
 
             $final_array = array_merge($response['error'],$response['message']);
             if(count($response['error'])){

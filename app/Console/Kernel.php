@@ -121,6 +121,10 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\BulkDisputeSend',
 		'App\Console\Commands\DisputeBulkmail',
 		'App\Console\Commands\AccountBalanceGenerator',
+		'App\Console\Commands\FTPVendorDownloadCDR',
+		'App\Console\Commands\FTPVendorAccountUsage',
+		'App\Console\Commands\ImportVOSAccountBalance',
+		'App\Console\Commands\ImportVOSAccounts',
 
 	];
 

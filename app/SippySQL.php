@@ -35,7 +35,7 @@ class SippySQL{
 
     public static function testConnection(){
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
 
             try {
                 if (DB::connection('pgsql')->getDatabaseName()) {
@@ -53,7 +53,7 @@ class SippySQL{
     public static function getAccountCDRs($addparams = array()){
 
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
             try {
                 //$addparams['end_date_ymd'] = '2018-06-03 00:02:00';
                 //$query = "select table_name as calls_table,REPLACE(table_name, 'calls', 'cdrs') as cdrs_table, REPLACE(table_name, 'calls', 'cdrs_connections') as cdrs_connections_table  from calls_schedule where newest_setup_time >= '" . $addparams['start_date_ymd'] . "' and newest_setup_time < '" . $addparams['end_date_ymd'] . "'";
@@ -94,7 +94,7 @@ class SippySQL{
     public static function getAccountByIP($addparams = array()){
 
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
             try {
                 $qry = "select i_account from authentications where remote_ip in (" . $addparams['remote_ip'] . ") limit 1";
                 $response = DB::connection('pgsql')->select($qry);
@@ -113,7 +113,7 @@ class SippySQL{
     public static function getTariffID($addparams = array()){
 
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
             try {
                 $qry = "select i_tariff from billing_plans where i_billing_plan = " . $addparams['i_billing_plan'] . " limit 1";
                 $response = DB::connection('pgsql')->select($qry);
