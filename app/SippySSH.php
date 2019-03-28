@@ -28,7 +28,7 @@ class SippySSH{
                 self::$config[$configkey] = $configval;
             }
         }
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             Config::set('remote.connections.production',self::$config);
         }
     }
@@ -39,30 +39,32 @@ class SippySSH{
      */
     public static function getCDRs($addparams=array()){
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             $filename = array();
             //$files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $files =  RemoteFacade::rawlist(self::$config['cdr_folder']);
-            foreach ($files as $key => $row) {
-                $files_sort[$key] = $row['mtime'];
-            }
-            array_multisort($files_sort, SORT_DESC, $files);
-
-            foreach((array)$files as $file){
-                if(strpos($file['filename'],self::$customer_cdr_file_name) !== false || strpos($file['filename'],self::$vendor_cdr_file_name) !== false){
-                    $filename[] =$file['filename'];
+            if(!empty($files)) {
+                foreach ($files as $key => $row) {
+                    $files_sort[$key] = $row['mtime'];
                 }
+                array_multisort($files_sort, SORT_DESC, $files);
+
+                foreach ((array)$files as $file) {
+                    if (strpos($file['filename'], self::$customer_cdr_file_name) !== false || strpos($file['filename'], self::$vendor_cdr_file_name) !== false) {
+                        $filename[] = $file['filename'];
+                    }
+                }
+                //asort($filename);
+                $filename = array_values($filename);
+                //$lastele = array_pop($filename);
+                $response = $filename;
             }
-            //asort($filename);
-            $filename = array_values($filename);
-            //$lastele = array_pop($filename);
-            $response = $filename;
         }
         return $response;
     }
     public static function deleteCDR($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             $status =  RemoteFacade::delete(rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
             if($status == true){
                 //Log::info('File deleted on server ' . rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
@@ -74,7 +76,7 @@ class SippySSH{
     }
     public static function downloadCDR($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
             $source = rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'];
             $destination = $addparams['download_path'] . $addparams['filename'];
             $status = RemoteFacade::get($source, $destination );
