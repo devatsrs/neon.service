@@ -26,6 +26,8 @@ class Product extends \Eloquent {
     const Customer = 0;
     const Reseller = 1;
 
+    const OutPaymentCode = 'outpayment';
+
     public static function getProductName($id,$ProductType){
         if( $id>0 && ($ProductType == self::ITEM || $ProductType == self::ONEOFFCHARGE)){
             $Product = Product::find($id);

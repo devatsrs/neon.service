@@ -97,6 +97,35 @@ class Account extends \Eloquent {
         }
         return $cdr_type;
     }
+    public static function getDynamicfieldValue($ParentID,$FieldName,$CompanyID){
+        $FieldValue = '';
+
+        $FieldsID = DB::table('tblDynamicFields')->where(['CompanyID'=> $CompanyID,'FieldSlug'=>$FieldName])->pluck('DynamicFieldsID');
+        if(!empty($FieldsID)){
+            $FieldValue = DynamicFieldsValue::where(['ParentID'=>$ParentID,'DynamicFieldsID'=>$FieldsID])->pluck('FieldValue');
+        }
+
+        return $FieldValue;
+    }
+
+    public static function getDynamicfields($Type,$ParentID,$CompanyID){
+        $results = array();
+        $data = array();
+
+        $Fields = DB::table('tblDynamicFields')->where(['CompanyID'=> $CompanyID,'Type'=>$Type,'Status'=>1])->get();
+        Log::info("Count for Dynamic fields for Account ." . $ParentID . count($Fields));
+        if(!empty($Fields) && count($Fields)>0){
+            Log::info("Count for Dynamic fields for Account ." . $ParentID . ' in side loop ');
+            foreach($Fields as $Field){
+                Log::info("Count for Dynamic fields for Account ." . $ParentID . ' ' . $Field->FieldSlug);
+                $FieldValue = Account::getDynamicfieldValue($ParentID,$Field->FieldSlug,$CompanyID);
+                $data[$Field->FieldName] = $FieldValue;
+                Log::info("Count for Dynamic fields for Account ." . $ParentID . ' ' . count($results));
+            }
+        }
+        Log::info("Count for Dynamic fields for Account ." . $ParentID . ' ' . count($results));
+        return $data;
+    }
 
     public static function getFullAddress($Account){
         $Address = "";

@@ -12,8 +12,10 @@ use App\Lib\Currency;
 use App\Lib\EmailsTemplates;
 use App\Lib\Helper;
 use App\Lib\Invoice;
+use App\Lib\InvoiceDetail;
 use App\Lib\Notification;
 use App\Lib\OutPaymentLog;
+use App\Lib\Product;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -77,11 +79,16 @@ class ApproveOutPayment extends Command {
 			if(!empty(@$cronsetting['StartIssueDate']) && self::validateDate($cronsetting['StartIssueDate']))
 				$dt = Carbon::createFromFormat('Y-m-d', $cronsetting['StartIssueDate'])->toDateString();
 
+
 			// Vendor Invoices
-			$query = Invoice::Join('tblInvoiceDetail','tblInvoice.InvoiceID','=','tblInvoiceDetail.InvoiceID')->select(['tblInvoice.InvoiceID','tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate','tblInvoice.AccountID'])->distinct('tblInvoice.InvoiceID')->where([
-				'tblInvoice.CompanyID'   => $CompanyID,
-				'tblInvoice.InvoiceType' => Invoice::INVOICE_IN
-			])->whereDate('tblInvoice.IssueDate', ">=", $dt)
+			$query = Invoice::Join('tblInvoiceDetail','tblInvoice.InvoiceID','=','tblInvoiceDetail.InvoiceID')
+				->Join('tblProduct','tblProduct.ProductID','=','tblInvoiceDetail.ProductID')
+				->select(['tblInvoice.InvoiceID','tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate','tblInvoice.AccountID'])
+				->where([
+				'tblInvoice.InvoiceType' => Invoice::INVOICE_IN,
+				'tblProduct.Code' => Product::OutPaymentCode,
+			])->whereDate('tblInvoiceDetail.StartDate', ">=", $dt)
+				->distinct('tblInvoice.InvoiceID')
 				->orderBy("tblInvoice.AccountID", "DESC");
 
 			Log::info('Vendor Invoice Query.' . $query->toSql());
@@ -92,11 +99,10 @@ class ApproveOutPayment extends Command {
 			foreach($VendorInvoice as $invoice) {
 				if(!empty($invoice->StartDate) && !empty($invoice->EndDate)) {
 
-					// Vendor CLIs
-					$CLIs = CLIRateTable::where([
-						'AccountID' => $invoice->AccountID,
-						'Status' => 1
-					])->lists('CLI');
+					// Vendor CLIs in invoice detail's description
+					$CLIs = InvoiceDetail::where([
+						'InvoiceID' => $invoice->InvoiceID,
+					])->lists('description');
 
 					Log::info('CLIs.' . print_r($CLIs, true));
 					if (!empty($CLIs)) {
@@ -108,6 +114,7 @@ class ApproveOutPayment extends Command {
 							->whereDate('Date', ">=", $invoice->StartDate)
 							->whereDate('Date', "<=", $invoice->EndDate)
 							->get();
+
 
 						// Accumulating Amount By Account ID
 						$payable = [];
@@ -124,6 +131,7 @@ class ApproveOutPayment extends Command {
 							}
 
 						Log::info('payable .' . print_r($payable, true));
+
 						DB::beginTransaction();
 						$approvedPaymentAccounts = [];
 						$approvedPaymentArray = [];
@@ -146,6 +154,7 @@ class ApproveOutPayment extends Command {
 									'StartDate' => $invoice->StartDate,
 									'EndDate' 	=> $invoice->EndDate,
 									'Amount'   	=> $item['Amount'],
+									'created_at'=> Carbon::now()->toDateTimeString(),
 								];
 
 								$SuccessOutPayment[] = [
@@ -196,9 +205,9 @@ class ApproveOutPayment extends Command {
 
 			Log::info("All Approved ". print_r($allApprovedPayments, true));
 
-			if(!empty($allApprovedPayments))
+			/*if(!empty($allApprovedPayments))
 				foreach($allApprovedPayments as $approved)
-					self::approvedOutPaymentCustomerEmail($approved, $CompanyID);
+					self::approvedOutPaymentCustomerEmail($approved, $CompanyID);*/
 
 			if (count($allApprovedPayments) > 0) {
 				$this::ApproveOutPaymentNotification($CompanyID, $SuccessOutPayment, $FailureOutPayment);
