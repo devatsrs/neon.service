@@ -28,7 +28,7 @@ class SippySSH{
                 self::$config[$configkey] = $configval;
             }
         }
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             Config::set('remote.connections.production',self::$config);
         }
     }
@@ -39,7 +39,7 @@ class SippySSH{
      */
     public static function getCDRs($addparams=array()){
         $response = array();
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $filename = array();
             //$files =  RemoteFacade::nlist(self::$config['cdr_folder']);
             $files =  RemoteFacade::rawlist(self::$config['cdr_folder']);
@@ -64,7 +64,7 @@ class SippySSH{
     }
     public static function deleteCDR($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $status =  RemoteFacade::delete(rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
             if($status == true){
                 //Log::info('File deleted on server ' . rtrim(self::$config['cdr_folder'],'/').'/'.$addparams['filename']);
@@ -76,7 +76,7 @@ class SippySSH{
     }
     public static function downloadCDR($addparams=array()){
         $status = false;
-        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])){
+        if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
             $source = rtrim(self::$config['cdr_folder'],'/') .'/'. $addparams['filename'];
             $destination = $addparams['download_path'] . $addparams['filename'];
             $status = RemoteFacade::get($source, $destination );
