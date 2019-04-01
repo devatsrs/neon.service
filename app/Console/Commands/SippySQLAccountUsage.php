@@ -114,7 +114,16 @@ class SippySQLAccountUsage extends Command {
             if (!empty($companysetting->PrefixTranslationRule)) {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
-            $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
+            //$IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
+            if($companysetting->NameFormat == 'IP') {
+                $IpBased = 1;
+            }
+            else if($companysetting->NameFormat == 'NUMBER') {
+                $IpBased = 0;
+            }
+            else{
+                $IpBased = 2;
+            }
 
             TempUsageDetail::applyDiscountPlan();
             $SippySQL = new SippySQL($CompanyGatewayID);
@@ -163,18 +172,22 @@ class SippySQLAccountUsage extends Command {
                         foreach ($response['cdrs_response'] as $cdr_rows) {
                             Log::error('call count customer ' . count($cdr_rows));
                             foreach ($cdr_rows as $cdr_row) {
-                                if (($IpBased == 0 && !empty($cdr_row['i_account'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip']))) {
+                                if (($IpBased == 0 && !empty($cdr_row['i_account'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip'])) || ($IpBased == 2 && !empty($cdr_row['username']))) {
 
                                     $uddata = array();
                                     $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                     $uddata['CompanyID'] = $CompanyID;
-                                    if ($IpBased) {
+                                    if ($IpBased == 1) {
                                         $uddata['GatewayAccountID'] = $cdr_row['remote_ip'];
-                                    } else {
+                                    }
+                                    else if ($IpBased == 0){
                                         $uddata['GatewayAccountID'] = $cdr_row['i_account'];
                                     }
+                                    else {
+                                        $uddata['GatewayAccountID'] = $cdr_row['username'];
+                                    }
                                     $uddata['AccountIP'] = $cdr_row['remote_ip'];
-                                    $uddata['AccountName'] = '';
+                                    $uddata['AccountName'] = $cdr_row['username'];
                                     $uddata['AccountNumber'] = $cdr_row['i_account'];
                                     $uddata['AccountCLI'] = '';
                                     $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['setup_time']));
@@ -214,21 +227,25 @@ class SippySQLAccountUsage extends Command {
                      *
                      */
                     if (isset($response['cdrs_response_connection'])) {
-                        $IpBased = 0;
+                        //$IpBased = 0;
                         foreach ($response['cdrs_response_connection'] as $cdr_rows) {
                             Log::error('call count vendor ' . count($cdr_rows));
                             foreach ($cdr_rows as $cdr_row) {
-                                if (($IpBased == 0 && !empty($cdr_row['i_account_debug'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip']))) {
+                                if (($IpBased == 0 && !empty($cdr_row['i_account_debug'])) || ($IpBased == 1 && !empty($cdr_row['remote_ip'])) || ($IpBased == 2 && !empty($cdr_row['username']))) {
                                     $uddata = array();
                                     $uddata['CompanyGatewayID'] = $CompanyGatewayID;
                                     $uddata['CompanyID'] = $CompanyID;
-                                    if ($IpBased) {
+                                    if ($IpBased == 1) {
                                         $uddata['GatewayAccountID'] = $cdr_row['remote_ip'];
-                                    } else {
+                                    }
+                                    else if ($IpBased == 0){
                                         $uddata['GatewayAccountID'] = $cdr_row['i_account_debug'];
                                     }
+                                    else {
+                                        $uddata['GatewayAccountID'] = $cdr_row['username'];
+                                    }
                                     $uddata['AccountIP'] = $cdr_row['remote_ip'];
-                                    $uddata['AccountName'] = '';
+                                    $uddata['AccountName'] = $cdr_row['username'];
                                     $uddata['AccountNumber'] = $cdr_row['i_account_debug'];
                                     $uddata['AccountCLI'] = '';
                                     $uddata['connect_time'] = gmdate('Y-m-d H:i:s', strtotime($cdr_row['setup_time']));
@@ -416,14 +433,14 @@ class SippySQLAccountUsage extends Command {
             return date('Y-m-d H:i:s');
         }
         return $endtimefinal;
-
+        /*
         if (isset($cronsetting->MaxInterval) && $hours > ($cronsetting->MaxInterval / 60)) {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $cronsetting->MaxInterval * 60);
         } else {
             $endtimefinal = date('Y-m-d H:i:s', strtotime($startdate) + $usageinterval * 60);
         }
 
-        return $endtimefinal;
+        return $endtimefinal;*/
     }
 
     public static function getStartDate($companyid, $CompanyGatewayID, $CronJobID)
@@ -435,10 +452,13 @@ class SippySQLAccountUsage extends Command {
             return date('Y-m-d H:i:s');
         }
 
+
+        return $endtime;
+
         //$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->max('end_time');
         /*$endtime = TempUsageDownloadLog::where(array('CompanyID' => $companyid, 'CompanyGatewayID' => $CompanyGatewayID))->orderby('TempUsageDownloadLogID', 'desc')->limit(1)->pluck("end_time");
         return $endtime; */
-
+/*
         $usageinterval = CompanyConfiguration::get($companyid,'USAGE_INTERVAL');
         $current = strtotime(date('Y-m-d H:i:s'));
         $seconds = $current - strtotime($endtime);
@@ -450,7 +470,7 @@ class SippySQLAccountUsage extends Command {
         if (empty($endtime)) {
             $endtime = date('Y-m-01 00:00:00');
         }
-        return $endtime;
+        return $endtime;*/
     }
 
     public function createAccountJobLog($CompanyID,$CompanyGatewayID){
