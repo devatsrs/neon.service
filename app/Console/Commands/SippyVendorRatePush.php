@@ -4,22 +4,21 @@ use App\Lib\Company;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
-use App\Lib\TempVendorCDR;
-use App\Lib\VendorCDR;
+use App\Lib\Timezones;
+use App\Lib\VendorTrunk;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Finder\Iterator\RecursiveDirectoryIterator;
 
-class VendorCDRRecalculate extends Command {
+class SippyVendorRatePush extends Command {
 
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'vendorcdrrecal';
+    protected $name = 'sippyvendorratepush';
 
     /**
      * The console command description.
@@ -46,7 +45,7 @@ class VendorCDRRecalculate extends Command {
     {
         return [
             ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
-            ['JobID', InputArgument::REQUIRED, 'Argument JobID '],
+            ['CronJobID', InputArgument::REQUIRED, 'Argument CronJobID'],
         ];
     }
 
@@ -57,129 +56,108 @@ class VendorCDRRecalculate extends Command {
      */
     public function handle()
     {
-
         CronHelper::before_cronrun($this->name, $this );
-
-
         $arguments = $this->argument();
-        $JobID = $arguments["JobID"];
+        $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
-        $job = Job::find($JobID);
-        $ProcessID = CompanyGateway::getProcessID();
-        $getmypid = getmypid();
-        $skiped_account_data = array();
-        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-        $jobdata['ModifiedBy'] = 'RMScheduler';
-        Job::JobStatusProcess($JobID,$ProcessID,$getmypid);
-        $temptableName  = 'tblTempVendorCDR';
-        Log::useFiles(storage_path().'/logs/vendorcdrrecal-'.$JobID.'-'.date('Y-m-d').'.log');
+        $CronJob = CronJob::find($CronJobID);
+        $cronsetting = json_decode($CronJob->Settings,true);
+        CronJob::activateCronJob($CronJob);
+        $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
+        Log::useFiles(storage_path() . '/logs/streamcoaccountimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
+        $joblogdata['Message'] = '';
+        $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+        $processID = CompanyGateway::getProcessID();
+
         try {
-            Log::error(' ========================== vendor cdr transaction start =============================');
+            $AccountIDs = $cronsetting->AccountIDs;
+            $TimezoneIDs = Timezones::getTimezonesIDList();
 
-            $joboptions = json_decode($job->Options);
-            if(!empty($job)) {
-                $AccountID=0;
-                $startdate = $enddate= '';
-                $CompanyGatewayID = $joboptions->CompanyGatewayID;
-                $temptableName = CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID,'recal');
-                if(!empty($joboptions->AccountID) && $joboptions->AccountID> 0){
-                    $AccountID = (int)$joboptions->AccountID;
-                }
+            foreach ($AccountIDs as $AccountID) {
+                $VendorTrunks = VendorTrunk::where('AccountID',$AccountID);
+                if($VendorTrunks->count() > 0) {
+                    $VendorTrunkIDs = $VendorTrunks->get();
+                    foreach ($VendorTrunkIDs as $VendorTrunkID) {
+                        $TrunkID = $VendorTrunkID->TrunkID;
+                        foreach ($TimezoneIDs as $TimezoneID => $TimezoneTitle) {
+                            $file_path      = '';
+                            $amazonPath     = '';
+                            $downloadtype   = 'csv';
+                            $Effective      = 'Now';
+                            $CustomDate     = date('Y-m-d');
 
-                $companysetting =   json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
-                $RateCDR = 1;
-                $RateFormat = Company::PREFIX;
-                $CLI = $CLD =  $area_prefix = $Trunk = '';
-                $RateMethod = 'CurrentRate';
-                $zerovaluebuyingcost = $SpecifyRate =  0 ;
-                $CurrencyID = 0;
-                if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                    $RateFormat = $companysetting->RateFormat;
-                }
+                            $file_name = Job::getfileName($AccountID,$TrunkID,'vendorsippydownload');
+                            $amazonDir = AmazonS3::generate_upload_path(AmazonS3::$dir['VENDOR_DOWNLOAD'],$AccountID,$CompanyID) ;
+                            //$local_dir = getenv('UPLOAD_PATH') . '/'.$amazonPath;
 
-                if(!empty($joboptions->StartDate)) {
-                    $startdate = $joboptions->StartDate;
-                }
-                if(!empty($joboptions->EndDate)) {
-                    $enddate = $joboptions->EndDate;
-                }
+                            $query = "CALL  prc_WSGenerateVendorSippySheet ('" .$AccountID . "','" . $TrunkID."'," . $TimezoneID.",'".$Effective."','".$CustomDate."')";
+                            Log::info($query);
+                            $excel_data = DB::select($query);
 
-                if(!empty($joboptions->CLD)) {
-                    $CLD = $joboptions->CLD;
-                }
-                if(!empty($joboptions->CLI)) {
-                    $CLI = $joboptions->CLI;
-                }
-                if(!empty($joboptions->zerovaluebuyingcost)) {
-                    $zerovaluebuyingcost = $joboptions->zerovaluebuyingcost;
-                }
-                if(!empty($joboptions->CurrencyID)) {
-                    $CurrencyID = $joboptions->CurrencyID;
-                }
-                if(!empty($joboptions->area_prefix)) {
-                    $area_prefix = $joboptions->area_prefix;
-                }
-                if(!empty($joboptions->Trunk)) {
-                    $Trunk = $joboptions->Trunk;
-                }
-                if(isset($joboptions->RateMethod)) {
-                    $RateMethod = $joboptions->RateMethod;
-                }
-                if(isset($joboptions->SpecifyRate)) {
-                    $SpecifyRate = $joboptions->SpecifyRate;
-                }
-                if(!empty($startdate) && !empty($enddate)){
-                    $q1 = " call  prc_InsertTempReRateVendorCDR  ($CompanyID,$CompanyGatewayID,'".$startdate."','".$enddate."','".$AccountID."','" . $ProcessID . "','".$temptableName."','".$CLI."','".$CLD."',".intval($zerovaluebuyingcost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$RateMethod."')";
-                    Log::error("start  ".$q1);
-                    DB::connection('sqlsrv2')->statement($q1);
-                    Log::error("end  ".$q1);
+                            if(count($excel_data) > 0) {
+                                $excel_data = json_decode(json_encode($excel_data), true);
 
-                    $skiped_account_data = TempVendorCDR::ProcessCDR($CompanyID,$ProcessID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'',$RateMethod,$SpecifyRate,0);
-                }
-                if (count($skiped_account_data)) {
-                    $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($skiped_account_data));
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'PF')->pluck('JobStatusID');
-                } else {
-                    $jobdata['JobStatusMessage'] = 'Customer CDR ReRated Successfully';
-                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
-                }
-                //if(count($skiped_account_data) == 0) {
-                DB::connection('sqlsrvcdr')->beginTransaction();
-                DB::connection('sqlsrv2')->statement(" call  prc_DeleteVCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CLI."','".$CLD."',".intval($zerovaluebuyingcost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
-                DB::connection('sqlsrvcdr')->statement("call  prc_insertVendorCDR ('" . $ProcessID . "','".$temptableName."')");
-                DB::connection('sqlsrvcdr')->commit();
-                //}
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
-                Log::error(' ========================== vendor cdr transaction end =============================');
-                $jobdata['updated_at'] = date('Y-m-d H:i:s');
-                $jobdata['ModifiedBy'] = 'RMScheduler';
+                                //Fix .333 to 0.333 on following column
+                                foreach ($excel_data as $key => $excel_val) {
+                                    foreach (['Price 1', 'Price N'] as $field) {
+                                        $excel_data[$key][$field] = number_format($excel_val[$field], 9, '.', '');
+                                    }
+                                }
 
-                Job::where(["JobID" => $JobID])->update($jobdata);
+                                if ($downloadtype == 'xlsx') {
+                                    $amazonPath = $amazonDir . $file_name . '.xlsx';
+                                    $file_path = $UPLOADPATH . '/' . $amazonPath;
+                                    $NeonExcel = new NeonExcelIO($file_path);
+                                    $NeonExcel->write_excel($excel_data);
+                                } else if ($downloadtype == 'csv') {
+                                    $amazonPath = $amazonDir . $file_name . '.csv';
+                                    $file_path = $UPLOADPATH . '/' . $amazonPath;
+                                    $NeonExcel = new NeonExcelIO($file_path);
+                                    $NeonExcel->write_csv($excel_data);
+                                }
+
+                                if(!AmazonS3::upload($file_path,$amazonDir,$CompanyID)){
+                                    throw new Exception('Error in Amazon upload');
+                                }
+                                $fullPath = $amazonPath; //$destinationPath . $file_name;
+                                $jobdata['OutputFilePath'] = $fullPath;
+                                $jobdata['JobStatusMessage'] = 'Vendor Sippy File Generated Successfully';
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                                $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                                $jobdata['ModifiedBy'] = 'RMScheduler';
+                                Job::where(["JobID" => $JobID])->update($jobdata);
+
+                                DB::commit();
+                            }
+                        }
+                    }
+                }
             }
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             try {
                 DB::rollback();
-                DB::connection('sqlsrv2')->rollback();
-                DB::connection('sqlsrvcdr')->rollback();
-
-            } catch (\Exception $err) {
+            } catch (Exception $err) {
                 Log::error($err);
             }
-            try{
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
-            } catch (\Exception $err) {
-                Log::error($err);
-            }
+            date_default_timezone_set(Config::get('app.timezone'));
+            $this->info('Failed:' . $e->getMessage());
+            $joblogdata['Message'] = 'Error:' . $e->getMessage();
+            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 
-            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
-            $jobdata['JobStatusMessage'] = 'Vendor CDR ReRating Failed::'.$e->getMessage();
-            $jobdata['updated_at'] = date('Y-m-d H:i:s');
-            $jobdata['ModifiedBy'] = 'RMScheduler';
-            Job::where(["JobID" => $JobID])->update($jobdata);
             Log::error($e);
-            TempVendorCDR::where(["processId" => $ProcessID])->delete();
+            if(!empty($cronsetting['ErrorEmail'])) {
+                $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
+                Log::error("**Email Sent Status " . $result['status']);
+                Log::error("**Email Sent message " . $result['message']);
+            }
         }
-        Job::send_job_status_email($job,$CompanyID);
+        CronJobLog::createLog($CronJobID,$joblogdata);
+        CronJob::deactivateCronJob($CronJob);
+        if(!empty($cronsetting['SuccessEmail'])) {
+            $result = CronJob::CronJobSuccessEmailSend($CronJobID);
+            Log::error("**Email Sent Status ".$result['status']);
+            Log::error("**Email Sent message ".$result['message']);
+        }
 
         CronHelper::after_cronrun($this->name, $this);
 
