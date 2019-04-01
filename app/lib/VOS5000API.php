@@ -30,7 +30,7 @@ class VOS5000API{
 
             //$post_data='{"accounts":["IC-TEST"]}';
 
-            \Illuminate\Support\Facades\Log::info(self::$api_url . $call_method);
+            //\Illuminate\Support\Facades\Log::info(self::$api_url . $call_method);
             if($post === 'delete') {
                 $curl->delete(self::$api_url . $call_method, $post_data);
             }else if($post === 'put') {
