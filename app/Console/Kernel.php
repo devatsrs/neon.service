@@ -125,6 +125,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\FTPVendorAccountUsage',
 		'App\Console\Commands\ImportVOSAccountBalance',
 		'App\Console\Commands\ImportVOSAccounts',
+		'App\Console\Commands\GetVOSCustomerRate',
+		'App\Console\Commands\GetVOSVendorRate',
 
 	];
 
