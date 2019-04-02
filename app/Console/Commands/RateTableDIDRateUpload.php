@@ -18,6 +18,7 @@ use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\RateTable;
+use App\Lib\ServiceTemplate;
 use App\Lib\TempRateTableDIDRate;
 use App\Lib\FileUploadTemplate;
 use App\Lib\Timezones;
@@ -338,7 +339,21 @@ class RateTableDIDRateUpload extends Command
                         $CostComponents[] = 'CollectionCostPercentage';
                         $CostComponents[] = 'RegistrationCostPerNumber';
 
-                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+                        $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID);
+                        $CountryPrefix          = ServiceTemplate::getCountryPrefixDD($CompanyID);
+                        $AccessTypes            = ServiceTemplate::getAccessTypeDD($CompanyID);
+                        $Codes                  = ServiceTemplate::getPrefixDD($CompanyID);
+                        $CityTariff             = ServiceTemplate::getCityTariffDD($CompanyID);
+                        $CityTariffFilter       = [];
+                        foreach($CityTariff as $key => $City){
+                            if(strpos($City, " per ")){
+                                $CityTariffFilter[$City] = $City;
+                                unset($CityTariff[$key]);
+                            }
+                        }
+                        $City                   = $CityTariff;
+                        $Tariff                 = $CityTariffFilter;
+
 
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
@@ -404,7 +419,10 @@ class RateTableDIDRateUpload extends Command
                                             } else if (!empty($attrselection2->OriginationCountryCode)) {
                                                 $selection_CountryCode_Origination = $attrselection2->OriginationCountryCode;
                                             }
-                                            if (isset($selection_CountryCode_Origination) && !empty($selection_CountryCode_Origination) && !empty($temp_row[$selection_CountryCode_Origination])) {
+
+                                            if (array_key_exists($selection_CountryCode_Origination, $CountryPrefix)) {// if Country selected from Neon Database
+                                                $tempratetabledata['OriginationCountryCode'] = $selection_CountryCode_Origination;
+                                            } else if (!empty($temp_row[$selection_CountryCode_Origination])) {// if Country selected from file
                                                 $tempratetabledata['OriginationCountryCode'] = trim($temp_row[$selection_CountryCode_Origination]);
                                             } else {
                                                 $tempratetabledata['OriginationCountryCode'] = '';
@@ -417,7 +435,10 @@ class RateTableDIDRateUpload extends Command
                                             } else if (!empty($attrselection2->CountryCode)) {
                                                 $selection_CountryCode = $attrselection2->CountryCode;
                                             }
-                                            if (isset($selection_CountryCode) && !empty($selection_CountryCode) && !empty($temp_row[$selection_CountryCode])) {
+
+                                            if (array_key_exists($selection_CountryCode, $CountryPrefix)) {// if Country selected from Neon Database
+                                                $tempratetabledata['CountryCode'] = $selection_CountryCode;
+                                            } else if (!empty($temp_row[$selection_CountryCode])) {// if Country selected from file
                                                 $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
                                             } else {
                                                 $tempratetabledata['CountryCode'] = '';
@@ -431,10 +452,12 @@ class RateTableDIDRateUpload extends Command
                                                 $selection_Code_Origination = $attrselection2->OriginationCode;
                                             }
 
-                                            if (isset($selection_Code_Origination) && !empty($selection_Code_Origination) && !empty($temp_row[$selection_Code_Origination])) {
+                                            if (array_key_exists($selection_Code_Origination, $Codes)) {// if OriginationCode selected from Neon Database
+                                                $tempratetabledata['OriginationCode'] = $selection_Code_Origination;
+                                            } else if (!empty($temp_row[$selection_Code_Origination])) {// if OriginationCode selected from file
                                                 $tempratetabledata['OriginationCode'] = trim($temp_row[$selection_Code_Origination]);
                                             } else {
-                                                $tempratetabledata['OriginationCode'] = "";
+                                                $tempratetabledata['OriginationCode'] = '';
                                             }
                                         }
 
@@ -444,10 +467,13 @@ class RateTableDIDRateUpload extends Command
                                             } else if (!empty($attrselection2->Code)) {
                                                 $selection_Code = $attrselection2->Code;
                                             }
-                                            if (isset($selection_Code) && !empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
+
+                                            if (array_key_exists($selection_Code, $Codes)) {// if OriginationCode selected from Neon Database
+                                                $tempratetabledata['Code'] = $selection_Code;
+                                            } else if (isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {// if Code selected from file
                                                 $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
                                             } else if (!empty($tempratetabledata['CountryCode'])) {
-                                                $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with countr code later ie 91 - 1 -> 911
+                                                $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with country code later ie 91 - 1 -> 911
                                             } else {
                                                 $error[] = 'Code is blank at line no:' . $lineno;
                                             }
@@ -503,14 +529,41 @@ class RateTableDIDRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
-                                        if (!empty($attrselection->CityTariff)) {
-                                            if (!empty($temp_row[$attrselection->CityTariff])) {
-                                                $tempratetabledata['CityTariff'] = $temp_row[$attrselection->CityTariff];
+                                        if (!empty($attrselection->City)) {
+                                            if (array_key_exists($attrselection->City, $City)) {// if City selected from Neon Database
+                                                $TempCity = $attrselection->City;
+                                            } else if (!empty($temp_row[$attrselection->City])) {// if City selected from file
+                                                $TempCity = $temp_row[$attrselection->City];
                                             } else {
-                                                $tempratetabledata['CityTariff'] = '';
+                                                $TempCity = '';
                                             }
                                         } else {
-                                            $tempratetabledata['CityTariff'] = '';
+                                            $TempCity = '';
+                                        }
+                                        if (!empty($attrselection->Tariff)) {
+                                            if (array_key_exists($attrselection->Tariff, $Tariff)) {// if Tariff selected from Neon Database
+                                                $TempTariff = $attrselection->Tariff;
+                                            } else if (!empty($temp_row[$attrselection->Tariff])) {// if Tariff selected from file
+                                                $TempTariff = $temp_row[$attrselection->Tariff];
+                                            } else {
+                                                $TempTariff = '';
+                                            }
+                                        } else {
+                                            $TempTariff = '';
+                                        }
+                                        // concat both variable as only one of two will have value
+                                        $tempratetabledata['CityTariff'] = $TempCity.$TempTariff;
+
+                                        if (!empty($attrselection->AccessType)) {
+                                            if (array_key_exists($attrselection->AccessType, $AccessTypes)) {// if AccessType selected from Neon Database
+                                                $tempratetabledata['AccessType'] = $attrselection->AccessType;
+                                            } else if (isset($temp_row[$attrselection->AccessType])) {// if AccessType selected from file
+                                                $tempratetabledata['AccessType'] = $temp_row[$attrselection->AccessType];
+                                            } else {
+                                                $tempratetabledata['AccessType'] = '';
+                                            }
+                                        } else {
+                                            $tempratetabledata['AccessType'] = '';
                                         }
 
                                         $CostComponentsMapped = 0;
