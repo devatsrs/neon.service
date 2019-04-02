@@ -128,7 +128,7 @@ class PushSalesPricesERP extends Command {
 
 			$fieldName = 'ProductID';
 			$AccountFieldName = 'CustomerID';
-			$PackageFieldName = 'PackageID';
+			$PackageFieldName = 'PackageProductID';
 			$DynamicFieldsID = '';
 			$AccountDynamicFieldsID = '';
 			$PackageDynamicFieldsID = '';

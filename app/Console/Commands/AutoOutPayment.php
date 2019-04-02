@@ -166,8 +166,7 @@ class AutoOutPayment extends Command {
         $autoOutPayment = array();
         $postdata = array(
             'AccountID' => $AutoPaymentAccount->AccountID,
-            'Amount' => (int)$AutoPaymentAccount->OutPaymentAmount,
-            'Approved' => 1
+            'Amount' => (int)$AutoPaymentAccount->OutPaymentAmount
         );
         $postdata = json_encode($postdata, true);
 
