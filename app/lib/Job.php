@@ -212,6 +212,8 @@ class Job extends \Eloquent {
                     }
                 }
 
+            case 'PRTU':
+            case 'DRTU':
             case 'RTU':
 
                 $UserID = User::where("CompanyID", $CompanyID)->where(["AdminUser" => 1, "Status" => 1])->min("UserID");
