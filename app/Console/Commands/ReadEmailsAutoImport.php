@@ -11,6 +11,7 @@ use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Imap;
 use App\Lib\Job;
+use App\Lib\RateType;
 use App\Lib\Trunk;
 use App\Lib\User;
 use App\Lib\VendorTrunk;
@@ -161,6 +162,15 @@ class ReadEmailsAutoImport extends Command
 									$ratetable = \DB::table("tblRateTable")->select("RateTableName")->where('RateTableId','=',$matchData->TypePKID)->get();
 									$data["ratetablename"] = $ratetable[0]->RateTableName;
 									$data["RateTableID"] = $matchData->TypePKID;
+
+									if($ratetable[0]->Type == RateType::getRateTypeIDBySlug(RateType::SLUG_DID)) { // did rate upload
+										$job_type = 'DRTU';
+									} else if($ratetable[0]->Type == RateType::getRateTypeIDBySlug(RateType::SLUG_PACKAGE)) { // package rate upload
+										$job_type = 'PRTU';
+									} else { // voicecall rate upload
+										$job_type = 'RTU';
+									}
+
 									$data['codedeckid']="";
 									$AccountID = 0;
 								}
