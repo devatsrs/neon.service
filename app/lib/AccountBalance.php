@@ -528,7 +528,9 @@ class AccountBalance extends Model
         $UnbilledAmount = empty($response->UnbilledAmount) ? 0 : $response->UnbilledAmount;
         $VendorUnbilledAmount = empty($response->VendorUnbilledAmount) ? 0 : $response->VendorUnbilledAmount;
         $AccountBalance = $SOA_Amount + ($UnbilledAmount - $VendorUnbilledAmount);
-        $AccountBalance = number_format($AccountBalance, get_round_decimal_places($AccountID));
+        $CompanyID = Account::where(["AccountID"=>$AccountID])->pluck('CompanyId');
+        $RoundCharge = Helper::get_round_decimal_places($CompanyID,$AccountID);
+        $AccountBalance = number_format($AccountBalance, $RoundCharge);
         return $AccountBalance;
     }
 
