@@ -318,6 +318,11 @@ class Account extends \Eloquent {
     }
 
 
+    public static function getLanguageIDbyAccountID($AcID)
+    {
+        return Account::find($AcID)->pluck('LanguageID');
+    }
+
     public static function importStreamcoAccounts($streamco,$addparams) {
         $processID = isset($addparams['ProcessID']) ? $addparams['ProcessID'] : '';
         $CompanyID = isset($addparams['CompanyID']) ? $addparams['CompanyID'] : 0;

@@ -26,7 +26,9 @@ class Payment extends \Eloquent{
                 $settings['ProcessID'] = $ProcessID;
                 $query = "CALL prc_getDueInvoice(?,?,?)";
                 $Invoices = DB::connection('sqlsrv2')->select($query, array($CompanyID, 0, $BillingClassSingle->BillingClassID));
+                $i = 0;
                 foreach ($Invoices as $Invoice) {
+                    $i++;
                     if (Account::getAccountEmailCount($Invoice->AccountID, AccountEmailLog::InvoicePaymentReminder) == 0) {
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
                         $settings['InvoiceGrandTotal'] = number_format($Invoice->GrandTotal,Helper::get_round_decimal_places($CompanyID,$Invoice->AccountID));
@@ -37,8 +39,9 @@ class Payment extends \Eloquent{
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);
 
                         if ($foundkey !== false && check_account_age($settings,$foundkey,$getdaysdiff)) {
-
-                            NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'][$foundkey], $Invoice->AccountID);
+                            $LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder".$i, $LanguageID);
+                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                         }
                     }
                 }
@@ -55,7 +58,9 @@ class Payment extends \Eloquent{
                     $query = "CALL prc_AccountPaymentReminder(?,?,?)";
                     $Invoices = DB::select($query, array($CompanyID, 0, $BillingClassSingle->BillingClassID));
                     foreach ($Invoices as $Invoice) {
-                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $Invoice->AccountID);
+                        $LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
+                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountPaymentReminder", $LanguageID);
+                        NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                     }
                     NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');
                 }
