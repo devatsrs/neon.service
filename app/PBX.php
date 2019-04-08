@@ -1,6 +1,8 @@
 <?php
 namespace App;
 
+use App\Lib\RateTable;
+use App\Lib\RateTableRate;
 use \Exception;
 use App\Lib\GatewayAPI;
 use Illuminate\Support\Facades\Config;
@@ -61,36 +63,36 @@ class PBX{
      * @param $CompanyGatewayID
      */
     public function __construct($CompanyGatewayID){
-       $setting = GatewayAPI::getSetting($CompanyGatewayID,'PBX');
-       foreach((array)$setting as $configkey => $configval){
-           if($configkey == 'password'){
-               self::$config[$configkey] = Crypt::decrypt($configval);
-           }else{
-               self::$config[$configkey] = $configval;
-           }
-       }
-       if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
-           extract(self::$config);
-           Config::set('database.connections.pbxmysql.host',$dbserver);
-           Config::set('database.connections.pbxmysql.database',self::$dbname2);
-           Config::set('database.connections.pbxmysql.username',$username);
-           Config::set('database.connections.pbxmysql.password',$password);
+        $setting = GatewayAPI::getSetting($CompanyGatewayID,'PBX');
+        foreach((array)$setting as $configkey => $configval){
+            if($configkey == 'password'){
+                self::$config[$configkey] = Crypt::decrypt($configval);
+            }else{
+                self::$config[$configkey] = $configval;
+            }
+        }
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            extract(self::$config);
+            Config::set('database.connections.pbxmysql.host',$dbserver);
+            Config::set('database.connections.pbxmysql.database',self::$dbname2);
+            Config::set('database.connections.pbxmysql.username',$username);
+            Config::set('database.connections.pbxmysql.password',$password);
 
-       }
+        }
     }
     public static function testConnection(){
-       $response = array();
-       if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
-           try{
-               if(DB::connection('pbxmysql')->getDatabaseName()){
-                   $response['result'] = 'OK';
-               }
-           }catch(Exception $e){
-               $response['faultString'] =  $e->getMessage();
-               $response['faultCode'] =  $e->getCode();
-           }
-       }
-       return $response;
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                if(DB::connection('pbxmysql')->getDatabaseName()){
+                    $response['result'] = 'OK';
+                }
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+            }
+        }
+        return $response;
     }
 
     public static function getAccountCDRs($addparams=array()){
@@ -242,4 +244,142 @@ class PBX{
         }
         return $response;
     }
+
+    public static function updateRateTables($rateTables = []){
+        $response = null;
+        //dd(self::$config);
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                if(!empty($rateTables)) {
+                    $list = DB::connection('pbxmysql')
+                        ->table('cl_clientrates')
+                        ->lists('cl_name', 'cl_id');
+
+                    $insertData = [];
+                    foreach ($rateTables as $key => $rateTable)
+                        if (!in_array($rateTable, $list)) {
+                            $insertData[] = [
+                                'cl_name' => $rateTable,
+                                'cl_description' => '',
+                                'cl_customratescript' => '',
+                                'cl_ratescripttech' => 'AGI'
+                            ];
+                        }
+
+                    if (!empty($insertData))
+                        DB::connection('pbxmysql')
+                            ->table('cl_clientrates')->insert($insertData);
+
+                    $response = DB::connection('pbxmysql')
+                        ->table('cl_clientrates')
+                        ->whereIn('cl_name', $rateTables)
+                        ->lists('cl_name', 'cl_id');
+                }
+
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    public static $pbxRates;
+    public static $pbxInsertRates;
+    public static $pbxUpdateRates;
+
+    public static function updateRateTableRates($CompanyID, $pbxRateTables = []){
+        $response = null;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::beginTransaction();
+
+                $rates = DB::connection('pbxmysql')->table('ra_rates')
+                    ->join('cl_clientrates','cl_clientrates.cl_id','=','ra_rates.ra_cl_id')
+                    ->select([
+                        'ra_id',
+                        'ra_cl_id',
+                        'cl_name',
+                        'ra_prefix',
+                        'ra_country',
+                        'ra_cost'
+                    ]);
+
+
+                if(!empty($pbxRateTables)) $rates->whereIn('ra_cl_id', $pbxRateTables);
+
+                self::$pbxRates = [];
+                $rates->chunk(10000, function ($chunk) {
+                    foreach($chunk as $item){
+                        $ind = $item->ra_prefix . "_" . $item->cl_name;
+                        self::$pbxRates[$ind] = $item;
+                    }
+                    Log::info("Fetching Data: ". count(self::$pbxRates));
+                });
+
+                Log::info("Total Fetched: " . count(self::$pbxRates));
+
+                $rateQ = RateTableRate::join('tblRateTable','tblRateTable.RateTableId','=','tblRateTableRate.RateTableId')
+                    ->join('tblRate','tblRate.RateID','=','tblRateTableRate.RateID')
+                    ->select([DB::raw('DISTINCT(CONCAT(tblRate.Code,tblRateTable.RateTableName)) as cc'), 'tblRate.Code','tblRateTable.RateTableName','tblRateTableRate.RateTableRateId', 'tblRateTableRate.Rate'])
+                    ->where(['tblRateTable.CompanyId' => $CompanyID, 'tblRateTable.Status' => 1]);
+
+                Log::info($rateQ->toSql());
+
+                self::$pbxInsertRates = [];
+                self::$pbxUpdateRates = [];
+
+                $rateQ->chunk(10000, function ($chunk) use($pbxRateTables) {
+                    foreach($chunk as $arr){
+                        $ind = $arr->Code . "_" . $arr->RateTableName;
+                        if(isset(self::$pbxRates[$ind])){
+                            if(self::$pbxRates[$ind]->ra_cost != $arr->Rate)
+                                self::$pbxUpdateRates[] = [
+                                    'ra_id' => self::$pbxRates[$ind]->ra_id,
+                                    'ra_cost' => $arr->Rate
+                                ];
+                        } else
+                            self::$pbxInsertRates[] = [
+                                'ra_cl_id' => @$pbxRateTables[$arr->RateTableName],
+                                'ra_prefix' => $arr->Code,
+                                'ra_country' => $arr->Prefix,
+                                'ra_network' => $arr->Prefix,
+                                'ra_cost' => $arr->Rate
+                            ];
+
+                    }
+
+                    sleep(2);
+                    Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
+                });
+
+                Log::info("Total Insert: " . count(self::$pbxInsertRates) . ", Total Update:" . count(self::$pbxUpdateRates));
+
+                if(!empty(self::$pbxInsertRates))
+                    foreach (array_chunk(self::$pbxInsertRates, 1500) as $insertData) {
+                        DB::connection('pbxmysql')->table('ra_rates')->insert($insertData);
+
+                        Log::info("Inserting: " . count($insertData));
+                    }
+
+                if(!empty(self::$pbxUpdateRates))
+                    foreach (self::$pbxUpdateRates as $key => $updateData) {
+                        DB::connection('pbxmysql')->table('ra_rates')
+                            ->where('ra_id', $updateData['ra_id'])
+                            ->update(['ra_cost' => $updateData['ra_cost']]);
+
+                        Log::info("Updating..." . $key);
+                    }
+
+                $response = true;
+                DB::commit();
+
+            } catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
 }
