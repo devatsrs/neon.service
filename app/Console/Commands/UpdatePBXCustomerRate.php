@@ -70,7 +70,7 @@ class UpdatePBXCustomerRate extends Command {
 		CronJob::activateCronJob($CronJob);
 		CronJob::createLog($CronJobID);
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
-		$RateTableID = $cronsetting['RateTableID'];
+		$RateTableID = $cronsetting['rateTables'];
 		$RateTableID = $RateTableID != "" && $RateTableID != false ? $RateTableID : false;
 
 		$joblogdata = array();
