@@ -78,7 +78,7 @@ class AccountBalanceSubscriptionLog extends Model
         $ServiceID = $AccountSubscription->ServiceID;
         $AccountServiceID = $AccountSubscription->AccountServiceID;
         $CompanyID = Account::where(['AccountID'=>$AccountID])->pluck('CompanyId');
-        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID,$ServiceID);
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID,$ServiceID,$AccountServiceID);
         $AccountBalanceLogID = AccountBalanceLog::where(['AccountID'=>$AccountID])->pluck('AccountBalanceLogID');
         $IssueDate=date('Y-m-d');
 
@@ -318,7 +318,7 @@ class AccountBalanceSubscriptionLog extends Model
         $ServiceID = $AccountOneOffCharge->ServiceID;
         $AccountServiceID = $AccountOneOffCharge->AccountServiceID;
         $CompanyID = Account::where(['AccountID'=>$AccountID])->pluck('CompanyId');
-        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID,$ServiceID);
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID,$ServiceID,$AccountServiceID);
 
         $AccountBalanceLogID = AccountBalanceLog::where(['AccountID'=>$AccountID])->pluck('AccountBalanceLogID');
         $IssueDate=date('Y-m-d');

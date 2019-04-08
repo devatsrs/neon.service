@@ -35,7 +35,6 @@ class Currency extends \Eloquent {
         return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
-    // not using
     public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
 
         if($FileCurrency == $AccountCurrency) {
