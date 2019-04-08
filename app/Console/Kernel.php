@@ -126,7 +126,6 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ImportVOSAccountBalance',
 		'App\Console\Commands\ImportVOSAccounts',
 		'App\Console\Commands\UpdatePBXCustomerRate',
-
 	];
 
 	/**

@@ -306,6 +306,7 @@ class PBX{
                     ]);
 
 
+
                 if(!empty($pbxRateTables)) $rates->whereIn('ra_cl_id', $pbxRateTables);
 
                 self::$pbxRates = [];
