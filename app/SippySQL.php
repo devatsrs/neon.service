@@ -67,11 +67,11 @@ class SippySQL{
                 $response_cdr = array();
                // foreach($tables as $tablename)
                // {
-                $cdrs_qry = "select cc.i_account,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_in,cc.cli_in,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
+                $cdrs_qry = "select a.username,cc.i_account,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_in,cc.cli_in,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call left join accounts as a on cc.i_account = a.i_account where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
                 $response_cdr = DB::connection('pgsql')->select($cdrs_qry);
                 Log::info($cdrs_qry);
 
-                $cdrs_conn_qry = "select cc.i_account_debug,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_out,cc.cli_out,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_connections_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
+                $cdrs_conn_qry = "select a.username,cc.i_account_debug,cc.remote_ip,c.setup_time,cc.disconnect_time,cc.cost,cc.cld_out,cc.cli_out,cc.billed_duration,cc.prefix,cc.i_call,c.i_call from ".$cdrs_connections_table." as cc inner join ".$calls_table." as c on cc.i_call = c.i_call left join accounts as a on cc.i_account_debug = a.i_account where cc.disconnect_time >= '" . $addparams['start_date_ymd'] . "' and cc.disconnect_time < '" . $addparams['end_date_ymd'] . "' ";
                 $response_cdr_connection = DB::connection('pgsql')->select($cdrs_conn_qry);
                 Log::info($cdrs_conn_qry);
 
