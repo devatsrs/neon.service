@@ -83,6 +83,7 @@ class GetVOSVendorRate extends Command {
         CronJob::activateCronJob($CronJob);
 
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+        $VendorAccounts =  !empty($cronsetting['vendors'])?$cronsetting['vendors']:'';
 
         Log::useFiles(storage_path().'/logs/getvosvendorrate-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
 
@@ -105,7 +106,11 @@ class GetVOSVendorRate extends Command {
             $Prefixes=array();
 
             if(!empty($CompanyGateways)) {
-                $VendorTrunks=VendorTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
+                if(!empty($VendorAccounts)){
+                    $VendorTrunks=VendorTrunk::where(["Status"=>1])->where("Prefix","!=","")->whereIn('AccountID',$VendorAccounts)->get();
+                }else{
+                    $VendorTrunks=VendorTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
+                }
                 foreach ($CompanyGateways as $CompanyGateway) {
 
                     $CompanyGatewayID = $CompanyGateway->CompanyGatewayID;
@@ -116,7 +121,10 @@ class GetVOSVendorRate extends Command {
 
                     foreach($VendorTrunks as $VendorTrunk) {
                         $Prefix=$VendorTrunk->Prefix;
-                        array_push($Prefixes,$Prefix);
+                       // array_push($Prefixes,$Prefix);
+                        if(!in_array($Prefix,$Prefixes)){
+                            array_push($Prefixes,$Prefix);
+                        }
                     }
                     if(!empty($Prefixes)){
 
@@ -149,7 +157,7 @@ class GetVOSVendorRate extends Command {
 
                                         }
                                     } else {
-                                        $Message .= "No Any Free Rates Found.";
+                                        //$Message .= "No Any Free Rates Found.";
                                     }
 
                                 }

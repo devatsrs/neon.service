@@ -82,6 +82,7 @@ class GetVOSCustomerRate extends Command {
         CronJob::activateCronJob($CronJob);
 
         $CompanyGatewayID =  $cronsetting['CompanyGatewayID'];
+        $CustomerAccounts =  !empty($cronsetting['customers'])?$cronsetting['customers']:'';
 
         Log::useFiles(storage_path().'/logs/getvoscustomerrate-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
 
@@ -104,7 +105,13 @@ class GetVOSCustomerRate extends Command {
             $Prefixes=array();
 
             if(!empty($CompanyGateways)) {
-                $CustomerTrunks=CustomerTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
+                if(!empty($CustomerAccounts)){
+                    //$AccountIDs = implode(",",$CustomerAccounts);
+                    $CustomerTrunks=CustomerTrunk::where(["Status"=>1])->where("Prefix","!=","")->whereIn('AccountID',$CustomerAccounts)->get();
+
+                }else{
+                    $CustomerTrunks=CustomerTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
+                }
                 foreach ($CompanyGateways as $CompanyGateway) {
 
                     $CompanyGatewayID = $CompanyGateway->CompanyGatewayID;
@@ -115,11 +122,14 @@ class GetVOSCustomerRate extends Command {
 
                     foreach($CustomerTrunks as $CustomerTrunk) {
                         $Prefix=$CustomerTrunk->Prefix;
-                        array_push($Prefixes,$Prefix);
+                        if(!in_array($Prefix,$Prefixes)){
+                            array_push($Prefixes,$Prefix);
+                        }
                     }
+
                     if(!empty($Prefixes)){
 
-                        $PostData['accounts']=$Prefixes;
+                        $PostData['accounts']=array_unique($Prefixes);
 
                         $GetAllAccounts = VOS5000API::request('GetCustomer', $CompanyGatewayID, $CompanyGatewayTitle, $PostData);
 
@@ -158,7 +168,7 @@ class GetVOSCustomerRate extends Command {
 
                                         }
                                     } else {
-                                        $Message .= "No Any Free Rates Found.";
+                                        //$Message .= "No Any Fee Rates Found.";
                                     }
                                 }
                                 Log::info("Count Total Store Data= " . count($StoreRateData));
