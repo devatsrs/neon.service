@@ -96,12 +96,14 @@ class UpdatePBXCustomerRate extends Command {
 
 			$pbxRateTables = $pbx->updateRateTables($RateTables);
 
+			$response = ['inserted' => 0, 'updated' => 0];
 			if($pbxRateTables != false){
 				$pbxRateTables = array_flip($pbxRateTables);
 				$response = $pbx->updateRateTableRates($CompanyID, $pbxRateTables);
 			}
 
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+			$joblogdata['Message'] = json_encode($response);
 			Log::info("Update pbx customer rate StartTime " . $start_date . " - End Time " . date('Y-m-d H:i:s'));
 			Log::info(' ========================== Update pbx customer rate end =============================');
 			DB::connection('sqlsrv2')->commit();
@@ -125,6 +127,8 @@ class UpdatePBXCustomerRate extends Command {
 				Log::error("**Email Sent message " . $result['message']);
 			}
 		}
+
+		CronJob::deactivateCronJob($CronJob);
 	}
 
 }

@@ -333,9 +333,10 @@ class PBX{
                     foreach($chunk as $arr){
                         $ind = $arr->Code . "_" . $arr->RateTableName;
                         if(isset(self::$pbxRates[$ind])){
-                            if(self::$pbxRates[$ind]->ra_cost != $arr->Rate)
+                            Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5));
+                            if(number_format(self::$pbxRates[$ind]->ra_cost, 5) != number_format($arr->Rate, 5))
                                 self::$pbxUpdateRates[] = [
-                                    'ra_id' => self::$pbxRates[$ind]->ra_id,
+                                    'ra_id'   => self::$pbxRates[$ind]->ra_id,
                                     'ra_cost' => $arr->Rate
                                 ];
                         } else
