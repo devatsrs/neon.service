@@ -103,7 +103,7 @@ class UpdatePBXCustomerRate extends Command {
 			}
 
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-			$joblogdata['Message'] = json_encode($response);
+			$joblogdata['Message'] = "Detail: " . json_encode($response);
 			Log::info("Update pbx customer rate StartTime " . $start_date . " - End Time " . date('Y-m-d H:i:s'));
 			Log::info(' ========================== Update pbx customer rate end =============================');
 			DB::connection('sqlsrv2')->commit();

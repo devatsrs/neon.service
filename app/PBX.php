@@ -354,7 +354,7 @@ class PBX{
                     }
 
                     sleep(2);
-                    Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
+                    //Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
                 });
 
                 Log::info("Total Insert: " . count(self::$pbxInsertRates) . ", Total Update:" . count(self::$pbxUpdateRates));
@@ -363,7 +363,7 @@ class PBX{
                     foreach (array_chunk(self::$pbxInsertRates, 1500) as $insertData) {
                         DB::connection('pbxmysql')->table('ra_rates')->insert($insertData);
 
-                        Log::info("Inserting: " . count($insertData));
+                        //Log::info("Inserting: " . count($insertData));
                     }
 
                 if(!empty(self::$pbxUpdateRates))
