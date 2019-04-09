@@ -336,11 +336,11 @@ class PBX{
                     foreach($chunk as $arr){
                         $ind = $arr->Code . "_" . $arr->RateTableName;
                         if(isset(self::$pbxRates[$ind])){
-                            Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5));
+                            //Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5));
                             if(number_format(self::$pbxRates[$ind]->ra_cost, 5) != number_format($arr->Rate, 5))
                                 self::$pbxUpdateRates[] = [
                                     'ra_id'   => self::$pbxRates[$ind]->ra_id,
-                                    'ra_cost' => $arr->Rate
+                                    'ra_cost' => number_format($arr->Rate, 5)
                                 ];
                         } else
                             self::$pbxInsertRates[] = [
