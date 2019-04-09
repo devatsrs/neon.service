@@ -368,11 +368,16 @@ class PBX{
                             ->where('ra_id', $updateData['ra_id'])
                             ->update(['ra_cost' => $updateData['ra_cost']]);
 
-                        Log::info("Updating..." . $key);
+                        //Log::info("Updating..." . $key);
                     }
 
-                $response = true;
+
                 DB::commit();
+
+                $response = [
+                    'inserted' => count(self::$pbxInsertRates),
+                    'updated' => count(self::$pbxUpdateRates)
+                ];
 
             } catch(Exception $e){
                 Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());

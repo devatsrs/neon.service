@@ -90,19 +90,20 @@ class UpdatePBXCustomerRate extends Command {
 			$start_date = date('Y-m-d 00:00:00');
 			Log::info(print_r($start_date, true));
 
-			$RateTables = RateTable::where(['CompanyID' => $CompanyID, 'Status' => 1])
-				->lists('RateTableName', 'RateTableId');
+			$RateTables = RateTable::where(['CompanyID' => $CompanyID, 'Status' => 1]);
+			if($RateTableID != false) $RateTables->where(['RateTableId' => $RateTableID]);
+			$RateTables = $RateTables->lists('RateTableName', 'RateTableId');
 
 			$pbxRateTables = $pbx->updateRateTables($RateTables);
-			//$pbxRateTables = true;
+
 			if($pbxRateTables != false){
 				$pbxRateTables = array_flip($pbxRateTables);
-				$check = $pbx->updateRateTableRates($CompanyID, $pbxRateTables);
+				$response = $pbx->updateRateTableRates($CompanyID, $pbxRateTables);
 			}
 
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-			Log::error("Update pbx customer rate StartTime " . $start_date . " - End Time " . date('Y-m-d H:i:s'));
-			Log::error(' ========================== Update pbx customer rate end =============================');
+			Log::info("Update pbx customer rate StartTime " . $start_date . " - End Time " . date('Y-m-d H:i:s'));
+			Log::info(' ========================== Update pbx customer rate end =============================');
 			DB::connection('sqlsrv2')->commit();
 			CronJobLog::insert($joblogdata);
 		} catch (\Exception $e) {
