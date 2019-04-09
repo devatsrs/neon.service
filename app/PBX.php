@@ -288,11 +288,12 @@ class PBX{
     public static $pbxInsertRates;
     public static $pbxUpdateRates;
 
-    public static function updateRateTableRates($CompanyID, $pbxRateTables = []){
+    public static function updateRateTableRates($CompanyID, $RateTableID, $pbxRateTables = []){
         $response = null;
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
                 DB::beginTransaction();
+                Log::info("Total RateTables: " . count($pbxRateTables));
 
                 $rates = DB::connection('pbxmysql')->table('ra_rates')
                     ->join('cl_clientrates','cl_clientrates.cl_id','=','ra_rates.ra_cl_id')
@@ -304,7 +305,6 @@ class PBX{
                         'ra_country',
                         'ra_cost'
                     ]);
-
 
                 if(!empty($pbxRateTables)) $rates->whereIn('ra_cl_id', $pbxRateTables);
 
@@ -324,7 +324,10 @@ class PBX{
                     ->select([DB::raw('DISTINCT(CONCAT(tblRate.Code,tblRateTable.RateTableName)) as cc'), 'tblRate.Code','tblRateTable.RateTableName','tblRateTableRate.RateTableRateId', 'tblRateTableRate.Rate'])
                     ->where(['tblRateTable.CompanyId' => $CompanyID, 'tblRateTable.Status' => 1]);
 
+
                 Log::info($rateQ->toSql());
+                if($RateTableID != false && $RateTableID != "")
+                    $rateQ->where('tblRateTable.RateTableId', $RateTableID);
 
                 self::$pbxInsertRates = [];
                 self::$pbxUpdateRates = [];
