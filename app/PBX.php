@@ -295,6 +295,8 @@ class PBX{
                 DB::beginTransaction();
                 Log::info("Total RateTables: " . count($pbxRateTables));
 
+                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', $pbxRateTables)->delete();
+
                 $rates = DB::connection('pbxmysql')->table('ra_rates')
                     ->join('cl_clientrates','cl_clientrates.cl_id','=','ra_rates.ra_cl_id')
                     ->select([
@@ -311,9 +313,10 @@ class PBX{
                 self::$pbxRates = [];
                 $rates->chunk(10000, function ($chunk) {
                     foreach($chunk as $item){
-                        $ind = $item->ra_prefix . "_" . $item->cl_name;
+                        $ind = $item->ra_prefix . "_" . $item->cl_name . "_" . $item->ra_country;
                         self::$pbxRates[$ind] = $item;
                     }
+
                     Log::info("Fetching Data: ". count(self::$pbxRates));
                 });
 
@@ -321,27 +324,32 @@ class PBX{
 
                 $rateQ = RateTableRate::join('tblRateTable','tblRateTable.RateTableId','=','tblRateTableRate.RateTableId')
                     ->join('tblRate','tblRate.RateID','=','tblRateTableRate.RateID')
-                    ->select([DB::raw('DISTINCT(CONCAT(tblRate.Code,tblRateTable.RateTableName)) as cc'), 'tblRate.Code','tblRateTable.RateTableName','tblRateTableRate.RateTableRateId', 'tblRateTableRate.Rate'])
-                    ->where(['tblRateTable.CompanyId' => $CompanyID, 'tblRateTable.Status' => 1]);
+                    ->leftJoin('tblCountry','tblCountry.CountryID','=','tblRate.CountryID')
+                    ->select([DB::raw('DISTINCT(CONCAT(tblRate.Code,tblRateTable.RateTableName)) as cc'),'tblRate.Code','tblRateTable.RateTableName','tblRateTableRate.RateTableRateId', 'tblRateTableRate.Rate', 'tblCountry.Prefix'])
+                    ->where(['tblRateTable.CompanyId' => $CompanyID, 'tblRateTable.Status' => 1])
+                    ->whereDate('tblRateTableRate.EffectiveDate', "<=", date('Y-m-d'));
 
-
-                Log::info($rateQ->toSql());
                 if($RateTableID != false && $RateTableID != "")
                     $rateQ->where('tblRateTable.RateTableId', $RateTableID);
+
+                Log::info($rateQ->toSql());
+                Log::info("Total Available Rates: " . $rateQ->count());
 
                 self::$pbxInsertRates = [];
                 self::$pbxUpdateRates = [];
 
                 $rateQ->chunk(10000, function ($chunk) use($pbxRateTables) {
                     foreach($chunk as $arr){
-                        $ind = $arr->Code . "_" . $arr->RateTableName;
+                        $ind = $arr->Code . "_" . $arr->RateTableName . "_" . $arr->Prefix;
                         if(isset(self::$pbxRates[$ind])){
-                            //Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5));
-                            if(number_format(self::$pbxRates[$ind]->ra_cost, 5) != number_format($arr->Rate, 5))
+                            if(number_format(self::$pbxRates[$ind]->ra_cost, 5) != number_format($arr->Rate, 5)){
                                 self::$pbxUpdateRates[] = [
                                     'ra_id'   => self::$pbxRates[$ind]->ra_id,
                                     'ra_cost' => number_format($arr->Rate, 5)
                                 ];
+
+                                //Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5) . " " . $ind);
+                            }
                         } else
                             self::$pbxInsertRates[] = [
                                 'ra_cl_id' => @$pbxRateTables[$arr->RateTableName],
@@ -350,11 +358,10 @@ class PBX{
                                 'ra_network' => $arr->Prefix,
                                 'ra_cost' => $arr->Rate
                             ];
-
                     }
 
-                    sleep(2);
-                    //Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
+                    Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
+                    sleep(1);
                 });
 
                 Log::info("Total Insert: " . count(self::$pbxInsertRates) . ", Total Update:" . count(self::$pbxUpdateRates));
@@ -374,7 +381,6 @@ class PBX{
 
                         //Log::info("Updating..." . $key);
                     }
-
 
                 DB::commit();
 
