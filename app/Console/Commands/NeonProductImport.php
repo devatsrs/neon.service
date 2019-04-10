@@ -125,13 +125,16 @@ class NeonProductImport extends Command {
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
                             $productdata['FieldName']   = $FieldsProductID;
-                            $city_tariff = '';
+                            //$city_tariff = '';
                             if (!empty($ProductResponse->cityName)) {
-                                $city_tariff = $ProductResponse->cityName;
-                            } else {
-                                $city_tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
+                                $City = $ProductResponse->cityName;
+                                $productdata['City'] = $City;
+                            }else {
+                                $Tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
+                                $productdata['Tariff'] = $Tariff;
                             }
-                            $productdata['city_tariff'] = $city_tariff;
+                            // $productdata['City'] = $city_tariff;
+                            // $productdata['Tariff'] = $city_tariff;
                             if (!empty($ProductResponse->accessTypeName)) {
                                 $productdata['accessType'] = $ProductResponse->accessTypeName;
                             }
