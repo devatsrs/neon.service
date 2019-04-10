@@ -97,10 +97,8 @@ class UpdatePBXCustomerRate extends Command {
 			$pbxRateTables = $pbx->updateRateTables($RateTables);
 
 			$response = ['inserted' => 0, 'updated' => 0];
-			if($pbxRateTables != false){
-				$pbxRateTables = array_flip($pbxRateTables);
-				$response = $pbx->updateRateTableRates($CompanyID, $RateTableID, $pbxRateTables);
-			}
+			if($pbxRateTables != false)
+				$response = $pbx->updateRateTableRates($CompanyID, $pbxRateTables);
 
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			$joblogdata['Message'] = "Detail: " . json_encode($response);
