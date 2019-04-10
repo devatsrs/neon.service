@@ -295,25 +295,29 @@ class PBX{
                 DB::beginTransaction();
                 Log::info("Total RateTables: " . count($pbxRateTables));
 
-                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', $pbxRateTables)->delete();
+                DB::connection('pbxmysql')
+                    ->table('ra_rates')
+                    ->whereIn('ra_cl_id', $pbxRateTables)
+                    ->delete();
 
                 $rates = DB::connection('pbxmysql')->table('ra_rates')
                     ->join('cl_clientrates','cl_clientrates.cl_id','=','ra_rates.ra_cl_id')
                     ->select([
                         'ra_id',
                         'ra_cl_id',
-                        'cl_name',
-                        'ra_prefix',
-                        'ra_country',
+                        'cl_name', // RateTable Name
+                        'ra_prefix', // Code
+                        'ra_country', // Country Prefix
                         'ra_cost'
                     ]);
 
-                if(!empty($pbxRateTables)) $rates->whereIn('ra_cl_id', $pbxRateTables);
+                if(!empty($pbxRateTables))
+                    $rates->whereIn('ra_cl_id', $pbxRateTables);
 
                 self::$pbxRates = [];
                 $rates->chunk(10000, function ($chunk) {
                     foreach($chunk as $item){
-                        $ind = $item->ra_prefix . "_" . $item->cl_name . "_" . $item->ra_country;
+                        $ind = $item->ra_prefix . "#_#" . $item->cl_name;
                         self::$pbxRates[$ind] = $item;
                     }
 
@@ -325,7 +329,7 @@ class PBX{
                 $rateQ = RateTableRate::join('tblRateTable','tblRateTable.RateTableId','=','tblRateTableRate.RateTableId')
                     ->join('tblRate','tblRate.RateID','=','tblRateTableRate.RateID')
                     ->leftJoin('tblCountry','tblCountry.CountryID','=','tblRate.CountryID')
-                    ->select([DB::raw('DISTINCT(CONCAT(tblRate.Code,tblRateTable.RateTableName)) as cc'),'tblRate.Code','tblRateTable.RateTableName','tblRateTableRate.RateTableRateId', 'tblRateTableRate.Rate', 'tblCountry.Prefix'])
+                    ->select(['tblRate.Code','tblRateTable.RateTableName', 'tblCountry.Prefix', 'tblRateTableRate.Rate'])->distinct()
                     ->where(['tblRateTable.CompanyId' => $CompanyID, 'tblRateTable.Status' => 1])
                     ->whereDate('tblRateTableRate.EffectiveDate', "<=", date('Y-m-d'));
 
@@ -340,24 +344,25 @@ class PBX{
 
                 $rateQ->chunk(10000, function ($chunk) use($pbxRateTables) {
                     foreach($chunk as $arr){
-                        $ind = $arr->Code . "_" . $arr->RateTableName . "_" . $arr->Prefix;
-                        if(isset(self::$pbxRates[$ind])){
+                        $ind = $arr->Code . "#_#" . $arr->RateTableName;
+                        if(isset(self::$pbxRates[$ind]) && !isset(self::$pbxUpdateRates[$ind])){
                             if(number_format(self::$pbxRates[$ind]->ra_cost, 5) != number_format($arr->Rate, 5)){
-                                self::$pbxUpdateRates[] = [
+                                self::$pbxUpdateRates[$ind] = [
                                     'ra_id'   => self::$pbxRates[$ind]->ra_id,
                                     'ra_cost' => number_format($arr->Rate, 5)
                                 ];
-
-                                //Log::info(number_format(self::$pbxRates[$ind]->ra_cost, 5) . " = " . number_format($arr->Rate, 5) . " " . $ind);
                             }
-                        } else
-                            self::$pbxInsertRates[] = [
-                                'ra_cl_id' => @$pbxRateTables[$arr->RateTableName],
-                                'ra_prefix' => $arr->Code,
-                                'ra_country' => $arr->Prefix,
-                                'ra_network' => $arr->Prefix,
-                                'ra_cost' => $arr->Rate
-                            ];
+                        } else {
+                            if (!isset(self::$pbxInsertRates[$ind])) {
+                                self::$pbxInsertRates[] = [
+                                    'ra_cl_id' => @$pbxRateTables[$arr->RateTableName],
+                                    'ra_prefix' => $arr->Code,
+                                    'ra_country' => $arr->Prefix,
+                                    'ra_network' => $arr->Prefix,
+                                    'ra_cost' => $arr->Rate
+                                ];
+                            }
+                        }
                     }
 
                     Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
@@ -370,7 +375,7 @@ class PBX{
                     foreach (array_chunk(self::$pbxInsertRates, 1500) as $insertData) {
                         DB::connection('pbxmysql')->table('ra_rates')->insert($insertData);
 
-                        //Log::info("Inserting: " . count($insertData));
+                        Log::info("Inserting: " . count($insertData));
                     }
 
                 if(!empty(self::$pbxUpdateRates))
@@ -396,5 +401,4 @@ class PBX{
         }
         return $response;
     }
-
 }
