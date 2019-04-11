@@ -340,20 +340,11 @@ class RateTableDIDRateUpload extends Command
                         $CostComponents[] = 'RegistrationCostPerNumber';
 
                         $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID);
-                        $CountryPrefix          = ServiceTemplate::getCountryPrefixDD($CompanyID);
+                        $CountryPrefix          = ServiceTemplate::getCountryPrefixDD();
                         $AccessTypes            = ServiceTemplate::getAccessTypeDD($CompanyID);
                         $Codes                  = ServiceTemplate::getPrefixDD($CompanyID);
-                        $CityTariff             = ServiceTemplate::getCityTariffDD($CompanyID);
-                        $CityTariffFilter       = [];
-                        foreach($CityTariff as $key => $City){
-                            if(strpos($City, " per ")){
-                                $CityTariffFilter[$City] = $City;
-                                unset($CityTariff[$key]);
-                            }
-                        }
-                        $City                   = $CityTariff;
-                        $Tariff                 = $CityTariffFilter;
-
+                        $City                   = ServiceTemplate::getCityDD($CompanyID);
+                        $Tariff                 = ServiceTemplate::getTariffDD($CompanyID);
 
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
@@ -459,6 +450,7 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $tempratetabledata['OriginationCode'] = '';
                                             }
+                                            $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCode'];
                                         }
 
                                         if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
@@ -477,32 +469,7 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $error[] = 'Code is blank at line no:' . $lineno;
                                             }
-                                        }
-
-                                        if (!empty($attrselection->OriginationDescription) || !empty($attrselection2->OriginationDescription)) {
-                                            if (!empty($attrselection->OriginationDescription)) {
-                                                $selection_Description_Origination = $attrselection->OriginationDescription;
-                                            } else if (!empty($attrselection2->OriginationDescription)) {
-                                                $selection_Description_Origination = $attrselection2->OriginationDescription;
-                                            }
-                                            if (isset($selection_Description_Origination) && !empty($selection_Description_Origination) && !empty($temp_row[$selection_Description_Origination])) {
-                                                $tempratetabledata['OriginationDescription'] = $temp_row[$selection_Description_Origination];
-                                            } else {
-                                                $tempratetabledata['OriginationDescription'] = "";
-                                            }
-                                        }
-
-                                        if (!empty($attrselection->Description) || !empty($attrselection2->Description)) {
-                                            if (!empty($attrselection->Description)) {
-                                                $selection_Description = $attrselection->Description;
-                                            } else if (!empty($attrselection2->Description)) {
-                                                $selection_Description = $attrselection2->Description;
-                                            }
-                                            if (isset($selection_Description) && !empty($selection_Description) && !empty($temp_row[$selection_Description])) {
-                                                $tempratetabledata['Description'] = $temp_row[$selection_Description];
-                                            } else {
-                                                $error[] = 'Description is blank at line no:' . $lineno;
-                                            }
+                                            $tempratetabledata['Description'] = $tempratetabledata['Code'];
                                         }
 
                                         /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
@@ -531,28 +498,26 @@ class RateTableDIDRateUpload extends Command
 
                                         if (!empty($attrselection->City)) {
                                             if (array_key_exists($attrselection->City, $City)) {// if City selected from Neon Database
-                                                $TempCity = $attrselection->City;
+                                                $tempratetabledata['City'] = $attrselection->City;
                                             } else if (!empty($temp_row[$attrselection->City])) {// if City selected from file
-                                                $TempCity = $temp_row[$attrselection->City];
+                                                $tempratetabledata['City'] = $temp_row[$attrselection->City];
                                             } else {
-                                                $TempCity = '';
+                                                $tempratetabledata['City'] = '';
                                             }
                                         } else {
-                                            $TempCity = '';
+                                            $tempratetabledata['City'] = '';
                                         }
                                         if (!empty($attrselection->Tariff)) {
                                             if (array_key_exists($attrselection->Tariff, $Tariff)) {// if Tariff selected from Neon Database
-                                                $TempTariff = $attrselection->Tariff;
+                                                $tempratetabledata['Tariff'] = $attrselection->Tariff;
                                             } else if (!empty($temp_row[$attrselection->Tariff])) {// if Tariff selected from file
-                                                $TempTariff = $temp_row[$attrselection->Tariff];
+                                                $tempratetabledata['Tariff'] = $temp_row[$attrselection->Tariff];
                                             } else {
-                                                $TempTariff = '';
+                                                $tempratetabledata['Tariff'] = '';
                                             }
                                         } else {
-                                            $TempTariff = '';
+                                            $tempratetabledata['Tariff'] = '';
                                         }
-                                        // concat both variable as only one of two will have value
-                                        $tempratetabledata['CityTariff'] = $TempCity.$TempTariff;
 
                                         if (!empty($attrselection->AccessType)) {
                                             if (array_key_exists($attrselection->AccessType, $AccessTypes)) {// if AccessType selected from Neon Database
