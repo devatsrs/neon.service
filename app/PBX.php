@@ -331,7 +331,7 @@ class PBX{
                             'tblRate.Interval1',
                             'tblCountry.Prefix',
                             'tblRateTableRate.Rate',
-                            'tblRateTableRate.RateN',
+                            'tblRateTableRate.ConnectionFee',
                             'tblRateTable.RoundChargedAmount',
                         ])->where([
                             'tblRateTable.CompanyId' => $CompanyID,
@@ -366,7 +366,7 @@ class PBX{
                                     'ra_country'      => $arr->Prefix,
                                     'ra_network'      => $arr->Prefix,
                                     'ra_cost'         => $arr->Rate,
-                                    'ra_setup'        => $arr->RateN,
+                                    'ra_setup'        => $arr->ConnectionFee === NULL ? 0 : $arr->ConnectionFee,
                                     'ra_roundingtime' => $arr->Interval1,
                                     'ra_minimumcost'  => 0,
                                     'ra_roundingcost' => $arr->RoundChargedAmount === NULL ? 5 : $arr->RoundChargedAmount,
