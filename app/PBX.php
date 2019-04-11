@@ -329,7 +329,9 @@ class PBX{
                         ->select([
                             'tblRate.Code',
                             'tblCountry.Prefix',
-                            'tblRateTableRate.Rate'
+                            'tblRateTableRate.Rate',
+                            'tblRateTableRate.RateN',
+                            'tblRateTable.RoundChargedAmount',
                         ])->where([
                             'tblRateTable.CompanyId' => $CompanyID,
                             'tblRateTable.Status' => 1,
@@ -355,13 +357,17 @@ class PBX{
                                         'ra_cost' => number_format($arr->Rate, 5)
                                     ];
                                 }
+                                
                             } else {
                                 self::$pbxInsertRates[] = [
-                                    'ra_cl_id' => $cl_id,
-                                    'ra_prefix' => $arr->Code,
-                                    'ra_country' => $arr->Prefix,
-                                    'ra_network' => $arr->Prefix,
-                                    'ra_cost' => $arr->Rate
+                                    'ra_cl_id'        => $cl_id,
+                                    'ra_prefix'       => $arr->Code,
+                                    'ra_country'      => $arr->Prefix,
+                                    'ra_network'      => $arr->Prefix,
+                                    'ra_cost'         => $arr->Rate,
+                                    'ra_setup'        => $arr->RateN,
+                                    'ra_minimumcost'  => 0,
+                                    'ra_roundingcost' => $arr->RoundChargedAmount,
                                 ];
                             }
                         }
