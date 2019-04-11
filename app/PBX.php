@@ -295,14 +295,15 @@ class PBX{
                 DB::beginTransaction();
                 Log::info("Total RateTables: " . count($pbxRateTables));
 
-                DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', $pbxRateTables)->delete();
+                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', $pbxRateTables)->delete();
 
                 $totalInserted = 0;
                 $totalUpdated  = 0;
 
                 foreach($pbxRateTables as $cl_id => $pbxRateTable) {
-                    
-                    Log::info("RateTableName: " . $pbxRateTable);
+
+                    Log::info("=========================================================");
+                    Log::info("Starting ------ RateTableName: " . $pbxRateTable . " ------");
                     $rates = DB::connection('pbxmysql')->table('ra_rates')
                         ->join('cl_clientrates', 'cl_clientrates.cl_id', '=', 'ra_rates.ra_cl_id')
                         ->select([
@@ -336,13 +337,15 @@ class PBX{
                         ])->whereDate('tblRateTableRate.EffectiveDate', "<=", date('Y-m-d'))
                         ->groupBy('tblRate.Code');
 
-                    Log::info($rateQ->toSql());
-                    Log::info("Total Available Rates: " . $rateQ->count());
+                    //Log::info($rateQ->toSql());
+                    //Log::info("Total Available Rates: " . $rateQ->count());
 
                     self::$pbxInsertRates = [];
                     self::$pbxUpdateRates = [];
 
                     $rateQ->chunk(10000, function ($chunk) use ($cl_id, $pbxRateTable) {
+                        //Log::info("Rates Proceeding: " . $chunk->count());
+
                         foreach ($chunk as $arr) {
 
                             if (isset(self::$pbxRates[$arr->Code])) {
@@ -383,6 +386,9 @@ class PBX{
                     $totalUpdated += count(self::$pbxUpdateRates);
 
                     Log::info("Total Inserted: " . count(self::$pbxInsertRates) . ", Total Updated:" . count(self::$pbxUpdateRates));
+
+                    Log::info("Ending ------ RateTableName: " . $pbxRateTable . " ------");
+                    Log::info("=========================================================");
                 }
 
                 DB::commit();
