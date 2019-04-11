@@ -295,7 +295,7 @@ class PBX{
                 DB::beginTransaction();
                 Log::info("Total RateTables: " . count($pbxRateTables));
 
-                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', $pbxRateTables)->delete();
+                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', array_keys($pbxRateTables))->delete();
 
                 $totalInserted = 0;
                 $totalUpdated  = 0;
@@ -357,7 +357,7 @@ class PBX{
                                         'ra_cost' => number_format($arr->Rate, 5)
                                     ];
                                 }
-                                
+
                             } else {
                                 self::$pbxInsertRates[] = [
                                     'ra_cl_id'        => $cl_id,
@@ -367,7 +367,7 @@ class PBX{
                                     'ra_cost'         => $arr->Rate,
                                     'ra_setup'        => $arr->RateN,
                                     'ra_minimumcost'  => 0,
-                                    'ra_roundingcost' => $arr->RoundChargedAmount,
+                                    'ra_roundingcost' => $arr->RoundChargedAmount === NULL ? 5 : $arr->RoundChargedAmount,
                                 ];
                             }
                         }
