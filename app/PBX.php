@@ -328,6 +328,7 @@ class PBX{
                         ->leftJoin('tblCountry', 'tblCountry.CountryID', '=', 'tblRate.CountryID')
                         ->select([
                             'tblRate.Code',
+                            'tblRate.Interval1',
                             'tblCountry.Prefix',
                             'tblRateTableRate.Rate',
                             'tblRateTableRate.RateN',
@@ -366,6 +367,7 @@ class PBX{
                                     'ra_network'      => $arr->Prefix,
                                     'ra_cost'         => $arr->Rate,
                                     'ra_setup'        => $arr->RateN,
+                                    'ra_roundingtime' => $arr->Interval1,
                                     'ra_minimumcost'  => 0,
                                     'ra_roundingcost' => $arr->RoundChargedAmount === NULL ? 5 : $arr->RoundChargedAmount,
                                 ];
