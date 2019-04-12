@@ -76,13 +76,14 @@ class AccountBalance extends Model
                         'CountDown' => $AccountZeroBalanceWarning->CountDown
                     );*/
                     // EmailsTemplates::setZeroBalanceCountDownPlaceholder($Account, 'body', $CompanyID, $emaildata);
+                    $CountDown = $settings['CountDown'];
                     $settings['CountDown'] = $AccountZeroBalanceWarning->CountDown;
                     if ($AccountZeroBalanceWarning->BalanceAmount <= 0 &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,$AccountZeroBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
-
+                    Log::info("balance check ". $AccountZeroBalanceWarning->BalanceAmount.' count down '.$AccountZeroBalanceWarning->CountDown);
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == -1)
                         {
-                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
-                                ->update(['CountDown' => $settings['CountDown']]);
+                                AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                    ->update(['CountDown' => $CountDown]);
                         }
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == 0)

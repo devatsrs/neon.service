@@ -357,6 +357,8 @@ class Helper
         if(isset($extra_settings['CountDown']) && !empty($extra_settings['CountDown'])){
             $replace_array['CountDown'] = $extra_settings['CountDown'];
             Log::info('count down from helper'. $extra_settings['CountDown']);
+            $replace_array['Date'] = date("d-m-Y");
+            $replace_array['Time'] = date("H:i:s");
         }
 
         if (isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])) {

@@ -275,7 +275,9 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{AccountExposure}}",
         "{{AccountBlocked}}",
         "{{InvoiceLink}}",
-        "{{CountDown}}"
+        "{{CountDown}}",
+        "{{Date}}",
+        "{{Time}}",
 
     ];
 
