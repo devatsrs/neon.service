@@ -103,6 +103,10 @@ class AccountBalance extends Model
                             Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
                             Log::info('template id '. $EmailTemplateID->TemplateID);
 
+                        } else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown > 0)
+                        {
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->update(['CountDown' => 0]);
                         }
                         //NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
