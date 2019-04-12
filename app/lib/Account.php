@@ -19,6 +19,7 @@ class Account extends \Eloquent {
     const  ApproveOutPaymentEmailTemplate ='ApproveOutPayment';
     const  ContractManageEmailTemplate ='ContractRenewal';
     const  ContractExpireEmailTemplate = 'ContractExpire';
+    const  ZeroBalanceWarningEmailTemplate = 'ZeroBalanceWarning';
     const  DETAIL_CDR = 1;
     const  SUMMARY_CDR= 2;
     const  NO_CDR = 3;
@@ -48,7 +49,7 @@ class Account extends \Eloquent {
                 case Account::DETAIL_CDR:
                     if(Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()) {
                         $excel = Excel::load(Config::get('app.temp_location') . basename($filepath), function ($reader) {
-                            })->first()->toArray();
+                        })->first()->toArray();
                         $excel_array_key = array_keys($excel);
                         $required_array_key = Account::$req_cdr_detail_column;
                         if ($single > 0) {
@@ -65,7 +66,7 @@ class Account extends \Eloquent {
                 case Account::SUMMARY_CDR:
                     if(Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()) {
                         $excel = Excel::load(Config::get('app.temp_location') . basename($filepath), function ($reader) {
-                            })->first()->toArray();
+                        })->first()->toArray();
                         $excel_array_key = array_keys($excel);
                         $required_array_key = Account::$req_cdr_summary_column;
                         if ($single > 0) {
@@ -145,7 +146,7 @@ class Account extends \Eloquent {
             ->Where(function($query)
             {
                 $query->whereNull('ItemInvoice')
-                ->orwhere('ItemInvoice', '!=', 1);
+                    ->orwhere('ItemInvoice', '!=', 1);
 
             })->count();
     }
@@ -196,7 +197,7 @@ class Account extends \Eloquent {
     }
     public static function getAccountEmailCount($AccountID,$EmailType){
         $count =  AccountEmailLog::
-            where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
+        where(array('AccountID'=>$AccountID,'EmailType'=>$EmailType))
             ->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') = '".date('Y-m-d')."'")
             ->count();
         return $count;
@@ -232,19 +233,28 @@ class Account extends \Eloquent {
 
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
         if(!empty($LastRunTime)){
-                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+            $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
     }
     public static function LowBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-
         $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder,'EmailTo'=>$email));
         if(!empty($LastRunTime)){
-                $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+            $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
         $count = $accountemaillog->count();
+        Log::info('AccountID = '.$AccountID.' email count = ' . $count);
+        return $count;
+    }
+
+    public static function ZeroBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
+        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning,'EmailTo'=>$email));
+        if(!empty($LastRunTime)){
+            $zerobalancemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
+        }
+        $count = $zerobalancemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
     }

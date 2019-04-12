@@ -24,6 +24,14 @@ class NeonAlert extends \Eloquent {
             $cronjobdata[] = 'Balance Warning Failed';
         }
         Log::info('============== Balance Warning END===========');
+        Log::info('============== Zero Balance Warning START===========');
+        try {
+            AccountBalance::SendZeroBalanceWarning($CompanyID,$ProcessID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'Zero Balance Warning Failed';
+        }
+        Log::info('============== Zero Balance Warning END===========');
         Log::info('============== InvoicePaymentReminder START===========');
         try {
             Payment::InvoicePaymentReminder($CompanyID,$ProcessID);
@@ -58,7 +66,7 @@ class NeonAlert extends \Eloquent {
             $cronjobdata[] = 'Vendor Balance alert failed';
         }
         Log::info('============== Vendor Balance alert END===========');
-        
+
         Log::info('============== CDR Post Process START===========');
         try {
             TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);
