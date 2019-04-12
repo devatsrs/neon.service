@@ -222,17 +222,9 @@ class RateTablePKGRateUpload extends Command
                                             $selection_Code = $attrselection->Code;
                                             if (!empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
                                                 $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                                $tempratetabledata['Description'] = $tempratetabledata['Code'];
                                             } else {
-                                                $error[] = 'Code is blank at line no:' . $lineno;
-                                            }
-                                        }
-
-                                        if (isset($attrselection->Description) && !empty($attrselection->Description)) {
-                                            $selection_Description = $attrselection->Description;
-                                            if (!empty($selection_Description) && !empty($temp_row[$selection_Description])) {
-                                                $tempratetabledata['Description'] = $temp_row[$selection_Description];
-                                            } else {
-                                                $error[] = 'Description is blank at line no:' . $lineno;
+                                                $error[] = 'Package Name is blank at line no:' . $lineno;
                                             }
                                         }
 
