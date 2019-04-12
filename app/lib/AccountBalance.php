@@ -77,7 +77,7 @@ class AccountBalance extends Model
                     );*/
                     // EmailsTemplates::setZeroBalanceCountDownPlaceholder($Account, 'body', $CompanyID, $emaildata);
                     $settings['CountDown'] = $AccountZeroBalanceWarning->CountDown;
-                    if ($AccountZeroBalanceWarning->BalanceAmount == 0 &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,$AccountZeroBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                    if ($AccountZeroBalanceWarning->BalanceAmount <= 0 &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,$AccountZeroBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
 
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == -1)
                         {
