@@ -45,6 +45,7 @@ class AccountBalance extends Model
                         $default_lang_id=Translation::$default_lang_id;
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
                         Log::info('LanguageID:---'.$LanguageID);
+                        Log::info('LanguageID:---'.$LanguageID);
                         //------------------------------------------------------
                         
                         $querypro = "CALL prc_GetSystemEmailTemplate(?,?,?,?,?)";
