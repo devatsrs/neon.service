@@ -23,6 +23,7 @@ class AccountEmailLog extends \Eloquent {
 	const AccountBalanceEmailReminder = 13;
     const ContractExpire = 14;
     const ContractManage = 15;
+    const ZeroBalanceWarning = 16;
 
     public static function getLastMessageIDByTicketID($TicketID){
 

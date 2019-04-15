@@ -285,11 +285,11 @@ class Helper
         return $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
-    public static function get_round_decimal_places($CompanyID = 0, $AccountID = 0, $ServiceID = 0,$AccountServiceID = 0)
+    public static function get_round_decimal_places($CompanyID = 0, $AccountID = 0, $ServiceID = 0)
     {
         $RoundChargesAmount = 2;
         if ($AccountID > 0) {
-            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID, $ServiceID,$AccountServiceID = 0);
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID, $ServiceID);
         }
 
         if (empty($RoundChargesAmount)) {
@@ -354,6 +354,12 @@ class Helper
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId, "VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
 
+        if(isset($extra_settings['CountDown']) && !empty($extra_settings['CountDown'])){
+            $replace_array['CountDown'] = $extra_settings['CountDown'];
+            Log::info('count down from helper'. $extra_settings['CountDown']);
+            $replace_array['Date'] = date("d-m-Y");
+            $replace_array['Time'] = date("H:i:s");
+        }
 
         if (isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])) {
             $WEBURL = CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId, 'WEB_URL');
@@ -370,9 +376,6 @@ class Helper
         $replace_array['CompanyPostCode'] = $CompanyData->PostCode;
         $replace_array['CompanyCountry'] = $CompanyData->Country;
         $replace_array['Logo'] = '<img src="' . getCompanyLogo($Account->CompanyId) . '" />';
-
-
-
 
         $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
         $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
@@ -395,8 +398,8 @@ class Helper
             'InvoiceGrandTotal' => '',
             'InvoiceOutstanding' => '',
         );
-        $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
 
+        $replace_array = $replace_array + array_intersect_key($extra_settings, $extra_var);
         return $replace_array;
     }
 
