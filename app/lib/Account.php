@@ -330,9 +330,9 @@ class Account extends \Eloquent {
 
     public static function getLanguageIDbyAccountID($AcID)
     {
-        Log::info('Accounts Import Start'.$AcID);
+        //Log::info('Accounts Import Start'.$AcID);
         
-        Log::info(dd(Account::where("AccountID",$AcID)->pluck('LanguageID')));
+        //Log::info(dd(Account::where("AccountID",$AcID)->pluck('LanguageID')));
         
         return Account::where("AccountID",$AcID)->pluck('LanguageID');
         
