@@ -42,10 +42,11 @@ class AccountBalance extends Model
                 foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
                     if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::LowBalanceReminderEmailCheck($AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                         Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
-                        $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
-                        
-                        //------------------------------------------------------
                         $default_lang_id=Translation::$default_lang_id;
+                        $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
+                        Log::info('LanguageID:---'.$LanguageID);
+                        //------------------------------------------------------
+                        
                         $querypro = "CALL prc_GetSystemEmailTemplate(?,?,?,?,?)";
                         $GetSystemEmailTemplate = DB::select($querypro, array($CompanyID, "LowBalanceReminder",$LanguageID,$AccountBalanceWarning->AccountID,$default_lang_id));
                         $TemplateID = $GetSystemEmailTemplate[0]->tID;
