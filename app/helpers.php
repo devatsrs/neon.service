@@ -833,23 +833,3 @@ function removeSpaceFromArrayKey($arr=array()){
     }
     return $arr;
 }
-
-/**
- * Get Round up decimal places from company or account
- * @param $array
- */
-function get_round_decimal_places($AccountID = 0) {
-
-    if($AccountID>0){
-        $RoundChargesAmount = \App\Lib\AccountBilling::getRoundChargesAmount($AccountID,0);
-    }else{
-        $RoundCharges=\App\Lib\CompanySetting::getKeyVal('RoundChargesAmount');
-        if($RoundCharges!='Invalid Key'){
-            $RoundChargesAmount = $RoundCharges;
-        }
-    }
-    if(empty($RoundChargesAmount)){
-        $RoundChargesAmount = 2;
-    }
-    return $RoundChargesAmount;
-}
