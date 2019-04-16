@@ -45,15 +45,15 @@ class AccountBalance extends Model
                         $default_lang_id=Translation::$default_lang_id;
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
                         //------------------------------------------------------
-                        
-                        $querypro = "CALL prc_GetSystemEmailTemplate(?,?,?,?,?)";
-                        $GetSystemEmailTemplate = DB::select($querypro, array($CompanyID, "LowBalanceReminder",$LanguageID,$AccountBalanceWarning->AccountID,$default_lang_id));
-                        $TemplateID = $GetSystemEmailTemplate[0]->tID;
+                        $TemplateID=520;
+                      //  $querypro = "CALL prc_GetSystemEmailTemplate(?,?,?,?,?)";
+                      //  $GetSystemEmailTemplate = DB::select($querypro, array($CompanyID, "LowBalanceReminder",$LanguageID,$AccountBalanceWarning->AccountID,$default_lang_id));
+                      //  $TemplateID = $GetSystemEmailTemplate[0]->tID;
                         //------------------------------------------------------
                         Log::info('AccountID = AccountBalanceWarning:'.$AccountBalanceWarning->BalanceThresholdEmail);
                         //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "LowBalanceReminder", $LanguageID);
 
-                        NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail);
+                       // NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail);
                         Log::info('End low balance:'.$TemplateID);
                         //NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
