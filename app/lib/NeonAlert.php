@@ -150,7 +150,7 @@ class NeonAlert extends \Eloquent {
             //For Balance Threshold
             if(!empty($BalanceThresholdEmail)){
                 $ThresholdEmail = $BalanceThresholdEmail;
-                $ThresholdEmail = explode(",", $CustomerEmail);
+                $ThresholdEmail = explode(",", $ThresholdEmail);
                 Log::info(' BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
                 foreach ($ThresholdEmail as $Thresholdsingleemail) {
                     $Thresholdsingleemail = trim($Thresholdsingleemail);
