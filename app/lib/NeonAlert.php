@@ -149,6 +149,7 @@ class NeonAlert extends \Eloquent {
             //For Balance Threshold
             $CustomerEmail = $AccountBalanceWarning->BalanceThresholdEmail;
             $CustomerEmail = explode(",", $CustomerEmail);
+            Log::info('CustomerEmail = '.print_r($CustomerEmail).' --------- ');
             foreach ($CustomerEmail as $singleemail) {
                 $singleemail = trim($singleemail);
                 if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
@@ -162,6 +163,7 @@ class NeonAlert extends \Eloquent {
                     }
                 }
             }
+            Log::info('haveEmail = '.$haveEmail.' --------- ');
             if($haveEmail==0){
                 $CustomerEmail = $Account->BillingEmail;
                 $CustomerEmail = explode(",", $CustomerEmail);
