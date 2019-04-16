@@ -105,7 +105,7 @@ class NeonAlert extends \Eloquent {
         return $cronjobdata;
     }
 
-    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$AccountBalanceWarning=""){
+    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$BalanceThresholdEmail=""){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         $Account = Account::find($AccountID);
@@ -147,19 +147,22 @@ class NeonAlert extends \Eloquent {
             
             $haveEmail=0;
             //For Balance Threshold
-            $CustomerEmail = $AccountBalanceWarning->BalanceThresholdEmail;
-            $CustomerEmail = explode(",", $CustomerEmail);
-            Log::info('CustomerEmail = '.print_r($CustomerEmail).' --------- ');
-            foreach ($CustomerEmail as $singleemail) {
-                $singleemail = trim($singleemail);
-                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                    $haveEmail=1;
-                    $emaildata['EmailTo'] = $singleemail;
-                    $customeremail_status = Helper::sendMail($email_view, $emaildata);
-                    if ($customeremail_status['status'] == 0) {
-                        $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
-                    } else {
-                        $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+            if(!empty($BalanceThresholdEmail)){
+                $ThresholdEmail = $BalanceThresholdEmail;
+                $ThresholdEmail = explode(",", $CustomerEmail);
+                Log::info(' BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
+                foreach ($ThresholdEmail as $Thresholdsingleemail) {
+                    $Thresholdsingleemail = trim($Thresholdsingleemail);
+                    Log::info(' Thresholdsingleemail = '.$Thresholdsingleemail.' --------- ');
+                    if (filter_var($Thresholdsingleemail, FILTER_VALIDATE_EMAIL)) {
+                        $haveEmail=1;
+                        $emaildata['EmailTo'] = $Thresholdsingleemail;
+                        $customeremail_status = Helper::sendMail($email_view, $emaildata);
+                        if ($customeremail_status['status'] == 0) {
+                            $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $Thresholdsingleemail . ')';
+                        } else {
+                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+                        }
                     }
                 }
             }
