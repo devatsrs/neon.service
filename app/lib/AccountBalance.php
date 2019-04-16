@@ -472,9 +472,12 @@ class AccountBalance extends Model
                                     log::info('Next Invoice GrandTotal '.$GrandTotal);
                                     if($AccountOutstandingBalance <= $GrandTotal) {
                                         Log::info('AccountID = '.$AccountID.' SendReminder sent ');
-                                        $LanguageID = Account::getLanguageIDbyAccountID(AccountID);
-                                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountBalanceWarning", $LanguageID);
-
+                                        $LanguageID = Account::getLanguageIDbyAccountID($AccountID);
+                                        //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountBalanceWarning", $LanguageID);
+                                        
+                                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountBalanceWarning",$AccountID, $LanguageID);
+                                        $TemplateID=$EmailTemplateID->TemplateID;
+                        
                                         NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountID);
 
                                     }
