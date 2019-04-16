@@ -106,10 +106,11 @@ class NeonAlert extends \Eloquent {
     }
 
     public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$BalanceThresholdEmail=""){
+        Log::info(' In BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         $Account = Account::find($AccountID);
-
+        Log::info(' AIn BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
         $AccountManagerEmail = Account::getAccountOwnerEmail($Account);
         if (isset($settings['AccountManager']) && $settings['AccountManager'] == 1 && !empty($AccountManagerEmail)) {
             $settings['ReminderEmail'] .= ',' . $AccountManagerEmail;
@@ -118,7 +119,7 @@ class NeonAlert extends \Eloquent {
         if(isset($settings['EmailType']) && $settings['EmailType']>0){
             $EmailType = $settings['EmailType'];
         }
-
+        Log::info(' BIn BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
         $EmailTemplate = EmailTemplate::find($TemplateID);
         if (!empty($EmailTemplate)) {
             $EmailSubject = $EmailTemplate->Subject;
@@ -143,7 +144,7 @@ class NeonAlert extends \Eloquent {
                     Helper::account_email_log($CompanyID, $AccountID, $emaildata, $status, '', $settings['ProcessID'], 0, $EmailType);
                 }
             }
-
+            Log::info(' CIn BalanceThresholdEmail = '.$BalanceThresholdEmail.' --------- ');
             
             $haveEmail=0;
             //For Balance Threshold
