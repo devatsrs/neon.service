@@ -124,6 +124,8 @@ class NeonAlert extends \Eloquent {
             $EmailMessage = $EmailTemplate->TemplateBody;
             $replace_array = Helper::create_replace_array($Account,$settings);
             $EmailMessage = template_var_replace($EmailMessage,$replace_array);
+            
+            $EmailSubject = template_var_replace($EmailSubject,$replace_array);
             $emaildata = array(
                 'EmailToName' => $Company->CompanyName,
                 'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
