@@ -46,10 +46,12 @@ class Payment extends \Eloquent{
                             Log::info("billing class id ".$BillingClassSingle->BillingClassID);
                             //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                             //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder1", $LanguageID);
-                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'],$Invoice->AccountID, $LanguageID);
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'],$LanguageID);
                             $TemplateID = $EmailTemplateID->TemplateID;
                             Log::info("reminder sent with template id ".$TemplateID);
-                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                            if(!empty($TemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                            }
                         }
                     }
                 }
@@ -72,10 +74,12 @@ class Payment extends \Eloquent{
                         $LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountPaymentReminder", $LanguageID);
-                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountPaymentReminder",$Invoice->AccountID, $LanguageID);
+                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountPaymentReminder",$LanguageID);
                         $TemplateID = $EmailTemplateID->TemplateID;
                         Log::info("Payment Reminder sent with template id ". $TemplateID);
-                        NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                        if(!empty($TemplateID)){
+                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                        }
                     }
                     NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');
                 }
