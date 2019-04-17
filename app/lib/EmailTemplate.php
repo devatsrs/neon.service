@@ -45,18 +45,16 @@ class EmailTemplate extends \Eloquent {
         if(empty($languageID)){
             $languageID=Translation::$default_lang_id;
         }	
-        $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$companyID])->first();
+        $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$companyID,"IsGlobal"=>0])->first();
         if(empty($emailtemplate)){     
-			/* find parent company id */	
-            $ParentCompanyID = Reseller::where(["ChildCompanyID"=>$companyID ])->pluck('CompanyID');            
-            if(!empty($ParentCompanyID)){
-                $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$ParentCompanyID])->first();
+			/** check same LanguageID in global*/
+            $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "IsGlobal"=>1])->first();
+            /** check same default LanguageID in company*/
+            if(empty($emailtemplate)){
+                $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$companyID,"IsGlobal"=>0])->first();
+                /** check same default LanguageID in global*/
                 if(empty($emailtemplate)){
-                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$ParentCompanyID ])->first();
-                }            
-            }else{
-                if(empty($emailtemplate)){
-                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$companyID ])->first();
+                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "IsGlobal"=>1])->first();
                 }
             }
         }
