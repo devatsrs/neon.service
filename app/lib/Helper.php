@@ -348,7 +348,12 @@ class Helper
         $replace_array['PostCode'] = $Account->PostCode;
         $replace_array['Country'] = $Account->Country;
         $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID), $RoundChargesAmount);
-        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+        
+        if(isset($extra_settings['BalanceThreshold']) && !empty($extra_settings['BalanceThreshold'])){
+            $replace_array['BalanceThreshold'] = $extra_settings['BalanceThreshold'];
+        }else{
+            $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+        }
         $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
         $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);

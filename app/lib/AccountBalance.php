@@ -53,7 +53,7 @@ class AccountBalance extends Model
                         $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "LowBalanceReminder", $LanguageID);
                        $TemplateID=$EmailTemplateID->TemplateID;
                         if(!empty($TemplateID)){
-                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail);
+                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning);
                         }
                         //NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
