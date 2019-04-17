@@ -41,7 +41,7 @@ class EmailTemplate extends \Eloquent {
         return $emailtemplate;
     }
     
-    public static function getSystemEmailTemplateID($companyID, $slug,$accountID,$languageID=""){
+    public static function getSystemEmailTemplateID($companyID, $slug,$languageID=""){
         if(empty($languageID)){
             $languageID=Translation::$default_lang_id;
         }	
