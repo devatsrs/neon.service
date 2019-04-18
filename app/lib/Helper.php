@@ -285,11 +285,11 @@ class Helper
         return $result = Helper::sendMail('emails.cronjoberroremail', $emaildata);
     }
 
-    public static function get_round_decimal_places($CompanyID = 0, $AccountID = 0, $ServiceID = 0)
+    public static function get_round_decimal_places($CompanyID = 0, $AccountID = 0, $ServiceID = 0,$AccountServiceID = 0)
     {
         $RoundChargesAmount = 2;
         if ($AccountID > 0) {
-            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID, $ServiceID);
+            $RoundChargesAmount = AccountBilling::getRoundChargesAmount($AccountID, $ServiceID,$AccountServiceID);
         }
 
         if (empty($RoundChargesAmount)) {
@@ -334,6 +334,7 @@ class Helper
     public static function create_replace_array($Account, $extra_settings, $JobLoggedUser = array())
     {
         $RoundChargesAmount = getCompanyDecimalPlaces($Account->CompanyId);
+        $dynamicfields = Account::getDynamicfields('account',$Account->AccountID,$Account->CompanyId);
         $replace_array = array();
         $replace_array['AccountName'] = $Account->AccountName;
         $replace_array['FirstName'] = $Account->FirstName;
@@ -347,18 +348,33 @@ class Helper
         $replace_array['PostCode'] = $Account->PostCode;
         $replace_array['Country'] = $Account->Country;
         $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID), $RoundChargesAmount);
-        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+        
+        if(isset($extra_settings['BalanceThreshold']) && !empty($extra_settings['BalanceThreshold'])){
+            $replace_array['BalanceThreshold'] = $extra_settings['BalanceThreshold'];
+        }else{
+            $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+        }
         $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
         $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
         $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId, "VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
+        $replace_array['BillingAddress1']		=	 $Account->BillingAddress1;
+        $replace_array['BillingAddress2']		=	 $Account->BillingAddress2;
+        $replace_array['BillingAddress3']		=	 $Account->BillingAddress3;
+        $replace_array['BillingCity']			=	 $Account->BillingCity;
+        $replace_array['BillingPostCode']		=	 $Account->BillingPostCode;
+        $replace_array['BillingCountry']		=	 $Account->BillingCountry;
+        $replace_array['CustomerID']			=	 $dynamicfields['CustomerID'];
+        $replace_array['DirectDebit']			=	 $dynamicfields['Direct Debit'];
+        $replace_array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
+        $replace_array['COCNumber']			                =	 $dynamicfields['COC Number'];
+        $replace_array['DutchProvider']			            =	 $dynamicfields['Dutch Provider'];
+
 
         if(isset($extra_settings['CountDown']) && !empty($extra_settings['CountDown'])){
             $replace_array['CountDown'] = $extra_settings['CountDown'];
             Log::info('count down from helper'. $extra_settings['CountDown']);
-            $replace_array['Date'] = date("d-m-Y");
-            $replace_array['Time'] = date("H:i:s");
         }
 
         if (isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])) {
@@ -368,6 +384,7 @@ class Helper
             $replace_array['InvoiceLink'] = '';
         }
 
+
         $CompanyData = Company::find($Account->CompanyId);
         $replace_array['CompanyAddress1'] = $CompanyData->Address1;
         $replace_array['CompanyAddress2'] = $CompanyData->Address2;
@@ -376,6 +393,9 @@ class Helper
         $replace_array['CompanyPostCode'] = $CompanyData->PostCode;
         $replace_array['CompanyCountry'] = $CompanyData->Country;
         $replace_array['Logo'] = '<img src="' . getCompanyLogo($Account->CompanyId) . '" />';
+        date_default_timezone_set($CompanyData->TimeZone);
+        $replace_array['Date'] = date("d-m-Y");
+        $replace_array['Time'] = date("H:i:s");
 
         $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
         $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
