@@ -146,7 +146,7 @@ class PushSalesPricesERP extends Command {
 			$ProductPackages = $ProductPackages->where(["tblDynamicFieldsValue.DynamicFieldsID" => $PackageDynamicFieldsID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.CompanyID" => $CompanyID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.status" => 1]);
-			Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
+			//Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
 			$ProductPackages = $ProductPackages->get();
 
 
@@ -156,7 +156,7 @@ class PushSalesPricesERP extends Command {
   								  from tblReseller reseller";
 
 
-			Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
+			//Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
 			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.City,tblServiceTemplate.Tariff,
 									(select  EffectiveDate  from tblRateTableRate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
@@ -166,7 +166,7 @@ class PushSalesPricesERP extends Command {
 								       and tblServiceTemplate.country is not null and tblServiceTemplate.prefixName is not null order by tblServiceTemapleInboundTariff.DIDCategoryId";
 
 
-			Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
+			//Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
 			$ProductResponses = DB::select($ProductSelectionQuery);
 			$DiDCategorySaveID = '';
 			$SetDiDCategory = 0;
@@ -188,7 +188,7 @@ class PushSalesPricesERP extends Command {
  												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
  												         	  and (pkgRate.ApprovedStatus = 1) and pkgRate.EffectiveDate <= NOW()";
 
-						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
+						//Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
 						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
 
@@ -272,7 +272,7 @@ class PushSalesPricesERP extends Command {
 					//Log::info('priceItemList json encode.' . $PricingJSONInput);
 					$results = array();
 					$data = array();
-					Log::info('priceItemList json encode.' . $PricingJSONInput);
+					//Log::info('priceItemList json encode.' . $PricingJSONInput);
 					$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
 					$PricingJSONInput = [];
 				}
@@ -316,7 +316,7 @@ class PushSalesPricesERP extends Command {
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
 
-					Log::info('$ServiceTemapleInboundTariff query.' . $Query);
+					//Log::info('$ServiceTemapleInboundTariff query.' . $Query);
 					$RateTableDIDRates = DB::select($Query);
 					//$RateTableDIDRates = $RateTableDIDRates->get();
 					//Log::info('$ServiceTemapleInboundTariff query.' . $ServiceTemapleInboundTariff->toSql());
