@@ -45,7 +45,6 @@ class Payment extends \Eloquent{
                             Log::info(json_encode($settings));
                             Log::info("billing class id ".$BillingClassSingle->BillingClassID);
                             //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
-                            //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder1", $LanguageID);
                             Log::info("slug ".$settings['TemplateID'][$foundkey]);
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'][$foundkey],$LanguageID);
                             if(!empty($EmailTemplateID)){
