@@ -461,6 +461,12 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
+                                        if (!empty($attrselection->Type) && !empty($temp_row[$attrselection->Type])) {
+                                            $tempratetabledata['Type'] = $temp_row[$attrselection->Type];
+                                        } else {
+                                            $tempratetabledata['Type'] = NULL;
+                                        }
+
                                         /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
                                             $tempratetabledata['CurrencyID'] = $attrselection->FromCurrency;
                                         }*/
