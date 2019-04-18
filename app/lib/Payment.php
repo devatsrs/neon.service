@@ -37,7 +37,7 @@ class Payment extends \Eloquent{
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);
                          //Log::info($Invoice->DueDay.', '.$settings['Day']);
-                        // Log::info('check key '.$foundkey);
+                        Log::info('check key '.$foundkey);
                         $default_lang_id = Translation::$default_lang_id;
                         $LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         if ($foundkey !== false && check_account_age($settings,$foundkey,$getdaysdiff)) {
@@ -46,7 +46,8 @@ class Payment extends \Eloquent{
                             Log::info("billing class id ".$BillingClassSingle->BillingClassID);
                             //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                             //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder1", $LanguageID);
-                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'],$LanguageID);
+                            Log::info("slug ".$settings['TemplateID'][$foundkey]);
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'][$foundkey],$LanguageID);
                             $TemplateID = $EmailTemplateID->TemplateID;
                             Log::info("reminder sent with template id ".$TemplateID);
                             if(!empty($TemplateID)){
