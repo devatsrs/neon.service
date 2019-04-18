@@ -105,7 +105,7 @@ class NeonAlert extends \Eloquent {
         return $cronjobdata;
     }
 
-    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$BalanceThresholdEmail=""){
+    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$AccountBalanceWarning=""){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         $Account = Account::find($AccountID);
@@ -113,6 +113,10 @@ class NeonAlert extends \Eloquent {
         $AccountManagerEmail = Account::getAccountOwnerEmail($Account);
         if (isset($settings['AccountManager']) && $settings['AccountManager'] == 1 && !empty($AccountManagerEmail)) {
             $settings['ReminderEmail'] .= ',' . $AccountManagerEmail;
+        }
+        
+        if(isset($AccountBalanceWarning->BalanceThreshold) && !empty($AccountBalanceWarning)){
+            $settings['BalanceThreshold'] = $AccountBalanceWarning->BalanceThreshold;
         }
         $EmailType = 0;
         if(isset($settings['EmailType']) && $settings['EmailType']>0){
@@ -124,6 +128,8 @@ class NeonAlert extends \Eloquent {
             $EmailMessage = $EmailTemplate->TemplateBody;
             $replace_array = Helper::create_replace_array($Account,$settings);
             $EmailMessage = template_var_replace($EmailMessage,$replace_array);
+            
+            $EmailSubject = template_var_replace($EmailSubject,$replace_array);
             $emaildata = array(
                 'EmailToName' => $Company->CompanyName,
                 'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
@@ -145,7 +151,8 @@ class NeonAlert extends \Eloquent {
             
             $haveEmail=0;
             //For Balance Threshold
-            if(!empty($BalanceThresholdEmail)){
+            if(!empty($AccountBalanceWarning->BalanceThresholdEmail)){
+                $BalanceThresholdEmail=$AccountBalanceWarning->BalanceThresholdEmail;
                 $ThresholdEmail = $BalanceThresholdEmail;
                 $ThresholdEmail = explode(",", $ThresholdEmail);
                 foreach ($ThresholdEmail as $Thresholdsingleemail) {
