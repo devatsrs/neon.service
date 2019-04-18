@@ -146,7 +146,7 @@ class PushSalesPricesERP extends Command {
 			$ProductPackages = $ProductPackages->where(["tblDynamicFieldsValue.DynamicFieldsID" => $PackageDynamicFieldsID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.CompanyID" => $CompanyID]);
 			$ProductPackages = $ProductPackages->where(["tblPackage.status" => 1]);
-			//Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
+			Log::info('Product Packages $ProductPackages.' . $ProductPackages->toSql());
 			$ProductPackages = $ProductPackages->get();
 
 
@@ -156,9 +156,9 @@ class PushSalesPricesERP extends Command {
   								  from tblReseller reseller";
 
 
-			//Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
+			Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
-			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.city_tariff,
+			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.City,tblServiceTemplate.Tariff,
 									(select  EffectiveDate  from tblRateTableRate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
 								  case when SUBSTRING(tblServiceTemplate.prefixName, 1, 1) = '0' THEN SUBSTRING(tblServiceTemplate.prefixName, 2, LENGTH(tblServiceTemplate.prefixName)) ELSE tblServiceTemplate.prefixName END as prefixName,(select CategoryName from tblDIDCategory where DIDCategoryID = tblServiceTemapleInboundTariff.DIDCategoryId) as CategoryDescription from tblServiceTemapleInboundTariff
 								   join tblServiceTemplate on tblServiceTemapleInboundTariff.ServiceTemplateID = tblServiceTemplate.ServiceTemplateId
@@ -166,7 +166,7 @@ class PushSalesPricesERP extends Command {
 								       and tblServiceTemplate.country is not null and tblServiceTemplate.prefixName is not null order by tblServiceTemapleInboundTariff.DIDCategoryId";
 
 
-			//Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
+			Log::info('$ProductSelectionQuery query.' . $ProductSelectionQuery);
 			$ProductResponses = DB::select($ProductSelectionQuery);
 			$DiDCategorySaveID = '';
 			$SetDiDCategory = 0;
@@ -188,7 +188,7 @@ class PushSalesPricesERP extends Command {
  												         	 and (rate.Code = '" . $ProductPackage["Name"] . "') and (pkgRate.RateTableId = " . $ProductPackage["RateTableId"] . ")
  												         	  and (pkgRate.ApprovedStatus = 1) and pkgRate.EffectiveDate <= NOW()";
 
-						//Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
+						Log::info('Package $RateTablePKGRates.' . $RateTablePKGRatesQuery);
 						$RateTablePKGRates = DB::select($RateTablePKGRatesQuery);
 
 
@@ -272,15 +272,27 @@ class PushSalesPricesERP extends Command {
 					//Log::info('priceItemList json encode.' . $PricingJSONInput);
 					$results = array();
 					$data = array();
-					//Log::info('priceItemList json encode.' . $PricingJSONInput);
+					Log::info('priceItemList json encode.' . $PricingJSONInput);
 					$APIResponse = NeonAPI::callPostAPI($Postdata, $PricingJSONInput, $PriceAPIMethod, $PriceAPIURL);
 					$PricingJSONInput = [];
 				}
 
 				foreach ($ProductResponses as $ProductResponse) {
 					$DiDCategorySaveDescription = $ProductResponse->CategoryDescription;
+					$ProductResponseCity = '';
+					$ProductResponseTariff = '';
+					if (empty( $ProductResponse->City)) {
+						$ProductResponseCity = "( didRate.City is null or didRate.City = '' ) ";
+					}else {
+						$ProductResponseCity = " didRate.City = " . "'" . str_replace("'", "\\'", $ProductResponse->City) . "'";
+					}
 
 
+					if (empty( $ProductResponse->Tariff)) {
+						$ProductResponseTariff = "( didRate.Tariff is null or didRate.Tariff = '' ) ";
+					}else {
+						$ProductResponseTariff = " didRate.Tariff = " . "'" . str_replace("'", "\\'", $ProductResponse->Tariff) . "'";;
+					}
 
 					$Query = "select didRate.*,timeZ.Title,didRateCountry.Prefix as countryPrefix,didRateCountry.ISO2 as CountryISO2,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
 								(select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol,
@@ -297,13 +309,14 @@ class PushSalesPricesERP extends Command {
  					from tblRateTableDIDRate didRate,tblTimezones timeZ,tblCountry didRateCountry where
 										didRate.RateID in (select RateID from tblRate where Code = concat((select Prefix from tblCountry where Country = '" . $ProductResponse->country . "'), '" . $ProductResponse->prefixName . "'))
 										   and RateTableId in (" . $ProductResponse->RateTableId . ")
-										   and didRate.CityTariff = '" . str_replace("'", "\\'", $ProductResponse->city_tariff) . "'" . "
+										   and   " . $ProductResponseCity .  "
+										   and " . $ProductResponseTariff  . "
 										   and didRate.ApprovedStatus = 1 and didRate.EffectiveDate <= NOW()
 										   and didRateCountry.Country = '" . $ProductResponse->country . "'
 										    and timeZ.TimezonesID = didRate.TimezonesID";
 
 
-					//Log::info('$ServiceTemapleInboundTariff query.' . $Query);
+					Log::info('$ServiceTemapleInboundTariff query.' . $Query);
 					$RateTableDIDRates = DB::select($Query);
 					//$RateTableDIDRates = $RateTableDIDRates->get();
 					//Log::info('$ServiceTemapleInboundTariff query.' . $ServiceTemapleInboundTariff->toSql());
