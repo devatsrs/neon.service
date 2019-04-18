@@ -48,10 +48,8 @@ class Payment extends \Eloquent{
                             //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder1", $LanguageID);
                             Log::info("slug ".$settings['TemplateID'][$foundkey]);
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'][$foundkey],$LanguageID);
-                            $TemplateID = $EmailTemplateID->TemplateID;
-                            Log::info("reminder sent with template id ".$TemplateID);
-                            if(!empty($TemplateID)){
-                                NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                             }
                         }
                     }
@@ -76,10 +74,8 @@ class Payment extends \Eloquent{
                         //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountPaymentReminder", $LanguageID);
                         $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountPaymentReminder",$LanguageID);
-                        $TemplateID = $EmailTemplateID->TemplateID;
-                        Log::info("Payment Reminder sent with template id ". $TemplateID);
-                        if(!empty($TemplateID)){
-                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                        if(!empty($EmailTemplateID)){
+                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                         }
                     }
                     NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');

@@ -44,6 +44,7 @@ class AccountBalance extends Model
                         Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
                         $default_lang_id=Translation::$default_lang_id;
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
+                        
                         //------------------------------------------------------
 //                        $querypro = "CALL prc_GetSystemEmailTemplate(?,?,?,?,?)";
 //                        $GetSystemEmailTemplate = DB::select($querypro, array($CompanyID, "LowBalanceReminder",$LanguageID,$AccountBalanceWarning->AccountID,$default_lang_id));
@@ -51,9 +52,8 @@ class AccountBalance extends Model
                         //------------------------------------------------------
                         
                         $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "LowBalanceReminder", $LanguageID);
-                       $TemplateID=$EmailTemplateID->TemplateID;
-                        if(!empty($TemplateID)){
-                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning);
+                        if(!empty($EmailTemplateID)){
+                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning);
                         }
                         //NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }
@@ -117,11 +117,8 @@ class AccountBalance extends Model
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == 0)
                         {
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "FinalZeroBalanceWarning", $LanguageID);
-                            $TemplateID = $EmailTemplateID->TemplateID;
-                            //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "FinalZeroBalanceWarning", $LanguageID);
-                            if(!empty($TemplateID)){
-
-                                NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountZeroBalanceWarning->AccountID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
                             }
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -2]);
@@ -129,13 +126,9 @@ class AccountBalance extends Model
 
                         }
                         else if ($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown > 0) {
-                            //Log::info('Account balance = '.$AccountZeroBalanceWarning->BalanceAmount.' and count'.$AccountZeroBalanceWarning->CountDown);
-                            //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "ZeroBalanceWarning", $LanguageID);
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "ZeroBalanceWarning", $LanguageID);
-                            $TemplateID = $EmailTemplateID->TemplateID;
-                            if(!empty($TemplateID)){
-
-                                NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $AccountZeroBalanceWarning->AccountID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
                             }
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->decrement('CountDown', 1);
@@ -497,8 +490,7 @@ class AccountBalance extends Model
                                         //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountBalanceWarning", $LanguageID);
                                         
                                         $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountBalanceWarning", $LanguageID);
-                                        $TemplateID=$EmailTemplateID->TemplateID;
-                                        if(!empty($TemplateID)){
+                                        if(!empty($EmailTemplateID)){
                                             NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountID);
                                         }
 
