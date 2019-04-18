@@ -83,6 +83,16 @@ class AccountBalanceLog extends Model
                 if(empty($ServiceBilling)){
                     $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->first();
                     if(!empty($AccountBilling->BillingStartDate)){
+
+                        // if billing type is postpaid and billing cycle is manual then skip this service
+                        if($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $AccountBilling->BillingCycleType == 'manual') {
+                            continue;
+                        }
+                        // if BillingStartDate is null then skip this service
+                        if(empty($AccountBilling->BillingStartDate)) {
+                            continue;
+                        }
+
                         $LatsCycleDate = $AccountBilling->BillingStartDate;
                         $ServiceBillingData=array();
                         $ServiceBillingData['AccountID']=$AccountID;

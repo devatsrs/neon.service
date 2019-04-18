@@ -77,7 +77,7 @@ class SippyRateFileStatus  extends Command {
 
         try {
             $response['error']  = $response['message']  = array();
-            $jobType        = JobType::where(["Code" => 'SCRP'])->get(["JobTypeID", "Title"]);
+            $jobType        = JobType::where(["Code" => 'SCRP'])->orWhere(["Code" => 'SVRP'])->get(["JobTypeID", "Title"]);
             $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
             $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
             $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
@@ -90,9 +90,11 @@ class SippyRateFileStatus  extends Command {
             foreach ($PendingFiles as $PendingFile) {
                 $Options = json_decode($PendingFile->Options);
                 $token = isset($Options->token) ? $Options->token : '';
+                $i_customer = isset($Options->i_customer) ? $Options->i_customer : '';
                 $addparam['token'] = $token;
+                $addparam['i_customer'] = $i_customer;
                 $result = $SippySFTP->getUploadStatus($addparam);
-
+                Log::info("result".print_r($result,true));
                 if (!empty($result) && !isset($result['faultCode'])) {
                     if (!empty($result['result']) && strtoupper($result['result']) == 'OK') {
                         $Job = Job::find($PendingFile->JobID);
