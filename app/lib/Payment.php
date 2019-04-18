@@ -37,7 +37,7 @@ class Payment extends \Eloquent{
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);
                          //Log::info($Invoice->DueDay.', '.$settings['Day']);
-                        // Log::info('check key '.$foundkey);
+                        Log::info('check key '.$foundkey);
                         $default_lang_id = Translation::$default_lang_id;
                         $LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         if ($foundkey !== false && check_account_age($settings,$foundkey,$getdaysdiff)) {
@@ -45,12 +45,10 @@ class Payment extends \Eloquent{
                             Log::info(json_encode($settings));
                             Log::info("billing class id ".$BillingClassSingle->BillingClassID);
                             //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
-                            //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "InvoicePaymentReminder1", $LanguageID);
-                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'],$LanguageID);
-                            $TemplateID = $EmailTemplateID->TemplateID;
-                            Log::info("reminder sent with template id ".$TemplateID);
-                            if(!empty($TemplateID)){
-                                NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                            Log::info("slug ".$settings['TemplateID'][$foundkey]);
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, $settings['TemplateID'][$foundkey],$LanguageID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                             }
                         }
                     }
@@ -75,10 +73,8 @@ class Payment extends \Eloquent{
                         //$LanguageID = Account::getLanguageIDbyAccountID($Invoice->AccountID);
                         //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountPaymentReminder", $LanguageID);
                         $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountPaymentReminder",$LanguageID);
-                        $TemplateID = $EmailTemplateID->TemplateID;
-                        Log::info("Payment Reminder sent with template id ". $TemplateID);
-                        if(!empty($TemplateID)){
-                            NeonAlert::SendReminder($CompanyID, $settings, $TemplateID, $Invoice->AccountID);
+                        if(!empty($EmailTemplateID)){
+                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $Invoice->AccountID);
                         }
                     }
                     NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID, 'PaymentReminderSettings','BillingClass');
