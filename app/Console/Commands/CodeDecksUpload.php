@@ -148,6 +148,11 @@ class CodeDecksUpload extends Command
                             }else{
                                 $tempcodedeckdata['IntervalN'] = '';
                             }
+                            if (isset($row['MinimumDuration']) && !empty($row['MinimumDuration'])) {
+                                $tempcodedeckdata['MinimumDuration'] = $row['MinimumDuration'];
+                            }else{
+                                $tempcodedeckdata['MinimumDuration'] = '';
+                            }
                             if (isset($row['Action']) && !empty($row['Action'])) {
                                 $tempcodedeckdata['Action'] = $row['Action'];
                             }else{
