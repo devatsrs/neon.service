@@ -158,7 +158,7 @@ class PushSalesPricesERP extends Command {
 
 			//Log::info('$PartnerIDQuery query.' . $PartnerIDQuery);
 			$PartnerResults = DB::select($PartnerIDQuery);
-			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.city_tariff,
+			$ProductSelectionQuery = "select tblServiceTemapleInboundTariff.DIDCategoryId as DIDCategoryId,tblServiceTemapleInboundTariff.RateTableId,tblServiceTemplate.Name as ProductName,tblServiceTemplate.country,tblServiceTemplate.accessType,tblServiceTemplate.City,tblServiceTemplate.Tariff,
 									(select  EffectiveDate  from tblRateTableRate tableRate where tableRate.RateTableId = tblServiceTemapleInboundTariff.RateTableId) as TableEffectiveDate,
 								  case when SUBSTRING(tblServiceTemplate.prefixName, 1, 1) = '0' THEN SUBSTRING(tblServiceTemplate.prefixName, 2, LENGTH(tblServiceTemplate.prefixName)) ELSE tblServiceTemplate.prefixName END as prefixName,(select CategoryName from tblDIDCategory where DIDCategoryID = tblServiceTemapleInboundTariff.DIDCategoryId) as CategoryDescription from tblServiceTemapleInboundTariff
 								   join tblServiceTemplate on tblServiceTemapleInboundTariff.ServiceTemplateID = tblServiceTemplate.ServiceTemplateId
@@ -223,7 +223,7 @@ class PushSalesPricesERP extends Command {
 									$data["priceItemId"] = '';// $RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "SUBSCRIPTION COSTS";
 									$data["pricePlanId"] = '';
-									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
 									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->MonthlyCost;
 									$data["salesPricePercentage"] = "";
@@ -235,7 +235,7 @@ class PushSalesPricesERP extends Command {
 									$data["priceItemId"] = '';//$RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 									$data["pricePlanId"] = '';
-									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
 									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->PackageCostPerMinute;
 									$data["salesPricePercentage"] = "";
@@ -246,7 +246,7 @@ class PushSalesPricesERP extends Command {
 									$data["priceItemId"] = '';//$RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "VARIABLE COSTS AND OUTPAYMENTS";
 									$data["pricePlanId"] = '';
-									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title);
+									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
 									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->RecordingCostPerMinute;
 									$data["salesPricePercentage"] = "";
@@ -279,8 +279,20 @@ class PushSalesPricesERP extends Command {
 
 				foreach ($ProductResponses as $ProductResponse) {
 					$DiDCategorySaveDescription = $ProductResponse->CategoryDescription;
+					$ProductResponseCity = '';
+					$ProductResponseTariff = '';
+					if (empty( $ProductResponse->City)) {
+						$ProductResponseCity = "( didRate.City is null or didRate.City = '' ) ";
+					}else {
+						$ProductResponseCity = " didRate.City = " . "'" . str_replace("'", "\\'", $ProductResponse->City) . "'";
+					}
 
 
+					if (empty( $ProductResponse->Tariff)) {
+						$ProductResponseTariff = "( didRate.Tariff is null or didRate.Tariff = '' ) ";
+					}else {
+						$ProductResponseTariff = " didRate.Tariff = " . "'" . str_replace("'", "\\'", $ProductResponse->Tariff) . "'";;
+					}
 
 					$Query = "select didRate.*,timeZ.Title,didRateCountry.Prefix as countryPrefix,didRateCountry.ISO2 as CountryISO2,(select Code from tblRate rate where didRate.OriginationRateID = rate.RateID) as orginationCode,
 								(select Symbol from tblCurrency where CurrencyId = OneOffCostCurrency  ) as OneOffCostCurrencySymbol,
@@ -297,7 +309,8 @@ class PushSalesPricesERP extends Command {
  					from tblRateTableDIDRate didRate,tblTimezones timeZ,tblCountry didRateCountry where
 										didRate.RateID in (select RateID from tblRate where Code = concat((select Prefix from tblCountry where Country = '" . $ProductResponse->country . "'), '" . $ProductResponse->prefixName . "'))
 										   and RateTableId in (" . $ProductResponse->RateTableId . ")
-										   and didRate.CityTariff = '" . str_replace("'", "\\'", $ProductResponse->city_tariff) . "'" . "
+										   and   " . $ProductResponseCity .  "
+										   and " . $ProductResponseTariff  . "
 										   and didRate.ApprovedStatus = 1 and didRate.EffectiveDate <= NOW()
 										   and didRateCountry.Country = '" . $ProductResponse->country . "'
 										    and timeZ.TimezonesID = didRate.TimezonesID";
