@@ -56,6 +56,8 @@ class ContractManage extends Command {
 	 */
 	public function handle()
 	{
+		//php artisan contractmanage 1 350
+		//php artisan contractmanage 1 284
 		CronHelper::before_cronrun($this->name, $this );
 		$SuccessDepositAccount = array();
 		$FailureDepositFund = array();
@@ -75,6 +77,9 @@ class ContractManage extends Command {
 		Log::useFiles(storage_path() . '/logs/ContractManage-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try {
 			CronJob::createLog($CronJobID);
+
+			$AccountServiceNumberAndPackage = "CALL prc_SetAccountServiceNumberAndPackage()";
+			DB::select($AccountServiceNumberAndPackage);
 
 			$CancelContractManage = "CALL prc_Cancel_Contract_Manage()";
 			$selectCancelContract = DB::select($CancelContractManage);
