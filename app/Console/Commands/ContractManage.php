@@ -78,8 +78,8 @@ class ContractManage extends Command {
 		try {
 			CronJob::createLog($CronJobID);
 
-			$AccountServiceNumberAndPackage = "CALL prc_SetAccountServiceNumberAndPackage()";
-			DB::select($AccountServiceNumberAndPackage);
+			//$AccountServiceNumberAndPackage = "CALL prc_SetAccountServiceNumberAndPackage()";
+			//DB::select($AccountServiceNumberAndPackage);
 
 			$CancelContractManage = "CALL prc_Cancel_Contract_Manage()";
 			$selectCancelContract = DB::select($CancelContractManage);
