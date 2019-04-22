@@ -125,6 +125,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\AutoTopAccount',
 		'App\Console\Commands\PushSalesPricesERP',
 		'App\Console\Commands\UpdateRateTableInProductAndPackage',
+		'App\Console\Commands\ChangeNumberAndPackageStatus',
 		'App\Console\Commands\RoutingVendorRate',
 		'App\Console\Commands\RoutingData',
 		'App\Console\Commands\RoutingEngineData',
