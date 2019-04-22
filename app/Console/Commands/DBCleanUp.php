@@ -86,7 +86,10 @@ class DBCleanUp extends Command {
 			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
 			Log::info('DBcleanup Starts.');
-			DB::select('CALL prc_SetAccountServiceNumberAndPackage()');
+			Log::info('Set AccountService Number And Package Log Start.');
+			$error .= Retention::setAccountServiceNumberAndPackage($CompanyID);
+			Log::info('Set AccountService Number And Package Log End.');
+
 
 			/*
 			 * @TODO: need to update as per new tables changes 27-03-18
