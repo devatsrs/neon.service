@@ -127,6 +127,7 @@ class TranslationsImport extends Command
                         if(!empty($checkemptyrow)){
                             if (isset($row['SystemName']) && !empty($row['SystemName'])) {
                                 $tempdata['SystemName'] = $row['SystemName'];
+                                Log::info($tempdata['SystemName']);
                             }else{
                                 $error[] = 'System Name is blank at line no:'.$lineno;
                             }
