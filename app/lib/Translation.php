@@ -96,8 +96,9 @@ class Translation extends \Eloquent {
             unset($json_file[$system_name]);
         }
         $json_file[$systemname]=$value;
-        DB::table('tblTranslation')
+        $update = DB::table('tblTranslation')
             ->where(['TranslationID'=>$labels->TranslationID ])
             ->update(['Translation' => json_encode($json_file)]);
+        if($update) {return true;} else {return false;}
     }
 }

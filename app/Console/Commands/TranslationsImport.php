@@ -78,7 +78,8 @@ class TranslationsImport extends Command
         $bacth_insert_limit = 250;
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
-        $JobStatusMessage =array();
+        $JobStatusMessageError = '';
+        $JobStatusMessageSuccess = '';
 
         Log::useFiles(storage_path() . '/logs/translationsimport-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
