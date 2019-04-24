@@ -161,29 +161,30 @@ class TranslationsImport extends Command
                         foreach($batch_insert_array as $val)
                         {
                             $labels = Translation::get_language_labels($val['ISOCode']);
-                            Translation::update_label($labels,strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']);
+                            if(Translation::update_label($labels,strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']))
+                            {
+                                $JobStatusMessageSuccess = 'Successfully Updated';
+                            } else {$JobStatusMessageError = "Transaction Error";}
                     }
                         Log::info(json_encode($batch_insert_array));
                         Log::info('insertion end');
                     }
 
-                    if(!empty($error) || count($JobStatusMessage) > 1){
-                        $prc_error = array();
-                        foreach ($JobStatusMessage as $JobStatusMessage1) {
-                            $prc_error[] = $JobStatusMessage1['Message'];
-                        }
+                    $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+                    Log::info($time_taken);
+
+                    if(!empty($error) || !empty($JobStatusMessageError)){
 
                         $job = Job::find($JobID);
-                        $error = array_merge($prc_error,$error);
-                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error)) ;
+                        $jobdata['JobStatusMessage'] = $JobStatusMessageError ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
-                    }elseif(!empty($JobStatusMessage[0]['Message'])) {
+                    }elseif(!empty($JobStatusMessageSuccess)) {
                         $job = Job::find($JobID);
 
-                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] ;
+                        $jobdata['JobStatusMessage'] = $JobStatusMessageSuccess ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
@@ -194,11 +195,6 @@ class TranslationsImport extends Command
             Job::send_job_status_email($job,$CompanyID);
 
         } catch (\Exception $e) {
-            try{
-                DB::rollback();
-            }catch (Exception $err) {
-                Log::error($err);
-            }
 
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
             $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
