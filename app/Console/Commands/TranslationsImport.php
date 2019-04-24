@@ -16,6 +16,7 @@ use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempCodeDeck;
+use App\Lib\Translation;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -82,33 +83,25 @@ class TranslationsImport extends Command
         Log::useFiles(storage_path() . '/logs/translationsimport-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
-            Log::info("job check");
             if (!empty($job)) {
                 Log::info("job find");
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
-                    Log::info("job options");
                     if ($jobfile->FilePath) {
-                        Log::info("job filepath ".$jobfile->FilePath);
                         $path = AmazonS3::unSignedUrl($jobfile->FilePath,$CompanyID);
-                        Log::info("amazon filepath ".$path);
                         if (strpos($path, "https://") !== false) {
                             $file = $TEMP_PATH . basename($path);
                             file_put_contents($file, file_get_contents($path));
                             $jobfile->FilePath = $file;
-                            Log::info("file ".$file);
                         } else {
                             $jobfile->FilePath = $path;
-                            Log::info('path '.$path);
                         }
                     }
                     Log::info('final path '.$jobfile->FilePath);
 
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath);
                     $results = $NeonExcel->read();
-
-
                     /*$results =  Excel::load($jobfile->FilePath, function ($reader){
                     })->get();*/
                     //$results = json_decode(json_encode($results), true);
@@ -123,11 +116,11 @@ class TranslationsImport extends Command
 
                         //check empty row
                         $checkemptyrow = array_filter(array_values($row));
-                        Log::info("empty row check start");
                         if(!empty($checkemptyrow)){
                             if (isset($row['SystemName']) && !empty($row['SystemName'])) {
                                 $tempdata['SystemName'] = $row['SystemName'];
                                 Log::info($tempdata['SystemName']);
+
                             }else{
                                 $error[] = 'System Name is blank at line no:'.$lineno;
                             }
@@ -146,14 +139,12 @@ class TranslationsImport extends Command
                                 $counter++;
                             }
                         }
-                        Log::info('Counter '.$counter);
-                        Log::info(json_encode($batch_insert_array));
+
                         if($counter==$bacth_insert_limit){
                             Log::info('Batch insert start');
                             Log::info('global counter'.$lineno);
                             Log::info('insertion start');
                             Log::info('count ' . count($batch_insert_array));
-                            //TempCodeDeck::insert($batch_insert_array);
                             Log::info('insertion end');
                             $batch_insert_array = [];
                             $counter = 0;
@@ -162,51 +153,45 @@ class TranslationsImport extends Command
                     } // loop end
 
 
-//                    if(!empty($batch_insert_array)){
-//                        Log::info('Batch insert start');
-//                        Log::info('global counter'.$lineno);
-//                        Log::info('insertion start');
-//                        Log::info('count ' . count($batch_insert_array));
-//                        TempCodeDeck::insert($batch_insert_array);
-//                        Log::info(json_encode($batch_insert_array));
-//                        Log::info('insertion end');
-//                    }
+                    if(!empty($batch_insert_array)){
+                        Log::info('Batch insert start');
+                        Log::info('global counter'.$lineno);
+                        Log::info('insertion start');
+                        Log::info('count ' . count($batch_insert_array));
+                        foreach($batch_insert_array as $val)
+                        {
+                            $labels = Translation::get_language_labels($val['ISOCode']);
+                            Translation::update_label($labels,strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']);
+                    }
+                        Log::info(json_encode($batch_insert_array));
+                        Log::info('insertion end');
+                    }
 
-//                    DB::beginTransaction();
-//                    Log::info("start CALL  prc_WSProcessCodeDeck ('" . $ProcessID . "','" . $CompanyID . "')");
-//                    $JobStatusMessage = DB::select("CALL  prc_WSProcessCodeDeck ('" . $ProcessID . "','" . $CompanyID . "')");
-//                    Log::info("end CALL  prc_WSProcessCodeDeck ('" . $ProcessID . "','" . $CompanyID . "')");
-//                    DB::commit();
-//                    $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
-//
-//                    $time_taken = ' <br/> Time taken - ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
-//                    Log::info($time_taken);
+                    if(!empty($error) || count($JobStatusMessage) > 1){
+                        $prc_error = array();
+                        foreach ($JobStatusMessage as $JobStatusMessage1) {
+                            $prc_error[] = $JobStatusMessage1['Message'];
+                        }
 
-//                    if(!empty($error) || count($JobStatusMessage) > 1){
-//                        $prc_error = array();
-//                        foreach ($JobStatusMessage as $JobStatusMessage1) {
-//                            $prc_error[] = $JobStatusMessage1['Message'];
-//                        }
-//
-//                        $job = Job::find($JobID);
-//                        $error = array_merge($prc_error,$error);
-//                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error)) ;
-//                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-//                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-//                        $jobdata['ModifiedBy'] = 'RMScheduler';
-//                        Job::where(["JobID" => $JobID])->update($jobdata);
-//                    }elseif(!empty($JobStatusMessage[0]['Message'])) {
-//                        $job = Job::find($JobID);
-//
-//                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] ;
-//                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
-//                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
-//                        $jobdata['ModifiedBy'] = 'RMScheduler';
-//                        Job::where(["JobID" => $JobID])->update($jobdata);
-//                    }
+                        $job = Job::find($JobID);
+                        $error = array_merge($prc_error,$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error)) ;
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }elseif(!empty($JobStatusMessage[0]['Message'])) {
+                        $job = Job::find($JobID);
+
+                        $jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'] ;
+                        $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
+                        $jobdata['updated_at'] = date('Y-m-d H:i:s');
+                        $jobdata['ModifiedBy'] = 'RMScheduler';
+                        Job::where(["JobID" => $JobID])->update($jobdata);
+                    }
                 }
             }
-            //Job::send_job_status_email($job,$CompanyID);
+            Job::send_job_status_email($job,$CompanyID);
 
         } catch (\Exception $e) {
             try{
@@ -215,16 +200,14 @@ class TranslationsImport extends Command
                 Log::error($err);
             }
 
-//            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-//            $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
-//            $jobdata['updated_at'] = date('Y-m-d H:i:s');
-//            $jobdata['ModifiedBy'] = 'RMScheduler';
-//            Job::where(["JobID" => $JobID])->update($jobdata);
-//            Log::error($e);
-//            Job::send_job_status_email($job,$CompanyID);
+            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+            $jobdata['JobStatusMessage'] = 'Exception: ' . $e->getMessage();
+            $jobdata['updated_at'] = date('Y-m-d H:i:s');
+            $jobdata['ModifiedBy'] = 'RMScheduler';
+            Job::where(["JobID" => $JobID])->update($jobdata);
+            Log::error($e);
+            Job::send_job_status_email($job,$CompanyID);
         }
-
-
         CronHelper::after_cronrun($this->name, $this);
     }
 }

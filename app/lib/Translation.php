@@ -87,4 +87,17 @@ class Translation extends \Eloquent {
             ->first();
         return $data_langs;
     }
+    public static function update_label($labels,$systemname,$value){
+        $json_file = json_decode($labels->Translation, true);
+        $system_name=($systemname);
+
+        if(array_key_exists($systemname,$json_file))
+        {
+            unset($json_file[$system_name]);
+        }
+        $json_file[$systemname]=$value;
+        DB::table('tblTranslation')
+            ->where(['TranslationID'=>$labels->TranslationID ])
+            ->update(['Translation' => json_encode($json_file)]);
+    }
 }
