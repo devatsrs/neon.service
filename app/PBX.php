@@ -1,8 +1,10 @@
 <?php
 namespace App;
 
+use App\Lib\Account;
 use App\Lib\RateTable;
 use App\Lib\RateTableRate;
+use App\Lib\VendorRate;
 use \Exception;
 use App\Lib\GatewayAPI;
 use Illuminate\Support\Facades\Config;
@@ -363,8 +365,8 @@ class PBX{
                                 self::$pbxInsertRates[] = [
                                     'ra_cl_id'        => $cl_id,
                                     'ra_prefix'       => $arr->Code,
-                                    'ra_country'      => $arr->Prefix,
-                                    'ra_network'      => $arr->Prefix,
+                                    'ra_country'      => $arr->Prefix === NULL ? '' : $arr->Prefix,
+                                    'ra_network'      => $arr->Prefix === NULL ? '' : $arr->Prefix,
                                     'ra_cost'         => $arr->Rate,
                                     'ra_setup'        => $arr->ConnectionFee === NULL ? 0 : $arr->ConnectionFee,
                                     'ra_roundingtime' => $arr->Interval1,
@@ -396,6 +398,198 @@ class PBX{
                     Log::info("Total Inserted: " . count(self::$pbxInsertRates) . ", Total Updated:" . count(self::$pbxUpdateRates));
 
                     Log::info("Ending ------ RateTableName: " . $pbxRateTable . " ------");
+                    Log::info("=========================================================");
+                }
+
+                DB::commit();
+
+                $response = ['inserted' => $totalInserted, 'updated' => $totalUpdated];
+
+                Log::info("Done " . json_encode($response));
+            } catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+
+    /** Update Vendor Rates */
+
+    public static function updateVendorRateTables($vendors = []){
+        $response = null;
+        //dd(self::$config);
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                if(!empty($vendors)) {
+                    $list = DB::connection('pbxmysql')
+                        ->table('pr_providers')
+                        ->lists('pr_peername', 'pr_id');
+
+                    $insertData = [];
+                    foreach ($vendors as $key => $vendorNumber)
+                        if (!in_array($vendorNumber, $list)) {
+                            $insertData[] = [
+                                'pr_name'           => $vendorNumber,
+                                'pr_peername'       => $vendorNumber,
+                                'pr_tech'           => '',
+                                'pr_penalty'        => 0,
+                                'pr_header1'        => '',
+                                'pr_header2'        => '',
+                                'pr_header3'        => '',
+                                'pr_disabled'       => '',
+                                'pr_ca_id'          => 0,
+                                'pr_tech_id'        => 0,
+                                'pr_userealtime'    => '',
+                                'pr_adddigits'      => '',
+                                'pr_deldigits'      => '',
+                                'pr_callerpres'     => '',
+                                'pr_smsurl'         => '',
+                                'pr_smspost'        => '',
+                                'pr_smsuser'        => '',
+                                'pr_smspassword'    => '',
+                                'pr_calleridregex'  => '',
+                                'pr_smsprotocol'    => '',
+                                'pr_smsprovider'    => '',
+                                'pr_header4'        => '',
+                                'pr_header5'        => '',
+                                'pr_header6'        => '',
+                            ];
+                        }
+
+                    if (!empty($insertData))
+                        DB::connection('pbxmysql')
+                            ->table('pr_providers')->insert($insertData);
+                    Log::info("Total Inserted Vendors: " . count($insertData));
+
+                    $response = DB::connection('pbxmysql')
+                        ->table('pr_providers')
+                        ->whereIn('pr_peername', $vendors)
+                        ->lists('pr_peername', 'pr_id');
+                }
+
+            }catch(Exception $e){
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    public static function updateVendorRates($CompanyID, $pbxVendors = []){
+        $response = null;
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                DB::beginTransaction();
+                Log::info("Total Vendors: " . count($pbxVendors));
+
+                //DB::connection('pbxmysql')->table('ra_rates')->whereIn('ra_cl_id', array_keys($pbxRateTables))->delete();
+
+                $totalInserted = 0;
+                $totalUpdated  = 0;
+
+                foreach($pbxVendors as $pr_id => $pbxVendor) {
+
+                    Log::info("=========================================================");
+                    Log::info("Starting ------ Vendor Number: " . $pbxVendor . " ------");
+                    $rates = DB::connection('pbxmysql')->table('pc_providercosts')
+                        ->join('pr_providers', 'pr_providers.pr_id', '=', 'pc_providercosts.pc_pr_id')
+                        ->select([
+                            'pc_id',
+                            'pr_peername', // Account Number
+                            'pc_prefix', // Code
+                            'pc_country', // Country Prefix
+                            'pc_code',
+                            'pc_cost'
+                        ])->where('pc_pr_id', $pr_id);
+
+                    self::$pbxRates = [];
+                    $rates->chunk(10000, function ($chunk) {
+                        foreach ($chunk as $item)
+                            self::$pbxRates[$item->pc_prefix] = $item;
+                        Log::info("Fetching Data: " . count(self::$pbxRates));
+                    });
+
+                    Log::info("Total Fetched: " . count(self::$pbxRates));
+
+                    $rateQ = VendorRate::join('tblAccount', 'tblAccount.AccountID', '=', 'tblVendorRate.AccountId')
+                        ->join('tblRate', 'tblRate.RateID', '=', 'tblVendorRate.RateId')
+                        ->leftJoin('tblCountry', 'tblCountry.CountryID', '=', 'tblRate.CountryID')
+                        ->select([
+                            'tblRate.Code',
+                            'tblRate.Interval1',
+                            'tblCountry.Prefix',
+                            'tblVendorRate.Rate',
+                            'tblVendorRate.ConnectionFee',
+                            'tblVendorRate.MinimumCost',
+                        ])->where([
+                            'tblAccount.VerificationStatus'  => Account::VERIFIED,
+                            'tblAccount.IsVendor'			 => 1,
+                            'tblAccount.CompanyID'			 => $CompanyID,
+                            'tblAccount.Number'              => $pbxVendor
+                        ])->whereDate('tblVendorRate.EffectiveDate', "<=", date('Y-m-d'))
+                        ->groupBy('tblRate.Code');
+
+                    //Log::info($rateQ->toSql());
+                    //Log::info("Total Available Rates: " . $rateQ->count());
+
+                    self::$pbxInsertRates = [];
+                    self::$pbxUpdateRates = [];
+
+                    $rateQ->chunk(10000, function ($chunk) use ($pr_id, $pbxVendor) {
+                        //Log::info("Rates Proceeding: " . $chunk->count());
+
+                        foreach ($chunk as $arr) {
+
+                            if (isset(self::$pbxRates[$arr->Code])) {
+                                if (number_format(self::$pbxRates[$arr->Code]->pc_cost, 5) != number_format($arr->Rate, 5)) {
+                                    self::$pbxUpdateRates[] = [
+                                        'pc_id' => self::$pbxRates[$arr->Code]->pc_id,
+                                        'pc_cost' => number_format($arr->Rate, 5)
+                                    ];
+                                }
+
+                            } else {
+                                self::$pbxInsertRates[] = [
+                                    'pc_pr_id'        => $pr_id,
+                                    'pc_prefix'       => $arr->Code,
+                                    'pc_code'         => $arr->Code,
+                                    'pc_country'      => $arr->Prefix === NULL ? '' : $arr->Prefix,
+                                    'pc_network'      => $arr->Prefix === NULL ? '' : $arr->Prefix,
+                                    'pc_cost'         => $arr->Rate,
+                                    'pc_setup'        => $arr->ConnectionFee === NULL ? 0 : $arr->ConnectionFee,
+                                    'pc_roundingtime' => $arr->Interval1,
+                                    'pc_minimumcost'  => $arr->MinimumCost === NULL ? 0 : $arr->MinimumCost,
+                                    'pc_roundingcost' => 5,
+                                    'pc_parent_id'    => 0,
+                                ];
+                            }
+                        }
+
+                        Log::info("Insert: " . count(self::$pbxInsertRates) . ", Update: " . count(self::$pbxUpdateRates));
+                        sleep(1);
+                    });
+
+
+                    if (!empty(self::$pbxInsertRates))
+                        foreach (array_chunk(self::$pbxInsertRates, 1500) as $insertData) {
+                            DB::connection('pbxmysql')->table('pc_providercosts')->insert($insertData);
+                        }
+
+                    if (!empty(self::$pbxUpdateRates))
+                        foreach (self::$pbxUpdateRates as $key => $updateData) {
+                            DB::connection('pbxmysql')->table('pc_providercosts')
+                                ->where('pc_id', $updateData['pc_id'])
+                                ->update(['pc_cost' => $updateData['pc_cost']]);
+                        }
+
+                    $totalInserted += count(self::$pbxInsertRates);
+                    $totalUpdated += count(self::$pbxUpdateRates);
+
+                    Log::info("Total Inserted: " . count(self::$pbxInsertRates) . ", Total Updated:" . count(self::$pbxUpdateRates));
+
+                    Log::info("Ending ------ Vendor Number: " . $pbxVendor . " ------");
                     Log::info("=========================================================");
                 }
 
