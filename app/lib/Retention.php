@@ -15,7 +15,8 @@ class Retention {
 
                         try {
                             DB::connection('sqlsrv')->beginTransaction();
-                            $query = "CALL prc_SetAccountServiceNumberAndPackage()";
+                            $date = date('Y-m-d');
+                            $query = "CALL prc_SetAccountServiceNumberAndPackage('" . $date . "')";
                             Log::info($query);
                             DB::connection('sqlsrv')->statement($query);
                             DB::connection('sqlsrv')->commit();
