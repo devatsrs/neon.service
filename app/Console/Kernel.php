@@ -140,6 +140,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ImportCurrencyExchRates',
 		'App\Console\Commands\ApproveOutPayment',
         'App\Console\Commands\TranslationsImport',
+        
 	];
 
 	/**
