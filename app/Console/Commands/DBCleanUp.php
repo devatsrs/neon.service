@@ -54,7 +54,8 @@ class DBCleanUp extends Command {
     public function handle()
 	{
 
-
+		//Staging php artisan dbcleanup 1 65
+		//php artisan dbcleanup 1 65
 		CronHelper::before_cronrun($this->name, $this );
 
 
@@ -85,6 +86,10 @@ class DBCleanUp extends Command {
 			Log::useFiles(storage_path() . '/logs/dbcleanup-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
 			Log::info('DBcleanup Starts.');
+			Log::info('Set AccountService Number And Package Log Start.');
+			$error .= Retention::setAccountServiceNumberAndPackage($CompanyID);
+			Log::info('Set AccountService Number And Package Log End.');
+
 
 			/*
 			 * @TODO: need to update as per new tables changes 27-03-18

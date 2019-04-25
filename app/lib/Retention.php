@@ -9,6 +9,30 @@ use \Exception;
 
 class Retention {
 
+    public static function setAccountServiceNumberAndPackage($CompanyID){
+        $error = '';
+        $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
+
+                        try {
+                            DB::connection('sqlsrv')->beginTransaction();
+                            $date = date('Y-m-d');
+                            $query = "CALL prc_SetAccountServiceNumberAndPackage('" . $date . "')";
+                            Log::info($query);
+                            DB::connection('sqlsrv')->statement($query);
+                            DB::connection('sqlsrv')->commit();
+                        } catch (\Exception $e) {
+                            try {
+                                DB::connection('sqlsrv')->rollback();
+                            } catch (\Exception $err) {
+                                Log::error($err);
+                            }
+                            Log::error($e);
+                            $error = "Set AccountService Number And Package \n\r";
+                        }
+
+        return $error;
+    }
+
     public static function deleteCustomerCDR($CompanyID ,$key){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
