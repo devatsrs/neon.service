@@ -78,7 +78,7 @@ class TranslationsImport extends Command
         $bacth_insert_limit = 250;
         $counter = 0;
         $start_time = date('Y-m-d H:i:s');
-        $JobStatusMessageError = '';
+        $JobStatusMessageError = array();
         $JobStatusMessageSuccess = '';
 
         Log::useFiles(storage_path() . '/logs/translationsimport-' .  $JobID. '-' . date('Y-m-d') . '.log');
@@ -165,7 +165,7 @@ class TranslationsImport extends Command
                             if(Translation::update_label($labels,strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']))
                             {
                                 $JobStatusMessageSuccess = 'Successfully Updated';
-                            } else {$JobStatusMessageError = "Transaction Error";}
+                            } else {$JobStatusMessageError[] = $val['SystemName']." Unable to Update";}
                     }
                         Log::info(json_encode($batch_insert_array));
                         Log::info('insertion end');
@@ -177,14 +177,16 @@ class TranslationsImport extends Command
                     if(!empty($error) || !empty($JobStatusMessageError)){
 
                         $job = Job::find($JobID);
-                        $jobdata['JobStatusMessage'] = $JobStatusMessageError ;
+                        $allerror = array_merge($JobStatusMessageError,$error);
+                        $jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($allerror)) ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
                         $jobdata['ModifiedBy'] = 'RMScheduler';
                         Job::where(["JobID" => $JobID])->update($jobdata);
+                        Log::info($JobStatusMessageError);
                     }elseif(!empty($JobStatusMessageSuccess)) {
                         $job = Job::find($JobID);
-
+                        Log::info($JobStatusMessageSuccess);
                         $jobdata['JobStatusMessage'] = $JobStatusMessageSuccess ;
                         $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                         $jobdata['updated_at'] = date('Y-m-d H:i:s');
