@@ -97,16 +97,16 @@ class Translation extends \Eloquent {
             if (array_key_exists($systemname, $json_file)) {
                 unset($json_file[$system_name]);
             }
-        $val = iconv(mb_detect_encoding($value), "UTF-8", $value);
-        $json_file[$systemname]= $val;
-        //Log::info("from model ".$system_name.' '.($val));
-        //Log::info("aa ".json_encode( $json_file, JSON_UNESCAPED_UNICODE ));
-
+        //$val = iconv(mb_detect_encoding($value), "UTF-8", $value);
+        $json_file[$systemname]= $value;
+        Log::info("from model ".$system_name.' '.($value));
+            try {
                 $update = DB::table('tblTranslation')
                     ->where(['TranslationID' => $labels->TranslationID])
-                    ->update(['Translation' => json_encode($json_file, JSON_UNESCAPED_UNICODE )]);
-
-
-        if($update) {return true;} else {return false;}
+                    ->update(['Translation' => json_encode($json_file)]);
+               // Log::info(json_encode($json_file));
+                return true;
+            } catch (\Exception $e){Log::info($e->getMessage());return false;}
+        //if($update) {return true;} else {return false;}
     }
 }
