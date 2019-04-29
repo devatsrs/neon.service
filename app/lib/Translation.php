@@ -88,13 +88,15 @@ class Translation extends \Eloquent {
         return $data_langs;
     }
     public static function update_label($labels,$systemname,$value){
+
         $json_file = json_decode($labels->Translation, true);
+        if(empty($json_file) or $json_file == 0){$json_file = array();}
         $system_name=($systemname);
 
-        if(array_key_exists($systemname,$json_file))
-        {
-            unset($json_file[$system_name]);
-        }
+            if (array_key_exists($systemname, $json_file)) {
+                unset($json_file[$system_name]);
+            }
+
         $json_file[$systemname]=$value;
         $update = DB::table('tblTranslation')
             ->where(['TranslationID'=>$labels->TranslationID ])
