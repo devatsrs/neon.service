@@ -88,6 +88,7 @@ class ApproveOutPayment extends Command {
 				'tblInvoice.InvoiceType' => Invoice::INVOICE_IN,
 				'tblProduct.Code' => Product::OutPaymentCode,
 			])->whereDate('tblInvoiceDetail.StartDate', ">=", $dt)
+				->where('tblInvoice.InvoiceStatus', "!=", "awaiting")
 				->distinct('tblInvoice.InvoiceID')
 				->orderBy("tblInvoice.AccountID", "DESC");
 
