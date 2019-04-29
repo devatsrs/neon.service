@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 class Translation extends \Eloquent {
 	
 	protected $guarded = array('TranslationID');
@@ -98,9 +99,12 @@ class Translation extends \Eloquent {
             }
 
         $json_file[$systemname]=$value;
-        $update = DB::table('tblTranslation')
-            ->where(['TranslationID'=>$labels->TranslationID ])
-            ->update(['Translation' => json_encode($json_file)]);
-        if($update) {return true;} else {return false;}
+            try {
+                $update = DB::table('tblTranslation')
+                    ->where(['TranslationID' => $labels->TranslationID])
+                    ->update(['Translation' => json_encode($json_file)]);
+                return true;
+            } catch (\Exception $e){Log::info($e->getMessage());return false;}
+        //if($update) {return true;} else {return false;}
     }
 }
