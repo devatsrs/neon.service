@@ -99,10 +99,12 @@ class TranslationsImport extends Command
                             $jobfile->FilePath = $path;
                         }
                     }
-                    Log::info('final path '.$jobfile->FilePath);
+                    //$jobfile->FilePath = "C:/Users/prope/Downloads/nnn.xlsx";
+                    //Log::info('final path '.$jobfile->FilePath);
 
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath);
                     $results = $NeonExcel->read();
+                    Log::info("result ".json_encode($results));
                     /*$results =  Excel::load($jobfile->FilePath, function ($reader){
                     })->get();*/
                     //$results = json_decode(json_encode($results), true);
@@ -120,7 +122,7 @@ class TranslationsImport extends Command
                         if(!empty($checkemptyrow)){
                             if (isset($row['SystemName']) && !empty($row['SystemName'])) {
                                 $tempdata['SystemName'] = $row['SystemName'];
-                                Log::info($tempdata['SystemName']);
+                                //Log::info($tempdata['SystemName']);
 
                             }else{
                                 $error[] = 'System Name is blank at line no:'.$lineno;
@@ -162,12 +164,13 @@ class TranslationsImport extends Command
                         foreach($batch_insert_array as $val)
                         {
                             $labels = Translation::get_language_labels($val['ISOCode']);
+                            //Log::info(json_encode($labels));
                             if(Translation::update_label($labels,strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']))
                             {
                                 $JobStatusMessageSuccess = 'Successfully Updated';
                             } else {$JobStatusMessageError[] = $val['SystemName']." Unable to Update";}
                     }
-                        Log::info(json_encode($batch_insert_array));
+                        //Log::info(json_encode($batch_insert_array));
                         Log::info('insertion end');
                     }
 
