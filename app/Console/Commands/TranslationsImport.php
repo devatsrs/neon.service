@@ -99,11 +99,12 @@ class TranslationsImport extends Command
                             $jobfile->FilePath = $path;
                         }
                     }
-                    //$jobfile->FilePath = "C:/Users/prope/Downloads/nnn.csv";
+                    //$jobfile->FilePath = "C:/Users/prope/Downloads/nnn.xlsx";
                     //Log::info('final path '.$jobfile->FilePath);
 
                     $NeonExcel = new NeonExcelIO($jobfile->FilePath);
                     $results = $NeonExcel->read();
+                    Log::info("result ".json_encode($results));
                     /*$results =  Excel::load($jobfile->FilePath, function ($reader){
                     })->get();*/
                     //$results = json_decode(json_encode($results), true);
