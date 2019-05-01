@@ -9,8 +9,8 @@ class EmailClient
     protected $clientData;
     protected $host;
     protected $port;
-    protected $IsSSL = 'TLS';
-    protected $validate_cert = 'false';
+    protected $IsSSL = 'tls';
+    protected $validate_cert = 0;
     protected $username;
     protected $password;
     public function __construct($data = array()){
@@ -21,17 +21,23 @@ class EmailClient
         }
         if($this->IsSSL == 1 ){
             $this->IsSSL='ssl';
-            $this->validate_cert='true';
+            $this->validate_cert=1;
         }
     }
     function connectClientEmail($CompanyID)
     {
         $inboxSetting = AutoImportInboxSetting::select('host','port','IsSSL','username','password')->where('CompanyID','=',$CompanyID)->get();
+
+        if($this->IsSSL == 1 ){
+            $this->IsSSL='ssl';
+            $this->validate_cert = 1;
+        }
+
         $oClient = new Client([
             'host' => $inboxSetting[0]->host,
             'port' => $inboxSetting[0]->port,
-            'IsSSL' => $inboxSetting[0]->IsSSL==1?'ssl':'tls',
-            'validate_cert' => $inboxSetting[0]->IsSSL==1? 'true':'false',
+            'validate_cert' => $this->validate_cert,
+            'encryption' => $this->IsSSL,
             'username' => $inboxSetting[0]->username,
             'password' => $inboxSetting[0]->password,
         ]);
@@ -44,15 +50,15 @@ class EmailClient
 
     function connect(){
 
-        $oClient = new Client([
+        $req = [
             'host' => $this->host,
             'port' => $this->port,
-			'IsSSL' => $this->IsSSL,
             'validate_cert' => $this->validate_cert,
+            'encryption' => $this->IsSSL,
             'username' => $this->username,
             'password' => $this->password,
-        ]);
-
+        ];
+        $oClient = new Client($req);
         //Connect to the IMAP Server
         $oClient->connect();
         return  $oClient;
