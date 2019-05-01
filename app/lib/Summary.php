@@ -229,7 +229,8 @@ class Summary extends \Eloquent {
 
             Log::error($temp_table2 .' done ');
 
-            if($RateCDR >0 || empty($extra_prefix)) {
+            //if($RateCDR >0 || empty($extra_prefix)) {
+            if(empty($extra_prefix)) {
                 Log::error(' DELETE FROM ' . $temp_table1);
                 DB::connection('neon_report')->table($temp_table1)->truncate();
                 DB::connection('neon_report')->table($temp_table2)->truncate();
