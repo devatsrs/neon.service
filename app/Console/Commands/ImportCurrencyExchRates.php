@@ -116,6 +116,7 @@ class ImportCurrencyExchRates extends Command {
 			CronHelper::before_cronrun($this->name, $this );
 			$cronjob = CronJob::find($CronJobID);
 			CronJob::activateCronJob($cronjob);
+			CronJob::createLog($CronJobID);
 			$json = json_decode($cronjob->Settings);
 			$url = $json->EuropCentralBank;
 			$time_start = microtime(true);
