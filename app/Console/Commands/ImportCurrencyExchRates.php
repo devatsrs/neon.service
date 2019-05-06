@@ -86,6 +86,7 @@ class ImportCurrencyExchRates extends Command {
 						'ModifiedBy' => gethostname()
 
 					]);
+
 					Log::info($rateupd);
 
 					if (CurrencyConversionLog::create([
@@ -137,7 +138,7 @@ class ImportCurrencyExchRates extends Command {
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'CurrencyExchangeRates Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -150,7 +151,7 @@ class ImportCurrencyExchRates extends Command {
 		}catch (\Exception $e){echo $e;
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
