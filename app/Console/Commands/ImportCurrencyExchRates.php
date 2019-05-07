@@ -1,14 +1,12 @@
 <?php namespace App\Console\Commands;
 
-use App\Lib\NeonAPI;
 use App\Lib\Currency;
 use App\Lib\CurrencyConversion;
 use App\Lib\CurrencyConversionLog;
 use Illuminate\Console\Command;
-use App\Lib\CronJob;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use DB;
+use App\Lib\CronJob;
 use Illuminate\Support\Facades\Log;
 use App\Lib\CronJobLog;
 use App\Lib\CronHelper;
@@ -113,6 +111,8 @@ class ImportCurrencyExchRates extends Command {
 	{
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
+
+		Log::useFiles(storage_path() . '/logs/europcentralbank-companyid-'.$companyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try {
 			CronHelper::before_cronrun($this->name, $this );
 			$cronjob = CronJob::find($CronJobID);
