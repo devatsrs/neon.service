@@ -96,7 +96,7 @@ class SippySQL{
         $response = array();
         if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['dbusername']) && isset(self::$config['dbpassword'])) {
             try {
-                $qry = "select i_account from authentications where remote_ip in (" . $addparams['remote_ip'] . ") limit 1";
+                $qry = "select i_account from authentications where remote_ip in (" . $addparams['remote_ip'] . ") and remote_ip != ''  limit 1";
                 $response = DB::connection('pgsql')->select($qry);
                 Log::info($qry);
             } catch (Exception $e) {

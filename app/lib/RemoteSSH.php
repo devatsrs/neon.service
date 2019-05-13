@@ -31,6 +31,9 @@ class RemoteSSH{
         self::setConfig($CompanyID);
 
         //Log::info($commands);
+        if(substr($commands,0,4) !== "sudo"){
+            $commands = "sudo ".$commands;
+        }
 
         $output = array();
         RemoteFacade::run($commands, function($line) use(&$output) {

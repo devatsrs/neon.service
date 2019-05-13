@@ -35,7 +35,7 @@ class AccountBalance extends Model
                 $query = "CALL prc_LowBalanceReminder(?,?,?)";
                 $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
                 foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
-                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::LowBalanceReminderEmailCheck($AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                         Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
                         NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
                     }

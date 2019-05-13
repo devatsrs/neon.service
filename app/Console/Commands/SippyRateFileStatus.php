@@ -92,7 +92,7 @@ class SippyRateFileStatus  extends Command {
                 $token = isset($Options->token) ? $Options->token : '';
                 $i_customer = isset($Options->i_customer) ? $Options->i_customer : '';
                 $addparam['token'] = $token;
-                $addparam['i_customer'] = $i_customer;
+                //$addparam['i_customer'] = $i_customer;
                 $result = $SippySFTP->getUploadStatus($addparam);
                 Log::info("result".print_r($result,true));
                 if (!empty($result) && !isset($result['faultCode'])) {

@@ -127,7 +127,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ImportVOSAccounts',
 		'App\Console\Commands\UpdatePBXCustomerRate',
 		'App\Console\Commands\ClarityPBXAccountUsage',
-
+		'App\Console\Commands\UpdatePBXVendorRate',
 	];
 
 	/**
