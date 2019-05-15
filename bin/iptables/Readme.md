@@ -11,16 +11,16 @@ Allow following ports for global access.
 -A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
 -A INPUT -p tcp -m state --state NEW -m tcp --dport 19999 -j ACCEPT
 
-# Allow following port for selected access
+# Allow all ports for selected ips
 
--A INPUT -s 117.247.87.156/24 -j ACCEPT
--A INPUT -s 78.129.239.99/24 -j ACCEPT
--A INPUT -s 137.59.230.241/24 -j ACCEPT
--A INPUT -s 110.39.187.46/24 -j ACCEPT
+-A INPUT -s {IP_ADDRESS_1}/24 -j ACCEPT
+-A INPUT -s {IP_ADDRESS_2}/24 -j ACCEPT
+-A INPUT -s {IP_ADDRESS_3}/24 -j ACCEPT
+-A INPUT -s {IP_ADDRESS_4}/24 -j ACCEPT
   
 ```
 
-## Restart and check 
+## Restart and check
 
 ```
 sudo service iptable restart
