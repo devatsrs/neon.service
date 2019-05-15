@@ -418,6 +418,7 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $tempratetabledata['OriginationCountryCode'] = '';
                                             }
+                                            $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCountryCode'];
                                         }
 
                                         if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
@@ -434,6 +435,7 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $tempratetabledata['CountryCode'] = '';
                                             }
+                                            $tempratetabledata['Description'] = $tempratetabledata['CountryCode'];
                                         }
 
                                         if (!empty($attrselection->OriginationCode) || !empty($attrselection2->OriginationCode)) {
@@ -450,7 +452,9 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $tempratetabledata['OriginationCode'] = '';
                                             }
-                                            $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCode'];
+                                            if(empty($tempratetabledata['OriginationDescription'])) {
+                                                $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCode'];
+                                            }
                                         }
 
                                         if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
@@ -469,7 +473,9 @@ class RateTableDIDRateUpload extends Command
                                             } else {
                                                 $error[] = 'Code is blank at line no:' . $lineno;
                                             }
-                                            $tempratetabledata['Description'] = $tempratetabledata['Code'];
+                                            if(empty($tempratetabledata['Description'])) {
+                                                $tempratetabledata['Description'] = $tempratetabledata['Code'];
+                                            }
                                         }
 
                                         /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
@@ -892,43 +898,46 @@ class RateTableDIDRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    if(!empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) || !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping)) {
-                        $CountryMapping             = !empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) ? 1 : 0;
-                        $OriginationCountryMapping  = !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping) ? 1 : 0;
+                    // if review rate while upload then no need to do this as this is already done at upload time
+                    if(empty($joboptions->checkbox_review_rates)) {
+                        if (!empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) || !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping)) {
+                            $CountryMapping = !empty($attrselection->CountryMapping) || !empty($attrselection2->CountryMapping) ? 1 : 0;
+                            $OriginationCountryMapping = !empty($attrselection->OriginationCountryMapping) || !empty($attrselection2->OriginationCountryMapping) ? 1 : 0;
 
-                        $query_CM = "CALL prc_WSMapCountryRateTableDIDRate ('" . $ProcessID . "','".$CountryMapping."','".$OriginationCountryMapping."')";
+                            $query_CM = "CALL prc_WSMapCountryRateTableDIDRate ('" . $ProcessID . "','" . $CountryMapping . "','" . $OriginationCountryMapping . "')";
 
-                        // map country against rates with tblCountry table, if not found then throw error - if option is checked at upload time
-                        Log::info('Start '.$query_CM);
-                        try {
-                            DB::beginTransaction();
-                            $JobStatusMessage_CM = DB::select($query_CM);
-                            Log::info('End ' . $query_CM);
-                            DB::commit();
+                            // map country against rates with tblCountry table, if not found then throw error - if option is checked at upload time
+                            Log::info('Start ' . $query_CM);
+                            try {
+                                DB::beginTransaction();
+                                $JobStatusMessage_CM = DB::select($query_CM);
+                                Log::info('End ' . $query_CM);
+                                DB::commit();
 
-                            $JobStatusMessage_CM = array_reverse(json_decode(json_encode($JobStatusMessage_CM), true));
-                            Log::info($JobStatusMessage_CM);
-                            Log::info(count($JobStatusMessage_CM));
+                                $JobStatusMessage_CM = array_reverse(json_decode(json_encode($JobStatusMessage_CM), true));
+                                Log::info($JobStatusMessage_CM);
+                                Log::info(count($JobStatusMessage_CM));
 
-                            if(count($JobStatusMessage_CM) >= 1){
-                                $prc_error_CM = array();
-                                foreach ($JobStatusMessage_CM as $JobStatusMessage_CM1) {
-                                    $prc_error_CM[] = $JobStatusMessage_CM1['Message'];
+                                if (count($JobStatusMessage_CM) >= 1) {
+                                    $prc_error_CM = array();
+                                    foreach ($JobStatusMessage_CM as $JobStatusMessage_CM1) {
+                                        $prc_error_CM[] = $JobStatusMessage_CM1['Message'];
+                                    }
+
+                                    //unset($error[0]);
+                                    $jobdata['JobStatusMessage'] = implode('<br>', fix_jobstatus_meassage($prc_error_CM));
+                                    $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                                    Job::where(["JobID" => $JobID])->update($jobdata);
                                 }
-
-                                //unset($error[0]);
-                                $jobdata['JobStatusMessage'] = implode('<br>',fix_jobstatus_meassage($prc_error_CM));
-                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','F')->pluck('JobStatusID');
+                            } catch (Exception $err) {
+                                DB::rollback();
+                                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
+                                $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
                                 Job::where(["JobID" => $JobID])->update($jobdata);
+                                Log::error($err);
                             }
-                        } catch ( Exception $err ) {
-                            DB::rollback();
-                            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                            $jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
-                            Job::where(["JobID" => $JobID])->update($jobdata);
-                            Log::error($err);
-                        }
 
+                        }
                     }
 
                     // if no error from prc_WSMapCountryRateTableDIDRate then only further process
