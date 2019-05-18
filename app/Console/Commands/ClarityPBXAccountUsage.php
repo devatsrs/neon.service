@@ -10,6 +10,7 @@ use App\Lib\CronJobLog;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\TempVendorCDR;
 use App\Lib\UsageDetail;
 use Exception;
 use Illuminate\Console\Command;
@@ -76,6 +77,10 @@ class ClarityPBXAccountUsage extends Command {
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
+        $joblogdata = array();
+        $joblogdata['CronJobID'] = $CronJobID;
+        $joblogdata['created_at'] = date('Y-m-d H:i:s');
+        $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
         CompanyGateway::updateProcessID($CronJob,$processID);
@@ -156,16 +161,16 @@ class ClarityPBXAccountUsage extends Command {
                         $data['cli']                = apply_translation_rule($CLITranslationRule, $row_account['src']);
                         $data['cld']                = apply_translation_rule($CLDTranslationRule, $row_account['dest']);
                         $data['AccountCLI']         = $data['cli'];
-                        $data['billed_duration']    = $row_account['rate_bill_sec'];
-                        $data['billed_second']      = $row_account['rate_bill_sec'];
-                        $data['duration']           = $row_account['duration_sec'];
+                        $data['billed_duration']    = !empty($row_account['rate_bill_sec']) ? $row_account['rate_bill_sec'] : 0;
+                        $data['billed_second']      = !empty($row_account['rate_bill_sec']) ? $row_account['rate_bill_sec'] : 0;
+                        $data['duration']           = !empty($row_account['duration_sec']) ? $row_account['duration_sec'] : 0;
                         $data['trunk']              = 'Other';
                         $data['is_inbound']         = '';
                         $data['area_prefix']        = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['rate_prefix']),$RateCDR, $RerateAccounts);
                         $data['ProcessID']          = $processID;
                         $data['ServiceID']          = $ServiceID;
                         $data['disposition']        = $row_account['sip_code'];
-                        $data['UUID']               = $row_account['call_id'];
+                        $data['ID']                 = $row_account['call_id'];
                         $InserData[]                = $data;
                         $data_count++;
                         if ($data_count > $insertLimit && !empty($InserData)) {
@@ -188,20 +193,19 @@ class ClarityPBXAccountUsage extends Command {
                         $vendordata['AccountNumber']    = '';
                         $vendordata['connect_time']     = !empty($row_account['answer_time']) ? $row_account['answer_time'] : $row_account['start_time'];
                         $vendordata['disconnect_time']  = !empty($row_account['end_time']) ? $row_account['end_time'] : $row_account['start_time'];
-                        $vendordata['cost']             = (float)$row_account['vendor_cost'];
+                        $vendordata['selling_cost']     = (float)$row_account['rate_cost_net'];
+                        $vendordata['buying_cost']      = (float)$row_account['vendor_cost'];
                         $vendordata['cli']              = apply_translation_rule($CLITranslationRule, $row_account['src']);
                         $vendordata['cld']              = apply_translation_rule($CLDTranslationRule, $row_account['dest']);
                         $vendordata['AccountCLI']       = $vendordata['cli'];
-                        $vendordata['billed_duration']  = $row_account['vendor_bill_sec'];
-                        $vendordata['billed_second']    = $row_account['vendor_bill_sec'];
-                        $vendordata['duration']         = $row_account['duration_sec'];
+                        $vendordata['billed_duration']  = !empty($row_account['vendor_bill_sec']) ? $row_account['vendor_bill_sec'] : 0;
+                        $vendordata['billed_second']    = !empty($row_account['vendor_bill_sec']) ? $row_account['vendor_bill_sec'] : 0;
+                        $vendordata['duration']         = !empty($row_account['duration_sec']) ? $row_account['duration_sec'] : 0;
                         $vendordata['trunk']            = 'Other';
-                        $vendordata['is_inbound']       = '';
                         $vendordata['area_prefix']      = sippy_vos_areaprefix( apply_translation_rule($PrefixTranslationRule,$row_account['rate_prefix']),$RateCDR, $RerateAccounts);
                         $vendordata['ProcessID']        = $processID;
                         $vendordata['ServiceID']        = $ServiceID;
-                        $vendordata['disposition']      = $row_account['sip_code'];
-                        $vendordata['UUID']             = $row_account['call_id'];
+                        $vendordata['ID']               = $row_account['call_id'];
                         $InserVData[]                   = $vendordata;
                         $data_countv++;
                         if ($data_countv > $insertLimit && !empty($InserVData)) {
@@ -220,39 +224,52 @@ class ClarityPBXAccountUsage extends Command {
 
             }
 
-
             date_default_timezone_set(Config::get('app.timezone'));
-            /** insert unique uuid*/
-            Log::info("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
+
+            $joblogdata['Message'] = "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'];
+            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            Log::error("claritypbx CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
+            Log::error(' ========================== claritypbx transaction end =============================');
 
             /** delete duplicate id*/
+            /** Check in tblUsageDetails and tblUsageDetailFailedCall table  and remove existing from temp table */
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
             DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
             Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
 
-            Log::error("ClarityPBX CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
-            Log::error(' ========================== ClarityPBX transaction end =============================');
+
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) end");
+
             //ProcessCDR
-
+            /** claritypbx ProcessCDR New Tasks
+             * 1. update cost = 0 where cc_type = 4 (OUTNOCHARGE)
+             */
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-
+            TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '', 'CurrentRate', 0, $RerateAccounts);
             $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
             if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
+                $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
-            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
+
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
-            Log::error("ClarityPBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+            //
+            Log::error("claritypbx CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
             DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("ClarityPBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+            Log::error("claritypbx CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
-            Log::error('ClarityPBX prc_insertCDR start');
+            /** claritypbx prc_insertCDR New Tasks
+             * 1. Move disposition <> "ANSWERED" to failed call
+             */
+            Log::error('claritypbx prc_insertCDR start');
             DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error('ClarityPBX prc_insertCDR end');
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '" . $tempVendortable . "')");
+
+            Log::error('claritypbx prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
             $logdata['start_time'] = $param['start_date_ymd'];
@@ -260,39 +277,29 @@ class ClarityPBXAccountUsage extends Command {
             $logdata['created_at'] = date('Y-m-d H:i:s');
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
-
             DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
 
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'] . ' total data count ' . $totaldata_count . ' ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
-
-            DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-
             TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
+
+            end_of_cronjob:
+
+            CronJobLog::insert($joblogdata);
 
         } catch (\Exception $e) {
             try {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
                 DB::connection('sqlsrvcdr')->rollback();
-            } catch (Exception $err) {
-                Log::error($err);
-
-            }
-            // delete temp table if process fail
-            try {
-                DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-
-                //DB::connection('sqlsrvcdr')->statement("  DELETE FROM tblTempUsageDetail WHERE ProcessID = '".$processID."'");
             } catch (\Exception $err) {
                 Log::error($err);
             }
+
             date_default_timezone_set(Config::get('app.timezone'));
             $this->info('Failed:' . $e->getMessage());
             $joblogdata['Message'] = 'Error:' . $e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-
+            CronJobLog::insert($joblogdata);
             Log::error($e);
             if(!empty($cronsetting['ErrorEmail'])) {
                 $result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
@@ -300,8 +307,7 @@ class ClarityPBXAccountUsage extends Command {
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
-        end_of_cronjob:
-        CronJobLog::createLog($CronJobID,$joblogdata);
+
         CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);

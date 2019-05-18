@@ -13,7 +13,7 @@ class ClarityPBX{
     private static $config = array();
     private static $cli;
     private static $timeout = 0; /* 60 seconds timeout */
-    private static $dbname1 = 'clarity';
+    private static $dbname = 'clarity';
 
     public function __construct($CompanyGatewayID){
         $setting = GatewayAPI::getSetting($CompanyGatewayID, 'ClarityPBX');
@@ -56,7 +56,7 @@ class ClarityPBX{
             try {
 
                 $query = "select
-                        cdr.src,cdr.dest,cdr.call_id,cdr.sip_code,cdr.start_time,cdr.answer_time,cdr.end_time,cdr.duration_sec,cdr.src_ip,
+                        cdr.src,cdr.dest,cdr.id AS call_id,cdr.sip_code,cdr.start_time,cdr.answer_time,cdr.end_time,cdr.duration_sec,cdr.src_ip,cdr.dest_ip,
                         crp.rate_bill_sec,crp.rate_cost_net,crp.vendor_bill_sec,crp.vendor_cost,
                         crs.rate_prefix,customer.descr AS customer_name,vendor.descr AS vendor_name
                     from
