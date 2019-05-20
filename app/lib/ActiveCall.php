@@ -88,6 +88,10 @@ class ActiveCall extends \Eloquent {
                     $IntervalN = $RateTableRate->IntervalN;
                     $Rate = $RateTableRate->Rate;
                     $RateN = $RateTableRate->RateN;
+                    $MinimumDuration = empty($RateTableRate->MinimumDuration) ? 0 : $RateTableRate->MinimumDuration;
+                    if($MinimumDuration > $Duration){
+                        $Duration = $MinimumDuration;
+                    }
                     if(!empty($RateTableRate->RateCurrency)){
                         if(!empty($Rate)){
                             $Rate = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
@@ -205,7 +209,6 @@ class ActiveCall extends \Eloquent {
                                 $OutpaymentPerCallCurrency = $RateTableDIDRate->OutpaymentPerCallCurrency;
                                 $OutpaymentPerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $OutpaymentPerCallCurrency, $OutpaymentPerCall);
                             }
-                            $OutpaymentPerCall = ($Duration * ($OutpaymentPerCall/60));
                         }
                         $OutpaymentPerMinute = isset($RateTableDIDRate->OutpaymentPerMinute)?$RateTableDIDRate->OutpaymentPerMinute:0;
                         if(!empty($OutpaymentPerMinute)){
