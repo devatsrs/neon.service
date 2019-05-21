@@ -82,10 +82,11 @@ class RateTableDIDRateUpload extends Command
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $DialStringId = 0;
         $dialcode_separator = 'null';
+        $countrycode_separator = 'null';
         Log::useFiles(storage_path() . '/logs/ratetabledidfileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $error = array();
@@ -146,6 +147,10 @@ class RateTableDIDRateUpload extends Command
                             $dialcode_separator = $attrselection2->OriginationDialCodeSeparator;
                             $seperatecolumn = 1;
                         }
+                    }
+
+                    if (!empty($attrselection->CountryCodeSeparator)) {
+                        $countrycode_separator = $attrselection->CountryCodeSeparator;
                     }
 
                     if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency)) {
@@ -421,21 +426,64 @@ class RateTableDIDRateUpload extends Command
                                             $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCountryCode'];
                                         }
 
-                                        if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
-                                            if (!empty($attrselection->CountryCode)) {
-                                                $selection_CountryCode = $attrselection->CountryCode;
-                                            } else if (!empty($attrselection2->CountryCode)) {
-                                                $selection_CountryCode = $attrselection2->CountryCode;
+                                        // for DID only if CountryCode Separator selected then need to separate code column and take first value as country and second as prefix/code
+                                        if($countrycode_separator != 'null') {
+
+                                            if (!empty($attrselection->Code)) {
+                                                if (isset($temp_row[$attrselection->Code]) && trim($temp_row[$attrselection->Code]) != '') {
+                                                    $separatedvalue = explode($countrycode_separator,trim($temp_row[$attrselection->Code]));
+                                                    if(count($separatedvalue) > 1) {
+                                                        $tempratetabledata['CountryCode']   = $separatedvalue[0];
+                                                        $tempratetabledata['Code']          = $separatedvalue[1];
+                                                        $tempratetabledata['Description']   = $tempratetabledata['Code'];
+                                                    } else {
+                                                        $error[] = 'Improper Prefix value at line no:' . $lineno;
+                                                    }
+                                                } else {
+                                                    $error[] = 'Code is blank at line no:' . $lineno;
+                                                }
                                             }
 
-                                            if (array_key_exists($selection_CountryCode, $CountryPrefix)) {// if Country selected from Neon Database
-                                                $tempratetabledata['CountryCode'] = $selection_CountryCode;
-                                            } else if (!empty($temp_row[$selection_CountryCode])) {// if Country selected from file
-                                                $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
-                                            } else {
-                                                $tempratetabledata['CountryCode'] = '';
+                                        } else {
+
+                                            if (!empty($attrselection->CountryCode) || !empty($attrselection2->CountryCode)) {
+                                                if (!empty($attrselection->CountryCode)) {
+                                                    $selection_CountryCode = $attrselection->CountryCode;
+                                                } else if (!empty($attrselection2->CountryCode)) {
+                                                    $selection_CountryCode = $attrselection2->CountryCode;
+                                                }
+
+                                                if (array_key_exists($selection_CountryCode, $CountryPrefix)) {// if Country selected from Neon Database
+                                                    $tempratetabledata['CountryCode'] = $selection_CountryCode;
+                                                } else if (!empty($temp_row[$selection_CountryCode])) {// if Country selected from file
+                                                    $tempratetabledata['CountryCode'] = trim($temp_row[$selection_CountryCode]);
+                                                } else {
+                                                    $tempratetabledata['CountryCode'] = '';
+                                                }
+                                                $tempratetabledata['Description'] = $tempratetabledata['CountryCode'];
                                             }
-                                            $tempratetabledata['Description'] = $tempratetabledata['CountryCode'];
+
+                                            if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
+                                                if (!empty($attrselection->Code)) {
+                                                    $selection_Code = $attrselection->Code;
+                                                } else if (!empty($attrselection2->Code)) {
+                                                    $selection_Code = $attrselection2->Code;
+                                                }
+
+                                                if (array_key_exists($selection_Code, $Codes)) {// if OriginationCode selected from Neon Database
+                                                    $tempratetabledata['Code'] = $selection_Code;
+                                                } else if (isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {// if Code selected from file
+                                                    $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                                } else if (!empty($tempratetabledata['CountryCode'])) {
+                                                    $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with country code later ie 91 - 1 -> 911
+                                                } else {
+                                                    $error[] = 'Code is blank at line no:' . $lineno;
+                                                }
+                                                if(empty($tempratetabledata['Description'])) {
+                                                    $tempratetabledata['Description'] = $tempratetabledata['Code'];
+                                                }
+                                            }
+
                                         }
 
                                         if (!empty($attrselection->OriginationCode) || !empty($attrselection2->OriginationCode)) {
@@ -454,27 +502,6 @@ class RateTableDIDRateUpload extends Command
                                             }
                                             if(empty($tempratetabledata['OriginationDescription'])) {
                                                 $tempratetabledata['OriginationDescription'] = $tempratetabledata['OriginationCode'];
-                                            }
-                                        }
-
-                                        if (!empty($attrselection->Code) || !empty($attrselection2->Code)) {
-                                            if (!empty($attrselection->Code)) {
-                                                $selection_Code = $attrselection->Code;
-                                            } else if (!empty($attrselection2->Code)) {
-                                                $selection_Code = $attrselection2->Code;
-                                            }
-
-                                            if (array_key_exists($selection_Code, $Codes)) {// if OriginationCode selected from Neon Database
-                                                $tempratetabledata['Code'] = $selection_Code;
-                                            } else if (isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {// if Code selected from file
-                                                $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
-                                            } else if (!empty($tempratetabledata['CountryCode'])) {
-                                                $tempratetabledata['Code'] = "";  // if code is blank but country code is not blank than mark code as blank., it will be merged with country code later ie 91 - 1 -> 911
-                                            } else {
-                                                $error[] = 'Code is blank at line no:' . $lineno;
-                                            }
-                                            if(empty($tempratetabledata['Description'])) {
-                                                $tempratetabledata['Description'] = $tempratetabledata['Code'];
                                             }
                                         }
 
@@ -539,91 +566,91 @@ class RateTableDIDRateUpload extends Command
 
                                         $CostComponentsMapped = 0;
 
-                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
+                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn]) && trim($temp_row[$attrselection->$OneOffCostColumn]) != '') {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
+                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn]) && trim($temp_row[$attrselection->$MonthlyCostColumn]) != '') {
                                             $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$CostPerCallColumn) && isset($temp_row[$attrselection->$CostPerCallColumn])) {
+                                        if (!empty($attrselection->$CostPerCallColumn) && isset($temp_row[$attrselection->$CostPerCallColumn]) && trim($temp_row[$attrselection->$CostPerCallColumn]) != '') {
                                             $tempratetabledata['CostPerCall'] = trim($temp_row[$attrselection->$CostPerCallColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CostPerCall'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$CostPerMinuteColumn) && isset($temp_row[$attrselection->$CostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$CostPerMinuteColumn) && isset($temp_row[$attrselection->$CostPerMinuteColumn]) && trim($temp_row[$attrselection->$CostPerMinuteColumn]) != '') {
                                             $tempratetabledata['CostPerMinute'] = trim($temp_row[$attrselection->$CostPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CostPerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$SurchargePerCallColumn) && isset($temp_row[$attrselection->$SurchargePerCallColumn])) {
+                                        if (!empty($attrselection->$SurchargePerCallColumn) && isset($temp_row[$attrselection->$SurchargePerCallColumn]) && trim($temp_row[$attrselection->$SurchargePerCallColumn]) != '') {
                                             $tempratetabledata['SurchargePerCall'] = trim($temp_row[$attrselection->$SurchargePerCallColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['SurchargePerCall'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$SurchargePerMinuteColumn) && isset($temp_row[$attrselection->$SurchargePerMinuteColumn])) {
+                                        if (!empty($attrselection->$SurchargePerMinuteColumn) && isset($temp_row[$attrselection->$SurchargePerMinuteColumn]) && trim($temp_row[$attrselection->$SurchargePerMinuteColumn]) != '') {
                                             $tempratetabledata['SurchargePerMinute'] = trim($temp_row[$attrselection->$SurchargePerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['SurchargePerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$OutpaymentPerCallColumn) && isset($temp_row[$attrselection->$OutpaymentPerCallColumn])) {
+                                        if (!empty($attrselection->$OutpaymentPerCallColumn) && isset($temp_row[$attrselection->$OutpaymentPerCallColumn]) && trim($temp_row[$attrselection->$OutpaymentPerCallColumn]) != '') {
                                             $tempratetabledata['OutpaymentPerCall'] = trim($temp_row[$attrselection->$OutpaymentPerCallColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OutpaymentPerCall'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$OutpaymentPerMinuteColumn) && isset($temp_row[$attrselection->$OutpaymentPerMinuteColumn])) {
+                                        if (!empty($attrselection->$OutpaymentPerMinuteColumn) && isset($temp_row[$attrselection->$OutpaymentPerMinuteColumn]) && trim($temp_row[$attrselection->$OutpaymentPerMinuteColumn]) != '') {
                                             $tempratetabledata['OutpaymentPerMinute'] = trim($temp_row[$attrselection->$OutpaymentPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OutpaymentPerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$SurchargesColumn) && isset($temp_row[$attrselection->$SurchargesColumn])) {
+                                        if (!empty($attrselection->$SurchargesColumn) && isset($temp_row[$attrselection->$SurchargesColumn]) && trim($temp_row[$attrselection->$SurchargesColumn]) != '') {
                                             $tempratetabledata['Surcharges'] = trim($temp_row[$attrselection->$SurchargesColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['Surcharges'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$ChargebackColumn) && isset($temp_row[$attrselection->$ChargebackColumn])) {
+                                        if (!empty($attrselection->$ChargebackColumn) && isset($temp_row[$attrselection->$ChargebackColumn]) && trim($temp_row[$attrselection->$ChargebackColumn]) != '') {
                                             $tempratetabledata['Chargeback'] = trim($temp_row[$attrselection->$ChargebackColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['Chargeback'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$CollectionCostAmountColumn) && isset($temp_row[$attrselection->$CollectionCostAmountColumn])) {
+                                        if (!empty($attrselection->$CollectionCostAmountColumn) && isset($temp_row[$attrselection->$CollectionCostAmountColumn]) && trim($temp_row[$attrselection->$CollectionCostAmountColumn]) != '') {
                                             $tempratetabledata['CollectionCostAmount'] = trim($temp_row[$attrselection->$CollectionCostAmountColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CollectionCostAmount'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$CollectionCostPercentageColumn) && isset($temp_row[$attrselection->$CollectionCostPercentageColumn])) {
+                                        if (!empty($attrselection->$CollectionCostPercentageColumn) && isset($temp_row[$attrselection->$CollectionCostPercentageColumn]) && trim($temp_row[$attrselection->$CollectionCostPercentageColumn]) != '') {
                                             $tempratetabledata['CollectionCostPercentage'] = trim($temp_row[$attrselection->$CollectionCostPercentageColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['CollectionCostPercentage'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$RegistrationCostPerNumberColumn) && isset($temp_row[$attrselection->$RegistrationCostPerNumberColumn])) {
+                                        if (!empty($attrselection->$RegistrationCostPerNumberColumn) && isset($temp_row[$attrselection->$RegistrationCostPerNumberColumn]) && trim($temp_row[$attrselection->$RegistrationCostPerNumberColumn]) != '') {
                                             $tempratetabledata['RegistrationCostPerNumber'] = trim($temp_row[$attrselection->$RegistrationCostPerNumberColumn]);
                                             $CostComponentsMapped++;
                                         } else {
