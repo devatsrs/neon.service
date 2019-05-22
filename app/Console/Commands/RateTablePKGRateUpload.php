@@ -81,7 +81,7 @@ class RateTablePKGRateUpload extends Command
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $DialStringId = 0;
         $dialcode_separator = 'null';
@@ -250,28 +250,28 @@ class RateTablePKGRateUpload extends Command
 
                                         $CostComponentsMapped = 0;
 
-                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
+                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn]) && trim($temp_row[$attrselection->$OneOffCostColumn]) != '') {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
+                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn]) && trim($temp_row[$attrselection->$MonthlyCostColumn]) != '') {
                                             $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn]) && trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['PackageCostPerMinute'] = trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['PackageCostPerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) && trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['RecordingCostPerMinute'] = trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {

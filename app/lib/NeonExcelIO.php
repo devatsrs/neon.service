@@ -149,11 +149,23 @@ class NeonExcelIO
         }
         if($this->file_type == self::$EXCEL){
             //return $this->readExcel($this->file,$limit);
-            return $this->readExcel2($this->file,$limit);
+            try {
+                return $this->readExcel2($this->file,$limit);
+            } catch(\Exception $e) {
+                Log::info($e->getMessage());
+                // when ReadorFactory can not read some files we will need to use PHPExcel to read that file
+                return $this->readExcel($this->file,$limit);
+            }
         }
 		if($this->file_type == self::$EXCELs){
             //return $this->readExcel($this->file,$limit);
-            return $this->readExcel2($this->file,$limit);
+            try {
+                return $this->readExcel2($this->file,$limit);
+            } catch(\Exception $e) {
+                Log::info($e->getMessage());
+                // when ReadorFactory can not read some files we will need to use PHPExcel to read that file
+                return $this->readExcel($this->file,$limit);
+            }
         }
 
     }
