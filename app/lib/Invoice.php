@@ -2847,7 +2847,7 @@ class Invoice extends \Eloquent {
 
         $query = "CALL prc_getDeductCallChargeAccounts(?)";
         $Accounts = DB::select($query,array($CompanyID));
-        Log::info("Call prc_getBillingAccounts($CompanyID)");
+        Log::info("Call prc_getDeductCallChargeAccounts($CompanyID)");
         //log::info(print_r($Accounts,true));
         $Accounts = json_decode(json_encode($Accounts),true);
 
