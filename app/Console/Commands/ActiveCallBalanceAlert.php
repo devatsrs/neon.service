@@ -7,6 +7,7 @@ use App\Lib\Helper;
 use App\Lib\SpeakIntelligenceAPI;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
+use App\Lib\CompanyGateway;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\AccountPaymentAutomation;
@@ -59,19 +60,19 @@ class ActiveCallBalanceAlert extends Command {
 	{
         CronHelper::before_cronrun($this->name, $this );
 
-        $getmypid = getmypid();
         $arguments = $this->argument();
         $CompanyID = $arguments['CompanyID'];
         $MainCronJobID = $arguments['CronJobID'];
         $MainCronJob = CronJob::find($MainCronJobID);
-        //$maindataactive['Active'] = 1;
-        $maindataactive['PID'] = $getmypid;
-        $MainCronJob->update($maindataactive);
+        CronJob::activateCronJob($MainCronJob);
+        $processID = CompanyGateway::getProcessID();
+        CompanyGateway::updateProcessID($MainCronJob,$processID);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
+        $Error=0;
 
         $Maincronsetting = json_decode($MainCronJob->Settings,true);
         $APIURL=isset($Maincronsetting['APIURL'])?$Maincronsetting['APIURL']:'';
@@ -87,8 +88,7 @@ class ActiveCallBalanceAlert extends Command {
 
                 /**
                  * This cronjob will check (accountbalance - live call balance) of Account (Active Call)
-                 * if account balance is zero or less than it first we will check auto top on or not
-                 * if auto top up or error in auto top , we will send api to customer.
+                 * if account balance is zero or less than we will send reminder (alert)
                 */
 
                 $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
@@ -140,20 +140,29 @@ class ActiveCallBalanceAlert extends Command {
                 Log::error($e);
                 $joblogdata['Message'] ='Error:'.$e->getMessage();
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                CronJobLog::insert($joblogdata);
+                //CronJobLog::insert($joblogdata);
+                CronJobLog::createLog($MainCronJobID,$joblogdata);
+                if(!empty($cronsetting['ErrorEmail'])) {
+
+                    $result = CronJob::CronJobErrorEmailSend($MainCronJobID,$e);
+                    Log::error("**Email Sent Status " . $result['status']);
+                    Log::error("**Email Sent message " . $result['message']);
+                }
+                $Error=1;
 
             }
         }else{
             $joblogdata['Message'] ="API URL Not Found.";
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+            $Error=1;
+
         }
 
         CronJobLog::createLog($MainCronJobID,$joblogdata);
 
-        $maindataactive['PID'] = '';
-        $MainCronJob->update($maindataactive);
+        CronJob::deactivateCronJob($MainCronJob);
 
-        if(!empty($Maincronsetting['SuccessEmail'])){
+        if(!empty($Maincronsetting['SuccessEmail']) && $Error==0){
             $result = CronJob::CronJobSuccessEmailSend($MainCronJobID);
             Log::error("**Email Sent Status ".$result['status']);
             Log::error("**Email Sent message ".$result['message']);

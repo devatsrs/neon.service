@@ -70,6 +70,7 @@ class RMService extends Command {
                 'BulkAccountEmail',
                 'PendingVendorUpload',
                 'PendingCodeDeckUpload',
+                'PendingImportTranslations',
                 'InvoiceReminder',
                 'CustomerSippySheetDownload',
                 'VendorSippySheetDownload',
@@ -78,6 +79,7 @@ class RMService extends Command {
                 'RateTableGeneration',
                 'RateTableFileUpload',
                 'RateTableDIDFileUpload',
+                'RateTablePKGFileUpload',
                 'VendorCDRUpload',
                 //'getSippyDownloadCommand',
 				'ImportAccount',
@@ -208,6 +210,15 @@ class RMService extends Command {
                     }
                 }
             }
+            foreach($allpending['data']['PendingImportTranslations'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." translationimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " translationimport " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
 
             foreach($allpending['data']['InvoiceReminder'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
@@ -312,6 +323,16 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." ratetabledidfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetabledidfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+
+            foreach($allpending['data']['RateTablePKGFileUpload'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." ratetablepkgfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " ratetablepkgfileupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

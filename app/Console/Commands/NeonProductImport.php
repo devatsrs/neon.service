@@ -3,6 +3,9 @@
 use App\Lib\CronHelper;
 use App\Lib\NeonAPI;
 use App\Lib\ServiceTemplate;
+use App\Lib\Package;
+use App\Lib\Packagetemp;
+use App\Lib\Producttemp;
 use App\Lib\DynamicFieldsValue;
 use App\Lib\DynamicFields;
 use App\Lib\Summary;
@@ -72,80 +75,165 @@ class NeonProductImport extends Command {
         $cronsetting = json_decode($CronJob->Settings,true);
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        
-        Log::useFiles(storage_path() . '/logs/neonproductimport-companyid:'.$CompanyID . '-cronjobid:'.$CronJobID.'-' . date('Y-m-d') . '.log');
+        $DynamicFieldsID ='';
+        $DynamicFieldsParentID = '';
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
+
+        Log::useFiles(storage_path() . '/logs/z_productimport-companyid-'.$CompanyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
         try{
             
             //Start Transaction
            // DB::connection('neon_routingengine')->beginTransaction();
             CronJob::createLog($CronJobID);
             $ServiceId = $cronsetting['ServiceId'];
-            
-            //ProductID this field name will be unique 
+            $PackageId = $cronsetting['PackageID'];
+            $APIMethod = $cronsetting['ProductAPIMethod'];
+            $APIUrl = $cronsetting['ProductAPIURL'];
+
+            //ProductID this field name will be unique
             // we will not give any 
             $FieldsProductID = $cronsetting['ProductID'];
             $ProductID = DynamicFields::where(['FieldName'=>$FieldsProductID])->pluck('DynamicFieldsID');
+            
+            Producttemp::truncate();
+            Packagetemp::truncate();
             
             if (!empty($ProductID)) { 
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
                 $Getdata = array();
-                $APIResponse = NeonAPI::callGetAPI($Getdata,"api/Products","http://api-neon.speakintelligence.com/");
+                $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod, $APIUrl);
                 if (isset($APIResponse["error"])) {
-                    Log::info('neonproductimport Error in  api/Products service.' . print_r($APIResponse["error"]));
+                    Log::info('z_neonproductimport1 Error in  api/Products service.' . print_r($APIResponse["error"]));
                 } else {
                     $ProductResponses = json_decode($APIResponse["response"]);
 
                     foreach($ProductResponses as $ProductResponse) {
-
-                        $productdata = array();
-                        $productdata['ServiceTemplateId'] = $ProductResponse->productId;
-                        $productdata['ServiceId']       = $ServiceId;
-                        $productdata['Name']            = $ProductResponse->name;
-                        
-                        $productdata['country']         = $ProductResponse->countryName;
-                        $productdata['prefixName']      = $ProductResponse->prefixName;
-                        $productdata['CurrencyId']      = $CurrencyId;
-                        $city_tariff='';
-                        if (!empty($ProductResponse->cityName)) {
-                            $city_tariff=$ProductResponse->cityName;
+                        Log::info('z_ProductResponse2.' . $ProductResponse->isPackage);
+                       // var_dump($ProductResponse->isPackage);
+                        if($ProductResponse->isPackage == false) {
+                            Log::info('z_ProductResponse3. Template');
+                            $productdata = array();
+                            $productdata['ServiceId']   = $ServiceId[0];
+                            $productdata['ProductId']   = $ProductResponse->productId;
+                            $productdata['Name']        = $ProductResponse->name;
+                            $productdata['country']     = $ProductResponse->countryName;
+                            $productdata['prefixName']  = $ProductResponse->prefixName;
+                            $productdata['CurrencyId']  = $CurrencyId;
+                            $productdata['CompanyID']   = $CompanyID;
+                            $productdata['FieldName']   = $FieldsProductID;
+                            //$city_tariff = '';
+                            if (!empty($ProductResponse->cityName)) {
+                                $City = $ProductResponse->cityName;
+                                $productdata['City'] = $City;
+                            }else {
+                                $Tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
+                                $productdata['Tariff'] = $Tariff;
+                            }
+                            // $productdata['City'] = $city_tariff;
+                            // $productdata['Tariff'] = $city_tariff;
+                            if (!empty($ProductResponse->accessTypeName)) {
+                                $productdata['accessType'] = $ProductResponse->accessTypeName;
+                            }
+                            if (!empty($ProductResponse->countryCode)) {
+                                $productdata['countryCode'] = $ProductResponse->countryCode;
+                            }
+                            $ServiceTemplate            = Producttemp::create($productdata);
+                            
+                            
+//                            
+//                            $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $FieldsProductID])->pluck('DynamicFieldsID');
+//                            $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');
+//                            Log::info('ProductResponse. Template' . $DynamicFieldsID . ' ' . $DynamicFieldsParentID);
+//                            $productdata = array();
+//                            $productdata['ServiceId'] = $ServiceId[0];
+//                            $productdata['Name'] = $ProductResponse->name;
+//
+//                            $productdata['country'] = $ProductResponse->countryName;
+//                            $productdata['prefixName'] = $ProductResponse->prefixName;
+//                            $productdata['CurrencyId'] = $CurrencyId;
+//                            $productdata['CompanyID'] = $CompanyID;
+//                            $city_tariff = '';
+//                            if (!empty($ProductResponse->cityName)) {
+//                                $city_tariff = $ProductResponse->cityName;
+//                            } else {
+//                                $city_tariff = $ProductResponse->tariff;
+//                            }
+//                            $productdata['city_tariff'] = $city_tariff;
+//
+//                            if (!empty($DynamicFieldsParentID)) {
+//                                ServiceTemplate::where(["ServiceTemplateId" => $DynamicFieldsParentID])->update($productdata);
+//                            }else {
+//                                try {
+//                                    $ServiceTemplate = ServiceTemplate::create($productdata);
+//                                $dyndata = array();
+//                                $dyndata['CompanyID'] = $CompanyID;
+//                                $dyndata['ParentID'] = $ServiceTemplate->ServiceTemplateId;
+//                                $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+//                                $dyndata['FieldValue'] = $ProductResponse->productId;
+//                                    Log::info('Dynamic Field Data.' . print_r($dyndata));
+//                                DynamicFieldsValue::insert($dyndata);
+//                                }catch(Exception $ex){
+//                                    Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
+//                                    Log::error($ex);
+//                                }
+//                            }
                         }else{
-                            $city_tariff=$ProductResponse->tariff;
-                        }
-                        $productdata['city_tariff'] = $city_tariff;
-
-                        $ServiceTemplateId = ServiceTemplate::where(['ServiceTemplateId'=>$ProductResponse->productId])->pluck('ServiceTemplateId');
-                        $ServiceTemplateName = ServiceTemplate::where(['Name'=>$ProductResponse->name])->pluck('Name');
-                        if (!empty($ServiceTemplateId)) {
-                            ServiceTemplate::where(["ServiceTemplateId" => $ProductResponse->productId])->update($productdata);
-                        }else if (!empty($ServiceTemplateName)) {
-                            ServiceTemplate::where(["Name" => $ProductResponse->name])->update($productdata);
-                        }else{
-                            ServiceTemplate::insert($productdata);
-                            //--Custom filed value
-                        }
-                        $DynamicFieldsID = DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->pluck('DynamicFieldsID');
-                        //SI product daynamin feild
-                        $dyndata = array();
-                        $dyndata['CompanyID']           = $CompanyID;
-                        $dyndata['ParentID']            = $ProductResponse->productId;
-                        $dyndata['DynamicFieldsID']     = $ProductID;
-                        $dyndata['FieldValue']          = $ProductResponse->productId;
-                        if (!empty($DynamicFieldsID)) {
-                            DynamicFieldsValue::where(['CompanyID'=>$CompanyID,'ParentID'=>$ProductResponse->productId,'DynamicFieldsID'=>$ProductID])->update($dyndata);
-                        }else{
-                            DynamicFieldsValue::insert($dyndata);
-                        }
+                            Log::info('z_ProductResponse. Package');
+                                $productdata = array();
+                            
+                                $packagedata = array();
+                                $packagedata['ProductId']   = $ProductResponse->productId;
+                                $packagedata['Name']        = $ProductResponse->name;
+                                $packagedata['CurrencyId']  = $CurrencyId;
+                                $packagedata['CompanyID']   = $CompanyID;
+                                $packagedata['FieldName']   = $PackageId;
+                                $Packagetemp            = Packagetemp::create($packagedata);
+                            
+//                                $DynamicFieldsID = DynamicFields::where(['CompanyID' => $CompanyID, 'FieldName' => $PackageId])->pluck('DynamicFieldsID');
+//                                $DynamicFieldsParentID = DynamicFieldsValue::where(['CompanyID' => $CompanyID, 'FieldValue' => $ProductResponse->productId, 'DynamicFieldsID' => $DynamicFieldsID])->pluck('ParentID');;
+//                                $packagedata = array();
+//                                $packagedata['Name'] = $ProductResponse->name;
+//                                $packagedata['CurrencyId'] = $CurrencyId;
+//                                $packagedata['CompanyID'] = $CompanyID;
+//                                if (!empty($DynamicFieldsParentID)) {
+//                                    Package::where(["PackageId" => $DynamicFieldsParentID])->update($packagedata);
+//                                }else {
+//                                    try {
+//                                        $Package = Package::create($packagedata);
+//                                        $dyndata = array();
+//                                        $dyndata['CompanyID'] = $CompanyID;
+//                                        $dyndata['ParentID'] = $Package['PackageId'];
+//                                        $dyndata['DynamicFieldsID'] = $DynamicFieldsID;
+//                                        $dyndata['FieldValue'] = $ProductResponse->productId;
+//
+//                                        DynamicFieldsValue::insert($dyndata);
+//                                        } catch (Exception $ex) {
+//                                        Log::useFiles(storage_path() . '/logs/neonproductimport-Error-' . date('Y-m-d') . '.log');
+//
+//                                        Log::error($ex);
+//                                        }
+//                                    }
+                            }
                     }
                 }
             }else{
-                Log::info('neonproductimport Not Find DynamicFieldsID.');
+                Log::info('z_neonproductimport5 Not Find DynamicFieldsID.');
             }
-            Log::info('neonproductimport Next step in  api/Products service.');
+            
+            
+            //Insert other Company Packages
+            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
+            //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
+            
+            
+            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducts()");
+            
+            
+            Log::info('z_neonproductimport Next step in  api/Products service.');
             //Track The Log          
             $joblogdata['Message'] = 'neonproductimport Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -169,10 +257,9 @@ class NeonProductImport extends Command {
             }
 
 
-    }
+        }
     
         CronJob::deactivateCronJob($CronJob);
         CronHelper::after_cronrun($this->name, $this);
     }
-
 }

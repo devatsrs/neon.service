@@ -124,10 +124,11 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\RoutingRoutingProfileRate',
 		'App\Console\Commands\AutoTopAccount',
 		'App\Console\Commands\PushSalesPricesERP',
+		'App\Console\Commands\UpdateRateTableInProductAndPackage',
 		'App\Console\Commands\RoutingVendorRate',
 		'App\Console\Commands\RoutingData',
 		'App\Console\Commands\RoutingEngineData',
-                'App\Console\Commands\NeonProductImport',
+		'App\Console\Commands\NeonProductImport',
 		'App\Console\Commands\ActiveCallBalanceAlert',
 		'App\Console\Commands\AccountBalanceGenerator',
 		'App\Console\Commands\RateTableDIDRateUpload',
@@ -136,7 +137,10 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ContractManage',
 		'App\Console\Commands\AutoOutPayment',
 		'App\Console\Commands\UpdateActiveCallCost',
-
+		'App\Console\Commands\ImportCurrencyExchRates',
+		'App\Console\Commands\ApproveOutPayment',
+        'App\Console\Commands\TranslationsImport',
+        
 	];
 
 	/**

@@ -6,6 +6,7 @@ use App\PBX;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Lib\AccountBalanceLog;
 
 class AccountBalance extends Model
 {
@@ -23,7 +24,11 @@ class AccountBalance extends Model
     const BILLINGTYPE_BOTH = 3;
 
 
-    public static function LowBalanceReminder($CompanyID,$ProcessID){
+    /**
+     * @param $CompanyID
+     * @param $ProcessID
+     */
+    public static function LowBalanceReminder($CompanyID, $ProcessID){
 
         $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
         foreach($BillingClass as $BillingClassSingle) {
@@ -35,13 +40,108 @@ class AccountBalance extends Model
                 $query = "CALL prc_LowBalanceReminder(?,?,?)";
                 $AccountBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
                 foreach ($AccountBalanceWarnings as $AccountBalanceWarning) {
-                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::FirstLowBalanceReminder($AccountBalanceWarning->AccountID,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                    if ($AccountBalanceWarning->BalanceWarning == 1 &&(Account::LowBalanceReminderEmailCheck($AccountBalanceWarning->AccountID,$AccountBalanceWarning->BalanceThresholdEmail,$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                         Log::info('AccountID = '.$AccountBalanceWarning->AccountID.' SendReminder sent ');
-                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
+                        $default_lang_id=Translation::$default_lang_id;
+                        $LanguageID = Account::getLanguageIDbyAccountID($AccountBalanceWarning->AccountID);
+                        
+                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "LowBalanceReminder", $LanguageID);
+                        if(!empty($EmailTemplateID)){
+                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountBalanceWarning->AccountID,$AccountBalanceWarning);
+                        }
                     }
                 }
                 if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
                     NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'LowBalanceReminderSettings','BillingClass');
+                }
+            }
+        }
+    }
+
+    public static function SendZeroBalanceWarning($CompanyID, $ProcessID){
+
+        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        foreach($BillingClass as $BillingClassSingle) {
+
+            if (isset($BillingClassSingle->ZeroBalanceWarningStatus) && $BillingClassSingle->ZeroBalanceWarningStatus == 1 && isset($BillingClassSingle->ZeroBalanceWarningStatus)) {
+                $settings = json_decode($BillingClassSingle->ZeroBalanceWarningSettings, true);
+                $settings['ProcessID'] = $ProcessID;
+                $settings['EmailType'] = AccountEmailLog::ZeroBalanceWarning;
+                $LastRunTime = isset($settings['LastRunTime'])?$settings['LastRunTime']:'';
+                $query = "CALL prc_ZeroBalanceWarning(?,?,?)";
+                $AccountZeroBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
+                Log::info("CALL prc_ZeroBalanceWarning(".$CompanyID.",0,".$BillingClassSingle->BillingClassID.")");
+                Log::info(json_encode($settings));
+                if(!empty($settings['CountDown'])){
+                    $CountDown1 = $settings['CountDown'];
+                } else {$CountDown1 = 0;}
+
+                foreach ($AccountZeroBalanceWarnings as $AccountZeroBalanceWarning) {
+                    $settings['CountDown'] = $AccountZeroBalanceWarning->CountDown;
+                    /*$Account = Account::find($AccountZeroBalanceWarning->AccountID);
+                    $emaildata = array(
+                        'CompanyID' => $CompanyID,
+                        'AccountID' => $AccountZeroBalanceWarning->AccountID,
+                        'CountDown' => $AccountZeroBalanceWarning->CountDown
+                    );*/
+                    // EmailsTemplates::setZeroBalanceCountDownPlaceholder($Account, 'body', $CompanyID, $emaildata);
+
+                    $countDown = $AccountZeroBalanceWarning->CountDown;
+                    Log::info('first '.$CountDown1);
+                    Log::info('second '.$countDown );
+                    $default_lang_id=Translation::$default_lang_id;
+                    $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
+                    if (isset($AccountZeroBalanceWarning->BalanceAmount) &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,"",$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
+                    Log::info("balance check ". $AccountZeroBalanceWarning->BalanceAmount.' count down '.$AccountZeroBalanceWarning->CountDown);
+                        if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == -1)
+                        {
+                            Log::info("count down ".$CountDown1. ' and count down '.$AccountZeroBalanceWarning->CountDown );
+                                AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                    ->update(['CountDown' => $CountDown1]);
+
+                        }
+                        if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == -2)
+                        {
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->update(['CountDown' => -1]);
+                        }
+                        $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
+                        if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == 0)
+                        {
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "FinalZeroBalanceWarning", $LanguageID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
+                            }
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->update(['CountDown' => -2]);
+                            Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
+
+                        }
+                        else if ($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown > 0) {
+                            $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "ZeroBalanceWarning", $LanguageID);
+                            if(!empty($EmailTemplateID)){
+                                NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
+                            }
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->decrement('CountDown', 1);
+                            Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
+
+                        } else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown > 0)
+                        {
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->update(['CountDown' => -1]);
+                        }
+                        else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == 0)
+                        {
+                            AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
+                                ->update(['CountDown' => -1]);
+                        }
+
+                        //NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountBalanceWarning->AccountID);
+                    }
+                }
+                if(cal_next_runtime($settings) == date('Y-m-d H:i:00')){
+                    NeonAlert::UpdateNextRunTime($BillingClassSingle->BillingClassID,'ZeroBalanceWarningSettings','BillingClass');
                 }
             }
         }
@@ -313,7 +413,7 @@ class AccountBalance extends Model
     /**
      * Send Email - if(AccountBalance > Next Invoice Generate required balance)
      * first email goes to date reminder date and other will go through interval wise
-    */
+     */
     public static function SendBalanceWarning($CompanyID,$ProcessID){
         $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
         foreach($BillingClass as $BillingClassSingle) {
@@ -378,7 +478,13 @@ class AccountBalance extends Model
                                     log::info('Next Invoice GrandTotal '.$GrandTotal);
                                     if($AccountOutstandingBalance <= $GrandTotal) {
                                         Log::info('AccountID = '.$AccountID.' SendReminder sent ');
-                                        NeonAlert::SendReminder($CompanyID, $settings, $settings['TemplateID'], $AccountID);
+                                        $LanguageID = Account::getLanguageIDbyAccountID($AccountID);
+                                        //$EmailTemplateID = EmailTemplate::getSystemEmailTemplate($CompanyID, "AccountBalanceWarning", $LanguageID);
+                                        
+                                        $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "AccountBalanceWarning", $LanguageID);
+                                        if(!empty($EmailTemplateID)){
+                                            NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountID);
+                                        }
 
                                     }
                                 }
@@ -558,7 +664,7 @@ class AccountBalance extends Model
 
     /**
      * This function only for prepaid account
-    **/
+     **/
     public static function getAccountBalanceWithActiveCall($AccountID){
 
         $AccountBalance = AccountBalanceLog::getPrepaidAccountBalance($AccountID);

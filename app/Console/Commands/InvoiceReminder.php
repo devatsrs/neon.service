@@ -171,8 +171,10 @@ class InvoiceReminder extends Command
 								$message =  template_var_replace($joboptions->message,$replace_array);
 
                                 $emaildata['Subject'] = $joboptions->subject;
+                                dd($emaildata['Subject']);
                                 $emaildata['Message'] = $message;
                                 $emaildata['CompanyID'] = $CompanyID;
+
 
                                 $emaildata['mandrill'] = 1;
                                 $status = Helper::sendMail('emails.template', $emaildata);

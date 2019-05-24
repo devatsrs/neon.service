@@ -1,7 +1,10 @@
 <?php
 namespace App\Lib;
 
-class AccountPaymentAutomation extends \Eloquent {
+use Illuminate\Support\Facades\Log;
+
+class AccountPaymentAutomation extends \Eloquent
+{
     //
     protected $guarded = array("AccountPaymentAutomationID");
 
@@ -12,54 +15,76 @@ class AccountPaymentAutomation extends \Eloquent {
     /**
      * this will call neon api and it will add top up and generate invoice
      */
-    public static function calldepositFundAPI($AutoPaymentAccount,$CompanyConfiguration)
+    public static function calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration)
     {
         $url = $CompanyConfiguration;
         $DepositAccount = array();
         $postdata = array();
         $postdata['AccountID'] = $AutoPaymentAccount->AccountID;
         $postdata['Amount'] = $AutoPaymentAccount->TopupAmount;
-        $postdata = json_encode($postdata,true);
+        $postdata = json_encode($postdata, true);
 
-        if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
+        if (!NeonAPI::endsWith($CompanyConfiguration, "/")) {
             $url = $CompanyConfiguration . "/";
         }
-        $APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
+        $APIresponse = NeonAPI::callAPI($postdata, "api/account/depositFund", $url);
         if (isset($APIresponse["error"])) {
-            $DepositAccount['status'] = "failed";
-            $DepositAccount['response'] = $APIresponse["error"];
-        } else {
-            $response = json_decode($APIresponse["response"]);
-            if (isset($response->ErrorMessage)) {
-                $DepositAccount['status'] = "failed";
-                $DepositAccount['response'] = $response->ErrorMessage;
-            } else {
-                $DepositAccount['status'] = "success";
-                $DepositAccount['response'] = $response;
+            try {
+                $response = json_decode($APIresponse["error"]);
+                //Log::info(print_r($APIresponse["error"],true));
+                $DepositAccount[0] = "failed";
+                $DepositAccount[1] = $response->ErrorMessage;
+            } catch (\Exception $e){
+                $DepositAccount[0] = "failed";
+                $DepositAccount[1] = "Error While Calling API";
             }
+        } else {
+            try {
+                $response = json_decode($APIresponse["response"]);
+                //Log::info("Succcess" . print_r($response, true));
+                $responseCode = $APIresponse["HTTP_CODE"];
+                if ($responseCode == 200) {
+                    $DepositAccount[0] = "success";
+                    $DepositAccount[1] = $response;
+                } else {
+                    $DepositAccount[0] = "failed";
+                    $DepositAccount[1] = $response;
+
+                }
+            }catch (\Exception $e){
+                $DepositAccount[0] = "failed";
+                $DepositAccount[1] = "Error While Calling API";
+            }
+
         }
 
         return $DepositAccount;
     }
 
-    public static function AutoTopUpNotification($CompanyID,$SuccessDepositAccounts,$FailureDepositFundAccounts){
+    public static function AutoTopUpNotification($CompanyID, $SuccessDepositAccounts, $FailureDepositFundAccounts)
+    {
 
-        $emaildata = array();
+        try {
+            $emaildata = array();
 
-        $ComanyName = Company::getName($CompanyID);
+            $ComanyName = Company::getName($CompanyID);
 
-        $emaildata['SuccessDepositAccount'] = $SuccessDepositAccounts;
-        $emaildata['FailureDepositFund'] = $FailureDepositFundAccounts;
+            $emaildata['SuccessDepositAccount'] = $SuccessDepositAccounts;
+            $emaildata['FailureDepositFund'] = $FailureDepositFundAccounts;
 
-        $AutoTopUpNotificationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::AutoTopAccount]);
-        if (!empty($AutoTopUpNotificationEmail)){
-            $emaildata['CompanyID'] = $CompanyID;
-            $emaildata['CompanyName'] = $ComanyName;
-            $emaildata['EmailTo'] = $AutoTopUpNotificationEmail;
-            $emaildata['EmailToName'] = '';
-            $emaildata['Subject'] = 'Auto Top Up Notification Email';
-            //$emaildata['Message'] = $Message;
-            $result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
+            $AutoTopUpNotificationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::AutoTopAccount]);
+            if (!empty($AutoTopUpNotificationEmail)) {
+                //Log::info('Sending email.' . $AutoTopUpNotificationEmail);
+                $emaildata['CompanyID'] = $CompanyID;
+                $emaildata['CompanyName'] = $ComanyName;
+                $emaildata['EmailTo'] = $AutoTopUpNotificationEmail;
+                $emaildata['EmailToName'] = '';
+                $emaildata['Subject'] = 'Auto Top Up Notification Email';
+                //$emaildata['Message'] = $Message;
+                $result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
+            }
+        } catch (\Exception $e) {
+            Log::error("**Email Sent Status AutoTopUpNotification" . $e->getTraceAsString());
         }
     }
 }

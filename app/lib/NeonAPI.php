@@ -23,7 +23,7 @@ class NeonAPI
     public static function callAPI($postdata,$call_method,$api_url)
     {
         $url = $api_url . $call_method;
-        Log::info("Call API URL :" . $url . '  ' . $postdata);
+      //  Log::info("Call API URL :" . $url . '  ' . $postdata);
         $APIresponse = array();
         $curl = curl_init();
 
@@ -57,11 +57,11 @@ class NeonAPI
         if ($httpcode != 200) {
             $APIresponse["error"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-            Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
+          //  Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-            Log::info("Call API URL Sucess:" . print_r($response,true));
+          //  Log::info("Call API URL Sucess:" . print_r($response,true));
         }
 
         return $APIresponse;
@@ -126,7 +126,7 @@ class NeonAPI
         $curl = curl_init();
 
 
-        echo ' Post Request ';
+      //  echo ' Post Request ';
         // echo 'Authorization:"Bearer ' . 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU0MzQwMTc0OCwiZXhwIjoxNTc0OTM3NzQ4LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlZlbmRvck1hbmFnZXIifQ.jdVEkXjR2q8swx8OFDNLQhJNSCtzM6y1P_TohN6ql-U' . '"';
 
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));

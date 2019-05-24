@@ -40,4 +40,25 @@ class EmailTemplate extends \Eloquent {
         }
         return $emailtemplate;
     }
+    
+    public static function getSystemEmailTemplateID($companyID, $slug,$languageID=""){
+        if(empty($languageID)){
+            $languageID=Translation::$default_lang_id;
+        }	
+        $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "CompanyID"=>$companyID,"IsGlobal"=>0])->first();
+        if(empty($emailtemplate)){     
+			/** check same LanguageID in global*/
+            $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>$languageID, "IsGlobal"=>1])->first();
+            /** check same default LanguageID in company*/
+            if(empty($emailtemplate)){
+                $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$companyID,"IsGlobal"=>0])->first();
+                /** check same default LanguageID in global*/
+                if(empty($emailtemplate)){
+                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "IsGlobal"=>1])->first();
+                }
+            }
+        }
+        return $emailtemplate;
+    }
+         
 }

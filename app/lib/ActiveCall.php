@@ -24,7 +24,7 @@ class ActiveCall extends \Eloquent {
     }
 
     public static function updateActiveCallCost($ActiveCallID){
-        $ActiveCall = ActiveCall::find($ActiveCallID);
+        $ActiveCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->first();
         $AccountID = $ActiveCall->AccountID;
         $CompanyID = $ActiveCall->CompanyID;
         $CompanyCurrency = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
@@ -35,6 +35,7 @@ class ActiveCall extends \Eloquent {
         $CallRecordingDuration = $ActiveCall->CallRecordingDuration;
         $PackageCostPerMinute= $ActiveCall->PackageCostPerMinute;
         $RecordingCostPerMinute= $ActiveCall->RecordingCostPerMinute;
+        $TaxRateIDs = $ActiveCall->TaxRateIDs;
         /**
          * update duration = current time - connect time
          */
@@ -42,7 +43,7 @@ class ActiveCall extends \Eloquent {
         $Date = date('Y-m-d H:i:s');
 
         $Duration = strtotime($Date) - strtotime($ActiveCall->ConnectTime);
-        log::info('Current Date '.$Date.' Old Duration '.$OldDuration.' New Duration '.$Duration);
+        //log::info('Current Date '.$Date.' Old Duration '.$OldDuration.' New Duration '.$Duration);
         if($Duration > $OldDuration) {
 
             $BilledDuration = $Duration;
@@ -80,10 +81,25 @@ class ActiveCall extends \Eloquent {
                 if ($RateTableRateID > 0) {
                     $RateTableRate = DB::table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
+                    if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
+                        $ConnectionFee = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
+                    }
                     $Interval1 = $RateTableRate->Interval1;
                     $IntervalN = $RateTableRate->IntervalN;
                     $Rate = $RateTableRate->Rate;
                     $RateN = $RateTableRate->RateN;
+                    $MinimumDuration = empty($RateTableRate->MinimumDuration) ? 0 : $RateTableRate->MinimumDuration;
+                    if($MinimumDuration > $Duration){
+                        $Duration = $MinimumDuration;
+                    }
+                    if(!empty($RateTableRate->RateCurrency)){
+                        if(!empty($Rate)){
+                            $Rate = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
+                        }
+                        if(!empty($RateN)){
+                            $RateN = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$RateN);
+                        }
+                    }
                     /** cost update */
                     if ($Duration >= $Interval1) {
                         $Cost = ($Rate / 60.0) * $Interval1 + ceil(($Duration - $Interval1) / $IntervalN) * ($RateN / 60.0) * $IntervalN + $ConnectionFee;
@@ -104,6 +120,22 @@ class ActiveCall extends \Eloquent {
                 }
                 $Cost = $Cost + $PackageCostPerMinute + $RecordingCostPerMinute;
 
+                /** minimum cost calculation
+                 * if cost is less than minimum cost , cost update as minimum cost
+                 */
+                if(!empty($ActiveCall->RateTableID)) {
+                    $MinimumCallCharge = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('MinimumCallCharge');
+                    if (!empty($MinimumCallCharge)) {
+                        $RateCurrency = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('CurrencyID');
+                        if (!empty($RateCurrency)) {
+                            $MinimumCallCharge = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateCurrency, $MinimumCallCharge);
+                        }
+                        if ($MinimumCallCharge > $Cost) {
+                            $Cost = $MinimumCallCharge;
+                        }
+                    }
+                }
+
                 /** update cost and duration */
 
                 $UpdateData = array();
@@ -115,7 +147,7 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['RecordingCostPerMinute'] = $RecordingCostPerMinute;
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
                 $ActiveCall->update($UpdateData);
-                log::info('New Cost '.$Cost);
+                //log::info('New Cost '.$Cost);
 
             }
             if ($CallType == 'Inbound') {
@@ -131,7 +163,7 @@ class ActiveCall extends \Eloquent {
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
 
                 if ($RateTableDIDRateID > 0) {
-                    $RateTableDIDRate = RateTableDIDRate::find($RateTableDIDRateID);
+                    $RateTableDIDRate = RateTableDIDRate::where(['RateTableDIDRateID'=>$RateTableDIDRateID])->first();
 
                     if ($Duration > 0) {
                         /**
@@ -177,7 +209,6 @@ class ActiveCall extends \Eloquent {
                                 $OutpaymentPerCallCurrency = $RateTableDIDRate->OutpaymentPerCallCurrency;
                                 $OutpaymentPerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $OutpaymentPerCallCurrency, $OutpaymentPerCall);
                             }
-                            $OutpaymentPerCall = ($Duration * ($OutpaymentPerCall/60));
                         }
                         $OutpaymentPerMinute = isset($RateTableDIDRate->OutpaymentPerMinute)?$RateTableDIDRate->OutpaymentPerMinute:0;
                         if(!empty($OutpaymentPerMinute)){
@@ -209,6 +240,9 @@ class ActiveCall extends \Eloquent {
 
                         $CollectionCostPercentage = isset($RateTableDIDRate->CollectionCostPercentage)?$RateTableDIDRate->CollectionCostPercentage:0;
                         if(!empty($CollectionCostPercentage)){
+                            if(!empty($TaxRateIDs)){
+                                $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
+                            }
                             $CollectionCostPercentage = $Cost * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
                         }
@@ -234,9 +268,26 @@ class ActiveCall extends \Eloquent {
 
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
                 $ActiveCall->update($UpdateData);
-                log::info('New Cost '.$Cost);
+                //log::info('New Cost '.$Cost);
             }
         }
+    }
+
+    public static function getCostWithTaxes($Cost,$TaxRateIDs){
+        $TaxGrandTotal = 0;
+        $TaxRateIDs = explode(",",$TaxRateIDs);
+        if(!empty($TaxRateIDs) && count($TaxRateIDs)>0) {
+            foreach($TaxRateIDs as $TaxRateID) {
+                $TaxRateID = intval($TaxRateID);
+                if($TaxRateID>0){
+                    $TaxAmount=TaxRate::calculateProductTaxAmount($TaxRateID,$Cost);
+                    $TaxGrandTotal += $TaxAmount;
+                }
+            }
+        }
+        $Total = $Cost + $TaxGrandTotal;
+
+        return $Total;
     }
 
 }

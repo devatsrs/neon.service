@@ -38,8 +38,24 @@ class EmailsTemplates{
 				"{{CompanyPostCode}}",
 				"{{CompanyCountry}}",
 				"{{Logo}}",
-				"{{CreditnotesGrandTotal}}"
+				"{{Date}}",
+				"{{Time}}",
+				"{{CreditnotesGrandTotal}}",
+				"{{BillingAddress1}}",
+				"{{BillingAddress2}}",
+				"{{BillingAddress3}}",
+				"{{BillingCity}}",
+				"{{BillingPostCode}}",
+				"{{BillingCountry}}",
+				"{{BillingEmail}}",
+				"{{CustomerID}}",
+                "{{DirectDebit}}",
+                "{{RegisterDutchFoundation}}",
+                "{{COCNumber}}",
+                "{{DutchProvider}}",
 				);
+
+				
 	
 	 public function __construct($data = array()){
 		 foreach($data as $key => $value){
@@ -62,7 +78,7 @@ class EmailsTemplates{
 					$EmailMessage							=	 $EmailTemplate->TemplateBody;
 				}
 				$replace_array							=	 EmailsTemplates::setCompanyFields($replace_array,$CompanyID);
-				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$userID);
+				$replace_array							=	 EmailsTemplates::setAccountFields($replace_array,$InvoiceData->AccountID,$CompanyID,$userID);
                 $WEBURL                                 =    CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
                 $replace_array['InvoiceLink'] 			= 	 $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email='.$singleemail;
 				$replace_array['FirstName']				=	 $AccoutData->FirstName;
@@ -105,7 +121,7 @@ class EmailsTemplates{
 				'{{BalanceThreshold}}',				
 				"{{InvoiceLink}}",
 				"{{PeriodFrom}}",
-				"{{PeriodTo}}"
+				"{{PeriodTo}}",
 			];
 			
 			$extraDefault	=	EmailsTemplates::$fields;
@@ -129,6 +145,7 @@ class EmailsTemplates{
 
 		//print_r($data);exit;
 		$message								=	"";
+
 		$CreditNotesData  							=  	CreditNotes::find($CreditNotesID);
 		$replace_array							=	$data;
 		$replace_array							=	EmailsTemplates::setCompanyFields($replace_array,$CreditNotesData->CompanyID);
@@ -172,6 +189,7 @@ class EmailsTemplates{
 			"{{CreditNotesLink}}",
 			"{{Comment}}",
 			"{{Message}}",
+
 		];
 
 
@@ -204,7 +222,7 @@ class EmailsTemplates{
 	
 	static function SendRateSheetEmail($slug,$Ratesheet,$type="body",$data,$CompanyID){
 		
-			$replace_array					=	 $data;				
+			$replace_array					=	 $data;
 			$message						=	 "";		
 			$EmailTemplate 					= 	 EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->first();
 			if($type=="subject"){
@@ -235,18 +253,22 @@ class EmailsTemplates{
 		return EmailTemplate::where(["SystemType"=>$slug,"CompanyID"=>$CompanyID])->pluck("EmailFrom");
 	}
 	
-		static function setCompanyFields($array,$CompanyID){
-			$CompanyData							=	Company::find($CompanyID);
-			$array['CompanyName']					=   $CompanyData->CompanyName;
-			$array['CompanyVAT']					=   $CompanyData->VAT;			
-			$array['CompanyAddress1']				=   $CompanyData->Address1;
-			$array['CompanyAddress2']				=   $CompanyData->Address1;
-			$array['CompanyAddress3']				=   $CompanyData->Address1;
-			$array['CompanyCity']					=   $CompanyData->City;
-			$array['CompanyPostCode']				=   $CompanyData->PostCode;
-			$array['CompanyCountry']				=   $CompanyData->Country;	
-			$array['Logo'] 							= 	"<img src='".getCompanyLogo($CompanyID)."' />";
-			return $array;
+	static function setCompanyFields($array,$CompanyID){
+		$CompanyData							=	Company::find($CompanyID);
+		$array['CompanyName']					=   $CompanyData->CompanyName;
+		$array['CompanyVAT']					=   $CompanyData->VAT;			
+		$array['CompanyAddress1']				=   $CompanyData->Address1;
+		$array['CompanyAddress2']				=   $CompanyData->Address1;
+		$array['CompanyAddress3']				=   $CompanyData->Address1;
+		$array['CompanyCity']					=   $CompanyData->City;
+		$array['CompanyPostCode']				=   $CompanyData->PostCode;
+		$array['CompanyCountry']				=   $CompanyData->Country;	
+		$array['Logo'] 							= 	"<img src='".getCompanyLogo($CompanyID)."' />";
+		date_default_timezone_set($CompanyData->TimeZone);
+		$array['Date'] = date("d-m-Y");
+		$array['Time'] = date("H:i:s");
+
+		return $array;
 	}
 	
 	static function CheckEmailTemplateStatus($slug,$CompanyID){
@@ -255,6 +277,7 @@ class EmailsTemplates{
 	
 	static function setAccountFields($array,$AccountID,$CompanyID,$UserID=0){
 			$RoundChargesAmount=Helper::get_round_decimal_places($CompanyID,$AccountID);
+			$dynamicfields = Account::getDynamicfields('account',$AccountID,$CompanyID);
 			$AccoutData 					= 	 Account::find($AccountID);			
 			$array['AccountName']			=	 $AccoutData->AccountName;
 			$array['FirstName']				=	 $AccoutData->FirstName;
@@ -267,11 +290,25 @@ class EmailsTemplates{
 			$array['State']					=	 $AccoutData->State;
 			$array['PostCode']				=	 $AccoutData->PostCode;
 			$array['Country']				=	 $AccoutData->Country;
+			$array['BillingAddress1']		=	 $AccoutData->BillingAddress1;
+			$array['BillingAddress2']		=	 $AccoutData->BillingAddress2;
+			$array['BillingAddress3']		=	 $AccoutData->BillingAddress3;
+			$array['BillingCity']			=	 $AccoutData->BillingCity;
+			$array['BillingPostCode']		=	 $AccoutData->BillingPostCode;
+			$array['BillingCountry']		=	 $AccoutData->BillingCountry;
+			$array['CustomerID']			=	 $dynamicfields['CustomerID'];
+			$array['DirectDebit']			=	 $dynamicfields['Direct Debit'];
+			$array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
+			$array['COCNumber']			=	 $dynamicfields['COC Number'];
+			$array['DutchProvider']			=	 $dynamicfields['Dutch Provider'];
+			
+				
 			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");		
 			$array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Symbol");
 			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  $RoundChargesAmount);
 			$array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($AccountID), $RoundChargesAmount);
-			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);	
+			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);
+
 			  if(!empty($UserID)){
 				   $UserData = user::find($UserID);
 				  if(isset($UserData->EmailFooter) && trim($UserData->EmailFooter) != '')
@@ -282,6 +319,22 @@ class EmailsTemplates{
 					$array['Signature']= '';	
 				}
 			return $array;
+	}
+
+	static function setAccountServiceFields($array,$AccountID,$UserID=0){
+		$AccountServiceData 		= 	 AccountService::find($AccountID);
+		$array['ServiceTitle']		=	 $AccountServiceData['ServiceTitle'];
+
+		if(!empty($UserID)){
+			$UserData = user::find($UserID);
+			if(isset($UserData->EmailFooter) && trim($UserData->EmailFooter) != '')
+			{
+				$array['Signature']= $UserData->EmailFooter;
+			}
+		}else{
+			$array['Signature']= '';
+		}
+		return $array;
 	}
 
 	static function SendAutoPayment($InvoiceID,$type="body",$CompanyID,$singleemail,$staticdata=array(),$data = array())
@@ -300,7 +353,7 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
-		$replace_array = EmailsTemplates::setAccountFields($replace_array, $InvoiceData->AccountID, $userID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $InvoiceData->AccountID,$CompanyID,$userID);
 		$WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID, 'WEB_URL');
 		$replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $InvoiceData->AccountID . '-' . $InvoiceData->InvoiceID . '/cview?email=' . $singleemail;
 		$replace_array['InvoiceNumber'] = $InvoiceData->FullInvoiceNumber;
@@ -339,7 +392,8 @@ class EmailsTemplates{
 			"{{PaymentMethod}}",
 			"{{PaymentNotes}}",
 			"{{PeriodFrom}}",
-			"{{PeriodTo}}"
+			"{{PeriodTo}}",
+
 		];
 
 		$extraDefault = EmailsTemplates::$fields;
@@ -375,12 +429,49 @@ class EmailsTemplates{
 		} else {
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
+		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
-		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID,$CompanyID, 0);
+		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
+		$replace_array['ServiceName'] = $data['ServiceName'];
+		$replace_array['ContractEndDate'] = $data['ContractEndDate'];
 		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
 
-		$extraSpecific = ["{{ServiceTitle}}"];
+		$extraSpecific = ["{{ServiceName}}","{{ServiceTitle}}","{{ContractStartDate}}","{{ContractEndDate}}"];
 
+		$extraDefault = EmailsTemplates::$fields;
+		$extra = array_merge($extraDefault, $extraSpecific);
+
+		foreach ($extra as $item) {
+			$item_name = str_replace(array('{', '}'), array('', ''), $item);
+			if (array_key_exists($item_name, $replace_array)) {
+				$EmailMessage = str_replace($item, $replace_array[$item_name], $EmailMessage);
+			}
+		}
+
+		return $EmailMessage;
+	}
+	static function setContractExpirePlaceholder($Account,$type="body",$CompanyID, $data = [])
+	{
+		$replace_array = $data;
+		$EmailTemplate = EmailTemplate::getSystemEmailTemplate($CompanyID, Account::ContractExpireEmailTemplate, $Account->LanguageID);
+		if ($type == "subject") {
+			$EmailMessage = $EmailTemplate->Subject;
+		} else {
+			$EmailMessage = $EmailTemplate->TemplateBody;
+		}
+		$replace_array = EmailsTemplates::setAccountServiceFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array,$Account->AccountID,$CompanyID,0);
+
+		
+		$replace_array['ServiceName'] = $data['Services'];
+		$replace_array['DaysOfExpiry'] = $data['Days'];
+		$replace_array['ContractStartDate'] = $data['ContractStartDate'];
+		$replace_array['ContractEndDate'] = $data['ContractEndDate'];
+		$replace_array['ServiceTitle'] = $data['ServiceTitle'];
+
+		$extraSpecific = ["{{DaysOfExpiry}}","{{ServiceName}}","{{ContractStartDate}}","{{ContractEndDate}}","{{ServiceTitle}}"];
 		$extraDefault = EmailsTemplates::$fields;
 		$extra = array_merge($extraDefault, $extraSpecific);
 
@@ -403,7 +494,7 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
-		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID, 0);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $Account->AccountID,$CompanyID, 0);
 		$replace_array['OutPaymentAmount'] = $data['OutPaymentAmount'];
 
 		$extraSpecific = ["{{OutPaymentAmount}}"];
@@ -435,7 +526,7 @@ class EmailsTemplates{
 			$EmailMessage = $EmailTemplate->TemplateBody;
 		}
 		$replace_array = EmailsTemplates::setCompanyFields($replace_array, $CompanyID);
-		$replace_array = EmailsTemplates::setAccountFields($replace_array, $AccountID, $userID);
+		$replace_array = EmailsTemplates::setAccountFields($replace_array, $AccountID, $CompanyID, $userID);
 		$RoundChargesAmount = Helper::get_round_decimal_places($CompanyID, $AccountID);
 
 		$replace_array['PaidAmount'] = empty($staticdata['PaidAmount'])?'':$staticdata['PaidAmount'];
@@ -490,7 +581,7 @@ class EmailsTemplates{
 		$EmailTemplate 							= 	EmailTemplate::getSystemEmailTemplate($companyID, Dispute::EMAILTEMPLATE, $Account->LanguageID );
 
 		$replace_array							=	EmailsTemplates::setCompanyFields($replace_array,$DisputeData->CompanyID);
-		$replace_array 							=	EmailsTemplates::setAccountFields($replace_array,$DisputeData->AccountID,$userID);
+		$replace_array 							=	EmailsTemplates::setAccountFields($replace_array,$DisputeData->AccountID,$DisputeData->CompanyID,$userID);
 
 		if($type=="subject"){
 			if(isset($postdata['Subject']) && !empty($postdata['Subject'])){

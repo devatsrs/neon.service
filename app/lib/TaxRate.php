@@ -22,4 +22,20 @@ class TaxRate extends \Eloquent {
         return $items;
     }
 
+    public static function calculateProductTaxAmount($TaxRateID,$Price) {
+        if($TaxRateID>0){
+            $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+            if(isset($TaxRate->TaxType) && isset($TaxRate->Amount) ) {
+                if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                    if ($TaxRate->FlatStatus == 1) {
+                        return $TaxRate->Amount;
+                    } else {
+                        return (($Price * $TaxRate->Amount) / 100);
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
 }

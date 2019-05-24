@@ -11,11 +11,13 @@ namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanySetting;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
+use App\Lib\RateTable;
 use App\Lib\TempRateTablePKGRate;
 use App\Lib\FileUploadTemplate;
 use App\Lib\Timezones;
@@ -79,7 +81,7 @@ class RateTablePKGRateUpload extends Command
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $DialStringId = 0;
         $dialcode_separator = 'null';
@@ -92,6 +94,7 @@ class RateTablePKGRateUpload extends Command
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
+                    $rateTable = RateTable::find($joboptions->RateTableID);
 
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
@@ -127,9 +130,9 @@ class RateTablePKGRateUpload extends Command
                         $data['end_row'] = $data['skipRows']['end_row'];
 
                         //convert excel to CSV
-                        $file_name_with_path = $jobfile->FilePath;
-                        $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
-                        $file_name = $NeonExcel->convertExcelToCSV($data);
+                        $file_name = $file_name2 = $file_name_with_path = $jobfile->FilePath;
+                        //$NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
+                        //$file_name = $NeonExcel->convertExcelToCSV($data);
 
                         if(isset($templateoptions->skipRows)) {
                             $skipRows              = $templateoptions->skipRows;
@@ -149,7 +152,7 @@ class RateTablePKGRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption, $data['importratesheet']);
                         $ratesheet = $NeonExcel->read();
 
                         $results = array();
@@ -167,6 +170,13 @@ class RateTablePKGRateUpload extends Command
 
                         $error = array();
 
+                        $CostComponents[] = 'OneOffCost';
+                        $CostComponents[] = 'MonthlyCost';
+                        $CostComponents[] = 'PackageCostPerMinute';
+                        $CostComponents[] = 'RecordingCostPerMinute';
+
+                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -183,10 +193,8 @@ class RateTablePKGRateUpload extends Command
                             $PackageCostPerMinuteCurrencyColumn     = 'PackageCostPerMinuteCurrency'.$id;
                             $RecordingCostPerMinuteCurrencyColumn   = 'RecordingCostPerMinuteCurrency'.$id;
 
-                            $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
-
                             // check if rate is mapped against timezone
-                            if (!empty($attrselection->$MonthlyCostColumn)) {
+                            //if (!empty($attrselection->$MonthlyCostColumn)) {
                                 $lineno = $lineno1;
 
                                 foreach ($results as $temp_row) {
@@ -214,17 +222,9 @@ class RateTablePKGRateUpload extends Command
                                             $selection_Code = $attrselection->Code;
                                             if (!empty($selection_Code) && isset($temp_row[$selection_Code]) && trim($temp_row[$selection_Code]) != '') {
                                                 $tempratetabledata['Code'] = trim($temp_row[$selection_Code]);
+                                                $tempratetabledata['Description'] = $tempratetabledata['Code'];
                                             } else {
-                                                $error[] = 'Code is blank at line no:' . $lineno;
-                                            }
-                                        }
-
-                                        if (isset($attrselection->Description) && !empty($attrselection->Description)) {
-                                            $selection_Description = $attrselection->Description;
-                                            if (!empty($selection_Description) && !empty($temp_row[$selection_Description])) {
-                                                $tempratetabledata['Description'] = $temp_row[$selection_Description];
-                                            } else {
-                                                $error[] = 'Description is blank at line no:' . $lineno;
+                                                $error[] = 'Package Name is blank at line no:' . $lineno;
                                             }
                                         }
 
@@ -248,35 +248,49 @@ class RateTablePKGRateUpload extends Command
                                             $tempratetabledata['Change'] = 'I';
                                         }
 
-                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
+                                        $CostComponentsMapped = 0;
+
+                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn]) && trim($temp_row[$attrselection->$OneOffCostColumn]) != '') {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
-                                            $temp_row[$attrselection->$MonthlyCostColumn] = preg_replace('/[^.0-9\-]/', '', $temp_row[$attrselection->$MonthlyCostColumn]); //remove anything but numbers and 0 (only allow numbers,-dash,.dot)
-                                            if (is_numeric(trim($temp_row[$attrselection->$MonthlyCostColumn]))) {
-                                                $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
-                                            } else {
-                                                $error[] = 'Monthly Cost is not numeric at line no:' . $lineno;
-                                            }
-                                        } elseif ($tempratetabledata['Change'] == 'D') {
-                                            $tempratetabledata['MonthlyCost'] = 0;
-                                        } elseif ($tempratetabledata['Change'] != 'D') {
-                                            $error[] = 'Monthly Cost is blank at line no:' . $lineno;
+                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn]) && trim($temp_row[$attrselection->$MonthlyCostColumn]) != '') {
+                                            $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
+                                            $CostComponentsMapped++;
+                                        } else {
+                                            $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn]) && trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['PackageCostPerMinute'] = trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['PackageCostPerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) && trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['RecordingCostPerMinute'] = trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]);
+                                            $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['RecordingCostPerMinute'] = NULL;
+                                        }
+
+                                        if($CostComponentsMapped > 0) {
+                                            $CostComponentsError = 1;
+                                            foreach ($CostComponents as $key => $component) {
+                                                if ($tempratetabledata[$component] != NULL) {
+                                                    $CostComponentsError = 0;
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            $CostComponentsError = 0;
+                                        }
+                                        if($CostComponentsError==1) {
+                                            $error[] = 'All Cost Component is blank at line no:' . $lineno;
                                         }
 
                                         if (!empty($attrselection->$OneOffCostCurrencyColumn)) {
@@ -362,7 +376,7 @@ class RateTablePKGRateUpload extends Command
 
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
-                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['MonthlyCost']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {
@@ -388,7 +402,7 @@ class RateTablePKGRateUpload extends Command
                                     }
                                     $lineno++;
                                 } // loop over
-                            } // if rate is mapped against timezone condition
+                            //} // if rate is mapped against timezone condition
 
                             if(!empty($batch_insert_array) || !empty($batch_insert_array2)){
                                 Log::info('Batch insert start');
@@ -415,7 +429,12 @@ class RateTablePKGRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    $query = "CALL  prc_WSProcessRateTablePKGRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    $RateApprovalProcess = CompanySetting::getKeyVal($CompanyID,'RateApprovalProcess');
+                    if($RateApprovalProcess == 1 && $rateTable->AppliedTo != RateTable::APPLIED_TO_VENDOR) {
+                        $query = "CALL  prc_WSProcessRateTablePKGRateAA ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    } else {
+                        $query = "CALL  prc_WSProcessRateTablePKGRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "'," . $CurrencyID . "," . $joboptions->radio_list_option . ",'" . $p_UserName . "')";
+                    }
                     Log::info("start " . $query);
 
                     try {

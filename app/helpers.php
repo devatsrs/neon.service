@@ -274,7 +274,23 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{AccountBalance}}",
         "{{AccountExposure}}",
         "{{AccountBlocked}}",
-        "{{InvoiceLink}}"
+        "{{InvoiceLink}}",
+        "{{BillingAddress1}}",
+        "{{BillingAddress2}}",
+        "{{BillingAddress3}}",
+        "{{BillingCity}}",
+        "{{BillingPostCode}}",
+        "{{BillingCountry}}",
+        "{{BillingEmail}}",
+        "{{CustomerID}}",
+        "{{DirectDebit}}",
+        "{{RegisterDutchFoundation}}",
+        "{{COCNumber}}",
+        "{{DutchProvider}}",
+        "{{CountDown}}",
+        "{{Date}}",
+        "{{Time}}",
+
     ];
 
     foreach($extra as $item){
@@ -702,7 +718,7 @@ function remove_extra_columns($usage_data,$usage_data_table){
 				 $keys[$index] = $table_h_row['UsageName'];
 				 $usage_data_row = array_combine($keys, array_values($usage_data_row));
             }
-        }		
+        }
 
         $usage_data[$row_key] = $usage_data_row;
     }
@@ -828,24 +844,4 @@ function removeSpaceFromArrayKey($arr=array()){
         $arr = array_combine($a, $b);
     }
     return $arr;
-}
-
-/**
- * Get Round up decimal places from company or account
- * @param $array
- */
-function get_round_decimal_places($AccountID = 0) {
-
-    if($AccountID>0){
-        $RoundChargesAmount = \App\Lib\AccountBilling::getRoundChargesAmount($AccountID,0);
-    }else{
-        $RoundCharges=\App\Lib\CompanySetting::getKeyVal('RoundChargesAmount');
-        if($RoundCharges!='Invalid Key'){
-            $RoundChargesAmount = $RoundCharges;
-        }
-    }
-    if(empty($RoundChargesAmount)){
-        $RoundChargesAmount = 2;
-    }
-    return $RoundChargesAmount;
 }

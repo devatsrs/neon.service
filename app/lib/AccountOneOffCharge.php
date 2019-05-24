@@ -13,8 +13,8 @@ class AccountOneOffCharge extends \Eloquent {
         return true;
     }
 
-    public static function getAccountOneoffChargesByDate($AccountID,$ServiceID,$StartDate,$EndDate){
-        $Result = AccountOneOffCharge::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID])->whereBetween('Date',[$StartDate,$EndDate])->get();
+    public static function getAccountOneoffChargesByDate($AccountID,$ServiceID,$AccountServiceID,$StartDate,$EndDate){
+        $Result = AccountOneOffCharge::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->whereBetween('Date',[$StartDate,$EndDate])->get();
         return $Result;
     }
 }

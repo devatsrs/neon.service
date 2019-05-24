@@ -11,11 +11,14 @@ namespace App\Console\Commands;
 
 use App\Lib\AmazonS3;
 use App\Lib\CompanyConfiguration;
+use App\Lib\CompanySetting;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
+use App\Lib\Currency;
 use App\Lib\Job;
 use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
+use App\Lib\RateTable;
 use App\Lib\RoutingCategory;
 use App\Lib\TempRateTableRate;
 use App\Lib\FileUploadTemplate;
@@ -81,7 +84,7 @@ class RateTableRateUpload extends Command
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $p_blocked = 0;
         $p_preference = 0;
@@ -96,6 +99,7 @@ class RateTableRateUpload extends Command
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
                 $joboptions = json_decode($jobfile->Options);
                 if (count($joboptions) > 0) {
+                    $rateTable = RateTable::find($joboptions->RateTableID);
 
                     if(isset($joboptions->uploadtemplate) && !empty($joboptions->uploadtemplate)){
                         $uploadtemplate = FileUploadTemplate::find($joboptions->uploadtemplate);
@@ -182,16 +186,16 @@ class RateTableRateUpload extends Command
                             $data['end_row_sheet2'] = $data['skipRows_sheet2']['end_row'];
                         }
                         //convert excel to CSV
-                        $file_name_with_path = $jobfile->FilePath;
-                        $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
-                        $file_name = $NeonExcel->convertExcelToCSV($data);
+                        $file_name = $file_name2 = $file_name_with_path = $jobfile->FilePath;
+                        //$NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
+                        //$file_name = $NeonExcel->convertExcelToCSV($data);
 
                         if(!empty($data['importdialcodessheet'])) {
                             $data2 = $data;
                             $data2['start_row'] = $data["start_row_sheet2"];
                             $data2['end_row'] = $data["end_row_sheet2"];
-                            $NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data2['option'], $data2['importdialcodessheet']);
-                            $file_name2 = $NeonExcelSheet2->convertExcelToCSV($data2);
+                            //$NeonExcelSheet2 = new NeonExcelIO($file_name_with_path, $data2['option'], $data2['importdialcodessheet']);
+                            //$file_name2 = $NeonExcelSheet2->convertExcelToCSV($data2);
                         }
 
                         if(isset($templateoptions->skipRows)) {
@@ -212,14 +216,14 @@ class RateTableRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption, $data['importratesheet']);
                         $ratesheet = $NeonExcel->read();
 
                         if(!empty($data['importdialcodessheet'])) {
                             $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
                             NeonExcelIO::$start_row = intval($skipRows_sheet2->start_row);
                             NeonExcelIO::$end_row = intval($skipRows_sheet2->end_row);
-                            $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption);
+                            $NeonExcel2 = new NeonExcelIO($file_name2, (array)$csvoption, $data2['importdialcodessheet']);
                             $dialcodessheet = $NeonExcel2->read();
                         }
 
@@ -332,6 +336,9 @@ class RateTableRateUpload extends Command
 
                         $error = array();
 
+                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+                        $IntervalIndexes = [""=>"Select","0"=>"One","1"=>"Two","2"=>"Three"];
+
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
 
@@ -342,10 +349,16 @@ class RateTableRateUpload extends Command
                             $RateNColumn            = 'RateN'.$id;
                             $Interval1Column        = 'Interval1'.$id;
                             $IntervalNColumn        = 'IntervalN'.$id;
+                            $MinimumDurationColumn  = 'MinimumDuration'.$id;
+                            $Interval1IndexColumn   = 'Interval1Index'.$id;
+                            $IntervalNIndexColumn   = 'IntervalNIndex'.$id;
+                            $MinimumDurationIndexColumn = 'MinimumDurationIndex'.$id;
                             $PreferenceColumn       = 'Preference'.$id;
                             $ConnectionFeeColumn    = 'ConnectionFee'.$id;
                             $BlockedColumn          = 'Blocked'.$id;
                             $RoutingCategory        = 'RoutingCategory'.$id;
+                            $RateCurrencyColumn     = 'RateCurrency'.$id;
+                            $ConnectionFeeCurrencyColumn = 'ConnectionFeeCurrency'.$id;
 
                             // check if rate is mapped against timezone
                             if (!empty($attrselection->$Rate1Column)) {
@@ -367,6 +380,8 @@ class RateTableRateUpload extends Command
                                     $tempratetabledata = array();
                                     $tempratetabledata['codedeckid'] = $joboptions->codedeckid;
                                     $tempratetabledata['ProcessId'] = (string)$ProcessID;
+
+                                    $continue = 0;
 
                                     //check empty row
                                     $checkemptyrow = array_filter(array_values($temp_row));
@@ -453,6 +468,12 @@ class RateTableRateUpload extends Command
                                             }
                                         }
 
+                                        if (!empty($attrselection->Type) && !empty($temp_row[$attrselection->Type])) {
+                                            $tempratetabledata['Type'] = $temp_row[$attrselection->Type];
+                                        } else {
+                                            $tempratetabledata['Type'] = NULL;
+                                        }
+
                                         /*if (isset($attrselection->FromCurrency) && !empty($attrselection->FromCurrency) && $attrselection->FromCurrency != 0) {
                                             $tempratetabledata['CurrencyID'] = $attrselection->FromCurrency;
                                         }*/
@@ -533,11 +554,96 @@ class RateTableRateUpload extends Command
                                         if (!empty($attrselection->$ConnectionFeeColumn) && isset($temp_row[$attrselection->$ConnectionFeeColumn])) {
                                             $tempratetabledata['ConnectionFee'] = trim($temp_row[$attrselection->$ConnectionFeeColumn]);
                                         }
-                                        if (!empty($attrselection->$Interval1Column) && isset($temp_row[$attrselection->$Interval1Column])) {
-                                            $tempratetabledata['Interval1'] = intval(trim($temp_row[$attrselection->$Interval1Column]));
+
+                                        if (!empty($attrselection->$RateCurrencyColumn)) {
+                                            if (array_key_exists($attrselection->$RateCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
+                                                $tempratetabledata['RateCurrency'] = $attrselection->$RateCurrencyColumn;
+                                            } else if (isset($temp_row[$attrselection->$RateCurrencyColumn]) && array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies)) {// if currency selected from file
+                                                $tempratetabledata['RateCurrency'] = array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies);
+                                            } else {
+                                                $tempratetabledata['RateCurrency'] = NULL;
+                                                $error[] = 'Rate Currency is not match at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempratetabledata['RateCurrency'] = NULL;
                                         }
+
+                                        if (!empty($attrselection->$ConnectionFeeCurrencyColumn)) {
+                                            if (array_key_exists($attrselection->$ConnectionFeeCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
+                                                $tempratetabledata['ConnectionFeeCurrency'] = $attrselection->$ConnectionFeeCurrencyColumn;
+                                            } else if (isset($temp_row[$attrselection->$ConnectionFeeCurrencyColumn]) && array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies)) {// if currency selected from file
+                                                $tempratetabledata['ConnectionFeeCurrency'] = array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies);
+                                            } else {
+                                                $tempratetabledata['ConnectionFeeCurrency'] = NULL;
+                                                $error[] = 'Connection Fee Currency is not match at line no:' . $lineno;
+                                            }
+                                        } else {
+                                            $tempratetabledata['ConnectionFeeCurrency'] = NULL;
+                                        }
+
+                                        if (!empty($attrselection->$Interval1Column) && isset($temp_row[$attrselection->$Interval1Column])) {
+                                            $tempratetabledata['Interval1'] = 1;
+                                            if (!empty($attrselection->IntervalSeperator) && isset($attrselection->$Interval1IndexColumn) && $attrselection->$Interval1IndexColumn != '') { // check if intervals seperator is mapped and index is mapped for Interval1
+                                                if (strpos($temp_row[$attrselection->$Interval1Column], $attrselection->IntervalSeperator) !== false) {
+                                                    $Interval1Index         = $attrselection->$Interval1IndexColumn; // which index to get from seperated value
+                                                    $Intervals              = explode($attrselection->IntervalSeperator,$temp_row[$attrselection->$Interval1Column]);
+                                                    if(isset($Intervals[$Interval1Index])) {
+                                                        $tempratetabledata['Interval1'] = $Intervals[$Interval1Index];
+                                                    } else {
+                                                        $continue++;
+                                                        $error[] = 'Selected Index ('. $IntervalIndexes[$Interval1Index] .') not found in Interval1 column at line no:' . $lineno;
+                                                    }
+                                                } else {
+                                                    $continue++;
+                                                    $error[] = 'Selected Separator ('. $attrselection->IntervalSeperator .') not found in Interval1 column at line no:' . $lineno;
+                                                }
+                                            } else {
+                                                $tempratetabledata['Interval1']  = intval(trim($temp_row[$attrselection->$Interval1Column]));
+                                            }
+                                        }
+
                                         if (!empty($attrselection->$IntervalNColumn) && isset($temp_row[$attrselection->$IntervalNColumn])) {
-                                            $tempratetabledata['IntervalN'] = intval(trim($temp_row[$attrselection->$IntervalNColumn]));
+                                            $tempratetabledata['IntervalN'] = 1;
+                                            if (!empty($attrselection->IntervalSeperator) && isset($attrselection->$IntervalNIndexColumn) && $attrselection->$IntervalNIndexColumn != '') { // check if intervals seperator is mapped and index is mapped for IntervalN - Intervals seperated by - or /
+                                                if (strpos($temp_row[$attrselection->$IntervalNColumn], $attrselection->IntervalSeperator) !== false) {
+                                                    $IntervalNIndex         = $attrselection->$IntervalNIndexColumn; // which index to get from seperated value
+                                                    $Intervals              = explode($attrselection->IntervalSeperator,$temp_row[$attrselection->$IntervalNColumn]);
+
+                                                    if(isset($Intervals[$IntervalNIndex])) {
+                                                        $tempratetabledata['IntervalN']  = $Intervals[$IntervalNIndex];
+                                                    } else {
+                                                        $continue++;
+                                                        $error[] = 'Selected Index ('. $IntervalIndexes[$IntervalNIndex] .') not found in IntervalN column at line no:' . $lineno;
+                                                    }
+                                                } else {
+                                                    $continue++;
+                                                    $error[] = 'Selected Separator ('. $attrselection->IntervalSeperator .') not found in IntervalN column at line no:' . $lineno;
+                                                }
+                                            } else {
+                                                $tempratetabledata['IntervalN']  = intval(trim($temp_row[$attrselection->$IntervalNColumn]));
+                                            }
+                                        }
+
+                                        if (!empty($attrselection->$MinimumDurationColumn) && isset($temp_row[$attrselection->$MinimumDurationColumn])) {
+                                            $tempratetabledata['MinimumDuration'] = 0;
+                                            if (!empty($attrselection->IntervalSeperator) && isset($attrselection->$MinimumDurationIndexColumn) && $attrselection->$MinimumDurationIndexColumn != '') { // check if intervals seperator is mapped and index is mapped for MinimumDuration - Intervals seperated by - or /
+                                                if (strpos($temp_row[$attrselection->$MinimumDurationColumn], $attrselection->IntervalSeperator) !== false) {
+                                                    $MinimumDurationIndex           = $attrselection->$MinimumDurationIndexColumn; // which index to get from seperated value
+                                                    $Intervals                      = explode($attrselection->IntervalSeperator,$temp_row[$attrselection->$MinimumDurationColumn]);
+
+                                                    if(isset($Intervals[$MinimumDurationIndex])) {
+                                                        $tempratetabledata['MinimumDuration']    = $Intervals[$MinimumDurationIndex];
+                                                    } else {
+                                                        $continue++;
+                                                        $error[] = 'Selected Index ('. $IntervalIndexes[$MinimumDurationIndex] .') not found in Min. Duration column at line no:' . $lineno;
+                                                    }
+                                                } else {
+                                                    $continue++;
+                                                    $error[] = 'Selected Separator ('. $attrselection->IntervalSeperator .') not found in Min. Duration column at line no:' . $lineno;
+                                                }
+                                            } else {
+                                                $tempratetabledata['MinimumDuration']    = intval(trim($temp_row[$attrselection->$MinimumDurationColumn]));
+                                            }
                                         }
 
                                         if (!empty($attrselection->$PreferenceColumn) && isset($temp_row[$attrselection->$PreferenceColumn])) {
@@ -569,7 +675,7 @@ class RateTableRateUpload extends Command
 
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
-                                        if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['Rate']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+                                        if ($continue==0 && isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && (isset($tempratetabledata['Rate']) || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {
@@ -622,8 +728,12 @@ class RateTableRateUpload extends Command
                     $JobStatusMessage = array();
                     $duplicatecode=0;
 
-                    $query = "CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_blocked."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$seperatecolumn.",".$CurrencyID.",".$joboptions->radio_list_option.",'".$p_UserName."')";
-
+                    $RateApprovalProcess = CompanySetting::getKeyVal($CompanyID,'RateApprovalProcess');
+                    if($RateApprovalProcess == 1 && $rateTable->AppliedTo != RateTable::APPLIED_TO_VENDOR) {
+                        $query = "CALL  prc_WSProcessRateTableRateAA ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_blocked."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$seperatecolumn.",".$CurrencyID.",".$joboptions->radio_list_option.",'".$p_UserName."')";
+                    } else {
+                        $query = "CALL  prc_WSProcessRateTableRate ('" . $joboptions->RateTableID . "','" . $joboptions->checkbox_replace_all . "','" . $joboptions->checkbox_rates_with_effected_from . "','" . $ProcessID . "','" . $joboptions->checkbox_add_new_codes_to_code_decks . "','" . $CompanyID . "','".$p_blocked."','".$p_preference."','".$DialStringId."','".$dialcode_separator."',".$seperatecolumn.",".$CurrencyID.",".$joboptions->radio_list_option.",'".$p_UserName."')";
+                    }
                     Log::info("start ".$query);
 
                     try{

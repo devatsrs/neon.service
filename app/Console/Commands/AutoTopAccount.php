@@ -30,7 +30,7 @@ class AutoTopAccount extends Command {
 	 *
 	 * @var string
 	 */
-	protected $name = 'AutoTopAccount';
+	protected $name = 'autotopaccount';
 
 	/**
 	 * The console command description.
@@ -93,30 +93,31 @@ class AutoTopAccount extends Command {
 			if(!empty($AutoPaymentAccountList) && !empty($CompanyConfiguration)) {
 				foreach ($AutoPaymentAccountList as $AutoPaymentAccount) {
 					$AccountBalance = AccountBalance::getAccountBalanceWithActiveCall($AutoPaymentAccount->AccountID);
-					if ($AccountBalance >= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
+					if ($AccountBalance <= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
 						$DepositAccount = AccountPaymentAutomation::calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration);
 						if (!empty($DepositAccount)) {
-							if ($DepositAccount['status'] == "success") {
+							if ($DepositAccount[0] == "success") {
 								$successRecord = array();
 								$successRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 								$successRecord["AccountName"] = $AutoPaymentAccount->AccountName;
 								$successRecord["Number"] = $AutoPaymentAccount->Number;
 								$successRecord["Amount"] = $AutoPaymentAccount->TopupAmount;
 								$SuccessDepositAccount[count($SuccessDepositAccount) + 1] = $successRecord;
-								Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
-							} else if ($DepositAccount['status'] == "failed") {
+								//Log::info('Call the deposit API $DepositAccount success.' . count($SuccessDepositAccount));
+							} else if ($DepositAccount[0] == "failed") {
 								$failedRecord = array();
 								$failedRecord["AccountID"] = $AutoPaymentAccount->AccountID;
 								$failedRecord["AccountName"] = $AutoPaymentAccount->AccountName;
 								$failedRecord["Number"] = $AutoPaymentAccount->Number;
-								$failedRecord["Response"] = $DepositAccount['response'];
+								$failedRecord["Response"] = $DepositAccount[1];
 								$FailureDepositFund[count($FailureDepositFund) + 1] = $failedRecord;
-								Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
+								//Log::info('Call the deposit API $DepositAccount failed.' . count($FailureDepositFund));
 							}
 						}
 					}
 
 				}
+
 
 				if (count($AutoPaymentAccountList) > 0) {
 					if (count($FailureDepositFund) > 0 || count($SuccessDepositAccount)) {
@@ -129,7 +130,7 @@ class AutoTopAccount extends Command {
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('Y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'AutoTopAccount Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -142,7 +143,7 @@ class AutoTopAccount extends Command {
             Log::error($e);
             $this->info('Failed:' . $e->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('Y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
@@ -178,9 +179,9 @@ class AutoTopAccount extends Command {
 		$emaildata['EmailToName'] = '';
 		$emaildata['Subject'] = 'Auto Top Up Notification Email';
 		//$emaildata['Message'] = $Message;
-		Log::info("AutoTopUpNotificationEmail 1" . count($emaildata['SuccessDepositAccount']));
-		Log::info("AutoTopUpNotificationEmail 2" . count($emaildata['FailureDepositFund']));
-		Log::info("AutoTopUpNotificationEmail 3" . count($emaildata['ErrorDepositFund']));
+		//Log::info("AutoTopUpNotificationEmail 1" . count($emaildata['SuccessDepositAccount']));
+		//Log::info("AutoTopUpNotificationEmail 2" . count($emaildata['FailureDepositFund']));
+		//Log::info("AutoTopUpNotificationEmail 3" . count($emaildata['ErrorDepositFund']));
 		$result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
 		return $result;
 	}
@@ -209,7 +210,7 @@ class AutoTopAccount extends Command {
 		if (!NeonAPI::endsWith($CompanyConfiguration, "/")) {
 			$url = $CompanyConfiguration . "/";
 		}
-		Log::info("Balance API URL" . $url);
+		//Log::info("Balance API URL" . $url);
 
 		$APIresponse = NeonAPI::callAPI($postdata, "api/account/checkBalance", $url);
 
@@ -219,7 +220,7 @@ class AutoTopAccount extends Command {
 			//echo "cURL Error #:" . $err;
 		} else {
 			$response = json_decode($APIresponse["response"]);
-			Log::info(print_r($APIresponse["response"], true));
+			//Log::info(print_r($APIresponse["response"], true));
 			if (!empty($response->amount) && $response->amount >= $AutoPaymentAccount->MinThreshold) {
 				$topUpAmount = true;
 				return $topUpAmount;
@@ -253,7 +254,7 @@ class AutoTopAccount extends Command {
 		if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
 			$url = $CompanyConfiguration . "/";
 		}
-		Log::info("Balance API URL" . $url);
+		//Log::info("Balance API URL" . $url);
 		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
 
 
@@ -264,12 +265,12 @@ class AutoTopAccount extends Command {
 			//Log::info(print_r($APIresponse["error"],true));
 			$DepositAccount[0] = "error";
 			$DepositAccount[1] = $response->ErrorMessage;
-			Log::info("error " . print_r($DepositAccount,true));
+			//Log::info("error " . print_r($DepositAccount,true));
 			//echo "cURL Error #:" . $err;
 		} else {
 			//$accountresponse["response"] = $response;
 			$response = json_decode($APIresponse["response"]);
-			Log::info("Succcess" . print_r($response,true));
+			//Log::info("Succcess" . print_r($response,true));
 			$responseCode = $APIresponse["HTTP_CODE"];
 			if ($responseCode == 200) {
 				$DepositAccount[0] = "success";
