@@ -13,7 +13,7 @@ class ClarityPBX{
     private static $config = array();
     private static $cli;
     private static $timeout = 0; /* 60 seconds timeout */
-    private static $dbname1 = 'clarity';
+    private static $dbname = 'clarity';
 
     public function __construct($CompanyGatewayID){
         $setting = GatewayAPI::getSetting($CompanyGatewayID, 'ClarityPBX');
@@ -24,8 +24,8 @@ class ClarityPBX{
                 self::$config[$configkey] = $configval;
             }
         }
-        if (count(self::$config) && isset(self::$config['dbserver_read']) && isset(self::$config['username']) && isset(self::$config['password'])) {
-            Config::set('database.connections.pgsql.host',self::$config['dbserver_read']);
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+            Config::set('database.connections.pgsql.host',self::$config['dbserver']);
             Config::set('database.connections.pgsql.database',self::$dbname);
             Config::set('database.connections.pgsql.username',self::$config['username']);
             Config::set('database.connections.pgsql.password',self::$config['password']);
@@ -35,7 +35,7 @@ class ClarityPBX{
 
     public static function testConnection(){
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver_read']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
 
             try {
                 if (DB::connection('pgsql')->getDatabaseName()) {
@@ -52,11 +52,11 @@ class ClarityPBX{
 
     public static function getAccountCDRs($addparams = array()){
         $response = array();
-        if (count(self::$config) && isset(self::$config['dbserver_read']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
             try {
 
                 $query = "select
-                        cdr.src,cdr.dest,cdr.call_id,cdr.sip_code,cdr.start_time,cdr.answer_time,cdr.end_time,cdr.duration_sec,cdr.src_ip,
+                        cdr.src,cdr.dest,cdr.id AS call_id,cdr.sip_code,cdr.start_time,cdr.answer_time,cdr.end_time,cdr.duration_sec,cdr.src_ip,cdr.dest_ip,
                         crp.rate_bill_sec,crp.rate_cost_net,crp.vendor_bill_sec,crp.vendor_cost,
                         crs.rate_prefix,customer.descr AS customer_name,vendor.descr AS vendor_name
                     from
