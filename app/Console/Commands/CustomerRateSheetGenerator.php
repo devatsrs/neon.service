@@ -194,10 +194,17 @@ class CustomerRateSheetGenerator extends Command {
                             DB::beginTransaction();
 
                             $Timezones = array();
+                            $RatePrefix='';
+
                             if(is_array($joboptions->Timezones)) {
                                 $Timezones = $joboptions->Timezones;
                             } else {
                                 $Timezones[] = $joboptions->Timezones;
+                            }
+
+                            //RatePrefix
+                            if(!empty($joboptions->RatePrefix)){
+                                $RatePrefix=$joboptions->RatePrefix;
                             }
 
                             if($CustomerEmailSend==1 && is_array($joboptions->Trunks)){
@@ -239,7 +246,8 @@ class CustomerRateSheetGenerator extends Command {
                                             $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
                                             $timezonename = Timezones::find($Timezone)->Title;
                                             Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                            $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $Timezone . "')");
+                                            $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $Timezone . "','".$RatePrefix."')");
+
                                             Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                             if (empty($excel_data)) {
                                                 $msg = 'No rate sheet data found against account: ' . $account->AccountName . ' trunk: ' . $trunkname . ' timezone: ' . $timezonename;
@@ -285,7 +293,8 @@ class CustomerRateSheetGenerator extends Command {
                                             $trunkname = DB::table('tblTrunk')->where(array('TrunkID' => $trunk))->pluck('Trunk');
                                             $timezonename = Timezones::find($Timezone)->Title;
                                             Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                            $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $Timezone . "')");
+                                            $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $Timezone . "','".$RatePrefix."')");
+                                            Log::info("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $trunk . "','" . $Timezone . "','".$RatePrefix."')");
                                             Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                             Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                             if (empty($excel_data)) {
@@ -329,7 +338,8 @@ class CustomerRateSheetGenerator extends Command {
                                     foreach ($Timezones as $Timezone) {
                                         $timezonename = Timezones::find($Timezone)->Title;
                                         Log::info('job start prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
-                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "','" . $Timezone . "')");
+                                        $excel_data = DB::select("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "','" . $Timezone . "','".$RatePrefix."')");
+                                        Log::info("CALL prc_WSGenerateRateSheet(" . $account->AccountID . ",'" . $joboptions->Trunks . "','" . $Timezone . "','".$RatePrefix."')");
                                         if (empty($excel_data)) {
                                             $msg = 'No rate sheet data found against account: ' . $account->AccountName . ' trunk: ' . $trunkname . ' timezone: ' . $timezonename;
                                             Log::info($msg);
