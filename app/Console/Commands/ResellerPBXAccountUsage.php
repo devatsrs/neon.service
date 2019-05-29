@@ -152,6 +152,8 @@ class ResellerPBXAccountUsage extends Command
             if(isset($cronsetting['StartDate']) && !empty($cronsetting['StartDate'])){
                 $cronsetting['StartDate'] = $cronsetting['EndDate'] = '';
                 $dataactive['Settings'] = json_encode($cronsetting);
+
+                $CronJob->update($dataactive);
             }
             //TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
 
