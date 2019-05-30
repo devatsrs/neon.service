@@ -86,5 +86,55 @@ class ClarityPBX{
 
     }
 
+    public static function updateAccountBalance($addparams = array()){
+        $response = array();
+        if (count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])) {
+            try {
+                $findAccountQuery = "SELECT
+                                        COUNT(cbc.*)
+                                    FROM
+                                        customer_bg_credit_ctrl cbc
+                                    WHERE
+                                        cbc.customer_bg_id = (
+                                            SELECT cb.id FROM customer_bg cb
+                                            JOIN customer c on c.id = cb.customer_id
+                                            WHERE c.descr = '".$addparams['AccountName']."'
+                                            ORDER BY cb.id ASC LIMIT 1
+                                        )";
+                Log::info($findAccountQuery);
+                $findAccountResult = DB::connection('pgsql')->select($findAccountQuery);
+
+                if($findAccountResult[0]->count > 0) {
+                    $calc = $addparams['Recall'] == 1 ? '-' : '+';
+                    $query = "UPDATE
+                                customer_bg_credit_ctrl
+                            SET credit_bal = credit_bal ".$calc." ".$addparams['Amount']."
+                            WHERE
+                                customer_bg_id = (
+                                    SELECT cb.id FROM customer_bg cb
+                                    JOIN customer c on c.id = cb.customer_id
+                                    WHERE c.descr = '".$addparams['AccountName']."'
+                                    ORDER BY cb.id ASC LIMIT 1
+                                )";
+                    Log::info($query);
+                    $result = DB::connection('pgsql')->select($query);
+
+                    $response['Status'] = "OK";
+                } else {
+                    $response['faultString'] = $addparams['AccountName']." : Account or Account Balance entry not found in Gateway.";
+                    $response['faultCode'] = "400";
+                }
+
+            } catch (Exception $e) {
+                $response['faultString'] = $e->getMessage();
+                $response['faultCode'] = $e->getCode();
+                Log::error("Class Name:" . __CLASS__ . ",Method: " . __METHOD__ . ", Fault. Code: " . $e->getCode() . ", Reason: " . $e->getMessage());
+                throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+
+    }
+
 
 }
