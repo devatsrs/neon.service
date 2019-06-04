@@ -145,11 +145,11 @@ class VendorCDRRecalculate extends Command {
                 }
                 //if(count($skiped_account_data) == 0) {
                 DB::connection('sqlsrvcdr')->beginTransaction();
-                DB::connection('sqlsrv2')->beginTransaction();
+               // DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrv2')->statement(" call  prc_DeleteVCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CLI."','".$CLD."',".intval($zerovaluebuyingcost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."')");
                 DB::connection('sqlsrvcdr')->statement("call  prc_insertVendorCDR ('" . $ProcessID . "','".$temptableName."')");
                 DB::connection('sqlsrvcdr')->commit();
-                DB::connection('sqlsrv2')->commit();
+               // DB::connection('sqlsrv2')->commit();
                 //}
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== vendor cdr transaction end =============================');
