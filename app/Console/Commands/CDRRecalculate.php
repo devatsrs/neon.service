@@ -154,11 +154,11 @@ class CDRRecalculate extends Command {
                 }
                 //if(count($skiped_account_data) == 0) {
                 DB::connection('sqlsrvcdr')->beginTransaction();
-                DB::connection('sqlsrv2')->beginTransaction();
+                //DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$ResellerOwner."')");
                 DB::connection('sqlsrvcdr')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
                 DB::connection('sqlsrvcdr')->commit();
-                DB::connection('sqlsrv2')->commit();
+                //DB::connection('sqlsrv2')->commit();
                 //}
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== cdr transaction end =============================');
