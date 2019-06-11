@@ -97,7 +97,8 @@ class Translation extends \Eloquent {
             if (array_key_exists($systemname, $json_file)) {
                 unset($json_file[$system_name]);
             }
-        $val = utf8_encode($value);
+        //$val = utf8_encode($value);
+        $val = $value;
         $json_file[$systemname]= $val;
         Log::info("from model ".$system_name.' '.($val));
             try {
