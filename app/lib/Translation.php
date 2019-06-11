@@ -91,6 +91,7 @@ class Translation extends \Eloquent {
     public static function update_label($labels,$systemname,$value){
 
         $json_file = json_decode($labels->Translation, true);
+        Log::info("update_label ". print_r($json_file,true));
         if(empty($json_file) or $json_file == 0){$json_file = array();}
         $system_name=($systemname);
 
@@ -101,6 +102,7 @@ class Translation extends \Eloquent {
         $val = $value;
         $json_file[$systemname]= $val;
         Log::info("from model ".$system_name.' '.($val));
+        Log::info("update_label 1". $labels->TranslationID . ' ' .print_r($json_file,true));
             try {
                 $update = DB::table('tblTranslation')
                     ->where(['TranslationID' => $labels->TranslationID])
