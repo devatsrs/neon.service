@@ -112,7 +112,7 @@ class RateTableGenerator extends Command {
             $info = $error = array();
             if($RateGenerator->SelectType == \RateGenerator::Package) { // for DID
 
-                $query = "CALL prc_WSGenerateRateTablePkg(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
+                $query = "CALL prc_WSGenerateRateTablePackage(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                 Log::info($query);
                 $JobStatusMessage = DB::select($query);
                 $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
