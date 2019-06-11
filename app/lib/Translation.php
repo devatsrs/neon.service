@@ -92,6 +92,7 @@ class Translation extends \Eloquent {
 
         $json_file = json_decode($labels->Translation, true);
         Log::info("update_label ". print_r($json_file,true));
+        Log::info("update_label before". json_encode($json_file));
         if(empty($json_file) or $json_file == 0){$json_file = array();}
         $system_name=($systemname);
 
