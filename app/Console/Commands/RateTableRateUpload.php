@@ -336,7 +336,11 @@ class RateTableRateUpload extends Command
 
                         $error = array();
 
-                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+                        $prefixKeyword          = 'DBDATA-';
+                        $includePrefix          = 1;
+                        $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID,$includePrefix); // to check when currency mapped from DB
+                        $component_currencies2  = Currency::getCurrencyDropdownIDList($CompanyID);  // to check when currency mapped from File
+
                         $IntervalIndexes = [""=>"Select","0"=>"One","1"=>"Two","2"=>"Three"];
 
                         //get how many rates mapped against timezones
@@ -557,9 +561,9 @@ class RateTableRateUpload extends Command
 
                                         if (!empty($attrselection->$RateCurrencyColumn)) {
                                             if (array_key_exists($attrselection->$RateCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['RateCurrency'] = $attrselection->$RateCurrencyColumn;
-                                            } else if (isset($temp_row[$attrselection->$RateCurrencyColumn]) && array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['RateCurrency'] = array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies);
+                                                $tempratetabledata['RateCurrency'] = str_replace($prefixKeyword,'',$attrselection->$RateCurrencyColumn);
+                                            } else if (isset($temp_row[$attrselection->$RateCurrencyColumn]) && array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['RateCurrency'] = array_search($temp_row[$attrselection->$RateCurrencyColumn], $component_currencies2);
                                             } else {
                                                 $tempratetabledata['RateCurrency'] = NULL;
                                                 $error[] = 'Rate Currency is not match at line no:' . $lineno;
@@ -570,9 +574,9 @@ class RateTableRateUpload extends Command
 
                                         if (!empty($attrselection->$ConnectionFeeCurrencyColumn)) {
                                             if (array_key_exists($attrselection->$ConnectionFeeCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['ConnectionFeeCurrency'] = $attrselection->$ConnectionFeeCurrencyColumn;
-                                            } else if (isset($temp_row[$attrselection->$ConnectionFeeCurrencyColumn]) && array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['ConnectionFeeCurrency'] = array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies);
+                                                $tempratetabledata['ConnectionFeeCurrency'] = str_replace($prefixKeyword,'',$attrselection->$ConnectionFeeCurrencyColumn);
+                                            } else if (isset($temp_row[$attrselection->$ConnectionFeeCurrencyColumn]) && array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['ConnectionFeeCurrency'] = array_search($temp_row[$attrselection->$ConnectionFeeCurrencyColumn], $component_currencies2);
                                             } else {
                                                 $tempratetabledata['ConnectionFeeCurrency'] = NULL;
                                                 $error[] = 'Connection Fee Currency is not match at line no:' . $lineno;
