@@ -110,7 +110,7 @@ class Translation extends \Eloquent {
                 . "'" .$systemname."',"
                 . "'" .$value."')";
             Log::info("update_label query:" . $query);
-            DB::select($query);
+            DB::statement($query);
        /* Log::info("update_label ID ". $labels->TranslationID . ' ' . print_r($json_file,true));
         Log::info("update_label json ID ". $labels->TranslationID . ' ' . json_encode($json_file,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
             try {
