@@ -106,7 +106,7 @@ class Translation extends \Eloquent {
 
         try {
             Log::info("from model ".$systemname.' '.($value));
-            $query = "call prc_ImportTranslatation(" . $languageCode . ","
+            $query = "call prc_ImportTranslatation('" . $languageCode . "',"
                 . "'" .$systemname."',"
                 . "'" .$value."')";
             Log::info("update_label query:" . $query);
