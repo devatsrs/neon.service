@@ -102,7 +102,8 @@ class Translation extends \Eloquent {
         $val = $value;
         $json_file[$systemname]= $val;
         Log::info("from model ".$system_name.' '.($val));
-        Log::info("update_label 1". $labels->TranslationID . ' ' .print_r($json_file,true));
+        Log::info("update_label ID ". $labels->TranslationID . ' ' . print_r($json_file,true));
+        Log::info("update_label json ID ". $labels->TranslationID . ' ' . json_encode($json_file));
             try {
                 $update = DB::table('tblTranslation')
                     ->where(['TranslationID' => $labels->TranslationID])
