@@ -88,25 +88,15 @@ class Translation extends \Eloquent {
             ->first();
         return $data_langs;
     }
-    public static function update_label($labels,$systemname,$value){
-
-        $json_file = json_decode($labels->Translation, true);
-        if(empty($json_file) or $json_file == 0){$json_file = array();}
-        $system_name=($systemname);
-
-            if (array_key_exists($systemname, $json_file)) {
-                unset($json_file[$system_name]);
-            }
-        $val = utf8_encode($value);
-        $json_file[$systemname]= $val;
-        Log::info("from model ".$system_name.' '.($val));
-            try {
-                $update = DB::table('tblTranslation')
-                    ->where(['TranslationID' => $labels->TranslationID])
-                    ->update(['Translation' => json_encode($json_file)]);
-               Log::info(json_encode($json_file));
+    public static function update_label($languageCode,$systemname,$value){
+        try {
+            Log::info("from model ".$systemname.' '.($value));
+            $query = "call prc_ImportTranslatation('" . $languageCode . "',"
+                . "'" .$systemname."',"
+                . "'" .utf8_encode($value)."')";
+            Log::info("update_label query:" . $query);
+            DB::statement($query);
                 return true;
             } catch (\Exception $e){Log::info($e->getMessage());return false;}
-        //if($update) {return true;} else {return false;}
     }
 }
