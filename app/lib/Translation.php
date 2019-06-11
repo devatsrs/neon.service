@@ -108,7 +108,7 @@ class Translation extends \Eloquent {
             Log::info("from model ".$systemname.' '.($value));
             $query = "call prc_ImportTranslatation('" . $languageCode . "',"
                 . "'" .$systemname."',"
-                . "'" .htmlentities($value)."')";
+                . "'" .utf8_encode($value)."')";
             Log::info("update_label query:" . $query);
             DB::statement($query);
        /* Log::info("update_label ID ". $labels->TranslationID . ' ' . print_r($json_file,true));
