@@ -165,7 +165,8 @@ class TranslationsImport extends Command
                         {
                            // $labels = Translation::get_language_labels($val['ISOCode']);
                             //Log::info(json_encode($labels));
-                            if(Translation::update_label($val['ISOCode'],strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation']))
+                            if(Translation::update_label($val['ISOCode'],strtoupper(str_replace(" ","_",$val['SystemName'])),$val['Translation'],
+                                $jobfile->FilePath))
                             {
                                 $JobStatusMessageSuccess = 'Successfully Updated';
                             } else {$JobStatusMessageError[] = $val['SystemName']." Unable to Update";}

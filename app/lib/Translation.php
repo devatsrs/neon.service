@@ -88,12 +88,13 @@ class Translation extends \Eloquent {
             ->first();
         return $data_langs;
     }
-    public static function update_label($languageCode,$systemname,$value){
+    public static function update_label($languageCode,$systemname,$value,$filePath){
         try {
-            Log::info("from model ".$systemname.' '.($value));
+            //ends_with($filePath,"xlsx");
+            Log::info("from model ".$systemname.' '.($value) . ends_with($filePath,"csv"));
             $query = "call prc_ImportTranslatation('" . $languageCode . "',"
                 . "'" .$systemname."',"
-                . "'" .($value)."')";
+                . "'" . (ends_with($filePath,"csv") ? utf8_encode($value) :$value) ."')";
             Log::info("update_label query:" . $query);
             DB::statement($query);
                 return true;
