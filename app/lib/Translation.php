@@ -93,7 +93,7 @@ class Translation extends \Eloquent {
             Log::info("from model ".$systemname.' '.($value));
             $query = "call prc_ImportTranslatation('" . $languageCode . "',"
                 . "'" .$systemname."',"
-                . "'" .utf8_encode($value)."')";
+                . "'" .($value)."')";
             Log::info("update_label query:" . $query);
             DB::statement($query);
                 return true;
