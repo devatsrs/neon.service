@@ -49,7 +49,6 @@ class EmailsTemplates{
 				"{{BillingCountry}}",
 				"{{BillingEmail}}",
 				"{{CustomerID}}",
-                "{{DirectDebit}}",
                 "{{RegisterDutchFoundation}}",
                 "{{COCNumber}}",
                 "{{DutchProvider}}",
@@ -297,7 +296,6 @@ class EmailsTemplates{
 			$array['BillingPostCode']		=	 $AccoutData->BillingPostCode;
 			$array['BillingCountry']		=	 $AccoutData->BillingCountry;
 			$array['CustomerID']			=	 $dynamicfields['CustomerID'];
-			$array['DirectDebit']			=	 $dynamicfields['Direct Debit'];
 			$array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
 			$array['COCNumber']			=	 $dynamicfields['COC Number'];
 			$array['DutchProvider']			=	 $dynamicfields['Dutch Provider'];

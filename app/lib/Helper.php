@@ -366,7 +366,6 @@ class Helper
         $replace_array['BillingPostCode']		=	 $Account->BillingPostCode;
         $replace_array['BillingCountry']		=	 $Account->BillingCountry;
         $replace_array['CustomerID']			=	 $dynamicfields['CustomerID'];
-        $replace_array['DirectDebit']			=	 $dynamicfields['Direct Debit'];
         $replace_array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
         $replace_array['COCNumber']			                =	 $dynamicfields['COC Number'];
         $replace_array['DutchProvider']			            =	 $dynamicfields['Dutch Provider'];

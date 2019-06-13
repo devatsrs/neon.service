@@ -283,7 +283,6 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{BillingCountry}}",
         "{{BillingEmail}}",
         "{{CustomerID}}",
-        "{{DirectDebit}}",
         "{{RegisterDutchFoundation}}",
         "{{COCNumber}}",
         "{{DutchProvider}}",
