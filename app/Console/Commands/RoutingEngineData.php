@@ -81,9 +81,6 @@ class RoutingEngineData extends Command {
             //Run The Procedure
             $runPro = DB::connection('sqlsrv')->select('call Prc_RoutingDataPerRow()');
             
-            //Run The prc_APIRoutingDataPerRow - Bahvin PRO
-            $runAPIPro = DB::connection('sqlsrv')->select('call prc_APIRoutingDataPerRow()');
-            
             //Track The Log          
             $joblogdata['Message'] = 'RoutingEngineData Successfully Done';
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
