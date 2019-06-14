@@ -2,6 +2,7 @@
 namespace App\Lib;
 use Symfony\Component\Intl\Intl;
 use App\Lib\CurrencyConversion;
+use Illuminate\Support\Facades\DB;
 
 class Currency extends \Eloquent {
 
@@ -31,8 +32,11 @@ class Currency extends \Eloquent {
         return $CurrencyId;
     }
 
-    public static function getCurrencyDropdownIDList($CompanyID){
-        return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
+    public static function getCurrencyDropdownIDList($CompanyID,$includePrefix=0){
+        if($includePrefix == 1)
+            return Currency::select('Code', DB::raw('CONCAT("DBDATA-",CurrencyID) AS CurrencyID'))->where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
+        else
+            return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
     public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
