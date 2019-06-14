@@ -81,7 +81,7 @@ class RateTablePKGRateUpload extends Command
         $ProcessID = CompanyGateway::getProcessID();
         Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 250;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $DialStringId = 0;
         $dialcode_separator = 'null';
@@ -130,9 +130,9 @@ class RateTablePKGRateUpload extends Command
                         $data['end_row'] = $data['skipRows']['end_row'];
 
                         //convert excel to CSV
-                        $file_name_with_path = $jobfile->FilePath;
-                        $NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
-                        $file_name = $NeonExcel->convertExcelToCSV($data);
+                        $file_name = $file_name2 = $file_name_with_path = $jobfile->FilePath;
+                        //$NeonExcel = new NeonExcelIO($file_name_with_path, $data['option'], $data['importratesheet']);
+                        //$file_name = $NeonExcel->convertExcelToCSV($data);
 
                         if(isset($templateoptions->skipRows)) {
                             $skipRows              = $templateoptions->skipRows;
@@ -152,7 +152,7 @@ class RateTablePKGRateUpload extends Command
                             $lineno = 2;
                         }
 
-                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption);
+                        $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption, $data['importratesheet']);
                         $ratesheet = $NeonExcel->read();
 
                         $results = array();
@@ -175,7 +175,10 @@ class RateTablePKGRateUpload extends Command
                         $CostComponents[] = 'PackageCostPerMinute';
                         $CostComponents[] = 'RecordingCostPerMinute';
 
-                        $component_currencies = Currency::getCurrencyDropdownIDList($CompanyID);
+                        $prefixKeyword          = 'DBDATA-';
+                        $includePrefix          = 1;
+                        $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID,$includePrefix); // to check when currency mapped from DB
+                        $component_currencies2  = Currency::getCurrencyDropdownIDList($CompanyID);  // to check when currency mapped from File
 
                         //get how many rates mapped against timezones
                         $AllTimezones = Timezones::getTimezonesIDList();//all timezones
@@ -250,28 +253,28 @@ class RateTablePKGRateUpload extends Command
 
                                         $CostComponentsMapped = 0;
 
-                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn])) {
+                                        if (!empty($attrselection->$OneOffCostColumn) && isset($temp_row[$attrselection->$OneOffCostColumn]) && trim($temp_row[$attrselection->$OneOffCostColumn]) != '') {
                                             $tempratetabledata['OneOffCost'] = trim($temp_row[$attrselection->$OneOffCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['OneOffCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn])) {
+                                        if (!empty($attrselection->$MonthlyCostColumn) && isset($temp_row[$attrselection->$MonthlyCostColumn]) && trim($temp_row[$attrselection->$MonthlyCostColumn]) != '') {
                                             $tempratetabledata['MonthlyCost'] = trim($temp_row[$attrselection->$MonthlyCostColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['MonthlyCost'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$PackageCostPerMinuteColumn) && isset($temp_row[$attrselection->$PackageCostPerMinuteColumn]) && trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['PackageCostPerMinute'] = trim($temp_row[$attrselection->$PackageCostPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
                                             $tempratetabledata['PackageCostPerMinute'] = NULL;
                                         }
 
-                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn])) {
+                                        if (!empty($attrselection->$RecordingCostPerMinuteColumn) && isset($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) && trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]) != '') {
                                             $tempratetabledata['RecordingCostPerMinute'] = trim($temp_row[$attrselection->$RecordingCostPerMinuteColumn]);
                                             $CostComponentsMapped++;
                                         } else {
@@ -295,9 +298,9 @@ class RateTablePKGRateUpload extends Command
 
                                         if (!empty($attrselection->$OneOffCostCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$OneOffCostCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['OneOffCostCurrency'] = $attrselection->$OneOffCostCurrencyColumn;
-                                            } else if(isset($temp_row[$attrselection->$OneOffCostCurrencyColumn]) && array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['OneOffCostCurrency'] = array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies);
+                                                $tempratetabledata['OneOffCostCurrency'] = str_replace($prefixKeyword,'',$attrselection->$OneOffCostCurrencyColumn);
+                                            } else if(isset($temp_row[$attrselection->$OneOffCostCurrencyColumn]) && array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['OneOffCostCurrency'] = array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies2);
                                             } else {
                                                 $tempratetabledata['OneOffCostCurrency'] = NULL;
                                                 $error[] = 'One-Off Cost Currency is not match at line no:' . $lineno;
@@ -308,9 +311,9 @@ class RateTablePKGRateUpload extends Command
 
                                         if (!empty($attrselection->$MonthlyCostCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$MonthlyCostCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['MonthlyCostCurrency'] = $attrselection->$MonthlyCostCurrencyColumn;
-                                            } else if(isset($temp_row[$attrselection->$MonthlyCostCurrencyColumn]) && array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['MonthlyCostCurrency'] = array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies);
+                                                $tempratetabledata['MonthlyCostCurrency'] = str_replace($prefixKeyword,'',$attrselection->$MonthlyCostCurrencyColumn);
+                                            } else if(isset($temp_row[$attrselection->$MonthlyCostCurrencyColumn]) && array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['MonthlyCostCurrency'] = array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies2);
                                             } else {
                                                 $tempratetabledata['MonthlyCostCurrency'] = NULL;
                                                 $error[] = 'Monthly Cost Currency is not match at line no:' . $lineno;
@@ -321,9 +324,9 @@ class RateTablePKGRateUpload extends Command
 
                                         if (!empty($attrselection->$PackageCostPerMinuteCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$PackageCostPerMinuteCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['PackageCostPerMinuteCurrency'] = $attrselection->$PackageCostPerMinuteCurrencyColumn;
-                                            } else if(isset($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn],$component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['PackageCostPerMinuteCurrency'] = array_search($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn],$component_currencies);
+                                                $tempratetabledata['PackageCostPerMinuteCurrency'] = str_replace($prefixKeyword,'',$attrselection->$PackageCostPerMinuteCurrencyColumn);
+                                            } else if(isset($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn],$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['PackageCostPerMinuteCurrency'] = array_search($temp_row[$attrselection->$PackageCostPerMinuteCurrencyColumn],$component_currencies2);
                                             } else {
                                                 $tempratetabledata['PackageCostPerMinuteCurrency'] = NULL;
                                                 $error[] = 'Cost Per Call Currency is not match at line no:' . $lineno;
@@ -334,9 +337,9 @@ class RateTablePKGRateUpload extends Command
 
                                         if (!empty($attrselection->$RecordingCostPerMinuteCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$RecordingCostPerMinuteCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
-                                                $tempratetabledata['RecordingCostPerMinuteCurrency'] = $attrselection->$RecordingCostPerMinuteCurrencyColumn;
-                                            } else if(isset($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn],$component_currencies)) {// if currency selected from file
-                                                $tempratetabledata['RecordingCostPerMinuteCurrency'] = array_search($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn],$component_currencies);
+                                                $tempratetabledata['RecordingCostPerMinuteCurrency'] = str_replace($prefixKeyword,'',$attrselection->$RecordingCostPerMinuteCurrencyColumn);
+                                            } else if(isset($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn],$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['RecordingCostPerMinuteCurrency'] = array_search($temp_row[$attrselection->$RecordingCostPerMinuteCurrencyColumn],$component_currencies2);
                                             } else {
                                                 $tempratetabledata['RecordingCostPerMinuteCurrency'] = NULL;
                                                 $error[] = 'Cost Per Minute Currency is not match at line no:' . $lineno;

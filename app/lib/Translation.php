@@ -1,6 +1,7 @@
 <?php
 namespace App\Lib;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 class Translation extends \Eloquent {
 	
 	protected $guarded = array('TranslationID');
@@ -86,5 +87,17 @@ class Translation extends \Eloquent {
             ->where(["tblLanguage.ISOCode"=>$languageCode])
             ->first();
         return $data_langs;
+    }
+    public static function update_label($languageCode,$systemname,$value,$filePath){
+        try {
+            //ends_with($filePath,"xlsx");
+            Log::info("from model ".$systemname.' '.($value) . ends_with($filePath,"csv"));
+            $query = "call prc_ImportTranslatation('" . $languageCode . "',"
+                . "'" .$systemname."',"
+                . "'" . (ends_with($filePath,"csv") ? utf8_encode($value) :$value) ."')";
+            Log::info("update_label query:" . $query);
+            DB::statement($query);
+                return true;
+            } catch (\Exception $e){Log::info($e->getMessage());return false;}
     }
 }

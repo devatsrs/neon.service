@@ -15,7 +15,8 @@ class Retention {
 
                         try {
                             DB::connection('sqlsrv')->beginTransaction();
-                            $query = "CALL prc_SetAccountServiceNumberAndPackage()";
+                            $date = date('Y-m-d');
+                            $query = "CALL prc_SetAccountServiceNumberAndPackage('" . $date . "')";
                             Log::info($query);
                             DB::connection('sqlsrv')->statement($query);
                             DB::connection('sqlsrv')->commit();
@@ -190,6 +191,14 @@ class Retention {
             Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableRate Start.');
                 DB::statement("CALL prc_WSCronJobDeleteOldRateTableRate('System')");
             Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableRate Done.');
+
+            Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableDIDRate Start.');
+                DB::statement("CALL prc_WSCronJobDeleteOldRateTableDIDRate('System')");
+            Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTableDIDRate Done.');
+
+            Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTablePKGRate Start.');
+                DB::statement("CALL prc_WSCronJobDeleteOldRateTablePKGRate('System')");
+            Log::info('DBcleanup: prc_WSCronJobDeleteOldRateTablePKGRate Done.');
 
             Log::info('DBcleanup: prc_WSCronJobDeleteOldRateSheetDetails Start.');
                 DB::statement("CALL prc_WSCronJobDeleteOldRateSheetDetails()");

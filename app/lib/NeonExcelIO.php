@@ -148,14 +148,24 @@ class NeonExcelIO
             return $this->read_csv($this->file,$limit);
         }
         if($this->file_type == self::$EXCEL){
-
-            //return $this->read_excel($this->file,$limit);
-            return $this->readExcel($this->file,$limit);
+            //return $this->readExcel($this->file,$limit);
+            try {
+                return $this->readExcel2($this->file,$limit);
+            } catch(\Exception $e) {
+                Log::info($e->getMessage());
+                // when ReadorFactory can not read some files we will need to use PHPExcel to read that file
+                return $this->readExcel($this->file,$limit);
+            }
         }
 		if($this->file_type == self::$EXCELs){
-
-            //return $this->read_xls_excel($this->file,$limit);
-            return $this->readExcel($this->file,$limit);
+            //return $this->readExcel($this->file,$limit);
+            try {
+                return $this->readExcel2($this->file,$limit);
+            } catch(\Exception $e) {
+                Log::info($e->getMessage());
+                // when ReadorFactory can not read some files we will need to use PHPExcel to read that file
+                return $this->readExcel($this->file,$limit);
+            }
         }
 
     }
@@ -1171,4 +1181,58 @@ class NeonExcelIO
 
         return $result;
     }
+
+    //same function in service when change this need to change in service too
+    public function readExcel2($filepath,$limit=0) {
+        $start_time1 = round(microtime(true) * 1000);
+
+        $reader = ReaderFactory::create(Type::XLSX); // for XLSX files
+        $reader->setShouldFormatDates(true);
+        $reader->setShouldPreserveEmptyRows(true);
+        $reader->open($filepath);
+
+        $i=0;$all_rows=[];$sheet_index=0;
+        foreach ($reader->getSheetIterator() as $sheet) {
+            if((!empty($this->Sheet) && $sheet->getName() == $this->Sheet) || (empty($this->Sheet) && $sheet_index==0)) {
+                foreach ($sheet->getRowIterator() as $row) {
+                    $i++;
+
+                    if ($i <= self::$start_row) continue;
+                    if ($limit != 0 && $i > (self::$start_row+$limit)) break;
+
+                    $all_rows[] = $row;
+                }
+            }
+            $sheet_index++;
+        }
+
+        if($this->first_row == self::$COLUMN_NAMES) {
+            $result = $first_row = array();
+
+            $i = 0;
+            foreach ($all_rows as $row) {
+                if ($i == 0) {
+                    $first_row = $row;
+                } else {
+                    $j = 0;
+                    foreach ($row as $column) {
+                        $result[$i - 1][$first_row[$j]] = $column;
+                        $j++;
+                    }
+                }
+                $i++;
+            }
+        } else {
+            $result = $all_rows;
+        }
+
+        $reader->close();
+
+        $end_time1 = round(microtime(true) * 1000);
+        $process_time1 = ($end_time1 - $start_time1) / 1000;
+        Log::info('readExcel2 call time : ' . $process_time1 . ' Seconds');
+
+        return $result;
+    }
+
 }

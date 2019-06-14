@@ -51,7 +51,7 @@ class ActiveCall extends \Eloquent {
                 $CallRecordingDuration = strtotime($Date) - strtotime($ActiveCall->CallRecordingStartTime);
                 $RateTablePKGRateID = $ActiveCall->RateTablePKGRateID;
                 if(!empty($RateTablePKGRateID)){
-                    $RateTablePKGRate = DB::table('tblRateTablePKGRate')->where(['RateTablePKGRateID'=>$RateTablePKGRateID])->first();
+                    $RateTablePKGRate = DB::connection('neon_routingengine')->table('tblRateTablePKGRate')->where(['RateTablePKGRateID'=>$RateTablePKGRateID])->first();
                     if(!empty($RateTablePKGRate)){
                         $PackageCostPerMinute = isset($RateTablePKGRate->PackageCostPerMinute)?$RateTablePKGRate->PackageCostPerMinute:0;
                         if(!empty($PackageCostPerMinute)){
@@ -79,7 +79,7 @@ class ActiveCall extends \Eloquent {
             if ($CallType == 'Outbound') {
                 $RateTableRateID = $ActiveCall->RateTableRateID;
                 if ($RateTableRateID > 0) {
-                    $RateTableRate = DB::table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
+                    $RateTableRate = DB::connection('neon_routingengine')->table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
                     if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
                         $ConnectionFee = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
@@ -88,6 +88,10 @@ class ActiveCall extends \Eloquent {
                     $IntervalN = $RateTableRate->IntervalN;
                     $Rate = $RateTableRate->Rate;
                     $RateN = $RateTableRate->RateN;
+                    $MinimumDuration = empty($RateTableRate->MinimumDuration) ? 0 : $RateTableRate->MinimumDuration;
+                    if($MinimumDuration > $Duration){
+                        $Duration = $MinimumDuration;
+                    }
                     if(!empty($RateTableRate->RateCurrency)){
                         if(!empty($Rate)){
                             $Rate = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
@@ -159,7 +163,7 @@ class ActiveCall extends \Eloquent {
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
 
                 if ($RateTableDIDRateID > 0) {
-                    $RateTableDIDRate = RateTableDIDRate::where(['RateTableDIDRateID'=>$RateTableDIDRateID])->first();
+                    $RateTableDIDRate = DB::connection('neon_routingengine')->table('tblRateTableDIDRate')->where(['RateTableDIDRateID'=>$RateTableDIDRateID])->first();
 
                     if ($Duration > 0) {
                         /**
@@ -205,7 +209,6 @@ class ActiveCall extends \Eloquent {
                                 $OutpaymentPerCallCurrency = $RateTableDIDRate->OutpaymentPerCallCurrency;
                                 $OutpaymentPerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $OutpaymentPerCallCurrency, $OutpaymentPerCall);
                             }
-                            $OutpaymentPerCall = ($Duration * ($OutpaymentPerCall/60));
                         }
                         $OutpaymentPerMinute = isset($RateTableDIDRate->OutpaymentPerMinute)?$RateTableDIDRate->OutpaymentPerMinute:0;
                         if(!empty($OutpaymentPerMinute)){

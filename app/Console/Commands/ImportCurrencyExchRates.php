@@ -1,14 +1,12 @@
 <?php namespace App\Console\Commands;
 
-use App\Lib\NeonAPI;
 use App\Lib\Currency;
 use App\Lib\CurrencyConversion;
 use App\Lib\CurrencyConversionLog;
 use Illuminate\Console\Command;
-use App\Lib\CronJob;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use DB;
+use App\Lib\CronJob;
 use Illuminate\Support\Facades\Log;
 use App\Lib\CronJobLog;
 use App\Lib\CronHelper;
@@ -86,6 +84,7 @@ class ImportCurrencyExchRates extends Command {
 						'ModifiedBy' => gethostname()
 
 					]);
+
 					Log::info($rateupd);
 
 					if (CurrencyConversionLog::create([
@@ -97,9 +96,9 @@ class ImportCurrencyExchRates extends Command {
 						'CreatedBy' => gethostname()
 					])
 					) {
-						Log::info('Conversionlog Updated');
+						Log::info('Conversion log Updated');
 					} else {
-						Log::error('Faild to Update ConversionLog');
+						Log::error('Failed to Update ConversionLog');
 					}
 				}
 			}
@@ -112,14 +111,17 @@ class ImportCurrencyExchRates extends Command {
 	{
 		$CronJobID = $this->argument("CronJobID");
 		$companyID = $this->argument("CompanyID");
+
+		Log::useFiles(storage_path() . '/logs/europcentralbank-companyid-'.$companyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try {
 			CronHelper::before_cronrun($this->name, $this );
 			$cronjob = CronJob::find($CronJobID);
 			CronJob::activateCronJob($cronjob);
+			CronJob::createLog($CronJobID);
 			$json = json_decode($cronjob->Settings);
-			$url = $json->EuropCentralBank;
-			$time_start = microtime(true);
-			$xml = simplexml_load_file($url);
+			$url  = $json->EuropCentralBank;
+			//$time_start = microtime(true);
+			$xml  = simplexml_load_file($url);
 			foreach ($xml as $data) {
 				foreach ($data as $val) {
 					foreach ($val as $value) {
@@ -130,13 +132,13 @@ class ImportCurrencyExchRates extends Command {
 					}
 				}
 			}
-			$time_end = microtime(true);
-			$execution_time = ($time_end - $time_start)/60;
+			//$time_end = microtime(true);
+			//$execution_time = ($time_end - $time_start)/60;
 
 
 			CronJob::CronJobSuccessEmailSend($CronJobID);
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('Y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'CurrencyExchangeRates Successfully Done';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
@@ -149,7 +151,7 @@ class ImportCurrencyExchRates extends Command {
 		}catch (\Exception $e){echo $e;
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['CronJobID'] = $CronJobID;
-			$joblogdata['created_at'] = Date('y-m-d');
+			$joblogdata['created_at'] = date('Y-m-d H:i:s');
 			$joblogdata['created_by'] = 'RMScheduler';
 			$joblogdata['Message'] = 'Error:' . $e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
@@ -165,24 +167,5 @@ class ImportCurrencyExchRates extends Command {
 
 
 	}
-
-	/**
-	 * Get the console command arguments.
-	 *
-	 * @return array
-	 */
-
-
-	/**
-	 * Get the console command options.
-	 *
-	 * @return array
-
-	protected function getOptions()
-	{
-	return [
-	['example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null],
-	];
-	}*/
 
 }

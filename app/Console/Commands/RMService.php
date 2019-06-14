@@ -70,6 +70,7 @@ class RMService extends Command {
                 'BulkAccountEmail',
                 'PendingVendorUpload',
                 'PendingCodeDeckUpload',
+                'PendingImportTranslations',
                 'InvoiceReminder',
                 'CustomerSippySheetDownload',
                 'VendorSippySheetDownload',
@@ -206,6 +207,15 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }else {
                         pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " codedecksupload " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
+                    }
+                }
+            }
+            foreach($allpending['data']['PendingImportTranslations'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(getenv('APP_OS') == 'Linux') {
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." translationimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }else {
+                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " translationimport " . $CompanyID . " " . $allpendingrow->JobID . " ", "r"));
                     }
                 }
             }

@@ -1,0 +1,55 @@
+vagrant plugin install vagrant-vbguest
+
+-------------------------------------
+
+/bin/systemctl start mysqld.service
+
+grep 'temporary password' /var/log/mysqld.log
+[Note] A temporary password is generated for root@localhost: cpSsJ&Cmu7o>
+
+[Note] A temporary password is generated for root@localhost: I!#oigPyp5.i
+
+mysql_secure_installation
+
+use new password:
+We1com3@Srs
+
+
+cat > /root/.my.cnf
+[client]
+user=root
+password=We1com3@Srs
+
+# --------------- server 1 start ---------------
+
+vi /etc/my.cnf
+
+[mysqld]
+server-id=1
+log-bin=mysql-bin
+# --------------------------------
+
+
+#restart
+service mysqld restart
+
+
+mysql
+GRANT REPLICATION SLAVE ON *.* TO 'replica'@'%' IDENTIFIED BY 'replica';
+FLUSH PRIVILEGES;
+quit;
+
+
+
+
+# --------------- server 2 start ---------------
+
+##mysql-replication/readme -> 1. Setup new ssh user
+
+#export mysql database as we created db user;
+
+mysqldump mysql > mysql.sql
+scp mysql.sql -i /d/www/vms/centos7/.vagrant/machines/srsneon1.com/virtualbox/private_key 192.168.56.102:/vagrant
+
+
+
