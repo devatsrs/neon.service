@@ -3,6 +3,7 @@
 use App\Lib\Currency;
 use App\Lib\CurrencyConversion;
 use App\Lib\CurrencyConversionLog;
+use App\Lib\Reseller;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use DB;
@@ -115,6 +116,12 @@ class ImportCurrencyExchRates extends Command {
 		Log::useFiles(storage_path() . '/logs/europcentralbank-companyid-'.$companyID . '-cronjobid-'.$CronJobID.'-' . date('Y-m-d') . '.log');
 		try {
 			CronHelper::before_cronrun($this->name, $this );
+			$ParentCompanyID = Reseller::where('ChildCompanyID',$companyID)
+				->pluck('CompanyID');
+			if (!empty($ParentCompanyID)) {
+				$companyID = $ParentCompanyID;
+				Log::info("Parent Company for Reseller:" . $companyID);
+			}
 			$cronjob = CronJob::find($CronJobID);
 			CronJob::activateCronJob($cronjob);
 			CronJob::createLog($CronJobID);
