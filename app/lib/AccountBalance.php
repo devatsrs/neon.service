@@ -527,6 +527,7 @@ class AccountBalance extends Model
                 $AccountBalance=0;
             }
         }
+        Log::info('AccountBalance: '.$AccountBalance);
         $AccountBalance = number_format($AccountBalance,Helper::get_round_decimal_places($CompanyID,$AccountID));
         return $AccountBalance;
     }
