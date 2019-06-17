@@ -409,6 +409,9 @@ class Helper
         
         $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
         $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
+        $replace_array['AccountExposure']=str_replace(',','',$replace_array['AccountExposure']);
+        Log::info('Account Exposure: '.$replace_array['AccountExposure']);
+        Log::info('RoundChargesAmount: '.$RoundChargesAmount);
         $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
         $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
         $Signature = '';
