@@ -524,8 +524,12 @@ class AccountBalance extends Model
                     $AccountBalance=0;
                 }
             }*/
+        }else{
+            if($AccountBalance<0){
+                $AccountBalance=0;
+            }
         }
-        if($AccountBalance<0 || empty($AccountBalance)){
+        if(empty($AccountBalance)){
             $AccountBalance=0;
         }
         Log::info('$AccountBalance M1: '.$AccountBalance);
