@@ -501,7 +501,9 @@ class AccountBalance extends Model
     }
 
     public static function getAccountBalance($CompanyID,$AccountID){
+        Log::info('$AccountID M: '.$AccountID);
         $AccountBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
+        Log::info('$AccountBalance M: '.$AccountBalance);
         $BillingType = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingType');
         /**
          * If billing type postpaid it will display as it is
@@ -527,6 +529,10 @@ class AccountBalance extends Model
                 $AccountBalance=0;
             }
         }
+        Log::info('$AccountBalance M1: '.$AccountBalance);
+        $AccountBalance=str_replace(',','',$AccountBalance);
+        Log::info('$AccountBalance M2: '.$AccountBalance);
+        
         $AccountBalance = number_format($AccountBalance,Helper::get_round_decimal_places($CompanyID,$AccountID));
         return $AccountBalance;
     }

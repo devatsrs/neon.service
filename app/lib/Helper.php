@@ -398,7 +398,12 @@ class Helper
 
         $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
         $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
+        Log::info('Get Account: ');
+        Log::info('Company ID: '.$Account->CompanyId);
+        Log::info('Account ID: '.$Account->AccountID);
         $replace_array['AccountBalance'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
+        Log::info('Account Balance: '.$replace_array['AccountBalance']);
+        
         $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
         $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
         $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
