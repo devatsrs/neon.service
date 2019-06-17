@@ -532,9 +532,7 @@ class AccountBalance extends Model
         if(empty($AccountBalance)){
             $AccountBalance=0;
         }
-        Log::info('$AccountBalance M1: '.$AccountBalance);
         $AccountBalance=str_replace(',','',$AccountBalance);
-        Log::info('$AccountBalance M2: '.$AccountBalance);
         $AccountBalance = number_format($AccountBalance,Helper::get_round_decimal_places($CompanyID,$AccountID));
         return $AccountBalance;
     }
