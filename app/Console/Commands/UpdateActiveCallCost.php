@@ -85,7 +85,7 @@ class UpdateActiveCallCost extends Command {
 
 			//Log::info('Account Balance Start.');
 
-			$ActiveCalls = ActiveCall::orderBy('ActiveCallID')->get();
+			$ActiveCalls = ActiveCall::where(['EndCall'=>0])->orderBy('ActiveCallID')->get();
 			if(!empty($ActiveCalls) && count($ActiveCalls)>0){
 				foreach($ActiveCalls as $ActiveCall){
 					try {
