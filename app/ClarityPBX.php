@@ -143,6 +143,40 @@ class ClarityPBX{
 
     }
 
+    //get data from gateway and insert in temp table
+    public static function getCustomersList($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $query = "select * from customer ";
+                $response = DB::connection('pgsql')->select($query);
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
+    //get data from gateway and insert in temp table
+    public static function getVendorsList($addparams=array()){
+        $response = array();
+        if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
+            try{
+                $query = "select * from vendor ";
+                $response = DB::connection('pgsql')->select($query);
+            }catch(Exception $e){
+                $response['faultString'] =  $e->getMessage();
+                $response['faultCode'] =  $e->getCode();
+                Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+                //throw new Exception($e->getMessage());
+            }
+        }
+        return $response;
+    }
+
 
 
     public static function updateRateTables($rateTables = []){
