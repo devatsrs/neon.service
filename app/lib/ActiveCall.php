@@ -27,8 +27,9 @@ class ActiveCall extends \Eloquent {
         $ActiveCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->first();
         $AccountID = $ActiveCall->AccountID;
         $CompanyID = $ActiveCall->CompanyID;
-        $CompanyCurrency = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
-        $AccountCurrency = Account::where(["AccountID"=>$AccountID])->pluck('CurrencyId');
+        $CompanyCurrency = DB::connection('neon_routingengine')->table('tblCompany')->where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+        $AccountCurrency = DB::connection('neon_routingengine')->table('tblAccount')->where(['CompanyId'=>$CompanyID])->pluck('CurrencyId');
+
         $Cost = $ActiveCall->Cost;
         $CallType = $ActiveCall->CallType;
         $OldDuration = $ActiveCall->Duration;
@@ -57,7 +58,7 @@ class ActiveCall extends \Eloquent {
                         if(!empty($PackageCostPerMinute)){
                             if(!empty($RateTablePKGRate->PackageCostPerMinuteCurrency)) {
                                 $PackageCostPerMinuteCurrency = $RateTablePKGRate->PackageCostPerMinuteCurrency;
-                                $PackageCostPerMinute = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
+                                $PackageCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
                             }
                             $PackageCostPerMinute = ($CallRecordingDuration * ($PackageCostPerMinute/60));
                         }
@@ -66,7 +67,7 @@ class ActiveCall extends \Eloquent {
                         if(!empty($RecordingCostPerMinute)){
                             if(!empty($RateTablePKGRate->RecordingCostPerMinuteCurrency)) {
                                 $RecordingCostPerMinuteCurrency = $RateTablePKGRate->RecordingCostPerMinuteCurrency;
-                                $RecordingCostPerMinute = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RecordingCostPerMinuteCurrency, $RecordingCostPerMinute);
+                                $RecordingCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RecordingCostPerMinuteCurrency, $RecordingCostPerMinute);
                             }
                             $RecordingCostPerMinute = ($CallRecordingDuration * ($RecordingCostPerMinute/60));
                         }
@@ -82,7 +83,7 @@ class ActiveCall extends \Eloquent {
                     $RateTableRate = DB::connection('neon_routingengine')->table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
                     if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
-                        $ConnectionFee = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
+                        $ConnectionFee = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
                     }
                     $Interval1 = $RateTableRate->Interval1;
                     $IntervalN = $RateTableRate->IntervalN;
@@ -94,10 +95,10 @@ class ActiveCall extends \Eloquent {
                     }
                     if(!empty($RateTableRate->RateCurrency)){
                         if(!empty($Rate)){
-                            $Rate = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
+                            $Rate = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$Rate);
                         }
                         if(!empty($RateN)){
-                            $RateN = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$RateN);
+                            $RateN = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateTableRate->RateCurrency,$RateN);
                         }
                     }
                     /** cost update */
@@ -123,18 +124,19 @@ class ActiveCall extends \Eloquent {
                 /** minimum cost calculation
                  * if cost is less than minimum cost , cost update as minimum cost
                  */
+                /* removed this functionality
                 if(!empty($ActiveCall->RateTableID)) {
                     $MinimumCallCharge = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('MinimumCallCharge');
                     if (!empty($MinimumCallCharge)) {
                         $RateCurrency = RateTable::where(['RateTableID' => $ActiveCall->RateTableID])->pluck('CurrencyID');
                         if (!empty($RateCurrency)) {
-                            $MinimumCallCharge = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $RateCurrency, $MinimumCallCharge);
+                            $MinimumCallCharge = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateCurrency, $MinimumCallCharge);
                         }
                         if ($MinimumCallCharge > $Cost) {
                             $Cost = $MinimumCallCharge;
                         }
                     }
-                }
+                }*/
 
                 /** update cost and duration */
 
@@ -175,14 +177,14 @@ class ActiveCall extends \Eloquent {
                         if(!empty($CostPerCall)){
                             if(!empty($RateTableDIDRate->CostPerCallCurrency)){
                                 $CostPerCallCurrency = $RateTableDIDRate->CostPerCallCurrency;
-                                $CostPerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $CostPerCallCurrency, $CostPerCall);
+                                $CostPerCall = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CostPerCallCurrency, $CostPerCall);
                             }
                         }
                         $CostPerMinute = isset($RateTableDIDRate->CostPerMinute)?$RateTableDIDRate->CostPerMinute:0;
                         if(!empty($CostPerMinute)){
                             if(!empty($RateTableDIDRate->CostPerMinuteCurrency)) {
                                 $CostPerMinuteCurrency = $RateTableDIDRate->CostPerMinuteCurrency;
-                                $CostPerMinute = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $CostPerMinuteCurrency, $CostPerMinute);
+                                $CostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CostPerMinuteCurrency, $CostPerMinute);
                             }
                             $CostPerMinute = ($Duration * ($CostPerMinute/60));
                         }
@@ -190,14 +192,14 @@ class ActiveCall extends \Eloquent {
                         if(!empty($SurchargePerCall)){
                             if(!empty($RateTableDIDRate->SurchargePerCallCurrency)) {
                                 $SurchargePerCallCurrency = $RateTableDIDRate->SurchargePerCallCurrency;
-                                $SurchargePerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $SurchargePerCallCurrency, $SurchargePerCall);
+                                $SurchargePerCall = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $SurchargePerCallCurrency, $SurchargePerCall);
                             }
                         }
                         $SurchargePerMinute = isset($RateTableDIDRate->SurchargePerMinute)?$RateTableDIDRate->SurchargePerMinute:0;
                         if(!empty($SurchargePerMinute)){
                             if(!empty($RateTableDIDRate->SurchargePerMinuteCurrency)) {
                                 $SurchargePerMinuteCurrency = $RateTableDIDRate->SurchargePerMinuteCurrency;
-                                $SurchargePerMinute = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $SurchargePerMinuteCurrency, $SurchargePerMinute);
+                                $SurchargePerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $SurchargePerMinuteCurrency, $SurchargePerMinute);
                             }
                             $SurchargePerMinute = ($Duration * ($SurchargePerMinute/60));
                         }
@@ -207,14 +209,14 @@ class ActiveCall extends \Eloquent {
                         if(!empty($OutpaymentPerCall)){
                             if(!empty($RateTableDIDRate->OutpaymentPerCallCurrency)) {
                                 $OutpaymentPerCallCurrency = $RateTableDIDRate->OutpaymentPerCallCurrency;
-                                $OutpaymentPerCall = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $OutpaymentPerCallCurrency, $OutpaymentPerCall);
+                                $OutpaymentPerCall = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $OutpaymentPerCallCurrency, $OutpaymentPerCall);
                             }
                         }
                         $OutpaymentPerMinute = isset($RateTableDIDRate->OutpaymentPerMinute)?$RateTableDIDRate->OutpaymentPerMinute:0;
                         if(!empty($OutpaymentPerMinute)){
                             if(!empty($RateTableDIDRate->OutpaymentPerMinuteCurrency)) {
                                 $OutpaymentPerMinuteCurrency = $RateTableDIDRate->OutpaymentPerMinuteCurrency;
-                                $OutpaymentPerMinute = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $OutpaymentPerMinuteCurrency, $OutpaymentPerMinute);
+                                $OutpaymentPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $OutpaymentPerMinuteCurrency, $OutpaymentPerMinute);
                             }
                             $OutpaymentPerMinute = ($Duration * ($OutpaymentPerMinute/60));
                         }
@@ -223,7 +225,7 @@ class ActiveCall extends \Eloquent {
                         if(!empty($Surcharges)){
                             if(!empty($RateTableDIDRate->SurchargesCurrency)) {
                                 $SurchargesCurrency = $RateTableDIDRate->SurchargesCurrency;
-                                $Surcharges = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $SurchargesCurrency, $Surcharges);
+                                $Surcharges = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $SurchargesCurrency, $Surcharges);
                             }
                             $Surcharges = ($Duration * ($Surcharges/60));
                         }
@@ -232,7 +234,7 @@ class ActiveCall extends \Eloquent {
                         if(!empty($CollectionCostAmount)){
                             if(!empty($RateTableDIDRate->CollectionCostAmountCurrency)) {
                                 $CollectionCostAmountCurrency = $RateTableDIDRate->CollectionCostAmountCurrency;
-                                $CollectionCostAmount = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $CollectionCostAmountCurrency, $CollectionCostAmount);
+                                $CollectionCostAmount = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CollectionCostAmountCurrency, $CollectionCostAmount);
                             }
                         }
 
