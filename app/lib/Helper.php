@@ -185,7 +185,7 @@ class Helper
 
 
     }
-    function getParentCompanyIdIfReseller($CompanyID){
+    static function getParentCompanyIdIfReseller($CompanyID){
 
         // If Reseller then get Parent Company ID
         $isReseller = Reseller::IsResellerByCompanyID($CompanyID);
