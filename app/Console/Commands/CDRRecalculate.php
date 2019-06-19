@@ -153,10 +153,19 @@ class CDRRecalculate extends Command {
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
                 }
                 //if(count($skiped_account_data) == 0) {
-                DB::connection('sqlsrvcdr')->beginTransaction();
+                /*DB::connection('sqlsrvcdr')->beginTransaction();
+                //DB::connection('sqlsrv2')->beginTransaction();
                 DB::connection('sqlsrv2')->statement(" call  prc_DeleteCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$ResellerOwner."')");
                 DB::connection('sqlsrvcdr')->statement("call  prc_insertCDR ('" . $ProcessID . "','".$temptableName."')");
                 DB::connection('sqlsrvcdr')->commit();
+                //DB::connection('sqlsrv2')->commit();*/
+
+                DB::connection('sqlsrv2')->beginTransaction();
+
+                DB::connection('sqlsrv2')->statement(" call  prc_Delete_and_insertCDR  ($CompanyID,$CompanyGatewayID,'" . $startdate . "','" . $enddate . "','" . $AccountID . "','".$CDRType."','".$CLI."','".$CLD."',".intval($zerovaluecost).",'".intval($CurrencyID)."','".$area_prefix."','".$Trunk."','".$ResellerOwner."','" . $ProcessID . "','".$temptableName."')");
+
+                DB::connection('sqlsrv2')->commit();
+
                 //}
                 DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $ProcessID])->delete();
                 Log::error(' ========================== cdr transaction end =============================');
@@ -186,7 +195,7 @@ class CDRRecalculate extends Command {
             $jobdata['ModifiedBy'] = 'RMScheduler';
             Job::where(["JobID" => $JobID])->update($jobdata);
             Log::error($e);
-            TempUsageDetail::where(["processId" => $ProcessID])->delete();
+
         }
         Job::send_job_status_email($job,$CompanyID);
 
