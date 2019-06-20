@@ -185,7 +185,14 @@ class Helper
 
 
     }
+    static function getParentCompanyIdIfReseller($CompanyID){
 
+        // If Reseller then get Parent Company ID
+        $isReseller = Reseller::IsResellerByCompanyID($CompanyID);
+        if($isReseller != false && $isReseller > 0)
+            $CompanyID = Reseller::getCompanyIDByChildCompanyID($CompanyID);
+        return $CompanyID;
+    }
     static function email_log($data)
     {
         $status = array('status' => 0, 'message' => 'Something wrong with Saving log.');
@@ -333,6 +340,9 @@ class Helper
 
     public static function create_replace_array($Account, $extra_settings, $JobLoggedUser = array())
     {
+        //Get the parent company id
+        $Account->CompanyId = Helper::getParentCompanyIdIfReseller($Account->CompanyId);
+        //----------------------------------------------------------------------
         $RoundChargesAmount = getCompanyDecimalPlaces($Account->CompanyId);
         $dynamicfields = Account::getDynamicfields('account',$Account->AccountID,$Account->CompanyId);
         $replace_array = array();
