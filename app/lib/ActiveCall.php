@@ -80,7 +80,7 @@ class ActiveCall extends \Eloquent {
             if ($CallType == 'Outbound') {
                 $RateTableRateID = $ActiveCall->RateTableRateID;
                 if ($RateTableRateID > 0) {
-                    $RateTableRate = DB::connection('neon_routingengine')->table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
+                    $RateTableRate = DB::connection('neon_routingengine')->table('tblCustomerRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
                     if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
                         $ConnectionFee = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);
