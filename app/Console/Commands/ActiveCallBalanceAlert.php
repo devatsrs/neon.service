@@ -91,7 +91,7 @@ class ActiveCallBalanceAlert extends Command {
                  * if account balance is zero or less than we will send reminder (alert)
                 */
 
-                $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID($CompanyID);
+                $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID();
                 if(!empty($ActiveCallAccountIDs)) {
                     foreach ($ActiveCallAccountIDs as $AccountID) {
                         $AccountBalance = AccountBalance::getAccountBalanceWithActiveCall($AccountID);
@@ -99,7 +99,7 @@ class ActiveCallBalanceAlert extends Command {
                             /** check auto top up is on or not */
 
                             log::info($APIURL);
-                            $UUIDS = ActiveCall::getUUIDByAccountID($CompanyID, $AccountID);
+                            $UUIDS = ActiveCall::getUUIDByAccountID($AccountID);
                             if (!empty($UUIDS[0])) {
                                 $ActiveCallArr = array();
                                 $ActiveCallArr['CustomerID'] = $AccountID;

@@ -13,13 +13,13 @@ class ActiveCall extends \Eloquent {
     public  $primaryKey = "ActiveCallID"; //Used in BasedController
 
 
-    public static function getUniqueAccountID($CompanyID){
-        return ActiveCall::where('CompanyID',$CompanyID)->groupby('AccountID')->lists('AccountID');
+    public static function getUniqueAccountID(){
+        return ActiveCall::groupby('AccountID')->lists('AccountID');
 
     }
 
-    public static function getUUIDByAccountID($CompanyID,$AccountID){
-        return ActiveCall::where(['CompanyID'=>$CompanyID,'AccountID'=>$AccountID])->groupby('UUID')->lists('UUID');
+    public static function getUUIDByAccountID($AccountID){
+        return ActiveCall::where(['AccountID'=>$AccountID])->groupby('UUID')->lists('UUID');
 
     }
 
@@ -80,7 +80,7 @@ class ActiveCall extends \Eloquent {
             if ($CallType == 'Outbound') {
                 $RateTableRateID = $ActiveCall->RateTableRateID;
                 if ($RateTableRateID > 0) {
-                    $RateTableRate = DB::connection('neon_routingengine')->table('tblRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
+                    $RateTableRate = DB::connection('neon_routingengine')->table('tblCustomerRateTableRate')->where(['RateTableRateID'=>$RateTableRateID])->first();
                     $ConnectionFee = empty($RateTableRate->ConnectionFee) ? 0 : $RateTableRate->ConnectionFee;
                     if(!empty($ConnectionFee) && !empty($RateTableRate->ConnectionFeeCurrency)){
                         $ConnectionFee = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $RateTableRate->ConnectionFeeCurrency, $ConnectionFee);

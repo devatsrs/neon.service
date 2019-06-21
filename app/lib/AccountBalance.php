@@ -673,7 +673,8 @@ class AccountBalance extends Model
      **/
     public static function getAccountBalanceWithActiveCall($AccountID){
 
-        $AccountBalance = AccountBalanceLog::getPrepaidAccountBalance($AccountID);
+        //$AccountBalance = AccountBalanceLog::getPrepaidAccountBalance($AccountID);
+        $AccountBalance = DB::connection('neon_routingengine')->table('tblAPIAccountBalance')->where(['AccountID'=>$AccountID])->pluck('BalanceAmount');
         $ActiveBalance = ActiveCall::where(['AccountID'=>$AccountID])->sum('Cost');
 
         $AccountBalance = empty($AccountBalance)?0:$AccountBalance;
