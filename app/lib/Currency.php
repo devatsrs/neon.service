@@ -39,6 +39,31 @@ class Currency extends \Eloquent {
             return Currency::where("CompanyId",$CompanyID)->lists('Code','CurrencyID');
     }
 
+    /** only use for Routing Database */
+    public static function convertCurrencyForRouting($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
+
+        if($FileCurrency == $AccountCurrency) {
+            $NewRate = $Rate;
+        } else if($FileCurrency == $CompanyCurrency) {
+            $ConversionRate = DB::connection('neon_routingengine')->table('tblCurrencyConversion')->where('CurrencyID',$AccountCurrency)->pluck('Value');
+            if($ConversionRate)
+                $NewRate = ($Rate *$ConversionRate);
+            else
+                $NewRate = 'failed';
+        } else {
+            $ACConversionRate = DB::connection('neon_routingengine')->table('tblCurrencyConversion')->where('CurrencyID',$AccountCurrency)->pluck('Value');
+            $FCConversionRate = DB::connection('neon_routingengine')->table('tblCurrencyConversion')->where('CurrencyID',$FileCurrency)->pluck('Value');
+
+            if($ACConversionRate && $FCConversionRate)
+                $NewRate = ($ACConversionRate) * ($Rate/$FCConversionRate);
+            else
+                $NewRate = 'failed';
+        }
+
+        return $NewRate;
+
+    }
+
     public static function convertCurrency($CompanyCurrency=0, $AccountCurrency=0, $FileCurrency=0, $Rate=0) {
 
         if($FileCurrency == $AccountCurrency) {

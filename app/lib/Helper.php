@@ -185,7 +185,14 @@ class Helper
 
 
     }
+    static function getParentCompanyIdIfReseller($CompanyID){
 
+        // If Reseller then get Parent Company ID
+        $isReseller = Reseller::IsResellerByCompanyID($CompanyID);
+        if($isReseller != false && $isReseller > 0)
+            $CompanyID = Reseller::getCompanyIDByChildCompanyID($CompanyID);
+        return $CompanyID;
+    }
     static function email_log($data)
     {
         $status = array('status' => 0, 'message' => 'Something wrong with Saving log.');
@@ -333,6 +340,9 @@ class Helper
 
     public static function create_replace_array($Account, $extra_settings, $JobLoggedUser = array())
     {
+        //Get the parent company id
+        $Account->CompanyId = Helper::getParentCompanyIdIfReseller($Account->CompanyId);
+        //----------------------------------------------------------------------
         $RoundChargesAmount = getCompanyDecimalPlaces($Account->CompanyId);
         $dynamicfields = Account::getDynamicfields('account',$Account->AccountID,$Account->CompanyId);
         $replace_array = array();
@@ -366,7 +376,6 @@ class Helper
         $replace_array['BillingPostCode']		=	 $Account->BillingPostCode;
         $replace_array['BillingCountry']		=	 $Account->BillingCountry;
         $replace_array['CustomerID']			=	 $dynamicfields['CustomerID'];
-        $replace_array['DirectDebit']			=	 $dynamicfields['Direct Debit'];
         $replace_array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
         $replace_array['COCNumber']			                =	 $dynamicfields['COC Number'];
         $replace_array['DutchProvider']			            =	 $dynamicfields['Dutch Provider'];
@@ -399,9 +408,20 @@ class Helper
 
         $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
         $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
+        Log::info('Get Account: ');
+        Log::info('Company ID: '.$Account->CompanyId);
+        Log::info('Account ID: '.$Account->AccountID);
         $replace_array['AccountBalance'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
+        Log::info('Account Balance11: '.$replace_array['AccountBalance']);
+        
+        $replace_array['AccountBalance']=str_replace(',','',$replace_array['AccountBalance']);
+        Log::info('Account Balance22: '.$replace_array['AccountBalance']);
+        
         $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
         $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
+        $replace_array['AccountExposure']=str_replace(',','',$replace_array['AccountExposure']);
+        Log::info('Account Exposure: '.$replace_array['AccountExposure']);
+        Log::info('RoundChargesAmount: '.$RoundChargesAmount);
         $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
         $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
         $Signature = '';
