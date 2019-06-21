@@ -13,13 +13,13 @@ class ActiveCall extends \Eloquent {
     public  $primaryKey = "ActiveCallID"; //Used in BasedController
 
 
-    public static function getUniqueAccountID($CompanyID){
-        return ActiveCall::where('CompanyID',$CompanyID)->groupby('AccountID')->lists('AccountID');
+    public static function getUniqueAccountID(){
+        return ActiveCall::groupby('AccountID')->lists('AccountID');
 
     }
 
-    public static function getUUIDByAccountID($CompanyID,$AccountID){
-        return ActiveCall::where(['CompanyID'=>$CompanyID,'AccountID'=>$AccountID])->groupby('UUID')->lists('UUID');
+    public static function getUUIDByAccountID($AccountID){
+        return ActiveCall::where(['AccountID'=>$AccountID])->groupby('UUID')->lists('UUID');
 
     }
 
