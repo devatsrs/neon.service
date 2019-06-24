@@ -29,7 +29,7 @@ class PHPMAILERIntegtration{
 		}
 		Config::set('mail.encryption',($config->IsSSL==1?'ssl':'tls'));
 		Config::set('mail.username',$config->SMTPUsername);
-		Config::set('mail.password',$config->SMTPPassword);
+		Config::set('mail.password',  Crypt::decrypt($config->SMTPPassword));
 		extract(Config::get('mail'));
 	
 		$mail = new \PHPMailer;
