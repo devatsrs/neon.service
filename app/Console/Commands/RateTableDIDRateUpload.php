@@ -489,6 +489,9 @@ class RateTableDIDRateUpload extends Command
 
                                         }
 
+                                        // remove 0 from starting of the Code
+                                        $tempratetabledata['Code'] = ltrim($tempratetabledata['Code'],'0');
+
                                         if (!empty($attrselection->OriginationCode) || !empty($attrselection2->OriginationCode)) {
                                             if (!empty($attrselection->OriginationCode)) {
                                                 $selection_Code_Origination = $attrselection->OriginationCode;
