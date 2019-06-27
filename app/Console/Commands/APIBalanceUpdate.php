@@ -89,6 +89,7 @@ class APIBalanceUpdate extends Command {
 		}catch (\Exception $e){
 
 			Log::error($e);
+			DB::connection('neon_routingengine')->rollback();
 			$error=1;
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['Message'] ='Error:'.$e->getMessage();
