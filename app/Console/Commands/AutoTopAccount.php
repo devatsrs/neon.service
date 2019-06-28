@@ -92,7 +92,7 @@ class AutoTopAccount extends Command {
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 			if(!empty($AutoPaymentAccountList) && !empty($CompanyConfiguration)) {
 				foreach ($AutoPaymentAccountList as $AutoPaymentAccount) {
-					$AccountBalance = AccountBalance::getAccountBalanceWithActiveCall($AutoPaymentAccount->AccountID);
+					$AccountBalance = AccountBalance::getAccountBalanceWithActiveCallRM($AutoPaymentAccount->AccountID);
 					if ($AccountBalance <= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
 						$DepositAccount = AccountPaymentAutomation::calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration);
 						if (!empty($DepositAccount)) {
