@@ -428,13 +428,13 @@ class AccountBalance extends Model
                 if(!empty($settings['RenewalDays'])){
                     $RenewalDays = $settings['RenewalDays'];
                     $IncludeUnBilledAmount = empty($settings['IncludeUnBilledAmount']) ? 0 : $settings['IncludeUnBilledAmount'];
-                    $InvoiceTemplateID=BillingClass::getInvoiceTemplateID($BillingClassID);
-                    $InvoiceTemplate=InvoiceTemplate::find($InvoiceTemplateID);
-                    $IgnoreCallCharge=$InvoiceTemplate->IgnoreCallCharge;
+                    //$InvoiceTemplateID=BillingClass::getInvoiceTemplateID($BillingClassID);
+                    //$InvoiceTemplate=InvoiceTemplate::find($InvoiceTemplateID);
+                    //$IgnoreCallCharge=$InvoiceTemplate->IgnoreCallCharge;
 
                     log::info('RenewalDays '.$RenewalDays);
                     log::info('IncludeUnBilledAmount '.$IncludeUnBilledAmount);
-                    log::info('IgnoreCallCharge '.$IgnoreCallCharge);
+                    //log::info('IgnoreCallCharge '.$IgnoreCallCharge);
 
                     $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
                         ->select('tblAccountBilling.*','AccountName')
