@@ -161,6 +161,7 @@ class ActiveCall extends \Eloquent {
                 $OutpaymentPerCall = 0;
                 $OutpaymentPerMinute = 0;
                 $Surcharges = 0;
+                $Chargeback = 0;
                 $CollectionCostAmount = 0;
                 $CollectionCostPercentage = 0;
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
@@ -239,19 +240,30 @@ class ActiveCall extends \Eloquent {
                                 $CollectionCostAmountCurrency = $RateTableDIDRate->CollectionCostAmountCurrency;
                                 $CollectionCostAmount = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CollectionCostAmountCurrency, $CollectionCostAmount);
                             }
+                            $CollectionCostAmount = ($Duration * ($CollectionCostAmount / 60));
                         }
 
                         $Cost = $PackageCostPerMinute + $RecordingCostPerMinute + $CostPerCall + $CostPerMinute + $SurchargePerCall + $SurchargePerMinute + $Surcharges +$CollectionCostAmount - $OutpaymentPerCall - $OutpaymentPerMinute;
 
                         $CollectionCostPercentage = isset($RateTableDIDRate->CollectionCostPercentage)?$RateTableDIDRate->CollectionCostPercentage:0;
-                        if(!empty($CollectionCostPercentage)){
+                        $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
+                        if(!empty($CollectionCostPercentage) && $TotalOutPayment > 0){
                             if(!empty($TaxRateIDs)){
-                                $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
+                                $TotalOutPayment = ActiveCall::getCostWithTaxes($TotalOutPayment,$TaxRateIDs);
                             }
-                            $CollectionCostPercentage = $Cost * ($CollectionCostPercentage/100);
+                            $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
                         }
+                        $Chargeback = isset($RateTableDIDRate->Chargeback)?$RateTableDIDRate->Chargeback:0;
+                        if(!empty($Chargeback) && $TotalOutPayment > 0){
+                            $Chargeback = $TotalOutPayment * ($Chargeback/100);
+                            $Cost = $Cost + $Chargeback;
+                        }
                     }
+                }
+
+                if($Cost>0){
+                    $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
                 }
 
                 $UpdateData = array();
@@ -266,6 +278,7 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['OutpaymentPerCall'] = $OutpaymentPerCall;
                 $UpdateData['OutpaymentPerMinute'] = $OutpaymentPerMinute;
                 $UpdateData['Surcharges'] = $Surcharges;
+                $UpdateData['Chargeback'] = $Chargeback;
                 $UpdateData['CollectionCostAmount'] = $CollectionCostAmount;
                 $UpdateData['CollectionCostPercentage'] = $CollectionCostPercentage;
                 $UpdateData['PackageCostPerMinute'] = $PackageCostPerMinute;
