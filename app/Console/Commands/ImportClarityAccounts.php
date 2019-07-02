@@ -77,6 +77,7 @@ class ImportClarityAccounts extends Command {
 
         Log::useFiles(storage_path().'/logs/importclarityaccounts-'.$CompanyGatewayID.'-'.date('Y-m-d').'.log');
 
+
         try {
 
             Log::info("============ Clarity Account Import Start ============");
@@ -89,9 +90,10 @@ class ImportClarityAccounts extends Command {
             $joblogdata['created_by'] = 'RMScheduler';
             $joblogdata['Message'] = '';
 
-            $batch_insert_array_customer = $batch_insert_array_vendor = $tempCustomerData = $tempVendorData = array();
+            $batch_insert_array_customer = $batch_insert_array_vendor = $tempCustomerData = $tempVendorData = $tempCustomerRateTableData = $batch_insert_array_customer_ratetable = array();
             $customer_data_count    = 0;
             $vendor_data_count      = 0;
+            $customer_ratetable_data_count = 0;
             $insertLimit            = 250;
             $importoption           = 1;
             $gateway                = "";
@@ -103,11 +105,14 @@ class ImportClarityAccounts extends Command {
             $Customers  = $ClarityPBX->getCustomersList();
             $Vendors    = $ClarityPBX->getVendorsList();
 
+            DB::table('tblTempAccountRateTable')->truncate();
+
             if(count($Customers)>0) {
+
                 foreach ($Customers as $temp_customer_row) {
-                    $count = DB::table('tblAccount')->where(["AccountName" => $temp_customer_row->descr, "AccountType" => $AccountType])->count();
+                    $count = DB::table('tblAccount')->where(["AccountName" => $temp_customer_row->customer_name, "AccountType" => $AccountType])->count();
                     if ($count == 0) {
-                        $tempCustomerData['AccountName'] = $temp_customer_row->descr;
+                        $tempCustomerData['AccountName'] = $temp_customer_row->customer_name;
                         $tempCustomerData['AccountType'] = $AccountType;
                         $tempCustomerData['CompanyId'] = $CompanyID;
                         $tempCustomerData['Status'] = 1;
@@ -118,16 +123,35 @@ class ImportClarityAccounts extends Command {
                         $tempCustomerData['created_at'] = date('Y-m-d H:i:s.000');
                         $tempCustomerData['created_by'] = 'Auto Import';
                         $batch_insert_array_customer[] = $tempCustomerData;
+
                         $customer_data_count++;
+
+                        //CustomerRate Table
+                        $tempCustomerRateTableData['AccountName'] = $temp_customer_row->customer_name;
+                        $tempCustomerRateTableData['RateTableName'] = $temp_customer_row->ratetable_name;
+                        $batch_insert_array_customer_ratetable[]=$tempCustomerRateTableData;
+
+
+                        $customer_ratetable_data_count++;
 
                         if ($customer_data_count > $insertLimit && !empty($batch_insert_array_customer)) {
                             DB::table('tblTempAccount')->insert($batch_insert_array_customer);
                             $batch_insert_array_customer = array();
                             $customer_data_count = 0;
                         }
+
+                        //CustomerRate Table
+                        if ($customer_ratetable_data_count > $insertLimit && !empty($batch_insert_array_customer_ratetable)) {
+                            DB::table('tblTempAccountRateTable')->insert($batch_insert_array_customer_ratetable);
+                            $batch_insert_array_customer_ratetable = array();
+                            $customer_ratetable_data_count = 0;
+                        }
+
                     }
                 }
             }
+
+
 
             if(count($Vendors)>0) {
                 foreach ($Vendors as $temp_vendor_row) {
@@ -162,12 +186,74 @@ class ImportClarityAccounts extends Command {
                 DB::table('tblTempAccount')->insert($batch_insert_array_vendor);
             }
 
+            //CustomerRateTable
+            if (!empty($batch_insert_array_customer_ratetable)) {
+                DB::table('tblTempAccountRateTable')->insert($batch_insert_array_customer_ratetable);
+            }
+
+            //die;
             Log::info("start CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','".$CompanyGatewayID."','".""."','".$importoption."','".$accountimportdate."','".$gateway."')");
             try {
                 DB::beginTransaction();
                 $JobStatusMessage = DB::select("CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . "" . "','" . $importoption . "','".$accountimportdate."','".$gateway."')");
                 Log::info("end CALL  prc_WSProcessImportAccount ('" . $ProcessID . "','" . $CompanyID . "','" . $CompanyGatewayID . "','" . "" . "','" . $importoption . "','".$accountimportdate."','".$gateway."')");
+
+                Log::info("start prc_CreateCustomerTrunks('".$CompanyID."')");
+                DB::select("CALL prc_CreateCustomerTrunks('".$CompanyID."')");
+                Log::info("END prc_CreateCustomerTrunks('".$CompanyID."')");
+
+
+                //Compare Neon-Clarity RateTable Start
+
+                $AcctRateTable=DB::table('tblCustomerTrunk')->join('tblAccount','tblAccount.AccountID','=','tblCustomerTrunk.AccountID')
+                    ->join('tblRateTable','tblRateTable.RateTableId','=','tblCustomerTrunk.RateTableID')
+                    ->where('tblCustomerTrunk.Status',1)->distinct()->get(['tblAccount.AccountName','tblRateTable.RateTableName']);
+
+                $CustomerRate=[];
+                foreach ($AcctRateTable as $item) {
+                    $data=[];
+                    $data['AccountName'] = $item->AccountName;
+                    $data['RateTableName'] = $item->RateTableName;
+                    array_push($CustomerRate,$data);
+                }
+
+
+                /*Log::info("Count= ".count($CustomerRate));
+                Log::info(print_r($CustomerRate,true));*/
+
+                $Customer_ratetable  = $ClarityPBX->getCustomersList();
+
+                //Log::info(print_r($Customers,true));die;
+
+                $updateData=array();
+
+                foreach($Customer_ratetable as $c){
+                    foreach($CustomerRate as $cr){
+                        if($c->customer_name == $cr['AccountName']){
+                            if($c->ratetable_name != $cr['RateTableName']){
+                                $data=array();
+                                $data['customer_name'] = $c->customer_name;
+                                $data['ratetable_name'] = $cr['RateTableName'];
+                                $data['cb_id'] = $c->cb_id;
+
+                                array_push($updateData,$data);
+                            }
+                        }
+                    }
+                }
+
+                //update diff rateTable
+                 Log::info("Count Difference RateTable = ".count($updateData));
+                if(!empty($updateData)){
+                    $ClarityPBX->UpdateRateTable($updateData);
+                }
+
+                //Compare Neon-Clarity RateTable End
+
+
                 DB::commit();
+
+
                 $JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
                 Account::updateAccountNo($CompanyID);
                 Log::info('update account number - Done');
