@@ -162,6 +162,7 @@ class ActiveCall extends \Eloquent {
                 $OutpaymentPerMinute = 0;
                 $Surcharges = 0;
                 $Chargeback = 0;
+                $TotalOutPayment = 0;
                 $CollectionCostAmount = 0;
                 $CollectionCostPercentage = 0;
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
@@ -254,6 +255,7 @@ class ActiveCall extends \Eloquent {
                             $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
                         }
+                        $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
                         $Chargeback = isset($RateTableDIDRate->Chargeback)?$RateTableDIDRate->Chargeback:0;
                         if(!empty($Chargeback) && $TotalOutPayment > 0){
                             $Chargeback = $TotalOutPayment * ($Chargeback/100);
