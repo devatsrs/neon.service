@@ -48,20 +48,22 @@ class ActiveCall extends \Eloquent {
         if($Duration > $OldDuration) {
 
             $BilledDuration = $Duration;
-            if ($ActiveCall->CallRecording == 1) {
-                $CallRecordingDuration = strtotime($Date) - strtotime($ActiveCall->CallRecordingStartTime);
-                $RateTablePKGRateID = $ActiveCall->RateTablePKGRateID;
-                if(!empty($RateTablePKGRateID)){
-                    $RateTablePKGRate = DB::connection('neon_routingengine')->table('tblRateTablePKGRate')->where(['RateTablePKGRateID'=>$RateTablePKGRateID])->first();
-                    if(!empty($RateTablePKGRate)){
-                        $PackageCostPerMinute = isset($RateTablePKGRate->PackageCostPerMinute)?$RateTablePKGRate->PackageCostPerMinute:0;
-                        if(!empty($PackageCostPerMinute)){
-                            if(!empty($RateTablePKGRate->PackageCostPerMinuteCurrency)) {
-                                $PackageCostPerMinuteCurrency = $RateTablePKGRate->PackageCostPerMinuteCurrency;
-                                $PackageCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
-                            }
-                            $PackageCostPerMinute = ($CallRecordingDuration * ($PackageCostPerMinute/60));
+            $RateTablePKGRateID = $ActiveCall->RateTablePKGRateID;
+            if(!empty($RateTablePKGRateID)){
+                $RateTablePKGRate = DB::connection('neon_routingengine')->table('tblRateTablePKGRate')->where(['RateTablePKGRateID'=>$RateTablePKGRateID])->first();
+                if(!empty($RateTablePKGRate)){
+
+                    $PackageCostPerMinute = isset($RateTablePKGRate->PackageCostPerMinute)?$RateTablePKGRate->PackageCostPerMinute:0;
+                    if(!empty($PackageCostPerMinute)){
+                        if(!empty($RateTablePKGRate->PackageCostPerMinuteCurrency)) {
+                            $PackageCostPerMinuteCurrency = $RateTablePKGRate->PackageCostPerMinuteCurrency;
+                            $PackageCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
                         }
+                        $PackageCostPerMinute = ($BilledDuration * ($PackageCostPerMinute/60));
+                    }
+
+                    if ($ActiveCall->CallRecording == 1) {
+                        $CallRecordingDuration = strtotime($Date) - strtotime($ActiveCall->CallRecordingStartTime);
 
                         $RecordingCostPerMinute = isset($RateTablePKGRate->RecordingCostPerMinute)?$RateTablePKGRate->RecordingCostPerMinute:0;
                         if(!empty($RecordingCostPerMinute)){
@@ -74,7 +76,6 @@ class ActiveCall extends \Eloquent {
                     }
                 }
             }
-
             /** calculation outbound cost */
 
             if ($CallType == 'Outbound') {
@@ -160,6 +161,8 @@ class ActiveCall extends \Eloquent {
                 $OutpaymentPerCall = 0;
                 $OutpaymentPerMinute = 0;
                 $Surcharges = 0;
+                $Chargeback = 0;
+                $TotalOutPayment = 0;
                 $CollectionCostAmount = 0;
                 $CollectionCostPercentage = 0;
                 $RateTableDIDRateID = $ActiveCall->RateTableDIDRateID;
@@ -221,13 +224,15 @@ class ActiveCall extends \Eloquent {
                             $OutpaymentPerMinute = ($Duration * ($OutpaymentPerMinute/60));
                         }
 
-                        $Surcharges = isset($RateTableDIDRate->Surcharges)?$RateTableDIDRate->Surcharges:0;
-                        if(!empty($Surcharges)){
-                            if(!empty($RateTableDIDRate->SurchargesCurrency)) {
-                                $SurchargesCurrency = $RateTableDIDRate->SurchargesCurrency;
-                                $Surcharges = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $SurchargesCurrency, $Surcharges);
+                        if(empty($SurchargePerCall) && empty($SurchargePerMinute)){
+                            $Surcharges = isset($RateTableDIDRate->Surcharges) ? $RateTableDIDRate->Surcharges : 0;
+                            if (!empty($Surcharges)) {
+                                if (!empty($RateTableDIDRate->SurchargesCurrency)) {
+                                    $SurchargesCurrency = $RateTableDIDRate->SurchargesCurrency;
+                                    $Surcharges = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $SurchargesCurrency, $Surcharges);
+                                }
+                                $Surcharges = ($Duration * ($Surcharges / 60));
                             }
-                            $Surcharges = ($Duration * ($Surcharges/60));
                         }
 
                         $CollectionCostAmount = isset($RateTableDIDRate->CollectionCostAmount)?$RateTableDIDRate->CollectionCostAmount:0;
@@ -236,19 +241,31 @@ class ActiveCall extends \Eloquent {
                                 $CollectionCostAmountCurrency = $RateTableDIDRate->CollectionCostAmountCurrency;
                                 $CollectionCostAmount = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CollectionCostAmountCurrency, $CollectionCostAmount);
                             }
+                            $CollectionCostAmount = ($Duration * ($CollectionCostAmount / 60));
                         }
 
                         $Cost = $PackageCostPerMinute + $RecordingCostPerMinute + $CostPerCall + $CostPerMinute + $SurchargePerCall + $SurchargePerMinute + $Surcharges +$CollectionCostAmount - $OutpaymentPerCall - $OutpaymentPerMinute;
 
                         $CollectionCostPercentage = isset($RateTableDIDRate->CollectionCostPercentage)?$RateTableDIDRate->CollectionCostPercentage:0;
-                        if(!empty($CollectionCostPercentage)){
+                        $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
+                        if(!empty($CollectionCostPercentage) && $TotalOutPayment > 0){
                             if(!empty($TaxRateIDs)){
-                                $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
+                                $TotalOutPayment = ActiveCall::getCostWithTaxes($TotalOutPayment,$TaxRateIDs);
                             }
-                            $CollectionCostPercentage = $Cost * ($CollectionCostPercentage/100);
+                            $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
                         }
+                        $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
+                        $Chargeback = isset($RateTableDIDRate->Chargeback)?$RateTableDIDRate->Chargeback:0;
+                        if(!empty($Chargeback) && $TotalOutPayment > 0){
+                            $Chargeback = $TotalOutPayment * ($Chargeback/100);
+                            $Cost = $Cost + $Chargeback;
+                        }
                     }
+                }
+
+                if($Cost>0){
+                    $Cost = ActiveCall::getCostWithTaxes($Cost,$TaxRateIDs);
                 }
 
                 $UpdateData = array();
@@ -263,6 +280,7 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['OutpaymentPerCall'] = $OutpaymentPerCall;
                 $UpdateData['OutpaymentPerMinute'] = $OutpaymentPerMinute;
                 $UpdateData['Surcharges'] = $Surcharges;
+                $UpdateData['Chargeback'] = $Chargeback;
                 $UpdateData['CollectionCostAmount'] = $CollectionCostAmount;
                 $UpdateData['CollectionCostPercentage'] = $CollectionCostPercentage;
                 $UpdateData['PackageCostPerMinute'] = $PackageCostPerMinute;
