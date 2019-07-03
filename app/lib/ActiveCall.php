@@ -27,7 +27,8 @@ class ActiveCall extends \Eloquent {
         $ActiveCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->first();
         $AccountID = $ActiveCall->AccountID;
         $CompanyID = $ActiveCall->CompanyID;
-        $CompanyCurrency = DB::connection('neon_routingengine')->table('tblCompany')->where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+        $CompanyCurrency = DB::connection('neon_routingengine')->table('tblBaseCurrency')->first();
+        $CompanyCurrency = $CompanyCurrency->CurrencyId;
         $AccountCurrency = DB::connection('neon_routingengine')->table('tblAccount')->where(['AccountID'=>$AccountID])->pluck('CurrencyId');
 
         $Cost = $ActiveCall->Cost;
