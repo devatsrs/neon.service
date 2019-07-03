@@ -241,7 +241,6 @@ class ActiveCall extends \Eloquent {
                                 $CollectionCostAmountCurrency = $RateTableDIDRate->CollectionCostAmountCurrency;
                                 $CollectionCostAmount = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $CollectionCostAmountCurrency, $CollectionCostAmount);
                             }
-                            $CollectionCostAmount = ($Duration * ($CollectionCostAmount / 60));
                         }
 
                         $Cost = $PackageCostPerMinute + $RecordingCostPerMinute + $CostPerCall + $CostPerMinute + $SurchargePerCall + $SurchargePerMinute + $Surcharges +$CollectionCostAmount - $OutpaymentPerCall - $OutpaymentPerMinute;
