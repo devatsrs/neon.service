@@ -49,7 +49,7 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== AccountPaymentReminder END===========');
 
-        Log::info('============== ACD/ASR alert START===========');
+        /*Log::info('============== ACD/ASR alert START===========');
         try {
             Alert::asr_acd_alert($CompanyID,$ProcessID);
         } catch (\Exception $e) {
@@ -65,7 +65,7 @@ class NeonAlert extends \Eloquent {
             Log::error($e);
             $cronjobdata[] = 'Vendor Balance alert failed';
         }
-        Log::info('============== Vendor Balance alert END===========');
+        Log::info('============== Vendor Balance alert END===========');*/
 
         Log::info('============== CDR Post Process START===========');
         try {
@@ -85,7 +85,7 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== Report Schedule END===========');
 
-        Log::info('============== Account Balance Email Reminder START===========');
+        /*Log::info('============== Account Balance Email Reminder START===========');
         try {
             Alert::sendAccountBalanceEmailReminder($CompanyID);
         } catch (\Exception $e) {
@@ -100,7 +100,7 @@ class NeonAlert extends \Eloquent {
             Log::error($e);
             $cronjobdata[] = 'LowStockReminder alert failed';
         }
-        Log::info('============== LowStockReminder alert END===========');
+        Log::info('============== LowStockReminder alert END===========');*/
 
         return $cronjobdata;
     }
