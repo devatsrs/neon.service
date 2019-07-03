@@ -41,7 +41,7 @@ class BillingClass extends \Eloquent {
                 $join->on('b1.BillingClassID', '=', 'b2.ParentBillingClassID');
                 $join->on('b1.IsGlobal','=', DB::raw('1'));
                 $join->on('b2.CompanyID','=', DB::raw($CompanyID));
-            })->select(['b1.Name','b1.BillingClassID'])
+            })->select(['b1.*'])
                 ->where(function($q) use($CompanyID) {
                     $q->where('b1.CompanyID', $CompanyID)
                         ->orWhere('b1.IsGlobal', '1');
