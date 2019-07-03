@@ -3,6 +3,7 @@
 use App\Lib\AccountBalance;
 use App\Lib\ActiveCall;
 use App\Lib\CronHelper;
+use App\Lib\NeonAPI;
 use App\Lib\Helper;
 use App\Lib\SpeakIntelligenceAPI;
 use Illuminate\Console\Command;
@@ -76,6 +77,7 @@ class ActiveCallBalanceAlert extends Command {
 
         $Maincronsetting = json_decode($MainCronJob->Settings,true);
         $APIURL=isset($Maincronsetting['APIURL'])?$Maincronsetting['APIURL']:'';
+        $BlockCallAPI=isset($Maincronsetting['BlockCallAPI'])?$Maincronsetting['BlockCallAPI']:'';
 
         CronJob::createLog($MainCronJobID);
         Log::useFiles(storage_path() . '/logs/activecallbalancealert-' . date('Y-m-d') . '.log');
@@ -121,6 +123,19 @@ class ActiveCallBalanceAlert extends Command {
                     $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$LowBalanceArr);
                     Log::info("=====API Response =====");
                     Log::info(print_r($Result,true));
+
+                    if($BlockCallAPI != ''){
+                        Log::info("=====Block Call API Start =====");
+                        foreach($LowBalanceArr as $Callblock){
+                            $BlockCallsApiArr = array();
+                            $BlockCallsApiArr['AccountID'] = $Callblock['CustomerID'];
+                            $BlockCallsApiArr['UUID'] = $Callblock['UUID'];
+                            $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
+                            $BlockCallsApiArr['BlockReason'] = 'Insufficient Balance';
+                            $JSONInput = json_encode($BlockCallsApiArr, true);
+                            $Result = NeonAPI::callPostAPI($BlockCallsApiArr, $JSONInput,'', $BlockCallAPI);
+                        }
+                    }
 
                     $joblogdata['Message'] = "success";
                     $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
