@@ -2,6 +2,8 @@
 namespace App\Lib;
 
 
+use Illuminate\Support\Facades\DB;
+
 class BillingClass extends \Eloquent {
 
     protected $table = 'tblBillingClass';
