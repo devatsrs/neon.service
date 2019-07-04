@@ -20,7 +20,7 @@ class NeonAPI
         return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
     }
 
-    public static function callAPI($postdata,$call_method,$api_url,$contentType = 0)
+    public static function callAPI($postdata,$call_method,$api_url,$contentType = '')
     {
         $url = $api_url . $call_method;
       //  Log::info("Call API URL :" . $url . '  ' . $postdata);
@@ -36,7 +36,7 @@ class NeonAPI
             "authorization: Basic " . $auth,
         );
 
-        if($contentType != 0)
+        if($contentType != '')
             $header[] = "content-type: " . $contentType;
 
         curl_setopt_array($curl, array(
