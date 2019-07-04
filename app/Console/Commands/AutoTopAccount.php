@@ -85,16 +85,21 @@ class AutoTopAccount extends Command {
 			$AutoPaymentAccountList = Account::
 			Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
 				->select(['AccountName','tblAccount.AccountID','Number','MinThreshold','TopupAmount'])
-				->where(['tblAccount.Status'=>1,'tblAccount.CompanyId'=>$CompanyID])
+				->where(['tblAccount.Status'=>1])
 				->where('tblAccountPaymentAutomation.AutoTopup','=', 1)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
 			$AutoPaymentAccountList = $AutoPaymentAccountList->get();
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 			if(!empty($AutoPaymentAccountList) && !empty($CompanyConfiguration)) {
+				//Log::info("$AutoPaymentAccountList: " . json_encode($AutoPaymentAccountList));
 				foreach ($AutoPaymentAccountList as $AutoPaymentAccount) {
+					//Log::info("$AutoPaymentAccount: " . json_encode($AutoPaymentAccountList));
 					$AccountBalance = AccountBalance::getAccountBalanceWithActiveCallRM($AutoPaymentAccount->AccountID);
+
+					//Log::info("$AccountBalance <= $AutoPaymentAccount->MinThreshold: " . json_encode($AccountBalance <= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0));
 					if ($AccountBalance <= $AutoPaymentAccount->MinThreshold && $AutoPaymentAccount->TopupAmount > 0) {
 						$DepositAccount = AccountPaymentAutomation::calldepositFundAPI($AutoPaymentAccount, $CompanyConfiguration);
+						//Log::info("$DepositAccount: " . json_encode($DepositAccount));
 						if (!empty($DepositAccount)) {
 							if ($DepositAccount[0] == "success") {
 								$successRecord = array();

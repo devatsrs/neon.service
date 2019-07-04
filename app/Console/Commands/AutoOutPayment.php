@@ -71,7 +71,6 @@ class AutoOutPayment extends Command {
             $AutoOutPaymentList =  Account::Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
                 ->Join('tblAccountBalance','tblAccount.AccountID','=','tblAccountBalance.AccountID')
                 ->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
-                ->where('tblAccount.CompanyID','=', $CompanyID)
                 ->where('tblAccountPaymentAutomation.AutoOutpayment','=', 1)
                 ->where('tblAccountPaymentAutomation.OutPaymentThreshold','>', 0)
                 ->where('tblAccountPaymentAutomation.OutPaymentAmount','>', 0)
