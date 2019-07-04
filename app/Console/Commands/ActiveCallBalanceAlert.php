@@ -133,7 +133,8 @@ class ActiveCallBalanceAlert extends Command {
                             $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
                             $BlockCallsApiArr['BlockReason'] = 'Insufficient Balance';
                             $JSONInput = json_encode($BlockCallsApiArr, true);
-                            $Result = NeonAPI::callPostAPI($BlockCallsApiArr, $JSONInput,'', $BlockCallAPI);
+                            $Result = NeonAPI::callAPI($JSONInput,'', $BlockCallAPI,'application/json');
+                            Log::info("Block call api response." . json_encode($Result));
                         }
                     }
 
