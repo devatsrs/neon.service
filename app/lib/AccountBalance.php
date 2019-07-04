@@ -60,7 +60,7 @@ class AccountBalance extends Model
 
     public static function SendZeroBalanceWarning($CompanyID, $ProcessID){
 
-        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach($BillingClass as $BillingClassSingle) {
 
             if (isset($BillingClassSingle->ZeroBalanceWarningStatus) && $BillingClassSingle->ZeroBalanceWarningStatus == 1 && isset($BillingClassSingle->ZeroBalanceWarningStatus)) {
@@ -415,7 +415,7 @@ class AccountBalance extends Model
      * first email goes to date reminder date and other will go through interval wise
      */
     public static function SendBalanceWarning($CompanyID,$ProcessID){
-        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach($BillingClass as $BillingClassSingle) {
             if(isset($BillingClassSingle->BalanceWarningStatus) && $BillingClassSingle->BalanceWarningStatus == 1 && isset($BillingClassSingle->BalanceWarningStatus)){
                 $settings = json_decode($BillingClassSingle->BalanceWarningSettings, true);

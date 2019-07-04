@@ -67,21 +67,22 @@ class NeonAlerts extends Command
 
 
             $Companies = Company::where('Status',1)->get();
+            $cronjobdata = [];
             foreach($Companies as $company) {
                 $CompanyID = $company->CompanyID;
                 $cronjobdata = NeonAlert::neon_alerts($CompanyID, $ProcessID);
-                if (count($cronjobdata)) {
-                    $joblogdata['Message'] = 'Message : ' . implode(',<br>', $cronjobdata);
-                    $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                    if (!empty($cronsetting['ErrorEmail'])) {
-                        $result = CronJob::CronJobErrorEmailSend($CronJobID, implode(',\n\r', $cronjobdata));
-                        Log::error("**Email Sent Status " . $result['status']);
-                        Log::error("**Email Sent message " . $result['message']);
-                    }
-                } else {
-                    $joblogdata['Message'] = 'Success';
-                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+            }
+            if (count($cronjobdata)) {
+                $joblogdata['Message'] = 'Message : ' . implode(',<br>', $cronjobdata);
+                $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                if (!empty($cronsetting['ErrorEmail'])) {
+                    $result = CronJob::CronJobErrorEmailSend($CronJobID, implode(',\n\r', $cronjobdata));
+                    Log::error("**Email Sent Status " . $result['status']);
+                    Log::error("**Email Sent message " . $result['message']);
                 }
+            } else {
+                $joblogdata['Message'] = 'Success';
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             }
 
         } catch (\Exception $e) {
