@@ -70,13 +70,22 @@ class NeonAlerts extends Command
             $cronjobdata = [];
             foreach($Companies as $company) {
                 $CompanyID = $company->CompanyID;
-                $cronjobdata = NeonAlert::neon_alerts($CompanyID, $ProcessID);
+                $cronjobdata[] = NeonAlert::neon_alerts($CompanyID, $ProcessID);
             }
-            if (count($cronjobdata)) {
-                $joblogdata['Message'] = 'Message : ' . implode(',<br>', $cronjobdata);
+
+            $messages = [];
+            foreach ($cronjobdata as $item) {
+                if(count($item))
+                    foreach ($item as $msg) {
+                        $messages[] = $msg;
+                    }
+            }
+
+            if (count($messages)) {
+                $joblogdata['Message'] = 'Message : ' . implode(',<br>', $messages);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                 if (!empty($cronsetting['ErrorEmail'])) {
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID, implode(',\n\r', $cronjobdata));
+                    $result = CronJob::CronJobErrorEmailSend($CronJobID, implode(',\n\r', $messages));
                     Log::error("**Email Sent Status " . $result['status']);
                     Log::error("**Email Sent message " . $result['message']);
                 }
