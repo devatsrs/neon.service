@@ -20,7 +20,7 @@ class NeonAPI
         return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
     }
 
-    public static function callAPI($postdata,$call_method,$api_url)
+    public static function callAPI($postdata,$call_method,$api_url,$contentType = '')
     {
         $url = $api_url . $call_method;
       //  Log::info("Call API URL :" . $url . '  ' . $postdata);
@@ -30,6 +30,15 @@ class NeonAPI
 
         //echo ' ' . Crypt::decrypt('eyJpdiI6IjRmZnRBQ1lKTm5ySEFlSU9hUHhha1E9PSIsInZhbHVlIjoiKytSU3JUK3FIdzRZaXhJRzhaNFwvbXc9PSIsIm1hYyI6IjllMmVhM2E1M2RkNzdlNjM5YmY3NGI2ZWUwMGQ1MDNmYjNjNmQwY2M2Y2Q1YWEwZGM5Nzg1NWU2OTBmYzQyOGEifQ==') . ' ';
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
+
+        $header = array(
+            "accept: application/json",
+            "authorization: Basic " . $auth,
+        );
+
+        if($contentType != '')
+            $header[] = "content-type: " . $contentType;
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -39,10 +48,7 @@ class NeonAPI
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => $postdata,
-            CURLOPT_HTTPHEADER => array(
-                "accept: application/json",
-                "authorization: Basic " . $auth,
-            ),
+            CURLOPT_HTTPHEADER => $header,
         ));
 
         $response = curl_exec($curl);

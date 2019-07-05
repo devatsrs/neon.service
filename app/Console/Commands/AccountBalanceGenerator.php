@@ -82,11 +82,11 @@ class AccountBalanceGenerator extends Command {
 
 			Log::info('Account Balance Start.');
 
-			$errors = AccountBalanceLog::CreateAllLog($CompanyID,$processID);
+			$errors = AccountBalanceLog::CreateAllLog($processID);
 
 			$ErrorMessage = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'');
 
-			AccountBalanceLog::updateAccountBalanceAmount($CompanyID);
+			AccountBalanceLog::updateAccountBalanceAmount();
 
 			Log::info('Account Balance End.');
 

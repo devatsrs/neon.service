@@ -162,5 +162,17 @@ class UsageDetail extends \Eloquent {
 
     }
 
+    public static function getTotalUsageByStartDate($AccountID,$Date){
+        $TotalCharges = 0;
+
+        $UsageDetails = DB::connection('sqlsrvcdr')->select('SELECT SUM(ud.cost) as cost  FROM tblUsageDetails ud INNER JOIN tblUsageHeader h  ON ud.UsageHeaderID = h.UsageHeaderID WHERE h.AccountID = "' . $AccountID . '" AND h.StartDate = "' . $Date . '"');
+
+        if (!empty($UsageDetails[0]->cost)) {
+            $TotalCharges = $UsageDetails[0]->cost;
+        }
+
+        return $TotalCharges;
+    }
+
 
 }

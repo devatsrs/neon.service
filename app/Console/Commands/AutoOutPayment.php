@@ -71,7 +71,6 @@ class AutoOutPayment extends Command {
             $AutoOutPaymentList =  Account::Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
                 ->Join('tblAccountBalance','tblAccount.AccountID','=','tblAccountBalance.AccountID')
                 ->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
-                ->where('tblAccount.CompanyID','=', $CompanyID)
                 ->where('tblAccountPaymentAutomation.AutoOutpayment','=', 1)
                 ->where('tblAccountPaymentAutomation.OutPaymentThreshold','>', 0)
                 ->where('tblAccountPaymentAutomation.OutPaymentAmount','>', 0)
@@ -110,7 +109,9 @@ class AutoOutPayment extends Command {
                 }
             }
 
-            if (count($AutoOutPaymentList) > 0) {
+            $totalMsg = count($SuccessOutPayment) + count($FailureOutPayment) + count($ErrorOutPayment);
+
+            if ($totalMsg > 0) {
                 $this::AutoOutPaymentNotification($CompanyID, $SuccessOutPayment, $FailureOutPayment, $ErrorOutPayment);
             } else {
                 Log::info('No Account IDs found for the auto out payment.');
@@ -183,7 +184,7 @@ class AutoOutPayment extends Command {
         } else {
             $response = json_decode($APIresponse["response"], true);
             Log::info(print_r($response, true));
-            $autoOutPayment[0] = isset($response['data']['RequestFundID']) ? "success" : "failed";
+            $autoOutPayment[0] = isset($response['RequestFundID']) ? "success" : "failed";
             $autoOutPayment[1] = $response;
         }
 

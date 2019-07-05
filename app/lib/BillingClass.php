@@ -2,6 +2,8 @@
 namespace App\Lib;
 
 
+use Illuminate\Support\Facades\DB;
+
 class BillingClass extends \Eloquent {
 
     protected $table = 'tblBillingClass';
@@ -27,5 +29,25 @@ class BillingClass extends \Eloquent {
     }
     public static function getTaxRate($BillingClassID){
         return BillingClass::where('BillingClassID',$BillingClassID)->pluck('TaxRateID');
+    }
+
+    public static function getBillingClassByCompanyID($CompanyID){
+
+        $Count = Reseller::IsResellerByCompanyID($CompanyID);
+        if($Count==0){
+            $BillingClasses = BillingClass::where(array("CompanyID"=>$CompanyID))->get();
+        }else{
+            $BillingClasses = DB::table('tblBillingClass as b1')->leftJoin('tblBillingClass as b2',function ($join) use($CompanyID){
+                $join->on('b1.BillingClassID', '=', 'b2.ParentBillingClassID');
+                $join->on('b1.IsGlobal','=', DB::raw('1'));
+                $join->on('b2.CompanyID','=', DB::raw($CompanyID));
+            })->select(['b1.*'])
+                ->where(function($q) use($CompanyID) {
+                    $q->where('b1.CompanyID', $CompanyID)
+                        ->orWhere('b1.IsGlobal', '1');
+                })->whereNull('b2.BillingClassID')
+                ->get();
+        }
+        return $BillingClasses;
     }
 }

@@ -23,24 +23,25 @@ class AccountBalanceLog extends Model
     const BILLINGTYPE_POSTPAID = 2;
     const BILLINGTYPE_BOTH = 3;
 
-    public static function CreateAllLog($CompanyID,$ProcessID){
+    public static function CreateAllLog($ProcessID){
         Log::info('CreateAllLog Start ');
         $errors = array();
 
         $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
-            ->select('tblAccountBilling.AccountID')
-            ->where(array('CompanyID'=>$CompanyID,'Status'=>1,'AccountType'=>1,'Billing'=>1,'tblAccountBilling.ServiceID'=>0,'tblAccountBilling.BillingType'=>AccountBalanceLog::BILLINGTYPE_PREPAID))
+            ->select('tblAccountBilling.AccountID','tblAccount.CompanyId','tblAccount.AccountName')
+            ->where(array('Status'=>1,'AccountType'=>1,'Billing'=>1,'tblAccountBilling.ServiceID'=>0,'tblAccountBilling.AccountServiceID'=>0,'tblAccountBilling.BillingType'=>AccountBalanceLog::BILLINGTYPE_PREPAID))
             //->where(array('tblAccount.AccountID'=>7990))
             ->get();
         foreach ($Accounts as $Account) {
                 $AccountID = $Account->AccountID;
+                $CompanyID = $Account->CompanyId;
                 $AccountName = $Account->AccountName;
                 log::info($Account->AccountID . ' ');
                 try {
                     DB::beginTransaction();
                     DB::connection('sqlsrv2')->beginTransaction();
-                    AccountBalanceUsageLog::CreateUsageLog($CompanyID, $AccountID, $ProcessID);
-                    AccountBalanceLog::CreateServiceLog($CompanyID, $AccountID, $ProcessID);
+                    AccountBalanceUsageLog::CreateUsageLog($CompanyID, $AccountID, $ProcessID); // done
+                    //AccountBalanceLog::CreateServiceLog($CompanyID, $AccountID, $ProcessID);
                     DB::commit();
                     DB::connection('sqlsrv2')->commit();
                 } catch (\Exception $e) {
@@ -141,9 +142,9 @@ class AccountBalanceLog extends Model
         }
     }
 
-    public static function updateAccountBalanceAmount($CompanyID){
+    public static function updateAccountBalanceAmount(){
         $AccountID=0;
-        DB::select("CALL prc_updatePrepaidAccountBalance(?,?)",array($CompanyID,$AccountID));
+        DB::select("CALL prc_updatePrepaidAccountBalance(?)",array($AccountID));
     }
 
     public static function getPrepaidAccountBalance($AccountID){

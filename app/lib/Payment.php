@@ -18,7 +18,7 @@ class Payment extends \Eloquent{
 
     public static function InvoicePaymentReminder($CompanyID,$ProcessID){
 
-        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach($BillingClass as $BillingClassSingle) {
             if (isset($BillingClassSingle->InvoiceReminderStatus) && $BillingClassSingle->InvoiceReminderStatus == 1 && isset($BillingClassSingle->InvoiceReminderSettings)) {
                 $settings = json_decode($BillingClassSingle->InvoiceReminderSettings, true);
@@ -57,7 +57,7 @@ class Payment extends \Eloquent{
         }
     }
     public static function AccountPaymentReminder($CompanyID,$ProcessID){
-        $BillingClass = BillingClass::where('CompanyID', $CompanyID)->get();
+        $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach ($BillingClass as $BillingClassSingle) {
             if (isset($BillingClassSingle->PaymentReminderStatus) && $BillingClassSingle->PaymentReminderStatus == 1 && isset($BillingClassSingle->PaymentReminderSettings)) {
                 $settings = json_decode($BillingClassSingle->PaymentReminderSettings, true);
