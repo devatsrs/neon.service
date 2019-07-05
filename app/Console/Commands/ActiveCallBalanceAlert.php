@@ -129,7 +129,7 @@ class ActiveCallBalanceAlert extends Command {
                         foreach($LowBalanceArr as $Callblock){
                             $BlockCallsApiArr = array();
                             $BlockCallsApiArr['AccountID']      = $Callblock['CustomerID'];
-                            $BlockCallsApiArr['UUID']           = $Callblock['UUID'];
+                            $BlockCallsApiArr['UUID']           = implode(",", $Callblock['UUID']);
                             $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
                             $BlockCallsApiArr['BlockReason']    = 'Insufficient Balance';
                             $JSONInput = json_encode($BlockCallsApiArr, true);
