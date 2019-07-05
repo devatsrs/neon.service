@@ -28,7 +28,7 @@ class AccountBalanceLog extends Model
         $errors = array();
 
         $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
-            ->select('tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID','tblAccount.CompanyId','tblAccount.AccountName')
             ->where(array('Status'=>1,'AccountType'=>1,'Billing'=>1,'tblAccountBilling.ServiceID'=>0,'tblAccountBilling.AccountServiceID'=>0,'tblAccountBilling.BillingType'=>AccountBalanceLog::BILLINGTYPE_PREPAID))
             //->where(array('tblAccount.AccountID'=>7990))
             ->get();
