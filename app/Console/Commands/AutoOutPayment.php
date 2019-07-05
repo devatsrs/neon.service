@@ -109,7 +109,9 @@ class AutoOutPayment extends Command {
                 }
             }
 
-            if (count($AutoOutPaymentList) > 0) {
+            $totalMsg = count($SuccessOutPayment) + count($FailureOutPayment) + count($ErrorOutPayment);
+
+            if ($totalMsg > 0) {
                 $this::AutoOutPaymentNotification($CompanyID, $SuccessOutPayment, $FailureOutPayment, $ErrorOutPayment);
             } else {
                 Log::info('No Account IDs found for the auto out payment.');

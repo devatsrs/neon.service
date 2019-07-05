@@ -127,22 +127,19 @@ class ActiveCallBalanceAlert extends Command {
                     if($BlockCallAPI != ''){
                         Log::info("=====Block Call API Start =====");
                         foreach($LowBalanceArr as $Callblock){
-                            foreach($Callblock['UUID'] as $blockcalluuid){
-                                $BlockCallsApiArr = array();
-                                $BlockCallsApiArr['AccountID'] = $Callblock['CustomerID'];
-                                $BlockCallsApiArr['UUID'] = $blockcalluuid;
-                                $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
-                                $BlockCallsApiArr['BlockReason'] = 'Insufficient Balance';
-                                $JSONInput = json_encode($BlockCallsApiArr, true);
-                                $Result = NeonAPI::callAPI($JSONInput,'', $BlockCallAPI,'application/json');
-                                Log::info("Block call api response." . json_encode($Result));
-                            }
+                            $BlockCallsApiArr = array();
+                            $BlockCallsApiArr['AccountID']      = $Callblock['CustomerID'];
+                            $BlockCallsApiArr['UUID']           = $Callblock['UUID'];
+                            $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
+                            $BlockCallsApiArr['BlockReason']    = 'Insufficient Balance';
+                            $JSONInput = json_encode($BlockCallsApiArr, true);
+                            $Result = NeonAPI::callAPI($JSONInput,'',$BlockCallAPI,'application/json');
+                            Log::info("Block call api response." . json_encode($Result));
                         }
                     }else{
                         $joblogdata['Message'] ="Block Call API URL Not Found.";
                         $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                         $Error=1;
-            
                     }
 
                     $joblogdata['Message'] = "success";
