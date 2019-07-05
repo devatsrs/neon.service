@@ -35,18 +35,19 @@ class AccountBalanceUsageLog extends Model
             $count=AccountBalanceUsageLog::where(['AccountBalanceLogID'=>$AccountBalanceLogID])->count();
         }
         if(empty($count)){
-            $StartDate = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('BillingStartDate');
+            $StartDate = AccountBilling::where(['AccountID'=>$AccountID,'AccountServiceID'=>0,'ServiceID'=>0])->pluck('BillingStartDate');
         }else{
             /**
              * need to check
              **/
-            $StartDate = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0])->pluck('LastInvoiceDate');
+            // $StartDate = AccountBilling::where(['AccountID'=>$AccountID,'AccountServiceID'=>0,'ServiceID'=>0])->pluck('LastInvoiceDate');
+            $StartDate = date('Y-m-d', strtotime('-1 day', strtotime($EndDate))); // yesterday
         }
         $Total=0;
         if(!empty($StartDate) && !empty($AccountBalanceLogID)){
             while ($StartDate <= $EndDate) {
                 log::info('Date '.$StartDate);
-                $SubTotal=AccountBalanceUsageLog::CreateUsageLogDaily($CompanyID,$AccountID,$AccountBalanceLogID,$StartDate);
+                $SubTotal=AccountBalanceUsageLog::CreateUsageLogDaily($AccountID,$AccountBalanceLogID,$StartDate);
                 $Total=$Total+$SubTotal;
                 $StartDate = date('Y-m-d', strtotime('+1 day', strtotime($StartDate)));
             }
@@ -56,11 +57,14 @@ class AccountBalanceUsageLog extends Model
     }
 
 
-    public static function CreateUsageLogDaily($CompanyID,$AccountID,$AccountBalanceLogID,$Date){
+    public static function CreateUsageLogDaily($AccountID,$AccountBalanceLogID,$Date){
         $UsageStartDate=date('Y-m-d 00:00:00',strtotime($Date));
         $UsageEndDate=date('Y-m-d 23:59:59',strtotime($Date));
+        $Date=date('Y-m-d 00:00:00',strtotime($Date));
         $ServiceID=0;
-        $TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $UsageStartDate, $UsageEndDate,$ServiceID);
+        $AccountServiceID=0;
+        //$TotalCharges = Invoice::getAccountUsageTotal($CompanyID, $AccountID, $UsageStartDate, $UsageEndDate,$ServiceID,$AccountServiceID);
+        $TotalCharges = UsageDetail::getTotalUsageByStartDate($AccountID,$Date);
         //log::info('Total Usage '.$TotalCharges);
         $count = AccountBalanceUsageLog::where(['AccountBalanceLogID'=>$AccountBalanceLogID,'Type'=>0,'Date'=>$UsageStartDate])->count();
         if($count==0){
@@ -76,7 +80,8 @@ class AccountBalanceUsageLog extends Model
             AccountBalanceUsageLog::create($data);
         }
         $AccountBalanceUsageLogID = AccountBalanceUsageLog::where(['AccountBalanceLogID'=>$AccountBalanceLogID,'Type'=>0,'Date'=>$UsageStartDate])->pluck('AccountBalanceUsageLogID');
-        $TotalTax = AccountBalanceTaxRateLog::CreateUsageAccountBalanceTax($AccountID,$AccountBalanceUsageLogID,$TotalCharges);
+        //$TotalTax = AccountBalanceTaxRateLog::CreateUsageAccountBalanceTax($AccountID,$AccountBalanceUsageLogID,$TotalCharges);
+        $TotalTax = 0;
         $GrandTotal = $TotalCharges + $TotalTax;
         $UpdateData=array();
         $UpdateData['UsageAmount']=$TotalCharges;
