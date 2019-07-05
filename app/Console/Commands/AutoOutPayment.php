@@ -182,7 +182,7 @@ class AutoOutPayment extends Command {
         } else {
             $response = json_decode($APIresponse["response"], true);
             Log::info(print_r($response, true));
-            $autoOutPayment[0] = isset($response['data']['RequestFundID']) ? "success" : "failed";
+            $autoOutPayment[0] = isset($response['RequestFundID']) ? "success" : "failed";
             $autoOutPayment[1] = $response;
         }
 
