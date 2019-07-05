@@ -75,8 +75,10 @@ class NeonAlerts extends Command
 
             $messages = [];
             foreach ($cronjobdata as $item) {
-                if (count($item))
-                    $messages[] = $item;
+                if(count($item))
+                    foreach ($item as $msg) {
+                        $messages[] = $msg;
+                    }
             }
 
             if (count($messages)) {
