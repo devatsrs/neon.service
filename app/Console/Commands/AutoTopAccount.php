@@ -88,6 +88,7 @@ class AutoTopAccount extends Command {
 				->where(['tblAccount.Status'=>1])
 				->where('tblAccountPaymentAutomation.AutoTopup','=', 1)
 				->orderBy("tblAccountPaymentAutomation.AccountID", "ASC");
+			//Log::info("TO Sql: ". $AutoPaymentAccountList->toSql());
 			$AutoPaymentAccountList = $AutoPaymentAccountList->get();
 			$CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 			if(!empty($AutoPaymentAccountList) && !empty($CompanyConfiguration)) {

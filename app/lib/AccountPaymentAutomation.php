@@ -63,7 +63,6 @@ class AccountPaymentAutomation extends \Eloquent
 
     public static function AutoTopUpNotification($CompanyID, $SuccessDepositAccounts, $FailureDepositFundAccounts)
     {
-
         try {
             $emaildata = array();
 

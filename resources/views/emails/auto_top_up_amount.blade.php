@@ -15,7 +15,7 @@
         <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <tr>
                 <td>
-                    Successfull Top Up Account Details
+                    Successful Top Up Account Details
                 </td>
             </tr>
         </table>
