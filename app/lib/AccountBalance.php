@@ -30,7 +30,7 @@ class AccountBalance extends Model
      */
     public static function LowBalanceReminder($CompanyID, $ProcessID){
 
-        $BillingClass = BillingClass::where('CompanyID',$CompanyID)->get();
+        $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach($BillingClass as $BillingClassSingle) {
             if (isset($BillingClassSingle->LowBalanceReminderStatus) && $BillingClassSingle->LowBalanceReminderStatus == 1 && isset($BillingClassSingle->LowBalanceReminderSettings)) {
                 $settings = json_decode($BillingClassSingle->LowBalanceReminderSettings, true);
