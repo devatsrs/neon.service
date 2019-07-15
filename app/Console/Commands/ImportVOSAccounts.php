@@ -259,7 +259,37 @@ class ImportVOSAccounts extends Command {
                     $data['Name'] = $val->name;
                     $data['RemoteIps'] = $val->remoteIps;
                     $data['IPType'] = 0; //Customer
+                    $data['LockType'] = $val->lockType;
+                    $data['LineLimit'] = $val->capacity;
+                    $data['routingGatewayGroups'] = $val->routingGatewayGroups;
 
+                    $RatePrefix = '';
+                    if(!empty($val->rewriteRulesOutCallee)){
+                        $rewriteRulesOutCallee = explode(",",$val->rewriteRulesOutCallee);
+
+                        if(count($rewriteRulesOutCallee) > 1){
+                            foreach($rewriteRulesOutCallee as $rp){
+                               $temp_rp = explode(":",$rp);
+                                if(!empty($temp_rp[1])){
+                                    $RatePrefix.= $temp_rp[1].',';
+                                }
+                            }
+                        }else{
+                            //single
+                            if(!empty($rewriteRulesOutCallee[0])){
+                                $temp_rp = explode(":",$rewriteRulesOutCallee[0]);
+
+                                if(!empty($temp_rp)){
+                                    $RatePrefix = $temp_rp[1];
+                                }
+                            }
+                        }
+
+                        $RatePrefix= trim($RatePrefix,',');
+
+                    }
+
+                    $data['RoutePrefix'] = $RatePrefix;
                     $data['created_at'] = date('Y-m-d H:i:s');
                     $data['created_by'] = 'API';
 
@@ -345,10 +375,42 @@ class ImportVOSAccounts extends Command {
                     $data['LocalIP'] = $val->localIp;
                     $data['AccountName'] = $val->clearingAccountName;
                     $data['RemoteIps'] = $val->remoteIp;
+                    $data['Name'] = $val->name;
                     $data['IPType'] = 1; //vendor
+                    $data['LockType'] = $val->lockType;
+                    $data['NumberPrefix'] = $val->prefix;
+                    $data['LineLimit'] = $val->capacity;
 
                     $data['created_at'] = date('Y-m-d H:i:s');
                     $data['created_by'] = 'API';
+
+
+                    $RatePrefix = '';
+                    if(!empty($val->rewriteRulesInCallee)){
+                        $rewriteRulesOutCallee = explode(",",$val->rewriteRulesInCallee);
+
+                        if(count($rewriteRulesOutCallee) > 1){
+                            foreach($rewriteRulesOutCallee as $rp){
+                                $temp_rp = explode(":",$rp);
+                                if(!empty($temp_rp)){
+                                    $RatePrefix.= $temp_rp[1].',';
+                                }
+                            }
+                        }else{
+                            //single
+                            if(!empty($rewriteRulesOutCallee[0])){
+                                $temp_rp = explode(":",$rewriteRulesOutCallee[0]);
+                                if(!empty($temp_rp)){
+                                    $RatePrefix.= $temp_rp[1];
+                                }
+                            }
+                        }
+
+                        $RatePrefix= trim($RatePrefix,',');
+
+                    }
+
+                    $data['RoutePrefix'] = $RatePrefix;
 
                     //Log::info(print_r($data,true));die;
                     array_push($VOSIPs, $data);
