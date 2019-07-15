@@ -7,6 +7,7 @@
 
 <div id="content">
     <?php
+        //Log::info("AutoTop Notification: " . json_encode($data));
     $SuccessDepositAccounts = $data['SuccessDepositAccount'];
     $FailureDepositFundAccounts = $data['FailureDepositFund'];
     ?>
@@ -33,9 +34,9 @@
 
                 @foreach($SuccessDepositAccounts as $SuccessDepositAccount)
                     <tr>
-                    <td width="20%" align="center">{{$SuccessDepositAccount["Number"]}}</td>
-                    <td width="20%" align="center">{{$SuccessDepositAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{$SuccessDepositAccount["Amount"]}}</td>
+                    <td width="20%" align="center">{{ isset($SuccessDepositAccount["Number"]) ? $SuccessDepositAccount["Number"] : '' }}</td>
+                    <td width="20%" align="center">{{ isset($SuccessDepositAccount["AccountName"]) ? $SuccessDepositAccount["AccountName"] : '' }}</td>
+                    <td width="60%" align="center">{{ isset($SuccessDepositAccount["Amount"]) ? $SuccessDepositAccount["Amount"] : '' }}</td>
                     </tr>
                 @endforeach
 
@@ -66,9 +67,9 @@
 
                 @foreach($FailureDepositFundAccounts as $FailureDepositFundAccount)
                     <tr>
-                    <td width="20%" align="center">{{$FailureDepositFundAccount["Number"]}}</td>
-                    <td width="20%" align="center">{{$FailureDepositFundAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{$FailureDepositFundAccount["Response"]}}</td>
+                    <td width="20%" align="center">{{ isset($FailureDepositFundAccount["Number"]) ? $FailureDepositFundAccount["Number"] : '' }}</td>
+                    <td width="20%" align="center">{{ isset($FailureDepositFundAccount["AccountName"]) ? $FailureDepositFundAccount["AccountName"] : '' }}</td>
+                    <td width="60%" align="center">{{ isset($FailureDepositFundAccount["Response"]) ? $FailureDepositFundAccount["Response"] : '' }}</td>
                     </tr>
                 @endforeach
 
