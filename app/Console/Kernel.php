@@ -142,6 +142,7 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\TranslationsImport',
 		'App\Console\Commands\APIBalanceUpdate',
 		'App\Console\Commands\ProcessActiveCall',
+		'App\Console\Commands\InsertIntoRateSearchCode',
 
 	];
 
