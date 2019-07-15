@@ -20,10 +20,10 @@ class NeonAPI
         return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
     }
 
-    public static function callAPI($postdata,$call_method,$api_url,$contentType = '')
+    public static function callAPI($postdata,$call_method,$api_url,$contentType = '', $port = 0)
     {
         $url = $api_url . $call_method;
-      //  Log::info("Call API URL :" . $url . '  ' . $postdata);
+        Log::info("Call API URL :" . $url . '  ' . $postdata);
         $APIresponse = array();
         $curl = curl_init();
 
@@ -51,7 +51,13 @@ class NeonAPI
             CURLOPT_HTTPHEADER => $header,
         ));
 
+        if($port != 0)
+            curl_setopt($curl, CURLOPT_PORT, $port);
+
+
         $response = curl_exec($curl);
+
+        //Log::info("curl options: ". json_encode(curl_getinfo($curl)));
         $err = curl_error($curl);
        // echo $response;
      //   $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
@@ -63,11 +69,11 @@ class NeonAPI
         if ($httpcode != 200) {
             $APIresponse["error"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-          //  Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
+            //Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-          //  Log::info("Call API URL Sucess:" . print_r($response,true));
+            //Log::info("Call API URL Success:" . print_r($response,true));
         }
 
         return $APIresponse;
