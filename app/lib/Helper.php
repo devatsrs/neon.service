@@ -596,4 +596,12 @@ class Helper
         }
         return $DefaultValue;
     }
+
+    public static function trigger_command($CompanyID,$Commmand){
+        // Trigger   insert_into_rate_search_code
+        $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
+        $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RM_ARTISAN_FILE_LOCATION');
+        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation."  " .$Commmand . " " . $CompanyID . " ". " &","r"));
+
+    }
 }
