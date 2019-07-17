@@ -243,7 +243,7 @@ class CodeDecksUpload extends Command
         CronHelper::after_cronrun($this->name, $this);
 
             // Trigger   insert_into_rate_search_code
-        Helper::trigger_command($CompanyID,"insert_into_rate_search_code");
+        Helper::trigger_command($CompanyID,"insert_into_rate_search_code",$joboptions->codedeckid);
 
     }
 }

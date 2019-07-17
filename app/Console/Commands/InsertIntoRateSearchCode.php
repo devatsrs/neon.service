@@ -47,6 +47,8 @@ class InsertIntoRateSearchCode extends Command {
     {
         return [
             ['CompanyID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['CodedeckID', InputArgument::REQUIRED, 'Argument CompanyID '],
+            ['Code', InputArgument::OPTIONAL, 'Argument CompanyID '],
         ];
     }
 
@@ -61,6 +63,11 @@ class InsertIntoRateSearchCode extends Command {
 
         $arguments = $this->argument();
         $CompanyID = $arguments['CompanyID'];
+        $CodedeckID = $arguments['CodedeckID'];
+        $Code = "";
+        if(isset($arguments['Code'])){
+            $Code = $arguments['Code'];
+        }
 
        Log::useFiles(storage_path() . '/logs/insert_into_rate_search_code-' . date('Y-m-d') . '.log');
        Log::error(' ========================== prc_InsertIntoRateSearchCode start =============================');
@@ -70,9 +77,9 @@ class InsertIntoRateSearchCode extends Command {
 
             DB::beginTransaction();
 
-            Log::error("CALL  prc_InsertIntoRateSearchCode ('" . $CompanyID . "') start");
-            DB::statement("CALL  prc_InsertIntoRateSearchCode ('" . $CompanyID . "')");
-            Log::error("CALL  prc_InsertIntoRateSearchCode ('" . $CompanyID . "') end");
+            Log::error("CALL     prc_InsertIntoRateSearchCode ('" . $CompanyID . "','" . $CodedeckID . "','" . $Code . "') start");
+            DB::statement("CALL  prc_InsertIntoRateSearchCode ('" . $CompanyID . "','" . $CodedeckID . "','" . $Code . "')");
+            Log::error("CALL     prc_InsertIntoRateSearchCode ('" . $CompanyID . "','" . $CodedeckID . "','" . $Code . "') end");
 
             DB::commit();
 
