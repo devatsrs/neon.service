@@ -69,7 +69,7 @@ class InsertIntoRateSearchCode extends Command {
             $Code = $arguments['Code'];
         }
 
-       Log::useFiles(storage_path() . '/logs/insert_into_rate_search_code-' . date('Y-m-d') . '.log');
+       Log::useFiles(storage_path() . '/logs/insert_into_rate_search_code-' .$CompanyID .'-'.$CodedeckID.'-'  .$Code.'-'  . date('Y-m-d') . '.log');
        Log::error(' ========================== prc_InsertIntoRateSearchCode start =============================');
 
 
