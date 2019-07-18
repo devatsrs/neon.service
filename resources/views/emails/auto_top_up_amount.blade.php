@@ -7,6 +7,7 @@
 
 <div id="content">
     <?php
+    //Log::info("AutoTop Notification: " . json_encode($data));
     $SuccessDepositAccounts = $data['SuccessDepositAccount'];
     $FailureDepositFundAccounts = $data['FailureDepositFund'];
     ?>
@@ -15,33 +16,33 @@
         <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
             <tr>
                 <td>
-                    Successfull Top Up Account Details
+                    Successful Top Up Account Details
                 </td>
             </tr>
         </table>
 
-            <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
-                <thead>
-                    <tr>
-                        <th width="20%" align="center">Account Number</th>
-                        <th width="20%" align="center">Account Name</th>
-                        <th width="60%" align="center">Deposit Amount</th>
-                    </tr>
-                </thead>
+        <table width="100%" border="1" cellpadding="0" cellspacing="0" style="border:1px solid #ccc;">
+            <thead>
+            <tr>
+                <th width="20%" align="center">Account Number</th>
+                <th width="20%" align="center">Account Name</th>
+                <th width="60%" align="center">Deposit Amount</th>
+            </tr>
+            </thead>
             <tbody>
 
 
-                @foreach($SuccessDepositAccounts as $SuccessDepositAccount)
-                    <tr>
-                    <td width="20%" align="center">{{$SuccessDepositAccount["Number"]}}</td>
-                    <td width="20%" align="center">{{$SuccessDepositAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{$SuccessDepositAccount["Amount"]}}</td>
-                    </tr>
-                @endforeach
+            @foreach($SuccessDepositAccounts as $SuccessDepositAccount)
+                <tr>
+                    <td width="20%" align="center">{{ isset($SuccessDepositAccount["Number"]) ? $SuccessDepositAccount["Number"] : '' }}</td>
+                    <td width="20%" align="center">{{ isset($SuccessDepositAccount["AccountName"]) ? $SuccessDepositAccount["AccountName"] : '' }}</td>
+                    <td width="60%" align="center">{{ isset($SuccessDepositAccount["Amount"]) ? $SuccessDepositAccount["Amount"] : '' }}</td>
+                </tr>
+            @endforeach
 
 
             </tbody>
-            </table>
+        </table>
 
         <br/>
 
@@ -64,13 +65,13 @@
             <tbody>
 
 
-                @foreach($FailureDepositFundAccounts as $FailureDepositFundAccount)
-                    <tr>
-                    <td width="20%" align="center">{{$FailureDepositFundAccount["Number"]}}</td>
-                    <td width="20%" align="center">{{$FailureDepositFundAccount["AccountName"]}}</td>
-                    <td width="60%" align="center">{{$FailureDepositFundAccount["Response"]}}</td>
-                    </tr>
-                @endforeach
+            @foreach($FailureDepositFundAccounts as $FailureDepositFundAccount)
+                <tr>
+                    <td width="20%" align="center">{{ isset($FailureDepositFundAccount["Number"]) ? $FailureDepositFundAccount["Number"] : '' }}</td>
+                    <td width="20%" align="center">{{ isset($FailureDepositFundAccount["AccountName"]) ? $FailureDepositFundAccount["AccountName"] : '' }}</td>
+                    <td width="60%" align="center">{{ isset($FailureDepositFundAccount["Response"]) ? json_encode($FailureDepositFundAccount["Response"]) : '' }}</td>
+                </tr>
+            @endforeach
 
 
             </tbody>

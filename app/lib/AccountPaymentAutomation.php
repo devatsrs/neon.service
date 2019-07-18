@@ -63,26 +63,29 @@ class AccountPaymentAutomation extends \Eloquent
 
     public static function AutoTopUpNotification($CompanyID, $SuccessDepositAccounts, $FailureDepositFundAccounts)
     {
-
         try {
             $emaildata = array();
 
-            $ComanyName = Company::getName($CompanyID);
+            $CompanyName = Company::getName($CompanyID);
 
             $emaildata['SuccessDepositAccount'] = $SuccessDepositAccounts;
             $emaildata['FailureDepositFund'] = $FailureDepositFundAccounts;
 
             $AutoTopUpNotificationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::AutoTopAccount]);
+            Log::info('$AutoTopUpNotificationEmail ..' . $AutoTopUpNotificationEmail);
+
+            $result = false;
             if (!empty($AutoTopUpNotificationEmail)) {
                 //Log::info('Sending email.' . $AutoTopUpNotificationEmail);
                 $emaildata['CompanyID'] = $CompanyID;
-                $emaildata['CompanyName'] = $ComanyName;
+                $emaildata['CompanyName'] = $CompanyName;
                 $emaildata['EmailTo'] = $AutoTopUpNotificationEmail;
                 $emaildata['EmailToName'] = '';
                 $emaildata['Subject'] = 'Auto Top Up Notification Email';
                 //$emaildata['Message'] = $Message;
                 $result = Helper::sendMail('emails.auto_top_up_amount', $emaildata);
             }
+            return $result;
         } catch (\Exception $e) {
             Log::error("**Email Sent Status AutoTopUpNotification" . $e->getTraceAsString());
         }
