@@ -227,6 +227,7 @@ class CustomerRateSheetGenerator extends Command {
                             //$file_name = Job::getfileName($account->AccountID, $joboptions->Trunks, 'customerdownload');
                             $amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['CUSTOMER_DOWNLOAD'], $account->AccountID, $CompanyID);
                             $local_dir = $UPLOADPATH . '/' . $amazonPath;
+                            Log::info($local_dir);
                             $excel_data_all = array();
                             $data = array();
                             $data['Company'] = $Company;
