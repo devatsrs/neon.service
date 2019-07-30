@@ -38,7 +38,10 @@ class EmailsTemplates{
 				"{{CompanyPostCode}}",
 				"{{CompanyCountry}}",
 				"{{Logo}}",
-				"{{CreditnotesGrandTotal}}"
+				"{{CreditnotesGrandTotal}}",
+				"{{Date}}",
+				"{{Time}}",
+				"{{CreditLimit}}"
 				);
 	
 	 public function __construct($data = array()){
@@ -246,6 +249,9 @@ class EmailsTemplates{
 			$array['CompanyPostCode']				=   $CompanyData->PostCode;
 			$array['CompanyCountry']				=   $CompanyData->Country;	
 			$array['Logo'] 							= 	"<img src='".getCompanyLogo($CompanyID)."' />";
+			date_default_timezone_set($CompanyData->TimeZone);
+			$array['Date']                          = date("d-m-Y");
+			$array['Time']                          = date("H:i:s");
 			return $array;
 	}
 	
@@ -271,7 +277,8 @@ class EmailsTemplates{
 			$array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Symbol");
 			$array['OutstandingExcludeUnbilledAmount'] = Account::getOutstandingAmount($CompanyID, $AccountID,  $RoundChargesAmount);
 			$array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($AccountID), $RoundChargesAmount);
-			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);	
+			$array['BalanceThreshold'] 				   = AccountBalance::getBalanceThreshold($AccountID);
+			$array['CreditLimit'] 				       = AccountBalance::getCreditLimit($AccountID);
 			  if(!empty($UserID)){
 				   $UserData = user::find($UserID);
 				  if(isset($UserData->EmailFooter) && trim($UserData->EmailFooter) != '')

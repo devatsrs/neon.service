@@ -337,6 +337,7 @@ class Helper{
        $replace_array['Country'] = $Account->Country;
        $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID),$RoundChargesAmount);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+       $replace_array['CreditLimit'] = AccountBalance::getCreditLimit($Account->AccountID);
        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
@@ -358,6 +359,9 @@ class Helper{
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
         $replace_array['Logo'] = '<img src="'.getCompanyLogo($Account->CompanyId).'" />';
+        date_default_timezone_set($CompanyData->TimeZone);
+        $replace_array['Date'] = date("d-m-Y");
+        $replace_array['Time'] = date("H:i:s");
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
        $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
