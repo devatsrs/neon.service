@@ -340,7 +340,7 @@ class Xero {
 					//$invoice->setLineAmountType('NoTax');
 
 					//fetch only overall taxes
-					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceTaxType"=>1])->first();
+					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceDetailID"=>0])->first();
 					$AllInvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->first();
 					log::info("InvoiceData". print_r($data, true));
 					log::info("InvoiceTaxRate". print_r($InvoiceTaxRate, true));
