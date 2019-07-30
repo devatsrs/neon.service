@@ -378,14 +378,17 @@ class ImportVOSAccounts extends Command {
                     $data['Name'] = $val->name;
                     $data['IPType'] = 1; //vendor
                     $data['LockType'] = $val->lockType;
-                    $data['NumberPrefix'] = $val->prefix;
+                    //$data['NumberPrefix'] = $val->prefix;
                     $data['LineLimit'] = $val->capacity;
 
                     $data['created_at'] = date('Y-m-d H:i:s');
                     $data['created_by'] = 'API';
 
+                    $data['RoutePrefix'] = $val->routePrefix;
+                    $data['NumberPrefix'] = $val->prefix;
 
-                    $RatePrefix = '';
+                    /*$RatePrefix = '';
+                    $NumberPrefix='';
                     if(!empty($val->rewriteRulesInCallee)){
                         $rewriteRulesOutCallee = explode(",",$val->rewriteRulesInCallee);
 
@@ -393,7 +396,11 @@ class ImportVOSAccounts extends Command {
                             foreach($rewriteRulesOutCallee as $rp){
                                 $temp_rp = explode(":",$rp);
                                 if(!empty($temp_rp)){
-                                    $RatePrefix.= $temp_rp[1].',';
+                                    if($temp_rp[0]!=''){
+                                        $RatePrefix.= substr($temp_rp[0],0,3).",";
+                                        $NumberPrefix.= substr($temp_rp[0],3).",";
+                                    }
+                                    //$RatePrefix.= $temp_rp[0].',';
                                 }
                             }
                         }else{
@@ -401,16 +408,19 @@ class ImportVOSAccounts extends Command {
                             if(!empty($rewriteRulesOutCallee[0])){
                                 $temp_rp = explode(":",$rewriteRulesOutCallee[0]);
                                 if(!empty($temp_rp)){
-                                    $RatePrefix.= $temp_rp[1];
+                                    if($temp_rp[0]!=''){
+                                        $RatePrefix = substr($temp_rp[0],0,3).",";
+                                        $NumberPrefix = substr($temp_rp[0],3).",";
+                                    }
                                 }
                             }
                         }
 
                         $RatePrefix= trim($RatePrefix,',');
+                        $NumberPrefix= trim($NumberPrefix,',');
 
-                    }
+                    }*/
 
-                    $data['RoutePrefix'] = $RatePrefix;
 
                     //Log::info(print_r($data,true));die;
                     array_push($VOSIPs, $data);
