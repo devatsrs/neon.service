@@ -274,7 +274,11 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{AccountBalance}}",
         "{{AccountExposure}}",
         "{{AccountBlocked}}",
-        "{{InvoiceLink}}"
+        "{{InvoiceLink}}",
+        "{{Date}}",
+        "{{Time}}",
+        "{{CreditLimit}}"
+
     ];
 
     foreach($extra as $item){

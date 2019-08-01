@@ -148,7 +148,9 @@ class ClarityPBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select * from customer ";
+                //$query = "select * from customer ";
+                $query = "select c.id,cb.id as cb_id,c.descr as customer_name,trp.descr as ratetable_name,trp.id as ratetable_id from customer c INNER JOIN customer_bg cb on cb.customer_id=c.id
+ join term_rate_plan trp on cb.term_rate_plan_id = trp.id where cb.id in (select MIN(id) as id from customer_bg group by customer_id) ";
                 $response = DB::connection('pgsql')->select($query);
             }catch(Exception $e){
                 $response['faultString'] =  $e->getMessage();
@@ -516,6 +518,36 @@ class ClarityPBX{
             }
         }
         return $response;
+    }
+
+
+    public static function UpdateRateTable($updateData=array()){
+        try{
+            foreach ($updateData as $item) {
+                $RateTableID = self::getRateTableIdByName($item['ratetable_name']);
+
+                if(!empty($RateTableID)){
+                    Log::info("Updated RateTableID=".$RateTableID);
+                    Log::info("customer_bg table id = ".$item['cb_id']);
+                    DB::connection('pgsql')->table('customer_bg')
+                        ->where('id', $item['cb_id'])
+                        ->update(['term_rate_plan_id' => $RateTableID]);
+                }
+
+            }
+        } catch(Exception $e){
+            Log::error("Class Name:".__CLASS__.",Method: ". __METHOD__.", Fault. Code: " . $e->getCode(). ", Reason: " . $e->getMessage());
+            throw new Exception($e->getMessage());
+        }
+
+    }
+
+    public static function getRateTableIdByName($RatetableName){
+        $RateTableID=0;
+        if(!empty($RatetableName)){
+            $RateTableID = DB::connection('pgsql')->table('term_rate_plan')->where('descr',$RatetableName)->pluck('id');
+        }
+        return $RateTableID;
     }
 
 }
