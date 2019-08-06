@@ -206,6 +206,7 @@ class VOS5000AccountUsage extends Command
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $CallID;
                                     $uddata['customer_trunk_type'] = $excelrow['28'];
+                                    $uddata['FileName'] = $filename;
 
                                     $InserData[] = $uddata;
                                     if($data_count > $insertLimit &&  !empty($InserData)){
@@ -243,6 +244,7 @@ class VOS5000AccountUsage extends Command
                                     $vendorcdrdata['ServiceID'] = $ServiceID;
                                     $vendorcdrdata['ID'] = $CallID;
                                     $vendorcdrdata['vendor_trunk_type'] = $excelrow['34'];
+                                    $vendorcdrdata['FileName'] = $filename;
 
                                     $InserVData[] = $vendorcdrdata;
                                     if($data_countv > $insertLimit &&  !empty($InserVData)){

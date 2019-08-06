@@ -205,6 +205,7 @@ class VOSAccountUsage extends Command
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
                                 $uddata['ID'] = $CallID;
+                                $uddata['FileName'] = $filename;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -241,6 +242,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;
                                 $vendorcdrdata['ID'] = $CallID;
+                                $vendorcdrdata['FileName'] = $filename;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){
