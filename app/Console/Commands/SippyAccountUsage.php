@@ -221,6 +221,7 @@ class SippyAccountUsage extends Command
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $cdr_row['i_call'];
+                                    $uddata['FileName'] = $filename;
 
                                     $InserData[] = $uddata;
                                     if ($data_count > $insertLimit && !empty($InserData)) {
@@ -302,6 +303,7 @@ class SippyAccountUsage extends Command
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $cdr_row['i_call'];
+                                    $uddata['FileName'] = $filename;
 
                                     $InserVData[] = $uddata;
                                     if($data_count > $insertLimit &&  !empty($InserVData)){
