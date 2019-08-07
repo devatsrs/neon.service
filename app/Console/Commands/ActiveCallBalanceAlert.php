@@ -123,7 +123,7 @@ class ActiveCallBalanceAlert extends Command {
                     $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$LowBalanceArr);
                     Log::info("=====API Response =====");
                     Log::info(print_r($Result,true));
-
+                    /*
                     if($BlockCallAPI != ''){
                         Log::info("=====Block Call API Start =====");
                         foreach($LowBalanceArr as $Callblock){
@@ -140,7 +140,7 @@ class ActiveCallBalanceAlert extends Command {
                         $joblogdata['Message'] ="Block Call API URL Not Found.";
                         $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                         $Error=1;
-                    }
+                    }*/
 
                     $joblogdata['Message'] = "success";
                     $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
