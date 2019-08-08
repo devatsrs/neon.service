@@ -269,6 +269,11 @@ class VOSAccountUsage extends Command
                     }
                     }catch(Exception $e){
 
+                        $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
+                        $message = $UsageDownloadFiles->Message.$e->getMessage();
+                        $joblogdata['Message'] .= 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message;
+                        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+
                         Log::error($e);
                         /** update file status to error */
                         UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$e->getMessage());
@@ -353,7 +358,7 @@ class VOSAccountUsage extends Command
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
-                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['CronJobStatus'] = !empty($joblogdata['CronJobStatus']) ? $joblogdata['CronJobStatus'] : CronJob::CRON_SUCCESS;
 
 
                 Log::error('vos delete file count ' . count($delete_files));
