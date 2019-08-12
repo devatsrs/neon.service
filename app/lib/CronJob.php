@@ -293,7 +293,6 @@ class CronJob extends \Eloquent {
         $LastRunTime = $CronJob->LastRunTime;
         $ComanyName = Company::getName($CompanyID);
         $PID = $CronJob->PID;
-        $MysqlPID = $CronJob->MysqlPID;
 
         $minute = CronJob::calcTimeDiff($LastRunTime);
         $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
@@ -307,21 +306,9 @@ class CronJob extends \Eloquent {
             $KillCommand = 'Taskkill /PID '.$PID.' /F';
         }
 
-        if($MysqlPID!=''){
-            try{
-                $MysqlProcess=DB::select("SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST where ID=".$MysqlPID);
-                if(!empty($MysqlProcess)){
-                    terminateMysqlProcess($MysqlPID);
-                }
-            }catch (\Exception $err) {
-                Log::error($err);
-            }
-
-        }
-
 		//Kill the process. 
  		$ReturnStatus = exec($KillCommand,$DetailOutput);
-		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00'),"MysqlPID"=>"","ProcessID"=>""]);
+		CronJob::find($CronJobID)->update(["PID" => "", "Active"=>0,"LastRunTime" => date('Y-m-d H:i:00')]);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
@@ -582,10 +569,10 @@ class CronJob extends \Eloquent {
         $CronJob=CronJob::find($CronJob1->CronJobID);
         $dataactive['PID'] = '';
         $dataactive['Active'] = 0;
-        $dataactive['ProcessID'] = '';
-        $dataactive['MysqlPID'] = '';
         $CronJob->update($dataactive);
     }
+
+
 
     // check sippy and vos download cronjob is active or not
     public static function checkCDRDownloadFiles($CompanyID){

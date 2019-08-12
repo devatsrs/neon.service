@@ -259,7 +259,37 @@ class ImportVOSAccounts extends Command {
                     $data['Name'] = $val->name;
                     $data['RemoteIps'] = $val->remoteIps;
                     $data['IPType'] = 0; //Customer
+                    $data['LockType'] = $val->lockType;
+                    $data['LineLimit'] = $val->capacity;
+                    $data['routingGatewayGroups'] = $val->routingGatewayGroups;
 
+                    $RatePrefix = '';
+                    if(!empty($val->rewriteRulesOutCallee)){
+                        $rewriteRulesOutCallee = explode(",",$val->rewriteRulesOutCallee);
+
+                        if(count($rewriteRulesOutCallee) > 1){
+                            foreach($rewriteRulesOutCallee as $rp){
+                               $temp_rp = explode(":",$rp);
+                                if(!empty($temp_rp[1])){
+                                    $RatePrefix.= $temp_rp[1].',';
+                                }
+                            }
+                        }else{
+                            //single
+                            if(!empty($rewriteRulesOutCallee[0])){
+                                $temp_rp = explode(":",$rewriteRulesOutCallee[0]);
+
+                                if(!empty($temp_rp)){
+                                    $RatePrefix = $temp_rp[1];
+                                }
+                            }
+                        }
+
+                        $RatePrefix= trim($RatePrefix,',');
+
+                    }
+
+                    $data['RoutePrefix'] = $RatePrefix;
                     $data['created_at'] = date('Y-m-d H:i:s');
                     $data['created_by'] = 'API';
 
@@ -345,10 +375,52 @@ class ImportVOSAccounts extends Command {
                     $data['LocalIP'] = $val->localIp;
                     $data['AccountName'] = $val->clearingAccountName;
                     $data['RemoteIps'] = $val->remoteIp;
+                    $data['Name'] = $val->name;
                     $data['IPType'] = 1; //vendor
+                    $data['LockType'] = $val->lockType;
+                    //$data['NumberPrefix'] = $val->prefix;
+                    $data['LineLimit'] = $val->capacity;
 
                     $data['created_at'] = date('Y-m-d H:i:s');
                     $data['created_by'] = 'API';
+
+                    $data['RoutePrefix'] = $val->routePrefix;
+                    $data['NumberPrefix'] = $val->prefix;
+
+                    /*$RatePrefix = '';
+                    $NumberPrefix='';
+                    if(!empty($val->rewriteRulesInCallee)){
+                        $rewriteRulesOutCallee = explode(",",$val->rewriteRulesInCallee);
+
+                        if(count($rewriteRulesOutCallee) > 1){
+                            foreach($rewriteRulesOutCallee as $rp){
+                                $temp_rp = explode(":",$rp);
+                                if(!empty($temp_rp)){
+                                    if($temp_rp[0]!=''){
+                                        $RatePrefix.= substr($temp_rp[0],0,3).",";
+                                        $NumberPrefix.= substr($temp_rp[0],3).",";
+                                    }
+                                    //$RatePrefix.= $temp_rp[0].',';
+                                }
+                            }
+                        }else{
+                            //single
+                            if(!empty($rewriteRulesOutCallee[0])){
+                                $temp_rp = explode(":",$rewriteRulesOutCallee[0]);
+                                if(!empty($temp_rp)){
+                                    if($temp_rp[0]!=''){
+                                        $RatePrefix = substr($temp_rp[0],0,3).",";
+                                        $NumberPrefix = substr($temp_rp[0],3).",";
+                                    }
+                                }
+                            }
+                        }
+
+                        $RatePrefix= trim($RatePrefix,',');
+                        $NumberPrefix= trim($NumberPrefix,',');
+
+                    }*/
+
 
                     //Log::info(print_r($data,true));die;
                     array_push($VOSIPs, $data);
