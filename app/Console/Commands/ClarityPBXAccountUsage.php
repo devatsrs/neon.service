@@ -83,7 +83,7 @@ class ClarityPBXAccountUsage extends Command {
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         try {
             Log::error(' ========================== Clarity PBX transaction start =============================');
