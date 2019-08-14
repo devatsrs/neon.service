@@ -257,7 +257,7 @@ class ActiveCall extends \Eloquent {
                             if(!empty($TaxRateIDs)){
                                 $TotalOutPayment = ActiveCall::getCostWithTaxes($TotalOutPayment,$TaxRateIDs);
                             }*/
-                            $TotalOutPaymentTax = $TotalOutPayment * (21/100);
+                            $TotalOutPaymentTax = $TotalOutPayment * (1.21);
                             $TotalOutPayment = $TotalOutPayment + $TotalOutPaymentTax;
                             $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
