@@ -366,9 +366,9 @@ class Helper{
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
        $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
        $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
-       $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
+       $replace_array['AccountBalance'] = number_format(floatval($replace_array['AccountBalance']), $RoundChargesAmount);
        $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
-       $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
+       $replace_array['AccountExposure'] = number_format(floatval($replace_array['AccountExposure']), $RoundChargesAmount);
        $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
        $Signature = '';
        if(!empty($JobLoggedUser)){

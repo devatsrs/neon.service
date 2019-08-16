@@ -87,7 +87,7 @@ class ResellerPBXAccountUsage extends Command
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $accounts = array();
         try {
             CronJob::createLog($CronJobID);
