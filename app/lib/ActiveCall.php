@@ -258,15 +258,19 @@ class ActiveCall extends \Eloquent {
                                 $TotalOutPayment = ActiveCall::getCostWithTaxes($TotalOutPayment,$TaxRateIDs);
                             }*/
                             $TotalOutPaymentTax = $TotalOutPayment * (1.21);
-                            $TotalOutPayment = $TotalOutPayment + $TotalOutPaymentTax;
-                            $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
+                            //$TotalOutPayment = $TotalOutPayment + $TotalOutPaymentTax;
+                            $CollectionCostPercentage = $TotalOutPaymentTax * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
+                        }else{
+                            $CollectionCostPercentage = 0;
                         }
                         $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
                         $Chargeback = isset($RateTableDIDRate->DID_Chargeback)?$RateTableDIDRate->DID_Chargeback:0;
                         if(!empty($Chargeback) && $TotalOutPayment > 0){
                             $Chargeback = $TotalOutPayment * ($Chargeback/100);
                             $Cost = $Cost + $Chargeback;
+                        }else{
+                            $Chargeback = 0;
                         }
                     }
                 }
