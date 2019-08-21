@@ -10,6 +10,7 @@ use App\Lib\GatewayAccount;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\UsageDetail;
 use App\VoipMS;
 use Exception;
 use Illuminate\Console\Command;
@@ -92,147 +93,162 @@ class VoipMSAccountUsage extends Command {
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $accounts = array();
         try {
+
             Log::error(' ========================== voipms transaction start =============================');
             CronJob::createLog($CronJobID);
-            $RateFormat = Company::PREFIX;
-            $RateCDR = 0;
 
-            $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
+            if(isset($cronsetting['CDRImportStartDate']) && trim($cronsetting['CDRImportStartDate'])!=''){
 
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
-                $RateCDR = $companysetting->RateCDR;
-            }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
-                $RateFormat = $companysetting->RateFormat;
-            }
-            $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
-                $CLITranslationRule = $companysetting->CLITranslationRule;
-            }
-            if(!empty($companysetting->CLDTranslationRule)){
-                $CLDTranslationRule = $companysetting->CLDTranslationRule;
-            }
-            if(!empty($companysetting->PrefixTranslationRule)){
-                $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
-            }
-            TempUsageDetail::applyDiscountPlan();
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] = $result['Message'];
 
-            $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
-            if ($TimeZone != '') {
-                date_default_timezone_set($TimeZone);
-            } else {
-                date_default_timezone_set('GMT'); // just to use e in date() function
-            }
-            $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
-            $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
+                CronJobLog::insert($joblogdata);
 
-            Log::error(print_r($param, true));
+            }else {
 
-            $voipms = new VoipMS($CompanyGatewayID);
+                $RateFormat = Company::PREFIX;
+                $RateCDR = 0;
 
-            $InserData = array();
-            $data_count = 0;
-            $insertLimit = 1000;
-            $response = array();
+                $RerateAccounts = !empty($companysetting->Accounts) ? count($companysetting->Accounts) : 0;
 
-            $response = $voipms->getAccountCDRs($param);
-            if (!isset($response['faultCode'])) {
-                if (isset($response['cdr'])) {
-                    Log::error('call count ' .count($response['cdr']));
-                    foreach ((array)$response['cdr'] as $row_account) {
-                        $data = array();
-                        $data['CompanyGatewayID'] = $CompanyGatewayID;
-                        $data['CompanyID'] = $CompanyID;
-                        $data['GatewayAccountID'] = $row_account['account'];
-                        $data['connect_time'] = $row_account['date'];
-                        $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['date'])+$row_account['seconds']);
-                        $data['cost'] = (float)$row_account['total'];
-                        $data['cld'] = apply_translation_rule($CLDTranslationRule,$row_account['destination']);
-                        $data['cli'] = apply_translation_rule($CLITranslationRule,$row_account['callerid']);
-                        $data['billed_duration'] = $row_account['seconds'];
-                        $data['billed_second'] = $row_account['seconds'];
-                        $data['duration'] = $row_account['seconds'];
-                        $data['disposition'] = $row_account['disposition'];
+                if (isset($companysetting->RateCDR) && $companysetting->RateCDR) {
+                    $RateCDR = $companysetting->RateCDR;
+                }
+                if (isset($companysetting->RateFormat) && $companysetting->RateFormat) {
+                    $RateFormat = $companysetting->RateFormat;
+                }
+                $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
+                if (!empty($companysetting->CLITranslationRule)) {
+                    $CLITranslationRule = $companysetting->CLITranslationRule;
+                }
+                if (!empty($companysetting->CLDTranslationRule)) {
+                    $CLDTranslationRule = $companysetting->CLDTranslationRule;
+                }
+                if (!empty($companysetting->PrefixTranslationRule)) {
+                    $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
+                }
+                TempUsageDetail::applyDiscountPlan();
 
-                        //its fix for supertec for inbound calls
-                        $data['is_inbound'] = $row_account['description'] == 'Inbound DID' ? 1 : 0;
+                $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
+                if ($TimeZone != '') {
+                    date_default_timezone_set($TimeZone);
+                } else {
+                    date_default_timezone_set('GMT'); // just to use e in date() function
+                }
+                $param['start_date_ymd'] = $this->getStartDate($CompanyID, $CompanyGatewayID, $CronJobID);
+                $param['end_date_ymd'] = $this->getLastDate($param['start_date_ymd'], $CompanyID, $CronJobID);
 
-                        $data['AccountIP'] = '';
-                        $data['AccountName'] = '';
-                        $data['AccountNumber'] = $row_account['account'];
-                        $data['AccountCLI'] = '';
-                        //$data['AccountID'] = $rowdata->AccountID;
-                        $data['trunk'] = 'Other';
-                        $data['area_prefix'] = 'Other';
-                        $data['ProcessID'] = $processID;
-                        $data['ServiceID'] = $ServiceID;
-                        $data['ID'] = $row_account['uniqueid'];
+                Log::error(print_r($param, true));
 
-                        $InserData[] = $data;
-                        $data_count++;
+                $voipms = new VoipMS($CompanyGatewayID);
 
-                        if ($data_count > $insertLimit && !empty($InserData)) {
-                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                            $InserData = array();
-                            $data_count = 0;
+                $InserData = array();
+                $data_count = 0;
+                $insertLimit = 1000;
+                $response = array();
+
+                $response = $voipms->getAccountCDRs($param);
+                if (!isset($response['faultCode'])) {
+                    if (isset($response['cdr'])) {
+                        Log::error('call count ' . count($response['cdr']));
+                        foreach ((array)$response['cdr'] as $row_account) {
+                            $data = array();
+                            $data['CompanyGatewayID'] = $CompanyGatewayID;
+                            $data['CompanyID'] = $CompanyID;
+                            $data['GatewayAccountID'] = $row_account['account'];
+                            $data['connect_time'] = $row_account['date'];
+                            $data['disconnect_time'] = date('Y-m-d H:i:s', strtotime($row_account['date']) + $row_account['seconds']);
+                            $data['cost'] = (float)$row_account['total'];
+                            $data['cld'] = apply_translation_rule($CLDTranslationRule, $row_account['destination']);
+                            $data['cli'] = apply_translation_rule($CLITranslationRule, $row_account['callerid']);
+                            $data['billed_duration'] = $row_account['seconds'];
+                            $data['billed_second'] = $row_account['seconds'];
+                            $data['duration'] = $row_account['seconds'];
+                            $data['disposition'] = $row_account['disposition'];
+
+                            //its fix for supertec for inbound calls
+                            $data['is_inbound'] = $row_account['description'] == 'Inbound DID' ? 1 : 0;
+
+                            $data['AccountIP'] = '';
+                            $data['AccountName'] = '';
+                            $data['AccountNumber'] = $row_account['account'];
+                            $data['AccountCLI'] = '';
+                            //$data['AccountID'] = $rowdata->AccountID;
+                            $data['trunk'] = 'Other';
+                            $data['area_prefix'] = 'Other';
+                            $data['ProcessID'] = $processID;
+                            $data['ServiceID'] = $ServiceID;
+                            $data['ID'] = $row_account['uniqueid'];
+
+                            $InserData[] = $data;
+                            $data_count++;
+
+                            if ($data_count > $insertLimit && !empty($InserData)) {
+                                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                                $InserData = array();
+                                $data_count = 0;
+                            }
                         }
                     }
+                
+            } else {
+                throw new Exception($response['faultCode']);
+            }
+
+ 
+
+                if (!empty($InserData)) {
+                    DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                 }
+
+                date_default_timezone_set(Config::get('app.timezone'));
+                /** delete duplicate id*/
+                Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
+                DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
+                Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
+
+
+                Log::error("VoipMS CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
+                Log::error(' ========================== VoipMS transaction end =============================');
+                //ProcessCDR
+
+                Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
+                $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
+                if (count($skiped_account_data)) {
+                    $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
+                }
+                $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
+                DB::connection('sqlsrvcdr')->beginTransaction();
+                DB::connection('sqlsrv2')->beginTransaction();
+
+                Log::error("VoipMS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
+                DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error("VoipMS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
+
+                Log::error('VoipMS prc_insertCDR start');
+                DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
+                Log::error('VoipMS prc_insertCDR end');
+                $logdata['CompanyGatewayID'] = $CompanyGatewayID;
+                $logdata['CompanyID'] = $CompanyID;
+                $logdata['start_time'] = $param['start_date_ymd'];
+                $logdata['end_time'] = $param['end_date_ymd'];
+                $logdata['created_at'] = date('Y-m-d H:i:s');
+                $logdata['ProcessID'] = $processID;
+                TempUsageDownloadLog::insert($logdata);
+
+                DB::connection('sqlsrvcdr')->commit();
+                DB::connection('sqlsrv2')->commit();
+
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'] . ' total data count ' . $totaldata_count . ' ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
+                CronJobLog::insert($joblogdata);
+                DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
+                TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
             }
-
-            if (!empty($InserData)) {
-                DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-            }
-
-            date_default_timezone_set(Config::get('app.timezone'));
-            /** delete duplicate id*/
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
-
-
-
-
-            Log::error("VoipMS CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
-            Log::error(' ========================== VoipMS transaction end =============================');
-            //ProcessCDR
-
-            Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
-            if (count($skiped_account_data)) {
-                $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
-            }
-            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
-            DB::connection('sqlsrvcdr')->beginTransaction();
-            DB::connection('sqlsrv2')->beginTransaction();
-
-            Log::error("VoipMS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) start");
-            DB::statement("CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' )");
-            Log::error("VoipMS CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
-
-            Log::error('VoipMS prc_insertCDR start');
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            Log::error('VoipMS prc_insertCDR end');
-            $logdata['CompanyGatewayID'] = $CompanyGatewayID;
-            $logdata['CompanyID'] = $CompanyID;
-            $logdata['start_time'] = $param['start_date_ymd'];
-            $logdata['end_time'] = $param['end_date_ymd'];
-            $logdata['created_at'] = date('Y-m-d H:i:s');
-            $logdata['ProcessID'] = $processID;
-            TempUsageDownloadLog::insert($logdata);
-			
-            DB::connection('sqlsrvcdr')->commit();
-            DB::connection('sqlsrv2')->commit();
-
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
-            CronJobLog::insert($joblogdata);
-            DB::connection('sqlsrvcdr')->table($temptableName)->where(["processId" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-            TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
-
         } catch (\Exception $e) {
             try {
                 DB::rollback();

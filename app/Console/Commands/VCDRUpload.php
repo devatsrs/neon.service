@@ -11,6 +11,7 @@ use App\Lib\JobFile;
 use App\Lib\NeonExcelIO;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
+use App\Lib\Trunk;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +92,7 @@ class VCDRUpload extends Command
             $csvoption = $TemplateOptions->option;
             $attrselection = $TemplateOptions->selection;
             $RateCDR = 0;
+            $Trunks = Trunk::where([ "Status" => 1 , "CompanyID" => $CompanyID])->lists('Trunk', 'TrunkID');
             if (isset($joboptions->RateCDR) && $joboptions->RateCDR) {
                 $RateCDR = $joboptions->RateCDR;
             }
@@ -187,19 +189,39 @@ class VCDRUpload extends Command
                         }else if($RateCDR == 1){
                             $cdrdata['buying_cost'] = 0;
                         }
+                        if (!empty($attrselection->area_prefix)) {
+                            $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
+                        }
+                        if (!empty($attrselection->ID)) {
+                            $cdrdata['ID'] = $temp_row[$attrselection->ID];
+                        }
+                        if (!empty($attrselection->remote_ip)) {
+                            $cdrdata['remote_ip'] = $temp_row[$attrselection->remote_ip];
+                        }
+
+                        if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && array_key_exists($attrselection->TrunkID,$Trunks)){
+                            $cdrdata['TrunkID'] = $attrselection->TrunkID;
+                            $cdrdata['trunk'] = $Trunks[$attrselection->TrunkID];
+                        }else if(isset($attrselection->TrunkID) && !empty($attrselection->TrunkID) && isset($temp_row[$attrselection->TrunkID]) && $TrunkID_1 = array_search($temp_row[$attrselection->TrunkID],$Trunks)){
+                            $cdrdata['TrunkID'] = $TrunkID_1;
+                            $cdrdata['trunk'] = $Trunks[$TrunkID_1];
+                        }else{
+                            $cdrdata['trunk'] = 'Other';
+                        }
+
                         if (!empty($attrselection->sellcost)) {
                             if (!empty($joboptions->RateCDR) && !empty($attrselection->area_prefix) && !empty($joboptions->TrunkID) && $joboptions->TrunkID > 0) {
-                                $cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
-                                $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->TrunkID))->Pluck('trunk');
+                                //$cdrdata['area_prefix'] = $temp_row[$attrselection->area_prefix];
+                                //$cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID' => $joboptions->TrunkID))->Pluck('trunk');
                                 $RateFormat = Company::CHARGECODE;
                             } else {
                                 $cdrdata['selling_cost'] = $temp_row[$attrselection->sellcost];
                             }
                         }
-                        if(!empty($joboptions->TrunkID)){
+                        /*if(!empty($joboptions->TrunkID)){
                             $cdrdata['TrunkID'] = $joboptions->TrunkID;
                             $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$joboptions->TrunkID))->Pluck('trunk');
-                        }
+                        }*/
                         if (isset($attrselection->Account) && !empty($attrselection->Account)) {
                             $cdrdata['GatewayAccountID'] = $temp_row[$attrselection->Account];
                             $cdrdata['AccountIP'] = $temp_row[$attrselection->Account];

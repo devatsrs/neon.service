@@ -60,7 +60,7 @@ class FTPGateway{
             }
         }else {
 
-            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['port'])  && isset(self::$config['ssl'])   && isset(self::$config['passive_mode']) && isset(self::$config['password'])){
+            if(count(self::$config) && isset(self::$config['host']) && isset(self::$config['username']) && isset(self::$config['password'])){
                 self::$FTPSGatewayObj  = new FTPSGateway($CompanyGatewayID);
             }
         }

@@ -70,7 +70,7 @@ class DBCleanUp extends Command {
 		$CronJob->update($dataactive);*/
 		CronJob::activateCronJob($CronJob);
 		$processID = CompanyGateway::getProcessID();
-		CompanyGateway::updateProcessID($CronJob,$processID);
+		/*CompanyGateway::updateProcessID($CronJob,$processID);*/
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error = '';
 
@@ -137,6 +137,8 @@ class DBCleanUp extends Command {
 
 			Log::info('RateLog Delete Start.');
 			DB::table('tblTempRateLog')->where(["SentStatus"=>1,"CompanyID"=>$CompanyID])->delete();
+			$DeleteRateDate = date('Y-m-d', strtotime('-1 days', strtotime(date('Y-m-d'))));
+			DB::table('tblTempRateLog')->where(["CompanyID"=>$CompanyID])->where("RateDate","<",$DeleteRateDate)->delete();
 			Log::info('RateLog Delete End.');
 
 			Log::info('Archive Old Rate Delete Start.');

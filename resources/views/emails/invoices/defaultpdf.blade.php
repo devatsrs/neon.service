@@ -134,10 +134,16 @@
     $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
     $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
     $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
-
+    // if cdrtype is detailcdr and calltype is active than we need to display inbound usage and outbound usage separate in detail section. otherwise it will as it is
+    $DisplayCallType=0;
+    $CallTypeData = array('NoCallType');
+    if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR){
+        $DisplayCallType=\App\Lib\InvoiceTemplate::DisplayCallType($usage_data_table['header']);
+        if($DisplayCallType==1){
+            $CallTypeData= array('OutBound','InBound');
+        }
+    }
     ?>
-
-
 
     <main>
         @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
@@ -390,10 +396,10 @@
             <tr>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                 <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                 <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
             </tr>
             </thead>
@@ -403,10 +409,10 @@
                     <tr>
                         <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                         <td class="leftalign">{{$ProductRow->Description}}</td>
-                        <td class="rightalign leftsideview">{{number_format($total_usage,$RoundChargesAmount)}}</td>
-                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                         <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                        <td class="rightalign leftsideview">{{number_format($total_usage,$RoundChargesAmount)}}</td>
+                        <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                         <td class="rightalign leftsideview">{{number_format($total_usage,$RoundChargesAmount)}}</td>
                     </tr>
                 @endif
@@ -426,10 +432,11 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
-                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_FROM")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE_TO")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -439,10 +446,15 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
-                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
-                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->EndDate))}}</td>
+                            <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -462,9 +474,10 @@
                 <tr>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TITLE")}}</th>
                     <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</th>
+                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</th>
-                    <th class="leftalign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
+                    <th class="rightalign leftsideview">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</th>
                     <th class="rightalign leftsideview">{{cus_lang("TABLE_TOTAL")}}</th>
                 </tr>
                 </thead>
@@ -474,9 +487,14 @@
                         <tr>
                             <td class="leftalign">{{\App\Lib\Product::getProductName($ProductRow->ProductID,$ProductRow->ProductType)}}</td>
                             <td class="leftalign">{{$ProductRow->Description}}</td>
+                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
                             <td class="rightalign leftsideview">{{$ProductRow->Qty}}</td>
-                            <td class="leftalign">{{date($InvoiceTemplate->DateFormat,strtotime($ProductRow->StartDate))}}</td>
+                            <td class="rightalign leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="rightalign leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -495,16 +513,14 @@
             <br />
             <br />
 
-
-
-                <main>
-                    <div class="ChargesTitle clearfix">
-                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
-                    </div>
-
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::SUMMARY_CDR)
+            <main>
+                <div class="ChargesTitle clearfix">
+                    <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
+                        <?php $total_columns_count = 0; ?>
                         @foreach($usage_data_table['header'] as $row)
                             <?php
                             $classname = 'centeralign';
@@ -512,6 +528,10 @@
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                 $classname = 'leftalign';
+                            }
+                            //check how many columns will be displayed to show total in the last
+                            if(in_array($row['Title'],array('NoOfCalls','Duration','BillDuration','ChargedAmount'))) {
+                                $total_columns_count++;
                             }
                             ?>
                             <th class="{{$classname}}">{{$row['UsageName']}}</th>
@@ -561,91 +581,141 @@
                     $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
                     $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
                     ?>
+                    @if($total_columns_count > 0)
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"></th>
-                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CALLS")}}</th>
-                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DURATION")}}</th>
-                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
-                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if(in_array($row['Title'],array('NoOfCalls','Duration','BillDuration','ChargedAmount')))
+                                <th class="centeralign">{{$row['UsageName']}}</th>
+                            @endif
+                        @endforeach
                     </tr>
                     <tr>
-                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - 4}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
-                        <th>{{$totalCalls}}</th>
-                        <th>{{$totalDuration}}</th>
-                        <th class="centeralign">{{$totalBillDuration}}</th>
-                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if($row['Title'] == 'NoOfCalls')
+                                <th class="centeralign">{{$totalCalls}}</th>
+                            @elseif($row['Title'] == 'Duration')
+                                <th class="centeralign">{{$totalDuration}}</th>
+                            @elseif($row['Title'] == 'BillDuration')
+                                <th class="centeralign">{{$totalBillDuration}}</th>
+                            @elseif($row['Title'] == 'ChargedAmount')
+                                <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                            @endif
+                        @endforeach
                     </tr>
+                    @endif
                 </table>
+            </main>
             @endif
 
-
             @if($InvoiceTemplate->CDRType == \App\Lib\Account::DETAIL_CDR)
+            <main>
+                @foreach($CallTypeData as $key=>$Value)
+                <div class="ChargesTitle clearfix">
+                    @if($Value=='NoCallType')
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}}</div>
+                    @else
+                        @if($Value=='OutBound')
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Outgoing</div>
+                        @endif
+                        @if($Value=='InBound')
+                        <div class="pull-left flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_USAGE")}} - Incoming</div>
+                        @endif
+                    @endif
+                </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
+                        <?php $total_columns_count = 0; ?>
                         @foreach($usage_data_table['header'] as $row)
                             <?php
-                                $classname = 'centeralign';
+                            $classname = 'centeralign';
                             if(in_array($row['Title'],array('ChargedAmount'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                 $classname = 'leftalign';
+                            }
+                            //check how many columns will be displayed to show total in the last
+                            if(in_array($row['Title'],array('BillDuration','BillDurationMinutes','ChargedAmount'))) {
+                                $total_columns_count++;
                             }
                             ?>
                             <th class="{{$classname}}">{{$row['UsageName']}}</th>
                         @endforeach
                     </tr>
                     <?php
-                    $totalBillDuration=0;
-                    $totalTotalCharges=0;
+                        $totalBillDuration=0;
+                        $totalTotalCharges=0;
+                        $CallTypeColumn='';
+                        if($Value=='InBound'){
+                            $CallTypeColumn='Incoming';
+                        }
+                        if($Value=='OutBound'){
+                            $CallTypeColumn='Outgoing';
+                        }
                     ?>
-
-
-                            @foreach($usage_data_table['data'] as $ServiceID => $usage_data)
-							@foreach($usage_data as $row)
-                                <?php
+                    @foreach($usage_data_table['data'] as $ServiceID => $usage_data)
+                    @foreach($usage_data as $row)
+                       @if($row['CallType']==$CallTypeColumn || $DisplayCallType==0)
+                            <?php
                                 $totalBillDuration  +=  $row['BillDuration'];
-								$totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
+                                $totalTotalCharges  += str_replace(',','',$row['ChargedAmount']);
+                            ?>
+                        <tr>
+                            @foreach($usage_data_table['header'] as $table_h_row)
+                                <?php
+                                $classname = 'centeralign';
+                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                    $classname = 'rightalign leftsideview';
+                                }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
+                                    $classname = 'leftalign';
+                                }
                                 ?>
-                                <tr>
-                                    @foreach($usage_data_table['header'] as $table_h_row)
-                                        <?php
-                                        $classname = 'centeralign';
-                                        if(in_array($table_h_row['Title'],array('ChargedAmount'))){
-                                            $classname = 'rightalign leftsideview';
-                                        }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
-                                            $classname = 'leftalign';
-                                        }
-                                        ?>
-                                        @if($table_h_row['Title'] == 'ChargedAmount')
-                                            <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
-                                        @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
-                                            <td class="{{$classname}}">{{substr($row[$table_h_row['Title']],1)}}</td>
-                                        @else
-                                            <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
-                                        @endif
-                                    @endforeach
-                                </tr>
+                                @if($table_h_row['Title'] == 'ChargedAmount')
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
+                                @elseif($table_h_row['Title'] == 'CLI' || $table_h_row['Title'] == 'CLD')
+                                    <td class="{{$classname}}">{{substr($row[$table_h_row['Title']],1)}}</td>
+                                @else
+                                    <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
+                                @endif
                             @endforeach
-							@endforeach
+                        </tr>
+                       @endif
+                    @endforeach
+                    @endforeach
 
-
+                    <?php
+                    $totalBillDurationMinutes = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
+                    ?>
+                    @if($total_columns_count > 0)
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
-                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
-                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if(in_array($row['Title'],array('BillDuration','BillDurationMinutes','ChargedAmount')))
+                                <th class="centeralign">{{$row['UsageName']}}</th>
+                            @endif
+                        @endforeach
                     </tr>
                     <tr>
-                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - 2}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
-                        <th class="centeralign">{{$totalBillDuration}}</th>
-                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if($row['Title'] == 'BillDuration')
+                                <th class="centeralign">{{$totalBillDuration}}</th>
+                            @elseif($row['Title'] == 'BillDurationMinutes')
+                                <th class="centeralign">{{$totalBillDurationMinutes}}</th>
+                            @elseif($row['Title'] == 'ChargedAmount')
+                                <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                            @endif
+                        @endforeach
                     </tr>
+                    @endif
                 </table>
+                @endforeach
             @endif
-                </main>
-
+            </main>
+            @endif
 
         @endif
-		@endif
     @if((!empty($InvoiceTemplate->ShowPaymentWidgetInvoice) && !empty($payment_data) && count($payment_data)>0) || (count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1))
         <div class="page_break"></div>
         @if(count($AllTaxSummary)>0 && $InvoiceTemplate->ShowTaxesOnSeparatePage==1)

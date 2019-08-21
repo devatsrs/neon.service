@@ -273,7 +273,12 @@ function template_var_replace($EmailMessage,$replace_array){
         "{{CurrencySymbol}}",
         "{{AccountBalance}}",
         "{{AccountExposure}}",
-        "{{AccountBlocked}}"
+        "{{AccountBlocked}}",
+        "{{InvoiceLink}}",
+        "{{Date}}",
+        "{{Time}}",
+        "{{CreditLimit}}"
+
     ];
 
     foreach($extra as $item){
@@ -782,7 +787,7 @@ function filterArrayRemoveNewLines($arr) { // remove new lines (/r/n) etc...
         $oldkey = $key;
         /*$key = str_replace("\r", '', $key);
         $key = str_replace("\n", '', $key);*/
-        $key = preg_replace('/\s+/', ' ',$key);
+        $key = trim(preg_replace('/\s+/', ' ',$key));
         $arr[$key] = $value;
         if($key != $oldkey)
             unset($arr[$oldkey]);
@@ -818,4 +823,13 @@ function terminateMysqlProcess($pid){
     $cmd="KILL ".$pid;
     DB::connection('sqlsrv2')->select($cmd);
 
+}
+
+function removeSpaceFromArrayKey($arr=array()){
+    if(!empty($arr)){
+        $a = array_map('trim', array_keys($arr));
+        $b = array_map('trim', $arr);
+        $arr = array_combine($a, $b);
+    }
+    return $arr;
 }

@@ -474,8 +474,7 @@ class QuickBook {
 		$realm = $this->realm;
 
 		$ItemService = new \QuickBooks_IPP_Service_Term();
-
-		$itemcount = $ItemService->query($Context, $realm, "SELECT count(*) FROM Item WHERE Name = '".$ProductName."' ");
+		$itemcount = $ItemService->query($Context, $realm, "SELECT count(*) FROM Item WHERE Name = '".trim($ProductName)."' ");
 
 		return $itemcount;
 
@@ -680,7 +679,7 @@ class QuickBook {
 					$ItemID = '';
 					$ProductID = $InvoiceDetail->ProductID;
 					$ProductType = $InvoiceDetail->ProductType;
-					if(!empty($ProductType)){
+					if(!empty($ProductType) && $ProductType != 5){
 						$ProductName = Product::getProductName($ProductID,$ProductType);
 						$ItemID = $this->getItemId($ProductName);
 						if(empty($ItemID)){

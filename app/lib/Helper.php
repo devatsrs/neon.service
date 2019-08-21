@@ -337,12 +337,20 @@ class Helper{
        $replace_array['Country'] = $Account->Country;
        $replace_array['OutstandingIncludeUnbilledAmount'] = number_format(AccountBalance::getBalanceAmount($Account->AccountID),$RoundChargesAmount);
        $replace_array['BalanceThreshold'] = AccountBalance::getBalanceThreshold($Account->AccountID);
+       $replace_array['CreditLimit'] = AccountBalance::getCreditLimit($Account->AccountID);
        $replace_array['Currency'] = Currency::getCurrencyCode($Account->CurrencyId);
        $replace_array['CurrencySign'] = Currency::getCurrencySymbol($Account->CurrencyId);
        $replace_array['CompanyName'] = Company::getName($Account->CompanyId);
 	   $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
 	   $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
-	   
+
+       if(isset($extra_settings['InvoiceID']) && !empty($extra_settings['InvoiceID'])){
+           $WEBURL = CompanyConfiguration::getValueConfigurationByKey($Account->CompanyId, 'WEB_URL');
+           $replace_array['InvoiceLink'] = $WEBURL . '/invoice/' . $Account->AccountID . '-' . $extra_settings['InvoiceID'] . '/cview?email='.$Account->Email;
+       }else{
+           $replace_array['InvoiceLink']='';
+       }
+
 	    $CompanyData						= Company::find($Account->CompanyId);	   
 	    $replace_array['CompanyAddress1'] 	= $CompanyData->Address1;
 		$replace_array['CompanyAddress2'] 	= $CompanyData->Address2;
@@ -351,13 +359,16 @@ class Helper{
 		$replace_array['CompanyPostCode'] 	= $CompanyData->PostCode;
 		$replace_array['CompanyCountry'] 	= $CompanyData->Country;
         $replace_array['Logo'] = '<img src="'.getCompanyLogo($Account->CompanyId).'" />';
+        date_default_timezone_set($CompanyData->TimeZone);
+        $replace_array['Date'] = date("d-m-Y");
+        $replace_array['Time'] = date("H:i:s");
 	   
        $replace_array['OutstandingExcludeUnbilledAmount'] = AccountBalance::getBalanceSOAOffsetAmount($Account->AccountID);
        $replace_array['OutstandingExcludeUnbilledAmount'] = number_format($replace_array['OutstandingExcludeUnbilledAmount'], $RoundChargesAmount);
        $replace_array['AccountBalance']  = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
-       $replace_array['AccountBalance'] = number_format($replace_array['AccountBalance'], $RoundChargesAmount);
+       $replace_array['AccountBalance'] = number_format(floatval($replace_array['AccountBalance']), $RoundChargesAmount);
        $replace_array['AccountExposure'] = AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
-       $replace_array['AccountExposure'] = number_format($replace_array['AccountExposure'], $RoundChargesAmount);
+       $replace_array['AccountExposure'] = number_format(floatval($replace_array['AccountExposure']), $RoundChargesAmount);
        $replace_array['AccountBlocked'] = empty($Account->Blocked) ? 'Unblocked' : 'Blocked';
        $Signature = '';
        if(!empty($JobLoggedUser)){

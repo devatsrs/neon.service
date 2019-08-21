@@ -1067,7 +1067,7 @@ protected $server;
 
 		$UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
 
-		$file_name = $email_number . "-" . $file_name;
+		$file_name = $email_number . "-" . str_replace("/","_",$file_name);
 
 		$amazonPath = AmazonS3::generate_upload_path(AmazonS3::$dir['EMAIL_ATTACHMENT'], '', $CompanyID);
 

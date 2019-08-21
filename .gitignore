@@ -16,3 +16,4 @@ Thumbs.db
 /storage/logs/*
 storage/locks/*
 bin/deployment/configs/
+/wkhtmltopdf

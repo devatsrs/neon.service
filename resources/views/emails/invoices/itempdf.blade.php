@@ -126,6 +126,7 @@
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DESCRIPTION")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_QUANTITY")}}</b></th>
                     <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_PRICE")}}</b></th>
+                    <th class="desc"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DISCOUNT")}}</b></th>
                     <th class="total"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_LINE_TOTAL")}}</b></th>
                 </tr>
                 </thead>
@@ -139,6 +140,11 @@
                             <td class="desc">{{nl2br($ProductRow->Description)}}</td>
                             <td class="desc leftsideview">{{$ProductRow->Qty}}</td>
                             <td class="desc leftsideview">{{number_format($ProductRow->Price,$RoundChargesAmount)}}</td>
+                            <td class="desc leftsideview">
+                                @if(!empty($ProductRow->DiscountAmount) && !empty($ProductRow->DiscountType))
+                                    {{number_format($ProductRow->DiscountAmount,$RoundChargesAmount)}}@if($ProductRow->DiscountType=='Percentage') % @endif
+                                @endif
+                            </td>
                             <td class="total leftsideview">{{number_format($ProductRow->LineTotal,$RoundChargesAmount)}}</td>
                         </tr>
                     @endif
@@ -146,7 +152,7 @@
                 </tbody>
                 <tfoot>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td colspan="2">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</td>
                     <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($Invoice->SubTotal,$RoundChargesAmount)}}</td>
                 </tr>
@@ -154,7 +160,7 @@
                 @if(count($InvoiceAllTaxRates))
                     @foreach($InvoiceAllTaxRates as $InvoiceTaxRate)
                         <tr>
-                            <td colspan="2"></td>
+                            <td colspan="3"></td>
                             <td colspan="2">{{$InvoiceTaxRate->Title}}</td>
                             <td class="subtotal leftsideview">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
                         </tr>
@@ -162,7 +168,7 @@
                 @endif
 
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td colspan="2"><b>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</b></td>
                     <td class="subtotal leftsideview"><b>{{$CurrencySymbol}}{{number_format($Invoice->GrandTotal,$RoundChargesAmount)}}</b></td>
                 </tr>

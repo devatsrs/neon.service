@@ -415,6 +415,10 @@ class Sippy{
                 $addparams['params']['i_tariff'] = new xmlrpcval($addparams["params"]['i_tariff'], "int");
                 $addparams['params'] = new xmlrpcval($addparams["params"], "struct");
             }
+            if(array_key_exists('i_destination_set',$addparams['params'])){
+                $addparams['params']['i_destination_set'] = new xmlrpcval($addparams["params"]['i_destination_set'], "int");
+                $addparams['params'] = new xmlrpcval($addparams["params"], "struct");
+            }
             $params = array(new xmlrpcval($addparams,'struct'));
             $msg = new xmlrpcmsg('getUploadToken', $params);
 
