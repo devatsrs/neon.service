@@ -99,7 +99,7 @@ class SippyAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -221,6 +221,7 @@ class SippyAccountUsage extends Command
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $cdr_row['i_call'];
+                                    $uddata['FileName'] = $filename;
 
                                     $InserData[] = $uddata;
                                     if ($data_count > $insertLimit && !empty($InserData)) {
@@ -241,8 +242,13 @@ class SippyAccountUsage extends Command
                             }
 
                         } else {
-
                             $return_var = isset($csv_response["return_var"]) ? $csv_response["return_var"] : "";
+
+                            $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
+                            $message = $UsageDownloadFiles->Message.$return_var;
+                            $joblogdata['Message'] .= 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message.'<br>';
+                            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+
                             Log::error("Error Reading Sippy Customer Encoded File. " . $return_var);
                             /** update file status to error */
                             UsageDownloadFiles::UpdateFileStatusToError($CompanyID, $cronsetting, $CronJob->JobTitle, $UsageDownloadFilesID, $return_var);
@@ -302,6 +308,7 @@ class SippyAccountUsage extends Command
                                     $uddata['ProcessID'] = $processID;
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $cdr_row['i_call'];
+                                    $uddata['FileName'] = $filename;
 
                                     $InserVData[] = $uddata;
                                     if($data_count > $insertLimit &&  !empty($InserVData)){
@@ -326,8 +333,13 @@ class SippyAccountUsage extends Command
 
 
                         } else {
-
                             $return_var = isset($csv_response["return_var"])?$csv_response["return_var"]:"";
+
+                            $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
+                            $message = $UsageDownloadFiles->Message.$return_var;
+                            $joblogdata['Message'] .= 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message.'<br>';
+                            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+
                             Log::error("Error Reading Sippy Vendor Encoded File. " . $return_var);
                             /** update file status to error */
                             UsageDownloadFiles::UpdateFileStatusToError($CompanyID,$cronsetting,$CronJob->JobTitle,$UsageDownloadFilesID,$return_var);
@@ -439,7 +451,7 @@ class SippyAccountUsage extends Command
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
-                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['CronJobStatus'] = !empty($joblogdata['CronJobStatus']) ? $joblogdata['CronJobStatus'] : CronJob::CRON_SUCCESS;
 
 
                 Log::error('sippy delete file count ' . count($delete_files));

@@ -97,6 +97,10 @@ class VoipMS{
                 if(!empty($ResponseArray) && isset($ResponseArray['cdr'])) {
                     $response = $ResponseArray;
                     $response['result'] = 'OK';
+                } else {
+                    $response['faultString'] = $ResponseArray['status'];
+                    $response['faultCode'] 	 =  $ResponseArray['status'];
+                    Log::error($ResponseArray);
                 }
             }else if(isset(self::$cli->error_message) && isset(self::$cli->error_code)){
                 $response['faultString'] =  self::$cli->error_message;

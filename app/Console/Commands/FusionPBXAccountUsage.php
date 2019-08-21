@@ -10,6 +10,7 @@ use App\Lib\CronJobLog;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\UsageDetail;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -76,28 +77,37 @@ class FusionPBXAccountUsage extends Command {
 
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
 
         try {
             Log::error(' ========================== Fusion PBX transaction start =============================');
             CronJob::createLog($CronJobID);
+
+            if(isset($cronsetting['CDRImportStartDate']) && !empty($cronsetting['CDRImportStartDate'])){
+
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] .= $result['Message'];
+                goto end_of_cronjob;
+                // break cron job after CDR Delete
+            }
+
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
 
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+            if (isset($companysetting->RateCDR) && $companysetting->RateCDR) {
                 $RateCDR = $companysetting->RateCDR;
             }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+            if (isset($companysetting->RateFormat) && $companysetting->RateFormat) {
                 $RateFormat = $companysetting->RateFormat;
             }
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
+            if (!empty($companysetting->CLITranslationRule)) {
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
-            if(!empty($companysetting->CLDTranslationRule)){
+            if (!empty($companysetting->CLDTranslationRule)) {
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if(!empty($companysetting->PrefixTranslationRule)){
+            if (!empty($companysetting->PrefixTranslationRule)) {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan();
@@ -127,12 +137,12 @@ class FusionPBXAccountUsage extends Command {
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
                 foreach ((array)$response as $row_account) {
-                    if(!empty($row_account['username'])) {
+                    if (!empty($row_account['username'])) {
                         $data = array();
-                        $json = json_decode($row_account['json'],true);
-                        if($row_account['userfield'] == 'inbound' && !empty($json['callflow'][count($json['callflow']) -1]['caller_profile']['destination_number'])){
-                           $destination_number =  $json['callflow'][count($json['callflow']) -1]['caller_profile']['destination_number'];
-                        }else{
+                        $json = json_decode($row_account['json'], true);
+                        if ($row_account['userfield'] == 'inbound' && !empty($json['callflow'][count($json['callflow']) - 1]['caller_profile']['destination_number'])) {
+                            $destination_number = $json['callflow'][count($json['callflow']) - 1]['caller_profile']['destination_number'];
+                        } else {
                             $destination_number = $row_account['cld'];
                         }
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
@@ -140,8 +150,11 @@ class FusionPBXAccountUsage extends Command {
                         if ($companysetting->NameFormat == 'NUB') {
                             $data['GatewayAccountID'] = $row_account['username'];
                         }
+                        if ($companysetting->NameFormat == 'NAME') {
+                            $data['GatewayAccountID'] = $row_account['domain_description'];
+                        }
                         $data['AccountIP'] = '';
-                        $data['AccountName'] = '';
+                        $data['AccountName'] = $row_account['domain_description'];
                         $data['AccountNumber'] = $row_account['username'];
                         //$data['AccountCLI'] = '';
                         $data['connect_time'] = $row_account['connect_time'];
@@ -180,14 +193,14 @@ class FusionPBXAccountUsage extends Command {
 
             date_default_timezone_set(Config::get('app.timezone'));
             /** insert unique uuid*/
-            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_UniqueIDCallID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+            Log::info("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_UniqueIDCallID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
 
             /** delete duplicate id*/
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error("FusionPBX CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== FusionPBX transaction end =============================');
@@ -195,11 +208,11 @@ class FusionPBXAccountUsage extends Command {
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
 
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
-            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
@@ -208,7 +221,7 @@ class FusionPBXAccountUsage extends Command {
             Log::error("FusionPBX CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('FusionPBX prc_insertCDR start');
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
             Log::error('FusionPBX prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
             $logdata['CompanyID'] = $CompanyID;
@@ -217,16 +230,16 @@ class FusionPBXAccountUsage extends Command {
             $logdata['created_at'] = date('Y-m-d H:i:s');
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
-			
+
             DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
 
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
+            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'] . ' total data count ' . $totaldata_count . ' ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
 
             DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
 
-            TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
+            TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
 
         } catch (\Exception $e) {
             try {
@@ -257,6 +270,7 @@ class FusionPBXAccountUsage extends Command {
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
+        end_of_cronjob:
         CronJobLog::createLog($CronJobID,$joblogdata);
         CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {

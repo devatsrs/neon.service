@@ -31,7 +31,7 @@ class Xero {
 
 		Log::info('-- Xero Api Check --');
 		$this->set_connection($CompanyID);
-    }
+	}
 
 	public function set_connection($CompanyID){
 		$is_xero = SiteIntegration::CheckIntegrationConfiguration(true, SiteIntegration::$XeroSlug,$CompanyID);
@@ -262,10 +262,11 @@ class Xero {
 		$response = array();
 		Log::info('-- Xero Add Inovice --');
 		$Invoices = $Options['Invoices'];
+		$CompanyID= $Options['CompanyID'];
 		if(!empty($Invoices) && count($Invoices)>0){
 			foreach($Invoices as $Invoice){
 				if(!empty($Invoice))
-					$response[] = $this->CreateInvoice($Invoice);
+					$response[] = $this->CreateInvoice($Invoice,$CompanyID);
 			}
 		}
 		Log::info('-- Xero End Inovice --');
@@ -294,17 +295,20 @@ class Xero {
 		return $ContactID;
 	}
 
-	public function CreateInvoice($InvoiceID){
+	public function CreateInvoice($InvoiceID,$CompanyID){
 		Log::info('Invoice ID : '.print_r($InvoiceID,true));
 		$response = array();
 		$XeroContext = $this->XeroContext;
+		$XeroData		=	SiteIntegration::CheckIntegrationConfiguration(true,SiteIntegration::$XeroSlug,$CompanyID);
+		$XeroData = json_decode(json_encode($XeroData),true);
+		log::info(print_r($XeroData,true));
 		$Invoices = Invoice::find($InvoiceID);
 		$InvoiceFullNumber = $Invoices->FullInvoiceNumber;
 		$count = $this->CheckInvoice($InvoiceFullNumber);
 		Log::info('-- count --'.print_r($count,true));
 		if(isset($count) && $count==0) {
 			Log::info('-- Create Invoice --'.print_r($InvoiceFullNumber,true));
-			$data = $this->GetInvoiceData($InvoiceID);
+			$data = $this->GetInvoiceData($InvoiceID,$XeroData);
 			if(!empty($data) && count($data)>0) {
 				try {
 
@@ -333,7 +337,22 @@ class Xero {
 
 					//$invoice->setCurrencyCode('GBP');
 					$invoice->setStatus('Draft');
-					$invoice->setLineAmountType('NoTax');
+					//$invoice->setLineAmountType('NoTax');
+
+					//fetch only overall taxes
+					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceDetailID"=>0])->first();
+					$AllInvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->first();
+					log::info("InvoiceData". print_r($data, true));
+					log::info("InvoiceTaxRate". print_r($InvoiceTaxRate, true));
+
+					$XeroItems = $XeroContext->load('Accounting\\Item')->execute();
+					//log::info('XeroItems' .print_r($XeroItems,true));
+
+					$XeroTaxRates = $XeroContext->load('Accounting\\TaxRate')->where('Status', 'ACTIVE')->execute();
+					//log::info("XeroTaxRates ". print_r($XeroTaxRates, true));
+
+					$XeroAccounts = $XeroContext->load('Accounting\\Account')->execute();
+					//log::info("XeroAccounts ". print_r($XeroAccounts, true));
 
 					foreach ($data as $lineItem) {
 						if(!empty($lineItem['LineTotal'])) {
@@ -341,28 +360,99 @@ class Xero {
 
 							$Description = $lineItem['Title'].' - '.$lineItem['Description'];
 							$line->setDescription($Description);
+							$ProductName = product::getProductName($lineItem['ProductID'],$lineItem['ProductType']);
+							log::info("ProductName". print_r($ProductName, true));
+
+							$ItemCode = $this->SearchItemXero($ProductName,$XeroItems);
+							if(!empty($ItemCode))
+							{
+								log::info("xeroItemCode". $ItemCode);
+								$line->setItemCode($ItemCode);
+							}
+
+							//check if Percentage overall tax is entered (not line tax)
+							if (!empty($InvoiceTaxRate)) {
+
+								$taxratesdata = $this->SearchTaxRatesXero($InvoiceTaxRate->Title,$XeroTaxRates);
+								log::info("test ". print_r($taxratesdata, true));
+								if(count($taxratesdata) == 0)
+								{
+									$taxratesdata = $this->SearchTaxRatesXero($lineItem['TaxRateName'],$XeroTaxRates);
+									log::info("test2 ". print_r($taxratesdata, true));
+								}
+							}
+							else{
+								if(isset($lineItem['TaxRateName']))
+								{
+									$taxratesdata = $this->SearchTaxRatesXero($lineItem['TaxRateName'],$XeroTaxRates);
+									log::info("test3 ". print_r($taxratesdata, true));
+								}
+								else{
+									$taxratesdata = array();
+									log::info("test4 ". print_r($taxratesdata, true));
+								}
+							}
+							log::info("count-taxratesdata ". count($taxratesdata));
+							if(count($taxratesdata) > 0)
+							{
+								$line->setTaxType($taxratesdata['TaxType']);
+							}
+							else{
+								//check if Flat overall tax is entered (not line tax)
+								if(isset($AllInvoiceTaxRate))
+								{
+									if($AllInvoiceTaxRate->InvoiceTaxType == 1)
+									{
+										$FlatStatus = TaxRate::getTaxFlatStatus($AllInvoiceTaxRate->TaxRateID);
+										if($FlatStatus == 1){
+											log::info("TaxAmount ". print_r($AllInvoiceTaxRate->TaxAmount, true));
+											$line->setTaxAmount($AllInvoiceTaxRate->TaxAmount);
+										}
+									}
+									else{
+										$FlatStatus = TaxRate::getTaxFlatStatus($AllInvoiceTaxRate->TaxRateID);
+										if($FlatStatus == 1){
+											log::info("TaxAmount ". print_r($lineItem['TaxAmount'], true));
+											$line->setTaxAmount($lineItem['TaxAmount']);
+										}
+									}
+								}
+							}
+
+							unset($ItemCode);
+							unset($taxratesdata);
+							if(isset($lineItem['AccountMappingName']) && $lineItem['AccountMappingName'] != '')
+							{
+								//$InvoiceItemAccount = $this->SearchAccountXero($lineItem['AccountMappingName'],$XeroAccounts);
+								$InvoiceItemAccount = "";
+								foreach ($XeroAccounts as $key => $val) {
+									//Log::info("keyname".$key);
+									//Log::info("valname".print_r($val,true));
+									if ($val['Name'] == $lineItem['AccountMappingName']) {
+										$InvoiceItemAccount = $XeroAccounts[$key]['Code'];
+									}
+								}
+								log::info("InvoiceItemAccount ". $InvoiceItemAccount);
+								if(!empty($InvoiceItemAccount))
+								{
+									log::info("InvoiceItemAccount ".$InvoiceItemAccount);
+									$line->setAccountCode($InvoiceItemAccount);
+								}
+							}
+							//$line->setTaxAmount($taxratesdata[0]->EffectiveRate);
 							//$line->setItemCode('112');
 							$line->setQuantity($lineItem['Qty']);
 							$line->setUnitAmount($lineItem['Price']);
-							//$line->setTaxAmount(0);
+
 							$line->setLineAmount($lineItem['LineTotal']);
-							//$line->setDiscountRate(0); // Percentage
+							if($lineItem['DiscountType'] != 'Flat')
+							{
+								$line->setDiscountRate($lineItem['DiscountAmount']); // Percentage
+							}
 
 							// Add the line to the order
 							$invoice->addLineItem($line);
 						}
-					}
-					$InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->sum('TaxAmount');
-					if (!empty($InvoiceTaxRates)) {
-						$line = new \XeroPHP\Models\Accounting\Invoice\LineItem($XeroContext);
-						//$line->setItemCode('112');
-						$line->setUnitAmount($InvoiceTaxRates);
-						//$line->setTaxType('NONE');
-						//$line->setTaxAmount('0.00');
-						$line->setDescription('Overall Tax');
-						$line->setQuantity(1);
-						$line->setLineAmount($InvoiceTaxRates);
-						$invoice->addLineItem($line);
 					}
 
 					$SaveInvoice = $invoice->save()->getElements();
@@ -423,7 +513,61 @@ class Xero {
 		return $response;
 	}
 
-	public function GetInvoiceData($InvoiceID){
+	public function SearchItemXero($ProductName,$XeroItems){
+		foreach ($XeroItems as $key => $val) {
+			if ($val['Name'] === $ProductName) {
+				return $XeroItems[$key]['Code'];
+			}
+		}
+		return null;
+	}
+
+	public function SearchTaxRatesXero($TaxRateName,$XeroTaxRates){
+		foreach ($XeroTaxRates as $key => $val) {
+			Log::info("valname".print_r($val));
+			if ($val['Name'] === $TaxRateName) {
+				return $XeroTaxRates[$key];
+			}
+		}
+		return null;
+	}
+
+	public function SearchAccountXero($AccountName,$XeroAccounts){
+		foreach ($XeroAccounts as $key => $val) {
+			Log::info("valname".print_r($val));
+			if ($val['Name'] === $AccountName) {
+				return $XeroAccounts[$key]['Code'];
+			}
+		}
+		return null;
+	}
+
+	public function SearchItem($ProductName){
+
+		Log::info('SearchItem : '.$ProductName);
+
+		$Response = 0;
+		//$Account = Account::find($AccountID);
+		//$AccountName = $Account->AccountName;
+		Log::info('SearchItem');
+		$XeroContext = $this->XeroContext;
+		$Items = $XeroContext->load('Accounting\\Item')
+			->where('Name', $ProductName)
+			->execute();
+		log::info(print_r($Items,true));
+		if(!empty($Items) && count($Items)>0){
+			$ItemCode = $Items[0]->Code;
+			if(!empty($ItemCode)){
+				$Response = $ItemCode;
+			}
+			log::info("$ItemCode".print_r($ItemCode,true));
+		}
+
+		return $Response;
+
+	}
+
+	public function GetInvoiceData($InvoiceID,$XeroData){
 		$data = array();
 		$Invoice = Invoice::find($InvoiceID);
 		$InvoiceDetails = InvoiceDetail::where('InvoiceID','=',$InvoiceID)->get();
@@ -452,6 +596,33 @@ class Xero {
 				$InvoiceData['Qty'] = $InvoiceDetail->Qty;
 				$InvoiceData['Price'] = $InvoiceDetail->Price;
 				$InvoiceData['LineTotal'] = $InvoiceDetail->LineTotal;
+				$InvoiceData['DiscountType'] = $InvoiceDetail->DiscountType;
+				$InvoiceData['DiscountAmount'] = $InvoiceDetail->DiscountAmount;
+				$InvoiceData['TaxRateName'] = TaxRate::getTaxName($InvoiceDetail->TaxRateID);
+				$InvoiceData['FlatStatus'] = TaxRate::getTaxFlatStatus($InvoiceDetail->TaxRateID);
+				$InvoiceData['TaxAmount'] = $InvoiceDetail->TaxAmount;
+
+				if($InvoiceDetail->ProductID == 0)
+				{
+					$InvoiceData['AccountMappingName'] = $XeroData['Usage'][0];
+				}
+				else
+				{
+					if($Title == 'Item' || $Title == 'Additional')
+					{
+						$InvoiceData['AccountMappingName'] = $XeroData['Items'][$InvoiceDetail->ProductID];
+					}
+					if($Title == 'Recurring')
+					{
+						$InvoiceData['AccountMappingName'] = $XeroData['Subscriptions'][$InvoiceDetail->ProductID];
+					}
+					if($Title == 'Usage')
+					{
+						$InvoiceData['AccountMappingName'] = $XeroData['Usage'][0];
+					}
+				}
+
+
 				$data[]=$InvoiceData;
 				$SubTotal=$SubTotal+$InvoiceDetail->LineTotal;
 			}
@@ -590,7 +761,7 @@ class Xero {
 	}
 
 	public function createJournal($JournalDate,$Invoices,$CompanyID){
-		log::info(print_r($Invoices,true));
+		//log::info(print_r($Invoices,true));
 		$response = array();
 		$error = array();
 		$success = array();
@@ -601,7 +772,7 @@ class Xero {
 
 			$XeroData = json_decode(json_encode($XeroData),true);
 
-			log::info(print_r($XeroData,true));
+			//log::info(print_r($XeroData,true));
 			$InvoiceAccount = array();
 			$PaymentAccount = array();
 			$TaxId = '';
@@ -820,7 +991,7 @@ class Xero {
 
 	/**
 	 * Xero Payment Import
-	*/
+	 */
 	public function GetAndInsertPayment($date){
 		$response = array();
 		$data = array();

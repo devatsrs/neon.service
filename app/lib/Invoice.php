@@ -561,7 +561,9 @@ class Invoice extends \Eloquent {
                 $AccountBilling = AccountBilling::getBillingClass($Invoice->AccountID,$ServiceID);
                 $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,$ServiceID);
                 $InvoiceTemplateID = $AccountBilling->InvoiceTemplateID;
-                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)->get();
+                $InvoiceTaxRates = InvoiceTaxRate::where("InvoiceID",$InvoiceID)
+                    ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                    ->groupBy("TaxRateID")->get();
             }
             $Currency = Currency::find($Account->CurrencyId);
             $CurrencyCode = !empty($Currency)?$Currency->Code:'';
@@ -775,7 +777,7 @@ class Invoice extends \Eloquent {
 
                              $Title = $TaxRate->Title . ' (Subscription)';*/
                             foreach($InvoiceDetails as $InvoiceDetail){
-                                $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
+                                $ExemptTax = AccountSubscription::where(array('AccountID'=>$AccountID,'AccountSubscriptionID'=>$InvoiceDetail->AccountSubscriptionID,'SubscriptionID'=>$InvoiceDetail->ProductID))->pluck('ExemptTax');
                                 if($ExemptTax == 0) {
 
                                     $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $InvoiceDetail->LineTotal);
@@ -1273,16 +1275,19 @@ class Invoice extends \Eloquent {
 
         $InvoiceGrandTotal = $SubTotal + $TotalTax + $SubTotalWithoutTax; // Total Tax Added in Grand Total.
 
-        $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
+
 
         Log::info(' InvoiceGrandTotal ' . $InvoiceGrandTotal);
         //$InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $SubTotal = number_format($SubTotal+$SubTotalWithoutTax, $decimal_places, '.', '');
         $TotalTax = number_format($TotalTax, $decimal_places, '.', '');
-        $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
+
 
         $InvoiceTaxRateAmount =Invoice::getInvoiceTaxRateAmount($Invoice->InvoiceID,$decimal_places);
         $InvoiceGrandTotal = $SubTotal + $InvoiceTaxRateAmount;
+
+        $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
+        $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
 
         Log::info('GrandTotal ' . $InvoiceGrandTotal);
         Log::info('SubTotal ' . $SubTotal);
@@ -1379,6 +1384,12 @@ class Invoice extends \Eloquent {
                         }
                     }
 
+                    $NewBillingStartDate = InvoiceHistory::where(["InvoiceID"=>$Invoice->InvoiceID,"AccountID"=>$Invoice->AccountID,"ServiceID"=>$ServiceID])->pluck('BillingStartDate');
+                    if($NewBillingStartDate>$AccountSubscription->StartDate){
+                        log::info('New Account Subscription Start');
+                        $AccountSubscription->StartDate=$NewBillingStartDate;
+                    }
+                    log::info(' AccountSubscription StartDate '.$AccountSubscription->StartDate.' StartDate '.$StartDate);
                     if (AccountSubscription::checkFirstTimeBilling($AccountSubscription->StartDate,$StartDate)) {
                         Log::info( 'First Time + Advance Billing - Yes' );
 
@@ -1707,6 +1718,22 @@ class Invoice extends \Eloquent {
         log::info('Already Invoice Subscription '. $AlreadyInvoiceSubscription);
         Log::info('Invoice::IsAlreadyInvoiceSubscriptionDetail('.$Invoice->AccountID. ',' .$AccountSubscription->ServiceID. ',' .$AccountSubscription->SubscriptionID. ',' .$SubscriptionStartDate. ',' .$SubscriptionEndDate. ',' .$ProductDescription. ',' .$TotalSubscriptionCharge. ','.$SubscriptionCharge. ','.$qty.','.$AccountSubscription->AccountSubscriptionID.')');
 
+        log::info('DiscountAmount '.$Subscription->DiscountAmount);
+        log::info('DiscountType '.$Subscription->DiscountType);
+        log::info('SubscriptionCharge '.$TotalSubscriptionCharge);
+        $DiscountLineAmount = 0;
+        if(!empty($Subscription->DiscountAmount) && !empty($Subscription->DiscountType)){
+            if($Subscription->DiscountType=='Percentage'){
+                $DiscountLineAmount =  (($TotalSubscriptionCharge * $Subscription->DiscountAmount) / 100);
+                $TotalSubscriptionCharge = $TotalSubscriptionCharge - $DiscountLineAmount;
+            }
+            if($Subscription->DiscountType=='Flat'){
+                $DiscountLineAmount = $Subscription->DiscountAmount;
+                $TotalSubscriptionCharge = $TotalSubscriptionCharge - $DiscountLineAmount;
+            }
+        }
+        log::info('New SubscriptionCharge '.$TotalSubscriptionCharge);
+
         if($AlreadyInvoiceSubscription==0){
             if($AccountSubscription->ExemptTax){
                 $SubscriptionChargewithouttaxTotal += $TotalSubscriptionCharge;
@@ -1719,8 +1746,6 @@ class Invoice extends \Eloquent {
         $TotalSubscriptionCharge = number_format($TotalSubscriptionCharge, $decimal_places, '.', '');
 
         Log::info( ' TotalSubscriptionCharge - ' . $TotalSubscriptionCharge );
-
-
 
         if ($FirstTime && $Subscription->ActivationFee >0) {
             $ActivationProductDescription=$ProductDescription.' Activation Fee';
@@ -1769,6 +1794,12 @@ class Invoice extends \Eloquent {
             $InvoiceDetailData['AccountSubscriptionID'] = $AccountSubscription->AccountSubscriptionID;
             $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
             $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+            if(!empty($Subscription->DiscountAmount) && !empty($Subscription->DiscountType)){
+                $InvoiceDetailData['DiscountAmount'] = $Subscription->DiscountAmount;
+                $InvoiceDetailData['DiscountType'] = $Subscription->DiscountType;
+            }
+            $InvoiceDetailData["DiscountLineAmount"] = $DiscountLineAmount;
+
             InvoiceDetail::insert($InvoiceDetailData);
         }
         return array("SubTotal"=>$SubTotal,'SubscriptionChargewithouttaxTotal' => $SubscriptionChargewithouttaxTotal);
@@ -1776,73 +1807,49 @@ class Invoice extends \Eloquent {
         //}
     }
     public static function addOneOffTaxCharge($InvoiceID,$AccountID,$ServiceID){
-        $InvoiceDetail = InvoiceDetail::where("InvoiceID",$InvoiceID)->get();
-        $StartDate = date("Y-m-d", strtotime($InvoiceDetail[0]->StartDate));
-        $EndDate = date("Y-m-d", strtotime($InvoiceDetail[0]->EndDate));
-
-        $query = "CALL prc_getAccountOneOffCharge(?,?,?,?)";
-        $AccountOneOffCharges = DB::connection('sqlsrv2')->select($query,array($AccountID,$ServiceID,$StartDate,$EndDate));
-        Log::info("Call prc_getAccountOneOffCharge($AccountID,$ServiceID,$StartDate,$EndDate)") ;
+        // new logic start
         $AdditionalChargeTotalTax = 0;
-        Log::info('AccountOneOffCharge Tax '.count($AccountOneOffCharges)) ;
-        if (count($AccountOneOffCharges)) {
-            foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
-
-                $OneOffcount = InvoiceDetail::where(['InvoiceID'=>$InvoiceID,'ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,
-                        'ProductType'=>Product::ONEOFFCHARGE,'ServiceID'=>$AccountOneOffCharge->ServiceID,'Description'=>$AccountOneOffCharge->Description,'Price'=>$AccountOneOffCharge->Price,'Qty'=>$AccountOneOffCharge->Qty]
-                )->count();
-
-                Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID.' - InvoiceAddedornot '.$OneOffcount);
-                if($OneOffcount==1) {
-                    //Log::info(' AccountOneOffChargeID - ' . $AccountOneOffCharge->AccountOneOffChargeID);
-                    $LineTotal = ($AccountOneOffCharge->Price) * $AccountOneOffCharge->Qty;
+        $InvoiceDetails = InvoiceDetail::where("InvoiceID",$InvoiceID)->where("ProductType",Product::ONEOFFCHARGE)->get();
+        if(!empty($InvoiceDetails)) {
+            foreach ($InvoiceDetails as $InvoiceDetail) {
+                $AccountOneOffCharge = AccountOneOffCharge::where(['AccountID'=>$AccountID,'AccountOneOffChargeID'=>$InvoiceDetail->AccountOneOffChargeID])->first();
+                if(!empty($AccountOneOffCharge)){
+                    $LineTotal = $InvoiceDetail->LineTotal;
                     if ($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2) {
-                        $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
-
+                        InvoiceTaxRate::where(['InvoiceID' => $InvoiceID,'InvoiceDetailID' => $InvoiceDetail->InvoiceDetailID])->delete();
                         if ($AccountOneOffCharge->TaxRateID) {
                             $TaxRate = TaxRate::where("TaxRateID", $AccountOneOffCharge->TaxRateID)->first();
                             $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
-                            if (InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID])->count() == 0) {
-                                InvoiceTaxRate::create(array(
-                                    "InvoiceDetailID"=>$InvoiceDetail->InvoiceDetailID,
-                                    "InvoiceID" => $InvoiceID,
-                                    "TaxRateID" => $AccountOneOffCharge->TaxRateID,
-                                    "TaxAmount" => $TotalTax,
-                                    "Title" => $TaxRate->Title,
-                                ));
-                            } else {
-                                $TaxAmount = InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID])->pluck('TaxAmount');
-                                InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID])->update(array('TaxAmount' => $TotalTax + $TaxAmount));
-                            }
+                            $AdditionalChargeTotalTax += $TotalTax;
+                            InvoiceTaxRate::create(array(
+                                "InvoiceDetailID"=>$InvoiceDetail->InvoiceDetailID,
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
                         }
                         if ($AccountOneOffCharge->TaxRateID2) {
                             $TaxRate = TaxRate::where("TaxRateID", $AccountOneOffCharge->TaxRateID2)->first();
                             $TotalTax = Invoice::calculateTotalTaxByTaxRateObj($TaxRate, $LineTotal);
-                            if (InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID2])->count() == 0) {
-                                InvoiceTaxRate::create(array(
-                                    "InvoiceDetailID"=>$InvoiceDetail->InvoiceDetailID,//Invoidedetail
-                                    "InvoiceID" => $InvoiceID,
-                                    "TaxRateID" => $AccountOneOffCharge->TaxRateID2,
-                                    "TaxAmount" => $TotalTax,
-                                    "Title" => $TaxRate->Title,
-                                ));
-                            } else {
-                                $TaxAmount = InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID2])->pluck('TaxAmount');
-                                InvoiceTaxRate::where(['InvoiceID' => $InvoiceID, 'TaxRateID' => $AccountOneOffCharge->TaxRateID2])->update(array('TaxAmount' => $TotalTax + $TaxAmount));
-                            }
+                            $AdditionalChargeTotalTax += $TotalTax;
+                            InvoiceTaxRate::create(array(
+                                "InvoiceDetailID"=>$InvoiceDetail->InvoiceDetailID,//Invoidedetail
+                                "InvoiceID" => $InvoiceID,
+                                "TaxRateID" => $AccountOneOffCharge->TaxRateID2,
+                                "TaxAmount" => $TotalTax,
+                                "Title" => $TaxRate->Title,
+                            ));
                         }
 
-                        Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
                     }
-
                 }
-
             }
-        } //Subscription over
+        }
+        // new logic end
         Log::info('AccountOneOffCharge Tax Over');
 
         return $AdditionalChargeTotalTax;
-
 
     }
     public static function addOneOffCharge($Invoice,$ServiceID,$StartDate,$EndDate,$SubTotal,$decimal_places,$regenerate = 0,$FirstInvoiceSend=0){
@@ -1865,7 +1872,7 @@ class Invoice extends \Eloquent {
         }
         if (count($AccountOneOffCharges)) {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
-
+                // in future we will use AccountOneOffChargeID
                 $OneOffcount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
                     ->where(['ProductID'=>$AccountOneOffCharge->ProductID,'StartDate'=>$AccountOneOffCharge->Date,'EndDate'=>$AccountOneOffCharge->Date,'ProductType'=>Product::ONEOFFCHARGE,'tblInvoiceDetail.ServiceID'=>$AccountOneOffCharge->ServiceID,'tblInvoiceDetail.Description'=>$AccountOneOffCharge->Description,'tblInvoiceDetail.Price'=>$AccountOneOffCharge->Price,'tblInvoiceDetail.Qty'=>$AccountOneOffCharge->Qty])
                     ->where(['tblInvoice.AccountID'=>$Invoice->AccountID])
@@ -1879,13 +1886,27 @@ class Invoice extends \Eloquent {
                     $singlePrice = $AccountOneOffCharge->Price;
                     $LineTotal = ($AccountOneOffCharge->Price) * $AccountOneOffCharge->Qty;
                     if ($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2) {
-                        $SubscriptionChargewithouttaxTotal += $LineTotal;
                         $AdditionalChargeTotalTax += $AccountOneOffCharge->TaxAmount;
                         Log::info(' TaxAmount - ' . $AccountOneOffCharge->TaxAmount);
-                        //$SubTotal += $LineTotal+$AccountOneOffCharge->TaxAmount;
-                    } else {
-                        $SubscriptionChargewithouttaxTotal += $LineTotal;
                     }
+                    log::info('AccountOneOffCharge DiscountAmount '.$AccountOneOffCharge->DiscountAmount);
+                    log::info('AccountOneOffCharge DiscountType '.$AccountOneOffCharge->DiscountType);
+                    log::info('AccountOneOffCharge LineTotal '.$LineTotal);
+                    $DiscountLineAmount = 0;
+                    if(!empty($AccountOneOffCharge->DiscountAmount) && !empty($AccountOneOffCharge->DiscountType)){
+                        if($AccountOneOffCharge->DiscountType=='Percentage'){
+                            $DiscountLineAmount =  (($LineTotal * $AccountOneOffCharge->DiscountAmount) / 100);
+                            $LineTotal = $LineTotal - $DiscountLineAmount;
+                            $SubscriptionChargewithouttaxTotal += $LineTotal;
+                        }
+                        if($AccountOneOffCharge->DiscountType=='Flat'){
+                            $DiscountLineAmount = $AccountOneOffCharge->DiscountAmount;
+                            $LineTotal = $LineTotal - $DiscountLineAmount;
+                            $SubscriptionChargewithouttaxTotal += $LineTotal;
+                        }
+                    }
+                    log::info('New LineTotal '.$LineTotal);
+
                     $singlePrice = number_format($singlePrice, $decimal_places, '.', '');
                     $LineTotal = number_format($LineTotal, $decimal_places, '.', '');
                     $InvoiceDetailData = array();
@@ -1902,6 +1923,12 @@ class Invoice extends \Eloquent {
                     $InvoiceDetailData['LineTotal'] = $LineTotal;
                     $InvoiceDetailData["created_at"] = date("Y-m-d H:i:s");
                     $InvoiceDetailData["CreatedBy"] = 'RMScheduler';
+                    $InvoiceDetailData["AccountOneOffChargeID"] = $AccountOneOffCharge->AccountOneOffChargeID;
+                    if(!empty($AccountOneOffCharge->DiscountAmount) && !empty($AccountOneOffCharge->DiscountType)){
+                        $InvoiceDetailData['DiscountAmount'] = $AccountOneOffCharge->DiscountAmount;
+                        $InvoiceDetailData['DiscountType'] = $AccountOneOffCharge->DiscountType;
+                    }
+                    $InvoiceDetailData["DiscountLineAmount"] = $DiscountLineAmount;
                     InvoiceDetail::insert($InvoiceDetailData);
                 }
             }
@@ -2561,7 +2588,7 @@ class Invoice extends \Eloquent {
 
     public static function IsAlreadyInvoiceSubscriptionDetail($AccountID,$ServiceID,$ProductID,$StartDate,$EndDate,$Description,$LineTotal,$Price,$Qty,$AccountSubscriptionID){
         $SubscriptionCount = InvoiceDetail::Join('tblInvoice','tblInvoiceDetail.InvoiceID','=','tblInvoice.InvoiceID')
-            ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'tblInvoiceDetail.LineTotal'=>$LineTotal,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID,'tblInvoiceDetail.AccountSubscriptionID'=>$AccountSubscriptionID])
+            ->where(['ProductID'=>$ProductID,'StartDate'=>$StartDate,'EndDate'=>$EndDate,'ProductType'=>Product::SUBSCRIPTION,'tblInvoiceDetail.Description'=>$Description,'Price'=>$Price,'Qty'=>$Qty,'tblInvoiceDetail.ServiceID'=>$ServiceID,'tblInvoiceDetail.AccountSubscriptionID'=>$AccountSubscriptionID])
             ->where(['tblInvoice.AccountID'=>$AccountID])
             ->where('tblInvoice.InvoiceStatus','<>',Invoice::CANCEL)
             ->count();
@@ -2631,7 +2658,9 @@ class Invoice extends \Eloquent {
         }
         Log::info('EndDate =' . $EndDate);
         if($SubscriptionStartDate > $EndDate){
-            //nothing do
+            $EndDate = date("Y-m-d", strtotime("+1 Day", strtotime($EndDate)));
+            Log::info('NewEndDate1 =' . $EndDate);
+            $SubscriptionData['StartDate']=$EndDate;
         }elseif($SubscriptionEndDate <= $EndDate){
             $SubscriptionData['AlreadyCharged']=1;
         }elseif($SubscriptionStartDate <= $EndDate && $SubscriptionEndDate > $EndDate){
@@ -2821,7 +2850,7 @@ class Invoice extends \Eloquent {
 
         $query = "CALL prc_getDeductCallChargeAccounts(?)";
         $Accounts = DB::select($query,array($CompanyID));
-        Log::info("Call prc_getBillingAccounts($CompanyID)");
+        Log::info("Call prc_getDeductCallChargeAccounts($CompanyID)");
         //log::info(print_r($Accounts,true));
         $Accounts = json_decode(json_encode($Accounts),true);
 

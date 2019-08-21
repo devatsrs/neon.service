@@ -31,6 +31,7 @@ class Payment extends \Eloquent{
                         $settings['InvoiceNumber'] = $Invoice->InvoiceNumber;
                         $settings['InvoiceGrandTotal'] = number_format($Invoice->GrandTotal,Helper::get_round_decimal_places($CompanyID,$Invoice->AccountID));
                         $settings['InvoiceOutstanding'] = number_format($Invoice->InvoiceOutStanding,Helper::get_round_decimal_places($CompanyID,$Invoice->AccountID));
+                        $settings['InvoiceID'] = $Invoice->InvoiceID;
                         $today = date('Y-m-d');
                         $getdaysdiff = getdaysdiff($today,$Invoice->AccountCreationDate);
                         $foundkey = array_search($Invoice->DueDay, $settings['Day']);

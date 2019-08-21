@@ -77,22 +77,30 @@ class SippyRateFileStatus  extends Command {
 
         try {
             $response['error']  = $response['message']  = array();
-            $jobType        = JobType::where(["Code" => 'SCRP'])->get(["JobTypeID", "Title"]);
+            $jobType        = JobType::where(["Code" => 'SCRP'])->orWhere(["Code" => 'SVRP'])->get(["JobTypeID", "Title"]);
             $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
-            $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+            //$JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+            foreach($jobType as $jt)
+            {
+                $jtid[] = $jt->JobTypeID;
+            }
+            //Log::info("jtid".print_r($jtid,true));exit;
             $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobTypeID'=>$JobTypeID,'JobStatusID'=>$JobStatusID])
-                                ->where(DB::raw('JSON_EXTRACT(Options, "$.CompanyGatewayID")'),$CompanyGatewayID)
-                                ->get();
+            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobStatusID'=>$JobStatusID])
+                ->where(DB::raw('JSON_EXTRACT(Options, "$.CompanyGatewayID")'),$CompanyGatewayID)
+                ->whereIn('JobTypeID', $jtid)
+                ->get();
 
             $SippySFTP = new Sippy($CompanyGatewayID);
 
             foreach ($PendingFiles as $PendingFile) {
                 $Options = json_decode($PendingFile->Options);
                 $token = isset($Options->token) ? $Options->token : '';
+                $i_customer = isset($Options->i_customer) ? $Options->i_customer : '';
                 $addparam['token'] = $token;
+                //$addparam['i_customer'] = $i_customer;
                 $result = $SippySFTP->getUploadStatus($addparam);
-
+                Log::info("result".print_r($result,true));
                 if (!empty($result) && !isset($result['faultCode'])) {
                     if (!empty($result['result']) && strtoupper($result['result']) == 'OK') {
                         $Job = Job::find($PendingFile->JobID);

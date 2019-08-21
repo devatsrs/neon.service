@@ -10,6 +10,7 @@ use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
 use App\Lib\TempVendorCDR;
+use App\Lib\UsageDetail;
 use App\MOR;
 use Exception;
 use Illuminate\Console\Command;
@@ -78,31 +79,41 @@ class MORAccountUsage extends Command {
         //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         try {
             Log::error(' ========================== mor transaction start =============================');
             CronJob::createLog($CronJobID);
+
+            if(isset($cronsetting['CDRImportStartDate']) && !empty($cronsetting['CDRImportStartDate'])){
+
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] = $result['Message'];
+                goto end_of_cronjob;
+                // break cron job after CDR Delete
+            }
+
             $RateFormat = Company::PREFIX;
             $RateCDR = $AutoAddIP = 0;
 
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+            if (isset($companysetting->RateCDR) && $companysetting->RateCDR) {
                 $RateCDR = $companysetting->RateCDR;
             }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+            if (isset($companysetting->RateFormat) && $companysetting->RateFormat) {
                 $RateFormat = $companysetting->RateFormat;
             }
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
+            if (!empty($companysetting->CLITranslationRule)) {
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
-            if(!empty($companysetting->CLDTranslationRule)){
+            if (!empty($companysetting->CLDTranslationRule)) {
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if(!empty($companysetting->PrefixTranslationRule)){
+            if (!empty($companysetting->PrefixTranslationRule)) {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
-            if(isset($companysetting->AutoAddIP) && $companysetting->AutoAddIP){
+            if (isset($companysetting->AutoAddIP) && $companysetting->AutoAddIP) {
                 $AutoAddIP = $companysetting->AutoAddIP;
             }
             TempUsageDetail::applyDiscountPlan();
@@ -132,7 +143,7 @@ class MORAccountUsage extends Command {
             if (!isset($response['faultCode'])) {
                 Log::error('call count ' . count($response));
                 foreach ((array)$response as $row_account) {
-                    if(!empty($row_account['username']) || !empty($row_account['originator_ip'])) {
+                    if (!empty($row_account['username']) || !empty($row_account['originator_ip'])) {
                         $data = array();
                         $data['CompanyGatewayID'] = $CompanyGatewayID;
                         $data['CompanyID'] = $CompanyID;
@@ -169,7 +180,7 @@ class MORAccountUsage extends Command {
                         }
                     }
 
-                    if(!empty($row_account['terminator_ip']) || !empty($row_account['providername'])) {
+                    if (!empty($row_account['terminator_ip']) || !empty($row_account['providername'])) {
                         $vendorcdrdata = array();
                         if ($companysetting->NameFormat == 'NUB') {
                             $vendorcdrdata['GatewayAccountID'] = $row_account['providername'];
@@ -192,7 +203,7 @@ class MORAccountUsage extends Command {
                         $vendorcdrdata['billed_second'] = $row_account['billed_second'];
                         $vendorcdrdata['duration'] = $row_account['duration'];
                         $vendorcdrdata['trunk'] = 'Other';
-                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$row_account['prefix']),$RateCDR, $RerateAccounts);
+                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule, $row_account['prefix']), $RateCDR, $RerateAccounts);
                         $vendorcdrdata['ProcessID'] = $processID;
                         $vendorcdrdata['ServiceID'] = $ServiceID;
                         $vendorcdrdata['remote_ip'] = $row_account['terminator_ip'];
@@ -217,26 +228,26 @@ class MORAccountUsage extends Command {
 
             date_default_timezone_set(Config::get('app.timezone'));
             /** delete duplicate id*/
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
 
             /** delete duplicate id*/
-            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' )");
-            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $tempVendortable . "' ) end");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) end");
 
             Log::error("MOR CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd']);
             Log::error(' ========================== MOR transaction end =============================');
             //ProcessCDR
 
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            TempVendorCDR::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$tempVendortable,'','CurrentRate',0,$RerateAccounts);
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
+            TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '', 'CurrentRate', 0, $RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data) . '<br>';
             }
-            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID',$processID)->count();
+            $totaldata_count = DB::connection('sqlsrvcdr')->table($temptableName)->where('ProcessID', $processID)->count();
             DB::connection('sqlsrvcdr')->beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
 
@@ -245,8 +256,8 @@ class MORAccountUsage extends Command {
             Log::error("MOR CALL  prc_ProcessDiscountPlan ('" . $processID . "', '" . $temptableName . "' ) end");
 
             Log::error('MOR prc_insertCDR start');
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '".$tempVendortable."')");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '" . $tempVendortable . "')");
             Log::error('MOR prc_insertCDR end');
 
             /*Log::error('MOR prc_linkCDR end');
@@ -260,17 +271,17 @@ class MORAccountUsage extends Command {
             $logdata['created_at'] = date('Y-m-d H:i:s');
             $logdata['ProcessID'] = $processID;
             TempUsageDownloadLog::insert($logdata);
-			
+
             DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
 
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'].' total data count '.$totaldata_count.' '.time_elapsed($start_time,date('Y-m-d H:i:s'));
+            $joblogdata['Message'] .= "CDR StartTime " . $param['start_date_ymd'] . " - End Time " . $param['end_date_ymd'] . ' total data count ' . $totaldata_count . ' ' . time_elapsed($start_time, date('Y-m-d H:i:s'));
 
             DB::connection('sqlsrvcdr')->table($temptableName)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
             DB::connection('sqlsrvcdr')->table($tempVendortable)->where(["ProcessID" => $processID])->delete(); //TempUsageDetail::where(["processId" => $processID])->delete();
-            TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
-            if($AutoAddIP == 1) {
+            TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
+            if ($AutoAddIP == 1) {
                 TempUsageDetail::AutoAddIPLog($CompanyID, $CompanyGatewayID);
             }
 
@@ -303,6 +314,9 @@ class MORAccountUsage extends Command {
                 Log::error("**Email Sent message " . $result['message']);
             }
         }
+
+        end_of_cronjob:
+
         CronJobLog::createLog($CronJobID,$joblogdata);
         CronJob::deactivateCronJob($CronJob);
         if(!empty($cronsetting['SuccessEmail'])) {

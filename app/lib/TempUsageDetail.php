@@ -220,10 +220,10 @@ Please check below error messages while re-rating cdrs.
 
 
         //imedia only outbound. 0 = outbound and 1 = inbound
-        if(isset($userfield) && (strpos($userfield,"inbound") !== false  || $userfield ===1) ) {
+        if(isset($userfield) && (strpos($userfield,"inbound") !== false  || $userfield ==="1") ) {
             $is_inbound = true;
         }
-        if(isset($userfield) && (strpos($userfield,"outbound") !== false || $userfield ===0)) {
+        if(isset($userfield) && (strpos($userfield,"outbound") !== false || $userfield ==="0")) {
             $is_outbound = true;
         }
         /** if user field is blocked call any reason make duration zero */

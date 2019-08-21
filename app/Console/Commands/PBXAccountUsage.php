@@ -9,6 +9,8 @@ use App\Lib\CronJobLog;
 use App\Lib\Service;
 use App\Lib\TempUsageDetail;
 use App\Lib\TempUsageDownloadLog;
+use App\Lib\TempVendorCDR;
+use App\Lib\UsageDetail;
 use App\PBX;
 use Exception;
 use Illuminate\Console\Command;
@@ -79,6 +81,7 @@ class PBXAccountUsage extends Command
         $companysetting = json_decode(CompanyGateway::getCompanyGatewayConfig($CompanyGatewayID));
         $ServiceID = (int)Service::getGatewayServiceID($CompanyGatewayID);
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID );
+        $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
         $tempRetailtableName = CompanyGateway::getUsagedetailRetailTablename($temptableName );
 
         Log::useFiles(storage_path() . '/logs/pbxaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
@@ -90,11 +93,19 @@ class PBXAccountUsage extends Command
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $accounts = array();
         try {
 
             CronJob::createLog($CronJobID);
+            if(isset($cronsetting['CDRImportStartDate']) && !empty($cronsetting['CDRImportStartDate'])){
+
+                $result = UsageDetail::reImportCDRByStartDate($cronsetting,$CronJobID,$processID);
+                $joblogdata['CronJobStatus'] = $result['CronJobStatus'];
+                $joblogdata['Message'] = $result['Message'];
+                goto end_of_cronjob;
+                // break cron job after CDR Delete
+            }
 
             $pbx = new PBX($CompanyGatewayID);
             $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
@@ -106,20 +117,20 @@ class PBXAccountUsage extends Command
             $RateFormat = Company::PREFIX;
             $RateCDR = 0;
 
-            if(isset($companysetting->RateCDR) && $companysetting->RateCDR){
+            if (isset($companysetting->RateCDR) && $companysetting->RateCDR) {
                 $RateCDR = $companysetting->RateCDR;
             }
-            if(isset($companysetting->RateFormat) && $companysetting->RateFormat){
+            if (isset($companysetting->RateFormat) && $companysetting->RateFormat) {
                 $RateFormat = $companysetting->RateFormat;
             }
             $CLITranslationRule = $CLDTranslationRule = $PrefixTranslationRule = '';
-            if(!empty($companysetting->CLITranslationRule)){
+            if (!empty($companysetting->CLITranslationRule)) {
                 $CLITranslationRule = $companysetting->CLITranslationRule;
             }
-            if(!empty($companysetting->CLDTranslationRule)){
+            if (!empty($companysetting->CLDTranslationRule)) {
                 $CLDTranslationRule = $companysetting->CLDTranslationRule;
             }
-            if(!empty($companysetting->PrefixTranslationRule)){
+            if (!empty($companysetting->PrefixTranslationRule)) {
                 $PrefixTranslationRule = $companysetting->PrefixTranslationRule;
             }
             TempUsageDetail::applyDiscountPlan(); // when NextBillingDate comes , remove old discount entry and add fresh discout value with usedSeconds = 0
@@ -134,12 +145,12 @@ class PBXAccountUsage extends Command
             /**
              * Not in use
              * $CdrBehindData = array();
-            //check CdrBehindDuration from cron job setting
-            if(!empty($cronsetting['ErrorEmail'])){
-                $CdrBehindData['startdatetime'] =$param['start_date_ymd'];
-                CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
-            }
-            //CdrBehindDuration
+             * //check CdrBehindDuration from cron job setting
+             * if(!empty($cronsetting['ErrorEmail'])){
+             * $CdrBehindData['startdatetime'] =$param['start_date_ymd'];
+             * CronJob::CheckCdrBehindDuration($CronJob,$CdrBehindData);
+             * }
+             * //CdrBehindDuration
              * */
 
 
@@ -150,13 +161,14 @@ class PBXAccountUsage extends Command
             Log::info('count ==' . count($response));
             $InserData = array();
             $data_count = 0;
+            $data_countv = 0;
             $insertLimit = 1000;
             if (!isset($response['faultCode'])) {
 
                 foreach ((array)$response as $row_account) {
 
-                    $data = $data_outbound = array(); // for call type = both $data = inbound ,  $data_outbound = outbound entry only when rerating is on.
-                    if(!empty($row_account['accountcode'])) {
+                    $data = $data_outbound = $vendordata = array(); // for call type = both $data = inbound ,  $data_outbound = outbound entry only when rerating is on.
+                    if (!empty($row_account['accountcode'])) {
 
 
                         /**  User Field
@@ -170,7 +182,7 @@ class PBXAccountUsage extends Command
                          *
                          * Outbound = FirstDst,LstDst
                          */
-                        $call_type = TempUsageDetail::check_call_type(strtolower($row_account["userfield"]),strtolower($row_account['cc_type']),strtolower($row_account['pincode']));
+                        $call_type = TempUsageDetail::check_call_type(strtolower($row_account["userfield"]), strtolower($row_account['cc_type']), strtolower($row_account['pincode']));
 
                         //Log::info( 'userfield ' . $row_account["userfield"] .' -  call_type ' . $call_type . '-  src ' . $row_account['src'] . ' -  firstdst ' . $row_account['firstdst']. '- lastdst ' . $row_account['lastdst'] );
 
@@ -178,7 +190,7 @@ class PBXAccountUsage extends Command
 
                         if (strtolower(trim($row_account['cc_type'])) == strtolower(PBX::$CcType[PBX::OUTNOCHARGE])) {
                             $data['cc_type'] = PBX::OUTNOCHARGE;
-                        }else {
+                        } else {
                             $data['cc_type'] = 0;
                         }
 
@@ -231,7 +243,7 @@ class PBXAccountUsage extends Command
 
                             $data['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             /** if user field is both */
-                        }else if ($call_type == 'failed') {
+                        } else if ($call_type == 'failed') {
                             //Log::info($row_account["userfield"]);
                             //Log::info($row_account["ID"]);
                             /** if user field is failed or blocked call any reason make duration zero */
@@ -254,7 +266,7 @@ class PBXAccountUsage extends Command
                             $data['cld'] = $row_account['firstdst'];
                             $data['cost'] = 0;
                             $data['is_inbound'] = 1;
-                            $data['userfield'] = str_replace('outbound','',$row_account['userfield']);
+                            $data['userfield'] = str_replace('outbound', '', $row_account['userfield']);
 
                             /**
                              * Outbound Entry
@@ -265,7 +277,7 @@ class PBXAccountUsage extends Command
                             $data_outbound['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
                             $data_outbound['cost'] = (float)$row_account['cc_cost'];
                             $data_outbound['is_inbound'] = 0;
-                            $data_outbound['userfield'] = str_replace('inbound','',$row_account['userfield']);
+                            $data_outbound['userfield'] = str_replace('inbound', '', $row_account['userfield']);
 
                         }
 
@@ -273,8 +285,8 @@ class PBXAccountUsage extends Command
                          * remove prefix from cli cld , given in gateway option
                          */
 
-                        $data['cli'] = apply_translation_rule($CLITranslationRule,$data['cli']);
-                        $data['cld'] = apply_translation_rule($CLDTranslationRule,$data['cld']);
+                        $data['cli'] = apply_translation_rule($CLITranslationRule, $data['cli']);
+                        $data['cld'] = apply_translation_rule($CLDTranslationRule, $data['cld']);
 
                         //for CLI Authentication
                         $data['AccountCLI'] = $data['cli'];
@@ -284,8 +296,8 @@ class PBXAccountUsage extends Command
 
                         if ($call_type == 'both' && $RateCDR == 1 && !empty($data_outbound)) {
 
-                            $data_outbound['cli'] = apply_translation_rule($CLITranslationRule,$data_outbound['cli']);
-                            $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule,$data_outbound['cld']);
+                            $data_outbound['cli'] = apply_translation_rule($CLITranslationRule, $data_outbound['cli']);
+                            $data_outbound['cld'] = apply_translation_rule($CLDTranslationRule, $data_outbound['cld']);
                             //for CLI Authentication
                             $data_outbound['AccountCLI'] = $data_outbound['cli'];
 
@@ -293,17 +305,56 @@ class PBXAccountUsage extends Command
                             $data_count++;
 
                         }
+
                         if ($data_count > $insertLimit && !empty($InserData)) {
                             DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
                             $InserData = array();
                             $data_count = 0;
                         }
+                        /** Vendor CDR Start */
+                        if(!empty($row_account['cc_peername'])){
+                            $vendordata['CompanyID'] = $CompanyID;
+                            $vendordata['CompanyGatewayID'] = $CompanyGatewayID;
+                            $vendordata['GatewayAccountID'] = $row_account['cc_peername'];
+                            $vendordata['connect_time']    = date("Y-m-d H:i:s", strtotime($row_account['start']));
+                            $vendordata['disconnect_time'] = date("Y-m-d H:i:s", strtotime($row_account['end']));
+                            $vendordata['buying_cost'] = (float)$row_account['cc_buy'];
+                            $vendordata['selling_cost']= (float)$row_account['cc_cost'];
+                            $vendordata['cli'] = $row_account['src'];
+                            $vendordata['cld'] = !empty($row_account['lastdst']) ? $row_account['lastdst'] : $row_account['firstdst'];
+                            $vendordata['billed_second'] = $row_account['billsec'];
+                            $vendordata['billed_duration'] = $row_account['billsec'];
+                            $vendordata['duration'] = $row_account['duration'];
+                            $vendordata['trunk'] = 'Other';
+                            $vendordata['area_prefix'] = 'Other';
+                            $vendordata['ProcessID'] = $processID;
+                            $vendordata['ServiceID'] = $ServiceID;
+                            $vendordata['ID'] = $row_account['ID'];
+                            $vendordata['AccountIP'] = '';
+                            $vendordata['AccountName'] = '';
+                            $vendordata['AccountNumber'] = $row_account['cc_peername'];
+                            $vendordata['cli'] = apply_translation_rule($CLITranslationRule, $vendordata['cli']);
+                            $vendordata['cld'] = apply_translation_rule($CLDTranslationRule, $vendordata['cld']);
+                            $vendordata['AccountCLI'] = $vendordata['cli'];
+                            $InserVData[] = $vendordata;
+                            $data_countv++;
+                            if ($data_countv > $insertLimit && !empty($InserVData)) {
+                                DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                                $InserVData = array();
+                                $data_countv = 0;
+                            }
+                        }
+                        /** Vendor CDR End */
                     }
 
                 }//loop
 
                 if (!empty($InserData)) {
                     DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+
+                }
+                if (!empty($InserVData)) {
+                    DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
 
                 }
                 date_default_timezone_set(Config::get('app.timezone'));
@@ -317,16 +368,21 @@ class PBXAccountUsage extends Command
 
             /** delete duplicate id*/
             /** Check in tblUsageDetails and tblUsageDetailFailedCall table  and remove existing from temp table */
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) start");
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' )");
-            Log::info("CALL  prc_DeleteDuplicateUniqueID ('".$CompanyID."','".$CompanyGatewayID."' , '" . $processID . "', '" . $temptableName . "' ) end");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $temptableName . "' ) end");
 
+
+            /** delete duplicate id*/
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) start");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' )");
+            Log::info("CALL  prc_DeleteDuplicateUniqueID2 ('" . $CompanyID . "','" . $CompanyGatewayID . "' , '" . $processID . "', '" . $tempVendortable . "' ) end");
 
             /**
              * insert into $tempRetailtableName
              */
 
-            $sql = "INSERT INTO ".$tempRetailtableName. " (TempUsageDetailID,ID,cc_type,ProcessID) SELECT  TempUsageDetailID,ID,cc_type,ProcessID FROM ".  $temptableName . " WHERE ProcessID = '" .$processID . "'";
+            $sql = "INSERT INTO " . $tempRetailtableName . " (TempUsageDetailID,ID,cc_type,ProcessID) SELECT  TempUsageDetailID,ID,cc_type,ProcessID FROM " . $temptableName . " WHERE ProcessID = '" . $processID . "'";
             Log::info($sql);
             DB::connection('sqlsrvcdr')->statement($sql);
 
@@ -335,7 +391,8 @@ class PBXAccountUsage extends Command
              * 1. update cost = 0 where cc_type = 4 (OUTNOCHARGE)
              */
             Log::info("ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat)");
-            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID,$processID,$CompanyGatewayID,$RateCDR,$RateFormat,$temptableName,'','CurrentRate',0,0,0,$RerateAccounts);
+            TempVendorCDR::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $tempVendortable, '', 'CurrentRate', 0, $RerateAccounts);
+            $skiped_account_data = TempUsageDetail::ProcessCDR($CompanyID, $processID, $CompanyGatewayID, $RateCDR, $RateFormat, $temptableName, '', 'CurrentRate', 0, 0, 0, $RerateAccounts);
             if (count($skiped_account_data)) {
                 $joblogdata['Message'] .= implode('<br>', $skiped_account_data);
             }
@@ -352,7 +409,8 @@ class PBXAccountUsage extends Command
              * 1. Move disposition <> "ANSWERED" to failed call
              */
             Log::error('pbx prc_insertCDR start');
-            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '".$temptableName."' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertCDR ('" . $processID . "', '" . $temptableName . "' )");
+            DB::connection('sqlsrvcdr')->statement("CALL  prc_insertVendorCDR ('" . $processID . "', '" . $tempVendortable . "')");
 
             Log::error('pbx prc_insertCDR end');
             $logdata['CompanyGatewayID'] = $CompanyGatewayID;
@@ -364,8 +422,12 @@ class PBXAccountUsage extends Command
             TempUsageDownloadLog::insert($logdata);
             DB::connection('sqlsrvcdr')->commit();
             DB::connection('sqlsrv2')->commit();
+
+            TempUsageDetail::GenerateLogAndSend($CompanyID, $CompanyGatewayID, $cronsetting, $skiped_account_data, $CronJob->JobTitle);
+
+            end_of_cronjob:
+
             CronJobLog::insert($joblogdata);
-            TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
 
         } catch (\Exception $e) {
             try {

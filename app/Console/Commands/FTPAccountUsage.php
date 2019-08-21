@@ -108,7 +108,7 @@ class FTPAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -248,13 +248,13 @@ class FTPAccountUsage extends Command
                                 }
 
 
-                                if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)   && isset($temp_row[$attrselection->disconnect_time])  && isset($attrselection->DateFormat)   ) {
+                                if (isset($attrselection->disconnect_datetime) && !empty($attrselection->disconnect_datetime)   && isset($temp_row[$attrselection->disconnect_datetime])  && isset($attrselection->DateFormat)   ) {
 
                                     //when Date and Time has no '-' and '/'  ie. 20180308	160345
-                                    if (isset($attrselection->disconnect_time) && !empty($attrselection->disconnect_time)  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->disconnect_time]) ) {
-                                        $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->disconnect_time] . ' ' . $temp_row[$attrselection->disconnect_time]));
+                                    if (isset($attrselection->disconnect_datetime) && !empty($attrselection->disconnect_datetime)  && isset($attrselection->DateFormat) && !preg_match('(/|-)', $temp_row[$attrselection->disconnect_datetime]) ) {
+                                        $cdrdata['connect_time'] = date ( "Y-m-d H:i:s",strtotime($temp_row[$attrselection->disconnect_datetime] . ' ' . $temp_row[$attrselection->disconnect_datetime]));
                                     }else {
-                                        $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_time]), $attrselection->DateFormat);
+                                        $cdrdata['disconnect_time'] = formatDate(str_replace('/', '-', $temp_row[$attrselection->disconnect_datetime]), $attrselection->DateFormat);
                                     }
                                 } elseif (isset($attrselection->billed_duration) && !empty($attrselection->billed_duration) && isset($cdrdata['connect_time']) && !empty($cdrdata['connect_time'])  ) {
                                     $strtotime = strtotime($cdrdata['connect_time']);

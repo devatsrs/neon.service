@@ -97,32 +97,42 @@ class NeonAlert extends \Eloquent {
         return $cronjobdata;
     }
 
-    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID){
+    public static function SendReminder($CompanyID,$settings,$TemplateID,$AccountID,$AccountBalanceWarning=""){
         $Company = Company::find($CompanyID);
         $email_view = 'emails.template';
         $Account = Account::find($AccountID);
+
         $AccountManagerEmail = Account::getAccountOwnerEmail($Account);
         if (isset($settings['AccountManager']) && $settings['AccountManager'] == 1 && !empty($AccountManagerEmail)) {
             $settings['ReminderEmail'] .= ',' . $AccountManagerEmail;
+        }
+
+        if(isset($AccountBalanceWarning->BalanceThreshold) && !empty($AccountBalanceWarning)){
+            $settings['BalanceThreshold'] = $AccountBalanceWarning->BalanceThreshold;
         }
         $EmailType = 0;
         if(isset($settings['EmailType']) && $settings['EmailType']>0){
             $EmailType = $settings['EmailType'];
         }
-
         $EmailTemplate = EmailTemplate::find($TemplateID);
         if (!empty($EmailTemplate)) {
             $EmailSubject = $EmailTemplate->Subject;
             $EmailMessage = $EmailTemplate->TemplateBody;
             $replace_array = Helper::create_replace_array($Account,$settings);
             $EmailMessage = template_var_replace($EmailMessage,$replace_array);
+
+            $EmailSubject = template_var_replace($EmailSubject,$replace_array);
             $emaildata = array(
                 'EmailToName' => $Company->CompanyName,
                 'Subject' => $EmailSubject . " (" . $Account->AccountName . ")",
                 'CompanyID' => $CompanyID,
                 'CompanyName' => $Company->CompanyName,
-                'Message' => $EmailMessage
+                'Message' => $EmailMessage,
+
             );
+            if(isset($settings['InvoiceNumber'])){
+                $emaildata['InvoiceNo'] = $settings['InvoiceNumber'];
+            }
             if(!empty($settings['ReminderEmail'])) {
                 $emaildata['EmailTo'] = explode(",", $settings['ReminderEmail']);
                 $status = Helper::sendMail($email_view, $emaildata);
@@ -131,20 +141,45 @@ class NeonAlert extends \Eloquent {
                 }
             }
 
-            $CustomerEmail = $Account->BillingEmail;
-            $CustomerEmail = explode(",", $CustomerEmail);
-            foreach ($CustomerEmail as $singleemail) {
-                $singleemail = trim($singleemail);
-                if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                    $emaildata['EmailTo'] = $singleemail;
-                    $customeremail_status = Helper::sendMail($email_view, $emaildata);
-                    if ($customeremail_status['status'] == 0) {
-                        $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
-                    } else {
-                        $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+            $haveEmail=0;
+            //For Balance Threshold
+            if(!empty($AccountBalanceWarning->BalanceThresholdEmail)){
+                $BalanceThresholdEmail=$AccountBalanceWarning->BalanceThresholdEmail;
+                $ThresholdEmail = $BalanceThresholdEmail;
+                $ThresholdEmail = explode(",", $ThresholdEmail);
+                foreach ($ThresholdEmail as $Thresholdsingleemail) {
+                    $Thresholdsingleemail = trim($Thresholdsingleemail);
+                    Log::info(' Thresholdsingleemail = '.$Thresholdsingleemail.' --------- ');
+                    if (filter_var($Thresholdsingleemail, FILTER_VALIDATE_EMAIL)) {
+                        $haveEmail=1;
+                        $emaildata['EmailTo'] = $Thresholdsingleemail;
+                        $customeremail_status = Helper::sendMail($email_view, $emaildata);
+                        if ($customeremail_status['status'] == 0) {
+                            $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $Thresholdsingleemail . ')';
+                        } else {
+                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+                        }
                     }
                 }
             }
+            Log::info('haveEmail = '.$haveEmail.' --------- ');
+            if($haveEmail==0){
+                $CustomerEmail = $Account->BillingEmail;
+                $CustomerEmail = explode(",", $CustomerEmail);
+                foreach ($CustomerEmail as $singleemail) {
+                    $singleemail = trim($singleemail);
+                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                        $emaildata['EmailTo'] = $singleemail;
+                        $customeremail_status = Helper::sendMail($email_view, $emaildata);
+                        if ($customeremail_status['status'] == 0) {
+                            $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
+                        } else {
+                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+                        }
+                    }
+                }
+            }
+            Log::info('End Email low balance:'.$haveEmail);
         }
 
     }
