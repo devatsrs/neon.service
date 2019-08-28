@@ -70,7 +70,7 @@ class AutoOutPayment extends Command {
         try {
             $AutoOutPaymentList =  Account::Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
                 ->Join('tblAccountBalance','tblAccount.AccountID','=','tblAccountBalance.AccountID')
-                ->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
+                ->select(['BalanceAmount','AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
                 ->where('tblAccountPaymentAutomation.AutoOutpayment','=', 1)
                 ->where('tblAccountPaymentAutomation.OutPaymentThreshold','>', 0)
                 ->where('tblAccountPaymentAutomation.OutPaymentAmount','>', 0)
@@ -83,7 +83,7 @@ class AutoOutPayment extends Command {
             $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
             foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
-                if((float)$AutoOutPaymentAccount->OutPaymentAvailable >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
+                if((float)$AutoOutPaymentAccount->BalanceAmount >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
                     $OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount, $CompanyConfiguration);
                     if ($OutPaymentAccount[0] == "success") {
                         $successRecord = array();
