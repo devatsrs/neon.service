@@ -703,4 +703,10 @@ class AccountBalance extends Model
 
         return $TotalAmount;
     }
+
+    public static function getNewAccountBalance($CompanyID,$AccountID){
+        $AccountBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
+        $AccountBalance = number_format($AccountBalance, 2);
+        return $AccountBalance;
+    }
 }

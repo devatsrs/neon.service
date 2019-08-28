@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\AccountBalance;
+use App\Lib\AccountBalanceLog;
+use App\Lib\AccountBilling;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
@@ -81,9 +84,18 @@ class AutoOutPayment extends Command {
 
             Log::info('DONE With AutoOutPaymentAccount.' . count($AutoOutPaymentList));
             $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
-
             foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
-                if((float)$AutoOutPaymentAccount->BalanceAmount >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
+
+                $BillingType = AccountBilling::where([
+                    'AccountID'=>$AutoOutPaymentAccount->AccountID,
+                    'ServiceID'=>0
+                ])->pluck('BillingType');
+                $BalanceAmount = AccountBalance::getNewAccountBalance($CompanyID, $AutoOutPaymentAccount->AccountID);
+                if(isset($BillingType) && $BillingType==1){
+                    $BalanceAmount = AccountBalanceLog::getPrepaidAccountBalance($AutoOutPaymentAccount->AccountID);
+                }
+
+                if((float)$BalanceAmount >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
                     $OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount, $CompanyConfiguration);
                     if ($OutPaymentAccount[0] == "success") {
                         $successRecord = array();
