@@ -706,7 +706,7 @@ class AccountBalance extends Model
 
     public static function getNewAccountBalance($CompanyID,$AccountID){
         $AccountBalance = AccountBalance::getBalanceSOAOffsetAmount($AccountID);
-        $AccountBalance = number_format($AccountBalance, 2);
+        $AccountBalance = number_format($AccountBalance, Helper::get_round_decimal_places($CompanyID, $AccountID));
         return $AccountBalance;
     }
 }
