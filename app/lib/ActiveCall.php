@@ -55,12 +55,14 @@ class ActiveCall extends \Eloquent {
                 if(!empty($RateTablePKGRate)){
 
                     $PackageCostPerMinute = isset($RateTablePKGRate->PKG_PackageCostPerMinute)?$RateTablePKGRate->PKG_PackageCostPerMinute:0;
-                    if(!empty($PackageCostPerMinute)){
+                    if(!empty($PackageCostPerMinute) && $CallType == 'Inbound'){
                         if(!empty($RateTablePKGRate->PKG_PackageCostPerMinuteCurrency)) {
                             $PackageCostPerMinuteCurrency = $RateTablePKGRate->PKG_PackageCostPerMinuteCurrency;
                             $PackageCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
                         }
                         $PackageCostPerMinute = ($BilledDuration * ($PackageCostPerMinute/60));
+                    }else{
+                        $PackageCostPerMinute = 0;
                     }
 
                     if ($ActiveCall->CallRecording == 1) {
@@ -74,6 +76,8 @@ class ActiveCall extends \Eloquent {
                             }
                             $RecordingCostPerMinute = ($CallRecordingDuration * ($RecordingCostPerMinute/60));
                         }
+                    }else{
+                        $RecordingCostPerMinute = 0;
                     }
                 }
             }
