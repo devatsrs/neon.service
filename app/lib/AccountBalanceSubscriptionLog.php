@@ -16,12 +16,10 @@ class AccountBalanceSubscriptionLog extends Model
 
 
 
-    public static function CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$BillingType,$NextCycleDate){
+    public static function CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$BillingType,$NextCycleDate,$AccountSubscriptionID){
         $Today=date('Y-m-d');
-        $AccountBilling = AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
-        $AccountService = AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->first();
         while ($NextCycleDate <= $Today) {
-            $ServiceBilling = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->first();
+            $ServiceBilling = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->first();
             AccountBalanceSubscriptionLog::CreateServiceDetailLog($ServiceBilling->ServiceBillingID);
             $NextCycleDate = $ServiceBilling->NextCycleDate;
 
@@ -43,14 +41,16 @@ class AccountBalanceSubscriptionLog extends Model
         $AccountID=$ServiceBilling->AccountID;
         $ServiceID=$ServiceBilling->ServiceID;
         $AccountServiceID=$ServiceBilling->AccountServiceID;
+        $AccountSubscriptionID=$ServiceBilling->AccountSubscriptionID;
         $BillingType=$ServiceBilling->BillingType;
         $StartDate = $ServiceBilling->LastCycleDate;
         $StartDate = date('Y-m-d 00:00:00',strtotime($StartDate));
         $EndDate = date('Y-m-d 23:59:59', strtotime('-1 day', strtotime($ServiceBilling->NextCycleDate)));
         log::info('StartDate '.$StartDate.' End Date '.$EndDate);
 
-
-        $AccountSubscriptions = AccountSubscription::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID, 'AccountServiceID' => $AccountServiceID])->get();
+        /** change if need to work as service */
+        //$AccountSubscriptions = AccountSubscription::where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID, 'AccountServiceID' => $AccountServiceID])->get();
+        $AccountSubscriptions = AccountSubscription::where(['AccountSubscriptionID' => $AccountSubscriptionID])->get();
         if (!empty($AccountSubscriptions)) {
             foreach ($AccountSubscriptions as $AccountSubscription) {
                 $AccountSubscriptionID = $AccountSubscription->AccountSubscriptionID;
@@ -58,13 +58,16 @@ class AccountBalanceSubscriptionLog extends Model
             }
         }
 
+        /** need to change if need to work as service */
+
+        /*
         $AccountOneOffCharges = AccountOneOffCharge::getAccountOneoffChargesByDate($AccountID, $ServiceID, $AccountServiceID, $StartDate, $EndDate);
         if (count($AccountOneOffCharges)) {
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
                 $AccountOneOffChargeID = $AccountOneOffCharge->AccountOneOffChargeID;
                 AccountBalanceSubscriptionLog::CreateOneOffChargeBalanceLog($BillingType, $AccountOneOffChargeID, $StartDate, $EndDate);
             }
-        }
+        } */
 
     }
 
@@ -94,7 +97,8 @@ class AccountBalanceSubscriptionLog extends Model
         }
 
         //if($BillingType==AccountBalance::BILLINGTYPE_PREPAID){
-            $BillingCycleType=AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->pluck('SubscriptionBillingCycleType');
+            //$BillingCycleType=AccountService::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->pluck('SubscriptionBillingCycleType');
+            $BillingCycleType = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->pluck('BillingCycleType');
             $QuarterSubscription =  0;
             if($BillingCycleType == 'quarterly'){
                 $QuarterSubscription = 1;
@@ -138,9 +142,9 @@ class AccountBalanceSubscriptionLog extends Model
                     }
                 }
 
-                $NextCycleDate = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->pluck('NextCycleDate');
-                $BillingCycleType = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->pluck('BillingCycleType');
-                $BillingCycleValue = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->pluck('BillingCycleValue');
+                $NextCycleDate = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->pluck('NextCycleDate');
+                $BillingCycleType = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->pluck('BillingCycleType');
+                $BillingCycleValue = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->pluck('BillingCycleValue');
 
                 $StartDate=date('Y-m-d 00:00:00',strtotime($NextCycleDate));
                 $EndDate=next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($NextCycleDate));
@@ -202,12 +206,21 @@ class AccountBalanceSubscriptionLog extends Model
     public static function InsertSubscriptionBalanceDeatilLog($AccountSubscriptionID,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places){
 
         $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscriptionID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription);
+        // convert currency
 
         $AccountSubscription = AccountSubscription::where(['AccountSubscriptionID'=>$AccountSubscriptionID])->first();
         $ServiceID = $AccountSubscription->ServiceID;
         $AccountServiceID = $AccountSubscription->AccountServiceID;
         $AccountID = $AccountSubscription->AccountID;
         $IssueDate = date('Y-m-d');
+
+        $AccountCurrency = Account::where(['AccountID'=>$AccountID])->pluck('CurrencyId');
+        $CompanyID = Account::where(['AccountID'=>$AccountID])->pluck('CompanyId');
+        $CompanyCurrency = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+
+        if(!empty($SubscriptionCharge) && !empty($AccountSubscription->RecurringCurrencyID)){
+            $SubscriptionCharge = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $AccountSubscription->RecurringCurrencyID, $SubscriptionCharge);
+        }
 
         $qty = $AccountSubscription->Qty;
         $TotalSubscriptionCharge = ( $SubscriptionCharge * $qty );
@@ -230,6 +243,11 @@ class AccountBalanceSubscriptionLog extends Model
 
         $ProductDescription = $AccountSubscription->InvoiceDescription;
         if ($FirstTimeBilling && $Subscription->ActivationFee >0) {
+
+            if(!empty($Subscription->ActivationFee) && !empty($AccountSubscription->OneOffCurrencyID)){
+                $Subscription->ActivationFee = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $AccountSubscription->OneOffCurrencyID, $Subscription->ActivationFee);
+            }
+
             $ActivationProductDescription=$ProductDescription.' Activation Fee';
             $TotalActivationFeeCharge = ( $Subscription->ActivationFee * $qty );
             /**
@@ -325,7 +343,16 @@ class AccountBalanceSubscriptionLog extends Model
 
         $ProductDescription = $AccountOneOffCharge->Description;
         $singlePrice = $AccountOneOffCharge->Price;
-        $LineTotal = ($AccountOneOffCharge->Price) * $AccountOneOffCharge->Qty;
+
+        $AccountCurrency = Account::where(['AccountID'=>$AccountID])->pluck('CurrencyId');
+        $CompanyID = Account::where(['AccountID'=>$AccountID])->pluck('CompanyId');
+        $CompanyCurrency = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
+
+        if(!empty($singlePrice) && !empty($AccountOneOffCharge->CurrencyID)){
+            $singlePrice = Currency::convertCurrency($CompanyCurrency, $AccountCurrency, $AccountOneOffCharge->CurrencyID, $singlePrice);
+        }
+
+        $LineTotal = ($singlePrice) * $AccountOneOffCharge->Qty;
 
         $DiscountLineAmount = 0;
         if(!empty($AccountOneOffCharge->DiscountAmount) && !empty($AccountOneOffCharge->DiscountType)){
