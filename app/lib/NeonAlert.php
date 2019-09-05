@@ -122,7 +122,7 @@ class NeonAlert extends \Eloquent {
         if(isset($settings['EmailType']) && $settings['EmailType']>0){
             $EmailType = $settings['EmailType'];
         }
-        $EmailTemplate = EmailTemplate::find($TemplateID);
+        $EmailTemplate = EmailTemplate::where(['Status' => 1])->find($TemplateID);
         if (!empty($EmailTemplate)) {
             $EmailSubject = $EmailTemplate->Subject;
             $EmailMessage = $EmailTemplate->TemplateBody;
