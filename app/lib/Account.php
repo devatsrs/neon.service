@@ -250,16 +250,10 @@ class Account extends \Eloquent {
     }
 
     public static function ZeroBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning));
-
-        if(!empty($email)){
-            $zerobalancemaillog->where(['EmailTo'=>$email]);
-        }
-
+        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning,'EmailTo'=>$email));
         if(!empty($LastRunTime)){
             $zerobalancemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
-
         $count = $zerobalancemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
