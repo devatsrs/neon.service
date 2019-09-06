@@ -54,7 +54,7 @@ class EmailTemplate extends \Eloquent {
                 $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "CompanyID"=>$companyID,"IsGlobal"=>0, 'Status'=>1])->first();
                 /** check same default LanguageID in global*/
                 if(empty($emailtemplate)){
-                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "IsGlobal"=>1, 'Status'=>1])->first();
+                    $emailtemplate=EmailTemplate::where(["SystemType"=>$slug, "LanguageID"=>Translation::$default_lang_id, "IsGlobal"=>1])->first();
                 }
             }
         }

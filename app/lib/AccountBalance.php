@@ -254,7 +254,7 @@ class AccountBalance extends Model
         }
         return $error_message;
     }
-
+     
     public static function SendAccountBlockingEmail($CompanyID,$AccountID,$Blocked){
         $CustomerEmail = '';
         $CompanyName = Company::getName($CompanyID);
