@@ -282,7 +282,7 @@ class Account extends \Eloquent {
     public static function getCompanyID($AccountID){
         return Account::where(["AccountID"=>$AccountID])->pluck('CompanyID');
     }
-
+ 
     public static function addAccountAudit($data=array()){
         $UserID = $data['UserID'];
         $CompanyID = $data['CompanyID'];
