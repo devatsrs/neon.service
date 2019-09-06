@@ -115,7 +115,6 @@ class AccountBalance extends Model
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -2]);
                             Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
-
                         }
                         else if ($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown > 0) {
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "ZeroBalanceWarning", $LanguageID);
