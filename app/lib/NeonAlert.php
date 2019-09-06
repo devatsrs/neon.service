@@ -123,6 +123,7 @@ class NeonAlert extends \Eloquent {
             $EmailType = $settings['EmailType'];
         }
         $EmailTemplate = EmailTemplate::find($TemplateID);
+        
         if (!empty($EmailTemplate)) {
             $EmailSubject = $EmailTemplate->Subject;
             $EmailMessage = $EmailTemplate->TemplateBody;
