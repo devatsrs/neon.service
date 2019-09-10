@@ -545,7 +545,7 @@
                         @foreach($usage_data_table['header'] as $row)
                             <?php
                             $classname = 'centeralign';
-                            if(in_array($row['Title'],array('ChargedAmount'))){
+                            if(in_array($row['Title'],array('ChargedAmount','BillDuration'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                 $classname = 'leftalign';
@@ -579,7 +579,7 @@
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 <?php
                                 $classname = 'centeralign';
-                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                if(in_array($table_h_row['Title'],array('ChargedAmount','BillDuration'))){
                                     $classname = 'rightalign leftsideview';
                                 }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                     $classname = 'leftalign';
