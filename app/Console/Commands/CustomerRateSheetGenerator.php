@@ -304,7 +304,6 @@ class CustomerRateSheetGenerator extends Command {
                                                 throw new Exception($msg);
                                             }
                                             $excel_data = json_decode(json_encode($excel_data), true);
-                                            $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $Timezone, $file_name, $excel_data);
                                             $data['excel_data'] = $excel_data;
                                             /*Customer trunk */
                                             $customertrunkprefix = CustomerTrunk::where(['AccountID' => $account->AccountID, 'TrunkID' => $trunk, 'Status' => 1])->pluck('Prefix');
@@ -314,14 +313,20 @@ class CustomerRateSheetGenerator extends Command {
                                             $this->generateexcel($file_name, $data, $local_dir, $downloadtype);
                                             $file_name .= '.' . $downloadtype;
                                             Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
-                                            RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $Timezone);
-                                            Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                             /*Customer trunk */
                                             //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$trunk,'Status'=>1])->pluck('Prefix');
                                             $account->trunkprefix = $customertrunkprefix;
                                             $account->trunk_name = $trunkname;
                                             $sheetstatusupdate = $this->sendRateSheet($JobID, $job, $ProcessID, $joboptions, $local_dir, $file_name, $account, $CompanyID, $userInfo, $Company, $countcust, $countuser, $errorscustomer, $errorslog, $errorsuser);
                                             extract($sheetstatusupdate);
+                                            if (count($errorsuser)>0 || count($errorscustomer)>0 || count($errorslog)>0) {
+                                                Log::info("Email Sending Failed");
+                                            }
+                                            else{
+                                                $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $Timezone, $file_name, $excel_data);
+                                                RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $Timezone);
+                                                Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
+                                            }
                                             if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath, $CompanyID)) {
                                                 throw new Exception('Error in Amazon upload');
                                             }
@@ -349,7 +354,6 @@ class CustomerRateSheetGenerator extends Command {
                                         Log::info('job end prc_WSGenerateRateSheet for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         Log::info('job RateSheetDetails start for AccountName ' . $account->AccountName . ' job ' . $JobID);
                                         $excel_data = json_decode(json_encode($excel_data), true);
-                                        $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $Timezone, $file_name, $excel_data);
                                         $data['excel_data'] = $excel_data;
                                         /*Customer trunk */
                                         $customertrunkprefix = CustomerTrunk::where(['AccountID' => $account->AccountID, 'TrunkID' => $joboptions->Trunks, 'Status' => 1])->pluck('Prefix');
@@ -359,14 +363,20 @@ class CustomerRateSheetGenerator extends Command {
                                         $this->generateexcel($file_name, $data, $local_dir, $downloadtype);
                                         $file_name .= '.' . $downloadtype;
                                         Log::info("job RateSheetDetails end for AccountName '" . $account->AccountName . "'" . $JobID);
-                                        RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $Timezone);
-                                        Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
                                         /*Customer trunk */
                                         //$customertrunkprefix = CustomerTrunk::where(['AccountID'=>$account->AccountID,'TrunkID'=>$joboptions->Trunks,'Status'=>1])->pluck('Prefix');
                                         $account->trunkprefix = $customertrunkprefix;
                                         $account->trunk_name = $trunkname;
                                         $sheetstatusupdate = $this->sendRateSheet($JobID, $job, $ProcessID, $joboptions, $local_dir, $file_name, $account, $CompanyID, $userInfo, $Company, $countcust, $countuser, $errorscustomer, $errorslog, $errorsuser);
                                         extract($sheetstatusupdate);
+                                        if (count($errorsuser)>0 || count($errorscustomer)>0 || count($errorslog)>0) {
+                                            Log::info("Email Sending Failed");
+                                        }
+                                        else{
+                                            $RateSheetID = RateSheetDetails::SaveToDetail($account->AccountID, $trunkname, $Timezone, $file_name, $excel_data);
+                                            RateSheetDetails::DeleteOldRateSheetDetails($RateSheetID, $account->AccountID, $trunkname, $Timezone);
+                                            Log::info("job RateSheetDetails old deleted for AccountName '" . $account->AccountName . "'" . $JobID);
+                                        }
                                         if (!AmazonS3::upload($local_dir . '/' . $file_name, $amazonPath, $CompanyID)) {
                                             throw new Exception('Error in Amazon upload');
                                         }
