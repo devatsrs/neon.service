@@ -63,18 +63,23 @@ class AccountBalance extends Model
         $BillingClass = BillingClass::getBillingClassByCompanyID($CompanyID);
         foreach($BillingClass as $BillingClassSingle) {
 
-            if (isset($BillingClassSingle->ZeroBalanceWarningStatus) && $BillingClassSingle->ZeroBalanceWarningStatus == 1 && isset($BillingClassSingle->ZeroBalanceWarningStatus)) {
+            Log::info("ZeroBalanceWarningStatus: " . json_encode($BillingClassSingle->ZeroBalanceWarningStatus));
+            if (isset($BillingClassSingle->ZeroBalanceWarningStatus) && $BillingClassSingle->ZeroBalanceWarningStatus == 1) {
                 $settings = json_decode($BillingClassSingle->ZeroBalanceWarningSettings, true);
+
+                Log::info("settings: " . json_encode($settings));
                 $settings['ProcessID'] = $ProcessID;
                 $settings['EmailType'] = AccountEmailLog::ZeroBalanceWarning;
                 $LastRunTime = isset($settings['LastRunTime'])?$settings['LastRunTime']:'';
                 $query = "CALL prc_ZeroBalanceWarning(?,?,?)";
                 $AccountZeroBalanceWarnings = DB::select($query, array($CompanyID, 0,$BillingClassSingle->BillingClassID));
                 Log::info("CALL prc_ZeroBalanceWarning(".$CompanyID.",0,".$BillingClassSingle->BillingClassID.")");
-                Log::info(json_encode($settings));
+                //Log::info(json_encode($settings));
                 if(!empty($settings['CountDown'])){
                     $CountDown1 = $settings['CountDown'];
                 } else {$CountDown1 = 0;}
+
+                Log::info("prc_ZeroBalanceWarning Count : " . count($AccountZeroBalanceWarnings));
 
                 foreach ($AccountZeroBalanceWarnings as $AccountZeroBalanceWarning) {
                     $settings['CountDown'] = $AccountZeroBalanceWarning->CountDown;
@@ -91,10 +96,16 @@ class AccountBalance extends Model
                     Log::info('second '.$countDown );
                     $default_lang_id=Translation::$default_lang_id;
                     $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
+
+                    Log::info("cal_next_runtime(): " . cal_next_runtime($settings));
+                    Log::info("Current Time: " . date('Y-m-d H:i:00'));
+                    Log::info("Last Time: " . Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,"",$LastRunTime));
+
                     if (isset($AccountZeroBalanceWarning->BalanceAmount) &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,"",$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                     Log::info("balance check ". $AccountZeroBalanceWarning->BalanceAmount.' count down '.$AccountZeroBalanceWarning->CountDown);
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == -1)
                         {
+                            Log::info("IF 1");
                             Log::info("count down ".$CountDown1. ' and count down '.$AccountZeroBalanceWarning->CountDown );
                                 AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                     ->update(['CountDown' => $CountDown1]);
@@ -102,13 +113,16 @@ class AccountBalance extends Model
                         }
                         if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == -2)
                         {
+                            Log::info("IF 2");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -1]);
                         }
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
                         if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == 0)
                         {
+                            Log::info("Final zero balance Send Reminder");
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "FinalZeroBalanceWarning", $LanguageID);
+                            Log::info("Template ID:" . $EmailTemplateID);
                             if(!empty($EmailTemplateID)){
                                 NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
                             }
@@ -117,7 +131,10 @@ class AccountBalance extends Model
                             Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
                         }
                         else if ($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown > 0) {
+
+                            Log::info("Zero balance Send Reminder");
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "ZeroBalanceWarning", $LanguageID);
+                            Log::info("Template ID:" . $EmailTemplateID);
                             if(!empty($EmailTemplateID)){
                                 NeonAlert::SendReminder($CompanyID, $settings, $EmailTemplateID->TemplateID, $AccountZeroBalanceWarning->AccountID);
                             }
@@ -127,11 +144,13 @@ class AccountBalance extends Model
 
                         } else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown > 0)
                         {
+                            Log::info("If 4");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -1]);
                         }
                         else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == 0)
                         {
+                            Log::info("If 5");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -1]);
                         }
