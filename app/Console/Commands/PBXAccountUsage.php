@@ -215,6 +215,10 @@ class PBXAccountUsage extends Command
                         $data['disposition'] = $row_account['disposition'];
                         $data['userfield'] = $row_account['userfield'];
                         $data['extension'] = $row_account['extension'];
+                        
+                        $data['ExtensionName'] = $row_account['ex_name'];
+                        $data['PincodeName']    = $row_account['pincode_name'];
+                        
                         $data['ProcessID'] = $processID;
                         $data['ServiceID'] = $ServiceID;
                         $data['ID'] = $row_account['ID'];

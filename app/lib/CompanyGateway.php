@@ -91,6 +91,10 @@ class CompanyGateway extends \Eloquent {
                                     `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
                                     `TrunkPrefix` VARCHAR(50) NULL DEFAULT NULL ,
+                                    
+                                    `ExtensionName` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `PincodeName` VARCHAR(100) NULL DEFAULT NULL ,
+
                                     `pincode` VARCHAR(50) NULL DEFAULT NULL ,
                                     `extension` VARCHAR(50) NULL DEFAULT NULL ,
                                     `cli` VARCHAR(500) NULL DEFAULT NULL ,

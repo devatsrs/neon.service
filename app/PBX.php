@@ -101,10 +101,15 @@ class PBX{
         $response = array();
         if(count(self::$config) && isset(self::$config['dbserver']) && isset(self::$config['username']) && isset(self::$config['password'])){
             try{
-                $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,IFNULL(cc_type ,'') as cc_type,disposition,IFNULL(cc.cc_peername,'') as cc_peername,IFNULL(cc.cc_buy,'') as cc_buy
-                    from asteriskcdrdb.cdr c
+                $query = "select c.src, c.ID,c.`start`,c.`end`,c.duration,c.billsec,c.realsrc as extension,c.accountcode,c.firstdst,c.lastdst,coalesce(sum(cc_cost)) as cc_cost,c.pincode, c.userfield,IFNULL(cc_type ,'') as cc_type,disposition,IFNULL(p.pr_name,'') as cc_peername,IFNULL(cc.cc_buy,'') as cc_buy, ex.ex_name, pin.pc_description as pincode_name
+                    from asteriskcdrdb.cdr c										
                     left outer join asterisk.cc_callcosts cc on
-                     c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) ) /*-- Given by mirta same as in their front end.*/
+                    c.uniqueid=cc.cc_uniqueid and ( c.sequence=cc.cc_cdr_sequence or (c.sequence is null and cc.cc_cdr_sequence=0 ) ) /*-- Given by mirta same as in their front end.*/
+					left outer join asterisk.pr_providers p on
+						cc_pr_id = pr_id
+					left outer join asterisk.te_tenants te ON te.te_code = c.accountcode
+                    left outer join asterisk.ex_extensions ex ON CONCAT(ex.ex_number, '-', te.te_code) = c.realsrc and ex.ex_te_id = te.te_id
+					left outer join asterisk.pc_pincodes pin ON pin.pc_pin = c.pincode	
                     where `end` >= '" . $addparams['start_date_ymd'] . "' and `end` < '" . $addparams['end_date_ymd'] . "'
                     AND (
                            userfield like '%outbound%'
