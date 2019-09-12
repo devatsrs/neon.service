@@ -53,8 +53,8 @@ class AccountBalanceTaxRateLog extends Model
         return $TaxGrandTotal;
     }
 
-    public static function CreateSubscriptiontBalanceTax($AccountID,$AccountBalanceSubscriptionLogID,$TotalCharge){
-        AccountBalanceTaxRateLog::where(array('ParentLogID'=>$AccountBalanceSubscriptionLogID,'Type'=>Product::SUBSCRIPTION))->delete();
+    public static function CreateSubscriptiontBalanceTax($AccountID,$AccountBalanceSubscriptionLogID,$TotalCharge,$ProductType){
+        AccountBalanceTaxRateLog::where(array('ParentLogID'=>$AccountBalanceSubscriptionLogID,'Type'=>$ProductType))->delete();
         //$TaxRateIDs = AccountBilling::getTaxRate($AccountID,0,0);
         $TaxRateIDs = Account::where(['AccountID'=>$AccountID])->pluck('TaxRateID');
         $TaxGrandTotal = 0;

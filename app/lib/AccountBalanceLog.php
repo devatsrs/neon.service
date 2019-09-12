@@ -43,7 +43,7 @@ class AccountBalanceLog extends Model
                     log::info('Usage Start');
                     AccountBalanceUsageLog::CreateUsageLog($CompanyID, $AccountID, $ProcessID); // done
                     log::info('Subscription Start');
-                    AccountBalanceLog::CreateSubscriptionServiceLog($CompanyID, $AccountID, $ProcessID);
+                    AccountBalanceLog::CreateServiceLog($CompanyID, $AccountID, $ProcessID);
                     log::info('One Off Start');
                     AccountOneOffCharge::CreateOneOffServiceLog($CompanyID, $AccountID, $ProcessID);
                     DB::commit();
@@ -69,82 +69,14 @@ class AccountBalanceLog extends Model
 
     }
 
-    /** Not using */
     public static function CreateServiceLog($CompanyID,$AccountID,$ProcessID){
-        $Today=date('Y-m-d');
-        $AccountServices = AccountService::where(['AccountID'=>$AccountID])->get();
-        if(!empty($AccountServices)){
-            /**
-             * Prepaid service
-             */
-            foreach($AccountServices as $AccountService){
-                $NextCycleDate='';
-                $LatsCycleDate='';
-                $BillingType = AccountBilling::BILLINGTYPE_PREPAID;
-                if(empty($AccountService->SubscriptionBillingCycleType)) {
-                    $BillingType = AccountBilling::BILLINGTYPE_POSTPAID;
-                }
-                $ServiceID          = $AccountService->ServiceID;
-                $AccountServiceID   = $AccountService->AccountServiceID;
-                $Count=1;
-                $ServiceBilling = DB::table('tblServiceBilling')->where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID])->first();
-                if(empty($ServiceBilling)){
-                    $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
-                    if(!empty($AccountBilling->BillingStartDate)){
+        /* Subscription wise log */
+        AccountBalanceLog::CreateSubscriptionServiceLog($CompanyID,$AccountID,$ProcessID);
 
-                        // if billing type is postpaid and billing cycle is manual then skip this service
-                        if($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $AccountBilling->BillingCycleType == 'manual') {
-                            continue;
-                        }
-                        // if BillingStartDate is null then skip this service
-                        if(empty($AccountBilling->BillingStartDate)) {
-                            continue;
-                        }
+        /* Service wise log */
 
-                        $LatsCycleDate = $AccountBilling->BillingStartDate;
-                        $ServiceBillingData=array();
-                        $ServiceBillingData['AccountID']=$AccountID;
-                        $ServiceBillingData['ServiceID']=$ServiceID;
-                        $ServiceBillingData['AccountServiceID']=$AccountServiceID;
-                        $ServiceBillingData['BillingType']=$BillingType;
-                        $ServiceBillingData['LastCycleDate']=$LatsCycleDate;
+        AccountBalanceLog::CreateAccountServiceLog($CompanyID,$AccountID,$ProcessID);
 
-                        if(empty($AccountService->SubscriptionBillingCycleType)) {
-                            $NextCycleDate = next_billing_date($AccountBilling->BillingCycleType,$AccountBilling->BillingCycleValue,strtotime($LatsCycleDate));
-                            $ServiceBillingData['BillingCycleType']=$AccountBilling->BillingCycleType;
-                            $ServiceBillingData['BillingCycleValue']=$AccountBilling->BillingCycleValue;
-                        }else{
-                            $NextCycleDate = next_billing_date($AccountService->SubscriptionBillingCycleType,$AccountService->SubscriptionBillingCycleValue,strtotime($LatsCycleDate));
-                            $ServiceBillingData['BillingCycleType']=$AccountService->SubscriptionBillingCycleType;
-                            $ServiceBillingData['BillingCycleValue']=$AccountService->SubscriptionBillingCycleValue;
-                        }
-
-                        $ServiceBillingData['NextCycleDate']=$NextCycleDate;
-                        $ServiceBillingData['created_at']=date('Y-m-d H:i:s');
-                        $ServiceBillingData['updated_at']=date('Y-m-d H:i:s');
-
-                        DB::table('tblServiceBilling')->insert($ServiceBillingData);
-                    }
-                }else{
-                    $LatsCycleDate = $ServiceBilling->LastCycleDate;
-                    $NextCycleDate = $ServiceBilling->NextCycleDate;
-                }
-                /***
-                 * Subscriptions
-                 */
-
-                //log::info('ServiceID '.$ServiceID.' Billing Type '.$BillingType.' Count '.$Count.' LastCycleDate '.$LatsCycleDate.' NextCycleDate '.$NextCycleDate);
-                if(!empty($NextCycleDate) && $NextCycleDate <= $Today){
-                    log::info('Main AccountService '.$AccountID.' '.$ServiceID.' '.$AccountServiceID);
-                    log::info('NextCycleDate '.$NextCycleDate);
-                    AccountBalanceSubscriptionLog::CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$BillingType,$NextCycleDate);
-                }
-
-            }
-
-        }else{
-            log::info('No Service');
-        }
     }
 
     public static function updateAccountBalanceAmount(){
@@ -236,4 +168,77 @@ class AccountBalanceLog extends Model
         }
     }
 
+    public static function CreateAccountServiceLog($CompanyID,$AccountID,$ProcessID){
+        $Today=date('Y-m-d');
+        $AccountServices = AccountService::where(['AccountID'=>$AccountID])->get();
+
+        if(!empty($AccountServices)){
+            /**
+             * Prepaid service
+             */
+            foreach($AccountServices as $AccountService){
+                $NextCycleDate='';
+                $LatsCycleDate='';
+                $BillingType = AccountBilling::BILLINGTYPE_PREPAID;
+                $ServiceID = $AccountService->ServiceID;
+                $AccountServiceID = $AccountService->AccountServiceID;
+                $Count=1;
+                $ServiceBilling = DB::table('tblServiceBilling')->where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>0])->first();
+                if(empty($ServiceBilling)){
+                    $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
+                    if(!empty($AccountBilling->BillingStartDate)){
+
+                        // if billing type is postpaid and billing cycle is manual then skip this service
+                        if($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $AccountBilling->BillingCycleType == 'manual') {
+                            continue;
+                        }
+                        // if BillingStartDate is null then skip this service
+                        if(empty($AccountBilling->BillingStartDate)) {
+                            continue;
+                        }
+
+                        $LatsCycleDate = $AccountBilling->BillingStartDate;
+                        $ServiceBillingData=array();
+                        $ServiceBillingData['AccountID']=$AccountID;
+                        $ServiceBillingData['ServiceID']=$ServiceID;
+                        $ServiceBillingData['AccountServiceID']=$AccountServiceID;
+                        $ServiceBillingData['AccountSubscriptionID']=0;
+                        $ServiceBillingData['BillingType']=$BillingType;
+                        $ServiceBillingData['LastCycleDate']=$LatsCycleDate;
+
+                        $BillingCycleType = 'monthly';
+                        $BillingCycleValue = '';
+
+                        $NextCycleDate = next_billing_date($BillingCycleType,$BillingCycleValue,strtotime($LatsCycleDate));
+                        $ServiceBillingData['BillingCycleType']=$BillingCycleType;
+                        $ServiceBillingData['BillingCycleValue']=$BillingCycleValue;
+
+
+                        $ServiceBillingData['NextCycleDate']=$NextCycleDate;
+                        $ServiceBillingData['created_at']=date('Y-m-d H:i:s');
+                        $ServiceBillingData['updated_at']=date('Y-m-d H:i:s');
+
+                        DB::table('tblServiceBilling')->insert($ServiceBillingData);
+                    }
+                }else{
+                    $LatsCycleDate = $ServiceBilling->LastCycleDate;
+                    $NextCycleDate = $ServiceBilling->NextCycleDate;
+                }
+                /***
+                 * Subscriptions
+                 */
+
+                //log::info('ServiceID '.$ServiceID.' Billing Type '.$BillingType.' Count '.$Count.' LastCycleDate '.$LatsCycleDate.' NextCycleDate '.$NextCycleDate);
+                if(!empty($NextCycleDate) && $NextCycleDate <= $Today){
+                    log::info('Main AccountService '.$AccountID.' '.$ServiceID.' '.$AccountServiceID.' 0');
+                    log::info('NextCycleDate '.$NextCycleDate);
+                    AccountBalanceSubscriptionLog::CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$BillingType,$NextCycleDate,0);
+                }
+
+            }
+
+        }else{
+            log::info('No Service');
+        }
+    }
 }
