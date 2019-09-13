@@ -695,7 +695,7 @@ class AccountBalanceSubscriptionLog extends Model
     public static function calculateOneOffCost($CLI,$OneOffCost,$Type,$ParentID,$ProductType){
         log::info('Monthly One off log '.' '.$ParentID.' '.$ProductType);
         $Count = AccountBalanceSubscriptionLog::where(['ProductType' => $ProductType, 'ParentID' => $ParentID])
-            ->where('Description', 'like', '%"'.$CLI.'%')
+            ->where('Description', 'like','%'.$CLI.'%')
             ->count();
         if ($Count == 0) {
 
