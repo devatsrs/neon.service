@@ -74,7 +74,7 @@ class AccountBalanceTaxRateLog extends Model
                             $TaxGrandTotal += $TotalTax;
                             AccountBalanceTaxRateLog::create(array(
                                 "ParentLogID"=>$AccountBalanceSubscriptionLogID,
-                                "Type"=>Product::SUBSCRIPTION,
+                                "Type"=>$ProductType,
                                 "TaxRateID" => $TaxRateID,
                                 "TaxAmount" => $TotalTax,
                                 "Title" => $Title,
