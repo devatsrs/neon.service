@@ -16,10 +16,10 @@ class AccountBalanceSubscriptionLog extends Model
 
 
 
-    public static function CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$BillingType,$NextCycleDate,$AccountSubscriptionID){
+    public static function CreateSubscriptionLog($CompanyID,$AccountID,$ServiceID,$AccountServiceID,$CLIRateTableID,$BillingType,$NextCycleDate,$AccountSubscriptionID){
         $Today=date('Y-m-d');
         while ($NextCycleDate <= $Today) {
-            $ServiceBilling = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID])->first();
+            $ServiceBilling = ServiceBilling::where(['AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'AccountSubscriptionID'=>$AccountSubscriptionID,'CLIRateTableID'=>$CLIRateTableID])->first();
             AccountBalanceSubscriptionLog::CreateServiceDetailLog($ServiceBilling->ServiceBillingID);
             $NextCycleDate = $ServiceBilling->NextCycleDate;
 
@@ -42,6 +42,7 @@ class AccountBalanceSubscriptionLog extends Model
         $ServiceID=$ServiceBilling->ServiceID;
         $AccountServiceID=$ServiceBilling->AccountServiceID;
         $AccountSubscriptionID=$ServiceBilling->AccountSubscriptionID;
+        $CLIRateTableID=$ServiceBilling->CLIRateTableID;
         $BillingType = $ServiceBilling->BillingType;
         $StartDate = $ServiceBilling->LastCycleDate;
         $StartDate = date('Y-m-d 00:00:00', strtotime($StartDate));
@@ -60,7 +61,7 @@ class AccountBalanceSubscriptionLog extends Model
                 }
             }
         }else{
-            AccountBalanceSubscriptionLog::CreateServiceNumberBalanceLog($BillingType, $AccountServiceID, $StartDate, $EndDate);
+            AccountBalanceSubscriptionLog::CreateServiceNumberBalanceLog($BillingType, $AccountServiceID,$CLIRateTableID, $StartDate, $EndDate);
         }
 
         /** need to change if need to work as service */
@@ -413,11 +414,11 @@ class AccountBalanceSubscriptionLog extends Model
 
     }
 
-    public static function CreateServiceNumberBalanceLog($BillingType, $AccountServiceID, $StartDate, $EndDate){
+    public static function CreateServiceNumberBalanceLog($BillingType, $AccountServiceID,$CLIRateTableID, $StartDate, $EndDate){
         $Today=date('Y-m-d');
 
         //$query = "CALL prcGetAccountServiceNumberData(?)";
-        $AccountServiceNumberDatas = DB::select("CALL prcGetAccountServiceNumberData('.$AccountServiceID.')");
+        $AccountServiceNumberDatas = DB::select("CALL prcGetAccountServiceNumberData('.$AccountServiceID.','.$CLIRateTableID.')");
 
         log::info('count data '.count($AccountServiceNumberDatas));
 
@@ -693,8 +694,9 @@ class AccountBalanceSubscriptionLog extends Model
 
     public static function calculateOneOffCost($CLI,$OneOffCost,$Type,$ParentID,$ProductType){
         log::info('Monthly One off log '.' '.$ParentID.' '.$ProductType);
-        $Description='';
-        $Count = AccountBalanceSubscriptionLog::where(['ProductType' => $ProductType, 'ParentID' => $ParentID])->count();
+        $Count = AccountBalanceSubscriptionLog::where(['ProductType' => $ProductType, 'ParentID' => $ParentID])
+            ->where('Description', 'like', '%"'.$CLI.'%')
+            ->count();
         if ($Count == 0) {
 
             $ProductName = 'One-Off Cost';
