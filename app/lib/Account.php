@@ -240,7 +240,15 @@ class Account extends \Eloquent {
         return $count;
     }
     public static function LowBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder,'EmailTo'=>$email));
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
+
+        if(!empty($email)){
+            $exp = explode(",", $email);
+            if(count($exp) > 1) $email = trim($exp[0]);
+
+            $accountemaillog->where(['EmailTo'=>$email]);
+        }
+
         if(!empty($LastRunTime)){
             $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
@@ -250,10 +258,20 @@ class Account extends \Eloquent {
     }
 
     public static function ZeroBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning,'EmailTo'=>$email));
+        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning));
+
+
+        if(!empty($email)){
+            $exp = explode(",", $email);
+            if(count($exp) > 1) $email = trim($exp[0]);
+            $zerobalancemaillog->where(['EmailTo'=>$email]);
+        }
+
         if(!empty($LastRunTime)){
             $zerobalancemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
+
+        Log::info("SELECT * FROM AccountEmailLog WHERE AccountID = $AccountID AND EmailType = " . AccountEmailLog::ZeroBalanceWarning . " AND EmailTo = $email and DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."';");
         $count = $zerobalancemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;

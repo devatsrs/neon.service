@@ -207,23 +207,23 @@ class PushSalesPricesERP extends Command {
 								//	Log::info('Loop $data_langs.' .  $data_lang->ISOCode . ' ' .$json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST']);
 								//}
 								//Log::info('Loop $data_langs.' . $json_file['CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST'] );
-								if (!empty($RateTablePKGRate->OneOffCost) && !empty($json_file['PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST'])) {
+								if (!empty($RateTablePKGRate->OneOffCost) && !empty($json_file['PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_PACKAGE'])) {
 									$data["priceItemId"] = '';// $RateTablePKGRate->RateID;
 									$data["pricePlanId"] = '';
 									$data["costGroupName"] = "INSTALLATION COSTS";
 
-									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
+									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_PACKAGE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
 									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->OneOffCost;
 									$data["salesPricePercentage"] = "";
 									$data["currencySymbol"] = empty($RateTablePKGRate->OneOffCostCurrencySymbol) ? "$" : $RateTablePKGRate->OneOffCostCurrencySymbol;
 									$results[] = $data;
 								}
-								if (!empty($RateTablePKGRate->MonthlyCost) && !empty($json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST"])) {
+								if (!empty($RateTablePKGRate->MonthlyCost) && !empty($json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_PACKAGE"])) {
 									$data["priceItemId"] = '';// $RateTablePKGRate->RateID;;
 									$data["costGroupName"] = "SUBSCRIPTION COSTS";
 									$data["pricePlanId"] = '';
-									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
+									$data["name"] = $json_file["PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_PACKAGE"] . ($RateTablePKGRate->Title == "Default" ? "" : $RateTablePKGRate->Title) . '=';
 									$data["iso2"] = $data_lang->ISOCode;
 									$data["salesPrice"] = $RateTablePKGRate->MonthlyCost;
 									$data["salesPricePercentage"] = "";
@@ -376,13 +376,13 @@ class PushSalesPricesERP extends Command {
 							//Log::info('Label Name.' . Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_ONE_OFF_COST",$LabelName));
 
 							if (!empty($RateTableDIDRate->OneOffCost) &&
-								!empty(Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST", $LabelName))
+								!empty(Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_ACCESS", $LabelName))
 							) {
 								$data["priceItemId"] = "";
 								$data["pricePlanId"] = "";
 								$data["costGroupName"] = "INSTALLATION COSTS";
 
-								$data["name"] = Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST", $LabelName) . '='
+								$data["name"] = Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_ACCESS", $LabelName) . '='
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "")
 									. ($RateTableDIDRate->Title == "Default" ? "" :
@@ -500,12 +500,12 @@ class PushSalesPricesERP extends Command {
 							//	Helper::getTranslationText($json_file,"CUST_PANEL_PAGE_INVOICE_PDF_LBL_MONTHLY_COST",$LabelName)) ;
 
 							if (!empty($RateTableDIDRate->MonthlyCost) &&
-								!empty(Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST", $LabelName))
+								!empty(Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_ACCESS", $LabelName))
 							) {
 								$data["priceItemId"] = "";
 								$data["costGroupName"] = "SUBSCRIPTION COSTS";
 								$data["pricePlanId"] = "";
-								$data["name"] = Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST", $LabelName) . '='
+								$data["name"] = Helper::getTranslationText($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_ACCESS", $LabelName) . '='
 									. (!empty($RateTableDIDRate->orginationCode) ? ($FromLabel .
 										Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . $RateTableDIDRate->orginationCode, $RateTableDIDRate->orginationCode) . ' ') : "") .
 									($RateTableDIDRate->Title == "Default" ? "" : Helper::getTranslationTextForKey($json_file, "PAGE_INVOICE_PDF_LBL_COMPONENT_" . str_replace(' ', '_', $RateTableDIDRate->Title), $RateTableDIDRate->Title));

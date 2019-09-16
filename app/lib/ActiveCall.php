@@ -55,12 +55,14 @@ class ActiveCall extends \Eloquent {
                 if(!empty($RateTablePKGRate)){
 
                     $PackageCostPerMinute = isset($RateTablePKGRate->PKG_PackageCostPerMinute)?$RateTablePKGRate->PKG_PackageCostPerMinute:0;
-                    if(!empty($PackageCostPerMinute)){
+                    if(!empty($PackageCostPerMinute) && $CallType == 'Inbound'){
                         if(!empty($RateTablePKGRate->PKG_PackageCostPerMinuteCurrency)) {
                             $PackageCostPerMinuteCurrency = $RateTablePKGRate->PKG_PackageCostPerMinuteCurrency;
                             $PackageCostPerMinute = Currency::convertCurrencyForRouting($CompanyCurrency, $AccountCurrency, $PackageCostPerMinuteCurrency, $PackageCostPerMinute);
                         }
                         $PackageCostPerMinute = ($BilledDuration * ($PackageCostPerMinute/60));
+                    }else{
+                        $PackageCostPerMinute = 0;
                     }
 
                     if ($ActiveCall->CallRecording == 1) {
@@ -74,6 +76,8 @@ class ActiveCall extends \Eloquent {
                             }
                             $RecordingCostPerMinute = ($CallRecordingDuration * ($RecordingCostPerMinute/60));
                         }
+                    }else{
+                        $RecordingCostPerMinute = 0;
                     }
                 }
             }
@@ -258,15 +262,19 @@ class ActiveCall extends \Eloquent {
                                 $TotalOutPayment = ActiveCall::getCostWithTaxes($TotalOutPayment,$TaxRateIDs);
                             }*/
                             $TotalOutPaymentTax = $TotalOutPayment * (1.21);
-                            $TotalOutPayment = $TotalOutPayment + $TotalOutPaymentTax;
-                            $CollectionCostPercentage = $TotalOutPayment * ($CollectionCostPercentage/100);
+                            //$TotalOutPayment = $TotalOutPayment + $TotalOutPaymentTax;
+                            $CollectionCostPercentage = $TotalOutPaymentTax * ($CollectionCostPercentage/100);
                             $Cost = $Cost + $CollectionCostPercentage;
+                        }else{
+                            $CollectionCostPercentage = 0;
                         }
                         $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
                         $Chargeback = isset($RateTableDIDRate->DID_Chargeback)?$RateTableDIDRate->DID_Chargeback:0;
                         if(!empty($Chargeback) && $TotalOutPayment > 0){
                             $Chargeback = $TotalOutPayment * ($Chargeback/100);
                             $Cost = $Cost + $Chargeback;
+                        }else{
+                            $Chargeback = 0;
                         }
                     }
                 }
