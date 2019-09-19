@@ -209,7 +209,7 @@ class BulkInvoiceSend extends Command {
                     }else{
                         $emaildata['EmailTo'] = $CustomerEmail;
                         $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
-                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview?email=' . $singleemail;
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview';
                         $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,'');
                         $emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,'');
                         if(!isset($emaildata['EmailFrom'])){
