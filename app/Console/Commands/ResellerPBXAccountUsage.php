@@ -87,7 +87,7 @@ class ResellerPBXAccountUsage extends Command
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $processID = CompanyGateway::getProcessID();
-
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $accounts = array();
         try {
             CronJob::createLog($CronJobID);
@@ -152,8 +152,6 @@ class ResellerPBXAccountUsage extends Command
             if(isset($cronsetting['StartDate']) && !empty($cronsetting['StartDate'])){
                 $cronsetting['StartDate'] = $cronsetting['EndDate'] = '';
                 $dataactive['Settings'] = json_encode($cronsetting);
-
-                $CronJob->update($dataactive);
             }
             //TempUsageDetail::GenerateLogAndSend($CompanyID,$CompanyGatewayID,$cronsetting,$skiped_account_data,$CronJob->JobTitle);
 

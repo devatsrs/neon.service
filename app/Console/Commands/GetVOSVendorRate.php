@@ -105,18 +105,12 @@ class GetVOSVendorRate extends Command {
             $PostData=array();
             $Prefixes=array();
 
-            $data_count = $TotalCount = 0;
-            $insertLimit = 1000;
-
             if(!empty($CompanyGateways)) {
                 if(!empty($VendorAccounts)){
                     $VendorTrunks=VendorTrunk::where(["Status"=>1])->where("Prefix","!=","")->whereIn('AccountID',$VendorAccounts)->get();
                 }else{
                     $VendorTrunks=VendorTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
                 }
-
-                DB::connection('sqlsrv')->table("tblVOSVendorFeeRateGroup")->truncate();
-
                 foreach ($CompanyGateways as $CompanyGateway) {
 
                     $CompanyGatewayID = $CompanyGateway->CompanyGatewayID;
@@ -143,7 +137,6 @@ class GetVOSVendorRate extends Command {
                             try {
                                 foreach ($GetAllAccounts->infoCustomers as $Account) {
                                     $feerateGroup = $Account->feerateGroup;
-                                    $account = $Account->account;
 
                                     $GetFeeRates = VOS5000API::request('GetFeeRate', $CompanyGatewayID, $CompanyGatewayTitle, ["feeRateGroup" => $feerateGroup]);
                                     if (!empty($GetFeeRates->infoFeeRates)) {
@@ -159,37 +152,24 @@ class GetVOSVendorRate extends Command {
                                             $RateGroup['IvrFee'] = $GetFeeRate->ivrFee;
                                             $RateGroup['IvrPeriod'] = $GetFeeRate->ivrPeriod;
                                             $RateGroup['FeeRateGroup'] = $feerateGroup;
-                                            $RateGroup['VosAccount'] = $account;
 
-                                           // array_push($StoreRateData, $RateGroup);
-                                            $StoreRateData[] = $RateGroup;
-                                            $data_count++;
-                                            $TotalCount++;
+                                            array_push($StoreRateData, $RateGroup);
 
-                                            if ($data_count > $insertLimit && !empty($StoreRateData)) {
-                                                DB::connection('sqlsrv')->table('tblVOSVendorFeeRateGroup')->insert($StoreRateData);
-                                                $StoreRateData = array();
-                                                $data_count = 0;
-                                            }
-
-                                        }
-                                        if(!empty($StoreRateData)){
-                                            DB::connection('sqlsrv')->table('tblVOSVendorFeeRateGroup')->insert($StoreRateData);
                                         }
                                     } else {
                                         //$Message .= "No Any Free Rates Found.";
                                     }
 
                                 }
-                                Log::info("Count Total Store Data= " . $TotalCount);
-                                if ($TotalCount) {
+                                Log::info("Count Total Store Data= " . count($StoreRateData));
+                                if (!empty($StoreRateData)) {
                                     //here store
-                                    /*DB::connection('sqlsrv')->table("tblVOSVendorFeeRateGroup")->truncate();
+                                    DB::connection('sqlsrv')->table("tblVOSVendorFeeRateGroup")->truncate();
 
                                     // It will process at a time 1500 records
                                     foreach (array_chunk($StoreRateData, 1500) as $t) {
                                         DB::connection('sqlsrv')->table("tblVOSVendorFeeRateGroup")->insert($t);
-                                    }*/
+                                    }
                                    // $Message .= count($StoreRateData) . " Vendor Rates imported.";
 
                                     $query = "call prc_VOSImportVendorFeeRate (".$CompanyID.")";

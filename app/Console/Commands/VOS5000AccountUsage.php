@@ -97,7 +97,7 @@ class VOS5000AccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -206,7 +206,6 @@ class VOS5000AccountUsage extends Command
                                     $uddata['ServiceID'] = $ServiceID;
                                     $uddata['ID'] = $CallID;
                                     $uddata['customer_trunk_type'] = $excelrow['28'];
-                                    $uddata['FileName'] = $filename;
 
                                     $InserData[] = $uddata;
                                     if($data_count > $insertLimit &&  !empty($InserData)){
@@ -244,7 +243,6 @@ class VOS5000AccountUsage extends Command
                                     $vendorcdrdata['ServiceID'] = $ServiceID;
                                     $vendorcdrdata['ID'] = $CallID;
                                     $vendorcdrdata['vendor_trunk_type'] = $excelrow['34'];
-                                    $vendorcdrdata['FileName'] = $filename;
 
                                     $InserVData[] = $vendorcdrdata;
                                     if($data_countv > $insertLimit &&  !empty($InserVData)){
@@ -270,11 +268,6 @@ class VOS5000AccountUsage extends Command
                             fclose($handle);
                         }
                     }catch(Exception $e){
-
-                        $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
-                        $message = $UsageDownloadFiles->Message.$e->getMessage();
-                        $joblogdata['Message'] .= 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message;
-                        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 
                         Log::error($e);
                         /** update file status to error */
@@ -358,7 +351,7 @@ class VOS5000AccountUsage extends Command
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
-                $joblogdata['CronJobStatus'] = !empty($joblogdata['CronJobStatus']) ? $joblogdata['CronJobStatus'] : CronJob::CRON_SUCCESS;
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
 
                 Log::error('VOS5000 delete file count ' . count($delete_files));

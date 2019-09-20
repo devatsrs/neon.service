@@ -238,10 +238,10 @@ class CDRUpload extends Command
                             if ($RateCDR == 1 && $RateFormat == Company::CHARGECODE && isset($attrselection->ChargeCode) && !empty($attrselection->ChargeCode)) {
                                 $cdrdata['area_prefix'] = $temp_row[$attrselection->ChargeCode];
                             }
-                            /*if(!empty($attrselection->TrunkID)){
+                            if(!empty($attrselection->TrunkID)){
                                 $cdrdata['TrunkID'] = $attrselection->TrunkID;
                                 $cdrdata['trunk'] = DB::table('tblTrunk')->where(array('TrunkID'=>$attrselection->TrunkID))->Pluck('trunk');
-                            }*/
+                            }
                             if (isset($attrselection->extension) && !empty($attrselection->extension)) {
                                 $cdrdata['extension'] = $temp_row[$attrselection->extension];
                             }
@@ -250,15 +250,6 @@ class CDRUpload extends Command
                             }
                             if (isset($attrselection->ID) && !empty($attrselection->ID)) {
                                 $cdrdata['ID'] = $temp_row[$attrselection->ID];
-                            }
-                            if (isset($attrselection->remote_ip) && !empty($attrselection->remote_ip)) {
-                                $cdrdata['remote_ip'] = $temp_row[$attrselection->remote_ip];
-                            }
-                            if (isset($attrselection->disposition) && !empty($attrselection->disposition)) {
-                                $cdrdata['disposition'] = $temp_row[$attrselection->disposition];
-                            }
-                            if (isset($attrselection->userfield) && !empty($attrselection->userfield)) {
-                                $cdrdata['userfield'] = $temp_row[$attrselection->userfield];
                             }
                             if (isset($attrselection->is_inbound) && !empty($attrselection->is_inbound)) {
 								$cdrdata['is_inbound'] = 0;

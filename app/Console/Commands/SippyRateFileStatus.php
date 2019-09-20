@@ -79,17 +79,11 @@ class SippyRateFileStatus  extends Command {
             $response['error']  = $response['message']  = array();
             $jobType        = JobType::where(["Code" => 'SCRP'])->orWhere(["Code" => 'SVRP'])->get(["JobTypeID", "Title"]);
             $jobStatus      = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
-            //$JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
-            foreach($jobType as $jt)
-            {
-                $jtid[] = $jt->JobTypeID;
-            }
-            //Log::info("jtid".print_r($jtid,true));exit;
+            $JobTypeID      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
             $JobStatusID    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobStatusID'=>$JobStatusID])
-                ->where(DB::raw('JSON_EXTRACT(Options, "$.CompanyGatewayID")'),$CompanyGatewayID)
-                ->whereIn('JobTypeID', $jtid)
-                ->get();
+            $PendingFiles   = Job::where(['CompanyID'=>$CompanyID,'JobTypeID'=>$JobTypeID,'JobStatusID'=>$JobStatusID])
+                                ->where(DB::raw('JSON_EXTRACT(Options, "$.CompanyGatewayID")'),$CompanyGatewayID)
+                                ->get();
 
             $SippySFTP = new Sippy($CompanyGatewayID);
 

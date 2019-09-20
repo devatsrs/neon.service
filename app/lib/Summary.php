@@ -5,12 +5,15 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class Summary extends \Eloquent {
-    public static function generateSummary($CompanyID,$today,$cronsetting=array()){
+    public static function generateSummary($CompanyID,$today,$cronsetting=array(),$CronJob=array()){
 
         $message = array();
 
         if($today == 1){
             $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
+            if(!empty($CronJob)){
+                CompanyGateway::updateProcessID($CronJob,$UniqueID);
+            }
 
             Log::error("CALL prc_updateLiveTables($CompanyID,$UniqueID)");
             DB::connection('neon_report')->statement("CALL prc_updateLiveTables(?,?)",array($CompanyID,$UniqueID));
@@ -41,7 +44,9 @@ class Summary extends \Eloquent {
                 }
                 try {
                     $UniqueID = self::CreateTempTable($CompanyID,0,$start_summary);
-
+                    if(!empty($CronJob)){
+                        CompanyGateway::updateProcessID($CronJob,$UniqueID);
+                    }
                     $query = "call fnGetUsageForSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
                     DB::connection('neon_report')->select($query);
                     $query = "call fnGetVendorUsageForSummary($CompanyID,'" . $start_summary . "','" . $start_summary . "','".$UniqueID."')";
@@ -89,10 +94,13 @@ class Summary extends \Eloquent {
         Log::info($query);
         DB::connection('neon_report')->statement($query);*/
     }
-    public static function generateVendorSummary($CompanyID,$today){
+    public static function generateVendorSummary($CompanyID,$today,$CronJob=array()){
         if($today == 1){
             $UniqueID = self::CreateTempTable($CompanyID,0,date("Y-m-d"),'Live');
             $UniquePID=$UniqueID.'vendor';
+            if(!empty($CronJob)){
+                CompanyGateway::updateProcessID($CronJob,$UniquePID);
+            }
 
             $query = "call prc_generateVendorSummaryLive($CompanyID,'" . date("Y-m-d") . "','" . date("Y-m-d") . "','".$UniqueID."')";
             Log::info($query);

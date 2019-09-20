@@ -27,10 +27,8 @@
                         <table  border="0"  width="50%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                             <thead>
                             <tr>
-                                @if($ManagementReportTemplateRow['Title'] == 'Longest Calls' || $ManagementReportTemplateRow['Title'] == 'Most Expensive Calls')
+                                @if($ManagementReportTemplateRow['Title'] == 'Longest Calls' || $ManagementReportTemplateRow['Title'] == 'Most Expensive Calls' || $ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers')
                                     <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_FROM")}}</th>
-                                @elseif($ManagementReportTemplateRow['Title'] == 'Frequently Called Numbers')
-                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TO")}}</th>
                                 @elseif($ManagementReportTemplateRow['Title'] == 'Daily Summary')
                                     <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DATE")}}</th>
                                 @elseif($ManagementReportTemplateRow['Title'] == 'Usage by Category')
@@ -57,7 +55,7 @@
                                     $call_count += $call_row['col2'];
                                 }
 
-                                $billed_duration  += $call_row['BillDurationInSec'];
+                                $billed_duration += $call_row['col3'];
                                 $cost += $call_row['col4'];
                                 ?>
                                 <tr>
@@ -67,9 +65,6 @@
                                     <td>{{$CurrencySymbol.number_format($call_row['col4'],$RoundChargesAmount)}}</td>
                                 </tr>
                             @endforeach
-                            <?php
-                                $billed_duration = intval($billed_duration / 60) .':' . ($billed_duration % 60);
-                            ?>
                             </tbody>
                             <tfoot>
                             <tr>

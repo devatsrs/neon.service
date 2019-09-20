@@ -98,6 +98,7 @@ class BulkInvoiceSend extends Command {
             $joboptions = json_decode($job->Options);
             $email_sending_failed = [];
             $InvoiceIDs = array_filter(explode(',', $joboptions->InvoiceIDs), 'intval');
+            $CompanySetting = CompanySetting::where(['key'=>'InvoiceSendWithUrl'])->first();
             if(count($InvoiceIDs)>0) {
                 foreach ($InvoiceIDs as $InvoiceID) {
                     $InvoiceCopyEmail = $InvoiceCopyEmail_main;
@@ -131,8 +132,8 @@ class BulkInvoiceSend extends Command {
 					{
 						$emaildata['EmailFrom'] = $joboptions->email_from;
 					}
-
-                    foreach ($InvoiceCopyEmail as $singleemail) {
+                    if($CompanySetting->Value == 1){
+                        foreach ($InvoiceCopyEmail as $singleemail) {
                             $singleemail = trim($singleemail);
                             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
 								if(EmailsTemplates::CheckEmailTemplateStatus(Invoice::EMAILTEMPLATE,$CompanyID)){							
@@ -154,14 +155,35 @@ class BulkInvoiceSend extends Command {
 								}else{$status  = array();}
 								
                             }
-                    }
+                        }
+                    }else{
+                        if(EmailsTemplates::CheckEmailTemplateStatus(Invoice::EMAILTEMPLATE,$CompanyID)){							
+                            $emaildata['EmailTo'] = $InvoiceCopyEmail_main;
+                            $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,'',$emaildata);
+                            $emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,'',$emaildata);
+                            if(!isset($emaildata['EmailFrom'])){
+                                    $emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
+                            }
+                            $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                            $emaildata['attach']="";
+                            if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
+                                $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
+                                $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
+                                $attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
+                                $emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+                            }
+                            $status = Helper::sendMail($body, $emaildata,0);
+                            }else{$status  = array();}
+                    }    
 					$CustomerEmail = $Account->BillingEmail;
                     $CustomerEmail = explode(",", $CustomerEmail);
                     $customeremail_status['status'] = 0;
                     $customeremail_status['message'] = '';
                     $customeremail_status['body'] = '';
                     Log::info($CustomerEmail);
-                    foreach ($CustomerEmail as $singleemail) {
+                   
+                    if($CompanySetting->Value == 1){
+                        foreach ($CustomerEmail as $singleemail) {
                             $singleemail = trim($singleemail);
                             if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
                                 $emaildata['EmailTo'] = $singleemail;
@@ -183,7 +205,27 @@ class BulkInvoiceSend extends Command {
                                 }                                
                           	  	$customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
                             }
-                       }
+                        }
+                    }else{
+                        $emaildata['EmailTo'] = $CustomerEmail;
+                        $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
+                        $emaildata['data']['InvoiceLink'] = $WEBURL . '/invoice/' . $Invoice->AccountID . '-' . $Invoice->InvoiceID . '/cview';
+                        $body					=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,'body',$CompanyID,'');
+                        $emaildata['Subject']	=	EmailsTemplates::SendinvoiceSingle($Invoice->InvoiceID,"subject",$CompanyID,'');
+                        if(!isset($emaildata['EmailFrom'])){
+                        $emaildata['EmailFrom']	=	EmailsTemplates::GetEmailTemplateFrom(Invoice::EMAILTEMPLATE,$CompanyID);
+                        }
+
+                        $invoicePdfSend = CompanySetting::getKeyVal($CompanyID,'invoicePdfSend');
+                        $emaildata['attach']="";
+                        if($invoicePdfSend!='Invalid Key' && $invoicePdfSend && !empty($Invoice->PDF)){
+                            $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH').'/';
+                            $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/'.pathinfo($Invoice->PDF, PATHINFO_BASENAME);
+                            $attach = AmazonS3::download( $CompanyID, $Invoice->PDF, $TEMP_PATH );
+                            $emaildata['attach'] = (strpos($attach, "https://") !== false) ? $TEMP_PATH : $UPLOADPATH.$Invoice->PDF;
+                        }                                
+                            $customeremail_status 	= 	Helper::sendMail($body, $emaildata,0);
+                    }  
                     Log::info($customeremail_status);
                     //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
                     if ($customeremail_status['status'] == 0) {

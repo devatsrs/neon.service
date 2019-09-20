@@ -25,7 +25,7 @@ class PaymentGateway extends \Eloquent {
         return PaymentGateway::where(array('PaymentGatewayID' => $PaymentGatewayID))->pluck('Title');
     }
 
-        public static function addTransaction($PaymentGateway,$amount,$options,$account,$AccountPaymentProfileID,$CompanyID)
+    public static function addTransaction($PaymentGateway,$amount,$options,$account,$AccountPaymentProfileID,$CompanyID)
     {
         switch($PaymentGateway) {
             case 'AuthorizeNet':
@@ -127,58 +127,6 @@ class PaymentGateway extends \Eloquent {
                 $Notes = '';
                 if(!empty($transaction['response_code']) && $transaction['response_code'] == 1) {
                     $Notes = 'Stripe ACH transaction_id ' . $transaction['id'];
-                    $Status = TransactionLog::SUCCESS;
-                }else{
-                    $Status = TransactionLog::FAILED;
-                    $Notes = empty($transaction['error']) ? '' : $transaction['error'];
-                    //AccountPaymentProfile::setProfileBlock($AccountPaymentProfileID);
-                }
-                $transactionResponse['transaction_notes'] =$Notes;
-                if(!empty($transaction['response_code'])) {
-                    $transactionResponse['response_code'] = $transaction['response_code'];
-                }
-                $transactionResponse['transaction_payment_method'] = 'BANK TRANSFER';
-                $transactionResponse['failed_reason'] = $Notes;
-                if(!empty($transaction['id'])) {
-                    $transactionResponse['transaction_id'] = $transaction['id'];
-                }
-                $transactiondata = array();
-                $transactiondata['CompanyID'] = $account->CompanyId;
-                $transactiondata['AccountID'] = $account->AccountID;
-                if(!empty($transaction['id'])) {
-                    $transactiondata['Transaction'] = $transaction['id'];
-                }
-                $transactiondata['Notes'] = $Notes;
-                if(!empty($transaction['amount'])) {
-                    $transactiondata['Amount'] = floatval($transaction['amount']);
-                }
-                $transactiondata['Status'] = $Status;
-                $transactiondata['created_at'] = date('Y-m-d H:i:s');
-                $transactiondata['updated_at'] = date('Y-m-d H:i:s');
-                $transactiondata['CreatedBy'] = "RMScheduler";
-                $transactiondata['ModifyBy'] = "RMScheduler";
-                $transactiondata['Response'] = json_encode($transaction);
-                TransactionLog::insert($transactiondata);
-                return $transactionResponse;
-
-
-            case 'GoCardLess':
-
-                $CurrencyCode = Currency::getCurrencyCode($account->CurrencyId);
-                $goCardLessData = array();
-                $goCardLessData['currency'] = strtolower($CurrencyCode);
-                $goCardLessData['amount'] = $amount;
-                $goCardLessData['description'] = $options->InvoiceNumber.' (Invoice) Payment';
-                $goCardLessData['customerid'] = $options->CustomerProfileID;
-
-                $transactionResponse = array();
-
-                $goCardLessPayment = new \GoCardLess($CompanyID);
-                $transaction = $goCardLessPayment->createchargebycustomer($goCardLessData);
-
-                $Notes = '';
-                if(!empty($transaction['response_code']) && $transaction['response_code'] == 1) {
-                    $Notes = 'GoCardLess transaction_id ' . $transaction['id'];
                     $Status = TransactionLog::SUCCESS;
                 }else{
                     $Status = TransactionLog::FAILED;
