@@ -109,7 +109,7 @@ class FTPVendorAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');

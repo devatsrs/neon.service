@@ -1275,19 +1275,16 @@ class Invoice extends \Eloquent {
 
         $InvoiceGrandTotal = $SubTotal + $TotalTax + $SubTotalWithoutTax; // Total Tax Added in Grand Total.
 
-
+        $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
 
         Log::info(' InvoiceGrandTotal ' . $InvoiceGrandTotal);
         //$InvoiceGrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $SubTotal = number_format($SubTotal+$SubTotalWithoutTax, $decimal_places, '.', '');
         $TotalTax = number_format($TotalTax, $decimal_places, '.', '');
-
+        $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
 
         $InvoiceTaxRateAmount =Invoice::getInvoiceTaxRateAmount($Invoice->InvoiceID,$decimal_places);
         $InvoiceGrandTotal = $SubTotal + $InvoiceTaxRateAmount;
-
-        $TotalDue = $InvoiceGrandTotal + $PreviousBalance; // Grand Total - Previous Balance is Total Due.
-        $TotalDue = number_format($TotalDue, $decimal_places, '.', '');
 
         Log::info('GrandTotal ' . $InvoiceGrandTotal);
         Log::info('SubTotal ' . $SubTotal);
@@ -2253,9 +2250,6 @@ class Invoice extends \Eloquent {
         $replace_array['CompanyVAT'] = Company::getCompanyField($Account->CompanyId,"VAT");
         $replace_array['CompanyAddress'] = Company::getCompanyFullAddress($Account->CompanyId);
         $replace_array['AccountBalance'] = $replace_array['CurrencySign'] ."". AccountBalance::getAccountBalance($Account->CompanyId,$Account->AccountID);
-        $replace_array['BillingTimezone'] = Account::getBillingTimeZone($Account->AccountID);
-        $BillingClass = AccountBilling::getBillingClass($Account->AccountID,0);
-        $replace_array['BillingClass'] = $BillingClass->Name;
 
 
         return $replace_array;
@@ -2286,9 +2280,7 @@ class Invoice extends \Eloquent {
             '{CompanyName}',
             '{CompanyVAT}',
             '{CompanyAddress}',
-            '{AccountBalance}',
-            '{BillingClass}',
-            '{BillingTimezone}'
+            '{AccountBalance}'
         ];
 
         foreach($extra as $item){
@@ -2855,7 +2847,7 @@ class Invoice extends \Eloquent {
 
         $query = "CALL prc_getDeductCallChargeAccounts(?)";
         $Accounts = DB::select($query,array($CompanyID));
-        Log::info("Call prc_getDeductCallChargeAccounts($CompanyID)");
+        Log::info("Call prc_getBillingAccounts($CompanyID)");
         //log::info(print_r($Accounts,true));
         $Accounts = json_decode(json_encode($Accounts),true);
 

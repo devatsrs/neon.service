@@ -91,6 +91,10 @@ class CompanyGateway extends \Eloquent {
                                     `trunk` VARCHAR(50) NULL DEFAULT NULL ,
                                     `area_prefix` VARCHAR(50) NULL DEFAULT NULL ,
                                     `TrunkPrefix` VARCHAR(50) NULL DEFAULT NULL ,
+                                    
+                                    `ExtensionName` VARCHAR(100) NULL DEFAULT NULL ,
+                                    `PincodeName` VARCHAR(100) NULL DEFAULT NULL ,
+
                                     `pincode` VARCHAR(50) NULL DEFAULT NULL ,
                                     `extension` VARCHAR(50) NULL DEFAULT NULL ,
                                     `cli` VARCHAR(500) NULL DEFAULT NULL ,
@@ -109,7 +113,6 @@ class CompanyGateway extends \Eloquent {
                                     `cc_type` TINYINT(1) NULL DEFAULT NULL ,
                                     `customer_trunk_type` VARCHAR(255) NULL DEFAULT NULL ,
                                     `TimezonesID` INT(11) NULL DEFAULT NULL,
-                                    `FileName` VARCHAR(50) NULL DEFAULT NULL,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
                                     INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
@@ -206,7 +209,6 @@ class CompanyGateway extends \Eloquent {
                 `is_rerated` TINYINT(1) NULL DEFAULT 0,
                 `vendor_trunk_type` VARCHAR(255) NULL DEFAULT NULL ,
                 `TimezonesID` INT(11) NULL DEFAULT NULL,
-                `FileName` VARCHAR(50) NULL DEFAULT NULL,
                  PRIMARY KEY (`TempVendorCDRID`),
                  INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
                  INDEX `IX_U` (`AccountName`, `AccountNumber`, `AccountCLI`, `AccountIP`, `CompanyGatewayID`, `ServiceID`, `CompanyID`),
@@ -312,6 +314,9 @@ class CompanyGateway extends \Eloquent {
     }
 
 
+    public static function updateProcessID($CronJob,$processID){
+        $CronJob->update(['ProcessID'=>$processID]);
+    }
 
     public static function getSettingFieldByCompanyGateWayID($Field,$CompanyGatewayID){
         $CompanyGateway = CompanyGateway::where(['CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1])->first();

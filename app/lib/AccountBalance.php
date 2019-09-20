@@ -58,11 +58,6 @@ class AccountBalance extends Model
     public static function getBalanceThreshold($AccountID){
         return str_replace('p', '%',AccountBalance::where(['AccountID'=>$AccountID])->pluck('BalanceThreshold'));
     }
-
-    public static function getCreditLimit($AccountID){
-        return AccountBalance::where(['AccountID'=>$AccountID])->pluck('PermanentCredit');
-    }
-
     public static function getOutstandingAmount($CompanyID,$AccountID){
         DB::connection('sqlsrv2')->statement('CALL prc_updateSOAOffSet(?,?)',array($CompanyID,$AccountID));
         return AccountBalance::where(['AccountID'=>$AccountID])->pluck('SOAOffset');

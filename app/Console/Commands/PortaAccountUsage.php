@@ -93,7 +93,7 @@ class PortaAccountUsage extends Command {
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-
+        CompanyGateway::updateProcessID($CronJob,$processID);
         $accounts = array();
         try {
             Log::error(' ========================== porta transaction start =============================');
