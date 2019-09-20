@@ -520,13 +520,18 @@
                 </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
+                        <?php $total_columns_count = 0; ?>
                         @foreach($usage_data_table['header'] as $row)
                             <?php
                             $classname = 'centeralign';
-                            if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount'))){
+                            if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount','NoOfCalls','BillDuration','Duration'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                 $classname = 'leftalign';
+                            }
+                            //check how many columns will be displayed to show total in the last
+                            if(in_array($row['Title'],array('NoOfCalls','Duration','BillDuration','ChargedAmount'))) {
+                                $total_columns_count++;
                             }
                             ?>
                             <th class="{{$classname}}">{{$row['UsageName']}}</th>
@@ -552,7 +557,7 @@
                                     @foreach($usage_data_table['header'] as $table_h_row)
                                         <?php
                                         $classname = 'centeralign';
-                                        if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount'))){
+                                        if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount','NoOfCalls','BillDuration','Duration'))){
                                             $classname = 'rightalign leftsideview';
                                         }else if(in_array($table_h_row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                             $classname = 'leftalign';
@@ -576,20 +581,30 @@
                     $totalDuration = intval($totalDuration / 60) .':' . ($totalDuration % 60);
                     $totalBillDuration = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
                     ?>
+                    @if($total_columns_count > 0)
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 4}}"></th>
-                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CALLS")}}</th>
-                        <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_DURATION")}}</th>
-                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
-                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if(in_array($row['Title'],array('NoOfCalls','Duration','BillDuration','ChargedAmount')))
+                                <th class="centeralign">{{$row['UsageName']}}</th>
+                            @endif
+                        @endforeach
                     </tr>
                     <tr>
-                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - 4}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
-                        <th>{{$totalCalls}}</th>
-                        <th>{{$totalDuration}}</th>
-                        <th class="centeralign">{{$totalBillDuration}}</th>
-                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if($row['Title'] == 'NoOfCalls')
+                                <th class="centeralign">{{$totalCalls}}</th>
+                            @elseif($row['Title'] == 'Duration')
+                                <th class="centeralign">{{$totalDuration}}</th>
+                            @elseif($row['Title'] == 'BillDuration')
+                                <th class="centeralign">{{$totalBillDuration}}</th>
+                            @elseif($row['Title'] == 'ChargedAmount')
+                                <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                            @endif
+                        @endforeach
                     </tr>
+                    @endif
                 </table>
             </main>
             @endif
@@ -611,13 +626,18 @@
                 </div>
                 <table  border="0"  width="100%" cellpadding="0" cellspacing="0" id="backinvoice" class="bg_graycolor">
                     <tr>
+                        <?php $total_columns_count = 0; ?>
                         @foreach($usage_data_table['header'] as $row)
                             <?php
-                                $classname = 'centeralign';
-                            if(in_array($row['Title'],array('ChargedAmount'))){
+                            $classname = 'centeralign';
+                            if(in_array($row['Title'],array('ChargedAmount','BillDuration','BillDurationMinutes'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                 $classname = 'leftalign';
+                            }
+                            //check how many columns will be displayed to show total in the last
+                            if(in_array($row['Title'],array('BillDuration','BillDurationMinutes','ChargedAmount'))) {
+                                $total_columns_count++;
                             }
                             ?>
                             <th class="{{$classname}}">{{$row['UsageName']}}</th>
@@ -645,7 +665,7 @@
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 <?php
                                 $classname = 'centeralign';
-                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                if(in_array($table_h_row['Title'],array('ChargedAmount','BillDuration','BillDurationMinutes'))){
                                     $classname = 'rightalign leftsideview';
                                 }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                     $classname = 'leftalign';
@@ -663,16 +683,32 @@
                        @endif
                     @endforeach
                     @endforeach
+
+                    <?php
+                    $totalBillDurationMinutes = intval($totalBillDuration / 60) .':' . ($totalBillDuration % 60);
+                    ?>
+                    @if($total_columns_count > 0)
                     <tr>
-                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - 2}}"></th>
-                        <th class="centeralign">{{str_replace(" ","<br>", cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_BILLED_DURATION"))}}</th>
-                        <th class="centeralign">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_CHARGE")}}</th>
+                        <th class="rightalign" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if(in_array($row['Title'],array('BillDuration','BillDurationMinutes','ChargedAmount')))
+                                <th class="centeralign">{{$row['UsageName']}}</th>
+                            @endif
+                        @endforeach
                     </tr>
                     <tr>
-                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - 2}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
-                        <th class="centeralign">{{$totalBillDuration}}</th>
-                        <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                        <th class="rightalign leftsideview" colspan="{{count($usage_data_table['header']) - $total_columns_count}}"><strong>{{cus_lang("TABLE_TOTAL")}}</strong></th>
+                        @foreach($usage_data_table['header'] as $row)
+                            @if($row['Title'] == 'BillDuration')
+                                <th class="centeralign">{{$totalBillDuration}}</th>
+                            @elseif($row['Title'] == 'BillDurationMinutes')
+                                <th class="centeralign">{{$totalBillDurationMinutes}}</th>
+                            @elseif($row['Title'] == 'ChargedAmount')
+                                <th class="centeralign">{{$CurrencySymbol}}{{number_format($totalTotalCharges,$RoundChargesAmount)}}</th>
+                            @endif
+                        @endforeach
                     </tr>
+                    @endif
                 </table>
                 @endforeach
             @endif

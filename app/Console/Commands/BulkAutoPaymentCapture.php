@@ -169,13 +169,29 @@ class BulkAutoPaymentCapture extends Command {
                                     $CustomerProfile=1;
                                 }else{
                                     $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
-                                    if (!empty($CustomerProfile) && $PaymentMethod == 'StripeACH') {
+                                    if (!empty($CustomerProfile) && $PaymentMethod == 'StripeACH' && $PaymentMethod == 'GoCardLess') {
                                         $StripeObj = json_decode($CustomerProfile->Options);
                                         if (empty($StripeObj->VerifyStatus) || $StripeObj->VerifyStatus !== 'verified') {
                                             $VerifyStatus = 0;
                                         }
                                     }
                                 }
+
+                                $DirectDebitInvoiceIds = [];
+                                $isGoCardLess = 0;
+                                if($PaymentMethod == 'GoCardLess'){
+                                    $isGoCardLess = 1;
+                                    $payments = Payment::whereIn('InvoiceID', $unPaidInvoices)
+                                        ->where('Status','Pending Approval')
+                                        ->get();
+                                    if($payments != false){
+                                        foreach($payments as $payment){
+                                            $DirectDebitInvoiceIds[] = $payment->InvoiceID;
+                                        }
+                                    }
+                                }
+
+
                                 if (!empty($CustomerProfile) && $VerifyStatus=='1') {
                                     $PaymentGateway = $PaymentMethod;
                                     if($PaymentMethod=='AccountBalance') {
@@ -188,10 +204,14 @@ class BulkAutoPaymentCapture extends Command {
 
                                     $outstanginamount = 0;
                                     $fullnumber = '';
-                                    foreach ($unPaidInvoices as $Invoiceid) {
-                                        $outstanginamount += $Invoiceid->RemaingAmount;
-                                        $AllInvoice = Invoice::find($Invoiceid->InvoiceID);
-                                        $fullnumber .= $AllInvoice->FullInvoiceNumber . ',';
+                                    foreach ($unPaidInvoices as $key => $Invoiceid) {
+                                        if(!in_array($Invoiceid->InvoiceID, $DirectDebitInvoiceIds)) {
+                                            $outstanginamount += $Invoiceid->RemaingAmount;
+                                            $AllInvoice = Invoice::find($Invoiceid->InvoiceID);
+                                            $fullnumber .= $AllInvoice->FullInvoiceNumber . ',';
+                                        } else {
+                                            unset($unPaidInvoices[$key]);
+                                        }
                                     }
                                     if ($fullnumber != '') {
                                         $fullnumber = rtrim($fullnumber, ',');
@@ -223,7 +243,7 @@ class BulkAutoPaymentCapture extends Command {
                                             $paymentdata['PaymentType'] = 'Payment In';
                                             $paymentdata['Notes'] = $transactionResponse['transaction_notes'];
                                             $paymentdata['Amount'] = floatval($Invoiceid->RemaingAmount);
-                                            $paymentdata['Status'] = 'Approved';
+                                            $paymentdata['Status'] = $isGoCardLess == 1 ? 'Pending Approval' : 'Approved';
                                             $paymentdata['created_at'] = date('Y-m-d H:i:s');
                                             $paymentdata['updated_at'] = date('Y-m-d H:i:s');
                                             $paymentdata['CreatedBy'] = $CreatedBy;
@@ -244,7 +264,11 @@ class BulkAutoPaymentCapture extends Command {
                                             $transactiondata['CreatedBy'] = 'RMScheduler';
                                             $transactiondata['ModifyBy'] = 'RMScheduler';
                                             TransactionLog::insert($transactiondata);
-                                            $Invoice->update(array('InvoiceStatus' => Invoice::PAID));
+
+                                            if($isGoCardLess == 1)
+                                                $Invoice->update(array('InvoiceStatus' => Invoice::AWAITING));
+                                            else
+                                                $Invoice->update(array('InvoiceStatus' => Invoice::PAID));
 
                                             $Emaildata = array();
                                             $CustomerEmail = '';

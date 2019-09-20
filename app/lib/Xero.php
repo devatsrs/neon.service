@@ -340,7 +340,7 @@ class Xero {
 					//$invoice->setLineAmountType('NoTax');
 
 					//fetch only overall taxes
-					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceTaxType"=>1])->first();
+					$InvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceDetailID"=>0])->first();
 					$AllInvoiceTaxRate = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID])->first();
 					log::info("InvoiceData". print_r($data, true));
 					log::info("InvoiceTaxRate". print_r($InvoiceTaxRate, true));
@@ -608,11 +608,11 @@ class Xero {
 				}
 				else
 				{
-					if($Title == 'Item')
+					if($Title == 'Item' || $Title == 'Additional')
 					{
 						$InvoiceData['AccountMappingName'] = $XeroData['Items'][$InvoiceDetail->ProductID];
 					}
-					if($Title = 'Recurring')
+					if($Title == 'Recurring')
 					{
 						$InvoiceData['AccountMappingName'] = $XeroData['Subscriptions'][$InvoiceDetail->ProductID];
 					}
@@ -761,7 +761,7 @@ class Xero {
 	}
 
 	public function createJournal($JournalDate,$Invoices,$CompanyID){
-		log::info(print_r($Invoices,true));
+		//log::info(print_r($Invoices,true));
 		$response = array();
 		$error = array();
 		$success = array();
@@ -772,7 +772,7 @@ class Xero {
 
 			$XeroData = json_decode(json_encode($XeroData),true);
 
-			log::info(print_r($XeroData,true));
+			//log::info(print_r($XeroData,true));
 			$InvoiceAccount = array();
 			$PaymentAccount = array();
 			$TaxId = '';
