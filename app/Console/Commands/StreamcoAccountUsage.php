@@ -81,7 +81,6 @@ class StreamcoAccountUsage extends Command {
         //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
 
         try {
             Log::error(' ========================== streamco transaction start =============================');

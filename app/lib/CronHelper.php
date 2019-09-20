@@ -41,19 +41,16 @@ class CronHelper {
 
     public static function before_cronrun($command_name,$Cron) {
         $arguments = $Cron->argument();
-        $MysqlProcess=0;
+
         if(isset($arguments["CompanyID"]) && !empty($arguments["CompanyID"])){
 
             Company::setup_timezone($arguments["CompanyID"]);
         }
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 
-        if(!empty($arguments['CronJobID'])){
-            $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
-        }
-        if(($pid = CronHelper::lock($lock_command_file)) ==  FALSE || $MysqlProcess==1) {
+        if(($pid = CronHelper::lock($lock_command_file)) ==  FALSE) {
             Log::info( $lock_command_file ." Already running....####");
-            Log::info("#### MysqlProcess=".$MysqlProcess);
+
             exit;
         }
         Log::info( $lock_command_file ." #Starts# ");
@@ -124,19 +121,5 @@ class CronHelper {
         return TRUE;
     }
 
-    public static function isMysqlPIDExists($CronJobID){
-        $isExists=0;
-        $CronJob = CronJob::find($CronJobID);
-        if(!empty($CronJob) && !empty($CronJob->MysqlPID)){
-            $MysqlPID=$CronJob->MysqlPID;
-            $query="SELECT count(*) as cnt FROM INFORMATION_SCHEMA.PROCESSLIST WHERE ID='".$MysqlPID."'";
-            $MysqlProcess=DB::select($query);
-            Log::info("cnt=".$MysqlProcess[0]->cnt);
-                if(!empty($MysqlProcess) && isset($MysqlProcess[0]->cnt) && $MysqlProcess[0]->cnt > 0){
-                    $isExists=1;
-                }
-        }
-        return $isExists;
-    }
 
 }

@@ -76,7 +76,6 @@ class VoipNowAccountUsage extends Command {
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
 
         try {
             Log::error(' ========================== VoipNow transaction start =============================');

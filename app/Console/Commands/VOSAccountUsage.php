@@ -97,7 +97,7 @@ class VOSAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -205,6 +205,7 @@ class VOSAccountUsage extends Command
                                 $uddata['ProcessID'] = $processID;
                                 $uddata['ServiceID'] = $ServiceID;
                                 $uddata['ID'] = $CallID;
+                                $uddata['FileName'] = $filename;
 
                                 $InserData[] = $uddata;
                                 if($data_count > $insertLimit &&  !empty($InserData)){
@@ -241,6 +242,7 @@ class VOSAccountUsage extends Command
                                 $vendorcdrdata['ProcessID'] = $processID;
                                 $vendorcdrdata['ServiceID'] = $ServiceID;
                                 $vendorcdrdata['ID'] = $CallID;
+                                $vendorcdrdata['FileName'] = $filename;
 
                                 $InserVData[] = $vendorcdrdata;
                                 if($data_countv > $insertLimit &&  !empty($InserVData)){
@@ -266,6 +268,11 @@ class VOSAccountUsage extends Command
                         fclose($handle);
                     }
                     }catch(Exception $e){
+
+                        $UsageDownloadFiles = UsageDownloadFiles::find($UsageDownloadFilesID);
+                        $message = $UsageDownloadFiles->Message.$e->getMessage();
+                        $joblogdata['Message'] .= 'Please check this file has error <br>' . $UsageDownloadFiles->FileName . ' - ' . $message;
+                        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 
                         Log::error($e);
                         /** update file status to error */
@@ -351,7 +358,7 @@ class VOSAccountUsage extends Command
 
                 $end_time = date('Y-m-d H:i:s');
                 $joblogdata['Message'] .= $filedetail . ' <br/>' . time_elapsed($start_time, $end_time);
-                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                $joblogdata['CronJobStatus'] = !empty($joblogdata['CronJobStatus']) ? $joblogdata['CronJobStatus'] : CronJob::CRON_SUCCESS;
 
 
                 Log::error('vos delete file count ' . count($delete_files));

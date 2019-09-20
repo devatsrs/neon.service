@@ -103,6 +103,8 @@ class GetVOSCustomerRate extends Command {
             $Message="";
             $PostData=array();
             $Prefixes=array();
+            $data_count = $TotalCount = 0;
+            $insertLimit = 1000;
 
             if(!empty($CompanyGateways)) {
                 if(!empty($CustomerAccounts)){
@@ -112,6 +114,7 @@ class GetVOSCustomerRate extends Command {
                 }else{
                     $CustomerTrunks=CustomerTrunk::where(["Status"=>1])->where("Prefix","!=","")->get();
                 }
+                DB::connection('sqlsrv')->table("tblVOSCustomerFeeRateGroup")->truncate();
                 foreach ($CompanyGateways as $CompanyGateway) {
 
                     $CompanyGatewayID = $CompanyGateway->CompanyGatewayID;
@@ -139,6 +142,7 @@ class GetVOSCustomerRate extends Command {
                             try {
                                 foreach ($GetAllAccounts->infoCustomers as $Account) {
                                     $feerateGroup = $Account->feerateGroup;
+                                    $account = $Account->account;
 
                                     $GetFeeRates = VOS5000API::request('GetFeeRate', $CompanyGatewayID, $CompanyGatewayTitle, ["feeRateGroup" => $feerateGroup]);
                                     if (!empty($GetFeeRates->infoFeeRates)) {
@@ -155,31 +159,44 @@ class GetVOSCustomerRate extends Command {
                                                 $RateGroup['IvrFee'] = $GetFeeRate->ivrFee;
                                                 $RateGroup['IvrPeriod'] = $GetFeeRate->ivrPeriod;
                                                 $RateGroup['FeeRateGroup'] = $feerateGroup;
+                                                $RateGroup['VosAccount'] = $account;
 
-                                                //$exist = array_search($RateGroup['AreaCode'], array_column($StoreRateData, 'AreaCode'));
 
-                                                  array_push($StoreRateData, $RateGroup);
+                                                $StoreRateData[] = $RateGroup;
+                                                $data_count++;
+                                                $TotalCount++;
+
+                                                if ($data_count > $insertLimit && !empty($StoreRateData)) {
+                                                    DB::connection('sqlsrv')->table('tblVOSCustomerFeeRateGroup')->insert($StoreRateData);
+                                                    $StoreRateData = array();
+                                                    $data_count = 0;
+                                                }
+
+                                                //  array_push($StoreRateData, $RateGroup);
 
                                                 /*if(false === $exist){
                                                     array_push($StoreRateData, $RateGroup);
                                                 }*/
                                            // }
 
-
                                         }
+                                        if(!empty($StoreRateData)){
+                                            DB::connection('sqlsrv')->table('tblVOSCustomerFeeRateGroup')->insert($StoreRateData);
+                                        }
+
                                     } else {
                                         //$Message .= "No Any Fee Rates Found.";
                                     }
                                 }
-                                Log::info("Count Total Store Data= " . count($StoreRateData));
-                                if (!empty($StoreRateData)) {
+                                Log::info("Count Total Store Data= " . $TotalCount);
+                                if ($TotalCount) {
                                     //here store
-                                    DB::connection('sqlsrv')->table("tblVOSCustomerFeeRateGroup")->truncate();
+                                   // DB::connection('sqlsrv')->table("tblVOSCustomerFeeRateGroup")->truncate();
 
                                     // It will process at a time 1500 records
-                                    foreach (array_chunk($StoreRateData, 1500) as $t) {
+                                    /*foreach (array_chunk($StoreRateData, 1500) as $t) {
                                         DB::connection('sqlsrv')->table("tblVOSCustomerFeeRateGroup")->insert($t);
-                                    }
+                                    }*/
                                    // $Message .= count($StoreRateData) . " Customer Rates imported.";
 
                                     $query = "call prc_VOSImportCustomerFeeRate (".$CompanyID.")";
