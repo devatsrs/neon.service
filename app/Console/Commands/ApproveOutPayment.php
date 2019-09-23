@@ -111,6 +111,7 @@ class ApproveOutPayment extends Command {
 						$outPayment = OutPaymentLog::where([
 							'VendorID' => $invoice->AccountID,
 							'Status' => 0,
+							'PartnerCustomerID' => 0,
 						])->whereIn('CLI', $CLIs)
 							->whereDate('Date', ">=", $invoice->StartDate)
 							->whereDate('Date', "<=", $invoice->EndDate)
@@ -170,15 +171,26 @@ class ApproveOutPayment extends Command {
 						Log::info('approved .' . print_r($approvedPaymentArray, true));
 						Log::info('Approved Accounts .' . print_r($approvedPaymentAccounts, true));
 
-						if(!empty($approvedPaymentAccounts))
+						if(!empty($approvedPaymentAccounts)) {
+							OutPaymentLog::where([
+								'VendorID' => $invoice->AccountID,
+								'Status' => 0,
+								'PartnerCustomerID' => 0,
+							])->whereIn('CLI', $CLIs)
+								->whereDate('Date', ">=", $invoice->StartDate)
+								->whereDate('Date', "<=", $invoice->EndDate)
+								->whereIn('AccountID', $approvedPaymentAccounts)
+								->update(['status' => 1]);
+
 							OutPaymentLog::where([
 								'VendorID' => $invoice->AccountID,
 								'Status' => 0,
 							])->whereIn('CLI', $CLIs)
 								->whereDate('Date', ">=", $invoice->StartDate)
 								->whereDate('Date', "<=", $invoice->EndDate)
-								->whereIn('AccountID', $approvedPaymentAccounts)
+								->whereIn('PartnerCustomerID', $approvedPaymentAccounts)
 								->update(['status' => 1]);
+						}
 
 						if(!empty($approvedPaymentArray)) {
 							ApprovedOutPaymentLog::insert($approvedPaymentArray);
