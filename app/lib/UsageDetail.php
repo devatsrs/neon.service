@@ -174,5 +174,15 @@ class UsageDetail extends \Eloquent {
         return $TotalCharges;
     }
 
+    public static function getResellerTotalUsageByStartDate($AccountID,$Date){
+        $TotalCharges = 0;
+
+        $UsageDetails = DB::connection('sqlsrvcdr')->select("CALL  prc_getResellerTotalUsageByStartDate ('" . $AccountID . "', '".$Date."' )");
+        if (!empty($UsageDetails[0]->Cost)) {
+            $TotalCharges = $UsageDetails[0]->Cost;
+        }
+        return $TotalCharges;
+    }
+
 
 }
