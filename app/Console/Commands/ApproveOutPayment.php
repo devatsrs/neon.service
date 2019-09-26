@@ -111,7 +111,6 @@ class ApproveOutPayment extends Command {
 						$outPayment = OutPaymentLog::where([
 							'VendorID' => $invoice->AccountID,
 							'Status' => 0,
-							'PartnerCustomerID' => 0,
 						])->whereIn('CLI', $CLIs)
 							->whereDate('Date', ">=", $invoice->StartDate)
 							->whereDate('Date', "<=", $invoice->EndDate)
