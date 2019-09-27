@@ -134,6 +134,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ExportClarityPBXCustomerRate',
 		'App\Console\Commands\ExportClarityPBXVendorRate',
 		'App\Console\Commands\ImportClarityAccounts',
+		'App\Console\Commands\HUAWEIAccountUsage',
+		'App\Console\Commands\HUAWEIDownloadCDR',
 	];
 
 	/**
