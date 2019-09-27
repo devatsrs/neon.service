@@ -204,7 +204,11 @@ class CustomerRateSheetGenerator extends Command {
 
                             //RatePrefix
                             if(!empty($joboptions->RatePrefix)){
-                                $RatePrefix=$joboptions->RatePrefix;
+                                if(is_array($joboptions->RatePrefix)){
+                                    $RatePrefix=implode(",",$joboptions->RatePrefix);
+                                }else{
+                                    $RatePrefix=$joboptions->RatePrefix;
+                                }
                             }
 
                             if($CustomerEmailSend==1 && is_array($joboptions->Trunks)){
@@ -587,7 +591,8 @@ class CustomerRateSheetGenerator extends Command {
             if(!is_array($emaildata['EmailTo'])){
                 $emaildata['EmailTo'] = explode(',',$emaildata['EmailTo']);
             }
-            $emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
+            /* comment below line for not receive email who logged the job */
+            //$emaildata['EmailTo'] = array_merge($emaildata['EmailTo'],explode(',', $userInfo->EmailAddress));
             $replace_array = Helper::create_replace_array($account,array(),$userInfo);
             $replace_array['TrunkPrefix'] = empty($account->trunkprefix)?'':$account->trunkprefix;
             $replace_array['TrunkName'] = empty($account->trunk_name)?'':$account->trunk_name;
