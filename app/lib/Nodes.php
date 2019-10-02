@@ -43,7 +43,8 @@ class Nodes extends \Eloquent{
         $host= gethostname();
         $CurrentIp = gethostbyname($host);
 
-        log::info('ip' . $CurrentIp);
+        log::info('ip ' . $CurrentIp);
+        log::info('ip from db ' . $NodeIp);
         if($NodeIp == $CurrentIp){
             log::info('ip match');
             return true;
