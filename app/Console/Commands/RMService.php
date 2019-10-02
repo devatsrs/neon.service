@@ -3,6 +3,7 @@
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\DataTableSql;
+use App\Lib\Nodes;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use App\Lib\CronJob;
@@ -466,14 +467,12 @@ class RMService extends Command {
             }
 
             //------------------------ Cron job start here------------------------//
-
-            $cmdarray = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
+          
+            $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
             foreach ($cmdarray as $com) {
                 if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
-                    if(getenv('APP_OS') == 'Linux') {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID)){
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
-                    }else {
-                        pclose(popen("start /B " . $PHP_EXE_PATH . " " . $RMArtisanFileLocation . " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID, "r"));
                     }
                 }
             }
