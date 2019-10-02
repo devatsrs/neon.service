@@ -42,14 +42,9 @@ class Nodes extends \Eloquent{
     public static function MatchCronJobNodeWithCurrentServer($NodeIp){
         $host= gethostname();
         $CurrentIp = gethostbyname($host);
-
-        log::info('ip ' . $CurrentIp);
-        log::info('ip from db ' . $NodeIp);
         if($NodeIp == $CurrentIp){
-            log::info('ip match');
             return true;
         }else{
-            log::info('ip not match');
             return false;
         }
        
