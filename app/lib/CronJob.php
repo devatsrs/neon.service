@@ -611,8 +611,10 @@ class CronJob extends \Eloquent {
     public static function GetNodesFromCronJob($CronJobID,$CompanyID){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
         $Nodes = json_decode($Cron->Settings,true);
-        
-        $Servers = $Nodes['Nodes'];
+        $Servers = [];
+        if(isset($Nodes['Nodes']) && !empty($Nodes['Nodes'])){
+            $Servers = $Nodes['Nodes'];
+        } 
 		
 		if(!empty($Servers)){
             $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerIP' , $Servers)->get();
