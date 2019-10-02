@@ -40,9 +40,7 @@ class Nodes extends \Eloquent{
     }
 
     public static function MatchCronJobNodeWithCurrentServer($NodeIp){
-        $host      = gethostname();
-        $CurrentIp = gethostbyname($host);
-       
+        $CurrentIp = $_SERVER['SERVER_ADDR'];  
         if($NodeIp == $CurrentIp){
             return true;
         }else{
