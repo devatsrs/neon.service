@@ -45,8 +45,10 @@ class Nodes extends \Eloquent{
 
         log::info('ip' . $CurrentIp);
         if($NodeIp == $CurrentIp){
+            log::info('ip match');
             return true;
         }else{
+            log::info('ip not match');
             return false;
         }
        
