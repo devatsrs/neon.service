@@ -445,7 +445,7 @@
                         @foreach($usage_data_table['header'] as $row)
                             <?php
                             $classname = 'centeralign';
-                            if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount'))){
+                            if(in_array($row['Title'],array('AvgRatePerMin','ChargedAmount','NoOfCalls','BillDuration','Duration'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                 $classname = 'leftalign';
@@ -475,7 +475,7 @@
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 <?php
                                 $classname = 'centeralign';
-                                if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount'))){
+                                if(in_array($table_h_row['Title'],array('AvgRatePerMin','ChargedAmount','NoOfCalls','BillDuration','Duration'))){
                                     $classname = 'rightalign leftsideview';
                                 }else if(in_array($table_h_row['Title'],array('Trunk','AreaPrefix','Country','Description'))){
                                     $classname = 'leftalign';
@@ -484,7 +484,7 @@
                                 @if($table_h_row['Title'] == 'ChargedAmount')
                                         <td class="{{$classname}}">{{$CurrencySymbol}}{{ \App\Lib\Invoice::NumberFormatNoZeroValue($row['ChargedAmount'],$RoundChargesCDR)}}</td>
                                 @elseif($table_h_row['Title'] == 'AvgRatePerMin')
-                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format($row['AvgRatePerMin'],$RoundChargesAmount) : 0}}</td>
+                                    <td class="{{$classname}}">{{$CurrencySymbol}}{{ $row['BillDurationInSec'] != 0? number_format($row['AvgRatePerMin'],$RoundChargesCDR) : 0}}</td>
                                 @else
                                     <td class="{{$classname}}">{{$row[$table_h_row['Title']]}}</td>
                                 @endif
@@ -545,7 +545,7 @@
                         @foreach($usage_data_table['header'] as $row)
                             <?php
                             $classname = 'centeralign';
-                            if(in_array($row['Title'],array('ChargedAmount'))){
+                            if(in_array($row['Title'],array('ChargedAmount','BillDuration','BillDurationMinutes'))){
                                 $classname = 'rightalign leftsideview';
                             }else if(in_array($row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                 $classname = 'leftalign';
@@ -579,7 +579,7 @@
                             @foreach($usage_data_table['header'] as $table_h_row)
                                 <?php
                                 $classname = 'centeralign';
-                                if(in_array($table_h_row['Title'],array('ChargedAmount'))){
+                                if(in_array($table_h_row['Title'],array('ChargedAmount','BillDuration','BillDurationMinutes'))){
                                     $classname = 'rightalign leftsideview';
                                 }else if(in_array($table_h_row['Title'],array('CLI','Prefix','CLD','ConnectTime','DisconnectTime'))){
                                     $classname = 'leftalign';

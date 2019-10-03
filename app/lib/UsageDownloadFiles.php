@@ -49,6 +49,17 @@ class UsageDownloadFiles extends Model {
         }
     }
 
+    /** get huawei pending files */
+    public static function getHuaweiPendingFile($CompanyGatewayID){
+        $filenames = array();
+        $new_filenames = UsageDownloadFiles::where(array('CompanyGatewayID'=>$CompanyGatewayID,'Status'=>1))->orderby('created_at')->get();
+        foreach ($new_filenames as $file) {
+            $filenames[$file->UsageDownloadFilesID] = $file->FileName;
+        }
+        return $filenames;
+
+    }
+
     /** get vos pending files */
     public static function getVosPendingFile($CompanyGatewayID){
         $filenames = array();
