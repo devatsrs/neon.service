@@ -402,4 +402,31 @@ class Account extends \Eloquent {
         }
     }
 
+    public static function getAllPrepaidAccount()
+    {
+        $Accounts = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId','tblAccount.AccountName', DB::raw("0 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0, 'tblAccountBilling.BillingType' => AccountBalanceLog::BILLINGTYPE_PREPAID))
+            ->whereNotIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts1 = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId', 'tblAccount.AccountName',DB::raw("1 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0, 'tblAccountBilling.BillingType' => AccountBalanceLog::BILLINGTYPE_PREPAID))
+            ->whereIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts2 = array_merge($Accounts,$Accounts1);
+
+        return $Accounts2;
+    }
+
 }
