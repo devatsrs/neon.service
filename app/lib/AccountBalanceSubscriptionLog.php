@@ -406,6 +406,17 @@ class AccountBalanceSubscriptionLog extends Model
         $OneOffChargeLogData['created_at']=date('Y-m-d H:i:s');
         $OneOffChargeLogData['updated_at']=date('Y-m-d H:i:s');
         $AccountBalanceOneOffLog = AccountBalanceSubscriptionLog::create($OneOffChargeLogData);
+
+        $AccountBalanceSubscriptionLogID = $AccountBalanceOneOffLog->AccountBalanceSubscriptionLogID;
+        $ProductType = Product::ONEOFFCHARGE;
+        $TotalTax = AccountBalanceTaxRateLog::CreateSubscriptiontBalanceTax($AccountID, $AccountBalanceSubscriptionLogID, $LineTotal,$ProductType);
+        $GrandTotal = $LineTotal + $TotalTax;
+        $SubLogData = array();
+        $SubLogData['TotalTax'] = $TotalTax;
+        $SubLogData['TotalAmount'] = $GrandTotal;
+        $SubLogData['updated_at'] = date('Y-m-d H:i:s');
+        AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
+        /*
         if ($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2) {
 
             $AccountBalanceSubscriptionLogID = $AccountBalanceOneOffLog->AccountBalanceSubscriptionLogID;
@@ -417,7 +428,7 @@ class AccountBalanceSubscriptionLog extends Model
             $SubLogData['updated_at'] = date('Y-m-d H:i:s');
             AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
 
-        }
+        }*/
 
     }
 
