@@ -32,10 +32,10 @@ class Nodes extends \Eloquent{
         if($Nodes){
             foreach($Nodes as $val){
                 if(self::MatchCronJobNodeWithCurrentServer($val['ServerIP'])){
-                    Log::info('node name '. $val['ServerIP']);
+                    Log::info('server node name '. $val['ServerIP']);
                     return $val['ServerIP'];
                 }elseif(self::MatchCronJobNodeWithCurrentServer($val['LocalIP'])){
-                    Log::info('node name '. $val['LocalIP']);
+                    Log::info('local node name '. $val['LocalIP']);
                     return $val['LocalIP'];
                 }
             }
