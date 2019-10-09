@@ -275,6 +275,9 @@ class AccountBalanceSubscriptionLog extends Model
             $SubscriptionLogData['LineAmount']=$TotalActivationFeeCharge;
             $SubscriptionLogData['TotalTax']=0;
             $SubscriptionLogData['TotalAmount']=$TotalActivationFeeCharge;
+            $SubscriptionLogData['TotalAmount']=$TotalActivationFeeCharge;
+            $SubscriptionLogData['CustomerSubscriptionLogID']=0;
+            $SubscriptionLogData['CLIRateTableID']=0;
             /*
             $SubscriptionLogData['DiscountAmount']=0;
             $SubscriptionLogData['DiscountType']='';
@@ -315,6 +318,8 @@ class AccountBalanceSubscriptionLog extends Model
         $SubscriptionLogData['LineAmount']=$LineAmount;
         $SubscriptionLogData['TotalTax']=0;
         $SubscriptionLogData['TotalAmount']=$LineAmount;
+        $SubscriptionLogData['CustomerSubscriptionLogID']=0;
+        $SubscriptionLogData['CLIRateTableID']=0;
 
         if(!empty($AccountSubscription->DiscountAmount) && !empty($AccountSubscription->DiscountType)){
             $SubscriptionLogData['DiscountAmount'] = $AccountSubscription->DiscountAmount;
@@ -391,6 +396,8 @@ class AccountBalanceSubscriptionLog extends Model
         $OneOffChargeLogData['LineAmount']=$LineTotal;
         $OneOffChargeLogData['TotalTax']=0;
         $OneOffChargeLogData['TotalAmount']=$LineTotal;
+        $OneOffChargeLogData['CustomerSubscriptionLogID']=0;
+        $OneOffChargeLogData['CLIRateTableID']=0;
         if(!empty($AccountOneOffCharge->DiscountAmount) && !empty($AccountOneOffCharge->DiscountType)){
             $OneOffChargeLogData['DiscountAmount'] = $AccountOneOffCharge->DiscountAmount;
             $OneOffChargeLogData['DiscountType'] = $AccountOneOffCharge->DiscountType;
@@ -399,6 +406,17 @@ class AccountBalanceSubscriptionLog extends Model
         $OneOffChargeLogData['created_at']=date('Y-m-d H:i:s');
         $OneOffChargeLogData['updated_at']=date('Y-m-d H:i:s');
         $AccountBalanceOneOffLog = AccountBalanceSubscriptionLog::create($OneOffChargeLogData);
+
+        $AccountBalanceSubscriptionLogID = $AccountBalanceOneOffLog->AccountBalanceSubscriptionLogID;
+        $ProductType = Product::ONEOFFCHARGE;
+        $TotalTax = AccountBalanceTaxRateLog::CreateSubscriptiontBalanceTax($AccountID, $AccountBalanceSubscriptionLogID, $LineTotal,$ProductType);
+        $GrandTotal = $LineTotal + $TotalTax;
+        $SubLogData = array();
+        $SubLogData['TotalTax'] = $TotalTax;
+        $SubLogData['TotalAmount'] = $GrandTotal;
+        $SubLogData['updated_at'] = date('Y-m-d H:i:s');
+        AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
+        /*
         if ($AccountOneOffCharge->TaxRateID || $AccountOneOffCharge->TaxRateID2) {
 
             $AccountBalanceSubscriptionLogID = $AccountBalanceOneOffLog->AccountBalanceSubscriptionLogID;
@@ -410,7 +428,7 @@ class AccountBalanceSubscriptionLog extends Model
             $SubLogData['updated_at'] = date('Y-m-d H:i:s');
             AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
 
-        }
+        }*/
 
     }
 
@@ -434,17 +452,17 @@ class AccountBalanceSubscriptionLog extends Model
                     //Monthly Cost
                     if(!empty($AccountServiceNumberData->MonthlyCost)){
                         //log::info('MonthlyCost '.$AccountServiceNumberData->MonthlyCost);
-                        AccountBalanceSubscriptionLog::calculateMonthlyCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->MonthlyCost,'Number',$CLIRateTableID, $StartDate, $EndDate);
+                        AccountBalanceSubscriptionLog::calculateMonthlyCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->MonthlyCost,'Number',$CLIRateTableID, $StartDate, $EndDate,$CLIRateTableID);
                     }
                     //OneOff Cost
                     if(!empty($AccountServiceNumberData->OneOffCost)){
                         //log::info('OneOffCost '.$AccountServiceNumberData->OneOffCost);
-                        AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->OneOffCost,'Number',$CLIRateTableID,Product::NUMBER_ONEOFFCHARGE);
+                        AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->OneOffCost,'Number',$CLIRateTableID,Product::NUMBER_ONEOFFCHARGE,$CLIRateTableID);
                     }
                     //Registration Cost
                     if(!empty($AccountServiceNumberData->RegistrationCostPerNumber)){
                         //log::info('RegistrationCostPerNumber '.$AccountServiceNumberData->RegistrationCostPerNumber);
-                        AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->RegistrationCostPerNumber,'Number',$CLIRateTableID,Product::NUMBER_REGISTRATIONCOST);
+                        AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->RegistrationCostPerNumber,'Number',$CLIRateTableID,Product::NUMBER_REGISTRATIONCOST,$CLIRateTableID);
                     }
 
                     // need package condition
@@ -452,12 +470,12 @@ class AccountBalanceSubscriptionLog extends Model
                     if($PackageStartDate <= $Today) {
                         if (!empty($AccountServiceNumberData->PKGMonthlyCost)) {
                             //log::info('PKGMonthlyCost '.$AccountServiceNumberData->PKGMonthlyCost);
-                            AccountBalanceSubscriptionLog::calculateMonthlyCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->PKGMonthlyCost, 'Package', $AccountServicePackageID, $StartDate, $EndDate);
+                            AccountBalanceSubscriptionLog::calculateMonthlyCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->PKGMonthlyCost, 'Package', $AccountServicePackageID, $StartDate, $EndDate,$CLIRateTableID);
                         }
                         //OneOff Cost
                         if(!empty($AccountServiceNumberData->PKGOneOffCost)){
                             //log::info('PKGOneOffCost '.$AccountServiceNumberData->PKGOneOffCost);
-                            AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->PKGOneOffCost,'Package',$AccountServicePackageID,Product::PACKAGE_ONEOFFCHARGE);
+                            AccountBalanceSubscriptionLog::calculateOneOffCost($AccountServiceNumberData->CLI,$AccountServiceNumberData->PKGOneOffCost,'Package',$AccountServicePackageID,Product::PACKAGE_ONEOFFCHARGE,$CLIRateTableID);
                         }
                     }
                 }
@@ -465,7 +483,7 @@ class AccountBalanceSubscriptionLog extends Model
         }
     }
 
-    public static function calculateMonthlyCost($CLI,$MonthlyCost,$Type,$ParentID,$StartDate,$EndDate){
+    public static function calculateMonthlyCost($CLI,$MonthlyCost,$Type,$ParentID,$StartDate,$EndDate,$CLIRateTableID){
         $BillingType = 1;
         $AccountSubscriptionID = 0;
 
@@ -518,6 +536,7 @@ class AccountBalanceSubscriptionLog extends Model
         $data['ProductType'] = $ProductType;
         $data['ParentID'] =  $ParentID;
         $data['Description'] = $Description;
+        $data['CLIRateTableID'] = $CLIRateTableID;
 
         $IsAdvance = 1;
         $FirstTimeBilling = 0;
@@ -673,6 +692,8 @@ class AccountBalanceSubscriptionLog extends Model
         $SubscriptionLogData['LineAmount']=$LineAmount;
         $SubscriptionLogData['TotalTax']=0;
         $SubscriptionLogData['TotalAmount']=$LineAmount;
+        $SubscriptionLogData['CustomerSubscriptionLogID']=0;
+        $SubscriptionLogData['CLIRateTableID']=$data['CLIRateTableID'];
         $SubscriptionLogData["DiscountLineAmount"] = $DiscountLineAmount;
         $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
         $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
@@ -692,7 +713,7 @@ class AccountBalanceSubscriptionLog extends Model
 
     }
 
-    public static function calculateOneOffCost($CLI,$OneOffCost,$Type,$ParentID,$ProductType){
+    public static function calculateOneOffCost($CLI,$OneOffCost,$Type,$ParentID,$ProductType,$CLIRateTableID){
         log::info('Monthly One off log '.' '.$ParentID.' '.$ProductType);
         $Count = AccountBalanceSubscriptionLog::where(['ProductType' => $ProductType, 'ParentID' => $ParentID])
             ->where('Description', 'like','%'.$CLI.'%')
@@ -761,6 +782,8 @@ class AccountBalanceSubscriptionLog extends Model
             $OneOffChargeLogData['LineAmount']=$LineTotal;
             $OneOffChargeLogData['TotalTax']=0;
             $OneOffChargeLogData['TotalAmount']=$LineTotal;
+            $OneOffChargeLogData['CustomerSubscriptionLogID']=0;
+            $OneOffChargeLogData['CLIRateTableID']=$CLIRateTableID;
             $OneOffChargeLogData["DiscountLineAmount"] = $DiscountLineAmount;
             $OneOffChargeLogData['created_at']=date('Y-m-d H:i:s');
             $OneOffChargeLogData['updated_at']=date('Y-m-d H:i:s');
@@ -776,6 +799,51 @@ class AccountBalanceSubscriptionLog extends Model
             $SubLogData['updated_at'] = date('Y-m-d H:i:s');
             AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
 
+        }
+    }
+
+    public static function insertPartnerSubscriptionLog($CompanyID,$AccountID,$SubscriptionDatas){
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID,0,0);
+        $IssueDate = date('Y-m-d');
+        $SubscriptionDatas = json_decode(json_encode($SubscriptionDatas),true);
+        foreach($SubscriptionDatas as $SubscriptionData){
+            $singlePrice = number_format($SubscriptionData['Price'], $decimal_places, '.', '');
+            $LineTotal = ($singlePrice) * 1;
+            $LineTotal = number_format($LineTotal, $decimal_places, '.', '');
+
+            $SubscriptionLogData=array();
+            $SubscriptionLogData['AccountBalanceLogID']=$SubscriptionData['AccountBalanceLogID'];
+            $SubscriptionLogData['ServiceID']=$SubscriptionData['ServiceID'];
+            $SubscriptionLogData['AccountServiceID']=$SubscriptionData['AccountServiceID'];
+            $SubscriptionLogData['IssueDate']=$IssueDate;
+            $SubscriptionLogData['ProductType']=$SubscriptionData['ProductType'];
+            $SubscriptionLogData['ParentID']=$SubscriptionData['ParentID'];
+            $SubscriptionLogData['Description']=$SubscriptionData['Description'];
+            $SubscriptionLogData['Price']=$singlePrice;
+            $SubscriptionLogData['Qty']=$SubscriptionData['Qty'];
+            $SubscriptionLogData['StartDate']=$SubscriptionData['StartDate'];
+            $SubscriptionLogData['EndDate']=$SubscriptionData['EndDate'];
+            $SubscriptionLogData['LineAmount']=$LineTotal;
+            $SubscriptionLogData['TotalTax']=0;
+            $SubscriptionLogData['TotalAmount']=$LineTotal;
+            $SubscriptionLogData["DiscountLineAmount"] = 0;
+            $SubscriptionLogData["CustomerSubscriptionLogID"] = $SubscriptionData["CustomerSubscriptionLogID"];
+            $SubscriptionLogData["CLIRateTableID"] = $SubscriptionData["CLIRateTableID"];
+            $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
+            $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
+
+            $NewAccountBalanceSubscriptionLog = AccountBalanceSubscriptionLog::create($SubscriptionLogData);
+
+            /* Exampt No */
+
+            $AccountBalanceSubscriptionLogID = $NewAccountBalanceSubscriptionLog->AccountBalanceSubscriptionLogID;
+            $TotalTax = AccountBalanceTaxRateLog::CreateSubscriptiontBalanceTax($AccountID, $AccountBalanceSubscriptionLogID, $LineTotal,$SubscriptionData['ProductType']);
+            $GrandTotal = $LineTotal + $TotalTax;
+            $SubLogData = array();
+            $SubLogData['TotalTax'] = $TotalTax;
+            $SubLogData['TotalAmount'] = $GrandTotal;
+            $SubLogData['updated_at'] = date('Y-m-d H:i:s');
+            AccountBalanceSubscriptionLog::where(['AccountBalanceSubscriptionLogID' => $AccountBalanceSubscriptionLogID])->update($SubLogData);
         }
     }
 }

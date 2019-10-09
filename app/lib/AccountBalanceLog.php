@@ -27,16 +27,22 @@ class AccountBalanceLog extends Model
         Log::info('CreateAllLog Start ');
         $errors = array();
 
+        /**
         $Accounts =   AccountBilling::join('tblAccount','tblAccount.AccountID','=','tblAccountBilling.AccountID')
             ->select('tblAccountBilling.AccountID','tblAccount.CompanyId','tblAccount.AccountName')
             ->where(array('Status'=>1,'AccountType'=>1,'Billing'=>1,'tblAccountBilling.ServiceID'=>0,'tblAccountBilling.AccountServiceID'=>0,'tblAccountBilling.BillingType'=>AccountBalanceLog::BILLINGTYPE_PREPAID))
             //->where(array('tblAccount.AccountID'=>6736))
+            //->where(array('tblAccount.AccountID'=>5401))
             ->get();
+         * */
+
+        $Accounts = Account::getAllPrepaidAccount();
         foreach ($Accounts as $Account) {
-                $AccountID = $Account->AccountID;
-                $CompanyID = $Account->CompanyId;
-                $AccountName = $Account->AccountName;
-                log::info($Account->AccountID . ' ');
+                $AccountID = $Account['AccountID'];
+                $CompanyID = $Account['CompanyId'];
+                $AccountName = $Account['AccountName'];
+                $Reseller = $Account['Reseller'];
+                log::info($Account['AccountID'] . ' ');
                 try {
                     DB::beginTransaction();
                     DB::connection('sqlsrv2')->beginTransaction();
@@ -46,6 +52,13 @@ class AccountBalanceLog extends Model
                     AccountBalanceLog::CreateServiceLog($CompanyID, $AccountID, $ProcessID);
                     log::info('One Off Start');
                     AccountOneOffCharge::CreateOneOffServiceLog($CompanyID, $AccountID, $ProcessID);
+                    if($Reseller==1){
+                        $SubscriptionDatas = DB::select("call prc_insertPartnerSubscriptionsLog ('" . $CompanyID . "','".$AccountID."','".$ProcessID."')");
+                        log::info('subscription data count '.count($SubscriptionDatas));
+                        if(count($SubscriptionDatas) > 0){
+                            AccountBalanceSubscriptionLog::insertPartnerSubscriptionLog($CompanyID,$AccountID,$SubscriptionDatas);
+                        }
+                    }
                     DB::commit();
                     DB::connection('sqlsrv2')->commit();
                 } catch (\Exception $e) {
