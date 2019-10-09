@@ -144,6 +144,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ProcessActiveCall',
 		'App\Console\Commands\InsertIntoRateSearchCode',
 		'App\Console\Commands\PartnerAccountUsage',
+		'App\Console\Commands\TerminationRateOperation',
 
 	];
 
