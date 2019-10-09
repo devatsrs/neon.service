@@ -475,6 +475,7 @@ class RMService extends Command {
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
                     }
                 }
+                
             }
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
                 if (isset($allpendingrs->JobID) && $allpendingrs->JobID>0) {
