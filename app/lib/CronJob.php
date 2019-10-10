@@ -616,7 +616,12 @@ class CronJob extends \Eloquent {
             $Nodes = json_decode($Cron->Settings,true);
         }else{
             $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
-            $Nodes = json_decode($NodesFromCompany->value,true);
+            if($NodesFromCompany){
+                $Nodes = json_decode($NodesFromCompany->value,true);
+            }else{
+                $Nodes['Nodes'] = "";
+            }
+            
         }
 
         $Servers = [];
