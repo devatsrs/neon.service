@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\View;
 
 class Nodes extends \Eloquent{
 
+
+    Const JOB = "Job";
+    Const CRONJOB = "CronJob";
+
 	//protected $fillable = ["NoteID","CompanyID","AccountID","Title","Note","created_at","updated_at","created_by","updated_by" ];
 
     protected $guarded = array();
@@ -27,8 +31,8 @@ class Nodes extends \Eloquent{
         return $Nodes;
     }
 
-    public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID){
-        $Nodes = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID);
+    public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID,$Type){
+        $Nodes = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID,$Type);
         if($Nodes){
             foreach($Nodes as $val){
                 if(self::MatchCronJobNodeWithCurrentServer($val['ServerIP'])){

@@ -608,9 +608,22 @@ class CronJob extends \Eloquent {
         return false;
     }
 
-    public static function GetNodesFromCronJob($CronJobID,$CompanyID){
+    public static function GetNodesFromCronJob($CronJobID,$CompanyID,$Type){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
-        $Nodes = json_decode($Cron->Settings,true);
+        
+        
+        if($Type == "CronJob"){
+            $Nodes = json_decode($Cron->Settings,true);
+        }else{
+            $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
+            if($NodesFromCompany){
+                $Nodes = json_decode($NodesFromCompany->value,true);
+            }else{
+                $Nodes['Nodes'] = "";
+            }
+            
+        }
+
         $Servers = [];
         if(isset($Nodes['Nodes']) && !empty($Nodes['Nodes'])){
             $Servers = $Nodes['Nodes'];
