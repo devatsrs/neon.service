@@ -618,7 +618,7 @@ class CronJob extends \Eloquent {
             $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
             log::info('Company_Data_1'.print_r($NodesFromCompany,true));
             if($NodesFromCompany){
-                $Nodes = json_decode($NodesFromCompany->value,true);
+                $Nodes = json_decode($NodesFromCompany->Value,true);
                 log::info('Company_Data'.print_r($Type,true));
             }else{
                 $Nodes['Nodes'] = "";
