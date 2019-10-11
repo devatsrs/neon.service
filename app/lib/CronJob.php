@@ -610,8 +610,6 @@ class CronJob extends \Eloquent {
 
     public static function GetNodesFromCronJob($CronJobID,$CompanyID,$Type){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
-        
-        
         if($Type == "CronJob"){
             $Nodes = json_decode($Cron->Settings,true);
         }else{
@@ -620,25 +618,27 @@ class CronJob extends \Eloquent {
                 $Nodes = json_decode($NodesFromCompany->value,true);
             }else{
                 $Nodes['Nodes'] = "";
-            }
-            
+            }   
         }
-
         $Servers = [];
         if(isset($Nodes['Nodes']) && !empty($Nodes['Nodes'])){
             $Servers = $Nodes['Nodes'];
         } 
 		
 		if(!empty($Servers)){
-            $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerIP' , $Servers)->get();
-            $array = [];
-            foreach($CheckServerUp as $val){
-                $Key = array_search($val->ServerIP,$Servers);
-                if($Key !== false)
-					$array[$Key] = json_decode(json_encode($val), true); 
-			}
-			ksort($array);
-            return $array;
+            $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerID' , $Servers)->get();
+            if($CheckServerUp){
+                $array = [];
+                foreach($CheckServerUp as $val){
+                    $Key = array_search($val->ServerIP,$Servers);
+                    if($Key !== false)
+                        $array[$Key] = json_decode(json_encode($val), true); 
+                }
+                ksort($array);
+                return $array;
+            }else{
+                return false;
+            }
         }else{
             return false;
         }

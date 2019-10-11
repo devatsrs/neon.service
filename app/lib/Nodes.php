@@ -23,7 +23,7 @@ class Nodes extends \Eloquent{
     public static $rules = array(
         'ServerName' =>      'required|unique:tblNode',
         'ServerIP' =>      'required|unique:tblNode',
-        'Username' =>      'required|unique:tblNode',
+        'Username' =>      'required',
     );
 
     public static function getActiveNodes(){
@@ -48,8 +48,7 @@ class Nodes extends \Eloquent{
     }
 
     public static function MatchCronJobNodeWithCurrentServer($NodeIp){
-        $host= gethostname();
-        $CurrentIp = gethostbyname($host);
+        $CurrentIp = $host = gethostname();
         if($NodeIp == $CurrentIp){
             return true;
         }else{
