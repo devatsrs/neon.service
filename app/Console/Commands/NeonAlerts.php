@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\Company;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -65,16 +66,30 @@ class NeonAlerts extends Command
         try {
 
 
-            $cronjobdata = NeonAlert::neon_alerts($CompanyID,$ProcessID);
-            if(count($cronjobdata)){
-                $joblogdata['Message'] ='Message : '.implode(',<br>',$cronjobdata);
+            $Companies = Company::where('Status',1)->get();
+            $cronjobdata = [];
+            foreach($Companies as $company) {
+                $CompanyID = $company->CompanyID;
+                $cronjobdata[] = NeonAlert::neon_alerts($CompanyID, $ProcessID);
+            }
+
+            $messages = [];
+            foreach ($cronjobdata as $item) {
+                if(count($item))
+                    foreach ($item as $msg) {
+                        $messages[] = $msg;
+                    }
+            }
+
+            if (count($messages)) {
+                $joblogdata['Message'] = 'Message : ' . implode(',<br>', $messages);
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                if(!empty($cronsetting['ErrorEmail'])) {
-                    $result = CronJob::CronJobErrorEmailSend($CronJobID,implode(',\n\r',$cronjobdata));
+                if (!empty($cronsetting['ErrorEmail'])) {
+                    $result = CronJob::CronJobErrorEmailSend($CronJobID, implode(',\n\r', $messages));
                     Log::error("**Email Sent Status " . $result['status']);
                     Log::error("**Email Sent message " . $result['message']);
                 }
-            }else{
+            } else {
                 $joblogdata['Message'] = 'Success';
                 $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
             }

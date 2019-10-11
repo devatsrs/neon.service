@@ -85,9 +85,9 @@ class ApproveOutPayment extends Command {
 				->Join('tblProduct','tblProduct.ProductID','=','tblInvoiceDetail.ProductID')
 				->select(['tblInvoice.InvoiceID','tblInvoiceDetail.StartDate','tblInvoiceDetail.EndDate','tblInvoice.AccountID'])
 				->where([
-				'tblInvoice.InvoiceType' => Invoice::INVOICE_IN,
-				'tblProduct.Code' => Product::OutPaymentCode,
-			])->whereDate('tblInvoiceDetail.StartDate', ">=", $dt)
+					'tblInvoice.InvoiceType' => Invoice::INVOICE_IN,
+					'tblProduct.Code' => Product::OutPaymentCode,
+				])->whereDate('tblInvoiceDetail.StartDate', ">=", $dt)
 				->where('tblInvoice.InvoiceStatus', "!=", Invoice::AWAITING)
 				->distinct('tblInvoice.InvoiceID')
 				->orderBy("tblInvoice.AccountID", "DESC");
@@ -138,60 +138,58 @@ class ApproveOutPayment extends Command {
 						$approvedPaymentArray = [];
 						foreach($payable as $AID => $item){
 							$Account = AccountBalance::where('AccountID', $AID)->first();
-							if($Account->OutPaymentAwaiting >= $item['Amount']){
-								$approvedPaymentAccounts[] = $AID;
-								$approvalAmount = $Account->OutPaymentAwaiting - $item['Amount'];
-								$approvedAmount = $Account->OutPaymentAvailable != NULL ? $Account->OutPaymentAvailable + $item['Amount'] : $item['Amount'];
+							$approvedPaymentAccounts[] = $AID;
+							$approvedAmount = $Account->OutPaymentAvailable != NULL ? $Account->OutPaymentAvailable + $item['Amount'] : $item['Amount'];
 
-								AccountBalance::where('AccountID', $AID)->update([
-									'OutPaymentAwaiting' => $approvalAmount,
-									'OutPaymentAvailable' => $approvedAmount
-								]);
+							AccountBalance::where('AccountID', $AID)->update([
+								'OutPaymentAvailable' => $approvedAmount
+							]);
 
-								$approvedPaymentArray[] = [
-									'AccountID' => $AID,
-									'VendorID' 	=> $invoice->AccountID,
-									'InvoiceID' => $invoice->InvoiceID,
-									'StartDate' => $invoice->StartDate,
-									'EndDate' 	=> $invoice->EndDate,
-									'Amount'   	=> $item['Amount'],
-									'created_at'=> Carbon::now()->toDateTimeString(),
-								];
+							$approvedPaymentArray[] = [
+								'AccountID' => $AID,
+								'VendorID' 	=> $invoice->AccountID,
+								'InvoiceID' => $invoice->InvoiceID,
+								'StartDate' => $invoice->StartDate,
+								'EndDate' 	=> $invoice->EndDate,
+								'Amount'   	=> $item['Amount'],
+								'created_at'=> Carbon::now()->toDateTimeString(),
+							];
 
-								$SuccessOutPayment[] = [
-									'AccountName' => $Account->AccountName,
-									'AccountID'   => $AID,
-									'VendorID' 	  => $invoice->AccountID,
-									'InvoiceID'   => $invoice->InvoiceID,
-									'StartDate'   => $invoice->StartDate,
-									'EndDate' 	  => $invoice->EndDate,
-									'Amount'   	  => $item['Amount'],
-								];
+							$SuccessOutPayment[] = [
+								'AccountName' => $Account->AccountName,
+								'AccountID'   => $AID,
+								'VendorID' 	  => $invoice->AccountID,
+								'InvoiceID'   => $invoice->InvoiceID,
+								'StartDate'   => $invoice->StartDate,
+								'EndDate' 	  => $invoice->EndDate,
+								'Amount'   	  => $item['Amount'],
+							];
 
-							} else {
-								$FailureOutPayment[] = [
-									'AccountName' => $Account->AccountName,
-									'AccountID'   => $AID,
-									'VendorID' 	  => $invoice->AccountID,
-									'InvoiceID'   => $invoice->InvoiceID,
-									'StartDate'   => $invoice->StartDate,
-									'EndDate'     => $invoice->EndDate,
-									'Amount'      => $item['Amount'],
-								];
-							}
 						}
 
 						Log::info('approved .' . print_r($approvedPaymentArray, true));
 						Log::info('Approved Accounts .' . print_r($approvedPaymentAccounts, true));
-						if(!empty($approvedPaymentAccounts))
+
+						if(!empty($approvedPaymentAccounts)) {
+							OutPaymentLog::where([
+								'VendorID' => $invoice->AccountID,
+								'Status' => 0,
+								'PartnerCustomerID' => 0,
+							])->whereIn('CLI', $CLIs)
+								->whereDate('Date', ">=", $invoice->StartDate)
+								->whereDate('Date', "<=", $invoice->EndDate)
+								->whereIn('AccountID', $approvedPaymentAccounts)
+								->update(['status' => 1]);
+
 							OutPaymentLog::where([
 								'VendorID' => $invoice->AccountID,
 								'Status' => 0,
 							])->whereIn('CLI', $CLIs)
 								->whereDate('Date', ">=", $invoice->StartDate)
 								->whereDate('Date', "<=", $invoice->EndDate)
-								->whereIn('AccountID', $approvedPaymentAccounts)
+								->whereIn('PartnerCustomerID', $approvedPaymentAccounts)
 								->update(['status' => 1]);
+						}
 
 						if(!empty($approvedPaymentArray)) {
 							ApprovedOutPaymentLog::insert($approvedPaymentArray);

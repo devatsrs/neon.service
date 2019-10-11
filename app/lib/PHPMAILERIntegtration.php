@@ -2,6 +2,7 @@
 
 namespace App\Lib;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
 
@@ -15,7 +16,7 @@ class PHPMAILERIntegtration{
 	{
 		Config::set('mail.host',$config->SMTPServer);
 		Config::set('mail.port',$config->Port);
-		
+
 		if(isset($data['EmailFrom'])){ 
 			Config::set('mail.from.address',trim($data['EmailFrom']));
 		}else{ 
@@ -29,7 +30,7 @@ class PHPMAILERIntegtration{
 		}
 		Config::set('mail.encryption',($config->IsSSL==1?'ssl':'tls'));
 		Config::set('mail.username',$config->SMTPUsername);
-		Config::set('mail.password',$config->SMTPPassword);
+		Config::set('mail.password',  Crypt::decrypt($config->SMTPPassword));
 		extract(Config::get('mail'));
 	
 		$mail = new \PHPMailer;
@@ -51,6 +52,7 @@ class PHPMAILERIntegtration{
 	
 	public static function SendMail($view,$data,$config,$companyID='',$body)
 	{
+		Log::useFiles(storage_path() . '/logs/email-companyid-'.$companyID . date('Y-m-d') . '.log');
 		if(empty($companyID)){
 			 $companyID = User::get_companyID();
 		}
@@ -101,6 +103,7 @@ class PHPMAILERIntegtration{
 		
 		$emailto = is_array($data['EmailTo'])?implode(",",$data['EmailTo']):$data['EmailTo'];
 
+		//Log::info('Mail OBJ: ' . json_encode($mail));
 		if (!$mail->send()) {
 					$status['status'] = 0;
 					$status['message'] .= $mail->ErrorInfo . ' ( Email Address: ' . $emailto . ')';					

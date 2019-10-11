@@ -1,6 +1,8 @@
 <?php
 namespace App\Lib;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TaxRate extends \Eloquent {
 
@@ -22,9 +24,10 @@ class TaxRate extends \Eloquent {
         return $items;
     }
 
+    /** only use for Routing Database */
     public static function calculateProductTaxAmount($TaxRateID,$Price) {
         if($TaxRateID>0){
-            $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+            $TaxRate = DB::connection('neon_routingengine')->table('tblTaxRate')->where("TaxRateID",$TaxRateID)->first();
             if(isset($TaxRate->TaxType) && isset($TaxRate->Amount) ) {
                 if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
                     if ($TaxRate->FlatStatus == 1) {

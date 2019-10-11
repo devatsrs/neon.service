@@ -20,6 +20,14 @@ class Product extends \Eloquent {
     const INVOICE_PERIOD = 5;
     const FIRST_PERIOD = 6;
     const ADVANCECALLCHARGE = 7;
+
+    const NUMBER_MONTHLY_SUBSCRIPTION = 8;
+    const NUMBER_ONEOFFCHARGE = 9;
+    const NUMBER_REGISTRATIONCOST = 10;
+
+    const PACKAGE_MONTHLY_SUBSCRIPTION = 11;
+    const PACKAGE_ONEOFFCHARGE = 12;
+
     public static $ProductTypes = ["item"=>self::ITEM, "usage"=>self::USAGE,"subscription"=>self::SUBSCRIPTION];
     public static $TypetoProducts = [self::ITEM => "item", self::USAGE => "usage", self::SUBSCRIPTION =>"subscription"];
 

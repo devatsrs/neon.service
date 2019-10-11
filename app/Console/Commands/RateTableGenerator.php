@@ -148,11 +148,11 @@ class RateTableGenerator extends Command {
                 $MergeInto = $RateGenerator->MergeInto;
 
                 if($Policy == \LCR::LCR_PREFIX){
-                    $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'" . $Timezones. "','".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',".$IsMerge.",".$TakePrice.",".$MergeInto.")";
+                    $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                     Log::info($query);
                     $JobStatusMessage = DB::select($query);
                 } else {
-                    $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'" . $Timezones. "','".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',".$IsMerge.",".$TakePrice.",".$MergeInto.")";
+                    $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                     Log::info($query);
                     $JobStatusMessage = DB::select($query);
                 }
@@ -172,11 +172,11 @@ class RateTableGenerator extends Command {
                 $i=0;
                 foreach ($Timezones as $Timezone) {
                     if($Policy == \LCR::LCR_PREFIX){
-                        $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',0,0,0)";
+                        $query = "CALL prc_WSGenerateRateTableWithPrefix(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                         Log::info($query);
                         $JobStatusMessage = DB::select($query);
                     } else {
-                        $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. "," . $Timezone. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$GroupBy."','".$username."',0,0,0)";
+                        $query = "CALL prc_WSGenerateRateTable(".$JobID.","  .$data['RateGeneratorId']. "," . $data['RateTableID']. ",'".$data['rate_table_name']."','".$data['EffectiveDate']."',".$data['replace_rate'].",'".$data['EffectiveRate']."','".$username."')";
                         Log::info($query);
                         $JobStatusMessage = DB::select($query);
                     }

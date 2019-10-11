@@ -20,16 +20,25 @@ class NeonAPI
         return $diff >= 0 && strpos($haystack, $needle, $diff) !== false;
     }
 
-    public static function callAPI($postdata,$call_method,$api_url)
+    public static function callAPI($postdata,$call_method,$api_url,$contentType = '', $port = 0)
     {
         $url = $api_url . $call_method;
-      //  Log::info("Call API URL :" . $url . '  ' . $postdata);
+        Log::info("Call API URL :" . $url . '  ' . $postdata);
         $APIresponse = array();
         $curl = curl_init();
 
 
         //echo ' ' . Crypt::decrypt('eyJpdiI6IjRmZnRBQ1lKTm5ySEFlSU9hUHhha1E9PSIsInZhbHVlIjoiKytSU3JUK3FIdzRZaXhJRzhaNFwvbXc9PSIsIm1hYyI6IjllMmVhM2E1M2RkNzdlNjM5YmY3NGI2ZWUwMGQ1MDNmYjNjNmQwY2M2Y2Q1YWEwZGM5Nzg1NWU2OTBmYzQyOGEifQ==') . ' ';
         $auth = base64_encode(getenv("NEON_USER_NAME") . ':' . Crypt::decrypt(User::get_user_password(getenv("NEON_USER_NAME"))));
+
+        $header = array(
+            "accept: application/json",
+            "authorization: Basic " . $auth,
+        );
+
+        if($contentType != '')
+            $header[] = "content-type: " . $contentType;
+
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -39,13 +48,16 @@ class NeonAPI
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => $postdata,
-            CURLOPT_HTTPHEADER => array(
-                "accept: application/json",
-                "authorization: Basic " . $auth,
-            ),
+            CURLOPT_HTTPHEADER => $header,
         ));
 
+        if($port != 0)
+            curl_setopt($curl, CURLOPT_PORT, $port);
+
+
         $response = curl_exec($curl);
+
+        //Log::info("curl options: ". json_encode(curl_getinfo($curl)));
         $err = curl_error($curl);
        // echo $response;
      //   $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
@@ -57,11 +69,11 @@ class NeonAPI
         if ($httpcode != 200) {
             $APIresponse["error"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-          //  Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
+            //Log::info("Call API URL Error:" . print_r($APIresponse["error"],true));
         } else {
             $APIresponse["response"] = $response;
             $APIresponse["HTTP_CODE"] = $httpcode;
-          //  Log::info("Call API URL Sucess:" . print_r($response,true));
+            //Log::info("Call API URL Success:" . print_r($response,true));
         }
 
         return $APIresponse;

@@ -240,7 +240,15 @@ class Account extends \Eloquent {
         return $count;
     }
     public static function LowBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder,'EmailTo'=>$email));
+        $accountemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::LowBalanceReminder));
+
+        if(!empty($email)){
+            $exp = explode(",", $email);
+            if(count($exp) > 1) $email = trim($exp[0]);
+
+            $accountemaillog->where(['EmailTo'=>$email]);
+        }
+
         if(!empty($LastRunTime)){
             $accountemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
@@ -250,10 +258,20 @@ class Account extends \Eloquent {
     }
 
     public static function ZeroBalanceReminderEmailCheck($AccountID,$email,$LastRunTime){
-        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning,'EmailTo'=>$email));
+        $zerobalancemaillog =  AccountEmailLog::where(array('AccountID'=>$AccountID,'EmailType'=>AccountEmailLog::ZeroBalanceWarning));
+
+
+        if(!empty($email)){
+            $exp = explode(",", $email);
+            if(count($exp) > 1) $email = trim($exp[0]);
+            $zerobalancemaillog->where(['EmailTo'=>$email]);
+        }
+
         if(!empty($LastRunTime)){
             $zerobalancemaillog->whereRaw(" DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."'");
         }
+
+        Log::info("SELECT * FROM AccountEmailLog WHERE AccountID = $AccountID AND EmailType = " . AccountEmailLog::ZeroBalanceWarning . " AND EmailTo = $email and DATE_FORMAT(`created_at`,'%Y-%m-%d') >= '".date('Y-m-d',strtotime($LastRunTime))."';");
         $count = $zerobalancemaillog->count();
         Log::info('AccountID = '.$AccountID.' email count = ' . $count);
         return $count;
@@ -382,6 +400,33 @@ class Account extends \Eloquent {
             }
             Log::error($err);
         }
+    }
+
+    public static function getAllPrepaidAccount()
+    {
+        $Accounts = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId','tblAccount.AccountName', DB::raw("0 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0, 'tblAccountBilling.BillingType' => AccountBalanceLog::BILLINGTYPE_PREPAID))
+            ->whereNotIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts1 = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId', 'tblAccount.AccountName',DB::raw("1 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0, 'tblAccountBilling.BillingType' => AccountBalanceLog::BILLINGTYPE_PREPAID))
+            ->whereIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts2 = array_merge($Accounts,$Accounts1);
+
+        return $Accounts2;
     }
 
 }

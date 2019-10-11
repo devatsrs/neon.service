@@ -19,7 +19,8 @@ class AccountBalanceTaxRateLog extends Model
 
     public static function CreateUsageAccountBalanceTax($AccountID,$AccountBalanceUsageLogID,$TotalCharge){
         AccountBalanceTaxRateLog::where(array('ParentLogID'=>$AccountBalanceUsageLogID,'Type'=>Product::USAGE))->delete();
-        $TaxRateIDs = AccountBilling::getTaxRate($AccountID,0);
+        //$TaxRateIDs = AccountBilling::getTaxRate($AccountID,0,0);
+        $TaxRateIDs = Account::where(['AccountID'=>$AccountID])->pluck('TaxRateID');
         $TaxGrandTotal = 0;
         if(!empty($TaxRateIDs)){
             $TaxRateIDs = explode(",",$TaxRateIDs);
@@ -52,9 +53,10 @@ class AccountBalanceTaxRateLog extends Model
         return $TaxGrandTotal;
     }
 
-    public static function CreateSubscriptiontBalanceTax($AccountID,$AccountBalanceSubscriptionLogID,$TotalCharge){
-        AccountBalanceTaxRateLog::where(array('ParentLogID'=>$AccountBalanceSubscriptionLogID,'Type'=>Product::SUBSCRIPTION))->delete();
-        $TaxRateIDs = AccountBilling::getTaxRate($AccountID,0);
+    public static function CreateSubscriptiontBalanceTax($AccountID,$AccountBalanceSubscriptionLogID,$TotalCharge,$ProductType){
+        AccountBalanceTaxRateLog::where(array('ParentLogID'=>$AccountBalanceSubscriptionLogID,'Type'=>$ProductType))->delete();
+        //$TaxRateIDs = AccountBilling::getTaxRate($AccountID,0,0);
+        $TaxRateIDs = Account::where(['AccountID'=>$AccountID])->pluck('TaxRateID');
         $TaxGrandTotal = 0;
         if(!empty($TaxRateIDs)){
             $TaxRateIDs = explode(",",$TaxRateIDs);
@@ -72,7 +74,7 @@ class AccountBalanceTaxRateLog extends Model
                             $TaxGrandTotal += $TotalTax;
                             AccountBalanceTaxRateLog::create(array(
                                 "ParentLogID"=>$AccountBalanceSubscriptionLogID,
-                                "Type"=>Product::SUBSCRIPTION,
+                                "Type"=>$ProductType,
                                 "TaxRateID" => $TaxRateID,
                                 "TaxAmount" => $TotalTax,
                                 "Title" => $Title,

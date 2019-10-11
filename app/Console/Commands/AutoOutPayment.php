@@ -3,6 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\AccountBalance;
+use App\Lib\AccountBalanceLog;
+use App\Lib\AccountBilling;
 use App\Lib\Company;
 use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
@@ -70,8 +73,7 @@ class AutoOutPayment extends Command {
         try {
             $AutoOutPaymentList =  Account::Join('tblAccountPaymentAutomation','tblAccount.AccountID','=','tblAccountPaymentAutomation.AccountID')
                 ->Join('tblAccountBalance','tblAccount.AccountID','=','tblAccountBalance.AccountID')
-                ->select(['AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
-                ->where('tblAccount.CompanyID','=', $CompanyID)
+                ->select(['BalanceAmount','AccountName','tblAccount.AccountID','AutoOutpayment','OutPaymentThreshold','OutPaymentAmount','OutPaymentAvailable'])
                 ->where('tblAccountPaymentAutomation.AutoOutpayment','=', 1)
                 ->where('tblAccountPaymentAutomation.OutPaymentThreshold','>', 0)
                 ->where('tblAccountPaymentAutomation.OutPaymentAmount','>', 0)
@@ -82,9 +84,18 @@ class AutoOutPayment extends Command {
 
             Log::info('DONE With AutoOutPaymentAccount.' . count($AutoOutPaymentList));
             $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
-
             foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
-                if((float)$AutoOutPaymentAccount->OutPaymentAvailable >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
+
+                $BillingType = AccountBilling::where([
+                    'AccountID'=>$AutoOutPaymentAccount->AccountID,
+                    'ServiceID'=>0
+                ])->pluck('BillingType');
+                $BalanceAmount = AccountBalance::getNewAccountBalance($CompanyID, $AutoOutPaymentAccount->AccountID);
+                if(isset($BillingType) && $BillingType==1){
+                    $BalanceAmount = AccountBalanceLog::getPrepaidAccountBalance($AutoOutPaymentAccount->AccountID);
+                }
+
+                if((float)$BalanceAmount >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
                     $OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount, $CompanyConfiguration);
                     if ($OutPaymentAccount[0] == "success") {
                         $successRecord = array();
@@ -110,7 +121,9 @@ class AutoOutPayment extends Command {
                 }
             }
 
-            if (count($AutoOutPaymentList) > 0) {
+            $totalMsg = count($SuccessOutPayment) + count($FailureOutPayment) + count($ErrorOutPayment);
+
+            if ($totalMsg > 0) {
                 $this::AutoOutPaymentNotification($CompanyID, $SuccessOutPayment, $FailureOutPayment, $ErrorOutPayment);
             } else {
                 Log::info('No Account IDs found for the auto out payment.');
@@ -183,7 +196,7 @@ class AutoOutPayment extends Command {
         } else {
             $response = json_decode($APIresponse["response"], true);
             Log::info(print_r($response, true));
-            $autoOutPayment[0] = isset($response['data']['RequestFundID']) ? "success" : "failed";
+            $autoOutPayment[0] = isset($response['RequestFundID']) ? "success" : "failed";
             $autoOutPayment[1] = $response;
         }
 

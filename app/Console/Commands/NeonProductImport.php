@@ -121,7 +121,7 @@ class NeonProductImport extends Command {
                             $productdata['ProductId']   = $ProductResponse->productId;
                             $productdata['Name']        = $ProductResponse->name;
                             $productdata['country']     = $ProductResponse->countryName;
-                            $productdata['prefixName']  = $ProductResponse->prefixName;
+                            $productdata['prefixName']  = str_replace(" ","",$ProductResponse->prefixName);
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
                             $productdata['FieldName']   = $FieldsProductID;
