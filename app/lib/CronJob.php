@@ -630,7 +630,7 @@ class CronJob extends \Eloquent {
             if($CheckServerUp){
                 $array = [];
                 foreach($CheckServerUp as $val){
-                    $Key = array_search($val->ServerIP,$Servers);
+                    $Key = array_search($val->ServerID,$Servers);
                     if($Key !== false)
                         $array[$Key] = json_decode(json_encode($val), true); 
                 }
