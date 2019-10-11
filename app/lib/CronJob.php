@@ -610,16 +610,12 @@ class CronJob extends \Eloquent {
 
     public static function GetNodesFromCronJob($CronJobID,$CompanyID,$Type){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
-        log::info('Type_Job'.$Type);
         if($Type == "CronJob"){
             $Nodes = json_decode($Cron->Settings,true);
         }else{
-            log::info('Jobss'.$Type);
             $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
-            log::info('Company_Data_1'.print_r($NodesFromCompany,true));
             if($NodesFromCompany){
                 $Nodes = json_decode($NodesFromCompany->Value,true);
-                log::info('Company_Data'.print_r($Type,true));
             }else{
                 $Nodes['Nodes'] = "";
             }   
