@@ -617,7 +617,7 @@ class CronJob extends \Eloquent {
             if($NodesFromCompany){
                 $Nodes = json_decode($NodesFromCompany->Value,true);
             }else{
-                $Nodes['Nodes'] = "";
+                $Nodes = [];
             }   
         }
         $Servers = [];
