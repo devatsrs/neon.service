@@ -23,7 +23,7 @@ class Nodes extends \Eloquent{
     public static $rules = array(
         'ServerName' =>      'required|unique:tblNode',
         'ServerIP' =>      'required|unique:tblNode',
-        'Username' =>      'required|unique:tblNode',
+        'Username' =>      'required',
     );
 
     public static function getActiveNodes(){
@@ -33,12 +33,10 @@ class Nodes extends \Eloquent{
 
     public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID,$Type){
         $Nodes = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID,$Type);
+
         if($Nodes){
             foreach($Nodes as $val){
-                if(self::MatchCronJobNodeWithCurrentServer($val['ServerIP'])){
-                    Log::info('server node name '. $val['ServerIP']);
-                    return $val['ServerIP'];
-                }elseif(self::MatchCronJobNodeWithCurrentServer($val['LocalIP'])){
+                if(self::MatchCronJobNodeWithCurrentServer($val['LocalIP'])){
                     Log::info('local node name '. $val['LocalIP']);
                     return $val['LocalIP'];
                 }
@@ -48,8 +46,7 @@ class Nodes extends \Eloquent{
     }
 
     public static function MatchCronJobNodeWithCurrentServer($NodeIp){
-        $host= gethostname();
-        $CurrentIp = gethostbyname($host);
+        $CurrentIp = $host = gethostname();
         if($NodeIp == $CurrentIp){
             return true;
         }else{
