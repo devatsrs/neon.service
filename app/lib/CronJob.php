@@ -626,19 +626,30 @@ class CronJob extends \Eloquent {
         } 
 		
 		if(!empty($Servers)){
-            $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerID' , $Servers)->get();
-            if($CheckServerUp){
-                $array = [];
-                foreach($CheckServerUp as $val){
-                    $Key = array_search($val->ServerID,$Servers);
-                    if($Key !== false)
-                        $array[$Key] = json_decode(json_encode($val), true); 
-                }
-                ksort($array);
-                return $array;
-            }else{
-                return false;
+
+            foreach($Servers as $server){
+                $Node = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0','ServerID' => $server])->first();
+                if($Node){
+                    $Node = json_decode($Node,true);
+                    log::info('Node Name' . $Node['ServerName']);
+                    return $Node['LocalIP'];
+                }else{
+                    return false;
+                } 
             }
+            // $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerID' , $Servers)->get();
+            // if($CheckServerUp){
+            //     $array = [];
+            //     foreach($CheckServerUp as $val){
+            //         $Key = array_search($val->ServerID,$Servers);
+            //         if($Key !== false)
+            //             $array[$Key] = json_decode(json_encode($val), true); 
+            //     }
+            //     ksort($array);
+            //     return $array;
+            // }else{
+            //     return false;
+            // }
         }else{
             return false;
         }
