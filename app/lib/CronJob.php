@@ -250,9 +250,11 @@ class CronJob extends \Eloquent {
             $data['LastRunTime'] = date('Y-m-d H:i:00');
         }
 
-        $CronJob->update($data);
+        //$CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['LastRunTime']."',1)");
         $data['NextRunTime'] = CronJob::calcNextTimeRun($CronJob->CronJobID);
-        $CronJob->update($data);
+       // $CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['NextRunTime']."',0)");
     }
 
     public static function checkStatus($CronJobID,$Command){
@@ -626,19 +628,16 @@ class CronJob extends \Eloquent {
         } 
 		
 		if(!empty($Servers)){
-            $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerID' , $Servers)->get();
-            if($CheckServerUp){
-                $array = [];
-                foreach($CheckServerUp as $val){
-                    $Key = array_search($val->ServerID,$Servers);
-                    if($Key !== false)
-                        $array[$Key] = json_decode(json_encode($val), true); 
-                }
-                ksort($array);
-                return $array;
-            }else{
-                return false;
+
+            foreach($Servers as $server){
+                $Node = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0','ServerID' => $server])->first();
+                if($Node){
+                    $Node = json_decode($Node,true);
+                    log::info('Node Name' . $Node['ServerName']);
+                    return $Node['LocalIP'];
+                } 
             }
+            return false;
         }else{
             return false;
         }

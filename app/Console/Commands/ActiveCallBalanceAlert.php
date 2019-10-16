@@ -65,9 +65,16 @@ class ActiveCallBalanceAlert extends Command {
         $CompanyID = $arguments['CompanyID'];
         $MainCronJobID = $arguments['CronJobID'];
         $MainCronJob = CronJob::find($MainCronJobID);
-        CronJob::activateCronJob($MainCronJob);
+        //CronJob::activateCronJob($MainCronJob);
+
+        $getmypid = getmypid();
+        $LastRunTime = date('Y-m-d H:i:00');
+        $ActiveCronJobQuery="CALL prc_ActivateCronJob(".$MainCronJobID.",1,'".$getmypid."','".$LastRunTime."')";
+        DB::select($ActiveCronJobQuery);
+
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($MainCronJob,$processID);
+        //CompanyGateway::updateProcessID($MainCronJob,$processID);
+        DB::select("CALL prc_updateProcessID(".$MainCronJobID.",'".$processID."')");
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
@@ -180,7 +187,9 @@ class ActiveCallBalanceAlert extends Command {
 
         CronJobLog::createLog($MainCronJobID,$joblogdata);
 
-        CronJob::deactivateCronJob($MainCronJob);
+       // CronJob::deactivateCronJob($MainCronJob);
+
+        DB::select("CALL prc_DeactivateCronJob(".$MainCronJobID.")");
 
         if(!empty($Maincronsetting['SuccessEmail']) && $Error==0){
             $result = CronJob::CronJobSuccessEmailSend($MainCronJobID);
