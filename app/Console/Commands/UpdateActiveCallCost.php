@@ -74,7 +74,8 @@ class UpdateActiveCallCost extends Command {
 		DB::select($ActiveCronJobQuery);
 
 		$processID = CompanyGateway::getProcessID();
-		CompanyGateway::updateProcessID($CronJob,$processID);
+		//CompanyGateway::updateProcessID($CronJob,$processID);
+		DB::select("CALL prc_updateProcessID(".$CronJobID.",'".$processID."')");
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error='';
 		$errors = array();

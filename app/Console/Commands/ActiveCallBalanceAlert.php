@@ -73,7 +73,8 @@ class ActiveCallBalanceAlert extends Command {
         DB::select($ActiveCronJobQuery);
 
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($MainCronJob,$processID);
+        //CompanyGateway::updateProcessID($MainCronJob,$processID);
+        DB::select("CALL prc_updateProcessID(".$MainCronJobID.",'".$processID."')");
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
