@@ -77,8 +77,6 @@ class RoutingEngineData extends Command {
 
         try{
 
-            CronJob::createLog($CronJobID);
-
             //Start Transaction
             DB::beginTransaction();
             DB::connection('neon_routingengine')->beginTransaction();
@@ -96,6 +94,9 @@ class RoutingEngineData extends Command {
             CronJob::CronJobSuccessEmailSend($CronJobID);
             
         }catch (\Exception $e){
+
+                DB::connection('neon_routingengine')->rollback();
+                DB::rollback();
 
                 Log::error($e);
                 $this->info('Failed:' . $e->getMessage());
