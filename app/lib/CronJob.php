@@ -250,9 +250,11 @@ class CronJob extends \Eloquent {
             $data['LastRunTime'] = date('Y-m-d H:i:00');
         }
 
-        $CronJob->update($data);
+        //$CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['LastRunTime']."',1)");
         $data['NextRunTime'] = CronJob::calcNextTimeRun($CronJob->CronJobID);
-        $CronJob->update($data);
+       // $CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['NextRunTime']."',0)");
     }
 
     public static function checkStatus($CronJobID,$Command){
