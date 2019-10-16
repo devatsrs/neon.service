@@ -36,9 +36,7 @@ class Nodes extends \Eloquent{
         if($Node){
             if(self::MatchCronJobNodeWithCurrentServer($Node)){
                 Log::info('local node ip '. $Node);
-                return $Node;
-            }else{
-                return false;
+                return true;
             }
         }
         return false;		
