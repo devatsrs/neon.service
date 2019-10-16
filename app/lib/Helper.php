@@ -22,6 +22,12 @@ class Helper
             $status = SiteIntegration::SendMail($view, $data, $companyID, $body);
         } else {
             $config = Company::select('SMTPServer', 'SMTPUsername', 'CompanyName', 'SMTPPassword', 'Port', 'IsSSL', 'EmailFrom')->where("CompanyID", '=', $companyID)->first();
+
+            if($config != false && empty($config->SMTPUsername) && Reseller::IsResellerByCompanyID($companyID) > 0){
+                $ParentCompanyID = Reseller::getCompanyIDByChildCompanyID($companyID);
+                $config = Company::select('SMTPServer', 'SMTPUsername', 'CompanyName', 'SMTPPassword', 'Port', 'IsSSL', 'EmailFrom')->where("CompanyID", '=', $ParentCompanyID)->first();
+            }
+
             $status = PHPMAILERIntegtration::SendMail($view, $data, $config, $companyID, $body);
         }
 
