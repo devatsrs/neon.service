@@ -62,16 +62,10 @@ class APIBalanceUpdate extends Command {
 		$CronJobID = $arguments["CronJobID"];
 
 		$CronJob =  CronJob::find($CronJobID);
-		//CronJob::activateCronJob($CronJob);
-
-		$getmypid = getmypid();
-		$LastRunTime = date('Y-m-d H:i:00');
-		DB::select("CALL prc_ActivateCronJob(".$CronJobID.",1,'".$getmypid."','".$LastRunTime."')");
+		CronJob::activateCronJob($CronJob);
 
 		$processID = CompanyGateway::getProcessID();
-		//CompanyGateway::updateProcessID($CronJob,$processID);
-
-		DB::select("CALL prc_updateProcessID(".$CronJobID.",'".$processID."')");
+		CompanyGateway::updateProcessID($CronJob,$processID);
 
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error='';
@@ -110,14 +104,9 @@ class APIBalanceUpdate extends Command {
 				Log::error("**Email Sent message " . $result['message']);
 			}
 
-
 		}
 
-		//CronJob::deactivateCronJob($CronJob);
-
-		DB::select("CALL prc_DeactivateCronJob(".$CronJob->CronJobID.")");
-
-
+		CronJob::deactivateCronJob($CronJob);
 
 		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
