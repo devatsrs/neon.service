@@ -32,22 +32,20 @@ class Nodes extends \Eloquent{
     }
 
     public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID,$Type){
-        $Node = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID,$Type);
-        if($Node){
-            if(self::MatchCronJobNodeWithCurrentServer($Node)){
-                Log::info('local node ip '. $Node);
-                return $Node;
-            }else{
-                return false;
+        $NodeLocalIP = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID,$Type);
+        if(!empty($NodeLocalIP)){
+            if(self::MatchCronJobNodeWithCurrentServer($NodeLocalIP)){
+                Log::info('local node ip '. $NodeLocalIP);
+                return true;
             }
         }
         return false;		
     }
 
-    public static function MatchCronJobNodeWithCurrentServer($NodeIp){
-        $CurrentIp =  getenv("SERVER_LOCAL_IP");
-        log::info('env local ip' . $CurrentIp);
-        if($NodeIp == $CurrentIp){
+    public static function MatchCronJobNodeWithCurrentServer($NodeLocalIP){
+        $CurrentServerIp =  getenv("SERVER_LOCAL_IP");
+        log::info('env local ip' . $CurrentServerIp);
+        if($NodeLocalIP === $CurrentServerIp){
             return true;
         }else{
             return false;

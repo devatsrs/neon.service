@@ -619,7 +619,7 @@ class CronJob extends \Eloquent {
 
     public static function GetNodesFromCronJob($CronJobID,$CompanyID,$Type){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
-        if($Type == "CronJob"){
+        if($Type == Nodes::CRONJOB){
             $Nodes = json_decode($Cron->Settings,true);
         }else{
             $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
@@ -629,15 +629,11 @@ class CronJob extends \Eloquent {
                 $Nodes = [];
             }   
         }
-        $Servers = [];
-        if(isset($Nodes['Nodes']) && !empty($Nodes['Nodes'])){
-            $Servers = $Nodes['Nodes'];
-        } 
-		
-		if(!empty($Servers)){
 
-            foreach($Servers as $server){
-                $Node = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0','ServerID' => $server])->first();
+		if(!empty($Nodes)){
+
+            foreach($Nodes as $ServerID){
+                $Node = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0','ServerID' => $ServerID])->first();
                 if($Node){
                     $Node = json_decode($Node,true);
                     log::info('Node Name' . $Node['ServerName']);

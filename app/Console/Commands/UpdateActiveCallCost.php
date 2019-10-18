@@ -66,16 +66,11 @@ class UpdateActiveCallCost extends Command {
 		$CronJobID = $arguments["CronJobID"];
 
 		$CronJob =  CronJob::find($CronJobID);
-		//CronJob::activateCronJob($CronJob);
-
-		$getmypid = getmypid();
-		$LastRunTime = date('Y-m-d H:i:00');
-		$ActiveCronJobQuery="CALL prc_ActivateCronJob(".$CronJobID.",1,'".$getmypid."','".$LastRunTime."')";
-		DB::select($ActiveCronJobQuery);
+		CronJob::activateCronJob($CronJob);
 
 		$processID = CompanyGateway::getProcessID();
-		//CompanyGateway::updateProcessID($CronJob,$processID);
-		DB::select("CALL prc_updateProcessID(".$CronJobID.",'".$processID."')");
+		CompanyGateway::updateProcessID($CronJob,$processID);
+
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error='';
 		$errors = array();
@@ -116,7 +111,8 @@ class UpdateActiveCallCost extends Command {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 			}
 
-			CronJobLog::insert($joblogdata);
+			//CronJobLog::insert($joblogdata);
+			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".$joblogdata['CronJobStatus'].",'".date('Y-m-d H:i:s')."','RMScheduler','".$joblogdata['Message']."')");
 
 
 		}catch (\Exception $e){
@@ -126,7 +122,10 @@ class UpdateActiveCallCost extends Command {
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['Message'] ='Error:'.$e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-			CronJobLog::insert($joblogdata);
+			//CronJobLog::insert($joblogdata);
+
+			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".CronJob::CRON_FAIL.",'".date('Y-m-d H:i:s')."','RMScheduler','".$joblogdata['Message']."')");
+
 			if(!empty($cronsetting['ErrorEmail'])) {
 
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
@@ -140,9 +139,7 @@ class UpdateActiveCallCost extends Command {
 		/*$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
 		$CronJob->update($dataactive);*/
-		//CronJob::deactivateCronJob($CronJob);
-
-		DB::select("CALL prc_DeactivateCronJob(".$CronJob->CronJobID.")");
+		CronJob::deactivateCronJob($CronJob);
 
 		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);

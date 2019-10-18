@@ -1,5 +1,6 @@
 <?php
 namespace App\Lib;
+use Illuminate\Support\Facades\DB;
 class CronJobLog extends \Eloquent {
 	protected $fillable = [];
     protected $guarded = array('CronJobLogID');
@@ -17,6 +18,15 @@ class CronJobLog extends \Eloquent {
         if(empty($joblogdatafinal['CronJobStatus'])){
             $joblogdatafinal['CronJobStatus'] = CronJob::CRON_SUCCESS;
         }
-        CronJobLog::insert($joblogdatafinal);
+       // CronJobLog::insert($joblogdatafinal);
+
+        if(empty($joblogdatafinal['Message'])){
+            $joblogdatafinal['Message'] = '';
+        }
+
+        DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".$joblogdatafinal['CronJobStatus'].",'".$joblogdatafinal['created_at']."','RMScheduler','".$joblogdatafinal['Message']."')");
+
+
+
     }
 }
