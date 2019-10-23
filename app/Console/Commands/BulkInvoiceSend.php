@@ -81,13 +81,15 @@ class BulkInvoiceSend extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobdata = array();
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/bulkinvoicesend-'.$JobID.'-'.date('Y-m-d').'.log');
 	try {
+        $ProcessID = Uuid::generate();
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $Company = Company::find($CompanyID);
         $WEBURL = CompanyConfiguration::getValueConfigurationByKey($CompanyID,'WEB_URL');
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');

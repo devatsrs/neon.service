@@ -72,8 +72,7 @@ class TranslationsImport extends Command
         $getmypid = getmypid();
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = CompanyGateway::getProcessID();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);
+
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
@@ -84,6 +83,8 @@ class TranslationsImport extends Command
         Log::useFiles(storage_path() . '/logs/translationsimport-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
+            $ProcessID = CompanyGateway::getProcessID();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);
             if (!empty($job)) {
                 Log::info("job find");
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();

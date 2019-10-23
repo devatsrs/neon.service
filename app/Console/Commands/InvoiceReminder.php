@@ -73,14 +73,15 @@ class InvoiceReminder extends Command
         $getmypid = getmypid(); // get proccess id
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $CompanyID = $arguments["CompanyID"];
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $errors = array();
         $errorslog = array();
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (!empty($job)) {
                 $JobLoggedUser = User::find($job->JobLoggedUserID);
                 $joboptions = json_decode($job->Options);

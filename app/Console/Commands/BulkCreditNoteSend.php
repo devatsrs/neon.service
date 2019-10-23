@@ -83,13 +83,16 @@ class BulkCreditNoteSend extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobdata = array();
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/bulkcreditnotesend-'.$JobID.'-'.date('Y-m-d').'.log');
 	try {
+
+        $ProcessID = Uuid::generate();
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $Company = Company::find($CompanyID);
         //$CreditNoteCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
         if(!empty($job)){

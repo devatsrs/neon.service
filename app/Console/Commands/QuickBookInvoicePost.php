@@ -79,13 +79,12 @@ class QuickBookInvoicePost extends Command {
 
         $job = Job::find($JobID);
         $joboptions = json_decode($job->Options);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
         Log::useFiles(storage_path() . '/logs/quickbookinvoicepost-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
 
         try {
-
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (isset($joboptions->InvoiceIDs)) {
 
                 $QuickBooks = new BillingAPI($CompanyID);
