@@ -281,6 +281,25 @@ class CompanyGateway extends \Eloquent {
         CompanyConfiguration::where(['CompanyID'=>$CompanyID,'Key'=>'VOS_UniqueID_'.$CompanyGatewayID])->update(array('Value'=>$UniqueID));
     }
 
+    public static function getHuaweiCallID($CompanyID,$CompanyGatewayID){
+        $UniqueID = (int)CompanyConfiguration::getValueConfigurationByKey($CompanyID,'HUAWEI_UniqueID_'.$CompanyGatewayID);
+        if($UniqueID == 0){
+            $CompanyConfiguration['CompanyID'] = $CompanyID;
+            $CompanyConfiguration['Key'] = 'HUAWEI_UniqueID_'.$CompanyGatewayID;
+            $UniqueID = (int)DB::connection('sqlsrvcdr')->table('tblUCall')->max('UID');
+            if($UniqueID == 0){
+                $CompanyConfiguration['Value'] = $UniqueID =  1;
+            }else{
+                $CompanyConfiguration['Value'] = $UniqueID+1 ;
+            }
+            CompanyConfiguration::insert($CompanyConfiguration);
+        }
+        return $UniqueID;
+    }
+    public static function setHuaweiCallID($CompanyID,$CompanyGatewayID,$UniqueID){
+        CompanyConfiguration::where(['CompanyID'=>$CompanyID,'Key'=>'HUAWEI_UniqueID_'.$CompanyGatewayID])->update(array('Value'=>$UniqueID));
+    }
+
     /** function not in use*/
     public static function CreateTempLinkTable($CompanyID,$CompanyGatewayID,$extra_prefix=''){
 
