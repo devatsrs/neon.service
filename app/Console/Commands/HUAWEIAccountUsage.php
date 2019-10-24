@@ -77,8 +77,6 @@ class HUAWEIAccountUsage extends Command
 
         $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
-        Log::info('CronJobID'.$CronJobID);
-        Log::info('CompanyID'.$CompanyID);
         $CronJob = CronJob::find($CronJobID);
         $cronsetting = json_decode($CronJob->Settings, true);
         if(isset($cronsetting['FilesMaxProccess']) && $cronsetting['FilesMaxProccess'] > 0){
@@ -215,22 +213,12 @@ class HUAWEIAccountUsage extends Command
                                     $uddata['AccountName'] = $excelrow['9'];
                                     $uddata['AccountNumber'] = '';
                                     $uddata['AccountCLI'] = '';
+                                    $uddata['disconnect_time'] = $this->ConvertDateTime($excelrow['5']);
 
-                                    $tmpdiscontime = explode(" ",$excelrow['5']);
-                                    array_pop($tmpdiscontime);
-                                    $discontime = implode(" ",$tmpdiscontime);
-                                    $uddata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($discontime));
-                                    //if connect time not set then set as disconnect_time
-                                    if(!isset($excelrow['35']) || $excelrow['35'] == '')
-                                    {
-                                        $uddata['connect_time'] = date('Y-m-d H:i:s', strtotime($discontime));
-                                    }
-                                    else{
-                                        $tmpcontime = explode(" ",$excelrow['35']);
-                                        array_pop($tmpcontime);
-                                        $contime = implode(" ",$tmpcontime);
-                                        $uddata['connect_time'] = date('Y-m-d H:i:s', strtotime($contime));
-                                    }
+                                    //getting connect time using disconnect_time - duration
+                                    $tmpcontime = strtotime($uddata['disconnect_time']) - $excelrow['6'];
+                                    $uddata['connect_time'] = date('Y-m-d H:i:s',$tmpcontime);
+
                                     //$uddata['cost'] = (float)$excelrow['26'];
                                     $uddata['cost'] = 0;
                                     $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['22']);
@@ -246,7 +234,7 @@ class HUAWEIAccountUsage extends Command
                                     $uddata['ID'] = $CallID;
                                     $uddata['caller_address_nature'] = $excelrow['4'];
                                     $uddata['called_address_nature'] = $excelrow['8'];
-                                    $uddata['alert_time'] = $excelrow['36'];
+                                    $uddata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
                                     $uddata['trunk_group_in'] = $excelrow['9'];
                                     $uddata['trunk_group_out'] = $excelrow['11'];
                                     $uddata['caller_trunk_cic'] = $excelrow['10'];
@@ -287,29 +275,12 @@ class HUAWEIAccountUsage extends Command
                                     $vendorcdrdata['duration'] = $excelrow['6'];
                                     $vendorcdrdata['buying_cost'] = 0;
                                     $vendorcdrdata['selling_cost'] = '';
-                                    /*if(!isset($excelrow['35']) || $excelrow['35'] == '')
-                                    {
-                                        $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['5']));
-                                    }
-                                    else{
-                                        $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['35']));
-                                    }
-                                    $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['5']));*/
-                                    $tmpdiscontime = explode(" ",$excelrow['5']);
-                                    array_pop($tmpdiscontime);
-                                    $discontime = implode(" ",$tmpdiscontime);
-                                    $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($discontime));
-                                    //if connect time not set then set as disconnect_time
-                                    if(!isset($excelrow['35']) || $excelrow['35'] == '')
-                                    {
-                                        $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', strtotime($discontime));
-                                    }
-                                    else{
-                                        $tmpcontime = explode(" ",$excelrow['35']);
-                                        array_pop($tmpcontime);
-                                        $contime = implode(" ",$tmpcontime);
-                                        $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', strtotime($contime));
-                                    }
+                                    $vendorcdrdata['disconnect_time'] = $this->ConvertDateTime($excelrow['5']);
+
+                                    //getting connect time using disconnect_time - duration
+                                    $tmpcontime = strtotime($vendorcdrdata['disconnect_time']) - $excelrow['6'];
+                                    $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s',$tmpcontime);
+
                                     $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['22']);
                                     $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['3']);
                                     $vendorcdrdata['trunk'] = 'Other';
@@ -320,7 +291,7 @@ class HUAWEIAccountUsage extends Command
                                     $vendorcdrdata['ID'] = $CallID;
                                     $vendorcdrdata['caller_address_nature'] = $excelrow['4'];
                                     $vendorcdrdata['called_address_nature'] = $excelrow['8'];
-                                    $vendorcdrdata['alert_time'] = $excelrow['36'];
+                                    $vendorcdrdata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
                                     $vendorcdrdata['trunk_group_in'] = $excelrow['9'];
                                     $vendorcdrdata['trunk_group_out'] = $excelrow['11'];
                                     $vendorcdrdata['caller_trunk_cic'] = $excelrow['10'];
@@ -509,6 +480,21 @@ class HUAWEIAccountUsage extends Command
 
 
         CronHelper::after_cronrun($this->name, $this);
+
+    }
+
+    public function ConvertDateTime($date){
+
+        $tmpdiscontime = explode(" ",$date);
+        $ampm_var = $tmpdiscontime[2];
+        array_pop($tmpdiscontime);
+        $discontime = implode(" ",$tmpdiscontime);
+        $tmptime = date('Y-m-d H:i:s',strtotime($discontime));
+        $tmpbs = $tmptime ." ". $ampm_var;
+        $finaldatetime = date('Y-m-d H:i:s',strtotime($tmpbs));
+        //$con_time = strtotime($tmp) - 1800.0;
+        //echo $con_time = date('Y-m-d H:i:s',$con_time);
+        return $finaldatetime;
 
     }
 
