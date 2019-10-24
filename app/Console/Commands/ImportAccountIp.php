@@ -77,8 +77,7 @@ class ImportAccountIp extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = (string) Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobdata = array();
         $error = array();
         $CompanyID = $arguments["CompanyID"];
@@ -91,6 +90,9 @@ class ImportAccountIp extends Command {
         Log::useFiles(storage_path().'/logs/importaccountip-'.$JobID.'-'.date('Y-m-d').'.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
+            $ProcessID = (string) Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
             if (!empty($job)) {
                 if(!empty($job->Options)){
                     $importoptions = json_decode($job->Options,true);

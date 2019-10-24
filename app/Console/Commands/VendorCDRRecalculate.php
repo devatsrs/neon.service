@@ -65,15 +65,18 @@ class VendorCDRRecalculate extends Command {
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = CompanyGateway::getProcessID();
+
         $getmypid = getmypid();
         $skiped_account_data = array();
         $jobdata['updated_at'] = date('Y-m-d H:i:s');
         $jobdata['ModifiedBy'] = 'RMScheduler';
-        Job::JobStatusProcess($JobID,$ProcessID,$getmypid);
+
         $temptableName  = 'tblTempVendorCDR';
         Log::useFiles(storage_path().'/logs/vendorcdrrecal-'.$JobID.'-'.date('Y-m-d').'.log');
         try {
+            $ProcessID = CompanyGateway::getProcessID();
+            Job::JobStatusProcess($JobID,$ProcessID,$getmypid);
+
             Log::error(' ========================== vendor cdr transaction start =============================');
 
             $joboptions = json_decode($job->Options);

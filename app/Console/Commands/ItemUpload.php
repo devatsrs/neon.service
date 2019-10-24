@@ -80,8 +80,7 @@ class ItemUpload extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = (string) Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobdata = array();
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
@@ -96,6 +95,8 @@ class ItemUpload extends Command {
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
 
+            $ProcessID = (string) Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();

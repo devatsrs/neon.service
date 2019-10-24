@@ -71,12 +71,15 @@ class InvoiceUsageFileGenerator extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+
         $decimal_places = 2;
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $CompanyID = $arguments["CompanyID"];
 
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
             if (!empty($job)) {
 
                 $joboptions = json_decode($job->Options);

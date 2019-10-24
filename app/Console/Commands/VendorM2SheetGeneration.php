@@ -84,7 +84,7 @@ class VendorM2SheetGeneration extends Command {
         $CompanyID = $arguments["CompanyID"];
 
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
         $start_time = date('Y-m-d H:i:s');
@@ -93,6 +93,7 @@ class VendorM2SheetGeneration extends Command {
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         DB::beginTransaction();
         try{
+            $ProcessID = Uuid::generate();
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $tunkids = '';
             $file_path = '';

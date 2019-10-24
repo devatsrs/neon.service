@@ -70,8 +70,7 @@ class PaymentsUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $CompanyID = $arguments["CompanyID"];
         $where = ['CompanyId'=>$CompanyID];
         $user = User::find($job->JobLoggedUserID);
@@ -83,6 +82,8 @@ class PaymentsUpload extends Command
         $UPLOADPATH = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
         $TEMP_PATH =  CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
 

@@ -76,7 +76,7 @@ class CustomerMorSheet extends Command {
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
         Log::useFiles(storage_path().'/logs/morcustomersheet-'.$JobID.'-'.date('Y-m-d').'.log');
@@ -84,6 +84,7 @@ class CustomerMorSheet extends Command {
 
         DB::beginTransaction();
         try{
+            $ProcessID = Uuid::generate();
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
             $tunkids = '';

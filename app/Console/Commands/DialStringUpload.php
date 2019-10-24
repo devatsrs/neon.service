@@ -74,8 +74,7 @@ class DialStringUpload extends Command
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = (string) Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
@@ -87,6 +86,9 @@ class DialStringUpload extends Command
         Log::useFiles(storage_path() . '/logs/dialstringupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         try {
+
+            $ProcessID = (string) Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();

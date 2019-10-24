@@ -74,16 +74,18 @@ class CDRUpload extends Command
         $JobID = $arguments["JobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = CompanyGateway::getProcessID();
+
         $jobfile = JobFile::where(["JobID" => $JobID])->first();
         $temptableName  = 'tblTempUsageDetail';
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         Log::useFiles(storage_path() . '/logs/cdrupload-' . $JobID . '-' . date('Y-m-d') . '.log');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $error = array();
         $skipped_cli = array();
         $active_cli = array();
         try {
+            $ProcessID = CompanyGateway::getProcessID();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $joboptions = json_decode($job->Options);
             //print_r($joboptions);exit;//CheckCustomerCLI,RateCDR
             $CompanyGatewayID = $joboptions->CompanyGatewayID;

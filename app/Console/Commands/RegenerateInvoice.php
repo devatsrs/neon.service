@@ -80,13 +80,13 @@ class RegenerateInvoice extends Command {
         $InvoiceCopyEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
         $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
 
         Log::useFiles(storage_path() . '/logs/regenerateinvoice-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
 
         try {
-
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (isset($joboptions->InvoiceIDs)) {
 
                 $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);

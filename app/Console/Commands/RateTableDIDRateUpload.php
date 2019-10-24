@@ -79,8 +79,7 @@ class RateTableDIDRateUpload extends Command
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
         $p_UserName = $job->CreatedBy;
-        $ProcessID = CompanyGateway::getProcessID();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 1000;
         $counter = 0;
@@ -91,6 +90,8 @@ class RateTableDIDRateUpload extends Command
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $error = array();
         try {
+            $ProcessID = CompanyGateway::getProcessID();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();
