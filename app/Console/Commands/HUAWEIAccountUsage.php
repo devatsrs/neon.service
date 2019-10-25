@@ -234,18 +234,24 @@ class HUAWEIAccountUsage extends Command
                                     $uddata['ID'] = $CallID;
                                     $uddata['caller_address_nature'] = $excelrow['4'];
                                     $uddata['called_address_nature'] = $excelrow['8'];
-                                    $uddata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    if(isset($excelrow['36']) && $excelrow['36'] !=''){
+                                        $uddata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    }
+                                    else{
+                                        $uddata['alert_time'] = '';
+                                    }
                                     $uddata['trunk_group_in'] = $excelrow['9'];
                                     $uddata['trunk_group_out'] = $excelrow['11'];
                                     $uddata['caller_trunk_cic'] = $excelrow['10'];
                                     $uddata['called_trunk_cic'] = $excelrow['12'];
-                                    $uddata['connected_number'] = $excelrow['25'];
+                                    $uddata['connected_number'] = $excelrow['7'];
                                     $uddata['connected_address_nature'] = $excelrow['26'];
                                     $uddata['caller_call_id'] = $excelrow['33'];
                                     $uddata['called_call_id'] = $excelrow['34'];
                                     $uddata['global_call_ref'] = $excelrow['20'];
                                     $uddata['connection_id'] = $excelrow['13'];
                                     $uddata['audio_codec_type'] = $excelrow['37'];
+                                    $uddata['terminating_code'] = $excelrow['17'];
                                     $uddata['FileName'] = $filename;
 
                                     $InserData[] = $uddata;
@@ -291,18 +297,25 @@ class HUAWEIAccountUsage extends Command
                                     $vendorcdrdata['ID'] = $CallID;
                                     $vendorcdrdata['caller_address_nature'] = $excelrow['4'];
                                     $vendorcdrdata['called_address_nature'] = $excelrow['8'];
-                                    $vendorcdrdata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    if(isset($excelrow['36']) && $excelrow['36'] !=''){
+                                        $vendorcdrdata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    }
+                                    else{
+                                        $vendorcdrdata['alert_time'] = '';
+                                    }
+
                                     $vendorcdrdata['trunk_group_in'] = $excelrow['9'];
                                     $vendorcdrdata['trunk_group_out'] = $excelrow['11'];
                                     $vendorcdrdata['caller_trunk_cic'] = $excelrow['10'];
                                     $vendorcdrdata['called_trunk_cic'] = $excelrow['12'];
-                                    $vendorcdrdata['connected_number'] = $excelrow['25'];
+                                    $vendorcdrdata['connected_number'] = $excelrow['7'];
                                     $vendorcdrdata['connected_address_nature'] = $excelrow['26'];
                                     $vendorcdrdata['caller_call_id'] = $excelrow['33'];
                                     $vendorcdrdata['called_call_id'] = $excelrow['34'];
                                     $vendorcdrdata['global_call_ref'] = $excelrow['20'];
                                     $vendorcdrdata['connection_id'] = $excelrow['13'];
                                     $vendorcdrdata['audio_codec_type'] = $excelrow['37'];
+                                    $vendorcdrdata['terminating_code'] = $excelrow['17'];
                                     $vendorcdrdata['FileName'] = $filename;
 
                                     $InserVData[] = $vendorcdrdata;
