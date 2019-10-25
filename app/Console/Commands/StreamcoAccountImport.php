@@ -68,9 +68,10 @@ class StreamcoAccountImport extends Command {
         $CompanyGatewayID = $cronsetting['CompanyGatewayID'];
         Log::useFiles(storage_path() . '/logs/streamcoaccountimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
+
 
         try {
+            $processID = CompanyGateway::getProcessID();
             Log::error(' ========================== streamco transaction start =============================');
             CronJob::createLog($CronJobID);
 

@@ -95,13 +95,14 @@ class CustomerRateFileProcess extends Command {
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
 		$FileLocationTo =  $cronsetting['FileLocation']; //'/home/temp/test_files_generation_to' ; //
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
+
 		$joblogdata['Message'] = '';
 		$delete_files = array();
 
 		Log::useFiles(storage_path() . '/logs/customerratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$processID = CompanyGateway::getProcessID();
 			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,"customer");
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");

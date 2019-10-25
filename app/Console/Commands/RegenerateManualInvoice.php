@@ -73,11 +73,12 @@ class RegenerateManualInvoice extends Command {
         $InvoiceCopyEmail = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);
         $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
-        $ProcessID = Uuid::generate();
+
         $InvoiceIDs = '11975,9802';
         Log::useFiles(storage_path() . '/logs/remanualinvoice-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
         try {
+            $ProcessID = Uuid::generate();
 
             if (isset($InvoiceIDs)) {
 

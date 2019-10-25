@@ -78,10 +78,12 @@ class MORAccountUsage extends Command {
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
         //$tempLinkPrefix =  CompanyGateway::CreateTempLinkTable($CompanyID,$CompanyGatewayID);
         $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         try {
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
+
             Log::error(' ========================== mor transaction start =============================');
             CronJob::createLog($CronJobID);
 

@@ -107,8 +107,7 @@ class FTPAccountUsage extends Command
 
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -121,6 +120,10 @@ class FTPAccountUsage extends Command
         Log::useFiles(storage_path() . '/logs/ftpaccountusage-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
         $FTP_LOCATION =  FTPGateway::getFileLocation($CompanyID);
         try {
+
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
+
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
             /** get process file make them pending*/

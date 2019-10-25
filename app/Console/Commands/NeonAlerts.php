@@ -62,9 +62,9 @@ class NeonAlerts extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/neonalerts-' . $CronJobID . '-' . date('Y-m-d') . '.log');
-        $ProcessID = CompanyGateway::getProcessID();
-        try {
 
+        try {
+            $ProcessID = CompanyGateway::getProcessID();
 
             $Companies = Company::where('Status',1)->get();
             $cronjobdata = [];

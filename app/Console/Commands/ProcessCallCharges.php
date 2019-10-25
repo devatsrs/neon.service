@@ -76,8 +76,9 @@ class ProcessCallCharges extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/processcallcharges-' . $CronJobID . '-' . date('Y-m-d') . '.log');
-        $ProcessID = CompanyGateway::getProcessID();
+
         try {
+            $ProcessID = CompanyGateway::getProcessID();
             $cronjobdata=array();
 
             $BillingClassCount = BillingClass::where(['DeductCallChargeInAdvance'=>1])->count();

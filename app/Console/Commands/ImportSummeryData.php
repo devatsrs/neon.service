@@ -53,11 +53,12 @@ class ImportSummeryData extends Command {
             '67.228.185.54' => 'SIPPY-CDR-67.228.185.54.csv',
             '85.13.206.74'  => 'SIPPY-CDR-85.13.206.74.csv',
         ];
-        $ProcessID = Uuid::generate();
+
 
         Log::useFiles(storage_path() . '/logs/impotySummeryData-' . date('Y-m-d') . '.log');
 
         try {
+            $ProcessID = Uuid::generate();
             foreach ($filenames as $IP => $filename) {
 
 

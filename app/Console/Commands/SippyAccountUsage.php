@@ -98,8 +98,7 @@ class SippyAccountUsage extends Command
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -112,6 +111,8 @@ class SippyAccountUsage extends Command
 
         $SIPPYFILE_LOCATION = CompanyConfiguration::get($CompanyID,'SIPPYFILE_LOCATION');
         try {
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
             /** get process file make them pending*/

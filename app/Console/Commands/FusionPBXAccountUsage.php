@@ -76,10 +76,12 @@ class FusionPBXAccountUsage extends Command {
         $temptableName = CompanyGateway::CreateIfNotExistCDRTempUsageDetailTable($CompanyID,$CompanyGatewayID);
 
         $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         try {
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
+
             Log::error(' ========================== Fusion PBX transaction start =============================');
             CronJob::createLog($CronJobID);
 
