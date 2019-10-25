@@ -83,13 +83,15 @@ class BulkDisputeSend extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobdata = array();
         $errorslog = array();
         $CompanyID = $arguments["CompanyID"];
         Log::useFiles(storage_path().'/logs/bulkdisputesend-'.$JobID.'-'.date('Y-m-d').'.log');
 	try {
+        $ProcessID = Uuid::generate();
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $Company = Company::find($CompanyID);
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
         $InvoiceCopyEmail_main = Notification::getNotificationMail(['CompanyID'=>$CompanyID,'NotificationType'=>Notification::InvoiceCopy]);

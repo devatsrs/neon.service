@@ -81,8 +81,7 @@ class VendorRateUpload extends Command
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
         $p_UserName = $job->CreatedBy;
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
+
         $CompanyID = $arguments["CompanyID"];
         $bacth_insert_limit = 250;
         $counter = 0;
@@ -94,6 +93,8 @@ class VendorRateUpload extends Command
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $error = array();
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
 
             if (!empty($job)) {
                 $jobfile = JobFile::where(['JobID' => $JobID])->first();

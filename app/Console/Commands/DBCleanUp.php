@@ -70,13 +70,14 @@ class DBCleanUp extends Command {
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
 		$CronJob->update($dataactive);*/
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
-		CompanyGateway::updateProcessID($CronJob,$processID);
+
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error = '';
 
 
 		try{
+			$processID = CompanyGateway::getProcessID();
+			CompanyGateway::updateProcessID($CronJob,$processID);
 
 			$joblogdata = array();
 			$joblogdata['CronJobID'] = $CronJobID;

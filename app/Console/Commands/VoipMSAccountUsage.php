@@ -92,10 +92,12 @@ class VoipMSAccountUsage extends Command {
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
         $joblogdata['created_by'] = 'RMScheduler';
         $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $accounts = array();
         try {
+
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
 
             Log::error(' ========================== voipms transaction start =============================');
             CronJob::createLog($CronJobID);

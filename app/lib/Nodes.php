@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\View;
 
 class Nodes extends \Eloquent{
 
+
+    Const JOB = "Job";
+    Const CRONJOB = "CronJob";
+
 	//protected $fillable = ["NoteID","CompanyID","AccountID","Title","Note","created_at","updated_at","created_by","updated_by" ];
 
     protected $guarded = array();
@@ -19,7 +23,7 @@ class Nodes extends \Eloquent{
     public static $rules = array(
         'ServerName' =>      'required|unique:tblNode',
         'ServerIP' =>      'required|unique:tblNode',
-        'Username' =>      'required|unique:tblNode',
+        'Username' =>      'required',
     );
 
     public static function getActiveNodes(){
@@ -27,26 +31,21 @@ class Nodes extends \Eloquent{
         return $Nodes;
     }
 
-    public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID){
-        $Nodes = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID);
-        if($Nodes){
-            foreach($Nodes as $val){
-                if(self::MatchCronJobNodeWithCurrentServer($val['ServerIP'])){
-                    Log::info('server node name '. $val['ServerIP']);
-                    return $val['ServerIP'];
-                }elseif(self::MatchCronJobNodeWithCurrentServer($val['LocalIP'])){
-                    Log::info('local node name '. $val['LocalIP']);
-                    return $val['LocalIP'];
-                }
+    public static function GetActiveNodeFromCronjobNodes($CronJobID,$CompanyID,$Type){
+        $NodeLocalIP = CronJob::GetNodesFromCronJob($CronJobID,$CompanyID,$Type);
+        if(!empty($NodeLocalIP)){
+            if(self::MatchCronJobNodeWithCurrentServer($NodeLocalIP)){
+                Log::info('local node ip '. $NodeLocalIP);
+                return true;
             }
         }
         return false;		
     }
 
-    public static function MatchCronJobNodeWithCurrentServer($NodeIp){
-        $host= gethostname();
-        $CurrentIp = gethostbyname($host);
-        if($NodeIp == $CurrentIp){
+    public static function MatchCronJobNodeWithCurrentServer($NodeLocalIP){
+        $CurrentServerIp =  getenv("SERVER_LOCAL_IP");
+        log::info('env local ip' . $CurrentServerIp);
+        if($NodeLocalIP === $CurrentServerIp){
             return true;
         }else{
             return false;

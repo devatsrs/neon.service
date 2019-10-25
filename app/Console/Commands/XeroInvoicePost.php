@@ -80,12 +80,13 @@ class XeroInvoicePost extends Command {
 
         $job = Job::find($JobID);
         $joboptions = json_decode($job->Options);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
 
         Log::useFiles(storage_path() . '/logs/xeroinvoicepost-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
 
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
 
             if (isset($joboptions->InvoiceIDs)) {
 

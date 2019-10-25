@@ -250,9 +250,11 @@ class CronJob extends \Eloquent {
             $data['LastRunTime'] = date('Y-m-d H:i:00');
         }
 
-        $CronJob->update($data);
+        //$CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['LastRunTime']."',1)");
         $data['NextRunTime'] = CronJob::calcNextTimeRun($CronJob->CronJobID);
-        $CronJob->update($data);
+       // $CronJob->update($data);
+        DB::select("CALL prc_CreateLog(".$CronJobID.",'".$data['NextRunTime']."',0)");
     }
 
     public static function checkStatus($CronJobID,$Command){
@@ -572,20 +574,27 @@ class CronJob extends \Eloquent {
         }
     }
     public static function activateCronJob($CronJob){
-        $getmypid = getmypid(); // get proccess id
+/*        $getmypid = getmypid(); // get proccess id
         $dataactive['Active'] = 1;
         $dataactive['PID'] = $getmypid;
         $dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-        $CronJob->update($dataactive);
+        $CronJob->update($dataactive);*/
+
+        DB::select("CALL prc_ActivateCronJob(".$CronJob->CronJobID.",1,'".getmypid()."','".date('Y-m-d H:i:00')."')");
+
 
     }
-    public static function deactivateCronJob($CronJob1){
-        $CronJob=CronJob::find($CronJob1->CronJobID);
+    public static function deactivateCronJob($CronJob){
+
+        /*$CronJob=CronJob::find($CronJob->CronJobID);
         $dataactive['PID'] = '';
         $dataactive['Active'] = 0;
         $dataactive['ProcessID'] = '';
         $dataactive['MysqlPID'] = '';
-        $CronJob->update($dataactive);
+        $CronJob->update($dataactive);*/
+
+        DB::select("CALL prc_DeactivateCronJob(".$CronJob->CronJobID.")");
+
     }
 
     // check sippy and vos download cronjob is active or not
@@ -608,24 +617,30 @@ class CronJob extends \Eloquent {
         return false;
     }
 
-    public static function GetNodesFromCronJob($CronJobID,$CompanyID){
+    public static function GetNodesFromCronJob($CronJobID,$CompanyID,$Type){
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
-        $Nodes = json_decode($Cron->Settings,true);
-        $Servers = [];
-        if(isset($Nodes['Nodes']) && !empty($Nodes['Nodes'])){
-            $Servers = $Nodes['Nodes'];
-        } 
-		
-		if(!empty($Servers)){
-            $CheckServerUp = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0'])->whereIn('ServerIP' , $Servers)->get();
-            $array = [];
-            foreach($CheckServerUp as $val){
-                $Key = array_search($val->ServerIP,$Servers);
-                if($Key !== false)
-					$array[$Key] = json_decode(json_encode($val), true); 
-			}
-			ksort($array);
-            return $array;
+        if($Type == Nodes::CRONJOB){
+            $Nodes = json_decode($Cron->Settings,true);
+        }else{
+            $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
+            if($NodesFromCompany){
+                $Nodes = json_decode($NodesFromCompany->Value,true);
+            }else{
+                $Nodes = [];
+            }   
+        }
+
+		if(!empty($Nodes)){
+
+            foreach($Nodes as $ServerID){
+                $Node = Nodes::where(['ServerStatus' => '1', 'MaintananceStatus' => '0','ServerID' => $ServerID])->first();
+                if($Node){
+                    $Node = json_decode($Node,true);
+                    log::info('Node Name' . $Node['ServerName']);
+                    return $Node['LocalIP'];
+                } 
+            }
+            return false;
         }else{
             return false;
         }

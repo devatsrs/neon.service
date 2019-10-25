@@ -65,12 +65,13 @@ class TerminationRateOperation extends Command
 		$getmypid = getmypid(); // get proccess id added by abubakar
 		$JobID = $arguments["JobID"];
 		$job = Job::find($JobID);
-		$ProcessID = Uuid::generate();
-		Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
+
 		$CompanyID = $arguments["CompanyID"];
 
 		Log::useFiles(storage_path() . '/logs/terminationrateoperation-' .  $JobID. '-' . date('Y-m-d') . '.log');
 		try {
+			$ProcessID = Uuid::generate();
+			Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
 			if (!empty($job)) {
 				$joboptions = json_decode($job->Options);
 				$query 		= $joboptions->query;

@@ -99,7 +99,7 @@ class VendorRateFileProcess extends Command {
 
 
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
+
 		$joblogdata['Message'] = '';
 		$delete_files = array();
 		//$tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
@@ -107,6 +107,7 @@ class VendorRateFileProcess extends Command {
 		Log::useFiles(storage_path() . '/logs/vendorratefileprocess-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$processID = CompanyGateway::getProcessID();
 			$temptableName = RateImportExporter::CreateIfNotExistTempRateImportTable($CompanyID,$CompanyGatewayID,'vendor');
 			$start_time = date('Y-m-d H:i:s');
 			Log::info("Start");

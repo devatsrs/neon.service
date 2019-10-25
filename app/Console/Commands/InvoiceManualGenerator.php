@@ -57,7 +57,7 @@ class InvoiceManualGenerator extends Command {
 
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id
-        $ProcessID = Uuid::generate();
+
         $CompanyID = $arguments["CompanyID"];
         $CronJobID = $arguments["CronJobID"];
         $CronJob =  CronJob::find($CronJobID);
@@ -117,6 +117,7 @@ class InvoiceManualGenerator extends Command {
         Log::error(' ========================== Invoice Send Loop Start =============================');
 
         try {
+            $ProcessID = Uuid::generate();
 
             Log::info($Accounts);
             foreach ($Accounts as $Account) {

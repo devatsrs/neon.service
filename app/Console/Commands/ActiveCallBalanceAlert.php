@@ -66,8 +66,7 @@ class ActiveCallBalanceAlert extends Command {
         $MainCronJobID = $arguments['CronJobID'];
         $MainCronJob = CronJob::find($MainCronJobID);
         CronJob::activateCronJob($MainCronJob);
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($MainCronJob,$processID);
+
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
@@ -85,6 +84,8 @@ class ActiveCallBalanceAlert extends Command {
 
         if($APIURL!=''){
             try {
+                $processID = CompanyGateway::getProcessID();
+                CompanyGateway::updateProcessID($MainCronJob,$processID);
                 //BalanceAlert
                 $LowBalanceArr=$ErrorAccount=array();
 

@@ -74,9 +74,10 @@ class ReImportCDRbyAccount extends Command {
         /* To avoid runing same day cron job twice */
         //if(true){//if($yesterday_date > $param['start_date_ymd']) {
 
-        $processID = Uuid::generate();
+
         $accounts = array();
         try {
+            $processID = Uuid::generate();
             DB::beginTransaction();
             DB::connection('sqlsrv2')->beginTransaction();
             DB::connection('sqlsrvcdr')->beginTransaction();

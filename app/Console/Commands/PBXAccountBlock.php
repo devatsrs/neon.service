@@ -63,8 +63,9 @@ class PBXAccountBlock extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         Log::useFiles(storage_path() . '/logs/pbxaccountblock-' . $CronJobID . '-' . date('Y-m-d') . '.log');
-        $ProcessID = CompanyGateway::getProcessID();
+
         try {
+            $ProcessID = CompanyGateway::getProcessID();
 
             $Result = Reseller::isResellerAndAccountBlock($CompanyID);
             if($Result==0) {

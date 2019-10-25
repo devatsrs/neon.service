@@ -129,7 +129,8 @@ class NeonProductImport extends Command {
                             if (!empty($ProductResponse->cityName)) {
                                 $City = $ProductResponse->cityName;
                                 $productdata['City'] = $City;
-                            }else {
+                            }
+                            if ($ProductResponse->tariff !== "") { 
                                 $Tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
                                 $productdata['Tariff'] = $Tariff;
                             }

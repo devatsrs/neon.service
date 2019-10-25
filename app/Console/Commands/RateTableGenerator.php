@@ -66,7 +66,7 @@ class RateTableGenerator extends Command {
         $CronJobID = $arguments["CronJobID"];
         $CompanyID = $arguments["CompanyID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
+
         $userInfo = User::getUserInfo($job->JobLoggedUserID);
         $username = User::get_user_full_name($job->JobLoggedUserID);
         $joboptions = json_decode($job->Options);
@@ -76,6 +76,7 @@ class RateTableGenerator extends Command {
         $emailstatus = array('status'=>0,'message'=>'');
 
         try {
+            $ProcessID = Uuid::generate();
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             $data =array();
             $data['RateGeneratorId'] = $joboptions->RateGeneratorId;

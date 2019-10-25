@@ -84,12 +84,13 @@ class MorCustomerRateImport extends Command {
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
 
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
+
 		$joblogdata['Message'] = '';
 
 		Log::useFiles(storage_path() . '/logs/morcustomerrateimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$processID = CompanyGateway::getProcessID();
 
 			$start_time = date('Y-m-d H:i:s');
 			$mor = new MOR($CompanyGatewayID);

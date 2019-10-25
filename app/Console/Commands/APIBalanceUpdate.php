@@ -63,11 +63,13 @@ class APIBalanceUpdate extends Command {
 
 		$CronJob =  CronJob::find($CronJobID);
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
-		CompanyGateway::updateProcessID($CronJob,$processID);
+
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error='';
 		try{
+
+			$processID = CompanyGateway::getProcessID();
+			CompanyGateway::updateProcessID($CronJob,$processID);
 
 			$joblogdata = array();
 			$joblogdata['CronJobID'] = $CronJobID;
@@ -84,7 +86,10 @@ class APIBalanceUpdate extends Command {
 
 			$joblogdata['Message'] = 'Success';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-			CronJobLog::insert($joblogdata);
+			//CronJobLog::insert($joblogdata);
+
+			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".CronJob::CRON_SUCCESS.",'".date('Y-m-d H:i:s')."','RMScheduler','Success')");
+
 
 		}catch (\Exception $e){
 
@@ -94,7 +99,10 @@ class APIBalanceUpdate extends Command {
 			$this->info('Failed:' . $e->getMessage());
 			$joblogdata['Message'] ='Error:'.$e->getMessage();
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-			CronJobLog::insert($joblogdata);
+			//CronJobLog::insert($joblogdata);
+
+			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".CronJob::CRON_FAIL.",'".date('Y-m-d H:i:s')."','RMScheduler','".$joblogdata['Message']."')");
+
 			if(!empty($cronsetting['ErrorEmail'])) {
 
 				$result = CronJob::CronJobErrorEmailSend($CronJobID,$e);
@@ -102,10 +110,10 @@ class APIBalanceUpdate extends Command {
 				Log::error("**Email Sent message " . $result['message']);
 			}
 
-
 		}
 
 		CronJob::deactivateCronJob($CronJob);
+
 		if(!empty($cronsetting['SuccessEmail']) && $error == '') {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);

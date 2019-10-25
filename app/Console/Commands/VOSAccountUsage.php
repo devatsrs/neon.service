@@ -96,8 +96,7 @@ class VOSAccountUsage extends Command
         $IpBased = ($companysetting->NameFormat == 'IP') ? 1 : 0;
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -111,6 +110,9 @@ class VOSAccountUsage extends Command
 
         $VOS_LOCATION = CompanyConfiguration::get($CompanyID,'VOS_LOCATION');
         try {
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
+
             $start_time = date('Y-m-d H:i:s');
             Log::info("Start");
             /** get process file make them pending*/

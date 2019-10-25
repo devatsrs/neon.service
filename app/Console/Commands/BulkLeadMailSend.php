@@ -67,8 +67,7 @@ class BulkLeadMailSend extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $JobID = $arguments["JobID"];
         $job = Job::find($JobID);
-        $ProcessID = Uuid::generate();
-        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
         $jobType = JobType::where(['JobTypeID'=>$job->JobTypeID])->pluck('Code');
         $CompanyID = $arguments["CompanyID"];
         $EMAIL_TO_CUSTOMER = CompanyConfiguration::get($CompanyID,'EMAIL_TO_CUSTOMER');
@@ -76,6 +75,9 @@ class BulkLeadMailSend extends Command {
         $errors = array();
         $errorslog = array();
         try {
+            $ProcessID = Uuid::generate();
+            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
+
             if(!empty($job)){
                 $JobLoggedUser = User::find($job->JobLoggedUserID);
                 $joboptions = json_decode($job->Options);
