@@ -145,6 +145,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\InsertIntoRateSearchCode',
 		'App\Console\Commands\PartnerAccountUsage',
 		'App\Console\Commands\TerminationRateOperation',
+		'App\Console\Commands\TerminationRateMargin',
 
 	];
 

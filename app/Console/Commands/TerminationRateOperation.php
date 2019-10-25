@@ -10,6 +10,8 @@ namespace App\Console\Commands;
 
 use App\Lib\CronHelper;
 use App\Lib\Job;
+use App\Lib\JobStatus;
+use App\Lib\JobType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -74,12 +76,56 @@ class TerminationRateOperation extends Command
 			Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
 			if (!empty($job)) {
 				$joboptions = json_decode($job->Options);
+				$params     = $joboptions->params;
 				$query 		= $joboptions->query;
-				$results 	= DB::statement($query);
+				$results 	= DB::select($query);
 
 				$success_message = '';
 				if($joboptions->OperationType =='Update') {
 					$success_message = 'Rate Updated Successfully!';
+
+					if($params->ApprovedStatus == 0 && !empty($results[0]->ProcessID)) {
+						$params['RateTableID']              = $params->RateTableID;
+						$params['RateTableRateAAID']        = '';
+						$params['ProcessID']                = $results[0]->ProcessID;
+
+						$options['RateTableName']   = $joboptions->RateTableName;
+						$options['params']          = $params;
+						$rules = array(
+							'CompanyID' => 'required',
+							'JobTypeID' => 'required',
+							'JobStatusID' => 'required',
+							'JobLoggedUserID' => 'required',
+							'Title' => 'required',
+							'CreatedBy' => 'required',
+						);
+
+						$JobType     = 'TRM';
+						$jobType     = JobType::where(["Code" => $JobType])->get(["JobTypeID", "Title"]);
+						$jobStatus   = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
+
+						$CompanyID              = $joboptions->CompanyID;
+						$options["CompanyID"]   = $CompanyID;
+						$data["CompanyID"]      = $CompanyID;
+						$data["JobTypeID"]      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+						$data["JobStatusID"]    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+						$data["JobLoggedUserID"]= $job->JobLoggedUserID;
+						$data["Title"]          = 'Termination Rate Difference ('.$options['RateTableName'].')';
+						$data["Description"]    = ' ' . isset($jobType[0]->Title) ? $jobType[0]->Title : '';
+						$data["CreatedBy"]      = $job->CreatedBy;
+						$data["updated_at"]     = date('Y-m-d H:i:s');
+						$data["created_at"]     = date('Y-m-d H:i:s');
+						$data["Options"]        = json_encode($options);
+
+						$validator = Validator::make($data, $rules);
+
+						if ($validator->fails()) {
+							    return validator_response($validator);
+ 						}
+
+ 						$JobID = Job::insertGetId($data);
+				  	}
+
 				} else if ($joboptions->OperationType =='Delete') {
 					$success_message = 'Rate Deleted Successfully!';
 				} else if ($joboptions->OperationType =='Approve') {
