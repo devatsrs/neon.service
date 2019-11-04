@@ -97,7 +97,8 @@ class RMService extends Command {
                 'PendingDisputeBulkMailSend',
                 'DisputeBulkMail',
                 'PendingBulkCreditNoteSend',
-                'TerminationRateOperation'
+                'TerminationRateOperation',
+                'TerminationRateMargin'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -450,7 +451,15 @@ class RMService extends Command {
                     pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationrateoperation " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                 }
             }
-        }   
+        }
+        //Termination Rate Margin
+        foreach($allpending['data']['TerminationRateMargin'] as $allpendingrow){
+            if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                    pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationratemargin " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                }
+            }
+        }
 
         }catch(\Exception $e){
             Log::error($e);
