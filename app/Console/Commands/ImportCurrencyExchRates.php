@@ -82,8 +82,8 @@ class ImportCurrencyExchRates extends Command {
 						'CompanyID' => $CompanyID,
 						'Value' => $rate,
 						'updated_at' => date("Y-m-d H:i:s"),
-						'ModifiedBy' => gethostname()
-
+						'ModifiedBy' => gethostname(),
+						'EffectiveDate' => date("Y-m-d H:i:s")
 					]);
 
 					Log::info($rateupd);

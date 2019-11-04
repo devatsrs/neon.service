@@ -83,12 +83,13 @@ class CallShopCustomerRateImport extends Command {
 		$CompanyGatewayID = $cronsetting['CompanyGatewayID'];
 
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
+
 		$joblogdata['Message'] = '';
 
 		Log::useFiles(storage_path() . '/logs/callshopcustomerrateimport-' . $CompanyGatewayID . '-' . date('Y-m-d') . '.log');
 
 		try {
+			$processID = CompanyGateway::getProcessID();
 			$start_time = date('Y-m-d H:i:s');
 			$callShop = new CallShop($CompanyGatewayID);
 			$callshop_customers = $callShop->listCustomerNames();

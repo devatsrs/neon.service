@@ -67,14 +67,16 @@ class PartnerAccountUsage extends Command {
 
 		$CronJob =  CronJob::find($CronJobID);
 		CronJob::activateCronJob($CronJob);
-		$processID = CompanyGateway::getProcessID();
-		CompanyGateway::updateProcessID($CronJob,$processID);
+
 		$cronsetting = json_decode($CronJob->Settings,true);
 		$error = '';
 
 		Log::useFiles(storage_path() . '/logs/partneraccountusage-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
 		try{
+
+			$processID = CompanyGateway::getProcessID();
+			CompanyGateway::updateProcessID($CronJob,$processID);
 
 			$joblogdata = array();
 			$joblogdata['CronJobID'] = $CronJobID;

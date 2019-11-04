@@ -79,10 +79,13 @@ class SippySQLAccountUsage extends Command {
         $tempVendortable =  CompanyGateway::CreateVendorTempTable($CompanyID,$CompanyGatewayID);
 
         $joblogdata['Message'] = '';
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         try {
+
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
+
             Log::error(' ========================== Sippy SQL transaction start =============================');
             CronJob::createLog($CronJobID);
 

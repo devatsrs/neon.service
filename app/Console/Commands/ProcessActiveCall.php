@@ -65,8 +65,7 @@ class ProcessActiveCall extends Command {
         $CronJobID = $arguments['CronJobID'];
         $CronJob =  CronJob::find($CronJobID);
         CronJob::activateCronJob($CronJob);
-        $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+
 
         $cronsetting = json_decode($CronJob->Settings,true);
 
@@ -82,6 +81,8 @@ class ProcessActiveCall extends Command {
 
 
         try {
+            $processID = CompanyGateway::getProcessID();
+            CompanyGateway::updateProcessID($CronJob,$processID);
 
             DB::beginTransaction();
 

@@ -80,8 +80,9 @@ class importPBXPayments extends Command {
 		$joblogdata['CronJobID'] = $CronJobID;
 		$joblogdata['created_at'] = date('Y-m-d H:i:s');
 		$joblogdata['created_by'] = 'RMScheduler';
-		$processID = CompanyGateway::getProcessID();
+
 		try {
+			$processID = CompanyGateway::getProcessID();
 			CronJob::createLog($CronJobID);
 			$pbx = new PBX($CompanyGatewayID);
 			$TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);

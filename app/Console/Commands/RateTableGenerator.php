@@ -4,6 +4,9 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\Helper;
 use App\Lib\Job;
+use App\Lib\JobStatus;
+use App\Lib\JobType;
+use App\Lib\RateTable;
 use App\Lib\User;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -215,6 +218,49 @@ class RateTableGenerator extends Command {
                 Job::where(["JobID" => $JobID])->update($jobdata);
                 Log::error($error);
             } else if(count($info) > 0) {
+
+                if($RateGenerator->SelectType == \RateGenerator::VoiceCall) {
+                    $RateTableName = RateTable::find($data['RateTableID'])->RateTableName;
+                    $params['RateTableID']              = $data['RateTableID'];
+                    $params['RateTableRateAAID']        = '';
+                    $params['ProcessID']                = '';
+
+                    $options['RateTableName']   = $RateTableName;
+                    $options['params']          = $params;
+                    $rules = array(
+                        'CompanyID' => 'required',
+                        'JobTypeID' => 'required',
+                        'JobStatusID' => 'required',
+                        'JobLoggedUserID' => 'required',
+                        'Title' => 'required',
+                        'CreatedBy' => 'required',
+                    );
+
+                    $JobType     = 'TRM';
+                    $jobType     = JobType::where(["Code" => $JobType])->get(["JobTypeID", "Title"]);
+                    $jobStatus   = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
+
+                    $options["CompanyID"]   = $CompanyID;
+                    $data["CompanyID"]      = $CompanyID;
+                    $data["JobTypeID"]      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+                    $data["JobStatusID"]    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+                    $data["JobLoggedUserID"]= $job->JobLoggedUserID;
+                    $data["Title"]          = 'Termination Rate Difference ('.$options['RateTableName'].')';
+                    $data["Description"]    = ' ' . isset($jobType[0]->Title) ? $jobType[0]->Title : '';
+                    $data["CreatedBy"]      = $username;
+                    $data["updated_at"]     = date('Y-m-d H:i:s');
+                    $data["created_at"]     = date('Y-m-d H:i:s');
+                    $data["Options"]        = json_encode($options);
+
+                    $validator = Validator::make($data, $rules);
+
+                    if ($validator->fails()) {
+                        return validator_response($validator);
+                    }
+
+                    $JobIDD = Job::insertGetId($data);
+                }
+
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = implode(',',$info);
                 $jobdata['updated_at'] = date('Y-m-d H:i:s');
