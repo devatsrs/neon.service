@@ -126,11 +126,11 @@ class InvoiceGenerate {
                             }
 
                             $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($oldNextInvoiceDate));
-                            //AccountBilling::where(['AccountID' => $AccountID])->update(["LastInvoiceDate" => $oldNextInvoiceDate, "NextInvoiceDate" => $NewNextInvoiceDate,'LastChargeDate'=>$NewLastChargeDate,'NextChargeDate'=>$NewNextChargeDate]);
+                            AccountBilling::where(['AccountID' => $AccountID])->update(["LastInvoiceDate" => $oldNextInvoiceDate, "NextInvoiceDate" => $NewNextInvoiceDate,'LastChargeDate'=>$NewLastChargeDate,'NextChargeDate'=>$NewNextChargeDate]);
                             $AccountNextBilling = AccountNextBilling::getBilling($AccountID,0);
                             if (!empty($AccountNextBilling)) {
-                                //AccountBilling::where(['AccountID' => $AccountID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
-                                //    AccountNextBilling::where(['AccountID' => $AccountID])->delete();
+                                AccountBilling::where(['AccountID' => $AccountID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
+                                AccountNextBilling::where(['AccountID' => $AccountID])->delete();
                             }
                             log::info("new dates");
                             Log::info('LastInvoiceDate '.$oldNextInvoiceDate.' NextInvoiceDate '.$NewNextInvoiceDate);
