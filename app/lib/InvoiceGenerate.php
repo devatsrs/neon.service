@@ -274,9 +274,9 @@ class InvoiceGenerate {
                 ])->pluck('AccountBalanceLogID');
 
                 if($AccountBalanceLogID != false) {
-                    self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
-                    self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
-                    self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
+                    self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
+                    self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
+                    self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
 
                     return [
                         'status' => 'success',
@@ -303,7 +303,7 @@ class InvoiceGenerate {
         return $alreadyBilled != false;
     }
 
-    public static function addPrepaidUsage($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places){
+    public static function addPrepaidUsage($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID){
         $AccountBalanceUsageLog = AccountBalanceUsageLog::select(DB::raw("SUM(UsageAmount) AS SubTotal, SUM(TotalTax) AS TotalTax, SUM(TotalAmount) AS GrandTotal"))
             ->where([
                 'AccountBalanceLogID' => $AccountBalanceLogID
@@ -326,6 +326,7 @@ class InvoiceGenerate {
                 'Description' => $ProductDescription,
                 'Price' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
                 'Qty' => 1,
+                'CurrencyID' => $CurrencyID,
                 'StartDate' => $StartDate,
                 'EndDate' => $EndDate,
                 'TaxAmount' => number_format($AccountBalanceUsageLog->TotalTax, $decimal_places, '.', ''),
@@ -360,7 +361,7 @@ class InvoiceGenerate {
     }
 
 
-    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places, $ServiceID = 0, $AccountServiceID = 0){
+    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -399,6 +400,7 @@ class InvoiceGenerate {
                     'Description' => $AccountBalanceSubscriptionLog->Description,
                     'Price' => $AccountBalanceSubscriptionLog->Price,
                     'Qty' => $AccountBalanceSubscriptionLog->Qty,
+                    'CurrencyID' => $CurrencyID,
                     'StartDate' => $AccountBalanceSubscriptionLog->StartDate,
                     'EndDate' => $AccountBalanceSubscriptionLog->EndDate,
                     'TaxAmount' => $AccountBalanceSubscriptionLog->TaxAmount,
@@ -428,7 +430,7 @@ class InvoiceGenerate {
         }
     }
 
-    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places, $ServiceID = 0, $AccountServiceID = 0){
+    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -467,6 +469,7 @@ class InvoiceGenerate {
                     'Description' => $AccountBalanceSubscriptionLog->Description,
                     'Price' => $AccountBalanceSubscriptionLog->Price,
                     'Qty' => $AccountBalanceSubscriptionLog->Qty,
+                    'CurrencyID' => $CurrencyID,
                     'StartDate' => $AccountBalanceSubscriptionLog->StartDate,
                     'EndDate' => $AccountBalanceSubscriptionLog->EndDate,
                     'TaxAmount' => $AccountBalanceSubscriptionLog->TaxAmount,
