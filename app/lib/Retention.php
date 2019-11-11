@@ -511,6 +511,20 @@ class Retention {
         return $error;
     }
 
+    /** delete termination rate margin which rates are deleted.
+     */
+    public static function deleteTerminationRateMargin() {
+        try{
+            $q = "CALL prc_deleteMargins()";
+            Log::info($q);
+            DB::select($q);
+            return;
+        } catch (\Exception $err) {
+            Log::error($err);
+        }
+        return "Failed to delete Termination Rate Margin";
+    }
+
     public static function deleteTickets($CompanyID,$Name,$processID){
         $error = '';
         $setting = CompanySetting::getKeyVal($CompanyID,'DataRetention');
