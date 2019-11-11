@@ -184,99 +184,109 @@ class InvoiceGenerate {
 
     public static function sendInvoice($CompanyID,$AccountID, $FirstInvoice,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
 
-        $Today=date('Y-m-d');
-        $error = "";
-        $CompanyName      = Company::getName($CompanyID);
-        $Account          = Account::find($AccountID);
-        $AccountBilling   = AccountBilling::where(['AccountID' => $AccountID])->first();
-        $AccountBillingClass = AccountBilling::getBillingClass((int)$AccountID,0);
-        $StartDate        = $AccountBilling->LastChargeDate;
-        $EndDate          = $AccountBilling->NextChargeDate;
-        $StartDate          = date("Y-m-d 00:00:00", strtotime($StartDate));
-        $EndDate          = date("Y-m-d 23:59:59", strtotime($EndDate));
-        Log::info('StartDate =' . $StartDate . " EndDate =" .$EndDate );
+        try {
+            $Today=date('Y-m-d');
+            $error = "";
+            $CompanyName      = Company::getName($CompanyID);
+            $Account          = Account::find($AccountID);
+            $AccountBilling   = AccountBilling::where(['AccountID' => $AccountID])->first();
+            $AccountBillingClass = AccountBilling::getBillingClass((int)$AccountID,0);
+            $StartDate        = $AccountBilling->LastChargeDate;
+            $EndDate          = $AccountBilling->NextChargeDate;
+            $StartDate          = date("Y-m-d 00:00:00", strtotime($StartDate));
+            $EndDate          = date("Y-m-d 23:59:59", strtotime($EndDate));
+            Log::info('StartDate =' . $StartDate . " EndDate =" .$EndDate );
 
-        $BillingCycleType   = $AccountBilling->BillingCycleType;
-        $BillingType        = $AccountBilling->BillingType;
+            $BillingCycleType   = $AccountBilling->BillingCycleType;
+            $BillingType        = $AccountBilling->BillingType;
 
-        if($AccountID <= 0 || $CompanyID <= 0 || empty($StartDate) || empty($EndDate))
-            return ['status' => "failure", "message" => "Invalid Request."];
+            if($AccountID <= 0 || $CompanyID <= 0 || empty($StartDate) || empty($EndDate))
+                return ['status' => "failure", "message" => "Invalid Request."];
 
-        if(empty($Account))
-            return ['status' => "failure", "message" => "Invalid Account"];
+            if(empty($Account))
+                return ['status' => "failure", "message" => "Invalid Account"];
 
 
-        // Collecting Invoice Data
+            // Collecting Invoice Data
 
-        $Reseller = Reseller::where('ChildCompanyID', $Account->CompanyId)->first();
-        $message = isset($Reseller->InvoiceTo) ? $Reseller->InvoiceTo : '';
-        $replace_array = Invoice::create_accountdetails($Account);
-        $text = Invoice::getInvoiceToByAccount($message, $replace_array);
-        $InvoiceToAddress = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
-        $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
-        $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
-        $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
-        $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
+            $Reseller = Reseller::where('ChildCompanyID', $Account->CompanyId)->first();
+            $message = isset($Reseller->InvoiceTo) ? $Reseller->InvoiceTo : '';
+            $replace_array = Invoice::create_accountdetails($Account);
+            $text = Invoice::getInvoiceToByAccount($message, $replace_array);
+            $InvoiceToAddress = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
+            $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
+            $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
+            $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
+            $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
 
-        $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
-        $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
-        $AlreadyBilled=0;
+            $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+            $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
+            $AlreadyBilled=0;
 
-        if($FirstInvoice == 0){
-            $AlreadyBilled = self::checkIfAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate);
-            //If Already Billed
-            if ($AlreadyBilled) {
-                $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                return array("status" => "failure", "message" => $error);
+            if($FirstInvoice == 0){
+                $AlreadyBilled = self::checkIfAlreadyBilled($CompanyID,$AccountID, $StartDate, $EndDate);
+                //If Already Billed
+                if ($AlreadyBilled) {
+                    $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
+                    return array("status" => "failure", "message" => $error);
+                }
             }
-        }
 
-        //If Account usage not already billed
-        Log::info('AlreadyBilled '.$AlreadyBilled);
+            //If Account usage not already billed
+            Log::info('AlreadyBilled '.$AlreadyBilled);
 
-        //Creating Invoice
-        $InvoiceData = array(
-            "CompanyID" 	=> $CompanyID,
-            "AccountID" 	=> $AccountID,
-            "ServiceID" 	=> 0,
-            "Address" 		=> $InvoiceToAddress,
-            "IssueDate" 	=> $Today,
-            "TotalDiscount" => 0,
-            "CurrencyID" 	=> $Account->CurrencyId,
-            "Note" 			=> "Auto Generated on " . $Today,
-            "Terms" 		=> $Terms,
-            'FooterTerm' 	=> $FooterTerm,
-            "InvoiceStatus" => Invoice::AWAITING,
-            "InvoiceNumber" => $LastInvoiceNumber,
-            "FullInvoiceNumber" => $FullInvoiceNumber,
-        );
-        $Invoice = Invoice::insertInvoice($InvoiceData);
-        $InvoiceID = $Invoice->InvoiceID;
+            //Creating Invoice
+            $InvoiceData = array(
+                "CompanyID" 	=> $CompanyID,
+                "AccountID" 	=> $AccountID,
+                "ServiceID" 	=> 0,
+                "Address" 		=> $InvoiceToAddress,
+                "IssueDate" 	=> $Today,
+                "TotalDiscount" => 0,
+                "CurrencyID" 	=> $Account->CurrencyId,
+                "Note" 			=> "Auto Generated on " . $Today,
+                "Terms" 		=> $Terms,
+                'FooterTerm' 	=> $FooterTerm,
+                "InvoiceStatus" => Invoice::AWAITING,
+                "InvoiceNumber" => $LastInvoiceNumber,
+                "FullInvoiceNumber" => $FullInvoiceNumber,
+            );
+            $Invoice = Invoice::insertInvoice($InvoiceData);
+            $InvoiceID = $Invoice->InvoiceID;
 
-        Log::error('$AccountID  '. $AccountID);
-        Log::error('$isPostPaid  '. $isPostPaid);
-        Log::error('$StartDate  '. $StartDate);
-        Log::error('$EndDate  '. $EndDate);
-        Log::error('$InvoiceID  '. $InvoiceID);
-        if($isPostPaid){
+            Log::error('$AccountID  '. $AccountID);
+            Log::error('$isPostPaid  '. $isPostPaid);
+            Log::error('$StartDate  '. $StartDate);
+            Log::error('$EndDate  '. $EndDate);
+            Log::error('$InvoiceID  '. $InvoiceID);
+            if($isPostPaid){
 
-            //AccountSubscription::addPostPaidSubscriptionInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice);
-            //AccountOneOffCharge::addPostPaidOneOfChargeInvoice($JobID,$CompanyID, $AccountID, $InvoiceID);
+                //AccountSubscription::addPostPaidSubscriptionInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice);
+                //AccountOneOffCharge::addPostPaidOneOfChargeInvoice($JobID,$CompanyID, $AccountID, $InvoiceID);
 
-            // Add Account service id
-            //self::addPostPaidUsageInvoice($JobID,$CompanyID,$AccountID,$InvoiceID,$BillingType,$BillingCycleType,$StartDate,$EndDate,$FirstInvoice);
+                // Add Account service id
+                //self::addPostPaidUsageInvoice($JobID,$CompanyID,$AccountID,$InvoiceID,$BillingType,$BillingCycleType,$StartDate,$EndDate,$FirstInvoice);
 
-        } else {
-            $AccountBalanceLogID = AccountBalanceLog::where([
-                'CompanyID' => $CompanyID,
-                'AccountID' => $AccountID
-            ])->pluck('AccountBalanceLogID');
+            } else {
+                $AccountBalanceLogID = AccountBalanceLog::where([
+                    'CompanyID' => $CompanyID,
+                    'AccountID' => $AccountID
+                ])->pluck('AccountBalanceLogID');
 
-            if($AccountBalanceLogID != false) {
-                self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID);
-                self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID);
-                self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID);
+                if($AccountBalanceLogID != false) {
+                    self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
+                    self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
+                    self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places);
+
+                    return [
+                        'status' => 'success',
+                        'message' => $AccountID . ' Account Invoice added successfully'
+                    ];
+                }
             }
+        } catch (\Exception $err) {
+            Log::error($err);
+            return ['status' => "failure", "message" => $AccountID . ": " . $err->getMessage()];
         }
     }
 
@@ -293,7 +303,7 @@ class InvoiceGenerate {
         return $alreadyBilled != false;
     }
 
-    public static function addPrepaidUsage($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID){
+    public static function addPrepaidUsage($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places){
         $AccountBalanceUsageLog = AccountBalanceUsageLog::select(DB::raw("SUM(UsageAmount) AS SubTotal, SUM(TotalTax) AS TotalTax, SUM(TotalAmount) AS GrandTotal"))
             ->where([
                 'AccountBalanceLogID' => $AccountBalanceLogID
@@ -307,21 +317,22 @@ class InvoiceGenerate {
         $InvoiceGrandTotal = $Invoice->GrandTotal;
         $InvoiceDetailArray = [];
 
+        Log::error('Usage Start  ' . json_encode(!empty($AccountBalanceUsageLog)));
         if (!empty($AccountBalanceUsageLog)) {
             $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
             $InvoiceDetailArray = [
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE,
                 'Description' => $ProductDescription,
-                'Price' => $AccountBalanceUsageLog->SubTotal,
+                'Price' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
                 'Qty' => 1,
                 'StartDate' => $StartDate,
                 'EndDate' => $EndDate,
-                'TaxAmount' => $AccountBalanceUsageLog->TotalTax,
+                'TaxAmount' => number_format($AccountBalanceUsageLog->TotalTax, $decimal_places, '.', ''),
                 'DiscountType' => 0,
                 'DiscountAmount' => 0,
                 'DiscountLineAmount' => 0,
-                'LineTotal' => $AccountBalanceUsageLog->SubTotal,
+                'LineTotal' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
                 //'TotalAmount' => $AccountBalanceUsageLog->GrandTotal,
             ];
 
@@ -334,9 +345,9 @@ class InvoiceGenerate {
             $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
 
             self::addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetail->InvoiceDetailID);
-            $Invoice->SubTotal = $InvoiceSubTotal;
-            $Invoice->TotalTax = $InvoiceTaxTotal;
-            $Invoice->GrandTotal = $InvoiceGrandTotal;
+            $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+            $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
+            $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
             $Invoice->save();
         }
     }
@@ -349,7 +360,7 @@ class InvoiceGenerate {
     }
 
 
-    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0){
+    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -368,6 +379,7 @@ class InvoiceGenerate {
         $InvoiceGrandTotal      = $Invoice->GrandTotal;
         $SubscriptionArray      = [];
 
+        Log::error('Subscription Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
         $InvoiceDetailArray = [];
         foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog){
 
@@ -408,15 +420,15 @@ class InvoiceGenerate {
 
         if(count($SubscriptionArray) > 0){
             InvoiceDetail::insert($SubscriptionArray);
-            $Invoice->SubTotal = $InvoiceSubTotal;
-            $Invoice->TotalDiscount = $InvoiceDiscountTotal;
-            $Invoice->TotalTax = $InvoiceTaxTotal;
-            $Invoice->GrandTotal = $InvoiceGrandTotal;
+            $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+            $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
+            $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
+            $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
             $Invoice->save();
         }
     }
 
-    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0){
+    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -435,6 +447,7 @@ class InvoiceGenerate {
         $InvoiceGrandTotal      = $Invoice->GrandTotal;
         $OneOffArray      = [];
 
+        Log::error('OneOffCharge Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
         $InvoiceDetailArray = [];
         foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog) {
 
@@ -475,10 +488,10 @@ class InvoiceGenerate {
 
         if(count($OneOffArray) > 0){
             InvoiceDetail::insert($OneOffArray);
-            $Invoice->SubTotal = $InvoiceSubTotal;
-            $Invoice->TotalDiscount = $InvoiceDiscountTotal;
-            $Invoice->TotalTax = $InvoiceTaxTotal;
-            $Invoice->GrandTotal = $InvoiceGrandTotal;
+            $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+            $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
+            $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
+            $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
             $Invoice->save();
         }
     }
