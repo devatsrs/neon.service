@@ -381,7 +381,6 @@ class InvoiceGenerate {
         $SubscriptionArray      = [];
 
         Log::error('Subscription Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
-        $InvoiceDetailArray = [];
         foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog){
 
             $checkIfExist = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
@@ -394,7 +393,7 @@ class InvoiceGenerate {
                 ])->first();
 
             if ($checkIfExist == false) {
-                $InvoiceDetailArray[] = [
+                $InvoiceDetailArray = [
                     'InvoiceID' => $InvoiceID,
                     'ProductType' => Product::SUBSCRIPTION,
                     'Description' => $AccountBalanceSubscriptionLog->Description,
@@ -407,8 +406,8 @@ class InvoiceGenerate {
                     'DiscountType' => $AccountBalanceSubscriptionLog->DiscountType,
                     'DiscountAmount' => $AccountBalanceSubscriptionLog->DiscountAmount,
                     'DiscountLineAmount' => $AccountBalanceSubscriptionLog->DiscountLineAmount,
-                    'LineAmount' => $AccountBalanceSubscriptionLog->LineAmount,
-                    'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
+                    'LineTotal' => $AccountBalanceSubscriptionLog->LineAmount,
+                    //'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
                     'AccountSubscriptionID' => $AccountBalanceSubscriptionLog->ParentID,
                 ];
 
@@ -450,7 +449,6 @@ class InvoiceGenerate {
         $OneOffArray      = [];
 
         Log::error('OneOffCharge Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
-        $InvoiceDetailArray = [];
         foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog) {
 
             $checkIfExist = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
@@ -463,7 +461,7 @@ class InvoiceGenerate {
                 ])->first();
 
             if ($checkIfExist == false) {
-                $InvoiceDetailArray[] = [
+                $InvoiceDetailArray = [
                     'InvoiceID' => $InvoiceID,
                     'ProductType' => Product::ONEOFFCHARGE,
                     'Description' => $AccountBalanceSubscriptionLog->Description,
@@ -476,8 +474,8 @@ class InvoiceGenerate {
                     'DiscountType' => $AccountBalanceSubscriptionLog->DiscountType,
                     'DiscountAmount' => $AccountBalanceSubscriptionLog->DiscountAmount,
                     'DiscountLineAmount' => $AccountBalanceSubscriptionLog->DiscountLineAmount,
-                    'LineAmount' => $AccountBalanceSubscriptionLog->LineAmount,
-                    'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
+                    'LineTotal' => $AccountBalanceSubscriptionLog->LineAmount,
+                    //'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
                     'AccountOneOffChargeID' => $AccountBalanceSubscriptionLog->ParentID,
                 ];
 
