@@ -38,6 +38,7 @@ class InvoiceGenerate {
 
     public static function GenerateInvoice($CompanyID,$AccountIDs,$InvoiceGenerationEmail,$ProcessID, $JobID)
     {
+
         Log::useFiles(storage_path() . '/logs/GenerateInvoice-' . date('Y-m-d') . '.log');
         $skip_accounts = array();
         $today = date("Y-m-d");
@@ -92,7 +93,7 @@ class InvoiceGenerate {
 
 
                         Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
-                        $response = Invoice2::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID);
+                        $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID);
 
                         Log::info('Invoice::sendInvoice done');
 
@@ -214,12 +215,11 @@ class InvoiceGenerate {
         $InvoiceToAddress = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
         $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
         $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
-        $LastInvoiceNumber = Invoice::getNextInvoiceNumber($CompanyID);
+        $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
         $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
 
         $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
         $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
-        $isPrePaid  = $BillingType === AccountBilling::BILLINGTYPE_PREPAID;
         $AlreadyBilled=0;
 
         if($FirstInvoice == 0){
@@ -250,15 +250,14 @@ class InvoiceGenerate {
             "InvoiceNumber" => $LastInvoiceNumber,
             "FullInvoiceNumber" => $FullInvoiceNumber,
         );
-        //$Invoice = Invoice::insertInvoice($InvoiceData);
-        //$InvoiceID = $Invoice->InvoiceID;
+        $Invoice = Invoice::insertInvoice($InvoiceData);
+        $InvoiceID = $Invoice->InvoiceID;
 
-        $InvoiceID = 1;
-
-        var_dump($AccountID);
-        var_dump($isPostPaid);
-        var_dump($StartDate);
-        var_dump($EndDate);
+        Log::error('$AccountID  '. $AccountID);
+        Log::error('$isPostPaid  '. $isPostPaid);
+        Log::error('$StartDate  '. $StartDate);
+        Log::error('$EndDate  '. $EndDate);
+        Log::error('$InvoiceID  '. $InvoiceID);
         if($isPostPaid){
 
             //AccountSubscription::addPostPaidSubscriptionInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice);
@@ -266,11 +265,13 @@ class InvoiceGenerate {
 
             // Add Account service id
             //self::addPostPaidUsageInvoice($JobID,$CompanyID,$AccountID,$InvoiceID,$BillingType,$BillingCycleType,$StartDate,$EndDate,$FirstInvoice);
+
         } else {
             $AccountBalanceLogID = AccountBalanceLog::where([
                 'CompanyID' => $CompanyID,
                 'AccountID' => $AccountID
             ])->pluck('AccountBalanceLogID');
+
             if($AccountBalanceLogID != false) {
                 self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID);
                 self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID);
@@ -312,16 +313,16 @@ class InvoiceGenerate {
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE,
                 'Description' => $ProductDescription,
-                'Price' => 0,
-                'Qty' => 0,
+                'Price' => $AccountBalanceUsageLog->SubTotal,
+                'Qty' => 1,
                 'StartDate' => $StartDate,
                 'EndDate' => $EndDate,
                 'TaxAmount' => $AccountBalanceUsageLog->TotalTax,
                 'DiscountType' => 0,
                 'DiscountAmount' => 0,
                 'DiscountLineAmount' => 0,
-                'LineAmount' => $AccountBalanceUsageLog->SubTotal,
-                'TotalAmount' => $AccountBalanceUsageLog->GrandTotal,
+                'LineTotal' => $AccountBalanceUsageLog->SubTotal,
+                //'TotalAmount' => $AccountBalanceUsageLog->GrandTotal,
             ];
 
             $InvoiceSubTotal += $AccountBalanceUsageLog->SubTotal;
@@ -329,8 +330,9 @@ class InvoiceGenerate {
             $InvoiceGrandTotal += $AccountBalanceUsageLog->GrandTotal;
         }
 
-        if(!empty($InvoiceDetailArray) > 0){
+        if(!empty($InvoiceDetailArray)){
             $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+
             self::addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetail->InvoiceDetailID);
             $Invoice->SubTotal = $InvoiceSubTotal;
             $Invoice->TotalTax = $InvoiceTaxTotal;
@@ -339,66 +341,15 @@ class InvoiceGenerate {
         }
     }
 
-
     public static function addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetailID){
+        $query = "CALL prc_addInvoicePrepaidComponents($CompanyID,$AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
 
-        $CLIs = CLIRateTable::where([
-            'CompanyID' => $CompanyID,
-            'AccountID' => $AccountID,
-            'Status'    => 1
-        ])->get();
-
-        Log::error('Account ID  '.$AccountID . " has total CLIs: " . $CLIs->count());
-
-        if($CLIs != false){
-            foreach($CLIs as $CLI){
-                $ServiceID = $CLI->ServiceID;
-                $AccountServiceID = $CLI->AccountServiceID;
-                $CLIRateTableID = $CLI->CLIRateTableID;
-                $CLINumber = $CLI->CLI;
-
-                Log::error('Account ID  '.$AccountID . " processing CLI: " . $CLINumber);
-
-                $UsageDetails = DB::connection('sqlsrv2')->select('prc_processCLIInvoiceUsage', [
-                    $CompanyID,$AccountID,$ServiceID,$AccountServiceID,$CLINumber,$StartDate,$EndDate
-                ]);
-
-                if(!empty($UsageDetails)){
-
-                    $Components = [];
-                    foreach($UsageDetails as $UsageDetail){
-                        $Components[] = [
-                            'InvoiceDetailID' => $InvoiceDetailID,
-                            'AccountServiceID' => $AccountServiceID,
-                            'Type'          => $UsageDetail->CallType,
-                            'TimezonesID'   => $UsageDetail->TimezonesID,
-                            'Origination'   => $UsageDetail->Origination,
-                            'Destination'   => $UsageDetail->Destination,
-                            'Component'     => $UsageDetail->Component,
-                            'Discount'      => $UsageDetail->Discount,
-                            'DiscountPrice' => $UsageDetail->DiscountPrice,
-                            'Quantity'      => $UsageDetail->Quantity,
-                            'TotalCost'     => $UsageDetail->TotalCost,
-                            'RateID'        => $UsageDetail->RateID,
-                        ];
-                    }
-
-                    if(!empty($Components)){
-                        InvoiceComponentDetail::insert($Components);
-                    }
-
-                } else {
-                    Log::error('CLI '.$CLI . " has no cdr");
-                }
-
-                self::addPrepaidComponentSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$ServiceID,$AccountServiceID,$InvoiceDetailID,$CLIRateTableID);
-                self::addPrepaidComponentOneOffCharges($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$ServiceID,$AccountServiceID,$InvoiceDetailID,$CLIRateTableID);
-            }
-        }
+        Log::error('prc_addCLIInvoiceComponents  '. $query);
+        DB::connection('sqlsrv2')->select($query);
     }
 
 
-    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0, $InvoiceDetailID = 0){
+    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -465,7 +416,7 @@ class InvoiceGenerate {
         }
     }
 
-    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0, $InvoiceDetailID = 0){
+    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $ServiceID = 0, $AccountServiceID = 0){
 
         $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
             'AccountBalanceLogID' => $AccountBalanceLogID,
@@ -532,78 +483,7 @@ class InvoiceGenerate {
         }
     }
 
-
-    public static function addPrepaidComponentSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$ServiceID,$AccountServiceID,$InvoiceDetailID,$CLIRateTableID){
-
-        $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::select('SUM(LineAmount) AS SubTotal, SUM(TotalTax) AS TotalTax, SUM(DiscountLineAmount) AS Discount, SUM(TotalAmount) AS GrandTotal')
-            ->where([
-                'AccountBalanceLogID' => $AccountBalanceLogID,
-                'ServiceID'=>$ServiceID,
-                'AccountServiceID'=>$AccountServiceID,
-                'CLIRateTableID'=>$CLIRateTableID,
-                'ProductType'=>Product::SUBSCRIPTION
-            ])
-            ->where('StartDate','>=',$StartDate)
-            ->where('EndDate','<=',$EndDate)
-            ->first();
-
-        if(!empty($AccountBalanceSubscriptionLogs)){
-            $SubscriptionArr = [
-                'InvoiceDetailID' => $InvoiceDetailID,
-                'AccountServiceID' => $AccountServiceID,
-                'Type'          => '',
-                'TimezonesID'   => 0,
-                'Origination'   => '',
-                'Destination'   => 0,
-                'Component'     => 'Subscription',
-                'Discount'      => 0,
-                'DiscountPrice' => 0,
-                'Quantity'      => 1,
-                'TotalCost'     => $AccountBalanceSubscriptionLogs->SubTotal,
-                'RateID'        => 0,
-            ];
-
-            InvoiceComponentDetail::create($SubscriptionArr);
-        }
-    }
-
-    public static function addPrepaidComponentOneOffCharges($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$ServiceID,$AccountServiceID,$InvoiceDetailID,$CLIRateTableID){
-
-        $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::select('SUM(LineAmount) AS SubTotal, SUM(TotalTax) AS TotalTax, SUM(DiscountLineAmount) AS Discount, SUM(TotalAmount) AS GrandTotal')
-            ->where([
-                'AccountBalanceLogID' => $AccountBalanceLogID,
-                'ServiceID'=>$ServiceID,
-                'AccountServiceID'=>$AccountServiceID,
-                'CLIRateTableID'=>$CLIRateTableID,
-                'ProductType'=>Product::ONEOFFCHARGE
-            ])
-            ->where('StartDate','>=',$StartDate)
-            ->where('EndDate','<=',$EndDate)
-            ->first();
-
-        if(!empty($AccountBalanceSubscriptionLogs)){
-            $OneOffArr = [
-                'InvoiceDetailID' => $InvoiceDetailID,
-                'AccountServiceID' => $AccountServiceID,
-                'Type'          => '',
-                'TimezonesID'   => 0,
-                'Origination'   => '',
-                'Destination'   => 0,
-                'Component'     => 'Subscription',
-                'Discount'      => 0,
-                'DiscountPrice' => 0,
-                'Quantity'      => 1,
-                'TotalCost'     => $AccountBalanceSubscriptionLogs->SubTotal,
-                'RateID'        => 0,
-            ];
-
-            InvoiceComponentDetail::create($OneOffArr);
-        }
-    }
-
-
     public static function addPostPaidUsageInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice){
-
 
     }
 }
