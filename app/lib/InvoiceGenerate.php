@@ -278,6 +278,15 @@ class InvoiceGenerate {
                     self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
                     self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
 
+                    Log::info('PDF Generation start');
+
+                    /*$pdf_path = self::generate_pdf($InvoiceID);
+                    if(empty($pdf_path)){
+                        $error = self::$InvoiceGenerationErrorReasons["PDF"];
+                        return array("status" => "failure", "message" => $error);
+                    }else {
+                        $Invoice->update(["PDF" => $pdf_path]);
+                    }*/
                     return [
                         'status' => 'success',
                         'message' => $AccountID . ' Account Invoice added successfully'
@@ -289,7 +298,6 @@ class InvoiceGenerate {
             return ['status' => "failure", "message" => $AccountID . ": " . $err->getMessage()];
         }
     }
-
 
     public static function checkIfAlreadyBilled($CompanyID, $AccountID, $StartDate, $EndDate){
         $alreadyBilled = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
@@ -311,6 +319,7 @@ class InvoiceGenerate {
             ->where('Date', '<=', $EndDate)
             ->first();
 
+
         $Invoice = Invoice::find($InvoiceID);
         $InvoiceSubTotal = $Invoice->SubTotal;
         $InvoiceTaxTotal = $Invoice->TotalTax;
@@ -320,6 +329,7 @@ class InvoiceGenerate {
         Log::error('Usage Start  ' . json_encode(!empty($AccountBalanceUsageLog)));
         if (!empty($AccountBalanceUsageLog)) {
             $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
+
             $InvoiceDetailArray = [
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE,
@@ -342,15 +352,63 @@ class InvoiceGenerate {
             $InvoiceGrandTotal += $AccountBalanceUsageLog->GrandTotal;
         }
 
+
+
         if(!empty($InvoiceDetailArray)){
             $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+            $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
-            self::addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetail->InvoiceDetailID);
+            self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::USAGE, $StartDate, $EndDate);
+
+            self::addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetailID);
+
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
             $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
             $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
             $Invoice->save();
         }
+    }
+
+    public static function addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, $ProductType, $StartDate, $EndDate){
+        $taxRateData = $TaxRateLogs = [];
+        if($ProductType == Product::USAGE){
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceUsageLog ul","ul.AccountBalanceUsageLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+                ->where([
+                    'ul.AccountBalanceLogID' => $AccountBalanceLogID,
+                    'tblAccountBalanceTaxRateLog.Type' => Product::USAGE,
+                ])->where('ul.Date', '>=', $StartDate)
+                ->where('ul.Date', '<=', $EndDate)
+                ->get();
+        } elseif ($ProductType == Product::SUBSCRIPTION){
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+                ->where([
+                    'sl.AccountBalanceLogID' => $AccountBalanceLogID,
+                    'tblAccountBalanceTaxRateLog.Type' => Product::SUBSCRIPTION,
+                ])->where('sl.StartDate', '>=', $StartDate)
+                ->where('sl.EndDate', '<=', $EndDate)
+                ->get();
+        } elseif($ProductType == Product::ONEOFFCHARGE){
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+                ->where([
+                    'sl.AccountBalanceLogID' => $AccountBalanceLogID,
+                    'tblAccountBalanceTaxRateLog.Type' => Product::ONEOFFCHARGE,
+                ])->where('sl.StartDate', '>=', $StartDate)
+                ->where('sl.EndDate', '<=', $EndDate)
+                ->get();
+        }
+
+        foreach($TaxRateLogs as $TaxRateLog){
+            $taxRateData[] = array(
+                "InvoiceID" => $InvoiceID,
+                "InvoiceDetailID" => $InvoiceDetailID,
+                "TaxRateID" => $TaxRateLog->TaxRateID,
+                "TaxAmount" => $TaxRateLog->TaxAmount,
+                "Title" => $TaxRateLog->Title,
+            );
+
+            InvoiceTaxRate::create($taxRateData);
+        }
+
     }
 
     public static function addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetailID){
@@ -416,11 +474,15 @@ class InvoiceGenerate {
                 $InvoiceDiscountTotal += $AccountBalanceSubscriptionLog->DiscountAmount;
                 $InvoiceTaxTotal += $AccountBalanceSubscriptionLog->TaxAmount;
                 $InvoiceGrandTotal += $AccountBalanceSubscriptionLog->TotalAmount;
+
+
+                $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+                $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+                self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::SUBSCRIPTION, $StartDate, $EndDate);
             }
         }
 
         if(count($SubscriptionArray) > 0){
-            InvoiceDetail::insert($SubscriptionArray);
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
             $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
             $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
@@ -446,7 +508,7 @@ class InvoiceGenerate {
         $InvoiceDiscountTotal   = $Invoice->TotalDiscount;
         $InvoiceTaxTotal        = $Invoice->TotalTax;
         $InvoiceGrandTotal      = $Invoice->GrandTotal;
-        $OneOffArray      = [];
+        $OneOffArray            = [];
 
         Log::error('OneOffCharge Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
         foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog) {
@@ -484,11 +546,14 @@ class InvoiceGenerate {
                 $InvoiceDiscountTotal += $AccountBalanceSubscriptionLog->DiscountAmount;
                 $InvoiceTaxTotal += $AccountBalanceSubscriptionLog->TaxAmount;
                 $InvoiceGrandTotal += $AccountBalanceSubscriptionLog->TotalAmount;
+
+                $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+                $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+                self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::ONEOFFCHARGE, $StartDate, $EndDate);
             }
         }
 
         if(count($OneOffArray) > 0){
-            InvoiceDetail::insert($OneOffArray);
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
             $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
             $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
@@ -499,5 +564,130 @@ class InvoiceGenerate {
 
     public static function addPostPaidUsageInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice){
 
+    }
+
+    public static function generate_pdf($InvoiceID){
+        $Invoice = Invoice::find($InvoiceID);
+        if($Invoice != false) {
+            $language = Account::where("AccountID", $Invoice->AccountID)
+                ->join('tblLanguage', 'tblLanguage.LanguageID', '=', 'tblAccount.LanguageID')
+                ->join('tblTranslation', 'tblTranslation.LanguageID', '=', 'tblAccount.LanguageID')
+                ->select('tblLanguage.ISOCode', 'tblTranslation.Language', 'tblLanguage.is_rtl')
+                ->first();
+
+            App::setLocale($language->ISOCode);
+
+
+            $Account = Account::find($Invoice->AccountID);
+            $AccountID = $Invoice->AccountID;
+            $CompanyID = $Account->CompanyId;
+            $Company = Company::find($CompanyID);
+            $AccountBilling = AccountBilling::where(['AccountID' => $AccountID])->first();
+            $UploadPath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+            $Currency = Currency::find($Account->CurrencyId);
+            $CurrencyCode = !empty($Currency)?$Currency->Code:'';
+            $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
+            $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
+            $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+
+            $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
+            if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $Account->CompanyId) == '') {
+                $as3url =  public_path("/assets/images/250x100.png");
+            } else {
+                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key,$Account->CompanyId));
+            }
+            $logo_path = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/logo/' . $Account->CompanyId;
+            @mkdir($logo_path, 0777, true);
+            RemoteSSH::run("chmod -R 777 " . $logo_path);
+            $logo = $logo_path  . '/'  . basename($as3url);
+            file_put_contents($logo, file_get_contents($as3url));
+            @chmod($logo,0777);
+
+            $dateFormat = isset($Reseller->InvoiceDateFormat) ? $Reseller->InvoiceDateFormat : '';
+            $common_name = Str::slug($Account->AccountName.'-'.$Invoice->FullInvoiceNumber.'-'.date(invoice_date_fomat($dateFormat),strtotime($Invoice->IssueDate)).'-'.$InvoiceID);
+
+            $file_name = 'Invoice--' .$common_name . '.pdf';
+            $htmlfile_name = 'Invoice--' .$common_name . '.html';
+
+
+            $arrSignature=array();
+            $arrSignature["UseDigitalSignature"] = CompanySetting::getKeyVal('UseDigitalSignature', $Account->CompanyId);
+            $arrSignature["DigitalSignature"] = CompanySetting::getKeyVal('DigitalSignature', $Account->CompanyId);
+            $arrSignature["signaturePath"]= CompanyConfiguration::get('UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $Account->CompanyId, true);
+            if($arrSignature["DigitalSignature"]!="Invalid Key"){
+                $arrSignature["DigitalSignature"]=json_decode($arrSignature["DigitalSignature"]);
+            }else{
+                $arrSignature["UseDigitalSignature"]=false;
+            }
+            $MultiCurrencies=array();
+            if(isset($InvoiceTemplate) && $InvoiceTemplate->ShowTotalInMultiCurrency==1){
+                $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($Account->CompanyId,$Account->CurrencyId,$Invoice->GrandTotal,$decimal_places);
+            }
+
+            $print_type = 'Invoice';
+            $body = View::make('invoices.pdf', get_defined_vars())->render();
+
+            $body = htmlspecialchars_decode($body);
+            $footer = View::make('invoices.pdffooter', compact('Invoice','print_type'))->render();
+            $footer = htmlspecialchars_decode($footer);
+
+            $header = View::make('invoices.pdfheader', compact('Invoice','print_type'))->render();
+            $header = htmlspecialchars_decode($header);
+
+            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
+            $destination_dir = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/'. $amazonPath;
+
+            if (!file_exists($destination_dir)) {
+                mkdir($destination_dir, 0777, true);
+            }
+            RemoteSSH::run("chmod -R 777 " . $destination_dir);
+
+            $local_file = $destination_dir .  $file_name;
+
+            $local_htmlfile = $destination_dir .  $htmlfile_name;
+            file_put_contents($local_htmlfile,$body);
+            @chmod($local_htmlfile,0777);
+            $footer_name = 'footer-'. $common_name .'.html';
+            $footer_html = $destination_dir.$footer_name;
+            file_put_contents($footer_html,$footer);
+            @chmod($footer_html,0777);
+
+            $header_name = 'header-'. $common_name .'.html';
+            $header_html = $destination_dir.$header_name;
+            file_put_contents($header_html,$header);
+            @chmod($footer_html,0777);
+
+            $output= "";
+
+            if(getenv('APP_OS') == 'Linux'){
+                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+
+                if($arrSignature["UseDigitalSignature"]==true){
+                    $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
+
+                    $mypdfsignerOutput=RemoteSSH::run('PortableSigner  -n     -t '.$local_file.'      -o '.$newlocal_file.'     -s '.$arrSignature["signaturePath"].'digitalsignature.pfx -c "Signed after 4 alterations" -r "Approved for publication" -l "Department of Dermatology" -p Welcome100');
+                    Log::info($mypdfsignerOutput);
+                    if(file_exists($newlocal_file)){
+                        RemoteSSH::run('rm '.$local_file);
+                        RemoteSSH::run('mv '.$newlocal_file.' '.$local_file);
+                    }
+                }
+
+            }else{
+                exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+            }
+            @chmod($local_file,0777);
+            Log::info($output);
+            @unlink($local_htmlfile);
+            @unlink($footer_html);
+            @unlink($header_html);
+            if (file_exists($local_file)) {
+                $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
+                if (AmazonS3::upload($local_file, $amazonPath,$Account->CompanyId)) {
+                    return $fullPath;
+                }
+            }
+        }
+        return '';
     }
 }
