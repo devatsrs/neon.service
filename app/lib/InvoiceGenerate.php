@@ -372,29 +372,32 @@ class InvoiceGenerate {
     public static function addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, $ProductType, $StartDate, $EndDate){
         $taxRateData = $TaxRateLogs = [];
         if($ProductType == Product::USAGE){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceUsageLog ul","ul.AccountBalanceUsageLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceUsageLog as ul","ul.AccountBalanceUsageLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
                 ->where([
                     'ul.AccountBalanceLogID' => $AccountBalanceLogID,
                     'tblAccountBalanceTaxRateLog.Type' => Product::USAGE,
                 ])->where('ul.Date', '>=', $StartDate)
                 ->where('ul.Date', '<=', $EndDate)
                 ->get();
+            Log::info("Usage Tax Rate Logs: " . $TaxRateLogs->count());
         } elseif ($ProductType == Product::SUBSCRIPTION){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog as sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
                 ->where([
                     'sl.AccountBalanceLogID' => $AccountBalanceLogID,
                     'tblAccountBalanceTaxRateLog.Type' => Product::SUBSCRIPTION,
                 ])->where('sl.StartDate', '>=', $StartDate)
                 ->where('sl.EndDate', '<=', $EndDate)
                 ->get();
+            Log::info("Subscription Tax Rate Logs: " . $TaxRateLogs->count());
         } elseif($ProductType == Product::ONEOFFCHARGE){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
+            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog as sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
                 ->where([
                     'sl.AccountBalanceLogID' => $AccountBalanceLogID,
                     'tblAccountBalanceTaxRateLog.Type' => Product::ONEOFFCHARGE,
                 ])->where('sl.StartDate', '>=', $StartDate)
                 ->where('sl.EndDate', '<=', $EndDate)
                 ->get();
+            Log::info("OneOffCharge Tax Rate Logs: " . $TaxRateLogs->count());
         }
 
         foreach($TaxRateLogs as $TaxRateLog){
