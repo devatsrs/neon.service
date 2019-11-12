@@ -401,7 +401,7 @@ class InvoiceGenerate {
         }
 
         foreach($TaxRateLogs as $TaxRateLog){
-            $taxRateData[] = array(
+            $taxRateData = array(
                 "InvoiceID" => $InvoiceID,
                 "InvoiceDetailID" => $InvoiceDetailID,
                 "TaxRateID" => $TaxRateLog->TaxRateID,
