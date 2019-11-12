@@ -136,6 +136,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ImportClarityAccounts',
 		'App\Console\Commands\HUAWEIAccountUsage',
 		'App\Console\Commands\HUAWEIDownloadCDR',
+		'App\Console\Commands\PortaOneAccountUsage',
+
 	];
 
 	/**
