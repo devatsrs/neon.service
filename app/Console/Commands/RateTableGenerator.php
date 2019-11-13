@@ -252,7 +252,7 @@ class RateTableGenerator extends Command {
                     $data["created_at"]     = date('Y-m-d H:i:s');
                     $data["Options"]        = json_encode($options);
 
-                    $validator = Validator::make($data, $rules);
+                    $validator = \Validator::make($data, $rules);
 
                     if ($validator->fails()) {
                         return validator_response($validator);
