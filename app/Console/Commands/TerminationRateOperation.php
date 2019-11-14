@@ -71,6 +71,7 @@ class TerminationRateOperation extends Command
 		$CompanyID = $arguments["CompanyID"];
 
 		Log::useFiles(storage_path() . '/logs/terminationrateoperation-' .  $JobID. '-' . date('Y-m-d') . '.log');
+		Log::info('terminationrateoperation starts');
 		try {
 			$ProcessID = Uuid::generate();
 			Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
@@ -85,12 +86,12 @@ class TerminationRateOperation extends Command
 					$success_message = 'Rate Updated Successfully!';
 
 					if($params->ApprovedStatus == 0 && !empty($results[0]->ProcessID)) {
-						$params['RateTableID']              = $params->RateTableID;
-						$params['RateTableRateAAID']        = '';
-						$params['ProcessID']                = $results[0]->ProcessID;
+						$params2['RateTableID']       	= $params->RateTableID;
+						$params2['RateTableRateAAID']   = '';
+						$params2['ProcessID']           = $results[0]->ProcessID;
 
 						$options['RateTableName']   = $joboptions->RateTableName;
-						$options['params']          = $params;
+						$options['params']          = $params2;
 						$rules = array(
 							'CompanyID' => 'required',
 							'JobTypeID' => 'required',
@@ -117,13 +118,13 @@ class TerminationRateOperation extends Command
 						$data["created_at"]     = date('Y-m-d H:i:s');
 						$data["Options"]        = json_encode($options);
 
-						$validator = Validator::make($data, $rules);
+						$validator = \Validator::make($data, $rules);
 
 						if ($validator->fails()) {
 							    return validator_response($validator);
  						}
 
- 						$JobID = Job::insertGetId($data);
+ 						$JobID2 = Job::insertGetId($data);
 				  	}
 
 				} else if ($joboptions->OperationType =='Delete') {
@@ -150,6 +151,8 @@ class TerminationRateOperation extends Command
 			Job::where(["JobID" => $JobID])->update($jobdata);
 			Log::error($e);
 		}
+		Log::info('terminationrateoperation ends');
+
 		Job::send_job_status_email($job,$CompanyID);
 
 		CronHelper::after_cronrun($this->name, $this);

@@ -81,7 +81,7 @@ class RoutingEngineData extends Command {
             DB::beginTransaction();
             DB::connection('neon_routingengine')->beginTransaction();
 
-            DB::connection('sqlsrv')->select('call Prc_RoutingDataPerRow()');
+            DB::connection('neon_routingengine')->select('call Prc_RoutingDataPerRow()');
             
 
             DB::connection('neon_routingengine')->commit();

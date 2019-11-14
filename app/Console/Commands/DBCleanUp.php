@@ -151,6 +151,10 @@ class DBCleanUp extends Command {
 			$error .= Retention::deleteArchiveOldRate($CompanyID,'ArchiveOldRate',$processID);
 			Log::info('Archive Old Rate Delete End.');
 
+			Log::info('Termination Rate Margin Delete Start.');
+			$error .= Retention::deleteTerminationRateMargin();
+			Log::info('Termination Rate Margin Delete End.');
+
 			Log::info('Tickets Delete Start.');
 			$error .= Retention::deleteTickets($CompanyID,'DeleteTickets',$processID);
 			Log::info('Tickets Delete End.');
