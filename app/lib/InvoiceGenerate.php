@@ -280,13 +280,13 @@ class InvoiceGenerate {
 
                     Log::info('PDF Generation start');
 
-                    /*$pdf_path = self::generate_pdf($InvoiceID);
+                    $pdf_path = self::generate_pdf($InvoiceID);
                     if(empty($pdf_path)){
                         $error = self::$InvoiceGenerationErrorReasons["PDF"];
                         return array("status" => "failure", "message" => $error);
                     }else {
                         $Invoice->update(["PDF" => $pdf_path]);
-                    }*/
+                    }
                     return [
                         'status' => 'success',
                         'message' => $AccountID . ' Account Invoice added successfully'
@@ -481,10 +481,10 @@ class InvoiceGenerate {
 
                 $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
                 $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
-                self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::SUBSCRIPTION, $StartDate, $EndDate);
             }
         }
 
+        self::addPrepaidInvoiceTaxRate($InvoiceID, 0, $AccountBalanceLogID, Product::SUBSCRIPTION, $StartDate, $EndDate);
         if(count($SubscriptionArray) > 0){
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
             $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
@@ -552,9 +552,10 @@ class InvoiceGenerate {
 
                 $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
                 $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
-                self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::ONEOFFCHARGE, $StartDate, $EndDate);
             }
         }
+
+        self::addPrepaidInvoiceTaxRate($InvoiceID, 0, $AccountBalanceLogID, Product::ONEOFFCHARGE, $StartDate, $EndDate);
 
         if(count($OneOffArray) > 0){
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
@@ -578,57 +579,106 @@ class InvoiceGenerate {
                 ->select('tblLanguage.ISOCode', 'tblTranslation.Language', 'tblLanguage.is_rtl')
                 ->first();
 
-            App::setLocale($language->ISOCode);
-
-
             $Account = Account::find($Invoice->AccountID);
             $AccountID = $Invoice->AccountID;
             $CompanyID = $Account->CompanyId;
             $Company = Company::find($CompanyID);
             $AccountBilling = AccountBilling::where(['AccountID' => $AccountID])->first();
-            $UploadPath = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+            $UploadPath = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH');
             $Currency = Currency::find($Account->CurrencyId);
-            $CurrencyCode = !empty($Currency)?$Currency->Code:'';
-            $CurrencySymbol =  Currency::getCurrencySymbol($Account->CurrencyId);
+            $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
+            $CurrencySymbol = Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-            $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+            $RoundChargesAmount = get_round_decimal_places($Account->AccountID);
+
+            $mainData= [
+                'other' => [
+                    "Title" => "",
+                    "Qty" => 0,
+                    "Rate" => '',
+                    "Discount" => 0,
+                    "Amount" => 0,
+                ],
+                'usage' => [
+                    "Title" => "Trafic costs",
+                    "Qty" => 0,
+                    "Rate" => '',
+                    "Discount" => 0,
+                    "Amount" => 0,
+                ],
+                'vat' => [
+                    "Title" => "VAT",
+                    "Qty" => 0,
+                    "Rate" => '',
+                    "Discount" => 0,
+                    "Amount" => 0,
+                ],
+            ];
+            $InvoiceDetailIDs = [];
+            foreach($InvoiceDetails as $Inv){
+                $InvoiceDetailIDs[] = $Inv->InvoiceDetailID;
+                if(!isset($mainData['other']['Title']) || empty($mainData['other']['Title']))
+                    $mainData['other']['Title'] =  date("M 'y", strtotime($Inv->StartDate));
+
+                $index = $Inv->ProductType == Product::USAGE ? "usage" : "other";
+                $mainData[$index]["Qty"] = number_format($mainData[$index]['Qty'] + $Inv->Qty,$RoundChargesAmount);
+                $mainData[$index]["Discount"] = number_format($mainData[$index]['Discount'] + $Inv->DiscountAmount,$RoundChargesAmount);
+                $mainData[$index]["Amount"] = number_format($mainData[$index]['Amount'] + $Inv->LineTotal,$RoundChargesAmount);
+            }
+
+            $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
+
+            $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceTaxType"=>0])->orderby('InvoiceTaxRateID')->get();
+
+            $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
+                ->select('TaxRateID', 'Title', DB::Raw('sum(TaxAmount) as TaxAmount'))
+                ->where("InvoiceID", $InvoiceID)
+                ->orderBy("InvoiceTaxRateID", "asc")
+                ->groupBy("TaxRateID")
+                ->get();
+
+            if(count($InvoiceAllTaxRates))
+                foreach($InvoiceAllTaxRates as $TaxRate){
+                    $mainData['vat']['Amount'] =  number_format($TaxRate->TaxAmount + $mainData['vat']['Amount'], $RoundChargesAmount);
+                }
+            App::setLocale($language->ISOCode);
 
             $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
             if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $Account->CompanyId) == '') {
-                $as3url =  public_path("/assets/images/250x100.png");
+                $as3url = public_path("/assets/images/250x100.png");
             } else {
-                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key,$Account->CompanyId));
+                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $Account->CompanyId));
             }
-            $logo_path = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/logo/' . $Account->CompanyId;
+            $logo_path = CompanyConfiguration::get('UPLOAD_PATH', $Account->CompanyId) . '/logo/' . $Account->CompanyId;
             @mkdir($logo_path, 0777, true);
             RemoteSSH::run("chmod -R 777 " . $logo_path);
-            $logo = $logo_path  . '/'  . basename($as3url);
+            $logo = $logo_path . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
-            @chmod($logo,0777);
+            @chmod($logo, 0777);
 
             $dateFormat = isset($Reseller->InvoiceDateFormat) ? $Reseller->InvoiceDateFormat : '';
-            $common_name = Str::slug($Account->AccountName.'-'.$Invoice->FullInvoiceNumber.'-'.date(invoice_date_fomat($dateFormat),strtotime($Invoice->IssueDate)).'-'.$InvoiceID);
+            $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-' . date(invoice_date_fomat($dateFormat), strtotime($Invoice->IssueDate)) . '-' . $InvoiceID);
 
-            $file_name = 'Invoice--' .$common_name . '.pdf';
-            $htmlfile_name = 'Invoice--' .$common_name . '.html';
+            $file_name = 'Invoice--' . $common_name . '.pdf';
+            $htmlfile_name = 'Invoice--' . $common_name . '.html';
 
-
-            $arrSignature=array();
+            $arrSignature = array();
             $arrSignature["UseDigitalSignature"] = CompanySetting::getKeyVal('UseDigitalSignature', $Account->CompanyId);
             $arrSignature["DigitalSignature"] = CompanySetting::getKeyVal('DigitalSignature', $Account->CompanyId);
-            $arrSignature["signaturePath"]= CompanyConfiguration::get('UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $Account->CompanyId, true);
-            if($arrSignature["DigitalSignature"]!="Invalid Key"){
-                $arrSignature["DigitalSignature"]=json_decode($arrSignature["DigitalSignature"]);
-            }else{
-                $arrSignature["UseDigitalSignature"]=false;
+            $arrSignature["signaturePath"] = CompanyConfiguration::get('UPLOAD_PATH') . "/" . AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $Account->CompanyId, true);
+            if ($arrSignature["DigitalSignature"] != "Invalid Key") {
+                $arrSignature["DigitalSignature"] = json_decode($arrSignature["DigitalSignature"]);
+            } else {
+                $arrSignature["UseDigitalSignature"] = false;
             }
-            $MultiCurrencies=array();
-            if(isset($InvoiceTemplate) && $InvoiceTemplate->ShowTotalInMultiCurrency==1){
-                $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($Account->CompanyId,$Account->CurrencyId,$Invoice->GrandTotal,$decimal_places);
+
+            $MultiCurrencies = array();
+            if (isset($InvoiceTemplate) && $InvoiceTemplate->ShowTotalInMultiCurrency == 1) {
+                $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($Account->CompanyId, $Account->CurrencyId, $Invoice->GrandTotal, $RoundChargesAmount);
             }
 
             $print_type = 'Invoice';
-            $body = View::make('invoices.pdf', get_defined_vars())->render();
+            $body = View::make('invoices.newpdf', get_defined_vars())->render();
 
             $body = htmlspecialchars_decode($body);
             $footer = View::make('invoices.pdffooter', compact('Invoice','print_type'))->render();
@@ -692,5 +742,106 @@ class InvoiceGenerate {
             }
         }
         return '';
+    }
+
+
+    public function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
+        $InvoiceDetail = InvoiceDetail::whereIn('InvoiceDetailID',$InvoiceDetailIDs)->first();
+        $date =  date("M 'y", strtotime($InvoiceDetail));
+
+        $data = [];
+        $InvoiceComponents = DB::connection('sqlsrv2')
+            ->table("tblInvoiceComponentDetail as id")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.TotalCost")
+            ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
+                $join->on('cli.CLI', '=', 'id.CLI');
+                $join->on('cli.AccountServiceID','=','id.AccountServiceID');
+            })
+            ->leftJoin("speakintelligentRM.tblTimezones as tz","tz.TimezonesID","=","id.TimezonesID")
+            ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
+            ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
+            ->get();
+
+        foreach($InvoiceComponents as $invoiceComponent){
+            $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
+            if(!isset($data[$index])){
+                $data[$index] = [
+                  'CLI' => $invoiceComponent->CLI,
+                  'CountryID' => $invoiceComponent->CountryID,
+                  'PackageID' => $invoiceComponent->PackageID,
+                  'Prefix' => $invoiceComponent->Prefix,
+                  'AccountServiceID' => $invoiceComponent->AccountServiceID,
+                  'date' => $date,
+                ];
+            }
+
+            $Component = $invoiceComponent->Component;
+            $Quantity = $invoiceComponent->Quantity;
+            $TotalCost = $invoiceComponent->TotalCost;
+
+            if($Component == "Subscription" || $Component == "OneOffCharge"){
+                $Component = "Monthly";
+                if(!isset($data[$index][$Component])) {
+                    $data[$index][$Component] = [
+                        'Discount' => number_format($invoiceComponent->Discount,$RoundChargesAmount),
+                        'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
+                        'Quantity' => number_format($invoiceComponent->Quantity,0),
+                        'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                    ];
+                } else {
+                    $oldData = $data[$index][$Component];
+                    $data[$index][$Component] = [
+                        'Discount' => number_format($oldData['Discount'] + $invoiceComponent->Discount,$RoundChargesAmount),
+                        'DiscountPrice' => number_format($oldData['DiscountPrice'] + $invoiceComponent->DiscountPrice,$RoundChargesAmount),
+                        'Quantity' => number_format($oldData['Quantity'] + $invoiceComponent->Quantity,0),
+                        'TotalCost' => number_format($oldData['TotalCost'] + $invoiceComponent->TotalCost,$RoundChargesAmount),
+                    ];
+                }
+            } else {
+                $UnitPrice = 0;
+                if($Component == "CostPerCall" && $Quantity > 0){
+                    $UnitPrice = $Quantity / $TotalCost;
+                }
+
+                $Title = "";
+                if($Component == "RecordingCostPerMinute"){
+                    $Title = "Voice Recording";
+                } elseif($Component == "PackageCostPerMinute"){
+                    $Title = "Package cost per minute";
+                } else {
+
+                    if($invoiceComponent->Type == "Termination")
+                        $Title .= "Termination ";
+
+                    if($Component == "CostPerMinute") {
+                        $Title .= "Cost per minute";
+                    } elseif($Component == "CostPerCall") {
+                        $Title .= "Cost per call";
+                    }
+
+                    if($invoiceComponent->Destination != "")
+                        $Title .= " " . $invoiceComponent->Destination;
+
+                    if($invoiceComponent->Origination != "")
+                        $Title .= " " . $invoiceComponent->Origination;
+                }
+                $Quantity = $Component == "CostPerCall" ? $invoiceComponent->Quantity : $invoiceComponent->Duration / 60;
+
+                $data[$index]['components'][] = [
+                    'Title' => $Title,
+                    'Type' => $invoiceComponent->Type,
+                    'Origination' => $invoiceComponent->Origination,
+                    'Component' => $Component,
+                    'Price'     => number_format($UnitPrice,$RoundChargesAmount),
+                    'Discount' => number_format($invoiceComponent->Discount,$RoundChargesAmount),
+                    'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
+                    'Duration' => number_format($invoiceComponent->Duration,$RoundChargesAmount),
+                    'Quantity' => number_format($Quantity,0),
+                    'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                ];
+            }
+        }
+
+        return $data;
     }
 }
