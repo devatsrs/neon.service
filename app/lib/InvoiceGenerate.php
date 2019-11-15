@@ -589,7 +589,7 @@ class InvoiceGenerate {
             $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
             $CurrencySymbol = Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-            $RoundChargesAmount = get_round_decimal_places($Account->AccountID);
+            $RoundChargesAmount = Helper::get_round_decimal_places($Account->AccountID);
 
             $mainData= [
                 'other' => [
@@ -614,6 +614,7 @@ class InvoiceGenerate {
                     "Amount" => 0,
                 ],
             ];
+
             $InvoiceDetailIDs = [];
             foreach($InvoiceDetails as $Inv){
                 $InvoiceDetailIDs[] = $Inv->InvoiceDetailID;
@@ -644,14 +645,14 @@ class InvoiceGenerate {
             App::setLocale($language->ISOCode);
 
             $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
-            if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $Account->CompanyId) == '') {
-                $as3url = public_path("/assets/images/250x100.png");
+            if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $CompanyID) == '') {
+                $as3url =  base_path().'/resources/assets/images/250x100.png';
             } else {
-                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $Account->CompanyId));
+                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
             }
-            $logo_path = CompanyConfiguration::get('UPLOAD_PATH', $Account->CompanyId) . '/logo/' . $Account->CompanyId;
+            $logo_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             @mkdir($logo_path, 0777, true);
-            RemoteSSH::run("chmod -R 777 " . $logo_path);
+            RemoteSSH::run($CompanyID,"chmod -R 777 " . $logo_path);
             $logo = $logo_path . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
             @chmod($logo, 0777);
@@ -663,9 +664,9 @@ class InvoiceGenerate {
             $htmlfile_name = 'Invoice--' . $common_name . '.html';
 
             $arrSignature = array();
-            $arrSignature["UseDigitalSignature"] = CompanySetting::getKeyVal('UseDigitalSignature', $Account->CompanyId);
-            $arrSignature["DigitalSignature"] = CompanySetting::getKeyVal('DigitalSignature', $Account->CompanyId);
-            $arrSignature["signaturePath"] = CompanyConfiguration::get('UPLOAD_PATH') . "/" . AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $Account->CompanyId, true);
+            $arrSignature["UseDigitalSignature"] = CompanySetting::getKeyVal($CompanyID, 'UseDigitalSignature');
+            $arrSignature["DigitalSignature"] = CompanySetting::getKeyVal($CompanyID, 'DigitalSignature');
+            $arrSignature["signaturePath"]= CompanyConfiguration::get($CompanyID,'UPLOAD_PATH')."/".AmazonS3::generate_upload_path(AmazonS3::$dir['DIGITAL_SIGNATURE_KEY'], '', $CompanyID, true);
             if ($arrSignature["DigitalSignature"] != "Invalid Key") {
                 $arrSignature["DigitalSignature"] = json_decode($arrSignature["DigitalSignature"]);
             } else {
@@ -677,26 +678,35 @@ class InvoiceGenerate {
                 $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($Account->CompanyId, $Account->CurrencyId, $Invoice->GrandTotal, $RoundChargesAmount);
             }
 
-            $print_type = 'Invoice';
-            $body = View::make('invoices.newpdf', get_defined_vars())->render();
+            $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
+            $message = isset($Reseller->InvoiceTo) ? $Reseller->InvoiceTo : '';
+            $replace_array = Invoice::create_accountdetails($Account);
+            $text = Invoice::getInvoiceToByAccount($message, $replace_array);
+            $InvoiceToAddress = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $text);
+            $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
+            $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
+            $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
+            $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
 
+            $print_type = 'Invoice';
+            $body = View::make('emails.invoices.newpdf', get_defined_vars())->render();
             $body = htmlspecialchars_decode($body);
-            $footer = View::make('invoices.pdffooter', compact('Invoice','print_type'))->render();
+
+            $footer = View::make('emails.invoices.pdffooter', get_defined_vars())->render();
             $footer = htmlspecialchars_decode($footer);
 
-            $header = View::make('invoices.pdfheader', compact('Invoice','print_type'))->render();
+            $header = View::make('emails.invoices.pdfheader', get_defined_vars())->render();
             $header = htmlspecialchars_decode($header);
 
-            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-            $destination_dir = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/'. $amazonPath;
+            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$CompanyID,$Invoice->AccountID) ;
+            $destination_dir = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH') . '/'. $amazonPath;
 
             if (!file_exists($destination_dir)) {
-                mkdir($destination_dir, 0777, true);
+                RemoteSSH::run($CompanyID, "mkdir -p " . $destination_dir);
+                RemoteSSH::run($CompanyID, "chmod -R 777 " . $destination_dir);
             }
-            RemoteSSH::run("chmod -R 777 " . $destination_dir);
 
             $local_file = $destination_dir .  $file_name;
-
             $local_htmlfile = $destination_dir .  $htmlfile_name;
             file_put_contents($local_htmlfile,$body);
             @chmod($local_htmlfile,0777);
@@ -704,7 +714,6 @@ class InvoiceGenerate {
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
             @chmod($footer_html,0777);
-
             $header_name = 'header-'. $common_name .'.html';
             $header_html = $destination_dir.$header_name;
             file_put_contents($header_html,$header);
@@ -713,21 +722,24 @@ class InvoiceGenerate {
             $output= "";
 
             if(getenv('APP_OS') == 'Linux'){
-                exec (base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                RemoteSSH::run($CompanyID, base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info(base_path(). '/wkhtmltox/bin/wkhtmltopdf --header-spacing 3 --footer-spacing 1 --header-html --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"');
 
                 if($arrSignature["UseDigitalSignature"]==true){
+                    Log::info("UseDigitalSignature true");
                     $newlocal_file = $destination_dir . str_replace(".pdf","-signature.pdf",$file_name);
-
-                    $mypdfsignerOutput=RemoteSSH::run('PortableSigner  -n     -t '.$local_file.'      -o '.$newlocal_file.'     -s '.$arrSignature["signaturePath"].'digitalsignature.pfx -c "Signed after 4 alterations" -r "Approved for publication" -l "Department of Dermatology" -p Welcome100');
+                    $mypdfsignerOutput=RemoteSSH::run($CompanyID, 'PortableSigner  -n     -t '.$local_file.'      -o '.$newlocal_file.'     -s '.$arrSignature["signaturePath"].'digitalsignature.pfx -c "Signed after 4 alterations" -r "Approved for publication" -l "Department of Dermatology" -p Welcome100');
                     Log::info($mypdfsignerOutput);
                     if(file_exists($newlocal_file)){
-                        RemoteSSH::run('rm '.$local_file);
-                        RemoteSSH::run('mv '.$newlocal_file.' '.$local_file);
+                        RemoteSSH::run($CompanyID, 'rm '.$local_file);
+                        RemoteSSH::run($CompanyID, 'mv '.$newlocal_file.' '.$local_file);
                     }
                 }
 
             }else{
+                Log::info("UseDigitalSignature false");
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
+                Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
             @chmod($local_file,0777);
             Log::info($output);
@@ -745,7 +757,7 @@ class InvoiceGenerate {
     }
 
 
-    public function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
+    public static function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
         $InvoiceDetail = InvoiceDetail::whereIn('InvoiceDetailID',$InvoiceDetailIDs)->first();
         $date =  date("M 'y", strtotime($InvoiceDetail));
 
@@ -766,12 +778,12 @@ class InvoiceGenerate {
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
             if(!isset($data[$index])){
                 $data[$index] = [
-                  'CLI' => $invoiceComponent->CLI,
-                  'CountryID' => $invoiceComponent->CountryID,
-                  'PackageID' => $invoiceComponent->PackageID,
-                  'Prefix' => $invoiceComponent->Prefix,
-                  'AccountServiceID' => $invoiceComponent->AccountServiceID,
-                  'date' => $date,
+                    'CLI' => $invoiceComponent->CLI,
+                    'CountryID' => $invoiceComponent->CountryID,
+                    'PackageID' => $invoiceComponent->PackageID,
+                    'Prefix' => $invoiceComponent->Prefix,
+                    'AccountServiceID' => $invoiceComponent->AccountServiceID,
+                    'date' => $date,
                 ];
             }
 
@@ -779,8 +791,7 @@ class InvoiceGenerate {
             $Quantity = $invoiceComponent->Quantity;
             $TotalCost = $invoiceComponent->TotalCost;
 
-            if($Component == "Subscription" || $Component == "OneOffCharge"){
-                $Component = "Monthly";
+            if($Component == "Monthly"){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
                         'Discount' => number_format($invoiceComponent->Discount,$RoundChargesAmount),

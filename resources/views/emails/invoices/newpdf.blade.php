@@ -1,9 +1,9 @@
 @extends('layout.print')
 
 @section('content')
-    <link rel="stylesheet" type="text/css" href="<?php echo public_path("assets/css/invoicetemplate/invoicestyle.css"); ?>" />
+    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/invoicestyle.css'}}" />
     @if(isset($language->is_rtl) && $language->is_rtl=="Y")
-        <link rel="stylesheet" type="text/css" href="<?php echo public_path("assets/css/bootstrap-rtl.min.css"); ?>" />
+        <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap-rtl.min.css'}}" />
         <style type="text/css">
             .leftsideview{
                 direction: ltr;
@@ -14,9 +14,31 @@
                 padding-left: 0px;
                 border-left: 0px;
             }
+            #client{
+                border-left: 0;
+            }
+            #frontinvoice .desc {
+                text-align: right;
+            }
+            #Service{
+                float: right;
+            }
+            .leftalign {
+                text-align: right;
+            }
+            .rightalign {
+                text-align: left;
+            }
         </style>
     @endif
     <style type="text/css">
+        .bg_graycolor{
+            background-color: #f5f5f6;
+            font-size: 12px;
+        }
+        .bg_graycolor th, .bg_graycolor td{
+            border: 1px solid #dddddd;
+        }
         .invoice,
         .invoice table,.invoice table td,.invoice table th,
         .invoice ul li
@@ -40,23 +62,21 @@
         }
 
         thead {
-            display: table-row-group
+            display: table-header-group
         }
 
         tfoot {
             display: table-row-group
         }
         @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
-  img.signatureImage {
+    img.signatureImage {
             position: absolute;
             z-index: 99999;
             top: {{isset($arrSignature["DigitalSignature"]->positionTop)?$arrSignature["DigitalSignature"]->positionTop:0}}px;
             left: {{isset($arrSignature["DigitalSignature"]->positionLeft)?$arrSignature["DigitalSignature"]->positionLeft:0}}px;
         }
         @endif
-
     </style>
-
     <div class="inovicebody">
         <!-- logo and invoice from section start-->
         <header class="clearfix">
@@ -67,38 +87,33 @@
             </div>
             <div id="company" class="pull-right flip">
                 <h2 class="name text-right flip"><b>@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_FROM')</b></h2>
-                <div class="text-right flip">{{ nl2br(Account::getAddress($Account)) }}</div>
+                <div class="text-right flip">{{ nl2br(\App\Lib\Account::getAddress($Account)) }}</div>
             </div>
         </header>
         <!-- logo and invoice from section end-->
+
+        <!-- need to change with new logic -->
 
         <main>
             @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
                 <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
             @endif
-
             <div id="details" class="clearfix">
-                <div id="client" class="pull-left flip">
-                    <div class="to"><b>@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_TO')</b></div>
-                    <div>{{nl2br($Invoice->Address)}}</div>
-                </div>
                 <div id="invoice" class="pull-right flip">
-                    <h1  class="text-right flip">@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO') {{$Invoice->FullInvoiceNumber}}</h1>
-                    <div class="date text-right flip">@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE') {{ date(invoice_date_fomat($Reseller->InvoiceDateFormat),strtotime($Invoice->IssueDate))}}</div>
-                    <div class="date text-right flip">@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE') {{date(invoice_date_fomat($Reseller->InvoiceDateFormat),strtotime($Invoice->IssueDate.' +0 days'))}}</div>
+                    <h1 class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}} {{$Invoice->FullInvoiceNumber}}</h1>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}} {{ date($dateFormat,strtotime($Invoice->IssueDate))}}</div>
+                    <div class="date text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}} {{date($dateFormat,strtotime($Invoice->IssueDate.' +1 days'))}}</div>
+
                     @if(!empty($MultiCurrencies))
                         @foreach($MultiCurrencies as $multiCurrency)
-                            <div class="text-right flip">@lang('routes.CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN') {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
+                            <div class="text-right flip">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}} {{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</div>
                         @endforeach
                     @endif
                 </div>
             </div>
 
             <!-- content of front page section start -->
-            <!--<div id="Service">
-              <h1>Item</h1>
-            </div>-->
-            <div class="clearfix"></div>
+
             <table border="0" cellspacing="0" cellpadding="0" id="frontinvoice">
                 <thead>
                 <tr>
@@ -136,6 +151,8 @@
                     </h3>
                 </div>
             </div>
+
+            <div class="page_break"></div>
             <!-- adevrtisement and terms section end -->
             @if(count($InvoiceComponents))
                 @foreach($InvoiceComponents as $key => $InvoiceComponent)
@@ -143,7 +160,7 @@
                         <table class="table table-striped">
                             <tr></tr>
                             <tr>
-                                <th style="width: 40%">{{ Country::where('CountryID', $InvoiceComponent['CountryID'])->pluck('ISO2') }}  {{ $InvoiceComponent['Prefix'] }}-{{ $InvoiceComponent['CLI'] }}  {{ Package::getPackageNameByID($InvoiceComponent['PackageID']) }} </th>
+                                <th style="width: 40%">{{ \App\Lib\Country::getCountryCode($InvoiceComponent['CountryID']) }}  {{ $InvoiceComponent['Prefix'] }}-{{ $InvoiceComponent['CLI'] }}  {{ \App\Lib\Package::getServiceNameByID($InvoiceComponent['PackageID']) }} </th>
                                 <th class="text-right" style="width: 12%; font-size: ">Standard price ({{$CurrencySymbol}}) </th>
                                 <th class="text-right" style="width: 12%">Disc. %</th>
                                 <th class="text-right" style="width: 12%"> Disc. Price ({{$CurrencySymbol}})</th>
@@ -178,7 +195,11 @@
                             @endif
                         </table>
                     </div>
+
+                    <div class="page_break"></div>
+
                 @endforeach
             @endif
         </main>
+    </div>
 @stop

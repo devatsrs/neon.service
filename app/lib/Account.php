@@ -86,6 +86,15 @@ class Account extends \Eloquent {
     }
 
 
+    public static function getAddress($Account){
+        $Address = "";
+        $Address .= !empty($Account->BillingAddress1) ? $Account->BillingAddress1 . ', ' : '';
+        $Address .= !empty($Account->BillingAddress2) ? $Account->BillingAddress2 . ', ' : '';
+        $Address .= !empty($Account->BillingAddress3) ? $Account->BillingAddress3 : '';
+        $Address = trim($Address, ', ');
+        return $Address;
+    }
+
     //not in use
     public static function getExcelFormat($filepath){
         $excel = Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()->toArray();
