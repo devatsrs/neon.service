@@ -82,58 +82,62 @@
     <div class="invoiceBody">
         <div class="col-md-12">
             <div id="CompanyInfo">
-
                 <div class="pull-right infoDiv">
                     <h2>Invoice</h2>
                 </div>
                 <div class="clearfix"></div>
                 <div class="pull-left addrDiv">
-                    IBM Nederland N.V. – ABN Johan Huizingalaan 765  1066VH AMSTERDAM NL
+                    {{ nl2br(\App\Lib\Account::getAddress($Account)) }}
                 </div>
                 <div class="pull-right infoDiv">
                     <table class="table">
                         <tr>
-                            <td>Number</td>
-                            <td>19700472</td>
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                            <td>{{$Invoice->FullInvoiceNumber}}</td>
                         </tr>
                         <tr>
-                            <td>Account</td>
-                            <td>20170006</td>
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
+                            <td>{{ $Account->AccountName }}</td>
                         </tr>
                         <tr>
-                            <td>Date </td>
-                            <td>01/15/2019</td>
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
+                            <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
                         </tr>
                         <tr>
-                            <td>Due date</td>
-                            <td>19700472</td>
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
+                            <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
                         </tr>
-                        <tr>
-                            <td>VAT nr</td>
-                            <td>NL001475253B01</td>
-                        </tr>
+                        @if(!empty($MultiCurrencies))
+                            @foreach($MultiCurrencies as $multiCurrency)
+                                <tr>
+                                    <td width="40%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL_IN")}}</td>                                         <td>{{$multiCurrency['Title']}} : {{$multiCurrency['Amount']}}</td>
+                                </tr>
+                            @endforeach
+                        @endif
                     </table>
                 </div>
             </div>
             <div class="clearfix"></div>
             <div id="CompanyInfo2" class="clearfix">
                 <div class="pull-left credentialDiv">
-                    kuperus@nl.ibm.com
-                    <br>
-                    sandra.stoker@nl.ibm.com
+                    @if(isset($arrSignature["UseDigitalSignature"]) && $arrSignature["UseDigitalSignature"]==true)
+                        <img src="{{get_image_data($arrSignature['signaturePath'].$arrSignature['DigitalSignature']->image)}}" class="signatureImage" />
+                    @endif
                 </div>
                 <div class="pull-right infoDiv">
                     <table class="table">
+                        @if(!empty($Invoice->PONumber))
+                            <tr>
+                                <td width="45%">PO</td>
+                                <td>{{ $Invoice->PONumber }}</td>
+                            </tr>
+                        @endif
                         <tr>
-                            <td>PO</td>
-                            <td>4603243667 </td>
+                            <td width="45%">Period</td>
+                            <td>{{ $InvoicePeriod }}</td>
                         </tr>
                         <tr>
-                            <td>Period</td>
-                            <td>dec '18</td>
-                        </tr>
-                        <tr>
-                            <td>Page</td>
+                            <td width="45%">Page</td>
                             <td>1/2</td>
                         </tr>
                     </table>
@@ -149,22 +153,22 @@
                         <th style="font-size: 18px; width: 56%">Total</th>
                         <th class="text-right" style="width: 11%">Quantity</th>
                         <th class="text-right" style="width: 11%">Rate</th>
-                        <th class="text-right" style="width: 11%">Discount (€)</th>
-                        <th class="text-right" style="width: 11%">Amount (€)</th>
+                        <th class="text-right" style="width: 11%">Discount ({{$CurrencySymbol}})</th>
+                        <th class="text-right" style="width: 11%">Amount ({{$CurrencySymbol}})</th>
                     </tr>
                     <tr>
-                        <td>Monthly costs jan '19</td>
-                        <td class="text-right"></td>
-                        <td class="text-right"></td>
-                        <td class="text-right">€ 0.50</td>
-                        <td class="text-right">€  4,50</td>
+                        <td>{{ $TotalMonthlyCost['title'] }}</td>
+                        <td class="text-right">{{ $TotalMonthlyCost['qty'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalMonthlyCost['rate'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalMonthlyCost['discount'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalMonthlyCost['amount'] }}</td>
                     </tr>
                     <tr>
-                        <td>Traffic costs</td>
-                        <td class="text-right"></td>
-                        <td class="text-right"></td>
-                        <td class="text-right"></td>
-                        <td class="text-right">00.00</td>
+                        <td>{{ $TotalUsageCost['title'] }}</td>
+                        <td class="text-right">{{ $TotalUsageCost['qty'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost['rate'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost['discount'] }}</td>
+                        <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost['amount'] }}</td>
                     </tr>
                     <tr>
                         <td>VAT</td>
@@ -178,10 +182,10 @@
             <div class="clearfix"></div>
             <div>
                 <div class="termsDiv pull-left">
-                    <h4>To pay before 03/31/2019 to <br>NL98 INGB 0675 1469 68 (BIC INGBNL2A)</h4>
+                    <h4>{{nl2br($Invoice->Terms)}}</h4>
                 </div>
                 <div class="totalAmount pull-right">
-                    <h4>€ 00,000.00</h4>
+                    <h4>{{$CurrencySymbol}} 00,000.00</h4>
                 </div>
             </div>
         </div>
@@ -193,22 +197,22 @@
                 <div class="infoDetail">
                     <table class="table">
                         <tr>
-                            <td style="width: 15%">Invoice</td>
-                            <td style="width: 15%">19700472</td>
+                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                            <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                             <td style="width: 40%"></td>
-                            <td style="width: 15%">Account</td>
-                            <td style="width: 15%">20170006</td>
+                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
+                            <td style="width: 15%">{{ $Account->AccountName }}</td>
                         </tr>
                         <tr>
-                            <td>Date </td>
-                            <td>01/15/2019</td>
+                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
+                            <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
                             <td></td>
                             <td>Period </td>
-                            <td>dec '18</td>
+                            <td>{{ $InvoicePeriod }}</td>
                         </tr>
                         <tr>
-                            <td>Due date</td>
-                            <td>19700472</td>
+                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
+                            <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
                             <td></td>
                             <td>Page</td>
                             <td>2/2</td>
@@ -221,33 +225,33 @@
                 <table class="table table-striped">
                     <tr>
                         <th style="width: 40%">BE  0800-39001  Custom </th>
-                        <th class="text-right" style="width: 12%; font-size: ">Standard price (€) </th>
+                        <th class="text-right" style="width: 12%; font-size: ">Standard price ({{$CurrencySymbol}}) </th>
                         <th class="text-right" style="width: 12%">Disc. %</th>
-                        <th class="text-right" style="width: 12%"> Disc. Price (€)</th>
+                        <th class="text-right" style="width: 12%"> Disc. Price ({{$CurrencySymbol}})</th>
                         <th class="text-right" style="width: 12%"> Qty</th>
-                        <th class="text-right" style="width: 12%">Amount (€)</th>
+                        <th class="text-right" style="width: 12%">Amount ({{$CurrencySymbol}})</th>
                     </tr>
                     <tr>
                         <th colspan="6">Monthly  costs jan '19 </th>
                     </tr>
                     <tr>
                         <td>Number</td>
-                        <td class="text-right">€ 5,00 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 5,00 </td>
                         <td class="text-right">10 % </td>
-                        <td class="text-right">€ 4,50 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 4,50 </td>
                         <td class="text-right">1 </td>
-                        <td class="text-right">€ 4,50 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 4,50 </td>
                     </tr>
                     <tr>
                         <th colspan="6">Traffic costs</th>
                     </tr>
                     <tr>
                         <td>Traffic costs per call from fixed off peak</td>
-                        <td class="text-right">€ 5,00 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 5,00 </td>
                         <td class="text-right"></td>
                         <td class="text-right"></td>
                         <td class="text-right">100</td>
-                        <td class="text-right">€ 1.50 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 1.50 </td>
                     </tr>
                     <tr>
                         <td>Traffic costs per call from fixed off peak</td>
@@ -255,7 +259,7 @@
                         <td class="text-right"></td>
                         <td class="text-right"></td>
                         <td class="text-right">100</td>
-                        <td class="text-right">€ 1.50 </td>
+                        <td class="text-right">{{$CurrencySymbol}} 1.50 </td>
                     </tr>
                     <tr>
                         <td>Cost per minute off-peak from fixed</td>
@@ -311,9 +315,10 @@
                         <td class="text-right"></td>
                         <td class="text-right"></td>
                         <td class="text-right"></td>
+                        <td class="text-right"></td>
                     </tr>
                     <tr style="font-size: 15px">
-                        <th class="text-right" colspan="4">SUBTOTAL</th>
+                        <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
                         <td></td>
                         <td></td>
                     </tr>
@@ -323,9 +328,9 @@
                         <td>%</td>
                     </tr>
                     <tr style="font-size: 15px">
-                        <th class="text-right" colspan="4">TOTAL</th>
+                        <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
                         <td></td>
-                        <td> € </td>
+                        <td> {{$CurrencySymbol}} </td>
                     </tr>
                 </table>
             </div>
