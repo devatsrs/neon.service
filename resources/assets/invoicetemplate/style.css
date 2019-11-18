@@ -1,0 +1,96 @@
+@font-face {
+    /*font-family: Source Sans Pro;
+    src: url(SourceSansPro-Regular.ttf);*/
+    font-family: DejaVu Sans;
+    src: url(DejaVuSans.ttf);
+}
+
+.invoiceBody {
+    margin: 0 auto;
+    color: #000000 !important;
+    background: #FFFFFF;
+    font-family: DejaVu Sans;
+}
+
+header {
+    padding: 10px 0;
+    margin-bottom: 20px;
+    /*border-bottom: 1px solid #AAAAAA;*/
+}
+
+#logo {
+    float: left;
+    margin-top: 8px;
+    width:48%;
+    margin-bottom: 10px;
+}
+.table td , .table th{
+    border: none !important;
+}
+h1, h2, h3 {
+    font-weight: bold;
+}
+.addrDiv {
+    width: 200px;
+}
+.infoDiv {
+    width: 42%;
+}
+.infoDiv tr td{
+    padding: 0px !important;
+}
+#CompanyInfo tr td:first-child{
+
+}
+.infoDiv h2{
+    padding-left: 5px;
+    font-weight: normal;
+}
+
+.credentialDiv {
+    color: #777;
+}
+.totalTable td, .totalTable th {
+    padding: 5px !important;
+}
+.termsDiv {
+    max-width: 45%;
+}
+.totalAmount {
+    max-width: 200px;
+}
+
+footer {
+    border-top: 1px solid navy;
+    padding: 20px 0;
+}
+.footer-logo {
+    width: 20%;
+}
+
+.footer-detail {
+    width: 60%;
+    text-align: right;
+    color: navy;
+    font-size: 12px;
+}
+.infoDetail {
+    margin-top: 0;
+}
+
+.infoDetail td{
+    padding: 0px !important;
+}
+.detailTable{
+    margin-top: 30px
+}
+
+.detailTable tr:first-child th:first-child{
+    font-size: 18px;
+}
+.detailTable td:first-child{
+    padding-left: 20px;
+}
+.detailTable th, .detailTable td {
+    font-size: 12px;
+}
