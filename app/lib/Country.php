@@ -17,6 +17,9 @@ class Country extends \Eloquent {
     public static function getCountryName($CountryID){
         return Country::where(["CountryID"=>$CountryID])->pluck('Country');
     }
+    public static function getCountryCode($CountryID){
+        return Country::where(["CountryID"=>$CountryID])->pluck('ISO2');
+    }
 
     public static function getCountryDropdownList($is_all=''){
 
