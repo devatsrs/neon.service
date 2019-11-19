@@ -280,6 +280,7 @@ class InvoiceGenerate {
 
                     Log::info('PDF Generation start');
 
+                    //$InvoiceID = 10578;
                     $pdf_path = self::generate_pdf($InvoiceID);
                     if(empty($pdf_path)){
                         $error = self::$InvoiceGenerationErrorReasons["PDF"];
@@ -287,6 +288,7 @@ class InvoiceGenerate {
                     }else {
                         $Invoice->update(["PDF" => $pdf_path]);
                     }
+                    //dd($pdf_path);
                     return [
                         'status' => 'success',
                         'message' => $AccountID . ' Account Invoice added successfully'
@@ -480,7 +482,7 @@ class InvoiceGenerate {
 
 
                 $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
-                $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+                //$InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
             }
         }
 
@@ -551,7 +553,7 @@ class InvoiceGenerate {
                 $InvoiceGrandTotal += $AccountBalanceSubscriptionLog->TotalAmount;
 
                 $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
-                $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+                //$InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
             }
         }
 
@@ -590,44 +592,43 @@ class InvoiceGenerate {
             $CurrencySymbol = Currency::getCurrencySymbol($Account->CurrencyId);
             $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->AccountID);
+            $InvoicePeriod = $InvoiceDetails != false ? date("M 'y", strtotime($InvoiceDetails->first()->StartDate)) : "";
+            $InvoiceDetailIDs = $InvoiceDetails->pluck('InvoiceDetailID');
 
-            $mainData= [
-                'other' => [
-                    "Title" => "",
-                    "Qty" => 0,
-                    "Rate" => '',
-                    "Discount" => 0,
-                    "Amount" => 0,
-                ],
-                'usage' => [
-                    "Title" => "Trafic costs",
-                    "Qty" => 0,
-                    "Rate" => '',
-                    "Discount" => 0,
-                    "Amount" => 0,
-                ],
-                'vat' => [
-                    "Title" => "VAT",
-                    "Qty" => 0,
-                    "Rate" => '',
-                    "Discount" => 0,
-                    "Amount" => 0,
-                ],
+            $AccountLevelMonthly = InvoiceDetail::where(['InvoiceID' => $InvoiceID])
+                ->whereIn('ProductType', [Product::SUBSCRIPTION, Product::ONEOFFCHARGE])
+                ->get();
+
+            $ComponentLevelMonthly = InvoiceComponentDetail::where(["Component" => "Monthly"])
+                ->whereIn(['InvoiceDetailID', $InvoiceDetailIDs])
+                ->get();
+
+            $TotalMonthlyCost = [
+                'title' => "Monthly Cost" . " " . $InvoicePeriod,
+                'qty' => $AccountLevelMonthly->sum('Qty') + $ComponentLevelMonthly->sum('Quantity'),
+                'rate' => 0,
+                'discount' => $AccountLevelMonthly->sum('DiscountAmount') + $ComponentLevelMonthly->sum('Discount'),
+                'amount' => $AccountLevelMonthly->sum('LineTotal') + $ComponentLevelMonthly->sum('TotalCost'),
             ];
 
-            $InvoiceDetailIDs = [];
-            foreach($InvoiceDetails as $Inv){
-                $InvoiceDetailIDs[] = $Inv->InvoiceDetailID;
-                if(!isset($mainData['other']['Title']) || empty($mainData['other']['Title']))
-                    $mainData['other']['Title'] =  date("M 'y", strtotime($Inv->StartDate));
+            $AccountLevelUsage = InvoiceDetail::where([
+                'InvoiceID' => $InvoiceID,
+                'ProductType' => Product::USAGE
+            ])->get();
 
-                $index = $Inv->ProductType == Product::USAGE ? "usage" : "other";
-                $mainData[$index]["Qty"] = number_format($mainData[$index]['Qty'] + $Inv->Qty,$RoundChargesAmount);
-                $mainData[$index]["Discount"] = number_format($mainData[$index]['Discount'] + $Inv->DiscountAmount,$RoundChargesAmount);
-                $mainData[$index]["Amount"] = number_format($mainData[$index]['Amount'] + $Inv->LineTotal,$RoundChargesAmount);
-            }
+            $ComponentLevelUsage = InvoiceComponentDetail::where("Component", "<>", "Monthly")
+                ->whereIn(['InvoiceDetailID', $InvoiceDetailIDs])
+                ->get();
 
-            $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
+            $TotalUsageCost = [
+                'title' => "Traffic costs",
+                'qty' => $AccountLevelUsage->sum('Qty') + $ComponentLevelUsage->sum('Quantity'),
+                'rate' => 0,
+                'discount' => $AccountLevelUsage->sum('DiscountAmount') + $ComponentLevelUsage->sum('Discount'),
+                'amount' => $AccountLevelUsage->sum('LineTotal') + $ComponentLevelUsage->sum('TotalCost'),
+            ];
+
+            //$InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
 
             $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceTaxType"=>0])->orderby('InvoiceTaxRateID')->get();
 
@@ -657,7 +658,7 @@ class InvoiceGenerate {
             file_put_contents($logo, file_get_contents($as3url));
             @chmod($logo, 0777);
 
-            $dateFormat = isset($Reseller->InvoiceDateFormat) ? $Reseller->InvoiceDateFormat : '';
+            $dateFormat = !empty($Reseller->InvoiceDateFormat) ? $Reseller->InvoiceDateFormat : 'Y-m-d';
             $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-' . date(invoice_date_fomat($dateFormat), strtotime($Invoice->IssueDate)) . '-' . $InvoiceID);
 
             $file_name = 'Invoice--' . $common_name . '.pdf';
@@ -687,6 +688,7 @@ class InvoiceGenerate {
             $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
             $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
             $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
+            $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,0);
 
             $print_type = 'Invoice';
             $body = View::make('emails.invoices.newpdf', get_defined_vars())->render();
