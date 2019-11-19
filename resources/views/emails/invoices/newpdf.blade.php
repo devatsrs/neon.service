@@ -5,32 +5,6 @@
     <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/style.css'}}" />
     @if(isset($language->is_rtl) && $language->is_rtl=="Y")
         <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap-rtl.min.css'}}" />
-        <style type="text/css">
-            .leftsideview{
-                direction: ltr;
-            }
-            #details{
-                border-right: 3px solid #000000;
-                padding-right: 6px;
-                padding-left: 0px;
-                border-left: 0px;
-            }
-            #client{
-                border-left: 0;
-            }
-            #frontinvoice .desc {
-                text-align: right;
-            }
-            .float-left{
-                float: right;
-            }
-            .leftalign {
-                text-align: right;
-            }
-            .rightalign {
-                text-align: left;
-            }
-        </style>
     @endif
     <style type="text/css">
         .bg_graycolor{
@@ -90,7 +64,7 @@
                     {{ nl2br(\App\Lib\Account::getAddress($Account)) }}
                 </div>
                 <div class="pull-right infoDiv">
-                    <table class="table">
+                    <table class="table text-right">
                         <tr>
                             <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
                             <td>{{$Invoice->FullInvoiceNumber}}</td>
@@ -161,14 +135,10 @@
                         <td>Traffic Costs</td>
                         <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost }}</td>
                     </tr>
-                    @if(count($InvoiceTaxRates))
-                        @foreach($InvoiceAllTaxRates as $taxRate)
-                            <tr>
-                                <td>{{ $InvoiceTaxRate->Title }}</td>
-                                <td class="text-right">{{$CurrencySymbol}}{{number_format($InvoiceTaxRate->TaxAmount,$RoundChargesAmount)}}</td>
-                            </tr>
-                        @endforeach
-                    @endif
+                    <tr>
+                        <td>VAT</td>
+                        <td class="text-right">{{$CurrencySymbol}}{{$TotalVAT}}</td>
+                    </tr>
                 </table>
             </div>
             <div class="clearfix"></div>
@@ -177,14 +147,14 @@
                     <h4>{{nl2br($Invoice->Terms)}}</h4>
                 </div>
                 <div class="totalAmount pull-right">
-                    <h4>{{$CurrencySymbol}} {{ $Invoice->GrandTotal }}</h4>
+                    <h4>{{$CurrencySymbol}} {{ $GrandTotal }}</h4>
                 </div>
             </div>
         </div>
         <div class="clearfix"></div>
         @if(count($InvoiceComponents))
             @foreach($InvoiceComponents as $key => $InvoiceComponent)
-                @php $PageCounter += 1; @endphp
+                <?php $PageCounter += 1; ?>
                 <div class="page_break"></div>
                 <div class="col-md-12">
                     <div id="CompanyInfo">
@@ -231,42 +201,41 @@
                             </tr>
                             <tr>
                                 <td>Number</td>
-                                <td>{{$CurrencySymbol}} {{number_format((int)@$InvoiceComponent['Monthly']['TotalCost'],$RoundChargesAmount)}}</td>
-                                <td>{{$CurrencySymbol}} {{number_format((int)@$InvoiceComponent['Monthly']['Discount'],$RoundChargesAmount)}}</td>
-                                <td>{{$CurrencySymbol}} {{number_format((int)@$InvoiceComponent['Monthly']['DiscountPrice'],$RoundChargesAmount)}}</td>
-                                <td>{{number_format((int)@$InvoiceComponent['Monthly']['Quantity'],0)}}</td>
-                                <td>{{$CurrencySymbol}} {{number_format((int)@$InvoiceComponent['Monthly']['TotalCost'],$RoundChargesAmount)}}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['Discount'] }}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }}</td>
+                                <td class="text-right">{{ $InvoiceComponent['Monthly']['Quantity'] }}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
                             </tr>
-
-                            @if(count($InvoiceComponent['components']))
+                            @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
                                 <tr>
                                     <th colspan="6">Traffic costs</th>
                                 </tr>
                                 @foreach($InvoiceComponent['components'] as $component => $comp)
                                     <tr>
                                         <td>{{ $comp['Title'] }}</td>
-                                        <td>{{ $comp['Price'] }}</td>
-                                        <td>{{ $comp['Discount'] }}</td>
-                                        <td>{{ $comp['DiscountPrice'] }}</td>
-                                        <td>{{ $comp['Quantity'] }}</td>
-                                        <td>{{ $comp['TotalCost'] }}</td>
+                                        <td class="text-right">{{ $comp['Price'] }}</td>
+                                        <td class="text-right">{{ $comp['Discount'] }}</td>
+                                        <td class="text-right">{{ $comp['DiscountPrice'] }}</td>
+                                        <td class="text-right">{{ $comp['Quantity'] }}</td>
+                                        <td class="text-right">{{ $comp['TotalCost'] }}</td>
                                     </tr>
                                 @endforeach
                             @endif
                             <tr style="font-size: 15px">
                                 <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
                                 <td></td>
-                                <td>{{$CurrencySymbol}} {{number_format($InvoiceComponent['SubTotal'], $RoundChargeAmount)}}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount)}}</td>
                             </tr>
                             <tr style="font-size: 15px">
                                 <th class="text-right" colspan="4">VAT</th>
                                 <td></td>
-                                <td>{{$CurrencySymbol}} {{number_format($InvoiceComponent['TotalTax'], $RoundChargeAmount)}}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount)}}</td>
                             </tr>
                             <tr style="font-size: 15px">
                                 <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
                                 <td></td>
-                                <td>{{$CurrencySymbol}} {{number_format($InvoiceComponent['GrandTotal'], $RoundChargeAmount)}}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount)}}</td>
                             </tr>
                         </table>
                     </div>
