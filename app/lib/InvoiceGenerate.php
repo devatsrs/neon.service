@@ -325,22 +325,34 @@ class InvoiceGenerate {
         Log::error('Usage Start  ' . json_encode(!empty($AccountBalanceUsageLog)));
 
         if (!empty($AccountBalanceUsageLog)) {
+
+            $UsageSubTotal = $AccountBalanceUsageLog->SubTotal;
+            $UsageTotalTax = $AccountBalanceUsageLog->TotalTax;
+            $UsageGrandTotal = $AccountBalanceUsageLog->GrandTotal;
+            if($UsageGrandTotal > 0) {
+                $Tax = self::calculateTax($AccountID, $UsageGrandTotal);
+                if($Tax > 0){
+                    $UsageTotalTax = $Tax;
+                    $UsageSubTotal = $UsageGrandTotal - $Tax;
+                }
+            }
+
             $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
 
             $InvoiceDetailArray = [
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE,
                 'Description' => $ProductDescription,
-                'Price' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
+                'Price' => number_format($UsageSubTotal, $decimal_places, '.', ''),
                 'Qty' => 1,
                 'CurrencyID' => $CurrencyID,
                 'StartDate' => $StartDate,
                 'EndDate' => $EndDate,
-                'TaxAmount' => number_format($AccountBalanceUsageLog->TotalTax, $decimal_places, '.', ''),
+                'TaxAmount' => number_format($UsageTotalTax, $decimal_places, '.', ''),
                 'DiscountType' => 0,
                 'DiscountAmount' => 0,
                 'DiscountLineAmount' => 0,
-                'LineTotal' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', '')
+                'LineTotal' => number_format($UsageSubTotal, $decimal_places, '.', '')
             ];
 
             $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
@@ -352,10 +364,6 @@ class InvoiceGenerate {
             Log::error('prc_addCLIInvoiceComponents  '. $query);
             DB::connection('sqlsrv2')->select($query);
 
-            // Adding Usage Totals in Invoice
-            $UsageSubtotal   = $AccountBalanceUsageLog->SubTotal;
-            $UsageTaxTotal   = $AccountBalanceUsageLog->TotalTax;
-            $UsageGrandTotal = $AccountBalanceUsageLog->GrandTotal;
 
             // Adding Monthly Cost Total in Invoice
             $MonthlyComponents = InvoiceComponentDetail::where([
@@ -368,8 +376,8 @@ class InvoiceGenerate {
             $MonthlyGrandTotal = $MonthlySubtotal + $MonthlyTax;
 
             // Totals of Usage and Monthly Cost
-            $InvoiceSubTotal    = $MonthlySubtotal + $UsageSubtotal;
-            $InvoiceTaxTotal    = $MonthlyTax + $UsageTaxTotal;
+            $InvoiceSubTotal    = $MonthlySubtotal + $UsageSubTotal;
+            $InvoiceTaxTotal    = $MonthlyTax + $UsageTotalTax;
             $InvoiceGrandTotal  = $MonthlyGrandTotal + $UsageGrandTotal;
 
             //Updating Invoice Totals
@@ -380,6 +388,31 @@ class InvoiceGenerate {
             $Invoice->save();
         }
     }
+
+   public static function calculateTax($AccountID, $Total){
+       $Account = Account::find($AccountID);
+       $Tax = 0;
+       $TaxRates = explode(",", $Account->TaxRateID);
+       foreach($TaxRates as $TaxRateID){
+
+           $TaxRateID = intval($TaxRateID);
+
+           if($TaxRateID>0){
+               $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+
+               if(isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                   if ($TaxRate->FlatStatus == 1 && $Total != 0) {
+                       $Tax = $TaxRate->Amount;
+                   } else {
+                       $Tax = $Total * ($TaxRate->Amount / 100);
+                   }
+
+               }
+           }
+       }
+
+       return $Tax;
+   }
 
     public static function generate_pdf($InvoiceID){
         $Invoice = Invoice::find($InvoiceID);
@@ -588,7 +621,6 @@ class InvoiceGenerate {
             $Component = $invoiceComponent->Component;
             $Quantity  = $invoiceComponent->Quantity;
             $TotalCost = $invoiceComponent->TotalCost;
-
             $data[$index]['SubTotal'] += $invoiceComponent->TotalCost;
             $data[$index]['TotalTax'] += $invoiceComponent->TotalTax;
             $GrandTotal = $data[$index]['SubTotal'] + $data[$index]['TotalTax'];
@@ -672,6 +704,4 @@ class InvoiceGenerate {
     public static function addPostPaidUsageInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice){
 
     }
-
-
 }
