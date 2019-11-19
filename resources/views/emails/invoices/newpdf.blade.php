@@ -203,7 +203,7 @@
                             <tr>
                                 <td>Number</td>
                                 <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
-                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['Discount'] }}</td>
+                                <td class="text-right">{{ $InvoiceComponent['Monthly']['Discount'] }}</td>
                                 <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }}</td>
                                 <td class="text-right">{{ $InvoiceComponent['Monthly']['Quantity'] }}</td>
                                 <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>

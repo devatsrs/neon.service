@@ -630,9 +630,9 @@ class InvoiceGenerate {
             if($Component == "Monthly"){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
-                        'Discount'  => number_format($invoiceComponent->Discount,$RoundChargesAmount),
-                        'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
-                        'Quantity'  => number_format($invoiceComponent->Quantity,0),
+                        'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                        'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
+                        'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',
                         'TotalTax'  => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                         'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
                     ];
@@ -687,11 +687,11 @@ class InvoiceGenerate {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => number_format($UnitPrice,$RoundChargesAmount),
-                    'Discount'      => number_format($invoiceComponent->Discount,$RoundChargesAmount),
-                    'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
+                    'Price'         => $UnitPrice > 0 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity'      => number_format($Quantity,0),
+                    'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
                 ];
