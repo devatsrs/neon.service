@@ -202,10 +202,10 @@
                             </tr>
                             <tr>
                                 <td>Number</td>
-                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
-                                <td class="text-right">{{ $InvoiceComponent['Monthly']['Discount'] }}</td>
-                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }}</td>
-                                <td class="text-right">{{ $InvoiceComponent['Monthly']['Quantity'] }}</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['TotalCost'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}@endif</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Discount'])){{ $InvoiceComponent['Monthly']['Discount'] }} @endif</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['DiscountPrice'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }} @endif</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Quantity'])){{ $InvoiceComponent['Monthly']['Quantity'] }} @endif</td>
                                 <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
                             </tr>
                         @endif
@@ -217,11 +217,11 @@
                                 @if($comp['Quantity'] != 0)
                                     <tr>
                                         <td>{{ $comp['Title'] }}</td>
-                                        <td class="text-right">{{ $comp['Price'] }}</td>
-                                        <td class="text-right">{{ $comp['Discount'] }}</td>
-                                        <td class="text-right">{{ $comp['DiscountPrice'] }}</td>
-                                        <td class="text-right">{{ $comp['Quantity'] }}</td>
-                                        <td class="text-right">{{ $comp['TotalCost'] }}</td>
+                                        <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
+                                        <td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>
+                                        <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
+                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
+                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['TotalCost'] }}</td>
                                     </tr>
                                 @endif
                             @endforeach
