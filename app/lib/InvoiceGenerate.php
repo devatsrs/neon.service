@@ -330,7 +330,7 @@ class InvoiceGenerate {
             $UsageTotalTax = $AccountBalanceUsageLog->TotalTax;
             $UsageGrandTotal = $AccountBalanceUsageLog->GrandTotal;
             if($UsageGrandTotal > 0) {
-                $Tax = self::calculateTax($AccountID, $UsageGrandTotal);
+                $Tax = self::calculateUsageTax($AccountID, $UsageGrandTotal);
                 if($Tax > 0){
                     $UsageTotalTax = $Tax;
                     $UsageSubTotal = $UsageGrandTotal - $Tax;
@@ -389,30 +389,31 @@ class InvoiceGenerate {
         }
     }
 
-   public static function calculateTax($AccountID, $Total){
-       $Account = Account::find($AccountID);
-       $Tax = 0;
-       $TaxRates = explode(",", $Account->TaxRateID);
-       foreach($TaxRates as $TaxRateID){
+    public static function calculateUsageTax($AccountID, $Total){
+        $Account = Account::find($AccountID);
+        $Tax = 0;
+        $TaxRates = explode(",", $Account->TaxRateID);
+        foreach($TaxRates as $TaxRateID){
 
-           $TaxRateID = intval($TaxRateID);
+            $TaxRateID = intval($TaxRateID);
 
-           if($TaxRateID>0){
-               $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+            if($TaxRateID>0){
+                $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+                if($TaxRate->TaxType == TaxRate::TAX_USAGE || $TaxRate->TaxType == TaxRate::TAX_ALL) {
+                    if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                        if ($TaxRate->FlatStatus == 1 && $Total != 0) {
+                            $Tax = $TaxRate->Amount;
+                        } else {
+                            $Tax = $Total * ($TaxRate->Amount / 100);
+                        }
 
-               if(isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
-                   if ($TaxRate->FlatStatus == 1 && $Total != 0) {
-                       $Tax = $TaxRate->Amount;
-                   } else {
-                       $Tax = $Total * ($TaxRate->Amount / 100);
-                   }
+                    }
+                }
+            }
+        }
 
-               }
-           }
-       }
-
-       return $Tax;
-   }
+        return $Tax;
+    }
 
     public static function generate_pdf($InvoiceID){
         $Invoice = Invoice::find($InvoiceID);
