@@ -83,4 +83,16 @@ class RemoteSSH{
     public static function put($localpath,$remotepath){
         RemoteFacade::put($localpath,$remotepath);
     }
+
+    public static function make_dir($CompanyID,$folder, $permission = "775" ){
+
+        self::setConfig($CompanyID);
+
+        $command  = "mkdir -p " . $folder;
+        self::run($CompanyID, $command);
+
+        $command2  = "sudo chmod -R ". $permission . " ".$folder;
+        self::run($CompanyID, $command2);
+
+    }
 }
