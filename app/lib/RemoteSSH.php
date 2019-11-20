@@ -91,7 +91,7 @@ class RemoteSSH{
         $command  = "mkdir -p " . $folder;
         self::run($CompanyID, $command);
 
-        $command2  = "sudo chmod -R ". $permission . " ".$folder;
+        $command2  = "chmod -R ". $permission . " ".$folder;
         self::run($CompanyID, $command2);
 
     }
