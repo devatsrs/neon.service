@@ -274,9 +274,8 @@ class InvoiceGenerate {
                 ])->pluck('AccountBalanceLogID');
 
                 if($AccountBalanceLogID != false) {
+
                     self::addPrepaidUsage($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
-                    self::addPrepaidSubscription($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
-                    self::addPrepaidOneOffCharge($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
 
                     Log::info('PDF Generation start');
 
@@ -314,6 +313,8 @@ class InvoiceGenerate {
     }
 
     public static function addPrepaidUsage($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID){
+
+        // Fetching Usage Data
         $AccountBalanceUsageLog = AccountBalanceUsageLog::select(DB::raw("SUM(UsageAmount) AS SubTotal, SUM(TotalTax) AS TotalTax, SUM(TotalAmount) AS GrandTotal"))
             ->where([
                 'AccountBalanceLogID' => $AccountBalanceLogID
@@ -321,49 +322,66 @@ class InvoiceGenerate {
             ->where('Date', '<=', $EndDate)
             ->first();
 
-
-        $Invoice = Invoice::find($InvoiceID);
-        $InvoiceSubTotal = $Invoice->SubTotal;
-        $InvoiceTaxTotal = $Invoice->TotalTax;
-        $InvoiceGrandTotal = $Invoice->GrandTotal;
-        $InvoiceDetailArray = [];
-
         Log::error('Usage Start  ' . json_encode(!empty($AccountBalanceUsageLog)));
+
         if (!empty($AccountBalanceUsageLog)) {
+
+            $UsageSubTotal = $AccountBalanceUsageLog->SubTotal;
+            $UsageTotalTax = $AccountBalanceUsageLog->TotalTax;
+            $UsageGrandTotal = $AccountBalanceUsageLog->GrandTotal;
+            if($UsageGrandTotal > 0) {
+                $Tax = self::calculateUsageTax($AccountID, $UsageGrandTotal);
+                if($Tax > 0){
+                    $UsageTotalTax = $Tax;
+                    $UsageSubTotal = $UsageGrandTotal - $Tax;
+                }
+            }
+
             $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
 
             $InvoiceDetailArray = [
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE,
                 'Description' => $ProductDescription,
-                'Price' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
+                'Price' => number_format($UsageSubTotal, $decimal_places, '.', ''),
                 'Qty' => 1,
                 'CurrencyID' => $CurrencyID,
                 'StartDate' => $StartDate,
                 'EndDate' => $EndDate,
-                'TaxAmount' => number_format($AccountBalanceUsageLog->TotalTax, $decimal_places, '.', ''),
+                'TaxAmount' => number_format($UsageTotalTax, $decimal_places, '.', ''),
                 'DiscountType' => 0,
                 'DiscountAmount' => 0,
                 'DiscountLineAmount' => 0,
-                'LineTotal' => number_format($AccountBalanceUsageLog->SubTotal, $decimal_places, '.', ''),
-                //'TotalAmount' => $AccountBalanceUsageLog->GrandTotal,
+                'LineTotal' => number_format($UsageSubTotal, $decimal_places, '.', '')
             ];
 
-            $InvoiceSubTotal += $AccountBalanceUsageLog->SubTotal;
-            $InvoiceTaxTotal += $AccountBalanceUsageLog->TotalTax;
-            $InvoiceGrandTotal += $AccountBalanceUsageLog->GrandTotal;
-        }
-
-
-
-        if(!empty($InvoiceDetailArray)){
             $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+
             $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
-            self::addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, Product::USAGE, $StartDate, $EndDate);
+            $query = "CALL prc_addInvoicePrepaidComponents($CompanyID,$AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
 
-            self::addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetailID);
+            Log::error('prc_addCLIInvoiceComponents  '. $query);
+            DB::connection('sqlsrv2')->select($query);
 
+
+            // Adding Monthly Cost Total in Invoice
+            $MonthlyComponents = InvoiceComponentDetail::where([
+                'InvoiceDetailID' => $InvoiceDetailID,
+                'Component' => 'Monthly',
+            ])->get();
+
+            $MonthlySubtotal = $MonthlyComponents->sum('TotalCost');
+            $MonthlyTax = $MonthlyComponents->sum('TotalTax');
+            $MonthlyGrandTotal = $MonthlySubtotal + $MonthlyTax;
+
+            // Totals of Usage and Monthly Cost
+            $InvoiceSubTotal    = $MonthlySubtotal + $UsageSubTotal;
+            $InvoiceTaxTotal    = $MonthlyTax + $UsageTotalTax;
+            $InvoiceGrandTotal  = $MonthlyGrandTotal + $UsageGrandTotal;
+
+            //Updating Invoice Totals
+            $Invoice = Invoice::find($InvoiceID);
             $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
             $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
             $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
@@ -371,205 +389,30 @@ class InvoiceGenerate {
         }
     }
 
-    public static function addPrepaidInvoiceTaxRate($InvoiceID, $InvoiceDetailID, $AccountBalanceLogID, $ProductType, $StartDate, $EndDate){
-        $taxRateData = $TaxRateLogs = [];
-        if($ProductType == Product::USAGE){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceUsageLog as ul","ul.AccountBalanceUsageLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
-                ->where([
-                    'ul.AccountBalanceLogID' => $AccountBalanceLogID,
-                    'tblAccountBalanceTaxRateLog.Type' => Product::USAGE,
-                ])->where('ul.Date', '>=', $StartDate)
-                ->where('ul.Date', '<=', $EndDate)
-                ->get();
-            Log::info("Usage Tax Rate Logs: " . $TaxRateLogs->count());
-        } elseif ($ProductType == Product::SUBSCRIPTION){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog as sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
-                ->where([
-                    'sl.AccountBalanceLogID' => $AccountBalanceLogID,
-                    'tblAccountBalanceTaxRateLog.Type' => Product::SUBSCRIPTION,
-                ])->where('sl.StartDate', '>=', $StartDate)
-                ->where('sl.EndDate', '<=', $EndDate)
-                ->get();
-            Log::info("Subscription Tax Rate Logs: " . $TaxRateLogs->count());
-        } elseif($ProductType == Product::ONEOFFCHARGE){
-            $TaxRateLogs = AccountBalanceTaxRateLog::join("tblAccountBalanceSubscriptionLog as sl","sl.AccountBalanceSubscriptionLogID","=","tblAccountBalanceTaxRateLog.ParentLogID")
-                ->where([
-                    'sl.AccountBalanceLogID' => $AccountBalanceLogID,
-                    'tblAccountBalanceTaxRateLog.Type' => Product::ONEOFFCHARGE,
-                ])->where('sl.StartDate', '>=', $StartDate)
-                ->where('sl.EndDate', '<=', $EndDate)
-                ->get();
-            Log::info("OneOffCharge Tax Rate Logs: " . $TaxRateLogs->count());
-        }
+    public static function calculateUsageTax($AccountID, $Total){
+        $Account = Account::find($AccountID);
+        $Tax = 0;
+        $TaxRates = explode(",", $Account->TaxRateID);
+        foreach($TaxRates as $TaxRateID){
 
-        foreach($TaxRateLogs as $TaxRateLog){
-            $taxRateData = array(
-                "InvoiceID" => $InvoiceID,
-                "InvoiceDetailID" => $InvoiceDetailID,
-                "TaxRateID" => $TaxRateLog->TaxRateID,
-                "TaxAmount" => $TaxRateLog->TaxAmount,
-                "Title" => $TaxRateLog->Title,
-            );
+            $TaxRateID = intval($TaxRateID);
 
-            InvoiceTaxRate::create($taxRateData);
-        }
+            if($TaxRateID>0){
+                $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+                if($TaxRate->TaxType == TaxRate::TAX_USAGE || $TaxRate->TaxType == TaxRate::TAX_ALL) {
+                    if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                        if ($TaxRate->FlatStatus == 1 && $Total != 0) {
+                            $Tax = $TaxRate->Amount;
+                        } else {
+                            $Tax = $Total * ($TaxRate->Amount / 100);
+                        }
 
-    }
-
-    public static function addUsageComponents($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceDetailID){
-        $query = "CALL prc_addInvoicePrepaidComponents($CompanyID,$AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
-
-        Log::error('prc_addCLIInvoiceComponents  '. $query);
-        DB::connection('sqlsrv2')->select($query);
-    }
-
-
-    public static function addPrepaidSubscription($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID, $ServiceID = 0, $AccountServiceID = 0){
-
-        $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
-            'AccountBalanceLogID' => $AccountBalanceLogID,
-            'ServiceID'=>$ServiceID,
-            'AccountServiceID'=>$AccountServiceID,
-            'ProductType'=>Product::SUBSCRIPTION
-        ])
-            ->where('StartDate','>=',$StartDate)
-            ->where('EndDate','<=',$EndDate)
-            ->get();
-
-        $Invoice                = Invoice::find($InvoiceID);
-        $InvoiceSubTotal        = $Invoice->SubTotal;
-        $InvoiceDiscountTotal   = $Invoice->TotalDiscount;
-        $InvoiceTaxTotal        = $Invoice->TotalTax;
-        $InvoiceGrandTotal      = $Invoice->GrandTotal;
-        $SubscriptionArray      = [];
-
-        Log::error('Subscription Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
-        foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog){
-
-            $checkIfExist = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
-                ->where([
-                    'tblInvoice.AccountID' => $AccountID,
-                    'tblInvoiceDetail.AccountSubscriptionID' => $AccountBalanceSubscriptionLog->ParentID,
-                    'tblInvoiceDetail.ProductType' => Product::SUBSCRIPTION,
-                    'tblInvoiceDetail.StartDate' => $AccountBalanceSubscriptionLog->StartDate,
-                    'tblInvoiceDetail.EndDate' => $AccountBalanceSubscriptionLog->EndDate,
-                ])->first();
-
-            if ($checkIfExist == false) {
-                $InvoiceDetailArray = [
-                    'InvoiceID' => $InvoiceID,
-                    'ProductType' => Product::SUBSCRIPTION,
-                    'Description' => $AccountBalanceSubscriptionLog->Description,
-                    'Price' => $AccountBalanceSubscriptionLog->Price,
-                    'Qty' => $AccountBalanceSubscriptionLog->Qty,
-                    'CurrencyID' => $CurrencyID,
-                    'StartDate' => $AccountBalanceSubscriptionLog->StartDate,
-                    'EndDate' => $AccountBalanceSubscriptionLog->EndDate,
-                    'TaxAmount' => (float)$AccountBalanceSubscriptionLog->TaxAmount ,
-                    'DiscountType' => $AccountBalanceSubscriptionLog->DiscountType,
-                    'DiscountAmount' => (float)$AccountBalanceSubscriptionLog->DiscountAmount,
-                    'DiscountLineAmount' => (float)$AccountBalanceSubscriptionLog->DiscountLineAmount,
-                    'LineTotal' => (float)$AccountBalanceSubscriptionLog->LineAmount,
-                    //'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
-                    'AccountSubscriptionID' => $AccountBalanceSubscriptionLog->ParentID,
-                ];
-
-                $SubscriptionArray[] = $InvoiceDetailArray;
-                $InvoiceSubTotal += $AccountBalanceSubscriptionLog->LineAmount;
-                $InvoiceDiscountTotal += $AccountBalanceSubscriptionLog->DiscountAmount;
-                $InvoiceTaxTotal += $AccountBalanceSubscriptionLog->TaxAmount;
-                $InvoiceGrandTotal += $AccountBalanceSubscriptionLog->TotalAmount;
-
-
-                $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
-                //$InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+                    }
+                }
             }
         }
 
-        self::addPrepaidInvoiceTaxRate($InvoiceID, 0, $AccountBalanceLogID, Product::SUBSCRIPTION, $StartDate, $EndDate);
-        if(count($SubscriptionArray) > 0){
-            $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
-            $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
-            $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
-            $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
-            $Invoice->save();
-        }
-    }
-
-    public static function addPrepaidOneOffCharge($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID, $ServiceID = 0, $AccountServiceID = 0){
-
-        $AccountBalanceSubscriptionLogs = AccountBalanceSubscriptionLog::where([
-            'AccountBalanceLogID' => $AccountBalanceLogID,
-            'ServiceID'=>$ServiceID,
-            'AccountServiceID'=>$AccountServiceID,
-            'ProductType'=>Product::ONEOFFCHARGE
-        ])
-            ->where('StartDate','>=',$StartDate)
-            ->where('EndDate','<=',$EndDate)
-            ->get();
-
-        $Invoice                = Invoice::find($InvoiceID);
-        $InvoiceSubTotal        = $Invoice->SubTotal;
-        $InvoiceDiscountTotal   = $Invoice->TotalDiscount;
-        $InvoiceTaxTotal        = $Invoice->TotalTax;
-        $InvoiceGrandTotal      = $Invoice->GrandTotal;
-        $OneOffArray            = [];
-
-        Log::error('OneOffCharge Start  ' . json_encode(count($AccountBalanceSubscriptionLogs)));
-        foreach($AccountBalanceSubscriptionLogs as $AccountBalanceSubscriptionLog) {
-
-            $checkIfExist = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
-                ->where([
-                    'tblInvoice.AccountID' => $AccountID,
-                    'tblInvoiceDetail.AccountOneOffChargeID' => $AccountBalanceSubscriptionLog->ParentID,
-                    'tblInvoiceDetail.ProductType' => Product::ONEOFFCHARGE,
-                    'tblInvoiceDetail.StartDate' => $AccountBalanceSubscriptionLog->StartDate,
-                    'tblInvoiceDetail.EndDate' => $AccountBalanceSubscriptionLog->EndDate,
-                ])->first();
-
-            if ($checkIfExist == false) {
-                $InvoiceDetailArray = [
-                    'InvoiceID' => $InvoiceID,
-                    'ProductType' => Product::ONEOFFCHARGE,
-                    'Description' => $AccountBalanceSubscriptionLog->Description,
-                    'Price' => $AccountBalanceSubscriptionLog->Price,
-                    'Qty' => $AccountBalanceSubscriptionLog->Qty,
-                    'CurrencyID' => $CurrencyID,
-                    'StartDate' => $AccountBalanceSubscriptionLog->StartDate,
-                    'EndDate' => $AccountBalanceSubscriptionLog->EndDate,
-                    'TaxAmount' => (float)$AccountBalanceSubscriptionLog->TaxAmount,
-                    'DiscountType' => $AccountBalanceSubscriptionLog->DiscountType,
-                    'DiscountAmount' => (float)$AccountBalanceSubscriptionLog->DiscountAmount,
-                    'DiscountLineAmount' => (float)$AccountBalanceSubscriptionLog->DiscountLineAmount,
-                    'LineTotal' => (float)$AccountBalanceSubscriptionLog->LineAmount,
-                    //'TotalAmount' => $AccountBalanceSubscriptionLog->TotalAmount,
-                    'AccountOneOffChargeID' => $AccountBalanceSubscriptionLog->ParentID,
-                ];
-
-                $OneOffArray[] = $InvoiceDetailArray;
-                $InvoiceSubTotal += $AccountBalanceSubscriptionLog->LineAmount;
-                $InvoiceDiscountTotal += $AccountBalanceSubscriptionLog->DiscountAmount;
-                $InvoiceTaxTotal += $AccountBalanceSubscriptionLog->TaxAmount;
-                $InvoiceGrandTotal += $AccountBalanceSubscriptionLog->TotalAmount;
-
-                $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
-                //$InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
-            }
-        }
-
-        self::addPrepaidInvoiceTaxRate($InvoiceID, 0, $AccountBalanceLogID, Product::ONEOFFCHARGE, $StartDate, $EndDate);
-
-        if(count($OneOffArray) > 0){
-            $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
-            $Invoice->TotalDiscount = number_format($InvoiceDiscountTotal, $decimal_places, '.', '');
-            $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
-            $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
-            $Invoice->save();
-        }
-    }
-
-    public static function addPostPaidUsageInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice){
-
+        return $Tax;
     }
 
     public static function generate_pdf($InvoiceID){
@@ -593,43 +436,31 @@ class InvoiceGenerate {
             $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
             $RoundChargesAmount = Helper::get_round_decimal_places($Account->AccountID);
             $InvoicePeriod = $InvoiceDetails != false ? date("M 'y", strtotime($InvoiceDetails->first()->StartDate)) : "";
-            $InvoiceDetailIDs = $InvoiceDetails->pluck('InvoiceDetailID');
+            $InvoiceDetailIDs = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->lists('InvoiceDetailID');
 
-            $AccountLevelMonthly = InvoiceDetail::where(['InvoiceID' => $InvoiceID])
-                ->whereIn('ProductType', [Product::SUBSCRIPTION, Product::ONEOFFCHARGE])
-                ->get();
+            // Getting total monthly cost
+            $TotalMonthlyCost = InvoiceComponentDetail::where(["Component" => "Monthly"])
+                ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                ->sum('TotalCost');
 
-            $ComponentLevelMonthly = InvoiceComponentDetail::where(["Component" => "Monthly"])
-                ->whereIn(['InvoiceDetailID', $InvoiceDetailIDs])
-                ->get();
+            $TotalMonthlyCost = number_format($TotalMonthlyCost,$RoundChargesAmount);
 
-            $TotalMonthlyCost = [
-                'title' => "Monthly Cost" . " " . $InvoicePeriod,
-                'qty' => $AccountLevelMonthly->sum('Qty') + $ComponentLevelMonthly->sum('Quantity'),
-                'rate' => 0,
-                'discount' => $AccountLevelMonthly->sum('DiscountAmount') + $ComponentLevelMonthly->sum('Discount'),
-                'amount' => $AccountLevelMonthly->sum('LineTotal') + $ComponentLevelMonthly->sum('TotalCost'),
-            ];
-
-            $AccountLevelUsage = InvoiceDetail::where([
+            // Getting total Usage cost
+            $TotalUsageCost = InvoiceDetail::where([
                 'InvoiceID' => $InvoiceID,
                 'ProductType' => Product::USAGE
-            ])->get();
+            ])->pluck('LineTotal');
 
-            $ComponentLevelUsage = InvoiceComponentDetail::where("Component", "<>", "Monthly")
-                ->whereIn(['InvoiceDetailID', $InvoiceDetailIDs])
-                ->get();
+            $TotalUsageCost = number_format($TotalUsageCost,$RoundChargesAmount);
 
-            $TotalUsageCost = [
-                'title' => "Traffic costs",
-                'qty' => $AccountLevelUsage->sum('Qty') + $ComponentLevelUsage->sum('Quantity'),
-                'rate' => 0,
-                'discount' => $AccountLevelUsage->sum('DiscountAmount') + $ComponentLevelUsage->sum('Discount'),
-                'amount' => $AccountLevelUsage->sum('LineTotal') + $ComponentLevelUsage->sum('TotalCost'),
-            ];
+            $TotalVAT = number_format($Invoice->TotalTax,$RoundChargesAmount);
+            $GrandTotal = number_format($Invoice->GrandTotal,$RoundChargesAmount);
 
-            //$InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
+            $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
 
+            Log::info("Component data " . json_encode($InvoiceComponents));
+            $PageCounter = 1;
+            $TotalPages = count($InvoiceComponents) + $PageCounter;
             $InvoiceTaxRates = InvoiceTaxRate::where(["InvoiceID"=>$InvoiceID,"InvoiceTaxType"=>0])->orderby('InvoiceTaxRateID')->get();
 
             $InvoiceAllTaxRates = DB::connection('sqlsrv2')->table('tblInvoiceTaxRate')
@@ -639,17 +470,13 @@ class InvoiceGenerate {
                 ->groupBy("TaxRateID")
                 ->get();
 
-            if(count($InvoiceAllTaxRates))
-                foreach($InvoiceAllTaxRates as $TaxRate){
-                    $mainData['vat']['Amount'] =  number_format($TaxRate->TaxAmount + $mainData['vat']['Amount'], $RoundChargesAmount);
-                }
             App::setLocale($language->ISOCode);
 
             $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
             if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $CompanyID) == '') {
                 $as3url =  base_path().'/resources/assets/images/250x100.png';
             } else {
-                $as3url = (AmazonS3::unSignedUrl($InvoiceTemplate->CompanyLogoAS3Key,$CompanyID));
+                $as3url = (AmazonS3::unSignedUrl($Reseller->CompanyLogoAS3Key,$CompanyID));
             }
             $logo_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
             @mkdir($logo_path, 0777, true);
@@ -679,7 +506,6 @@ class InvoiceGenerate {
                 $MultiCurrencies = Invoice::getTotalAmountInOtherCurrency($Account->CompanyId, $Account->CurrencyId, $Invoice->GrandTotal, $RoundChargesAmount);
             }
 
-            $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
             $message = isset($Reseller->InvoiceTo) ? $Reseller->InvoiceTo : '';
             $replace_array = Invoice::create_accountdetails($Account);
             $text = Invoice::getInvoiceToByAccount($message, $replace_array);
@@ -700,7 +526,7 @@ class InvoiceGenerate {
             $header = View::make('emails.invoices.pdfheader', get_defined_vars())->render();
             $header = htmlspecialchars_decode($header);
 
-            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$CompanyID,$Invoice->AccountID) ;
+            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$CompanyID,$Invoice->AccountID);
             $destination_dir = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH') . '/'. $amazonPath;
 
             if (!file_exists($destination_dir)) {
@@ -760,13 +586,11 @@ class InvoiceGenerate {
 
 
     public static function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
-        $InvoiceDetail = InvoiceDetail::whereIn('InvoiceDetailID',$InvoiceDetailIDs)->first();
-        $date =  date("M 'y", strtotime($InvoiceDetail));
-
         $data = [];
+        //Getting all CLIs data
         $InvoiceComponents = DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.TotalCost")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.TotalTax","id.Duration","id.TotalCost")
             ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
                 $join->on('cli.CLI', '=', 'id.CLI');
                 $join->on('cli.AccountServiceID','=','id.AccountServiceID');
@@ -775,86 +599,110 @@ class InvoiceGenerate {
             ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
             ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
             ->get();
+        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentCostPerCall"];
 
         foreach($InvoiceComponents as $invoiceComponent){
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
+            $SubTotal = 0;
+            $TotalTax = 0;
+            $GrandTotal = 0;
             if(!isset($data[$index])){
                 $data[$index] = [
-                    'CLI' => $invoiceComponent->CLI,
-                    'CountryID' => $invoiceComponent->CountryID,
-                    'PackageID' => $invoiceComponent->PackageID,
-                    'Prefix' => $invoiceComponent->Prefix,
                     'AccountServiceID' => $invoiceComponent->AccountServiceID,
-                    'date' => $date,
+                    'CLI'        => $invoiceComponent->CLI,
+                    'CountryID'  => $invoiceComponent->CountryID,
+                    'PackageID'  => $invoiceComponent->PackageID,
+                    'Prefix'     => $invoiceComponent->Prefix,
+                    'SubTotal'   => $SubTotal,
+                    'TotalTax'   => $TotalTax,
+                    'GrandTotal' => $GrandTotal,
                 ];
             }
 
             $Component = $invoiceComponent->Component;
-            $Quantity = $invoiceComponent->Quantity;
+            $Quantity  = $invoiceComponent->Quantity;
             $TotalCost = $invoiceComponent->TotalCost;
+            $data[$index]['SubTotal'] += $invoiceComponent->TotalCost;
+            $data[$index]['TotalTax'] += $invoiceComponent->TotalTax;
+            $GrandTotal = $data[$index]['SubTotal'] + $data[$index]['TotalTax'];
+
+            $data[$index]['GrandTotal'] = $GrandTotal;
 
             if($Component == "Monthly"){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
-                        'Discount' => number_format($invoiceComponent->Discount,$RoundChargesAmount),
-                        'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
-                        'Quantity' => number_format($invoiceComponent->Quantity,0),
+                        'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                        'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
+                        'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',
+                        'TotalTax'  => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                         'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
-                    ];
-                } else {
-                    $oldData = $data[$index][$Component];
-                    $data[$index][$Component] = [
-                        'Discount' => number_format($oldData['Discount'] + $invoiceComponent->Discount,$RoundChargesAmount),
-                        'DiscountPrice' => number_format($oldData['DiscountPrice'] + $invoiceComponent->DiscountPrice,$RoundChargesAmount),
-                        'Quantity' => number_format($oldData['Quantity'] + $invoiceComponent->Quantity,0),
-                        'TotalCost' => number_format($oldData['TotalCost'] + $invoiceComponent->TotalCost,$RoundChargesAmount),
                     ];
                 }
             } else {
-                $UnitPrice = 0;
-                if($Component == "CostPerCall" && $Quantity > 0){
-                    $UnitPrice = $Quantity / $TotalCost;
-                }
 
                 $Title = "";
+
+                if($invoiceComponent->Type == "Outbound")
+                    $Title .= "Termination ";
+
                 if($Component == "RecordingCostPerMinute"){
                     $Title = "Voice Recording";
                 } elseif($Component == "PackageCostPerMinute"){
                     $Title = "Package cost per minute";
+                } elseif($Component == "SurchargePerMinute") {
+                    $Title .= "Surcharge per minute";
+                } elseif($Component == "SurchargePerCall") {
+                    $Title .= "Surcharge per call";
+                } elseif($Component == "CollectionCostAmount") {
+                    $Title .= "Collection cost amount";
+                } elseif($Component == "CostPerCall") {
+                    $Title .= "Cost per call";
+                } elseif($Component == "CostPerMinute") {
+                    $Title .= "Cost per minute";
+                } elseif($Component == "OutpaymentPerMinute") {
+                    $Title .= "Outpayment per minute";
+                } elseif($Component == "OutpaymentPerCall") {
+                    $Title .= "Outpayment per call";
                 } else {
-
-                    if($invoiceComponent->Type == "Termination")
-                        $Title .= "Termination ";
-
-                    if($Component == "CostPerMinute") {
-                        $Title .= "Cost per minute";
-                    } elseif($Component == "CostPerCall") {
-                        $Title .= "Cost per call";
-                    }
-
-                    if($invoiceComponent->Destination != "")
-                        $Title .= " " . $invoiceComponent->Destination;
-
-                    if($invoiceComponent->Origination != "")
-                        $Title .= " " . $invoiceComponent->Origination;
+                    $Title .= $Component;
                 }
-                $Quantity = $Component == "CostPerCall" ? $invoiceComponent->Quantity : $invoiceComponent->Duration / 60;
+
+                if($invoiceComponent->Destination != "")
+                    $Title .= " " . $invoiceComponent->Destination;
+
+                if($invoiceComponent->Origination != "")
+                    $Title .= " " . $invoiceComponent->Origination;
+
+                if($invoiceComponent->Timezone != "")
+                    $Title .= " " . $invoiceComponent->Timezone;
+
+                $UnitPrice = 0;
+                if(in_array($Component,$PerCallComponents) && $Quantity > 0){
+                    $UnitPrice = $TotalCost / $Quantity;
+                }
+
+                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : $invoiceComponent->Duration / 60;
 
                 $data[$index]['components'][] = [
-                    'Title' => $Title,
-                    'Type' => $invoiceComponent->Type,
-                    'Origination' => $invoiceComponent->Origination,
-                    'Component' => $Component,
-                    'Price'     => number_format($UnitPrice,$RoundChargesAmount),
-                    'Discount' => number_format($invoiceComponent->Discount,$RoundChargesAmount),
-                    'DiscountPrice' => number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount),
-                    'Duration' => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity' => number_format($Quantity,0),
-                    'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                    'Title'         => $Title,
+                    'Type'          => $invoiceComponent->Type,
+                    'Origination'   => $invoiceComponent->Origination,
+                    'Component'     => $Component,
+                    'Price'         => $UnitPrice > 0 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
+                    'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
+                    'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
+                    'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
                 ];
             }
         }
 
         return $data;
+    }
+
+    public static function addPostPaidUsageInvoice($JobID,$CompanyID, $AccountID, $InvoiceID, $BillingType, $BillingCycleType, $StartDate, $EndDate, $FirstInvoice){
+
     }
 }
