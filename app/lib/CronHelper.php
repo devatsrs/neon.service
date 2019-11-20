@@ -51,7 +51,7 @@ class CronHelper {
         if(!empty($arguments['CronJobID'])){
             $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
         }
-        if(($pid = CronHelper::lock($arguments["CompanyID"],$lock_command_file)) ==  FALSE || $MysqlProcess==1) {
+        if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1) {
             Log::info( $lock_command_file ." Already running....####");
             Log::info("#### MysqlProcess=".$MysqlProcess);
             exit;
