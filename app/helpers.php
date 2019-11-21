@@ -237,6 +237,7 @@ return $area_prefix;
 function template_var_replace($EmailMessage,$replace_array){
     $extra = [
         '{{AccountName}}',
+        '{{AccountTag}}',
         '{{FirstName}}',
         '{{LastName}}',
         '{{Email}}',
