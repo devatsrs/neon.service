@@ -353,7 +353,7 @@ class InvoiceGenerate {
         $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
         // Adding Monthly and Components data
-        $query = "CALL prc_addInvoicePrepaidComponents($CompanyID,$AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
+        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
@@ -594,6 +594,7 @@ class InvoiceGenerate {
             if($Component == "Monthly"){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
+                        'Price'     => $Quantity > 0 ? number_format(($invoiceComponent->SubTotal / 0),$RoundChargesAmount) : '',
                         'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                         'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
                         'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',

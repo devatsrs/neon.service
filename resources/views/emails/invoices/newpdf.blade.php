@@ -131,11 +131,11 @@
                 </tr>
                 <tr>
                     <td>Monthly Costs {{ $InvoicePeriod }}</td>
-                    <td class="text-right">{{$CurrencySymbol}} {{ $TotalMonthlyCost }}</td>
+                    <td class="text-right">{{$CurrencySymbol}} {{ $MonthlySubTotal }}</td>
                 </tr>
                 <tr>
                     <td>Traffic Costs</td>
-                    <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost }}</td>
+                    <td class="text-right">{{$CurrencySymbol}} {{ $UsageSubTotal }}</td>
                 </tr>
                 <tr>
                     <td>VAT</td>
@@ -202,11 +202,11 @@
                             </tr>
                             <tr>
                                 <td>Number</td>
-                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['TotalCost'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}@endif</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Price'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['Price'] }}@endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Discount'])){{ $InvoiceComponent['Monthly']['Discount'] }} @endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['DiscountPrice'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }} @endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Quantity'])){{ $InvoiceComponent['Monthly']['Quantity'] }} @endif</td>
-                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['SubTotal'] }}</td>
                             </tr>
                         @endif
                         @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
@@ -221,7 +221,7 @@
                                         <td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>
                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
                                         <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['TotalCost'] }}</td>
+                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                     </tr>
                                 @endif
                             @endforeach
