@@ -325,6 +325,7 @@ class Helper{
        $RoundChargesAmount=getCompanyDecimalPlaces($Account->CompanyId);
        $replace_array = array();
        $replace_array['AccountName'] = $Account->AccountName;
+       $replace_array['AccountTag'] = $Account->tags;
        $replace_array['FirstName'] = $Account->FirstName;
        $replace_array['LastName'] = $Account->LastName;
        $replace_array['Email'] = $Account->Email;
