@@ -51,7 +51,7 @@ class CronHelper {
         if(!empty($arguments['CronJobID'])){
             $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
         }
-        if(($pid = CronHelper::lock($lock_command_file)) ==  FALSE || $MysqlProcess==1) {
+        if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1) {
             Log::info( $lock_command_file ." Already running....####");
             Log::info("#### MysqlProcess=".$MysqlProcess);
             exit;
@@ -81,10 +81,11 @@ class CronHelper {
         return FALSE;
     }
 
-    public static function lock($command) {
+    public static function lock($companyId,$command) {
 
         if (!file_exists(storage_path() . '/locks/')) {
-            mkdir(storage_path() . '/locks/');
+//            mkdir(storage_path() . '/locks/');
+              RemoteSSH::make_dir($companyId,storage_path() . '/locks/');
         }
 
         $lock_file = storage_path() . '/locks/'.$command.'.lock';

@@ -2,6 +2,7 @@
 
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
+use App\Lib\RemoteSSH;
 use App\Streamco;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -84,7 +85,8 @@ class CustomerRateFileDownload extends Command {
 			$filenames = $Streamco->getCustomerRateFile($FileLocationFrom);
 			$destination = $FileLocationTo .'/'.$CompanyGatewayID;
 			if (!file_exists($destination)) {
-				mkdir($destination, 0777, true);
+				//mkdir($destination, 0777, true);
+				RemoteSSH::make_dir($CompanyID,$destination);
 			}
 			//$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
 			Log::info('File download Count '.count($filenames));

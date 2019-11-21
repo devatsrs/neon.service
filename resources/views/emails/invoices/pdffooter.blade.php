@@ -12,22 +12,20 @@
             width:100%;
         }
     </style>
-    <?php
-    $FooterTerm = $Invoice->FooterTerm;
-
-    $replace_array = \App\Lib\Invoice::create_accountdetails($Account);
-    $FooterTermtext = \App\Lib\Invoice::getInvoiceToByAccount($FooterTerm,$replace_array);
-    $FooterTerm_message = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", $FooterTermtext);
-    ?>
+    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/css/bootstrap.css'}}" />
+    <link rel="stylesheet" type="text/css" href="{{base_path().'/resources/assets/invoicetemplate/style.css'}}" />
     <!-- footer section start -->
-    <div id="pdf_footer">
-        @if($InvoiceTemplate->FooterDisplayOnlyFirstPage==0)
-         {{nl2br($FooterTerm_message)}}
-        @endif
-
-    </div>
+    <footer>
+        <div class="footer-logo pull-left text-left">
+            @if(!empty($logo))
+                <img src="{{get_image_data($logo)}}" style="max-width: 150px">
+            @endif
+        </div>
+        <div class="footer-detail pull-right">
+            {{nl2br($FooterTerm)}}
+        </div>
+        <div class="clearfix"></div>
+    </footer>
     <!-- footer section start -->
 
-    </div> <!-- invoicebody(class) section end -->
-
- @stop
+@stop

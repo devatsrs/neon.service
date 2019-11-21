@@ -39,7 +39,9 @@ class UsageDetail extends \Eloquent {
 
             $fullpath = Config::get('app.cdr_location').$UsageDetail->CompanyGatewayID . '/' . $AccountName . '/';
             if (file_exists($fullpath) === false) {
-                mkdir($fullpath, 0777, true);
+                //mkdir($fullpath, 0777, true);
+                RemoteSSH::make_dir(1,$fullpath);
+
             }
             $fullfilename = $fullpath.$filename;
             if($count == 1) {

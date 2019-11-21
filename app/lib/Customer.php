@@ -135,7 +135,9 @@ class Customer extends \Eloquent {
         }
         $destination = $FileLocation.'/'.$CompanyGatewayID;
         if (!file_exists($destination)) {
-            mkdir($destination, 0777, true);
+            //mkdir($destination, 0777, true);
+            RemoteSSH::make_dir($CompanyID,$destination);
+
         }
         $accounts = $account->select('tblAccount.*','tblTrunk.*','tblCustomerTrunk.Prefix AS CustomerTrunkPrefix')->get();
         foreach ($accounts as $account) {
@@ -217,7 +219,8 @@ class Customer extends \Eloquent {
 
         $destination = $FileLocation.'/'.$CompanyGatewayID;
         if (!file_exists($destination)) {
-            mkdir($destination, 0777, true);
+            //mkdir($destination, 0777, true);
+            RemoteSSH::make_dir($CompanyID,$destination);
         }
         $accounts = $account->select('tblAccount.*','tblTrunk.*','tblVendorTrunk.Prefix AS VendorTrunkPrefix')->get();
         foreach ($accounts as $account) {
@@ -294,7 +297,9 @@ class Customer extends \Eloquent {
         }
         $destination = $FileLocation.'/'.$CompanyGatewayID;
         if (!file_exists($destination)) {
-            mkdir($destination, 0777, true);
+            //mkdir($destination, 0777, true);
+            RemoteSSH::make_dir($CompanyID,$destination);
+
         }
         $accounts = $account->distinct()->select('tblAccount.CompanyId','tblAccount.AccountID','tblAccount.AccountName','tblAccount.Number','tblTrunk.TrunkID','tblTrunk.Trunk')->get();
         $Timezones = Timezones::getTimezonesIDList();

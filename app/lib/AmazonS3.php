@@ -135,10 +135,13 @@ class AmazonS3 {
         $dir = $UPLOADPATH . '/'. $path;
         if (!file_exists($dir)) {
             //exec("chmod -R 777 " . getenv('UPLOAD_PATH'));
-            @mkdir($dir, 0777, TRUE);
+            //@mkdir($dir, 0777, TRUE);
+            RemoteSSH::make_dir($companyId,$dir);
         }
         if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
+            //@mkdir($dir, 0777, true);
+            RemoteSSH::make_dir($companyId,$dir);
+
         }
 
 
