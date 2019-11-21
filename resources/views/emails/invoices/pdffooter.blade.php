@@ -22,7 +22,7 @@
             @endif
         </div>
         <div class="footer-detail pull-right">
-            {{nl2br($FooterTerm)}}
+            {{ nl2br($Invoice->FooterTerm) }}
         </div>
         <div class="clearfix"></div>
     </footer>

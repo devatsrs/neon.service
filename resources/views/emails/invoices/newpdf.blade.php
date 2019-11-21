@@ -63,13 +63,13 @@
             </div>
             <div class="clearfix"></div>
             <div class="pull-left addrDiv">
-                {{ nl2br(\App\Lib\Account::getAddress($Account)) }}
+                {{ nl2br($Invoice->Address) }}
             </div>
             <div class="pull-right infoDiv">
                 <table class="table">
                     <tr>
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
-                        <td>{{$Invoice->FullInvoiceNumber}}</td>
+                        <td>{{ $Invoice->FullInvoiceNumber }}</td>
                     </tr>
                     <tr>
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -146,7 +146,7 @@
         <div class="clearfix"></div>
         <div>
             <div class="termsDiv pull-left">
-                <h4>{{nl2br($Invoice->Terms)}}</h4>
+                <h4>{{ nl2br($Invoice->Terms) }}</h4>
             </div>
             <div class="totalAmount pull-right">
                 <h4>{{$CurrencySymbol}} {{ $GrandTotal }}</h4>
@@ -229,17 +229,17 @@
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount) }}</td>
                         </tr>
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">VAT</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount) }}</td>
                         </tr>
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount) }}</td>
                         </tr>
                     </table>
                 </div>
