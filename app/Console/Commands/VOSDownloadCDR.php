@@ -14,6 +14,7 @@ use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\RemoteSSH;
 use App\Lib\UsageDownloadFiles;
 use App\VOS;
 use Illuminate\Console\Command;
@@ -97,7 +98,8 @@ class VOSDownloadCDR extends Command {
             $filenames = $vos->getCDRs();
             $destination = $VOS_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
-                mkdir($destination, 0777, true);
+                //mkdir($destination, 0777, true);
+                RemoteSSH::make_dir($CompanyID,$destination);
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('vos File download Count '.count($filenames));

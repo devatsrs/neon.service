@@ -12,6 +12,7 @@ use App\Lib\CompanyConfiguration;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
+use App\Lib\RemoteSSH;
 use App\SippySSH;
 use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
@@ -94,7 +95,9 @@ class SippyDownloadCDR extends Command {
             $filenames = $sippy->getCDRs();
             $destination = $SIPPYFILE_LOCATION.'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
-                mkdir($destination, 0777, true);
+                //mkdir($destination, 0777, true);
+                RemoteSSH::make_dir($CompanyID,$destination);
+
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('sippy File download Count '.count($filenames));

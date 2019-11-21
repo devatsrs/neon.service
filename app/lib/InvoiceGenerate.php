@@ -452,11 +452,12 @@ class InvoiceGenerate {
             }
 
             $logo_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
-            @mkdir($logo_path, 0777, true);
-            RemoteSSH::run($CompanyID,"chmod -R 777 " . $logo_path);
+            //@mkdir($logo_path, 0777, true);
+            RemoteSSH::make_dir($CompanyID,$logo_path);
+            //RemoteSSH::run($CompanyID,"chmod -R 777 " . $logo_path);
             $logo = $logo_path . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
-            @chmod($logo, 0777);
+            //@chmod($logo, 0777);
 
             $dateFormat = !empty($Reseller->InvoiceDateFormat) ? $Reseller->InvoiceDateFormat : 'Y-m-d';
             $common_name = Str::slug($Account->AccountName . '-' . $Invoice->FullInvoiceNumber . '-' . date(invoice_date_fomat($dateFormat), strtotime($Invoice->IssueDate)) . '-' . $InvoiceID);
@@ -495,22 +496,23 @@ class InvoiceGenerate {
             $destination_dir = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH') . '/'. $amazonPath;
 
             if (!file_exists($destination_dir)) {
-                RemoteSSH::run($CompanyID, "mkdir -p " . $destination_dir);
-                RemoteSSH::run($CompanyID, "chmod -R 777 " . $destination_dir);
+                RemoteSSH::make_dir($CompanyID,$destination_dir);
+                //RemoteSSH::run($CompanyID, "mkdir -p " . $destination_dir);
+                //RemoteSSH::run($CompanyID, "chmod -R 777 " . $destination_dir);
             }
 
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
             file_put_contents($local_htmlfile,$body);
-            @chmod($local_htmlfile,0777);
+                //@chmod($local_htmlfile,0777);
             $footer_name = 'footer-'. $common_name .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
-            @chmod($footer_html,0777);
+                //@chmod($footer_html,0777);
             $header_name = 'header-'. $common_name .'.html';
             $header_html = $destination_dir.$header_name;
             file_put_contents($header_html,$header);
-            @chmod($footer_html,0777);
+                //@chmod($footer_html,0777);
 
             $output= "";
 
@@ -534,7 +536,7 @@ class InvoiceGenerate {
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
-            @chmod($local_file,0777);
+                //@chmod($local_file,0777);
             Log::info($output);
             @unlink($local_htmlfile);
             @unlink($footer_html);
