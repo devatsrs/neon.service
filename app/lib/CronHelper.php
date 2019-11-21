@@ -115,9 +115,9 @@ class CronHelper {
 
          $lock_file = storage_path() . '/locks/'.$command.'.lock';
 
-        if(file_exists($lock_file)){
+        if(is_file($lock_file) && file_exists($lock_file)){
 
-            unlink($lock_file);
+            @unlink($lock_file);
         }
 
         Log::info("==".self::$pid."== Releasing lock...");
