@@ -17,6 +17,7 @@ use App\Lib\CronHelper;
 use App\Lib\CronJob;
 use App\Lib\CronJobLog;
 use App\Lib\Gateway;
+use App\Lib\RemoteSSH;
 use App\Lib\UsageDownloadFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -103,7 +104,9 @@ class FTPDownloadCDR extends Command {
             $FTP_FILE_LOCATION = $ftp->getFileLocation($CompanyID);
             $destination = $FTP_FILE_LOCATION .'/'.$CompanyGatewayID;
             if (!file_exists($destination)) {
-                mkdir($destination, 0777, true);
+                //mkdir($destination, 0777, true);
+                RemoteSSH::make_dir($CompanyID,$destination);
+
             }
             //$filenames = UsageDownloadFiles::remove_downloaded_files($CompanyGatewayID,$filenames);
             Log::info('ftp File download Count '.count($filenames));

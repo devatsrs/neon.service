@@ -114,14 +114,16 @@ class RateExportToVos extends Command {
 									$joblogdata['Message'] .= ' <br/> ' . $file . ' Uploaded to ' . $remote_path.$file;
 								} catch (\Exception $ex) {
 									if(!is_dir(getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID)){
-										mkdir(getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID);
+										//mkdir(getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID);
+										RemoteSSH::make_dir($CompanyID,getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID);
 									}
 									rename($local_file, getenv("ERROR_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.$file);
 									Log::error(print_r($ex, true));
 								}
 
 								if(!is_dir(getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID)){
-									mkdir(getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID);
+									RemoteSSH::make_dir($CompanyID,getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID);
+									//mkdir(getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID);
 								}
 								rename($local_file,getenv("PROCESSED_FILE_LOCATION").'/'.$CompanyGatewayID.'/'.$file);
 							}
