@@ -83,7 +83,7 @@ class InvoiceGenerator extends Command {
 
 
         // Get Active Accounts which has BillingCycleType set
-        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
+        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
 
 
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';

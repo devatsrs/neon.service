@@ -63,13 +63,13 @@
             </div>
             <div class="clearfix"></div>
             <div class="pull-left addrDiv">
-                {{ nl2br(\App\Lib\Account::getAddress($Account)) }}
+                {{ nl2br($Invoice->Address) }}
             </div>
             <div class="pull-right infoDiv">
                 <table class="table">
                     <tr>
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
-                        <td>{{$Invoice->FullInvoiceNumber}}</td>
+                        <td>{{ $Invoice->FullInvoiceNumber }}</td>
                     </tr>
                     <tr>
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -131,11 +131,11 @@
                 </tr>
                 <tr>
                     <td>Monthly Costs {{ $InvoicePeriod }}</td>
-                    <td class="text-right">{{$CurrencySymbol}} {{ $TotalMonthlyCost }}</td>
+                    <td class="text-right">{{$CurrencySymbol}} {{ $MonthlySubTotal }}</td>
                 </tr>
                 <tr>
                     <td>Traffic Costs</td>
-                    <td class="text-right">{{$CurrencySymbol}} {{ $TotalUsageCost }}</td>
+                    <td class="text-right">{{$CurrencySymbol}} {{ $UsageSubTotal }}</td>
                 </tr>
                 <tr>
                     <td>VAT</td>
@@ -146,7 +146,7 @@
         <div class="clearfix"></div>
         <div>
             <div class="termsDiv pull-left">
-                <h4>{{nl2br($Invoice->Terms)}}</h4>
+                <h4>{{ nl2br($Invoice->Terms) }}</h4>
             </div>
             <div class="totalAmount pull-right">
                 <h4>{{$CurrencySymbol}} {{ $GrandTotal }}</h4>
@@ -202,11 +202,11 @@
                             </tr>
                             <tr>
                                 <td>Number</td>
-                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['TotalCost'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}@endif</td>
+                                <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Price'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['Price'] }}@endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Discount'])){{ $InvoiceComponent['Monthly']['Discount'] }} @endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['DiscountPrice'])){{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['DiscountPrice'] }} @endif</td>
                                 <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Quantity'])){{ $InvoiceComponent['Monthly']['Quantity'] }} @endif</td>
-                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['TotalCost'] }}</td>
+                                <td class="text-right">{{$CurrencySymbol}} {{ $InvoiceComponent['Monthly']['SubTotal'] }}</td>
                             </tr>
                         @endif
                         @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
@@ -221,7 +221,7 @@
                                         <td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>
                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
                                         <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['TotalCost'] }}</td>
+                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                     </tr>
                                 @endif
                             @endforeach
@@ -229,17 +229,17 @@
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount) }}</td>
                         </tr>
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">VAT</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount) }}</td>
                         </tr>
                         <tr style="font-size: 15px">
                             <th class="text-right" colspan="4">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
                             <td></td>
-                            <td class="text-right">{{$CurrencySymbol}} {{number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount)}}</td>
+                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount) }}</td>
                         </tr>
                     </table>
                 </div>
