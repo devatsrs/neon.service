@@ -21,12 +21,14 @@ class AccountOneOffCharge extends \Eloquent {
     public static function CreateOneOffServiceLog($CompanyID, $AccountID, $ProcessID){
         $Today=date('Y-m-d 00:00:00');
         $AccountOneOffCharges = AccountOneOffCharge::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->get();
+        $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
+        $BillingType = $AccountBilling->BillingType;
         if(!empty($AccountOneOffCharges)){
             foreach ($AccountOneOffCharges as $AccountOneOffCharge) {
                 if($AccountOneOffCharge->Date <= $Today ) {
                     $Count = AccountBalanceSubscriptionLog::where(['ProductType' => Product::ONEOFFCHARGE, 'ParentID' => $AccountOneOffCharge->AccountOneOffChargeID, 'StartDate' => $AccountOneOffCharge->Date])->count();
                     if ($Count == 0) {
-                        AccountBalanceSubscriptionLog::CreateOneOffChargeBalanceLog(AccountBalance::BILLINGTYPE_PREPAID, $AccountOneOffCharge->AccountOneOffChargeID, $AccountOneOffCharge->Date, $AccountOneOffCharge->Date);
+                        AccountBalanceSubscriptionLog::CreateOneOffChargeBalanceLog($BillingType, $AccountOneOffCharge->AccountOneOffChargeID, $AccountOneOffCharge->Date, $AccountOneOffCharge->Date);
                     }
                 }
             }
