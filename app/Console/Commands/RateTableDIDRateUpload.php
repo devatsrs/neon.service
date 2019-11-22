@@ -105,6 +105,22 @@ class RateTableDIDRateUpload extends Command
                     }else{
                         $templateoptions = json_decode($joboptions->Options);
                     }
+
+                    // get mapped city from template options
+                    //$MappedCityList = json_decode($templateoptions->MappedCityList,true);
+                    $MappedCityList = !empty($templateoptions->MappedCityList) ? json_decode($templateoptions->MappedCityList,true) : [];
+                    $CompareMappedCityList = array();
+                    foreach($MappedCityList AS $key => $val){
+                        $CompareMappedCityList[$val['AccessType'].'-'.$val['Country'].'-'.$val['Prefix'].'-'.$val['City']] = $val;
+                    }
+                    // get mapped tariff from template options
+                    //$MappedTariffList = json_decode($templateoptions->MappedTariffList,true);
+                    $MappedTariffList = !empty($templateoptions->MappedTariffList) ? json_decode($templateoptions->MappedTariffList,true) : [];
+                    $CompareMappedTariffList = array();
+                    foreach($MappedTariffList AS $key => $val){
+                        $CompareMappedTariffList[$val['AccessType'].'-'.$val['Country'].'-'.$val['Prefix'].'-'.$val['Tariff']] = $val;
+                    }
+
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
                     if(!empty($templateoptions->importdialcodessheet)) {
@@ -881,6 +897,16 @@ class RateTableDIDRateUpload extends Command
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+
+                                            $check_city_key = $tempratetabledata['AccessType'].'-'.$tempratetabledata['CountryCode'].'-'.$tempratetabledata['Code'].'-'.$tempratetabledata['City'];
+                                            if(array_key_exists($check_city_key,$CompareMappedCityList)) {
+                                                $tempratetabledata['City'] = $CompareMappedCityList[$check_city_key]['CityValue'];
+                                            }
+                                            $check_tariff_key = $tempratetabledata['AccessType'].'-'.$tempratetabledata['CountryCode'].'-'.$tempratetabledata['Code'].'-'.$tempratetabledata['Tariff'];
+                                            if(array_key_exists($check_tariff_key,$CompareMappedTariffList)) {
+                                                $tempratetabledata['Tariff'] = $CompareMappedTariffList[$check_tariff_key]['TariffValue'];
+                                            }
+
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {

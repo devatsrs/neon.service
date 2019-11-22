@@ -103,6 +103,14 @@ class RateTablePKGRateUpload extends Command
                     }else{
                         $templateoptions = json_decode($joboptions->Options);
                     }
+
+                    // get mapped code/package from template options
+                    $MappedCodeList = !empty($templateoptions->MappedCodeList) ? json_decode($templateoptions->MappedCodeList,true) : [];
+                    $CompareMappedCodeList = array();
+                    foreach($MappedCodeList AS $key => $val){
+                        $CompareMappedCodeList[$val['Code']] = $val;
+                    }
+
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
 
@@ -382,6 +390,12 @@ class RateTablePKGRateUpload extends Command
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+
+                                            $check_code_key = $tempratetabledata['Code'];
+                                            if(array_key_exists($check_code_key,$CompareMappedCodeList)) {
+                                                $tempratetabledata['Code'] = $CompareMappedCodeList[$check_code_key]['CodeValue'];
+                                            }
+
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {
