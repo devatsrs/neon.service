@@ -460,6 +460,7 @@ class InvoiceGenerate {
             ])->sum('LineTotal');
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
+            $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);
             $UsageSubTotal      = number_format($UsageSubTotal,$RoundChargesAmount);
             $TotalVAT           = number_format($Invoice->TotalTax,$RoundChargesAmount);
             $GrandTotal         = number_format($Invoice->GrandTotal,$RoundChargesAmount);
