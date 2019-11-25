@@ -594,7 +594,7 @@ class InvoiceGenerate {
             if($Component == "Monthly"){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
-                        'Price'     => $Quantity > 0 ? number_format(($invoiceComponent->SubTotal / 0),$RoundChargesAmount) : '',
+                        'Price'     => $Quantity > 0 ? number_format(($invoiceComponent->SubTotal / $Quantity),$RoundChargesAmount) : '',
                         'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                         'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
                         'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',
@@ -611,9 +611,9 @@ class InvoiceGenerate {
                     $Title .= "Termination ";
 
                 if($Component == "RecordingCostPerMinute"){
-                    $Title = "Voice Recording";
+                    $Title .= "Voice Recording";
                 } elseif($Component == "PackageCostPerMinute"){
-                    $Title = "Package cost per minute";
+                    $Title .= "Package cost per minute";
                 } elseif($Component == "SurchargePerMinute") {
                     $Title .= "Surcharge per minute";
                 } elseif($Component == "SurchargePerCall") {
@@ -636,7 +636,7 @@ class InvoiceGenerate {
                     $Title .= " " . $invoiceComponent->Destination;
 
                 if($invoiceComponent->Origination != "")
-                    $Title .= " " . $invoiceComponent->Origination;
+                    $Title .= " of " . $invoiceComponent->Origination;
 
                 if($invoiceComponent->Timezone != "")
                     $Title .= " " . $invoiceComponent->Timezone;
