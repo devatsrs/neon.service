@@ -288,7 +288,7 @@ class InvoiceGenerate {
             }
 
             //If Account usage not already billed
-            Log::info('AlreadyBilled '.$AlreadyBilled);
+            Log::info('AlreadyBilled '. json_encode($AlreadyBilled));
 
             //Creating Invoice
             $InvoiceData = array(
@@ -317,7 +317,6 @@ class InvoiceGenerate {
             Log::error('$InvoiceID  '. $InvoiceID);
 
             $AccountBalanceLogID = AccountBalanceLog::where([
-                'CompanyID' => $CompanyID,
                 'AccountID' => $AccountID
             ])->pluck('AccountBalanceLogID');
 
@@ -329,6 +328,8 @@ class InvoiceGenerate {
                     'status' => 'success',
                     'message' => $AccountID . ' Account Invoice added successfully'
                 ];
+            } else {
+                return ['status' => "failure", "message" => $AccountID . ": Has no Balance Log ID"];
             }
         } catch (\Exception $err) {
             Log::error($err);
@@ -619,7 +620,6 @@ class InvoiceGenerate {
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCharge', 'Monthly'])){
-                $Component = 'Monthly';
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
@@ -630,15 +630,6 @@ class InvoiceGenerate {
                         'TotalTax'  => $invoiceComponent->TotalTax,
                         'TotalCost' => $invoiceComponent->TotalCost,
                     ];
-                } else {
-                    $oldData = $data[$index][$Component];
-                    $oldData['Discount'] += (float)$invoiceComponent->Discount;
-                    $oldData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
-                    $oldData['Quantity'] += $Quantity;
-                    $oldData['SubTotal'] += $invoiceComponent->SubTotal;
-                    $oldData['TotalTax'] += $invoiceComponent->TotalTax;
-                    $oldData['TotalCost'] += $invoiceComponent->TotalCost;
-                    $oldData['Price'] = (float)$oldData['Quantity'] > 0 ? ($oldData['SubTotal'] / $oldData['Quantity']) : 0;
                 }
             } else {
 

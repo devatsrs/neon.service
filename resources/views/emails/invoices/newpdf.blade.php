@@ -216,6 +216,16 @@
                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['Monthly']['SubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
                             @endif
+                            @if(isset($InvoiceComponent['OneOffCharge']) && !empty($InvoiceComponent['OneOffCharge']))
+                                <tr>
+                                    <td>One Off Charge</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Price'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['Price'], $RoundChargesAmount) }}@endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Discount'])){{ number_format($InvoiceComponent['OneOffCharge']['Discount'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Quantity'])){{ number_format($InvoiceComponent['OneOffCharge']['Quantity'], 0) }} @endif</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['SubTotal'], $RoundChargesAmount) }}</td>
+                                </tr>
+                            @endif
                             @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
                                 <tr>
                                     <th colspan="6">Traffic costs</th>
