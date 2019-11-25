@@ -36,7 +36,31 @@ class InvoiceGenerate {
         return $NewInvoiceNumber;
     }
 
-    public static function calculateTax($AccountID, $Total){
+    public static function calculateTax($AccountID, $SubTotal){
+        $Account = Account::find($AccountID);
+        $Tax = 0;
+        $TaxRates = explode(",", $Account->TaxRateID);
+        foreach($TaxRates as $TaxRateID){
+
+            $TaxRateID = intval($TaxRateID);
+
+            if($TaxRateID>0){
+                $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+                if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                    if ($TaxRate->FlatStatus == 1 && $SubTotal != 0) {
+                        $Tax += $TaxRate->Amount;
+                    } else {
+                        $Tax += $SubTotal * ($TaxRate->Amount / 100);
+                    }
+
+                }
+            }
+        }
+
+        return $Tax;
+    }
+
+    public static function calculateTaxFromGrandTotal($AccountID, $Total){
         $Account = Account::find($AccountID);
         $Tax = 0;
         $TaxRates = explode(",", $Account->TaxRateID);
@@ -48,9 +72,9 @@ class InvoiceGenerate {
                 $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
                 if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
                     if ($TaxRate->FlatStatus == 1 && $Total != 0) {
-                        $Tax = $TaxRate->Amount;
+                        $Tax += $TaxRate->Amount;
                     } else {
-                        $Tax = $Total * ($TaxRate->Amount / 100);
+                        $Tax += ($Total * $TaxRate->Amount) / (100 + $TaxRate->Amount);
                     }
 
                 }
@@ -325,7 +349,7 @@ class InvoiceGenerate {
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
         if($UsageGrandTotal > 0) {
-            $TotalTax = self::calculateTax($AccountID, $UsageGrandTotal);
+            $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
             $UsageTotalTax = $TotalTax;
             $UsageSubTotal = $UsageGrandTotal - $TotalTax;
         }
@@ -353,16 +377,14 @@ class InvoiceGenerate {
         $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
         // Adding Monthly and Components data
-        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
+        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
         // Adding Monthly Cost Total in Invoice
-        $MonthlyCost = InvoiceComponentDetail::where([
-            'InvoiceDetailID' => $InvoiceDetailID,
-            'Component'       => 'Monthly',
-        ])->get();
+        $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
+            ->whereIn('Component', ['OneOffCharge', 'Monthly'])->get();
 
         $MonthlySubtotal    = $MonthlyCost->sum('SubTotal');
         $MonthlyTax         = $MonthlyCost->sum('TotalTax');
@@ -422,6 +444,11 @@ class InvoiceGenerate {
 
             // Getting total Monthly cost
             $MonthlySubTotal = InvoiceComponentDetail::where('Component', 'Monthly')
+                ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                ->sum('SubTotal');
+
+            // Getting total OneOffCharge cost
+            $OneOffSubTotal = InvoiceComponentDetail::where('Component', 'OneOffCharge')
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
@@ -589,19 +616,29 @@ class InvoiceGenerate {
             }
 
             $Component = $invoiceComponent->Component;
-            $Quantity  = $invoiceComponent->Quantity;
+            $Quantity  = (int)$invoiceComponent->Quantity;
 
-            if($Component == "Monthly"){
+            if(in_array($Component, ['OneOffCharge', 'Monthly'])){
+                $Component = 'Monthly';
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
-                        'Price'     => $Quantity > 0 ? number_format(($invoiceComponent->SubTotal / $Quantity),$RoundChargesAmount) : '',
-                        'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                        'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
-                        'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',
-                        'SubTotal'  => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
-                        'TotalTax'  => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
-                        'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                        'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
+                        'Discount'  => (float)$invoiceComponent->Discount,
+                        'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
+                        'Quantity'  => $Quantity,
+                        'SubTotal'  => $invoiceComponent->SubTotal,
+                        'TotalTax'  => $invoiceComponent->TotalTax,
+                        'TotalCost' => $invoiceComponent->TotalCost,
                     ];
+                } else {
+                    $oldData = $data[$index][$Component];
+                    $oldData['Discount'] += (float)$invoiceComponent->Discount;
+                    $oldData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
+                    $oldData['Quantity'] += $Quantity;
+                    $oldData['SubTotal'] += $invoiceComponent->SubTotal;
+                    $oldData['TotalTax'] += $invoiceComponent->TotalTax;
+                    $oldData['TotalCost'] += $invoiceComponent->TotalCost;
+                    $oldData['Price'] = (float)$oldData['Quantity'] > 0 ? ($oldData['SubTotal'] / $oldData['Quantity']) : 0;
                 }
             } else {
 
