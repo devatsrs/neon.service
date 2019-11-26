@@ -56,6 +56,9 @@ h1, h2, h3 {
 .totalAmount {
     max-width: 200px;
 }
+.totalAmount h4, .totalAmount h4{
+    font-size: 14px;
+}
 
 footer {
     border-top: 1px solid navy;
