@@ -637,26 +637,30 @@ class InvoiceGenerate {
                 $Title = "";
 
                 if($invoiceComponent->Type == "Outbound")
-                    $Title .= "Termination ";
+                    $Title = cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_COMPONENT_LBL_TERMINATION");
 
                 if($Component == "RecordingCostPerMinute"){
-                    $Title .= "Voice Recording";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE");
                 } elseif($Component == "PackageCostPerMinute"){
-                    $Title .= "Package cost per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE");
                 } elseif($Component == "SurchargePerMinute") {
-                    $Title .= "Surcharge per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE");
                 } elseif($Component == "SurchargePerCall") {
-                    $Title .= "Surcharge per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL");
                 } elseif($Component == "CollectionCostAmount") {
-                    $Title .= "Collection cost amount";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT");
                 } elseif($Component == "CostPerCall") {
-                    $Title .= "Cost per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL");
                 } elseif($Component == "CostPerMinute") {
-                    $Title .= "Cost per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE");
                 } elseif($Component == "OutpaymentPerMinute") {
-                    $Title .= "Outpayment per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE");
                 } elseif($Component == "OutpaymentPerCall") {
-                    $Title .= "Outpayment per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_CALL");
+                } elseif($Component == "Chargeback") {
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_CHARGEBACK");
+                } elseif($Component == "Surcharges") {
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE");
                 } else {
                     $Title .= $Component;
                 }
