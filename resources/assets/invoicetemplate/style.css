@@ -54,12 +54,12 @@ h1, h2, h3 {
     max-width: 45%;
 }
 .totalAmount {
-    max-width: 200px;
+    width: 45%;
+    text-align: right;
 }
-.totalAmount h4, .totalAmount h4{
+.termsDiv h4, .totalAmount h4{
     font-size: 14px;
 }
-
 footer {
     border-top: 1px solid navy;
     padding: 20px 0;
