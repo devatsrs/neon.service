@@ -36,7 +36,31 @@ class InvoiceGenerate {
         return $NewInvoiceNumber;
     }
 
-    public static function calculateTax($AccountID, $Total){
+    public static function calculateTax($AccountID, $SubTotal){
+        $Account = Account::find($AccountID);
+        $Tax = 0;
+        $TaxRates = explode(",", $Account->TaxRateID);
+        foreach($TaxRates as $TaxRateID){
+
+            $TaxRateID = intval($TaxRateID);
+
+            if($TaxRateID>0){
+                $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
+                if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
+                    if ($TaxRate->FlatStatus == 1 && $SubTotal != 0) {
+                        $Tax += $TaxRate->Amount;
+                    } else {
+                        $Tax += $SubTotal * ($TaxRate->Amount / 100);
+                    }
+
+                }
+            }
+        }
+
+        return $Tax;
+    }
+
+    public static function calculateTaxFromGrandTotal($AccountID, $Total){
         $Account = Account::find($AccountID);
         $Tax = 0;
         $TaxRates = explode(",", $Account->TaxRateID);
@@ -48,9 +72,9 @@ class InvoiceGenerate {
                 $TaxRate = TaxRate::where("TaxRateID",$TaxRateID)->first();
                 if (isset($TaxRate->FlatStatus) && isset($TaxRate->Amount)) {
                     if ($TaxRate->FlatStatus == 1 && $Total != 0) {
-                        $Tax = $TaxRate->Amount;
+                        $Tax += $TaxRate->Amount;
                     } else {
-                        $Tax = $Total * ($TaxRate->Amount / 100);
+                        $Tax += ($Total * $TaxRate->Amount) / (100 + $TaxRate->Amount);
                     }
 
                 }
@@ -264,7 +288,7 @@ class InvoiceGenerate {
             }
 
             //If Account usage not already billed
-            Log::info('AlreadyBilled '.$AlreadyBilled);
+            Log::info('AlreadyBilled '. json_encode($AlreadyBilled));
 
             //Creating Invoice
             $InvoiceData = array(
@@ -293,7 +317,6 @@ class InvoiceGenerate {
             Log::error('$InvoiceID  '. $InvoiceID);
 
             $AccountBalanceLogID = AccountBalanceLog::where([
-                'CompanyID' => $CompanyID,
                 'AccountID' => $AccountID
             ])->pluck('AccountBalanceLogID');
 
@@ -305,6 +328,8 @@ class InvoiceGenerate {
                     'status' => 'success',
                     'message' => $AccountID . ' Account Invoice added successfully'
                 ];
+            } else {
+                return ['status' => "failure", "message" => $AccountID . ": Has no Balance Log ID"];
             }
         } catch (\Exception $err) {
             Log::error($err);
@@ -325,7 +350,7 @@ class InvoiceGenerate {
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
         if($UsageGrandTotal > 0) {
-            $TotalTax = self::calculateTax($AccountID, $UsageGrandTotal);
+            $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
             $UsageTotalTax = $TotalTax;
             $UsageSubTotal = $UsageGrandTotal - $TotalTax;
         }
@@ -353,16 +378,14 @@ class InvoiceGenerate {
         $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
         // Adding Monthly and Components data
-        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceDetailID,'$StartDate','$EndDate')";
+        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
         // Adding Monthly Cost Total in Invoice
-        $MonthlyCost = InvoiceComponentDetail::where([
-            'InvoiceDetailID' => $InvoiceDetailID,
-            'Component'       => 'Monthly',
-        ])->get();
+        $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
+            ->whereIn('Component', ['OneOffCharge', 'Monthly'])->get();
 
         $MonthlySubtotal    = $MonthlyCost->sum('SubTotal');
         $MonthlyTax         = $MonthlyCost->sum('TotalTax');
@@ -425,6 +448,11 @@ class InvoiceGenerate {
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
+            // Getting total OneOffCharge cost
+            $OneOffSubTotal = InvoiceComponentDetail::where('Component', 'OneOffCharge')
+                ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                ->sum('SubTotal');
+
             // Getting total Usage cost
             $UsageSubTotal = InvoiceDetail::where([
                 'InvoiceID' => $InvoiceID,
@@ -432,6 +460,7 @@ class InvoiceGenerate {
             ])->sum('LineTotal');
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
+            $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);
             $UsageSubTotal      = number_format($UsageSubTotal,$RoundChargesAmount);
             $TotalVAT           = number_format($Invoice->TotalTax,$RoundChargesAmount);
             $GrandTotal         = number_format($Invoice->GrandTotal,$RoundChargesAmount);
@@ -589,18 +618,18 @@ class InvoiceGenerate {
             }
 
             $Component = $invoiceComponent->Component;
-            $Quantity  = $invoiceComponent->Quantity;
+            $Quantity  = (int)$invoiceComponent->Quantity;
 
-            if($Component == "Monthly"){
+            if(in_array($Component, ['OneOffCharge', 'Monthly'])){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
-                        'Price'     => $Quantity > 0 ? number_format(($invoiceComponent->SubTotal / $Quantity),$RoundChargesAmount) : '',
-                        'Discount'  => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                        'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : "",
-                        'Quantity'  => $invoiceComponent->Quantity > 0 ? number_format($invoiceComponent->Quantity,0) : '',
-                        'SubTotal'  => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
-                        'TotalTax'  => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
-                        'TotalCost' => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                        'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
+                        'Discount'  => (float)$invoiceComponent->Discount,
+                        'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
+                        'Quantity'  => $Quantity,
+                        'SubTotal'  => $invoiceComponent->SubTotal,
+                        'TotalTax'  => $invoiceComponent->TotalTax,
+                        'TotalCost' => $invoiceComponent->TotalCost,
                     ];
                 }
             } else {
@@ -608,26 +637,30 @@ class InvoiceGenerate {
                 $Title = "";
 
                 if($invoiceComponent->Type == "Outbound")
-                    $Title .= "Termination ";
+                    $Title = cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_COMPONENT_LBL_TERMINATION");
 
                 if($Component == "RecordingCostPerMinute"){
-                    $Title .= "Voice Recording";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE");
                 } elseif($Component == "PackageCostPerMinute"){
-                    $Title .= "Package cost per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE");
                 } elseif($Component == "SurchargePerMinute") {
-                    $Title .= "Surcharge per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE");
                 } elseif($Component == "SurchargePerCall") {
-                    $Title .= "Surcharge per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL");
                 } elseif($Component == "CollectionCostAmount") {
-                    $Title .= "Collection cost amount";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT");
                 } elseif($Component == "CostPerCall") {
-                    $Title .= "Cost per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL");
                 } elseif($Component == "CostPerMinute") {
-                    $Title .= "Cost per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE");
                 } elseif($Component == "OutpaymentPerMinute") {
-                    $Title .= "Outpayment per minute";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE");
                 } elseif($Component == "OutpaymentPerCall") {
-                    $Title .= "Outpayment per call";
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_CALL");
+                } elseif($Component == "Chargeback") {
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_CHARGEBACK");
+                } elseif($Component == "Surcharges") {
+                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE");
                 } else {
                     $Title .= $Component;
                 }
