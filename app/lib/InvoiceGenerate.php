@@ -421,7 +421,7 @@ class InvoiceGenerate {
         $OneOffInvoiceDetail = [
             'InvoiceID'          => $InvoiceID,
             'ProductType'        => Product::ONEOFFCHARGE,
-            'Description'        => "Subscription",
+            'Description'        => "One Off Charge",
             'Price'              => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', ''),
             'Qty'                => $OneOff->sum('Quantity'),
             'CurrencyID'         => $CurrencyID,
