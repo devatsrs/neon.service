@@ -458,7 +458,7 @@ class InvoiceGenerate {
         $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $Invoice->save();
 
-        $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetail, $decimal_places);
+        $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailID, $decimal_places);
         $pdf_path = self::generate_pdf($InvoiceID, $InvoiceComponents);
         if(empty($pdf_path)){
             $error = self::$InvoiceGenerationErrorReasons["PDF"];
