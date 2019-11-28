@@ -647,6 +647,7 @@ class InvoiceGenerate {
 
 
     public static function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
+        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
         $data = [];
         //Getting all CLIs data
         $InvoiceComponents = DB::connection('sqlsrv2')
