@@ -339,6 +339,7 @@ class InvoiceGenerate {
 
     public static function addInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID){
 
+        $Account = Account::find($AccountID);
         // Fetching Usage Data
         $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
             ->where('Date', '>=', $StartDate)
@@ -356,6 +357,7 @@ class InvoiceGenerate {
         }
 
         $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
+        $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
 
         $InvoiceDetailArray = [
             'InvoiceID'          => $InvoiceID,
@@ -366,6 +368,8 @@ class InvoiceGenerate {
             'CurrencyID'         => $CurrencyID,
             'StartDate'          => $StartDate,
             'EndDate'            => $EndDate,
+            'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
+            'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
             'TaxAmount'          => number_format($UsageTotalTax, $decimal_places, '.', ''),
             'DiscountType'       => 0,
             'DiscountAmount'     => 0,
@@ -382,6 +386,57 @@ class InvoiceGenerate {
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
+
+
+        // Adding Monthly in Invoice Detail
+        $Monthly = InvoiceComponentDetail::where('Component', 'Monthly')
+            ->whereIn('InvoiceDetailID', $InvoiceDetailID)
+            ->get();
+
+        $MonthlyInvoiceDetail = [
+            'InvoiceID'          => $InvoiceID,
+            'ProductType'        => Product::SUBSCRIPTION,
+            'Description'        => "Subscription",
+            'Price'              => number_format($Monthly->sum('SubTotal'), $decimal_places, '.', ''),
+            'Qty'                => 1,
+            'CurrencyID'         => $CurrencyID,
+            'StartDate'          => $StartDate,
+            'EndDate'            => $EndDate,
+            'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
+            'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
+            'TaxAmount'          => number_format($Monthly->sum('TotalTax'), $decimal_places, '.', ''),
+            'DiscountType'       => 0,
+            'DiscountAmount'     => 0,
+            'DiscountLineAmount' => 0,
+            'LineTotal'          => number_format($Monthly->sum('SubTotal'), $decimal_places, '.', '')
+        ];
+        InvoiceDetail::create($MonthlyInvoiceDetail);
+
+
+        // Adding OneOffCharge in Invoice Detail
+        $OneOff = InvoiceComponentDetail::where('Component', 'OneOffCharge')
+            ->whereIn('InvoiceDetailID', $InvoiceDetailID)
+            ->get();
+
+        $OneOffInvoiceDetail = [
+            'InvoiceID'          => $InvoiceID,
+            'ProductType'        => Product::ONEOFFCHARGE,
+            'Description'        => "Subscription",
+            'Price'              => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', ''),
+            'Qty'                => 1,
+            'CurrencyID'         => $CurrencyID,
+            'StartDate'          => $StartDate,
+            'EndDate'            => $EndDate,
+            'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
+            'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
+            'TaxAmount'          => number_format($OneOff->sum('TotalTax'), $decimal_places, '.', ''),
+            'DiscountType'       => 0,
+            'DiscountAmount'     => 0,
+            'DiscountLineAmount' => 0,
+            'LineTotal'          => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', '')
+        ];
+        InvoiceDetail::create($OneOffInvoiceDetail);
+
 
         // Adding Monthly Cost Total in Invoice
         $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
@@ -403,16 +458,26 @@ class InvoiceGenerate {
         $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $Invoice->save();
 
-        $pdf_path = self::generate_pdf($InvoiceID);
+        $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetail, $decimal_places);
+        $pdf_path = self::generate_pdf($InvoiceID, $InvoiceComponents);
         if(empty($pdf_path)){
             $error = self::$InvoiceGenerationErrorReasons["PDF"];
             return array("status" => "failure", "message" => $error);
         }else {
             $Invoice->update(["PDF" => $pdf_path]);
         }
+
+        $ubl_path = self::generate_ubl_invoice($Invoice->InvoiceID,$InvoiceComponents,$decimal_places);
+        if (empty($ubl_path)) {
+            $error['message'] = 'Failed to generate Invoice UBL File.';
+            $error['status'] = 'failure';
+            return $error;
+        } else {
+            $Invoice->update(["UblInvoice" => $ubl_path]);
+        }
     }
 
-    public static function generate_pdf($InvoiceID){
+    public static function generate_pdf($InvoiceID, $InvoiceComponents){
         $Invoice = Invoice::find($InvoiceID);
         if($Invoice != false) {
             $language = Account::where("AccountID", $Invoice->AccountID)
@@ -533,15 +598,15 @@ class InvoiceGenerate {
             $local_file = $destination_dir .  $file_name;
             $local_htmlfile = $destination_dir .  $htmlfile_name;
             file_put_contents($local_htmlfile,$body);
-                //@chmod($local_htmlfile,0777);
+            //@chmod($local_htmlfile,0777);
             $footer_name = 'footer-'. $common_name .'.html';
             $footer_html = $destination_dir.$footer_name;
             file_put_contents($footer_html,$footer);
-                //@chmod($footer_html,0777);
+            //@chmod($footer_html,0777);
             $header_name = 'header-'. $common_name .'.html';
             $header_html = $destination_dir.$header_name;
             file_put_contents($header_html,$header);
-                //@chmod($footer_html,0777);
+            //@chmod($footer_html,0777);
 
             $output= "";
 
@@ -565,7 +630,7 @@ class InvoiceGenerate {
                 exec (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
                 Log::info (base_path().'/wkhtmltopdf/bin/wkhtmltopdf.exe --header-spacing 3 --footer-spacing 1 --header-html "'.$header_html.'" --footer-html "'.$footer_html.'" "'.$local_htmlfile.'" "'.$local_file.'"',$output);
             }
-                //@chmod($local_file,0777);
+            //@chmod($local_file,0777);
             Log::info($output);
             @unlink($local_htmlfile);
             @unlink($footer_html);
@@ -586,7 +651,7 @@ class InvoiceGenerate {
         //Getting all CLIs data
         $InvoiceComponents = DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost")
             ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
                 $join->on('cli.CLI', '=', 'id.CLI');
                 $join->on('cli.AccountServiceID','=','id.AccountServiceID');
@@ -630,6 +695,7 @@ class InvoiceGenerate {
                         'SubTotal'  => $invoiceComponent->SubTotal,
                         'TotalTax'  => $invoiceComponent->TotalTax,
                         'TotalCost' => $invoiceComponent->TotalCost,
+                        'ID'        => $invoiceComponent->InvoiceComponentID,
                     ];
                 }
             } else {
@@ -694,6 +760,7 @@ class InvoiceGenerate {
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
+                    'ID'            => $invoiceComponent->InvoiceComponentID,
                 ];
             }
         }
@@ -701,4 +768,238 @@ class InvoiceGenerate {
         return $data;
     }
 
+    public static  function generate_ubl_invoice($InvoiceID, $InvoiceComponents, $RoundChargesAmount){
+        if($InvoiceID>0) {
+            $Invoice = Invoice::find($InvoiceID);
+            $Account = Account::find($Invoice->AccountID);
+            $common_name = Str::slug($Account->AccountName.'-'.$Invoice->FullInvoiceNumber.'-'.date("Y-m-d",strtotime($Invoice->IssueDate)).'-'.$InvoiceID);
+
+            $file_name = 'Invoice--' .$common_name . '.xml';
+            $body = self::ublInvoice($Invoice, $Account, $InvoiceComponents, $RoundChargesAmount);
+
+            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
+            $destination_dir = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/'. $amazonPath;
+
+            if (!is_dir($destination_dir)) {
+                mkdir($destination_dir, 0775, true);
+            }
+
+            $local_file = $destination_dir . $file_name;
+            file_put_contents($local_file, $body);
+            @chmod($local_file,0775);
+
+            RemoteSSH::run("chmod -R 775 " . $destination_dir);
+            if (file_exists($local_file)) {
+                $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
+                if (AmazonS3::upload($local_file, $amazonPath,$Account->CompanyId)) {
+                    return $fullPath;
+                }
+            }
+            return '';
+        }
+    }
+
+    public static function ublInvoice($Invoice, $Account, $InvoiceComponents, $RoundChargesAmount){
+        $AccountID      = $Account->AccountID;
+        $CompanyID      = $Account->CompanyId;
+        $InvoiceID      = $Invoice->InvoiceID;
+        $BillingClass   = AccountBilling::getBillingClass((int)$AccountID,0);
+        $CompanyData    = Company::findOrFail($CompanyID);
+        $CompanyAddr    = Company::getCompanyAddress($CompanyID);
+        $AccountAddress = Account::getAddress($Account);
+        $CurrencyID = !empty($Invoice->CurrencyID) ? $Invoice->CurrencyID : $Account->CurrencyId;
+        $Currency = Currency::find($CurrencyID);
+        $CurrencyCode = !empty($Currency) ? $Currency->Code : '';
+
+        $generator = new \App\UblInvoice\Generator();
+        $legalMonetaryTotal = new \App\UblInvoice\LegalMonetaryTotal();
+
+// company address
+        $companyAddress = new \App\UblInvoice\Address();
+        if(!empty($CompanyAddr))
+            $companyAddress->setStreetName($CompanyAddr);
+
+        if (!empty($CompanyData->City))
+            $companyAddress->setCityName($CompanyData->City);
+
+        if (!empty($CompanyData->PostCode))
+            $companyAddress->setPostalZone($CompanyData->PostCode);
+
+        if (!empty($CompanyData->Country)) {
+            $countryCode = Country::getCountryCodeByName($CompanyData->Country);
+            $country = new \App\UblInvoice\Country();
+            $country->setIdentificationCode($countryCode);
+            $companyAddress->setCountry($country);
+        }
+// company
+        $company  = new \App\UblInvoice\Party();
+        $company->setName($CompanyData->CompanyName);
+        $company->setPostalAddress($companyAddress);
+
+// client address
+        $clientAddress = new \App\UblInvoice\Address();
+
+        if(!empty($AccountAddress))
+            $clientAddress->setStreetName($AccountAddress);
+
+        if (!empty($Account->City))
+            $clientAddress->setCityName($Account->City);
+
+        if (!empty($Account->PostCode))
+            $clientAddress->setPostalZone($Account->PostCode);
+
+        if (!empty($Account->Country)) {
+            $countryCode = Country::getCountryCodeByName($Account->Country);
+            $country = new \App\UblInvoice\Country();
+            $country->setIdentificationCode($countryCode);
+            $clientAddress->setCountry($country);
+        }
+
+// client
+        $client = new \App\UblInvoice\Party();
+        $client->setName($Account->AccountName);
+        $client->setPostalAddress($clientAddress);
+        $invoiceLines = [];
+        $unitCode = 'A9';
+        $InvoiceDetails   = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
+        $StartDate        = $InvoiceDetails->first()->StartDate;
+        $InvoicePeriod    = $InvoiceDetails != false ? date("M 'y", strtotime($StartDate)) : "";
+
+
+        foreach($InvoiceComponents as $InvoiceComponent) {
+            //product
+            $description = Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['Prefix'] . "-" . $InvoiceComponent['CLI'];
+            if(isset($InvoiceComponent['Monthly']) && !empty($InvoiceComponent['Monthly'])){
+                $item = new \App\UblInvoice\Item();
+                $item->setName(cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") . " " . $InvoicePeriod);
+                $item->setDescription($description);
+                $item->setSellersItemIdentification(Product::SUBSCRIPTION);
+
+                //price
+                $price = new \App\UblInvoice\Price();
+                $price->setBaseQuantity($InvoiceComponent['Monthly']['Quantity']);
+                $price->setUnitCode($unitCode);
+                $price->setPriceAmount($InvoiceComponent['Monthly']['Price']);
+
+                //line
+                $invoiceLine = new \App\UblInvoice\InvoiceLine();
+                $invoiceLine->setId($InvoiceComponent['Monthly']['ID']);
+                $invoiceLine->setItem($item);
+
+                $invoiceLine->setPrice($price);
+                $invoiceLine->setUnitCode($unitCode);
+                $invoiceLine->setInvoicedQuantity($InvoiceComponent['Monthly']['Quantity']);
+                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['Monthly']['SubTotal'], $RoundChargesAmount));
+                $invoiceLine->setTaxTotal($InvoiceComponent['Monthly']['TotalTax']);
+                $invoiceLines[] = $invoiceLine;
+            }
+
+            if(isset($InvoiceComponent['OneOffCharge']) && !empty($InvoiceComponent['OneOffCharge'])){
+                $item = new \App\UblInvoice\Item();
+                $item->setName(cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL"));
+                $item->setDescription($description);
+                $item->setSellersItemIdentification(Product::ONEOFFCHARGE);
+
+                //price
+                $price = new \App\UblInvoice\Price();
+                $price->setBaseQuantity($InvoiceComponent['OneOffCharge']['Quantity']);
+                $price->setUnitCode($unitCode);
+                $price->setPriceAmount($InvoiceComponent['OneOffCharge']['Price']);
+
+                //line
+                $invoiceLine = new \App\UblInvoice\InvoiceLine();
+                $invoiceLine->setId($InvoiceComponent['OneOffCharge']['ID']);
+                $invoiceLine->setItem($item);
+
+                $invoiceLine->setPrice($price);
+                $invoiceLine->setUnitCode($unitCode);
+                $invoiceLine->setInvoicedQuantity($InvoiceComponent['OneOffCharge']['Quantity']);
+                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['OneOffCharge']['SubTotal'], $RoundChargesAmount));
+                $invoiceLine->setTaxTotal($InvoiceComponent['OneOffCharge']['TotalTax']);
+                $invoiceLines[] = $invoiceLine;
+            }
+            if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0){
+                foreach($InvoiceComponent['components'] as $component => $comp){
+                    if($comp['Quantity'] != 0){
+
+                        $item = new \App\UblInvoice\Item();
+                        $item->setName($comp['Title']);
+                        $item->setDescription($description);
+                        $item->setSellersItemIdentification(Product::USAGE);
+
+                        //price
+                        $price = new \App\UblInvoice\Price();
+                        $price->setBaseQuantity($comp['Quantity']);
+                        $price->setUnitCode($unitCode);
+                        $price->setPriceAmount($comp['Price']);
+
+                        //line
+                        $invoiceLine = new \App\UblInvoice\InvoiceLine();
+                        $invoiceLine->setId($comp['ID']);
+                        $invoiceLine->setItem($item);
+
+                        $invoiceLine->setPrice($price);
+                        $invoiceLine->setUnitCode($unitCode);
+                        $invoiceLine->setInvoicedQuantity($comp['Quantity']);
+                        $invoiceLine->setLineExtensionAmount($comp['SubTotal']);
+                        $invoiceLine->setTaxTotal($comp['TotalTax']);
+                        $invoiceLines[] = $invoiceLine;
+                    }
+                }
+            }
+        }
+
+// taxe TVA
+        $TaxScheme    = new \App\UblInvoice\TaxScheme();
+        $TaxScheme->setId(0);
+        $taxCategory = new \App\UblInvoice\TaxCategory();
+        $tax = $Account->TaxRateID != "" ? explode(",",$Account->TaxRateID) : "";
+        $tax = !empty($tax) ? TaxRate::find($tax[0]) : false;
+        $tax = $tax != false ? $tax->Title : "";
+        $taxPercentage = number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2);
+        $taxCategory->setId($Account->TaxRateID);
+        $taxCategory->setName($tax);
+        $taxCategory->setPercent($taxPercentage);
+        $taxCategory->setTaxScheme($TaxScheme);
+// taxes
+        $taxTotal    = new \App\UblInvoice\TaxTotal();
+        $taxSubTotal = new \App\UblInvoice\TaxSubTotal();
+        $taxSubTotal->setTaxableAmount($Invoice->SubTotal);
+        $taxSubTotal->setTaxAmount($Invoice->TotalTax);
+        $taxSubTotal->setTaxCategory($taxCategory);
+        $taxTotal->addTaxSubTotal($taxSubTotal);
+        $taxTotal->setTaxAmount($taxSubTotal->getTaxAmount());
+
+        $issueDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $Invoice->IssueDate);
+        $dueDate = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $Invoice->IssueDate)->addDays($BillingClass->PaymentDueInDays);
+
+// invoice
+        $invoice = new \App\UblInvoice\Invoice();
+        $invoice->setId($Invoice->FullInvoiceNumber);
+        $invoice->setIssueDate($issueDate);
+        $invoice->setDueDate($dueDate);
+        $invoice->setCurrencyCode($CurrencyCode);
+        $invoice->setNote($Invoice->Note);
+        $invoice->setTerms("Expect payment within {$BillingClass->PaymentDueInDays} days.");
+        $invoice->setInvoiceTypeCode($Invoice->InvoiceType);
+        $invoice->setAccountingSupplierParty($company);
+        $invoice->setAccountingCustomerParty($client);
+        $invoice->setInvoiceLines($invoiceLines);
+        $legalMonetaryTotal->setTaxExclusiveAmount($Invoice->SubTotal);
+        $legalMonetaryTotal->setLineExtensionAmount($Invoice->SubTotal);
+        $legalMonetaryTotal->setTaxInclusiveAmount($Invoice->GrandTotal);
+        $legalMonetaryTotal->setPayableAmount($Invoice->GrandTotal);
+        $legalMonetaryTotal->setAllowanceTotalAmount($Invoice->TotalDiscount);
+        $invoice->setLegalMonetaryTotal($legalMonetaryTotal);
+        $invoice->setTaxTotal($taxTotal);
+
+        if($Invoice->PDF != "") {
+            $additionalDocument = new \App\UblInvoice\AdditionalDocumentReference();
+            $additionalDocument->setAttachment(AmazonS3::preSignedUrl($Account->PDF));
+            $additionalDocument->setDocumentType("Invoice");
+            $additionalDocument->setId("01");
+            $invoice->setAdditionalDocumentReference($additionalDocument);
+        }
+        return $generator->invoice($invoice, $CurrencyCode);
+    }
 }

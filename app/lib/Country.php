@@ -21,6 +21,14 @@ class Country extends \Eloquent {
         return Country::where(["CountryID"=>$CountryID])->pluck('ISO2');
     }
 
+    public static function getCountryCodeByName($CountryName){
+        $country =  Country::where(array('Country'=>$CountryName))->first();
+        if($country != false)
+            return $country->ISO2;
+        else
+            return '';
+    }
+
     public static function getCountryDropdownList($is_all=''){
 
         if (self::$enable_cache && Cache::has('country_dropdown_cache')) {
