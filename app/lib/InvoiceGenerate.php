@@ -390,7 +390,7 @@ class InvoiceGenerate {
 
         // Adding Monthly in Invoice Detail
         $Monthly = InvoiceComponentDetail::where('Component', 'Monthly')
-            ->whereIn('InvoiceDetailID', $InvoiceDetailID)
+            ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
 
         $MonthlyInvoiceDetail = [
@@ -398,7 +398,7 @@ class InvoiceGenerate {
             'ProductType'        => Product::SUBSCRIPTION,
             'Description'        => "Subscription",
             'Price'              => number_format($Monthly->sum('SubTotal'), $decimal_places, '.', ''),
-            'Qty'                => 1,
+            'Qty'                => $Monthly->sum('Quantity'),
             'CurrencyID'         => $CurrencyID,
             'StartDate'          => $StartDate,
             'EndDate'            => $EndDate,
@@ -407,7 +407,7 @@ class InvoiceGenerate {
             'TaxAmount'          => number_format($Monthly->sum('TotalTax'), $decimal_places, '.', ''),
             'DiscountType'       => 0,
             'DiscountAmount'     => 0,
-            'DiscountLineAmount' => 0,
+            'DiscountLineAmount' => number_format($Monthly->sum('DiscountPrice'), $decimal_places, '.', ''),
             'LineTotal'          => number_format($Monthly->sum('SubTotal'), $decimal_places, '.', '')
         ];
         InvoiceDetail::create($MonthlyInvoiceDetail);
@@ -415,7 +415,7 @@ class InvoiceGenerate {
 
         // Adding OneOffCharge in Invoice Detail
         $OneOff = InvoiceComponentDetail::where('Component', 'OneOffCharge')
-            ->whereIn('InvoiceDetailID', $InvoiceDetailID)
+            ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
 
         $OneOffInvoiceDetail = [
@@ -423,7 +423,7 @@ class InvoiceGenerate {
             'ProductType'        => Product::ONEOFFCHARGE,
             'Description'        => "Subscription",
             'Price'              => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', ''),
-            'Qty'                => 1,
+            'Qty'                => $OneOff->sum('Quantity'),
             'CurrencyID'         => $CurrencyID,
             'StartDate'          => $StartDate,
             'EndDate'            => $EndDate,
@@ -432,7 +432,7 @@ class InvoiceGenerate {
             'TaxAmount'          => number_format($OneOff->sum('TotalTax'), $decimal_places, '.', ''),
             'DiscountType'       => 0,
             'DiscountAmount'     => 0,
-            'DiscountLineAmount' => 0,
+            'DiscountLineAmount' => number_format($OneOff->sum('DiscountPrice'), $decimal_places, '.', ''),
             'LineTotal'          => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', '')
         ];
         InvoiceDetail::create($OneOffInvoiceDetail);
@@ -779,7 +779,7 @@ class InvoiceGenerate {
             $body = self::ublInvoice($Invoice, $Account, $InvoiceComponents, $RoundChargesAmount);
 
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_UPLOAD'],$Account->CompanyId,$Invoice->AccountID) ;
-            $destination_dir = CompanyConfiguration::get('UPLOAD_PATH',$Account->CompanyId) . '/'. $amazonPath;
+            $destination_dir = CompanyConfiguration::get($Account->CompanyId,'UPLOAD_PATH') . '/'. $amazonPath;
 
             if (!is_dir($destination_dir)) {
                 mkdir($destination_dir, 0775, true);
@@ -789,7 +789,7 @@ class InvoiceGenerate {
             file_put_contents($local_file, $body);
             @chmod($local_file,0775);
 
-            RemoteSSH::run("chmod -R 775 " . $destination_dir);
+            RemoteSSH::run($Account->CompanyId, "chmod -R 775 " . $destination_dir);
             if (file_exists($local_file)) {
                 $fullPath = $amazonPath . basename($local_file); //$destinationPath . $file_name;
                 if (AmazonS3::upload($local_file, $amazonPath,$Account->CompanyId)) {
@@ -866,6 +866,33 @@ class InvoiceGenerate {
         $StartDate        = $InvoiceDetails->first()->StartDate;
         $InvoicePeriod    = $InvoiceDetails != false ? date("M 'y", strtotime($StartDate)) : "";
 
+        foreach($InvoiceDetails as $InvoiceDetail) {
+            if (in_array($InvoiceDetail->ProductType, [Product::SUBSCRIPTION, Product::ONEOFFCHARGE])) {
+                //product
+                $item = new \App\UblInvoice\Item();
+                $item->setName($InvoiceDetail->Description);
+                $item->setDescription($InvoiceDetail->Description);
+                $item->setSellersItemIdentification($InvoiceDetail->ProductID);
+
+                //price
+                $price = new \App\UblInvoice\Price();
+                $price->setBaseQuantity($InvoiceDetail->Qty);
+                $price->setUnitCode($unitCode);
+                $price->setPriceAmount($InvoiceDetail->Price);
+
+                //line
+                $invoiceLine = new \App\UblInvoice\InvoiceLine();
+                $invoiceLine->setId($InvoiceDetail->InvoiceDetailID);
+                $invoiceLine->setItem($item);
+
+                $invoiceLine->setPrice($price);
+                $invoiceLine->setUnitCode($unitCode);
+                $invoiceLine->setInvoicedQuantity($InvoiceDetail->Qty);
+                $invoiceLine->setLineExtensionAmount($InvoiceDetail->Price);
+                $invoiceLine->setTaxTotal($InvoiceDetail->TaxAmount);
+                $invoiceLines[] = $invoiceLine;
+            }
+        }
 
         foreach($InvoiceComponents as $InvoiceComponent) {
             //product
@@ -996,7 +1023,7 @@ class InvoiceGenerate {
 
         if($Invoice->PDF != "") {
             $additionalDocument = new \App\UblInvoice\AdditionalDocumentReference();
-            $additionalDocument->setAttachment(AmazonS3::preSignedUrl($Account->PDF));
+            $additionalDocument->setAttachment(AmazonS3::preSignedUrl($Account->PDF, $CompanyID));
             $additionalDocument->setDocumentType("Invoice");
             $additionalDocument->setId("01");
             $invoice->setAdditionalDocumentReference($additionalDocument);
