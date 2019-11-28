@@ -652,7 +652,7 @@ class InvoiceGenerate {
         //Getting all CLIs data
         $InvoiceComponents = DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost")
             ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
                 $join->on('cli.CLI', '=', 'id.CLI');
                 $join->on('cli.AccountServiceID','=','id.AccountServiceID');
@@ -696,7 +696,7 @@ class InvoiceGenerate {
                         'SubTotal'  => $invoiceComponent->SubTotal,
                         'TotalTax'  => $invoiceComponent->TotalTax,
                         'TotalCost' => $invoiceComponent->TotalCost,
-                        'ID'        => $invoiceComponent->InvoiceComponentID,
+                        'ID'        => $invoiceComponent->InvoiceComponentDetailID,
                     ];
                 }
             } else {
@@ -761,7 +761,7 @@ class InvoiceGenerate {
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
-                    'ID'            => $invoiceComponent->InvoiceComponentID,
+                    'ID'            => $invoiceComponent->InvoiceComponentDetailID,
                 ];
             }
         }
