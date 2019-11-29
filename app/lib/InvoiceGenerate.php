@@ -542,7 +542,7 @@ class InvoiceGenerate {
             if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $CompanyID) == '') {
                 $as3url =  base_path().'/resources/assets/images/250x100.png';
             } else {
-                $as3url = (AmazonS3::unSignedUrl($Reseller->CompanyLogoAS3Key,$CompanyID));
+                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key,$CompanyID));
             }
 
             $logo_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
