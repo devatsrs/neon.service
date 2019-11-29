@@ -1,7 +1,7 @@
 <?php namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Lib\log;
+use App\Lib\Log;
 use Monolog\Logger as Monolog;
 
 
@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider {
 
 	public function registerLogger()
 	{
-		$this->app->instance('log', $log = new log(
+		$this->app->instance('log', $log = new Log(
 			new Monolog($this->app->environment()), $this->app['events'])
 		);
 		return $log;

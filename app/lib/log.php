@@ -1,6 +1,6 @@
 <?php
 namespace App\Lib;
-class log extends \Illuminate\Log\Writer
+class Log extends \Illuminate\Log\Writer
 {
 
     public function alert($message, array $context = array())
@@ -29,7 +29,7 @@ class log extends \Illuminate\Log\Writer
 	 */
 	public function error($message, array $context = array())
 	{
-		return false;
+		return $this->writeLog(__FUNCTION__, $message, $context);
 	}
 
 	/**
