@@ -1,7 +1,7 @@
 <?php namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Lib\Log;
+use App\lib\Log;
 use Monolog\Logger as Monolog;
 
 
