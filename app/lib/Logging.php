@@ -29,7 +29,7 @@ class Logging extends \Illuminate\Log\Writer
 	 */
 	public function error($message, array $context = array())
 	{
-		return $this->writeLog(__FUNCTION__, $message, $context);
+		return false;
 	}
 
 	/**
