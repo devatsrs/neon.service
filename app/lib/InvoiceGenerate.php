@@ -533,8 +533,11 @@ class InvoiceGenerate {
             $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
 
             Log::info("Component data " . json_encode($InvoiceComponents));
-            $PageCounter = 1;
-            $TotalPages = count($InvoiceComponents) + $PageCounter;
+            $PageCounter = $TotalPages = 1;
+
+            if(count($InvoiceComponents))
+                foreach($InvoiceComponents as $key => $InvoiceComponent)
+                    if($InvoiceComponent['GrandTotal'] > 0) $TotalPages++;
 
             App::setLocale($language->ISOCode);
 
