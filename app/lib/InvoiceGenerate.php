@@ -987,7 +987,7 @@ class InvoiceGenerate {
         $tax = $Account->TaxRateID != "" ? explode(",",$Account->TaxRateID) : "";
         $tax = !empty($tax) ? TaxRate::find($tax[0]) : false;
         $tax = $tax != false ? $tax->Title : "";
-        $taxPercentage = number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2);
+        $taxPercentage = $Invoice->GrandTotal > 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
         $taxCategory->setId($Account->TaxRateID);
         $taxCategory->setName($tax);
         $taxCategory->setPercent($taxPercentage);
