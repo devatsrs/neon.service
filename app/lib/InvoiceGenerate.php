@@ -664,7 +664,7 @@ class InvoiceGenerate {
             ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
             ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
             ->get();
-        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentCostPerCall"];
+        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"];
 
         foreach($InvoiceComponents as $invoiceComponent){
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
