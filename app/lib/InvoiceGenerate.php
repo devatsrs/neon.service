@@ -351,7 +351,7 @@ class InvoiceGenerate {
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
         if($UsageGrandTotal > 0) {
-            $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
+            $TotalTax = self::calculateTax($AccountID, $UsageGrandTotal);
             $UsageTotalTax = $TotalTax;
             $UsageSubTotal = $UsageGrandTotal - $TotalTax;
         }
