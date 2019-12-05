@@ -203,27 +203,27 @@
                                 <th class="text-right" style="width: 12%">Qty</th>
                                 <th class="text-right" style="width: 12%">Amount ({{$CurrencySymbol}})</th>
                             </tr>
-                            @if(isset($InvoiceComponent['Monthly']) && !empty($InvoiceComponent['Monthly']))
+                            @if(isset($InvoiceComponent['MonthlyCost']) && !empty($InvoiceComponent['MonthlyCost']))
                                 <tr>
                                     <th colspan="6">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") }} {{ $InvoicePeriod }}</th>
                                 </tr>
                                 <tr>
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_INVOICE_NUMBER")}}</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Price'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['Monthly']['Price'], $RoundChargesAmount) }}@endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Discount'])){{ number_format($InvoiceComponent['Monthly']['Discount'], $RoundChargesAmount) }} @endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['Monthly']['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['Monthly']['Quantity'])){{ number_format($InvoiceComponent['Monthly']['Quantity'], 0) }} @endif</td>
-                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['Monthly']['SubTotal'], $RoundChargesAmount) }}</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['MonthlyCost']['Price'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['MonthlyCost']['Price'], $RoundChargesAmount) }}@endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['MonthlyCost']['Discount'])){{ number_format($InvoiceComponent['MonthlyCost']['Discount'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['MonthlyCost']['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['MonthlyCost']['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['MonthlyCost']['Quantity'])){{ number_format($InvoiceComponent['MonthlyCost']['Quantity'], 0) }} @endif</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['MonthlyCost']['SubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
                             @endif
-                            @if(isset($InvoiceComponent['OneOffCharge']) && !empty($InvoiceComponent['OneOffCharge']))
+                            @if(isset($InvoiceComponent['OneOffCost']) && !empty($InvoiceComponent['OneOffCost']))
                                 <tr>
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Price'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['Price'], $RoundChargesAmount) }}@endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Discount'])){{ number_format($InvoiceComponent['OneOffCharge']['Discount'], $RoundChargesAmount) }} @endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCharge']['Quantity'])){{ number_format($InvoiceComponent['OneOffCharge']['Quantity'], 0) }} @endif</td>
-                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCharge']['SubTotal'], $RoundChargesAmount) }}</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCost']['Price'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCost']['Price'], $RoundChargesAmount) }}@endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCost']['Discount'])){{ number_format($InvoiceComponent['OneOffCost']['Discount'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCost']['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCost']['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
+                                    <td class="text-right">@if(!empty($InvoiceComponent['OneOffCost']['Quantity'])){{ number_format($InvoiceComponent['OneOffCost']['Quantity'], 0) }} @endif</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['OneOffCost']['SubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
                             @endif
                             @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
