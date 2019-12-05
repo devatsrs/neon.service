@@ -533,8 +533,11 @@ class InvoiceGenerate {
             $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount);
 
             Log::info("Component data " . json_encode($InvoiceComponents));
-            $PageCounter = 1;
-            $TotalPages = count($InvoiceComponents) + $PageCounter;
+            $PageCounter = $TotalPages = 1;
+
+            if(count($InvoiceComponents))
+                foreach($InvoiceComponents as $key => $InvoiceComponent)
+                    if($InvoiceComponent['GrandTotal'] > 0) $TotalPages++;
 
             App::setLocale($language->ISOCode);
 
@@ -661,7 +664,7 @@ class InvoiceGenerate {
             ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
             ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
             ->get();
-        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentCostPerCall"];
+        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"];
 
         foreach($InvoiceComponents as $invoiceComponent){
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
@@ -984,7 +987,7 @@ class InvoiceGenerate {
         $tax = $Account->TaxRateID != "" ? explode(",",$Account->TaxRateID) : "";
         $tax = !empty($tax) ? TaxRate::find($tax[0]) : false;
         $tax = $tax != false ? $tax->Title : "";
-        $taxPercentage = number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2);
+        $taxPercentage = $Invoice->GrandTotal > 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
         $taxCategory->setId($Account->TaxRateID);
         $taxCategory->setName($tax);
         $taxCategory->setPercent($taxPercentage);
