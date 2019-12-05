@@ -26,8 +26,8 @@ class Handler extends ExceptionHandler {
 	public function report(Exception $e)
 	{
         $to = "error@neon-soft.com";
-        $subject = getenv("COMPANY_NAME")." - RM Service has Problem";
-        $txt = "Error Message:".$e->getMessage();
+        $subject = getenv("COMPANY_NAME")." - NEON Service has Problem";
+        $txt = "User: " . get_current_user() . " Got Error Message: " . $e->getTraceAsString();
         $headers = "From: no-reply@code-desk.com" ;
         @mail($to,$subject,$txt,$headers);
         return parent::report($e);

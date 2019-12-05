@@ -83,9 +83,11 @@ class InvoiceGenerator extends Command {
 
 
         // Get Active Accounts which has BillingCycleType set
-        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["CompanyID" =>$CompanyID, "Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
+        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
 
 
+        Log::info("Getting Accounts " . Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->toSql());
+        Log::info("Accounts " . json_encode($Accounts));
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
 
@@ -129,13 +131,12 @@ class InvoiceGenerator extends Command {
             /** regular invoice start */
             $SingleInvoice = 0;
             $response = InvoiceGenerate::GenerateInvoice($CompanyID,$AccountIDs,$InvoiceGenerationEmail,$ProcessID,$JobID);
-            dd($response);
             $errors = isset($response['errors'])?$response['errors']:array();
             $message = isset($response['message'])?$response['message']:array();
 
 
             if(count($errors)>0){
-                $jobdata['JobStatusID'] = DB::table('tblJobStaus')->where('Code','PF')->pluck('JobStatusID');
+                $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'');
             }else if(isset($message['accounts']) && $message['accounts'] != ''){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
