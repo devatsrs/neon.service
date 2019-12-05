@@ -241,24 +241,24 @@ class RateTableGenerator extends Command {
                     $jobStatus   = JobStatus::where(["Code" => "P"])->get(["JobStatusID"]);
 
                     $options["CompanyID"]   = $CompanyID;
-                    $data["CompanyID"]      = $CompanyID;
-                    $data["JobTypeID"]      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
-                    $data["JobStatusID"]    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
-                    $data["JobLoggedUserID"]= $job->JobLoggedUserID;
-                    $data["Title"]          = 'Termination Rate Difference ('.$options['RateTableName'].')';
-                    $data["Description"]    = ' ' . isset($jobType[0]->Title) ? $jobType[0]->Title : '';
-                    $data["CreatedBy"]      = $username;
-                    $data["updated_at"]     = date('Y-m-d H:i:s');
-                    $data["created_at"]     = date('Y-m-d H:i:s');
-                    $data["Options"]        = json_encode($options);
+                    $tro_jobdata["CompanyID"]      = $CompanyID;
+                    $tro_jobdata["JobTypeID"]      = isset($jobType[0]->JobTypeID) ? $jobType[0]->JobTypeID : '';
+                    $tro_jobdata["JobStatusID"]    = isset($jobStatus[0]->JobStatusID) ? $jobStatus[0]->JobStatusID : '';
+                    $tro_jobdata["JobLoggedUserID"]= $job->JobLoggedUserID;
+                    $tro_jobdata["Title"]          = 'Termination Rate Difference ('.$options['RateTableName'].')';
+                    $tro_jobdata["Description"]    = ' ' . isset($jobType[0]->Title) ? $jobType[0]->Title : '';
+                    $tro_jobdata["CreatedBy"]      = $username;
+                    $tro_jobdata["updated_at"]     = date('Y-m-d H:i:s');
+                    $tro_jobdata["created_at"]     = date('Y-m-d H:i:s');
+                    $tro_jobdata["Options"]        = json_encode($options);
 
-                    $validator = Validator::make($data, $rules);
+                    $validator = \Validator::make($tro_jobdata, $rules);
 
                     if ($validator->fails()) {
                         return validator_response($validator);
                     }
 
-                    $JobIDD = Job::insertGetId($data);
+                    $JobIDD = Job::insertGetId($tro_jobdata);
                 }
 
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');

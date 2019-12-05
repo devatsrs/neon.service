@@ -105,6 +105,22 @@ class RateTableDIDRateUpload extends Command
                     }else{
                         $templateoptions = json_decode($joboptions->Options);
                     }
+
+                    // get mapped city from template options
+                    //$MappedCityList = json_decode($templateoptions->MappedCityList,true);
+                    $MappedCityList = !empty($templateoptions->MappedCityList) ? json_decode($templateoptions->MappedCityList,true) : [];
+                    $CompareMappedCityList = array();
+                    foreach($MappedCityList AS $key => $val){
+                        $CompareMappedCityList[$val['AccessType'].'-'.$val['Country'].'-'.$val['Prefix'].'-'.$val['City']] = $val;
+                    }
+                    // get mapped tariff from template options
+                    //$MappedTariffList = json_decode($templateoptions->MappedTariffList,true);
+                    $MappedTariffList = !empty($templateoptions->MappedTariffList) ? json_decode($templateoptions->MappedTariffList,true) : [];
+                    $CompareMappedTariffList = array();
+                    foreach($MappedTariffList AS $key => $val){
+                        $CompareMappedTariffList[$val['AccessType'].'-'.$val['Country'].'-'.$val['Prefix'].'-'.$val['Tariff']] = $val;
+                    }
+
                     $csvoption = $templateoptions->option;
                     $attrselection = $templateoptions->selection;
                     if(!empty($templateoptions->importdialcodessheet)) {
@@ -349,6 +365,7 @@ class RateTableDIDRateUpload extends Command
                         $includePrefix          = 1;
                         $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID,$includePrefix); // to check when currency mapped from DB
                         $component_currencies2  = Currency::getCurrencyDropdownIDList($CompanyID);  // to check when currency mapped from File
+                        $component_currencies2  = array_map('strtolower', $component_currencies2);
                         $CountryPrefix          = ServiceTemplate::getCountryPrefixDD($includePrefix);
                         $AccessTypes            = ServiceTemplate::getAccessTypeDD($CompanyID,$includePrefix);
                         $Codes                  = ServiceTemplate::getPrefixDD($CompanyID,$includePrefix);
@@ -682,8 +699,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$OneOffCostCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$OneOffCostCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['OneOffCostCurrency'] = str_replace($prefixKeyword,'',$attrselection->$OneOffCostCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$OneOffCostCurrencyColumn]) && array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['OneOffCostCurrency'] = array_search($temp_row[$attrselection->$OneOffCostCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$OneOffCostCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$OneOffCostCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['OneOffCostCurrency'] = array_search(strtolower($temp_row[$attrselection->$OneOffCostCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['OneOffCostCurrency'] = NULL;
                                                 $error[] = 'One-Off Cost Currency is not match at line no:' . $lineno;
@@ -695,8 +712,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$MonthlyCostCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$MonthlyCostCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['MonthlyCostCurrency'] = str_replace($prefixKeyword,'',$attrselection->$MonthlyCostCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$MonthlyCostCurrencyColumn]) && array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['MonthlyCostCurrency'] = array_search($temp_row[$attrselection->$MonthlyCostCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$MonthlyCostCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$MonthlyCostCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['MonthlyCostCurrency'] = array_search(strtolower($temp_row[$attrselection->$MonthlyCostCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['MonthlyCostCurrency'] = NULL;
                                                 $error[] = 'Monthly Cost Currency is not match at line no:' . $lineno;
@@ -708,8 +725,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$CostPerCallCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$CostPerCallCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['CostPerCallCurrency'] = str_replace($prefixKeyword,'',$attrselection->$CostPerCallCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$CostPerCallCurrencyColumn]) && array_search($temp_row[$attrselection->$CostPerCallCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['CostPerCallCurrency'] = array_search($temp_row[$attrselection->$CostPerCallCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$CostPerCallCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$CostPerCallCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['CostPerCallCurrency'] = array_search(strtolower($temp_row[$attrselection->$CostPerCallCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['CostPerCallCurrency'] = NULL;
                                                 $error[] = 'Cost Per Call Currency is not match at line no:' . $lineno;
@@ -721,8 +738,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$CostPerMinuteCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$CostPerMinuteCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['CostPerMinuteCurrency'] = str_replace($prefixKeyword,'',$attrselection->$CostPerMinuteCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$CostPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$CostPerMinuteCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['CostPerMinuteCurrency'] = array_search($temp_row[$attrselection->$CostPerMinuteCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$CostPerMinuteCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$CostPerMinuteCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['CostPerMinuteCurrency'] = array_search(strtolower($temp_row[$attrselection->$CostPerMinuteCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['CostPerMinuteCurrency'] = NULL;
                                                 $error[] = 'Cost Per Minute Currency is not match at line no:' . $lineno;
@@ -734,8 +751,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$SurchargePerCallCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$SurchargePerCallCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['SurchargePerCallCurrency'] = str_replace($prefixKeyword,'',$attrselection->$SurchargePerCallCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$SurchargePerCallCurrencyColumn]) && array_search($temp_row[$attrselection->$SurchargePerCallCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['SurchargePerCallCurrency'] = array_search($temp_row[$attrselection->$SurchargePerCallCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$SurchargePerCallCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$SurchargePerCallCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['SurchargePerCallCurrency'] = array_search(strtolower($temp_row[$attrselection->$SurchargePerCallCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['SurchargePerCallCurrency'] = NULL;
                                                 $error[] = 'Surcharge Per Call Currency is not match at line no:' . $lineno;
@@ -747,8 +764,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$SurchargePerMinuteCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$SurchargePerMinuteCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['SurchargePerMinuteCurrency'] = str_replace($prefixKeyword,'',$attrselection->$SurchargePerMinuteCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['SurchargePerMinuteCurrency'] = array_search($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['SurchargePerMinuteCurrency'] = array_search(strtolower($temp_row[$attrselection->$SurchargePerMinuteCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['SurchargePerMinuteCurrency'] = NULL;
                                                 $error[] = 'Surcharge Per Minute Currency is not match at line no:' . $lineno;
@@ -760,8 +777,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$OutpaymentPerCallCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$OutpaymentPerCallCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['OutpaymentPerCallCurrency'] = str_replace($prefixKeyword,'',$attrselection->$OutpaymentPerCallCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn]) && array_search($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['OutpaymentPerCallCurrency'] = array_search($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['OutpaymentPerCallCurrency'] = array_search(strtolower($temp_row[$attrselection->$OutpaymentPerCallCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['OutpaymentPerCallCurrency'] = NULL;
                                                 $error[] = 'Outpayment Per Call Currency is not match at line no:' . $lineno;
@@ -773,8 +790,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$OutpaymentPerMinuteCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$OutpaymentPerMinuteCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['OutpaymentPerMinuteCurrency'] = str_replace($prefixKeyword,'',$attrselection->$OutpaymentPerMinuteCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn]) && array_search($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['OutpaymentPerMinuteCurrency'] = array_search($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['OutpaymentPerMinuteCurrency'] = array_search(strtolower($temp_row[$attrselection->$OutpaymentPerMinuteCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['OutpaymentPerMinuteCurrency'] = NULL;
                                                 $error[] = 'Outpayment Per Minute Currency is not match at line no:' . $lineno;
@@ -786,8 +803,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$SurchargesCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$SurchargesCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['SurchargesCurrency'] = str_replace($prefixKeyword,'',$attrselection->$SurchargesCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$SurchargesCurrencyColumn]) && array_search($temp_row[$attrselection->$SurchargesCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['SurchargesCurrency'] = array_search($temp_row[$attrselection->$SurchargesCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$SurchargesCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$SurchargesCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['SurchargesCurrency'] = array_search(strtolower($temp_row[$attrselection->$SurchargesCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['SurchargesCurrency'] = NULL;
                                                 $error[] = 'Surcharges Currency is not match at line no:' . $lineno;
@@ -799,8 +816,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$ChargebackCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$ChargebackCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['ChargebackCurrency'] = str_replace($prefixKeyword,'',$attrselection->$ChargebackCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$ChargebackCurrencyColumn]) && array_search($temp_row[$attrselection->$ChargebackCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['ChargebackCurrency'] = array_search($temp_row[$attrselection->$ChargebackCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$ChargebackCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$ChargebackCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['ChargebackCurrency'] = array_search(strtolower($temp_row[$attrselection->$ChargebackCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['ChargebackCurrency'] = NULL;
                                                 $error[] = 'Chargeback Currency is not match at line no:' . $lineno;
@@ -812,8 +829,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$CollectionCostAmountCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$CollectionCostAmountCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['CollectionCostAmountCurrency'] = str_replace($prefixKeyword,'',$attrselection->$CollectionCostAmountCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn]) && array_search($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['CollectionCostAmountCurrency'] = array_search($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['CollectionCostAmountCurrency'] = array_search(strtolower($temp_row[$attrselection->$CollectionCostAmountCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['CollectionCostAmountCurrency'] = NULL;
                                                 $error[] = 'Collection Cost Amount Currency is not match at line no:' . $lineno;
@@ -825,8 +842,8 @@ class RateTableDIDRateUpload extends Command
                                         if (!empty($attrselection->$RegistrationCostPerNumberCurrencyColumn)) {
                                             if(array_key_exists($attrselection->$RegistrationCostPerNumberCurrencyColumn, $component_currencies)) {// if currency selected from Neon Currencies
                                                 $tempratetabledata['RegistrationCostPerNumberCurrency'] = str_replace($prefixKeyword,'',$attrselection->$RegistrationCostPerNumberCurrencyColumn);
-                                            } else if(isset($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn]) && array_search($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn],$component_currencies2)) {// if currency selected from file
-                                                $tempratetabledata['RegistrationCostPerNumberCurrency'] = array_search($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn],$component_currencies2);
+                                            } else if(isset($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn]) && array_search(strtolower($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn]),$component_currencies2)) {// if currency selected from file
+                                                $tempratetabledata['RegistrationCostPerNumberCurrency'] = array_search(strtolower($temp_row[$attrselection->$RegistrationCostPerNumberCurrencyColumn]),$component_currencies2);
                                             } else {
                                                 $tempratetabledata['RegistrationCostPerNumberCurrency'] = NULL;
                                                 $error[] = 'Registration Cost Per Number Currency is not match at line no:' . $lineno;
@@ -880,6 +897,16 @@ class RateTableDIDRateUpload extends Command
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
+
+                                            $check_city_key = $tempratetabledata['AccessType'].'-'.$tempratetabledata['CountryCode'].'-'.$tempratetabledata['Code'].'-'.$tempratetabledata['City'];
+                                            if(array_key_exists($check_city_key,$CompareMappedCityList)) {
+                                                $tempratetabledata['City'] = $CompareMappedCityList[$check_city_key]['CityValue'];
+                                            }
+                                            $check_tariff_key = $tempratetabledata['AccessType'].'-'.$tempratetabledata['CountryCode'].'-'.$tempratetabledata['Code'].'-'.$tempratetabledata['Tariff'];
+                                            if(array_key_exists($check_tariff_key,$CompareMappedTariffList)) {
+                                                $tempratetabledata['Tariff'] = $CompareMappedTariffList[$check_tariff_key]['TariffValue'];
+                                            }
+
                                             if (isset($tempratetabledata['EndDate'])) {
                                                 $batch_insert_array[] = $tempratetabledata;
                                             } else {

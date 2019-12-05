@@ -2,6 +2,7 @@
 namespace App;
 
 use App\Lib\CompanyConfiguration;
+use App\Lib\RemoteSSH;
 use Collective\Remote\RemoteFacade;
 use \Exception;
 use App\Lib\GatewayAPI;
@@ -57,7 +58,8 @@ class FTPSGateway{
         $FTP_FILE_PATH = $TEMP_PATH . '/' . "ftp_files";
 
         if (!is_dir($FTP_FILE_PATH)) {
-            @mkdir($FTP_FILE_PATH, 0777, true);
+            //@mkdir($FTP_FILE_PATH, 0777, true);
+            RemoteSSH::make_dir($CompanyID,$FTP_FILE_PATH);
         }
 
         return $FTP_FILE_PATH;

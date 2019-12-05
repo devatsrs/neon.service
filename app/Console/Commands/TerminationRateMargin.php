@@ -69,7 +69,7 @@ class TerminationRateMargin extends Command
 		Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
 		$CompanyID = $arguments["CompanyID"];
 
-		Log::useFiles(storage_path() . '/logs/terminationrateoperation-' .  $JobID. '-' . date('Y-m-d') . '.log');
+		Log::useFiles(storage_path() . '/logs/terminationratemargin-' .  $JobID. '-' . date('Y-m-d') . '.log');
 		try {
 			if (!empty($job)) {
 				$joboptions = json_decode($job->Options);

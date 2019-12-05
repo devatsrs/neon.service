@@ -86,6 +86,15 @@ class Account extends \Eloquent {
     }
 
 
+    public static function getAddress($Account){
+        $Address = "";
+        $Address .= !empty($Account->BillingAddress1) ? $Account->BillingAddress1 . ', ' : '';
+        $Address .= !empty($Account->BillingAddress2) ? $Account->BillingAddress2 . ', ' : '';
+        $Address .= !empty($Account->BillingAddress3) ? $Account->BillingAddress3 : '';
+        $Address = trim($Address, ', ');
+        return $Address;
+    }
+
     //not in use
     public static function getExcelFormat($filepath){
         $excel = Excel::load(Config::get('app.temp_location').basename($filepath), function($reader) {})->first()->toArray();
@@ -429,4 +438,30 @@ class Account extends \Eloquent {
         return $Accounts2;
     }
 
+    public static function getAllAccounts()
+    {
+        $Accounts = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId','tblAccount.AccountName', DB::raw("0 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0))
+            ->whereNotIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts1 = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
+            ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId', 'tblAccount.AccountName',DB::raw("1 as `Reseller`"))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0))
+            ->whereIn('tblAccountBilling.AccountID', function($query){
+                $query->select('AccountID')
+                    ->from('tblReseller')
+                    ->where('status',1);
+            })
+            ->get()->toArray();
+
+        $Accounts2 = array_merge($Accounts,$Accounts1);
+
+        return $Accounts2;
+    }
 }

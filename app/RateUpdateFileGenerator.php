@@ -10,6 +10,7 @@ namespace App;
 
 
 use App\Lib\NeonExcelIO;
+use App\Lib\RemoteSSH;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -33,7 +34,8 @@ class RateUpdateFileGenerator
 
         $dir = $local_dir;
         if (!file_exists($dir)) {
-            @mkdir($dir, 0777, TRUE);
+            //@mkdir($dir, 0777, TRUE);
+            RemoteSSH::make_dir($CompanyID,$dir);
         }
 
         $sort_column = $AccountType == 'customer' ? "CustomerRateUpdateHistoryWithDataID" : "VendorRateUpdateHistoryWithDataID";

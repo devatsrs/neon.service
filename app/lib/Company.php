@@ -27,10 +27,23 @@ class Company extends \Eloquent {
         }
     }
 	
- public static function getCompanyField($companyID,$field) {
+    public static function getCompanyField($companyID,$field) {
         if(!empty($field) && $companyID > 0) {      
    	      return Company::where("CompanyID",$companyID)->pluck($field);
        }
+    }
+
+    public static function getCompanyAddress($companyID=0){
+        if($companyID>0){
+            $companyData = Company::find($companyID);
+        }else{
+            $companyData = Company::find(User::get_companyID());
+        }
+        $Address = "";
+        $Address .= !empty($companyData->Address1) ? $companyData->Address1 . ',' . PHP_EOL : '';
+        $Address .= !empty($companyData->Address2) ? $companyData->Address2 . ',' . PHP_EOL : '';
+        $Address .= !empty($companyData->Address3) ? $companyData->Address3 . ',' . PHP_EOL : '';
+        return $Address;
     }
 	
 	public static function getCompanyFullAddress($companyID){

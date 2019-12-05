@@ -36,7 +36,7 @@ class AccountBalanceLog extends Model
             ->get();
          * */
 
-        $Accounts = Account::getAllPrepaidAccount();
+        $Accounts = Account::getAllAccounts();
         foreach ($Accounts as $Account) {
                 $AccountID = $Account['AccountID'];
                 $CompanyID = $Account['CompanyId'];
@@ -114,18 +114,18 @@ class AccountBalanceLog extends Model
                 $AccountSubscriptionID = $AccountSubscription->AccountSubscriptionID;
                 $NextCycleDate='';
                 $LatsCycleDate='';
-                $BillingType = AccountBilling::BILLINGTYPE_PREPAID;
                 $ServiceID          = 0;
                 $AccountServiceID   = 0;
                 $CLIRateTableID =0;
                 $Count=1;
+                $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
+                $BillingType = $AccountBilling->BillingType;
                 $ServiceBilling = DB::table('tblServiceBilling')->where(['AccountSubscriptionID'=>$AccountSubscriptionID,'AccountID'=>$AccountID,'ServiceID'=>$ServiceID,'AccountServiceID'=>$AccountServiceID,'CLIRateTableID'=>$CLIRateTableID])->first();
                 if(empty($ServiceBilling)){
-                    $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
                     if(!empty($AccountBilling->BillingStartDate)){
 
                         // if billing type is postpaid and billing cycle is manual then skip this service
-                        if($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $AccountBilling->BillingCycleType == 'manual') {
+                        if($AccountBilling->BillingCycleType == 'manual') {
                             continue;
                         }
                         // if BillingStartDate is null then skip this service
@@ -194,7 +194,8 @@ class AccountBalanceLog extends Model
             foreach($AccountServices as $AccountService){
                 $NextCycleDate='';
                 $LatsCycleDate='';
-                $BillingType = AccountBilling::BILLINGTYPE_PREPAID;
+                $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
+                $BillingType = $AccountBilling->BillingType;
                 $ServiceID = $AccountService->ServiceID;
                 $AccountServiceID = $AccountService->AccountServiceID;
 
@@ -205,11 +206,10 @@ class AccountBalanceLog extends Model
                         $Count = 1;
                         $ServiceBilling = DB::table('tblServiceBilling')->where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID, 'AccountServiceID' => $AccountServiceID, 'CLIRateTableID' => $CLIRateTableID, 'AccountSubscriptionID' => 0])->first();
                         if (empty($ServiceBilling)) {
-                            $AccountBilling = AccountBilling::where(['AccountID' => $AccountID, 'ServiceID' => 0, 'AccountServiceID' => 0])->first();
                             if (!empty($AccountBilling->BillingStartDate)) {
 
                                 // if billing type is postpaid and billing cycle is manual then skip this service
-                                if ($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $AccountBilling->BillingCycleType == 'manual') {
+                                if ($AccountBilling->BillingCycleType == 'manual') {
                                     continue;
                                 }
                                 // if BillingStartDate is null then skip this service
