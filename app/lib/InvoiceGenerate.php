@@ -389,7 +389,7 @@ class InvoiceGenerate {
 
 
         // Adding Monthly in Invoice Detail
-        $Monthly = InvoiceComponentDetail::where('Component', 'Monthly')
+        $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
             ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
 
@@ -413,15 +413,15 @@ class InvoiceGenerate {
         InvoiceDetail::create($MonthlyInvoiceDetail);
 
 
-        // Adding OneOffCharge in Invoice Detail
-        $OneOff = InvoiceComponentDetail::where('Component', 'OneOffCharge')
+        // Adding OneOffCost in Invoice Detail
+        $OneOff = InvoiceComponentDetail::where('Component', 'OneOffCost')
             ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
 
         $OneOffInvoiceDetail = [
             'InvoiceID'          => $InvoiceID,
             'ProductType'        => Product::ONEOFFCHARGE,
-            'Description'        => "One Off Charge",
+            'Description'        => "One Off Cost",
             'Price'              => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', ''),
             'Qty'                => $OneOff->sum('Quantity'),
             'CurrencyID'         => $CurrencyID,
@@ -440,7 +440,7 @@ class InvoiceGenerate {
 
         // Adding Monthly Cost Total in Invoice
         $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
-            ->whereIn('Component', ['OneOffCharge', 'Monthly'])->get();
+            ->whereIn('Component', ['OneOffCost', 'MonthlyCost'])->get();
 
         $MonthlySubtotal    = $MonthlyCost->sum('SubTotal');
         $MonthlyTax         = $MonthlyCost->sum('TotalTax');
@@ -509,12 +509,12 @@ class InvoiceGenerate {
             $InvoiceDetailIDs = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->lists('InvoiceDetailID');
 
             // Getting total Monthly cost
-            $MonthlySubTotal = InvoiceComponentDetail::where('Component', 'Monthly')
+            $MonthlySubTotal = InvoiceComponentDetail::where('Component', 'MonthlyCost')
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
-            // Getting total OneOffCharge cost
-            $OneOffSubTotal = InvoiceComponentDetail::where('Component', 'OneOffCharge')
+            // Getting total OneOffCost
+            $OneOffSubTotal = InvoiceComponentDetail::where('Component', 'OneOffCost')
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
@@ -689,7 +689,7 @@ class InvoiceGenerate {
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
-            if(in_array($Component, ['OneOffCharge', 'Monthly'])){
+            if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
                 if(!isset($data[$index][$Component])) {
                     $data[$index][$Component] = [
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
@@ -900,7 +900,7 @@ class InvoiceGenerate {
         foreach($InvoiceComponents as $InvoiceComponent) {
             //product
             $description = Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['Prefix'] . "-" . $InvoiceComponent['CLI'];
-            if(isset($InvoiceComponent['Monthly']) && !empty($InvoiceComponent['Monthly'])){
+            if(isset($InvoiceComponent['MonthlyCost']) && !empty($InvoiceComponent['MonthlyCost'])){
                 $item = new \App\UblInvoice\Item();
                 $item->setName(cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") . " " . $InvoicePeriod);
                 $item->setDescription($description);
@@ -908,24 +908,24 @@ class InvoiceGenerate {
 
                 //price
                 $price = new \App\UblInvoice\Price();
-                $price->setBaseQuantity($InvoiceComponent['Monthly']['Quantity']);
+                $price->setBaseQuantity($InvoiceComponent['MonthlyCost']['Quantity']);
                 $price->setUnitCode($unitCode);
-                $price->setPriceAmount($InvoiceComponent['Monthly']['Price']);
+                $price->setPriceAmount($InvoiceComponent['MonthlyCost']['Price']);
 
                 //line
                 $invoiceLine = new \App\UblInvoice\InvoiceLine();
-                $invoiceLine->setId($InvoiceComponent['Monthly']['ID']);
+                $invoiceLine->setId($InvoiceComponent['MonthlyCost']['ID']);
                 $invoiceLine->setItem($item);
 
                 $invoiceLine->setPrice($price);
                 $invoiceLine->setUnitCode($unitCode);
-                $invoiceLine->setInvoicedQuantity($InvoiceComponent['Monthly']['Quantity']);
-                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['Monthly']['SubTotal'], $RoundChargesAmount));
-                $invoiceLine->setTaxTotal($InvoiceComponent['Monthly']['TotalTax']);
+                $invoiceLine->setInvoicedQuantity($InvoiceComponent['MonthlyCost']['Quantity']);
+                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['MonthlyCost']['SubTotal'], $RoundChargesAmount));
+                $invoiceLine->setTaxTotal($InvoiceComponent['MonthlyCost']['TotalTax']);
                 $invoiceLines[] = $invoiceLine;
             }
 
-            if(isset($InvoiceComponent['OneOffCharge']) && !empty($InvoiceComponent['OneOffCharge'])){
+            if(isset($InvoiceComponent['OneOffCost']) && !empty($InvoiceComponent['OneOffCost'])){
                 $item = new \App\UblInvoice\Item();
                 $item->setName(cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL"));
                 $item->setDescription($description);
@@ -933,20 +933,20 @@ class InvoiceGenerate {
 
                 //price
                 $price = new \App\UblInvoice\Price();
-                $price->setBaseQuantity($InvoiceComponent['OneOffCharge']['Quantity']);
+                $price->setBaseQuantity($InvoiceComponent['OneOffCost']['Quantity']);
                 $price->setUnitCode($unitCode);
-                $price->setPriceAmount($InvoiceComponent['OneOffCharge']['Price']);
+                $price->setPriceAmount($InvoiceComponent['OneOffCost']['Price']);
 
                 //line
                 $invoiceLine = new \App\UblInvoice\InvoiceLine();
-                $invoiceLine->setId($InvoiceComponent['OneOffCharge']['ID']);
+                $invoiceLine->setId($InvoiceComponent['OneOffCost']['ID']);
                 $invoiceLine->setItem($item);
 
                 $invoiceLine->setPrice($price);
                 $invoiceLine->setUnitCode($unitCode);
-                $invoiceLine->setInvoicedQuantity($InvoiceComponent['OneOffCharge']['Quantity']);
-                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['OneOffCharge']['SubTotal'], $RoundChargesAmount));
-                $invoiceLine->setTaxTotal($InvoiceComponent['OneOffCharge']['TotalTax']);
+                $invoiceLine->setInvoicedQuantity($InvoiceComponent['OneOffCost']['Quantity']);
+                $invoiceLine->setLineExtensionAmount(number_format($InvoiceComponent['OneOffCost']['SubTotal'], $RoundChargesAmount));
+                $invoiceLine->setTaxTotal($InvoiceComponent['OneOffCost']['TotalTax']);
                 $invoiceLines[] = $invoiceLine;
             }
             if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0){
