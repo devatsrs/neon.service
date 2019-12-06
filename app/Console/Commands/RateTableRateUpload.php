@@ -84,13 +84,14 @@ class RateTableRateUpload extends Command
         $p_UserName = $job->CreatedBy;
 
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 1000;
+        $bacth_insert_limit = 10000;
         $counter = 0;
         $p_blocked = 0;
         $p_preference = 0;
         $DialStringId = 0;
         $dialcode_separator = 'null';
         Log::useFiles(storage_path() . '/logs/ratetablefileupload-' .  $JobID. '-' . date('Y-m-d') . '.log');
+        Log::info('Rate Upload Starts');
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $error = array();
         try {
@@ -217,8 +218,12 @@ class RateTableRateUpload extends Command
                             $lineno = 2;
                         }
 
+                        Log::info('File read Starts');
+
                         $NeonExcel = new NeonExcelIO($file_name, (array) $csvoption, $data['importratesheet']);
                         $ratesheet = $NeonExcel->read();
+
+                        Log::info('File read Ends');
 
                         if(!empty($data['importdialcodessheet'])) {
                             $skipRows_sheet2 = $templateoptions->skipRows_sheet2;
@@ -812,6 +817,9 @@ class RateTableRateUpload extends Command
             Job::where(["JobID" => $JobID])->update($jobdata);
             Log::error($e);
         }
+
+        Log::info('Rate Upload End');
+
         Job::send_job_status_email($job,$CompanyID);
 
         CronHelper::after_cronrun($this->name, $this);
