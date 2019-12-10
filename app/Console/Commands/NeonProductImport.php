@@ -119,28 +119,28 @@ class NeonProductImport extends Command {
                             $productdata = array();
                             $productdata['ServiceId']   = $ServiceId[0];
                             $productdata['ProductId']   = $ProductResponse->productId;
-                            $productdata['Name']        = $ProductResponse->name;
-                            $productdata['country']     = $ProductResponse->countryName;
+                            $productdata['Name']        = trim($ProductResponse->name);
+                            $productdata['country']     = trim($ProductResponse->countryName);
                             $productdata['prefixName']  = str_replace(" ","",$ProductResponse->prefixName);
                             $productdata['CurrencyId']  = $CurrencyId;
                             $productdata['CompanyID']   = $CompanyID;
-                            $productdata['FieldName']   = $FieldsProductID;
+                            $productdata['FieldName']   = trim($FieldsProductID);
                             //$city_tariff = '';
                             if (!empty($ProductResponse->cityName)) {
                                 $City = $ProductResponse->cityName;
-                                $productdata['City'] = $City;
+                                $productdata['City'] = trim($City);
                             }
                             if ($ProductResponse->tariff !== "") { 
                                 $Tariff = $ProductResponse->tariff.' '.$ProductResponse->tariffType;
-                                $productdata['Tariff'] = $Tariff;
+                                $productdata['Tariff'] = trim($Tariff);
                             }
                             // $productdata['City'] = $city_tariff;
                             // $productdata['Tariff'] = $city_tariff;
                             if (!empty($ProductResponse->accessTypeName)) {
-                                $productdata['accessType'] = $ProductResponse->accessTypeName;
+                                $productdata['accessType'] = trim($ProductResponse->accessTypeName);
                             }
                             if (!empty($ProductResponse->countryCode)) {
-                                $productdata['countryCode'] = $ProductResponse->countryCode;
+                                $productdata['countryCode'] = trim($ProductResponse->countryCode);
                             }
                             $ServiceTemplate            = Producttemp::create($productdata);
                             
@@ -188,7 +188,7 @@ class NeonProductImport extends Command {
                             
                                 $packagedata = array();
                                 $packagedata['ProductId']   = $ProductResponse->productId;
-                                $packagedata['Name']        = $ProductResponse->name;
+                                $packagedata['Name']        = trim($ProductResponse->name);
                                 $packagedata['CurrencyId']  = $CurrencyId;
                                 $packagedata['CompanyID']   = $CompanyID;
                                 $packagedata['FieldName']   = $PackageId;
