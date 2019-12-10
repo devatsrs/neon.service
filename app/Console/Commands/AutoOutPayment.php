@@ -83,7 +83,7 @@ class AutoOutPayment extends Command {
             $AutoOutPaymentList = $AutoOutPaymentList->get();
 
             Log::info('DONE With AutoOutPaymentAccount.' . count($AutoOutPaymentList));
-            $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
+            $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'API'])->pluck('Value');
             foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
 
                 $BillingType = AccountBilling::where([
@@ -186,6 +186,8 @@ class AutoOutPayment extends Command {
         if (!NeonAPI::endsWith($CompanyConfiguration,"/")) {
             $url = $CompanyConfiguration . "/";
         }
+        $localIP = env('SERVER_LOCAL_IP');
+        $url =  !empty($localIP) ? "http://$localIP/" : $url;
         Log::info("Out Payment API URL" . $url);
         $APIresponse = NeonAPI::callAPI($postdata,"api/account/requestFund",$url);
         //dd($APIresponse);
