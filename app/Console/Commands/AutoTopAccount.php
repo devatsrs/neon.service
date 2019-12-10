@@ -262,7 +262,7 @@ class AutoTopAccount extends Command {
 			$url = $CompanyConfiguration . "/";
 		}
 		//Log::info("Balance API URL" . $url);
-		$APIresponse = NeonAPI::callAPI($postdata,"api/account/depositFund",$url);
+		$APIresponse = NeonAPI::callAPI($postdata,"api/depositFund",$url);
 
 
 		if (isset($APIresponse["error"])) {
