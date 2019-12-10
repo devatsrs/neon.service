@@ -102,7 +102,7 @@ class NeonAPI
                 CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
                 CURLOPT_HTTPHEADER => array(
                     "accept: */*",
-                    'Authorization:Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU0MzQwMTc0OCwiZXhwIjoxNTc0OTM3NzQ4LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlZlbmRvck1hbmFnZXIifQ.jdVEkXjR2q8swx8OFDNLQhJNSCtzM6y1P_TohN6ql-U',
+                    'Authorization:Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU3NTAzNTI4NiwiZXhwIjoxNjA2NTcxMjg2LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsInJvbGUiOiJWZW5kb3JNYW5hZ2VyIn0.fnxV7jFA-NEXKVo3XQhCx5KiiN0Pw8YKOM6acoi9yU4',
                 ),
             ));
             Log::info("Before curl_exec:" . $url);
