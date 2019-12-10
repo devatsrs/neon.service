@@ -12,4 +12,7 @@ sudo find /vol/data/speakintelligent.neon.service -type f -exec chmod 464 {} +
 sudo chmod -R 770 /vol/data/speakintelligent.neon.service/storage
 sudo chown neon_sys:apache /vol/data/cron_job_speakintelligent
 
+sudo chmod -R 575 /vol/data/speakintelligent.neon.service/wkhtmltox/bin/wkhtmltopdf
+sudo chmod -R 575 /vol/data/speakintelligent.neon.service/neon_service_pull.sh
+
 echo "success"
