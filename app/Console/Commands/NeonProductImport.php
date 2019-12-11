@@ -91,7 +91,8 @@ class NeonProductImport extends Command {
             $ServiceId = $cronsetting['ServiceId'];
             $PackageId = $cronsetting['PackageID'];
             $APIMethod = $cronsetting['ProductAPIMethod'];
-            $APIUrl = $cronsetting['ProductAPIURL'];
+            $APIKey    = isset($cronsetting['ProductAPIKey']) ? $cronsetting['ProductAPIKey'] : '';
+            $APIUrl    = $cronsetting['ProductAPIURL'];
 
             //ProductID this field name will be unique
             // we will not give any 
@@ -105,7 +106,7 @@ class NeonProductImport extends Command {
                 
                 $CurrencyId = Company::where(['CompanyID'=>$CompanyID])->pluck('CurrencyId');
                 $Getdata = array();
-                $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod, $APIUrl);
+                $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod,$APIUrl,$APIKey);
                 if (isset($APIResponse["error"])) {
                     Log::info('z_neonproductimport1 Error in  api/Products service.' . print_r($APIResponse["error"]));
                 } else {

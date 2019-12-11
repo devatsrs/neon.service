@@ -79,7 +79,7 @@ class NeonAPI
         return $APIresponse;
     }
 
-    public static function callGetAPI($postdata,$call_method,$api_url)
+    public static function callGetAPI($postdata,$call_method,$api_url,$API_Key)
     {
         $url = $api_url . $call_method;
         Log::info("Call GET API URL :" . $url);
@@ -102,7 +102,7 @@ class NeonAPI
                 CURLOPT_POSTFIELDS => http_build_query($postdata, '', '&'),
                 CURLOPT_HTTPHEADER => array(
                     "accept: */*",
-                    'Authorization:Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsImlhdCI6MTU3NTAzNTI4NiwiZXhwIjoxNjA2NTcxMjg2LCJhdWQiOiJ3d3cuYXBpLnNwZWFraW50ZWxsaWdlbmNlLmNvbSIsInN1YiI6IiIsInVzZXJuYW1lIjoiVGVzdCIsInJvbGUiOiJWZW5kb3JNYW5hZ2VyIn0.fnxV7jFA-NEXKVo3XQhCx5KiiN0Pw8YKOM6acoi9yU4',
+                    'Authorization:Bearer '.$API_Key,
                 ),
             ));
             Log::info("Before curl_exec:" . $url);
