@@ -98,7 +98,8 @@ class RMService extends Command {
                 'DisputeBulkMail',
                 'PendingBulkCreditNoteSend',
                 'TerminationRateOperation',
-                'TerminationRateMargin'
+                'TerminationRateMargin',
+                'GridExport'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -444,22 +445,30 @@ class RMService extends Command {
                 }
           
             }
-        //Termination Rate Operation
-        foreach($allpending['data']['TerminationRateOperation'] as $allpendingrow){
-            if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
-                if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
-                    pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationrateoperation " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+            //Termination Rate Operation
+            foreach($allpending['data']['TerminationRateOperation'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationrateoperation " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
                 }
             }
-        }
-        //Termination Rate Margin
-        foreach($allpending['data']['TerminationRateMargin'] as $allpendingrow){
-            if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
-                if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
-                    pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationratemargin " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+            //Termination Rate Margin
+            foreach($allpending['data']['TerminationRateMargin'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." terminationratemargin " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
                 }
             }
-        }
+            //Grid Export
+            foreach($allpending['data']['GridExport'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." gridexport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
 
         }catch(\Exception $e){
             Log::error($e);
