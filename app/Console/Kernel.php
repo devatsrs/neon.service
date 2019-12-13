@@ -146,6 +146,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\PartnerAccountUsage',
 		'App\Console\Commands\TerminationRateOperation',
 		'App\Console\Commands\TerminationRateMargin',
+		'App\Console\Commands\GridExport',
 
 	];
 

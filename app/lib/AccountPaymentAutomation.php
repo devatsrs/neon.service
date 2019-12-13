@@ -27,7 +27,10 @@ class AccountPaymentAutomation extends \Eloquent
         if (!NeonAPI::endsWith($CompanyConfiguration, "/")) {
             $url = $CompanyConfiguration . "/";
         }
-        $APIresponse = NeonAPI::callAPI($postdata, "api/account/depositFund", $url);
+        $localIP = env('SERVER_LOCAL_IP');
+        $url =  !empty($localIP) ? "http://$localIP/" : $url;
+        $APIresponse = NeonAPI::callAPI($postdata, "api/depositFund", $url);
+        Log::info("API Response". json_encode($APIresponse));
         if (isset($APIresponse["error"])) {
             try {
                 $response = json_decode($APIresponse["error"]);

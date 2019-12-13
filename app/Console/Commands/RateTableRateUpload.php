@@ -84,7 +84,7 @@ class RateTableRateUpload extends Command
         $p_UserName = $job->CreatedBy;
 
         $CompanyID = $arguments["CompanyID"];
-        $bacth_insert_limit = 10000;
+        $bacth_insert_limit = 1000;
         $counter = 0;
         $p_blocked = 0;
         $p_preference = 0;
