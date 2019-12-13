@@ -174,16 +174,20 @@ class NeonAlert extends \Eloquent {
             Log::info('haveEmail = '.$haveEmail.' --------- ');
             if($haveEmail==0){
                 $CustomerEmail = $Account->BillingEmail;
-                $CustomerEmail = explode(",", $CustomerEmail);
-                foreach ($CustomerEmail as $singleemail) {
-                    $singleemail = trim($singleemail);
-                    if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
-                        $emaildata['EmailTo'] = $singleemail;
-                        $customeremail_status = Helper::sendMail($email_view, $emaildata);
-                        if ($customeremail_status['status'] == 0) {
-                            $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
-                        } else {
-                            $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+                $CustomerBillingType = AccountBilling::where('AccountID',$Account->AccountID)->Pluck('BillingType');
+                dd($CustomerBillingType);
+                if($CustomerBillingType != 2){
+                    $CustomerEmail = explode(",", $CustomerEmail);
+                    foreach ($CustomerEmail as $singleemail) {
+                        $singleemail = trim($singleemail);
+                        if (filter_var($singleemail, FILTER_VALIDATE_EMAIL)) {
+                            $emaildata['EmailTo'] = $singleemail;
+                            $customeremail_status = Helper::sendMail($email_view, $emaildata);
+                            if ($customeremail_status['status'] == 0) {
+                                $cronjobdata[] = 'Failed sending email to ' . $Account->AccountName . ' (' . $singleemail . ')';
+                            } else {
+                                $statuslog = Helper::account_email_log($CompanyID, $AccountID, $emaildata, $customeremail_status, '', $settings['ProcessID'],0,$EmailType);
+                            }
                         }
                     }
                 }
