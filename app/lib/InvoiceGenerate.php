@@ -701,7 +701,22 @@ class InvoiceGenerate {
                         'TotalCost' => $invoiceComponent->TotalCost,
                         'ID'        => $invoiceComponent->InvoiceComponentDetailID,
                     ];
+                } else {
+
+                    $arrData = $data[$index][$Component];
+
+                    $arrData['Discount']  += (float)$invoiceComponent->Discount;
+                    $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
+                    $arrData['Quantity']  += $Quantity;
+                    $arrData['SubTotal']  += $invoiceComponent->SubTotal;
+                    $arrData['TotalTax']  += $invoiceComponent->TotalTax;
+                    $arrData['TotalCost'] += $invoiceComponent->TotalCost;
+
+                    $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
+
+                    $data[$index][$Component] = $arrData;
                 }
+
             } else {
 
                 $Title = "";
