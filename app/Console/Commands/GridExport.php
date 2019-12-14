@@ -86,12 +86,25 @@ class GridExport extends Command
 				$query 			= $joboptions->query;
 				$GridType 		= $joboptions->GridType;
 
-				DB::setFetchMode( \PDO::FETCH_ASSOC );
-				$result_data = DB::select($query);
-				DB::setFetchMode( Config::get('database.fetch'));
+				if($GridType == 'GT-TRT') {// grid type from RateTablesController->rate_export()
+					DB::setFetchMode(\PDO::FETCH_ASSOC);
+				}
 
-				// grid type from RateTablesController->rate_export()
-				if($GridType == 'Termination Rate Table') {
+				$result_data = DB::select($query);
+
+				if($GridType == 'GT-TRT') {// grid type from RateTablesController->rate_export()
+					DB::setFetchMode(Config::get('database.fetch'));
+				}
+
+				if($GridType == 'GT-LCR') {// grid type from LCRController->search_ajax_datagrid()
+					$result_data = json_decode(json_encode($result_data),true);
+					foreach($result_data as $rowno => $rows){
+						foreach($rows as $colno => $colval){
+							$result_data[$rowno][$colno] = str_replace( "<br>" , "\n" ,$colval );
+						}
+					}
+				}
+				if($GridType == 'GT-TRT') {// grid type from RateTablesController->rate_export()
 					if (!empty($params->ResellerPage)) {
 						foreach ($result_data as $key => $value) {
 							if (isset($value['Approved By/Date'])) {
