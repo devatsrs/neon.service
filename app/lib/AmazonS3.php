@@ -29,6 +29,7 @@ class AmazonS3 {
 		'REPORT_ATTACHMENT'=>'ReportAttachment',
 		'DIGITAL_SIGNATURE_KEY'=>'DigitalSignature',
         'GATEWAY_KEY'=>'GatewayKey',
+        'GRID_EXPORT'=>'GridExport',
 
     );
 
