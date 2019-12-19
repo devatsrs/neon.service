@@ -701,7 +701,22 @@ class InvoiceGenerate {
                         'TotalCost' => $invoiceComponent->TotalCost,
                         'ID'        => $invoiceComponent->InvoiceComponentDetailID,
                     ];
+                } else {
+
+                    $arrData = $data[$index][$Component];
+
+                    $arrData['Discount']  += (float)$invoiceComponent->Discount;
+                    $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
+                    $arrData['Quantity']  += $Quantity;
+                    $arrData['SubTotal']  += $invoiceComponent->SubTotal;
+                    $arrData['TotalTax']  += $invoiceComponent->TotalTax;
+                    $arrData['TotalCost'] += $invoiceComponent->TotalCost;
+
+                    $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
+
+                    $data[$index][$Component] = $arrData;
                 }
+
             } else {
 
                 $Title = "";
@@ -744,12 +759,12 @@ class InvoiceGenerate {
                 if($invoiceComponent->Timezone != "")
                     $Title .= " " . $invoiceComponent->Timezone;
 
+                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+
                 $UnitPrice = 0;
                 if(in_array($Component,$PerCallComponents) && $Quantity > 0){
-                    $UnitPrice = (float)$invoiceComponent->TotalCost / $Quantity;
+                    $UnitPrice = (float)$invoiceComponent->SubTotal / $Quantity;
                 }
-
-                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : $invoiceComponent->Duration / 60;
 
                 $data[$index]['components'][] = [
                     'Title'         => $Title,
