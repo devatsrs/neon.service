@@ -111,18 +111,19 @@ class CompanyGateway extends \Eloquent {
                                     `TimezonesID` INT(11) NULL DEFAULT NULL,
                                     `caller_address_nature` INT(5) NULL DEFAULT NULL,
                                     `called_address_nature` INT(5) NULL DEFAULT NULL,
-                                    `alert_time` DATETIME NULL DEFAULT NULL,
+                                    `alert_time` VARCHAR(50) NULL DEFAULT NULL,
                                     `trunk_group_in` VARCHAR(100) NULL DEFAULT NULL,
                                     `trunk_group_out` VARCHAR(100) NULL DEFAULT NULL,
                                     `caller_trunk_cic` INT(11) NULL DEFAULT NULL,
                                     `called_trunk_cic` INT(11) NULL DEFAULT NULL,
                                     `connected_number` BIGINT(20) NULL DEFAULT NULL,
                                     `connected_address_nature` INT(3) NULL DEFAULT NULL,
-                                    `caller_call_id` BIGINT(20) NULL DEFAULT NULL,
-                                    `called_call_id` BIGINT(20) NULL DEFAULT NULL,
+                                    `caller_call_id` VARCHAR(200) NULL DEFAULT NULL,
+                                    `called_call_id` VARCHAR(200) NULL DEFAULT NULL,
                                     `global_call_ref` VARCHAR(50) NULL DEFAULT NULL,
                                     `connection_id` INT(11) NULL DEFAULT NULL,
                                     `audio_codec_type` INT(5) NULL DEFAULT NULL,
+                                    `terminating_code` VARCHAR(50) NULL DEFAULT NULL,
                                     `FileName` VARCHAR(50) NULL DEFAULT NULL,
                                     PRIMARY KEY (`TempUsageDetailID`),
                                     INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`is_inbound`,`AccountID`),
@@ -222,18 +223,19 @@ class CompanyGateway extends \Eloquent {
                 `TimezonesID` INT(11) NULL DEFAULT NULL,
                 `caller_address_nature` INT(5) NULL DEFAULT NULL,
                 `called_address_nature` INT(5) NULL DEFAULT NULL,
-                `alert_time` DATETIME NULL DEFAULT NULL,
+                `alert_time` VARCHAR(50) NULL DEFAULT NULL,
                 `trunk_group_in` VARCHAR(100) NULL DEFAULT NULL,
                 `trunk_group_out` VARCHAR(100) NULL DEFAULT NULL,
                 `caller_trunk_cic` INT(11) NULL DEFAULT NULL,
                 `called_trunk_cic` INT(11) NULL DEFAULT NULL,
                 `connected_number` BIGINT(20) NULL DEFAULT NULL,
                 `connected_address_nature` INT(3) NULL DEFAULT NULL,
-                `caller_call_id` BIGINT(20) NULL DEFAULT NULL,
-                `called_call_id` BIGINT(20) NULL DEFAULT NULL,
+                `caller_call_id` VARCHAR(200) NULL DEFAULT NULL,
+                `called_call_id` VARCHAR(200) NULL DEFAULT NULL,
                 `global_call_ref` VARCHAR(50) NULL DEFAULT NULL,
                 `connection_id` INT(11) NULL DEFAULT NULL,
                 `audio_codec_type` INT(5) NULL DEFAULT NULL,
+                `terminating_code` VARCHAR(50) NULL DEFAULT NULL,
                 `FileName` VARCHAR(50) NULL DEFAULT NULL,
                  PRIMARY KEY (`TempVendorCDRID`),
                  INDEX `IX_'.$tbltempusagedetail_name.'PID_I_AID` (`ProcessID`,`AccountID`),
@@ -279,6 +281,25 @@ class CompanyGateway extends \Eloquent {
     }
     public static function setCallID($CompanyID,$CompanyGatewayID,$UniqueID){
         CompanyConfiguration::where(['CompanyID'=>$CompanyID,'Key'=>'VOS_UniqueID_'.$CompanyGatewayID])->update(array('Value'=>$UniqueID));
+    }
+
+    public static function getHuaweiCallID($CompanyID,$CompanyGatewayID){
+        $UniqueID = (int)CompanyConfiguration::getValueConfigurationByKey($CompanyID,'HUAWEI_UniqueID_'.$CompanyGatewayID);
+        if($UniqueID == 0){
+            $CompanyConfiguration['CompanyID'] = $CompanyID;
+            $CompanyConfiguration['Key'] = 'HUAWEI_UniqueID_'.$CompanyGatewayID;
+            $UniqueID = (int)DB::connection('sqlsrvcdr')->table('tblUCall')->max('UID');
+            if($UniqueID == 0){
+                $CompanyConfiguration['Value'] = $UniqueID =  1;
+            }else{
+                $CompanyConfiguration['Value'] = $UniqueID+1 ;
+            }
+            CompanyConfiguration::insert($CompanyConfiguration);
+        }
+        return $UniqueID;
+    }
+    public static function setHuaweiCallID($CompanyID,$CompanyGatewayID,$UniqueID){
+        CompanyConfiguration::where(['CompanyID'=>$CompanyID,'Key'=>'HUAWEI_UniqueID_'.$CompanyGatewayID])->update(array('Value'=>$UniqueID));
     }
 
     /** function not in use*/

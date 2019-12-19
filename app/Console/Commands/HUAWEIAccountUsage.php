@@ -97,7 +97,7 @@ class HUAWEIAccountUsage extends Command
         CronJob::activateCronJob($CronJob);
         CronJob::createLog($CronJobID);
         $processID = CompanyGateway::getProcessID();
-        CompanyGateway::updateProcessID($CronJob,$processID);
+        //  CompanyGateway::updateProcessID($CronJob,$processID);
         $joblogdata = array();
         $joblogdata['CronJobID'] = $CronJobID;
         $joblogdata['created_at'] = date('Y-m-d H:i:s');
@@ -129,7 +129,7 @@ class HUAWEIAccountUsage extends Command
                 {
                     $tmpfn = explode(".",$v);
                     $command = "huawei_parser ".$HUAWEI_LOCATION."/".$CompanyGatewayID."/".$v ." ". $destination."/".$tmpfn[0].".csv";
-                    //log::info('command'.$command);
+                    //log::info('command '.$command);
                     $csv_filenames[$k] =  $tmpfn[0].".csv";
                     $output = trim(shell_exec($command));
                 }
@@ -198,115 +198,133 @@ class HUAWEIAccountUsage extends Command
                             fgetcsv($handle);
                             while (($excelrow = fgetcsv($handle)) !== FALSE) {
                                 //Log::info("file2".print_R($excelrow,true));
-                                if (!empty($excelrow['11'])) {
-                                    if(isset($excelrow['35']) && isset($excelrow['37'] ))
-                                    {
-                                        $uddata = array();
-                                        $uddata['CompanyGatewayID'] = $CompanyGatewayID;
-                                        $uddata['CompanyID'] = $CompanyID;
-                                        if($IpBased){
-                                            $uddata['GatewayAccountID'] = $excelrow['11'];
-                                        }else{
-                                            $uddata['GatewayAccountID'] = $excelrow['11'];
-                                        }
-
-
-                                        $uddata['AccountIP'] = $excelrow['11'];
-                                        $uddata['AccountName'] = '';
-                                        $uddata['AccountNumber'] = '';
-                                        $uddata['AccountCLI'] = '';
-                                        $uddata['connect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['35']));
-                                        $uddata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['5']));
-                                        //$uddata['cost'] = (float)$excelrow['26'];
-                                        $uddata['cost'] = 0;
-                                        $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['7']);
-                                        $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['3']);
-                                        $uddata['billed_duration'] = $excelrow['6'];
-                                        $uddata['billed_second'] = $excelrow['6'];
-                                        $uddata['duration'] = $excelrow['6'];
-                                        $uddata['trunk'] = 'Other';
-                                        $uddata['area_prefix'] = '';
-                                        $uddata['remote_ip'] = $excelrow['11'];
-                                        $uddata['ProcessID'] = $processID;
-                                        $uddata['ServiceID'] = $ServiceID;
-                                        $uddata['ID'] = $CallID;
-                                        $uddata['caller_address_nature'] = $excelrow['4'];
-                                        $uddata['called_address_nature'] = $excelrow['8'];
-                                        $uddata['alert_time'] = $excelrow['36'];
-                                        $uddata['trunk_group_in'] = $excelrow['9'];
-                                        $uddata['trunk_group_out'] = $excelrow['11'];
-                                        $uddata['caller_trunk_cic'] = $excelrow['10'];
-                                        $uddata['called_trunk_cic'] = $excelrow['12'];
-                                        $uddata['connected_number'] = $excelrow['25'];
-                                        $uddata['connected_address_nature'] = $excelrow['26'];
-                                        $uddata['caller_call_id'] = $excelrow['33'];
-                                        $uddata['called_call_id'] = $excelrow['34'];
-                                        $uddata['global_call_ref'] = $excelrow['20'];
-                                        $uddata['connection_id'] = $excelrow['13'];
-                                        $uddata['audio_codec_type'] = $excelrow['37'];
-                                        $uddata['FileName'] = $filename;
-
-                                        $InserData[] = $uddata;
-                                        if($data_count > $insertLimit &&  !empty($InserData)){
-                                            DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
-                                            $InserData = array();
-                                            $data_count = 0;
-                                        }
-                                    }
-                                }
                                 if (!empty($excelrow['9'])) {
-                                    if(isset($excelrow['35']) && isset($excelrow['37'] ))
-                                    {
-                                        $vendorcdrdata = array();
-                                        $vendorcdrdata['CompanyID'] = $CompanyID;
-                                        $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
-                                        if($IpBased){
-                                            $vendorcdrdata['GatewayAccountID'] = $excelrow['9'];
-                                        }else{
-                                            $vendorcdrdata['GatewayAccountID'] = $excelrow['9'];
-                                        }
-                                        $vendorcdrdata['AccountIP'] = $excelrow['9'];
-                                        $vendorcdrdata['AccountName'] = '';
-                                        $vendorcdrdata['AccountNumber'] = '';
-                                        $vendorcdrdata['AccountCLI'] = '';
-                                        $vendorcdrdata['billed_duration'] = $excelrow['6'];
-                                        $vendorcdrdata['billed_second'] = $excelrow['6'];
-                                        $vendorcdrdata['duration'] = $excelrow['6'];
-                                        $vendorcdrdata['buying_cost'] = 0;
-                                        $vendorcdrdata['selling_cost'] = '';
-                                        $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['35']));
-                                        $vendorcdrdata['disconnect_time'] = date('Y-m-d H:i:s', strtotime($excelrow['5']));
-                                        $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['7']);
-                                        $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['3']);
-                                        $vendorcdrdata['trunk'] = 'Other';
-                                        $vendorcdrdata['area_prefix'] = sippy_vos_areaprefix(apply_translation_rule($PrefixTranslationRule,$excelrow['34']),$RateCDR, $RerateAccounts);
-                                        $vendorcdrdata['remote_ip'] = $excelrow['9'];
-                                        $vendorcdrdata['ProcessID'] = $processID;
-                                        $vendorcdrdata['ServiceID'] = $ServiceID;
-                                        $vendorcdrdata['ID'] = $CallID;
-                                        $vendorcdrdata['caller_address_nature'] = $excelrow['4'];
-                                        $vendorcdrdata['called_address_nature'] = $excelrow['8'];
-                                        $vendorcdrdata['alert_time'] = $excelrow['36'];
-                                        $vendorcdrdata['trunk_group_in'] = $excelrow['9'];
-                                        $vendorcdrdata['trunk_group_out'] = $excelrow['11'];
-                                        $vendorcdrdata['caller_trunk_cic'] = $excelrow['10'];
-                                        $vendorcdrdata['called_trunk_cic'] = $excelrow['12'];
-                                        $vendorcdrdata['connected_number'] = $excelrow['25'];
-                                        $vendorcdrdata['connected_address_nature'] = $excelrow['26'];
-                                        $vendorcdrdata['caller_call_id'] = $excelrow['33'];
-                                        $vendorcdrdata['called_call_id'] = $excelrow['34'];
-                                        $vendorcdrdata['global_call_ref'] = $excelrow['20'];
-                                        $vendorcdrdata['connection_id'] = $excelrow['13'];
-                                        $vendorcdrdata['audio_codec_type'] = $excelrow['37'];
-                                        $vendorcdrdata['FileName'] = $filename;
 
-                                        $InserVData[] = $vendorcdrdata;
-                                        if($data_countv > $insertLimit &&  !empty($InserVData)){
-                                            DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
-                                            $InserVData = array();
-                                            $data_countv =0;
-                                        }
+                                    $uddata = array();
+                                    $uddata['CompanyGatewayID'] = $CompanyGatewayID;
+                                    $uddata['CompanyID'] = $CompanyID;
+                                    if($IpBased){
+                                        $uddata['GatewayAccountID'] = $excelrow['9'];
+                                    }else{
+                                        $uddata['GatewayAccountID'] = $excelrow['9'];
                                     }
+
+                                    $uddata['AccountIP'] = $excelrow['9'];
+                                    $uddata['AccountName'] = $excelrow['9'];
+                                    $uddata['AccountNumber'] = '';
+                                    $uddata['AccountCLI'] = '';
+                                    $uddata['disconnect_time'] = $this->ConvertDateTime($excelrow['5']);
+
+                                    //getting connect time using disconnect_time - duration
+                                    $tmpcontime = strtotime($uddata['disconnect_time']) - $excelrow['6'];
+                                    $uddata['connect_time'] = date('Y-m-d H:i:s',$tmpcontime);
+
+                                    //$uddata['cost'] = (float)$excelrow['26'];
+                                    $uddata['cost'] = 0;
+                                    $uddata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['22']);
+                                    $uddata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['3']);
+                                    $uddata['billed_duration'] = $excelrow['6'];
+                                    $uddata['billed_second'] = $excelrow['6'];
+                                    $uddata['duration'] = $excelrow['6'];
+                                    $uddata['trunk'] = 'Other';
+                                    $uddata['area_prefix'] = '';
+                                    $uddata['remote_ip'] = $excelrow['9'];
+                                    $uddata['ProcessID'] = $processID;
+                                    $uddata['ServiceID'] = $ServiceID;
+                                    $uddata['ID'] = $CallID;
+                                    $uddata['caller_address_nature'] = $excelrow['4'];
+                                    $uddata['called_address_nature'] = $excelrow['8'];
+                                    if(isset($excelrow['36']) && $excelrow['36'] !=''){
+                                        $uddata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    }
+                                    else{
+                                        $uddata['alert_time'] = '';
+                                    }
+                                    $uddata['trunk_group_in'] = $excelrow['9'];
+                                    $uddata['trunk_group_out'] = $excelrow['11'];
+                                    $uddata['caller_trunk_cic'] = $excelrow['10'];
+                                    $uddata['called_trunk_cic'] = $excelrow['12'];
+                                    $uddata['connected_number'] = $excelrow['7'];
+                                    $uddata['connected_address_nature'] = $excelrow['26'];
+                                    $uddata['caller_call_id'] = $excelrow['33'];
+                                    $uddata['called_call_id'] = $excelrow['34'];
+                                    $uddata['global_call_ref'] = $excelrow['20'];
+                                    $uddata['connection_id'] = $excelrow['13'];
+                                    $uddata['audio_codec_type'] = $excelrow['37'];
+                                    $uddata['terminating_code'] = $excelrow['17'];
+                                    $uddata['FileName'] = $filename;
+
+                                    $InserData[] = $uddata;
+                                    if($data_count > $insertLimit &&  !empty($InserData)){
+                                        DB::connection('sqlsrvcdr')->table($temptableName)->insert($InserData);
+                                        $InserData = array();
+                                        $data_count = 0;
+                                    }
+
+                                }
+                                if (!empty($excelrow['11'])) {
+
+                                    $vendorcdrdata = array();
+                                    $vendorcdrdata['CompanyID'] = $CompanyID;
+                                    $vendorcdrdata['CompanyGatewayID'] = $CompanyGatewayID;
+                                    if($IpBased){
+                                        $vendorcdrdata['GatewayAccountID'] = $excelrow['11'];
+                                    }else{
+                                        $vendorcdrdata['GatewayAccountID'] = $excelrow['11'];
+                                    }
+                                    $vendorcdrdata['AccountIP'] = $excelrow['11'];
+                                    $vendorcdrdata['AccountName'] = $excelrow['11'];
+                                    $vendorcdrdata['AccountNumber'] = '';
+                                    $vendorcdrdata['AccountCLI'] = '';
+                                    $vendorcdrdata['billed_duration'] = $excelrow['6'];
+                                    $vendorcdrdata['billed_second'] = $excelrow['6'];
+                                    $vendorcdrdata['duration'] = $excelrow['6'];
+                                    $vendorcdrdata['buying_cost'] = 0;
+                                    $vendorcdrdata['selling_cost'] = '';
+                                    $vendorcdrdata['disconnect_time'] = $this->ConvertDateTime($excelrow['5']);
+
+                                    //getting connect time using disconnect_time - duration
+                                    $tmpcontime = strtotime($vendorcdrdata['disconnect_time']) - $excelrow['6'];
+                                    $vendorcdrdata['connect_time'] = date('Y-m-d H:i:s',$tmpcontime);
+
+                                    $vendorcdrdata['cld'] = apply_translation_rule($CLDTranslationRule,$excelrow['22']);
+                                    $vendorcdrdata['cli'] = apply_translation_rule($CLITranslationRule,$excelrow['3']);
+                                    $vendorcdrdata['trunk'] = 'Other';
+                                    $vendorcdrdata['area_prefix'] = '';
+                                    $vendorcdrdata['remote_ip'] = $excelrow['11'];
+                                    $vendorcdrdata['ProcessID'] = $processID;
+                                    $vendorcdrdata['ServiceID'] = $ServiceID;
+                                    $vendorcdrdata['ID'] = $CallID;
+                                    $vendorcdrdata['caller_address_nature'] = $excelrow['4'];
+                                    $vendorcdrdata['called_address_nature'] = $excelrow['8'];
+                                    if(isset($excelrow['36']) && $excelrow['36'] !=''){
+                                        $vendorcdrdata['alert_time'] = $this->ConvertDateTime($excelrow['36']);
+                                    }
+                                    else{
+                                        $vendorcdrdata['alert_time'] = '';
+                                    }
+
+                                    $vendorcdrdata['trunk_group_in'] = $excelrow['9'];
+                                    $vendorcdrdata['trunk_group_out'] = $excelrow['11'];
+                                    $vendorcdrdata['caller_trunk_cic'] = $excelrow['10'];
+                                    $vendorcdrdata['called_trunk_cic'] = $excelrow['12'];
+                                    $vendorcdrdata['connected_number'] = $excelrow['7'];
+                                    $vendorcdrdata['connected_address_nature'] = $excelrow['26'];
+                                    $vendorcdrdata['caller_call_id'] = $excelrow['33'];
+                                    $vendorcdrdata['called_call_id'] = $excelrow['34'];
+                                    $vendorcdrdata['global_call_ref'] = $excelrow['20'];
+                                    $vendorcdrdata['connection_id'] = $excelrow['13'];
+                                    $vendorcdrdata['audio_codec_type'] = $excelrow['37'];
+                                    $vendorcdrdata['terminating_code'] = $excelrow['17'];
+                                    $vendorcdrdata['FileName'] = $filename;
+
+                                    $InserVData[] = $vendorcdrdata;
+                                    if($data_countv > $insertLimit &&  !empty($InserVData)){
+                                        DB::connection('sqlsrvcdr')->table($tempVendortable)->insert($InserVData);
+                                        $InserVData = array();
+                                        $data_countv =0;
+                                    }
+
                                 }
                                 $data_count++;
                                 $data_countv++;
@@ -475,6 +493,21 @@ class HUAWEIAccountUsage extends Command
 
 
         CronHelper::after_cronrun($this->name, $this);
+
+    }
+
+    public function ConvertDateTime($date){
+
+        $tmpdiscontime = explode(" ",$date);
+        $ampm_var = $tmpdiscontime[2];
+        array_pop($tmpdiscontime);
+        $discontime = implode(" ",$tmpdiscontime);
+        $tmptime = date('Y-m-d H:i:s',strtotime($discontime));
+        $tmpbs = $tmptime ." ". $ampm_var;
+        $finaldatetime = date('Y-m-d H:i:s',strtotime($tmpbs));
+        //$con_time = strtotime($tmp) - 1800.0;
+        //echo $con_time = date('Y-m-d H:i:s',$con_time);
+        return $finaldatetime;
 
     }
 

@@ -12,7 +12,8 @@ class EmailsTemplates{
 	protected $Error;
 	protected $CompanyName;
 	static $fields = array(
-				"{{AccountName}}",
+				"{{ AccountName }}",
+				"{{AccountTag}}",
 				'{{FirstName}}',
 				'{{LastName}}',
 				'{{Email}}',
@@ -267,6 +268,7 @@ class EmailsTemplates{
 			$RoundChargesAmount=Helper::get_round_decimal_places($CompanyID,$AccountID);
 			$AccoutData 					= 	 Account::find($AccountID);			
 			$array['AccountName']			=	 $AccoutData->AccountName;
+			$array['AccountTag']			=	 $AccoutData->tags;
 			$array['FirstName']				=	 $AccoutData->FirstName;
 			$array['LastName']				=	 $AccoutData->LastName;
 			$array['Email']					=	 $AccoutData->Email;
