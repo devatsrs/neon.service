@@ -196,7 +196,7 @@
                     <div class="detailTable">
                         <table class="table table-striped">
                             <tr>
-                                <th style="width: 40%">{{ \App\Lib\Country::getCountryCode($InvoiceComponent['CountryID']) }}  {{ $InvoiceComponent['Prefix'] }}-{{ $InvoiceComponent['CLI'] }} {{ \App\Lib\Package::getServiceNameByID($InvoiceComponent['PackageID']) }}</th>
+                                <th style="width: 40%">{{ \App\Lib\Country::getCountryCode($InvoiceComponent['CountryID']) }} {{ $InvoiceComponent['CLI'] }} {{ \App\Lib\Package::getServiceNameByID($InvoiceComponent['PackageID']) }}</th>
                                 <th class="text-right" style="width: 12%">Standard price ({{$CurrencySymbol}}) </th>
                                 <th class="text-right" style="width: 12%">Disc. %</th>
                                 <th class="text-right" style="width: 12%">Disc. Price ({{$CurrencySymbol}})</th>
