@@ -96,7 +96,8 @@ class AccountActivityReminder extends Command
             $select = ['tblAccount.AccountName', 'tblTask.Subject', 'tblTask.DueDate', 'tblCRMBoardColumn.BoardColumnName' ,'tblUser.EmailAddress', 'tblTask.Task_type', 'tblUser.FirstName', 'tblUser.LastName', 'tblAccount.AccountName'];
             $accounttask = Account::join('tblTask', 'tblTask.AccountIDs', '=', 'tblAccount.AccountID')
                 ->join('tblCRMBoardColumn','tblTask.BoardColumnID','=','tblCRMBoardColumn.BoardColumnID')
-                ->join('tblUser', 'tblUser.UserID', '=', 'tblAccount.Owner');//convert(date,errorDate,101)
+               // ->join('tblUser', 'tblUser.UserID', '=', 'tblAccount.Owner');//convert(date,errorDate,101)
+               ->join('tblUser', 'tblUser.UserID', '=', 'tblTask.UsersIDs');//convert(date,errorDate,101)
             $accounttask->where('tblAccount.CompanyID', $CompanyID)->whereRaw("DATE_FORMAT(tblTask.DueDate,'%Y-%m-%d')='" . $today . "'")->orderBy('tblUser.UserID', 'ASC')->orderBy('tblAccount.AccountID', 'DESC');
             //$accountactivity = AccountActivity::where('CompanyID', $CompanyID)->whereRaw('YEAR([Date])-MONTH([Date])-DAY([Date])=' . $today)->orderBy('AccountID','DESC');
             //$accountactivity->join('tblAccount','tblAccountActivity.AccountID','=','tblAccount.AccountID');
