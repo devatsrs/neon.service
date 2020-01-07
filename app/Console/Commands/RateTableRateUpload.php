@@ -344,8 +344,8 @@ class RateTableRateUpload extends Command
 
                         $prefixKeyword          = 'DBDATA-';
                         $includePrefix          = 1;
-                        $component_currencies   = Currency::getCurrencyDropdownIDList($CompanyID,$includePrefix); // to check when currency mapped from DB
-                        $component_currencies2  = Currency::getCurrencyDropdownIDList($CompanyID);  // to check when currency mapped from File
+                        $component_currencies   = Currency::getCurrencyDropdownIDList(1,$includePrefix); // to check when currency mapped from DB
+                        $component_currencies2  = Currency::getCurrencyDropdownIDList(1);  // to check when currency mapped from File
                         $component_currencies2  = array_map('strtolower', $component_currencies2);
 
                         $IntervalIndexes = [""=>"Select","0"=>"One","1"=>"Two","2"=>"Three"];
