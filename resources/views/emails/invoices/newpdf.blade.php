@@ -145,7 +145,7 @@
                 </tr>
                 <tr>
                     <td>VAT</td>
-                    <td class="text-right">{{$CurrencySymbol}}{{$TotalVAT}}</td>
+                    <td class="text-right">{{$CurrencySymbol}} {{$TotalVAT}}</td>
                 </tr>
             </table>
         </div>
