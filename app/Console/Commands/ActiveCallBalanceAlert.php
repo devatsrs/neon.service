@@ -108,7 +108,26 @@ class ActiveCallBalanceAlert extends Command {
                                 $ActiveCallArr['CustomerId'] = $AccountID;
                                 $ActiveCallArr['Balance'] = $AccountBalance;
                                 $ActiveCallArr['Uuids'] = implode(",",$UUIDS);
+                                $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$ActiveCallArr);
+
                                 $LowBalanceArr[] = $ActiveCallArr;
+                                Log::info("=====API Response =====");
+                                Log::info(print_r($Result,true));
+                                if(empty($Result)){
+                                    $joblogdata['Message'] ="API Response Not Found.";
+                                    $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                                    $Error=1;
+                                }else{
+                                    $joblogdata['Message'] = "success";
+                                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+
+                                    if(!empty($ErrorAccount)){
+                                        $joblogdata['Message'].=" <br/>";
+                                        $joblogdata['Message'].=" No UUID Found On the Following Account: ";
+                                        $joblogdata['Message'].=implode(",",$ErrorAccount);
+                                    }
+                                }
+
                             } else {
                                 $ErrorAccount[] = $AccountID;
                             }
@@ -120,26 +139,8 @@ class ActiveCallBalanceAlert extends Command {
 
                 //Log::info(print_r($LowBalanceArr,true));die;
 
-                if(!empty($LowBalanceArr)){
-                    $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$LowBalanceArr);
-                    Log::info("=====API Response =====");
-                    Log::info(print_r($Result,true));
-                    
-                    if(empty($Result)){
-                        $joblogdata['Message'] ="API Response Not Found.";
-                        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                        $Error=1;
-                    }else{
-                        $joblogdata['Message'] = "success";
-                        $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
-                        if(!empty($ErrorAccount)){
-                            $joblogdata['Message'].=" <br/>";
-                            $joblogdata['Message'].=" No UUID Found On the Following Account: ";
-                            $joblogdata['Message'].=implode(",",$ErrorAccount);
-                        }
-                    }
-                    
+
                     /*
                     if($BlockCallAPI != ''){
                         Log::info("=====Block Call API Start =====");
@@ -159,8 +160,8 @@ class ActiveCallBalanceAlert extends Command {
                         $Error=1;
                     }*/
 
-                    
-                }else{
+
+                if(empty($LowBalanceArr)){
                     $joblogdata['Message'] = "No Records Found.";
                     $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 }
