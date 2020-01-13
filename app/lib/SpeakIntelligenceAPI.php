@@ -14,9 +14,7 @@ class SpeakIntelligenceAPI{
         Log::info("Request : BalanceAlertDetails=");
         Log::info(print_r($data,true));
         $curl = new Curl();
-        $curl->post($APIURL, array(
-            'BalanceAlertDetails' => $data,
-	    ));
+        $curl->post($APIURL, $data);
         $curl->close();
         $response = json_decode($curl->response);  
         return $response;

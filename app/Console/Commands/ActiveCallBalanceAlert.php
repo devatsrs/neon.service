@@ -107,7 +107,7 @@ class ActiveCallBalanceAlert extends Command {
                                 $ActiveCallArr = array();
                                 $ActiveCallArr['CustomerId'] = $AccountID;
                                 $ActiveCallArr['Balance'] = $AccountBalance;
-                                $ActiveCallArr['Uuids'] = implode(",",$UUIDS);
+                                $ActiveCallArr['Uuids'] = $UUIDS;
                                 $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$ActiveCallArr);
 
                                 $LowBalanceArr[] = $ActiveCallArr;
