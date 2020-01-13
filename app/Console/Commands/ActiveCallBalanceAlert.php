@@ -105,9 +105,9 @@ class ActiveCallBalanceAlert extends Command {
                             $UUIDS = ActiveCall::getUUIDByAccountID($AccountID);
                             if (!empty($UUIDS[0])) {
                                 $ActiveCallArr = array();
-                                $ActiveCallArr['CustomerID'] = $AccountID;
+                                $ActiveCallArr['CustomerId'] = $AccountID;
                                 $ActiveCallArr['Balance'] = $AccountBalance;
-                                $ActiveCallArr['UUID'] = $UUIDS;
+                                $ActiveCallArr['Uuids'] = implode(",",$UUIDS);
                                 $LowBalanceArr[] = $ActiveCallArr;
                             } else {
                                 $ErrorAccount[] = $AccountID;
