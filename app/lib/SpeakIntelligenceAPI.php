@@ -16,7 +16,8 @@ class SpeakIntelligenceAPI{
         $curl = new Curl();
         $curl->post($APIURL, $data);
         $curl->close();
-        $response = json_decode($curl->response);  
+        $response = ['res' => json_decode($curl->response), 'code' => $curl->http_status_code];
+
         return $response;
     }
 
