@@ -113,7 +113,7 @@ class ActiveCallBalanceAlert extends Command {
                                 $LowBalanceArr[] = $ActiveCallArr;
                                 Log::info("=====API Response =====");
                                 Log::info(print_r($Result,true));
-                                if($Result['code'] != 200){
+                                if($Result['code'] != 200 && $Result['code'] != 409){
                                     $joblogdata['Message'] = json_encode($Result);
                                     $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                                     $Error=1;
