@@ -114,7 +114,7 @@ class ActiveCallBalanceAlert extends Command {
                                 Log::info("=====API Response =====");
                                 Log::info(print_r($Result,true));
                                 if($Result['code'] != 200){
-                                    $joblogdata['Message'] ="API Response Not Found.";
+                                    $joblogdata['Message'] = json_encode($Result);
                                     $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                                     $Error=1;
                                 }else{
