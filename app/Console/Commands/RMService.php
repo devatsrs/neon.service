@@ -405,11 +405,11 @@ class RMService extends Command {
             $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
             foreach ($cmdarray as $com) {
                 if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
-                    if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID,Nodes::CRONJOB)){
+                    // activecronjobemail cronjob will run on all servers
+                    if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID,Nodes::CRONJOB) || $com->Command == 'activecronjobemail'){
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
                     }
                 }
-                
             }
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
                 if (isset($allpendingrs->JobID) && $allpendingrs->JobID>0) {
