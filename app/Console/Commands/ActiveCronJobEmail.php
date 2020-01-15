@@ -80,6 +80,10 @@ class ActiveCronJobEmail extends Command {
             $msg="";
             foreach($acarray as $ac) {
                 if (isset($ac->CronJobID) && $ac->CronJobID > 0) {
+                    $CurrentServerIp = getenv("SERVER_LOCAL_IP");
+                    if($CurrentServerIp != $ac->RunningOnServer) {
+                        continue;
+                    }
 
                     Log::error(' ========================== active cronjob email start =============================');
                     $CronJobID = $ac->CronJobID;
@@ -100,7 +104,7 @@ class ActiveCronJobEmail extends Command {
 
                         $limitTime = isset($cronsetting['ThresholdTime']) ? $cronsetting['ThresholdTime'] : '';
                         //check cron job is running more than limit time
-                        if(isset($minute) && (int)$minute > (int)$limitTime )
+                        if(isset($minute) && (int)$minute >= (int)$limitTime )
                         {
 							Log::error("LastRunTime ". $LastRunTime );
 							Log::error("Minutes ". $minute . " >  " . (int)$limitTime);
