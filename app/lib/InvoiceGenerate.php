@@ -759,12 +759,12 @@ class InvoiceGenerate {
                 if($invoiceComponent->Timezone != "")
                     $Title .= " " . $invoiceComponent->Timezone;
 
+                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+
                 $UnitPrice = 0;
                 if(in_array($Component,$PerCallComponents) && $Quantity > 0){
-                    $UnitPrice = (float)$invoiceComponent->TotalCost / $Quantity;
+                    $UnitPrice = (float)$invoiceComponent->SubTotal / $Quantity;
                 }
-
-                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : $invoiceComponent->Duration / 60;
 
                 $data[$index]['components'][] = [
                     'Title'         => $Title,
