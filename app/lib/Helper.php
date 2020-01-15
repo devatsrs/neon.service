@@ -417,7 +417,7 @@ class Helper
         Log::info('Get Account: ');
         Log::info('Company ID: '.$Account->CompanyId);
         Log::info('Account ID: '.$Account->AccountID);
-        $replace_array['AccountBalance'] = AccountBalance::getAccountBalance($Account->CompanyId, $Account->AccountID);
+        $replace_array['AccountBalance'] = AccountBalance::getAccountBalanceWithActiveCallRM($Account->AccountID);
         Log::info('Account Balance11: '.$replace_array['AccountBalance']);
         
         $replace_array['AccountBalance']=str_replace(',','',$replace_array['AccountBalance']);

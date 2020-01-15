@@ -105,10 +105,29 @@ class ActiveCallBalanceAlert extends Command {
                             $UUIDS = ActiveCall::getUUIDByAccountID($AccountID);
                             if (!empty($UUIDS[0])) {
                                 $ActiveCallArr = array();
-                                $ActiveCallArr['CustomerID'] = $AccountID;
+                                $ActiveCallArr['CustomerId'] = $AccountID;
                                 $ActiveCallArr['Balance'] = $AccountBalance;
-                                $ActiveCallArr['UUID'] = $UUIDS;
+                                $ActiveCallArr['Uuids'] = $UUIDS;
+                                $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$ActiveCallArr);
+
                                 $LowBalanceArr[] = $ActiveCallArr;
+                                Log::info("=====API Response =====");
+                                Log::info(print_r($Result,true));
+                                if($Result['code'] != 200 && $Result['code'] != 409){
+                                    $joblogdata['Message'] = json_encode($Result);
+                                    $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                                    $Error=1;
+                                }else{
+                                    $joblogdata['Message'] = "success";
+                                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+
+                                    if(!empty($ErrorAccount)){
+                                        $joblogdata['Message'].=" <br/>";
+                                        $joblogdata['Message'].=" No UUID Found On the Following Account: ";
+                                        $joblogdata['Message'].=implode(",",$ErrorAccount);
+                                    }
+                                }
+
                             } else {
                                 $ErrorAccount[] = $AccountID;
                             }
@@ -120,10 +139,8 @@ class ActiveCallBalanceAlert extends Command {
 
                 //Log::info(print_r($LowBalanceArr,true));die;
 
-                if(!empty($LowBalanceArr)){
-                    $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$LowBalanceArr);
-                    Log::info("=====API Response =====");
-                    Log::info(print_r($Result,true));
+
+
                     /*
                     if($BlockCallAPI != ''){
                         Log::info("=====Block Call API Start =====");
@@ -143,15 +160,8 @@ class ActiveCallBalanceAlert extends Command {
                         $Error=1;
                     }*/
 
-                    $joblogdata['Message'] = "success";
-                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
 
-                    if(!empty($ErrorAccount)){
-                        $joblogdata['Message'].=" <br/>";
-                        $joblogdata['Message'].=" No UUID Found On the Following Account: ";
-                        $joblogdata['Message'].=implode(",",$ErrorAccount);
-                    }
-                }else{
+                if(empty($LowBalanceArr)){
                     $joblogdata['Message'] = "No Records Found.";
                     $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 }

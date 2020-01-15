@@ -11,14 +11,13 @@ class SpeakIntelligenceAPI{
     public static function BalanceAlert($APIURL,$data=array()){
 
         log::info($APIURL);
-        Log::info("Request : ActiveCallData=");
+        Log::info("Request : BalanceAlertDetails=");
         Log::info(print_r($data,true));
         $curl = new Curl();
-        $curl->post($APIURL, array(
-            'ActiveCallData' => $data,
-	    ));
+        $curl->post($APIURL, $data);
         $curl->close();
-        $response = json_decode($curl->response);  
+        $response = ['res' => json_decode($curl->response), 'code' => $curl->http_status_code];
+
         return $response;
     }
 
