@@ -88,7 +88,7 @@ class AccountBalanceGenerator extends Command {
 
 			$ErrorMessage = (count($errors)>0?'Skipped account: '.implode(',\n\r',$errors):'');
 
-			AccountBalanceLog::updateAccountBalanceAmount();
+			//AccountBalanceLog::updateAccountBalanceAmount(0);
 
 			Log::info('Account Balance End.');
 
