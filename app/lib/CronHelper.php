@@ -49,8 +49,12 @@ class CronHelper {
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 
         if(!empty($arguments['CronJobID'])){
-            $CurrentServerIp = getenv("SERVER_LOCAL_IP");
-            CronJob::where(["CronJobID" => $arguments['CronJobID']])->update(["RunningOnServer"=>$CurrentServerIp]);
+            $CronJob = CronJob::find($arguments['CronJobID']);
+            $CronJobCommand = DB::table('tblCronJobCommand')->where(["CronJobCommandID"=>$CronJob->CronJobCommandID])->first();
+            if($CronJobCommand->Command != 'activecronjobemail') { // skip activecronjobemail
+                $CurrentServerIp = getenv("SERVER_LOCAL_IP");
+                $CronJob->update(["RunningOnServer" => $CurrentServerIp]);
+            }
             $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
         }
         if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1) {
