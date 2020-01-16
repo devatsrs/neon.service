@@ -19,7 +19,7 @@ class ActiveCall extends \Eloquent {
     }
 
     public static function getUUIDByAccountID($AccountID){
-        return ActiveCall::where(['AccountID'=>$AccountID])->groupby('UUID')->lists('UUID');
+        return ActiveCall::where(['AccountID'=>$AccountID,'EndCall'=>0])->groupby('UUID')->lists('UUID');
 
     }
 

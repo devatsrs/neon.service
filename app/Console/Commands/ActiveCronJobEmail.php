@@ -61,8 +61,9 @@ class ActiveCronJobEmail extends Command {
         $MainCronJobID = $arguments['CronJobID'];
         $MainCronJob = CronJob::find($MainCronJobID);
         //$maindataactive['Active'] = 1;
-        $maindataactive['PID'] = $getmypid;
-        $MainCronJob->update($maindataactive);
+        /*$maindataactive['PID'] = $getmypid;
+        $MainCronJob->update($maindataactive);*/
+        //CronJob::activateCronJob($MainCronJob);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
@@ -71,7 +72,7 @@ class ActiveCronJobEmail extends Command {
 
         $Maincronsetting = json_decode($MainCronJob->Settings,true);
         $ActiveCronJobEmailMinute = isset($Maincronsetting['AlertEmailInterval']) ? $Maincronsetting['AlertEmailInterval'] : '';
-        CronJob::createLog($MainCronJobID);
+        //CronJob::createLog($MainCronJobID);
         Log::useFiles(storage_path() . '/logs/activecronjob-' . date('Y-m-d') . '.log');
         Log::error(' ========================== active cronjob start =============================');
         try {
@@ -149,12 +150,20 @@ class ActiveCronJobEmail extends Command {
             //$joblogdata['Message'] = 'Success';
             $joblogdata['Message'] = $Message;
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            CronJobLog::insert($joblogdata);
+            //CronJobLog::insert($joblogdata);
+
+            // if lock error occurs then comment below line
+            CronJobLog::createLog($MainCronJobID,$joblogdata);
+
         }catch (\Exception $e) {
             Log::error($e);
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-            CronJobLog::insert($joblogdata);
+            //CronJobLog::insert($joblogdata);
+
+            // if lock error occurs then comment below line
+            CronJobLog::createLog($MainCronJobID,$joblogdata);
+
             if(!empty($Maincronsetting['ErrorEmail'])) 
             {
                 $result = CronJob::CronJobErrorEmailSend($MainCronJobID,$e);
@@ -163,8 +172,10 @@ class ActiveCronJobEmail extends Command {
             }
         }
         //$maindataactive['Active'] = 0;
-        $maindataactive['PID'] = '';
-        $MainCronJob->update($maindataactive);
+        /*$maindataactive['PID'] = '';
+        $MainCronJob->update($maindataactive);*/
+
+        //CronJob::deactivateCronJob($MainCronJob);
 
         if(!empty($Maincronsetting['SuccessEmail'])){
             $result = CronJob::CronJobSuccessEmailSend($MainCronJobID);

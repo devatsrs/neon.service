@@ -105,7 +105,7 @@ class AccountBalance extends Model
 
                     if (isset($AccountZeroBalanceWarning->BalanceAmount) &&(Account::ZeroBalanceReminderEmailCheck($AccountZeroBalanceWarning->AccountID,"",$LastRunTime) == 0 || cal_next_runtime($settings) == date('Y-m-d H:i:00'))) {
                     Log::info("balance check ". $AccountZeroBalanceWarning->BalanceAmount.' count down '.$AccountZeroBalanceWarning->CountDown);
-                        if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == -1)
+                        if($AccountZeroBalanceWarning->BalanceAmount <= 0.0000 && $AccountZeroBalanceWarning->CountDown == -1)
                         {
                             Log::info("IF 1");
                             Log::info("count down ".$CountDown1. ' and count down '.$AccountZeroBalanceWarning->CountDown );
@@ -113,14 +113,14 @@ class AccountBalance extends Model
                                     ->update(['CountDown' => $CountDown1]);
 
                         }
-                        if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == -2)
+                        if($AccountZeroBalanceWarning->BalanceAmount > 0.0000 && $AccountZeroBalanceWarning->CountDown == -2)
                         {
                             Log::info("IF 2");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -1]);
                         }
                         $LanguageID = Account::getLanguageIDbyAccountID($AccountZeroBalanceWarning->AccountID);
-                        if($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown == 0)
+                        if($AccountZeroBalanceWarning->BalanceAmount <= 0.0000 && $AccountZeroBalanceWarning->CountDown == 0)
                         {
                             Log::info("Final zero balance Send Reminder");
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "FinalZeroBalanceWarning", $LanguageID);
@@ -132,7 +132,7 @@ class AccountBalance extends Model
                                 ->update(['CountDown' => -2]);
                             Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
                         }
-                        else if ($AccountZeroBalanceWarning->BalanceAmount <= 0 && $AccountZeroBalanceWarning->CountDown > 0) {
+                        else if ($AccountZeroBalanceWarning->BalanceAmount <= 0.0000 && $AccountZeroBalanceWarning->CountDown > 0) {
 
                             Log::info("Zero balance Send Reminder");
                             $EmailTemplateID = EmailTemplate::getSystemEmailTemplateID($CompanyID, "ZeroBalanceWarning", $LanguageID);
@@ -144,13 +144,13 @@ class AccountBalance extends Model
                                 ->decrement('CountDown', 1);
                             Log::info('AccountID = '.$AccountZeroBalanceWarning->AccountID.' SendReminder sent ');
 
-                        } else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown > 0)
+                        } else if($AccountZeroBalanceWarning->BalanceAmount > 0.0000 && $AccountZeroBalanceWarning->CountDown > 0)
                         {
                             Log::info("If 4");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])
                                 ->update(['CountDown' => -1]);
                         }
-                        else if($AccountZeroBalanceWarning->BalanceAmount > 0 && $AccountZeroBalanceWarning->CountDown == 0)
+                        else if($AccountZeroBalanceWarning->BalanceAmount > 0.0000 && $AccountZeroBalanceWarning->CountDown == 0)
                         {
                             Log::info("If 5");
                             AccountBalance::where(['AccountID' => $AccountZeroBalanceWarning->AccountID])

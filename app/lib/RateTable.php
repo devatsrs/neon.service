@@ -20,5 +20,8 @@ class RateTable extends \Eloquent {
     const RATE_STATUS_REJECTED  = 2;
     const RATE_STATUS_DELETE    = 3;
 
-    
+    const RATE_TABLE_TYPE_TERMINATION   = 1;
+    const RATE_TABLE_TYPE_ACCESS        = 2;
+    const RATE_TABLE_TYPE_PACKAGE       = 3;
+
 }
