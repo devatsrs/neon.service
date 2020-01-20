@@ -292,7 +292,7 @@ class InvoiceGenerate {
 
             //Creating Invoice
             $InvoiceData = array(
-                "CompanyID" 	=> $CompanyID,
+                "CompanyID" 	=> $Account->CompanyID,
                 "AccountID" 	=> $AccountID,
                 "ServiceID" 	=> 0,
                 "Address" 		=> $InvoiceToAddress,
