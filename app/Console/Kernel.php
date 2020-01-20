@@ -147,6 +147,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\TerminationRateOperation',
 		'App\Console\Commands\TerminationRateMargin',
 		'App\Console\Commands\GridExport',
+		'App\Console\Commands\ExactInvoiceExport',
+		'App\Console\Commands\ExactPaymentImport',
 
 	];
 
