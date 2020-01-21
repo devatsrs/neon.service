@@ -153,7 +153,7 @@ class ActiveCronJobEmail extends Command {
             //CronJobLog::insert($joblogdata);
 
             // if lock error occurs then comment below line
-            CronJobLog::createLog($MainCronJobID,$joblogdata);
+            //CronJobLog::createLog($MainCronJobID,$joblogdata);
 
         }catch (\Exception $e) {
             Log::error($e);
@@ -162,7 +162,7 @@ class ActiveCronJobEmail extends Command {
             //CronJobLog::insert($joblogdata);
 
             // if lock error occurs then comment below line
-            CronJobLog::createLog($MainCronJobID,$joblogdata);
+            //CronJobLog::createLog($MainCronJobID,$joblogdata);
 
             if(!empty($Maincronsetting['ErrorEmail'])) 
             {
