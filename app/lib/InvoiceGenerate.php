@@ -96,119 +96,138 @@ class InvoiceGenerate {
         return $alreadyBilled != false;
     }
 
-    public static function GenerateInvoice($CompanyID,$AccountIDs,$InvoiceGenerationEmail,$ProcessID, $JobID)
+    public static function GenerateInvoice($CompanyID,$Accounts,$InvoiceGenerationEmail,$ProcessID,$JobID,$InvoiceAccountType = "Customer")
     {
         Log::useFiles(storage_path() . '/logs/GenerateInvoice-' . date('Y-m-d') . '.log');
         $skip_accounts = array();
         $today = date("Y-m-d");
         $response = $errors = $message = array();
 
-        foreach($AccountIDs as $AccountID){
-            $Account = Account::find($AccountID);
-            if($Account != false)
-                $Account = json_decode(json_encode($Account),true);
-            else
-                return ['status' => 'failure', "message" => self::$InvoiceGenerationErrorReasons['InvalidAccount']];
+        // Note: Accounts must be join with Billing Details
+        foreach($Accounts as $Account){
 
+            $Account = json_decode(json_encode($Account),true);
+            $AccountID   = $Account['AccountID'];
             $AccountName = $Account['AccountName'];
-            try {
-                $AccountBilling = AccountBilling::where(['AccountID' => $AccountID])->first();
 
+            try {
                 // Check if 1st invoice sent
                 $FirstInvoiceCheck = 0;
-                if($AccountBilling->NextInvoiceDate == $AccountBilling->BillingStartDate) {
+                $AccountBilling   = AccountBilling::where(['AccountID' => $AccountID])->first();
+                $BillingStartDate = $AccountBilling->BillingStartDate;
+                if($Account['NextInvoiceDate'] == $BillingStartDate) {
                     $InvoiceCount = Account::getInvoiceCount($AccountID);
                     if($InvoiceCount > 0) $FirstInvoiceCheck = 1;
                 }
 
                 $FirstInvoice       = $FirstInvoiceCheck;
-                $LastChargeDate     = $AccountBilling->LastChargeDate;
-                $NextChargeDate     = $AccountBilling->NextChargeDate;
+                $LastChargeDate     = $Account['LastChargeDate'];
+                $NextChargeDate     = $Account['NextChargeDate'];
 
                 if($FirstInvoice == 1){
-                    $NextInvoiceDate = $AccountBilling->BillingStartDate;
-                    $LastInvoiceDate = $AccountBilling->BillingStartDate;
-                }else{
-                    $LastInvoiceDate = $AccountBilling->LastInvoiceDate;
-                    $NextInvoiceDate = $AccountBilling->NextInvoiceDate;
+                    $NextInvoiceDate = $BillingStartDate;
+                    $LastInvoiceDate = $BillingStartDate;
+                } else {
+                    $LastInvoiceDate = $Account['LastInvoiceDate'];
+                    $NextInvoiceDate = $Account['NextInvoiceDate'];
                 }
 
                 Log::info('AccountID =' . $AccountID . ' FirstInvoiceSend '.$FirstInvoice);
                 Log::info('LastInvoiceDate '.$LastInvoiceDate.' NextInvoiceDate '.$NextInvoiceDate);
                 Log::info('LastChargeDate '.$LastChargeDate.' NextChargeDate '.$NextChargeDate);
 
-                $BillingCycleType   = $AccountBilling->BillingCycleType;
-                $BillingType        = $AccountBilling->BillingType;
+                $BillingCycleType  = $AccountBilling->BillingCycleType;
+                $BillingCycleValue = $AccountBilling->BillingCycleValue;
 
                 if (!empty($NextInvoiceDate) && $BillingCycleType != 'manual') {
 
                     if (strtotime($NextInvoiceDate) <= strtotime($today)) {
-
                         Log::info(' ========================== Invoice Send Start =============================');
 
                         DB::beginTransaction();
                         DB::connection('sqlsrv2')->beginTransaction();
 
-                        Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
-                        $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastInvoiceDate, $NextInvoiceDate, $InvoiceGenerationEmail, $ProcessID, $JobID);
+                        do {
+                            Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
 
-                        Log::info('Invoice::sendInvoice done');
+                            $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastChargeDate, $NextChargeDate, $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID);
 
-                        if (isset($response["status"]) && $response["status"] == 'success') {
+                            Log::info('Invoice::sendInvoice done');
 
-                            Log::info('Invoice created - ' . print_r($response, true));
-                            $message[] = $response["message"];
-                            Log::info('Invoice Committed  AccountID = ' . $AccountID);
-                            DB::connection('sqlsrv2')->commit();
-                            Log::info('=========== Updating  InvoiceDate =========== ');
-                            $oldNextInvoiceDate = $NextInvoiceDate;
-                            //Add One Date In Last Charge Date because when we next period(Last Charge Date - Next Charge)Both Date include
-                            if($FirstInvoice==1) {
-                                $CheckBillingStartDate = date("Y-m-d", strtotime($AccountBilling->BillingStartDate));
-                                $NewLastChargeDate = date("Y-m-d", strtotime($AccountBilling->NextChargeDate));
-                                if($NewLastChargeDate!=$CheckBillingStartDate){
-                                    $CheckChargeDate=date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
-                                    $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($CheckChargeDate));
-                                }else{
-                                    $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($AccountBilling->NextChargeDate));
+                            if (isset($response["status"]) && $response["status"] == 'success') {
+
+                                Log::info('Invoice created - ' . print_r($response, true));
+                                $message[] = $response["message"];
+                                Log::info('Invoice Committed  AccountID = ' . $AccountID);
+                                $oldNextInvoiceDate = $NextInvoiceDate;
+                                //Add One Date In Last Charge Date because when we next period(Last Charge Date - Next Charge)Both Date include
+                                if ($FirstInvoice == 1) {
+                                    $CheckBillingStartDate = date("Y-m-d", strtotime($BillingStartDate));
+                                    $NewLastChargeDate = date("Y-m-d", strtotime($NextChargeDate));
+                                    if ($NewLastChargeDate != $CheckBillingStartDate) {
+                                        $CheckChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($NextChargeDate)));
+                                        $NewNextChargeDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($CheckChargeDate));
+                                    } else {
+                                        $NewNextChargeDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($NextChargeDate));
+                                    }
+
+                                    $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
+                                    log::info('FirstInvoice ' . $NewLastChargeDate . ' ' . $NewNextChargeDate);
+                                } else {
+                                    $NewLastChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($NextChargeDate)));
+                                    $NewNextChargeDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($NewLastChargeDate));
+                                    $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
+                                    log::info('NextInvoice ' . $NewLastChargeDate . ' ' . $NewNextChargeDate);
                                 }
 
-                                $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
-                                log::info('FirstInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
-                            }else{
-                                $NewLastChargeDate = date("Y-m-d", strtotime("+1 Day", strtotime($AccountBilling->NextChargeDate)));
-                                $NewNextChargeDate=next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($NewLastChargeDate));
-                                $NewNextChargeDate = date("Y-m-d", strtotime("-1 Day", strtotime($NewNextChargeDate)));
-                                log::info('NextInvoice '.$NewLastChargeDate.' '.$NewNextChargeDate);
+                                $NewNextInvoiceDate = next_billing_date($BillingCycleType, $BillingCycleValue, strtotime($oldNextInvoiceDate));
+
+                                AccountBilling::where(['AccountID' => $AccountID])
+                                    ->update([
+                                        "LastInvoiceDate" => $oldNextInvoiceDate,
+                                        "NextInvoiceDate" => $NewNextInvoiceDate,
+                                        'LastChargeDate' => $NewLastChargeDate,
+                                        'NextChargeDate' => $NewNextChargeDate
+                                    ]);
+
+                                $AccountNextBilling = AccountNextBilling::getBilling($AccountID, 0);
+                                if (!empty($AccountNextBilling)) {
+                                    AccountBilling::where(['AccountID' => $AccountID])
+                                        ->update([
+                                            "BillingCycleType" => $BillingCycleType,
+                                            "BillingCycleValue" => $BillingCycleValue,
+                                            'LastInvoiceDate' => $LastInvoiceDate,
+                                            'NextInvoiceDate' => $NextInvoiceDate
+                                        ]);
+                                    AccountNextBilling::where(['AccountID' => $AccountID])->delete();
+                                }
+
+                                Log::info('LastInvoiceDate ' . $oldNextInvoiceDate . ' NextInvoiceDate ' . $NewNextInvoiceDate);
+                                Log::info('LastChargeDate ' . $NewLastChargeDate . ' NextChargeDate ' . $NewNextChargeDate);
+                                $NextInvoiceDate = $NewNextInvoiceDate;
+                                $LastInvoiceDate = $oldNextInvoiceDate;
+                                $NextChargeDate  = $NewNextChargeDate;
+                            } else {
+                                $errors[] = $response["message"];
+                                $skip_accounts[] = $AccountID;
                             }
 
-                            $NewNextInvoiceDate = next_billing_date($AccountBilling->BillingCycleType, $AccountBilling->BillingCycleValue, strtotime($oldNextInvoiceDate));
-                            AccountBilling::where(['AccountID' => $AccountID])->update(["LastInvoiceDate" => $oldNextInvoiceDate, "NextInvoiceDate" => $NewNextInvoiceDate,'LastChargeDate'=>$NewLastChargeDate,'NextChargeDate'=>$NewNextChargeDate]);
-                            $AccountNextBilling = AccountNextBilling::getBilling($AccountID,0);
-                            if (!empty($AccountNextBilling)) {
-                                AccountBilling::where(['AccountID' => $AccountID])->update(["BillingCycleType" => $AccountNextBilling->BillingCycleType, "BillingCycleValue" => $AccountNextBilling->BillingCycleValue, 'LastInvoiceDate' => $AccountNextBilling->LastInvoiceDate, 'NextInvoiceDate' => $AccountNextBilling->NextInvoiceDate]);
-                                AccountNextBilling::where(['AccountID' => $AccountID])->delete();
-                            }
-                            log::info("new dates");
-                            Log::info('LastInvoiceDate '.$oldNextInvoiceDate.' NextInvoiceDate '.$NewNextInvoiceDate);
-                            Log::info('LastChargeDate '.$NewLastChargeDate.' NextChargeDate '.$NewNextChargeDate);
+                        } while(empty($errors) && strtotime($NextInvoiceDate) <= strtotime($today));
 
-                            Log::info('=========== Updated  InvoiceDate =========== ');
+                        if(empty($errors)) {
+                            DB::connection('sqlsrv2')->commit();
                             DB::commit();
-
                         } else {
-                            $errors[] = $response["message"];
                             DB::rollback();
                             DB::connection('sqlsrv2')->rollback();
-                            $skip_accounts[] = $AccountID;
                             Log::info('Invoice rollback  AccountID = ' . $AccountID);
                             Log::info(' ========================== Error  =============================');
                             Log::info('Invoice with Error - ' . print_r($response, true));
                         }
+                        Log::info(' ========================== Invoice Send End =============================');
 
                     } else
                         $skip_accounts[] = $AccountID;
-
                 } else
                     $skip_accounts[] = $AccountID;
 
@@ -237,23 +256,16 @@ class InvoiceGenerate {
     }
 
 
-    public static function sendInvoice($CompanyID,$AccountID, $FirstInvoice,$LastInvoiceDate,$NextInvoiceDate,$InvoiceGenerationEmail,$ProcessID,$JobID){
+    public static function sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastChargeDate, $NextChargeDate, $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID){
 
         try {
             $Today=date('Y-m-d');
-            $error = "";
-            $CompanyName      = Company::getName($CompanyID);
             $Account          = Account::find($AccountID);
             $AccountBilling   = AccountBilling::where(['AccountID' => $AccountID])->first();
-            $AccountBillingClass = AccountBilling::getBillingClass((int)$AccountID,0);
-            $StartDate        = $AccountBilling->LastChargeDate;
-            $EndDate          = $AccountBilling->NextChargeDate;
-            $StartDate          = date("Y-m-d 00:00:00", strtotime($StartDate));
-            $EndDate          = date("Y-m-d 23:59:59", strtotime($EndDate));
+            $StartDate        = date("Y-m-d 00:00:00", strtotime($LastChargeDate));
+            $EndDate          = date("Y-m-d 23:59:59", strtotime($NextChargeDate));
             Log::info('StartDate =' . $StartDate . " EndDate =" .$EndDate );
-
-            $BillingCycleType   = $AccountBilling->BillingCycleType;
-            $BillingType        = $AccountBilling->BillingType;
+            $BillingType      = $AccountBilling->BillingType;
 
             if($AccountID <= 0 || $CompanyID <= 0 || empty($StartDate) || empty($EndDate))
                 return ['status' => "failure", "message" => "Invalid Request."];
@@ -261,9 +273,7 @@ class InvoiceGenerate {
             if(empty($Account))
                 return ['status' => "failure", "message" => "Invalid Account"];
 
-
             // Collecting Invoice Data
-
             $Reseller = Reseller::where('ChildCompanyID', $Account->CompanyId)->first();
             $message = isset($Reseller->InvoiceTo) ? $Reseller->InvoiceTo : '';
             $replace_array = Invoice::create_accountdetails($Account);
@@ -276,7 +286,7 @@ class InvoiceGenerate {
 
             $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
             $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
-            $AlreadyBilled=0;
+            $AlreadyBilled = 0;
 
             if($FirstInvoice == 0){
                 $AlreadyBilled = self::checkIfAlreadyBilled($AccountID, $StartDate, $EndDate);
@@ -322,12 +332,16 @@ class InvoiceGenerate {
 
             if($AccountBalanceLogID != false) {
 
-                self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID,$decimal_places,$Account->CurrencyId);
+                if($InvoiceAccountType == "Affiliate")
+                    self::addAffiliateInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
+                else
+                    self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
 
                 return [
                     'status' => 'success',
                     'message' => $AccountID . ' Account Invoice added successfully'
                 ];
+
             } else {
                 return ['status' => "failure", "message" => $AccountID . ": Has no Balance Log ID"];
             }
@@ -337,7 +351,7 @@ class InvoiceGenerate {
         }
     }
 
-    public static function addInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$decimal_places,$CurrencyID){
+    public static function addInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceAccountType, $decimal_places,$CurrencyID){
 
         $Account = Account::find($AccountID);
         // Fetching Usage Data
@@ -458,6 +472,76 @@ class InvoiceGenerate {
         $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $Invoice->save();
 
+        self::generateExportFiles($InvoiceID,$InvoiceDetailID,$decimal_places);
+    }
+
+    // Affiliate Invoice
+    public static function addAffiliateInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places,$CurrencyID){
+
+        $Account = Account::find($AccountID);
+        $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
+        $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
+
+        $InvoiceDetailArray = [
+            'InvoiceID'          => $InvoiceID,
+            'ProductType'        => Product::INVOICE_PERIOD,
+            'Description'        => $ProductDescription,
+            'Price'              => number_format(0, $decimal_places, '.', ''),
+            'Qty'                => 1,
+            'CurrencyID'         => $CurrencyID,
+            'StartDate'          => $StartDate,
+            'EndDate'            => $EndDate,
+            'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
+            'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
+            'TaxAmount'          => number_format(0, $decimal_places, '.', ''),
+            'DiscountType'       => 0,
+            'DiscountAmount'     => 0,
+            'DiscountLineAmount' => 0,
+            'LineTotal'          => number_format(0, $decimal_places, '.', '')
+        ];
+
+        $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
+
+        $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
+
+        // Adding Affiliate Components data
+        $query = "CALL prc_insertAffiliateInvoiceComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
+
+        Log::error($query);
+        DB::connection('sqlsrv2')->select($query);
+
+
+        // Adding Monthly in Invoice Detail
+        $InvoiceComponent = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)->get();
+
+        // Totals of Usage and Monthly Cost
+        $InvoiceDiscount    = $InvoiceComponent->sum('DiscountPrice');
+        $InvoiceSubTotal    = $InvoiceComponent->sum('SubTotal');
+        $InvoiceTaxTotal    = $InvoiceComponent->sum('TaxTotal');
+        $InvoiceGrandTotal  = $InvoiceComponent->sum('TotalCost');
+
+        //Updating Invoice Detail Totals
+        $InvoiceDetail            = InvoiceDetail::find($InvoiceDetailID);
+        $InvoiceDetail->DiscountAmount = number_format($InvoiceDiscount, $decimal_places, '.', '');
+        $InvoiceDetail->Price     = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail->TaxAmount = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
+        $InvoiceDetail->LineTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail->save();
+
+        //Updating Invoice Totals
+        $Invoice = Invoice::find($InvoiceID);
+        $Invoice->TotalDiscount = number_format($InvoiceDiscount, $decimal_places, '.', '');
+        $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
+        $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
+        $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
+        $Invoice->save();
+
+        self::generateExportFiles($InvoiceID,$InvoiceDetailID,$decimal_places);
+    }
+
+    public static function generateExportFiles($InvoiceID,$InvoiceDetailID,$decimal_places){
+
+        $Invoice = Invoice::find($InvoiceID);
         $InvoiceComponents = self::generatePdfComponentsData($InvoiceDetailID, $decimal_places);
         $pdf_path = self::generate_pdf($InvoiceID, $InvoiceComponents);
         if(empty($pdf_path)){
@@ -914,7 +998,7 @@ class InvoiceGenerate {
 
         foreach($InvoiceComponents as $InvoiceComponent) {
             //product
-            $description = Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['Prefix'] . "-" . $InvoiceComponent['CLI'];
+            $description = Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['CLI'];
             if(isset($InvoiceComponent['MonthlyCost']) && !empty($InvoiceComponent['MonthlyCost'])){
                 $item = new \App\UblInvoice\Item();
                 $item->setName(cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") . " " . $InvoicePeriod);

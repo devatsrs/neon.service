@@ -80,4 +80,19 @@ class AccountBilling extends \Eloquent {
         $AutoPayMethod = (int)AccountBilling::where(array('AccountID'=>$AccountID,'ServiceID'=>$ServiceID))->pluck('AutoPayMethod');
         return $AutoPayMethod;
     }
+
+    public static function getPendingBillingAccounts($Date = "",$TypeColumn = ""){
+
+        if($Date == "") $Date = date("Y-m-d");
+        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')
+                ->select(["tblAccount.AccountID","tblAccount.AccountName",'tblAccountBilling.NextInvoiceDate','tblAccountBilling.LastInvoiceDate','tblAccountBilling.BillingStartDate','tblAccountBilling.LastChargeDate','tblAccountBilling.NextChargeDate','tblAccountBilling.BillingType','tblAccountBilling.BillingCycleType','tblAccountBilling.BillingCycleValue'])
+            ->where(["Status" => 1,"AccountType" => 1, $TypeColumn => 1])
+            ->where('tblAccountBilling.NextInvoiceDate','<=',$Date)
+            ->whereNotNull('tblAccountBilling.BillingCycleType');
+
+        Log::info("Getting $TypeColumn: " . $Accounts->toSql());
+
+        return $Accounts->get();
+    }
+
 }
