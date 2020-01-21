@@ -763,7 +763,7 @@ class InvoiceGenerate {
 
                 $UnitPrice = 0;
                 if(in_array($Component,$PerCallComponents) && $Quantity > 0){
-                    $UnitPrice = (float)$invoiceComponent->SubTotal / $Quantity;
+                    $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
                 $data[$index]['components'][] = [

@@ -146,7 +146,7 @@ class AccountBalanceSubscriptionLog extends Model
                     }
                     if ($billed == 0) {
                         $NewEndDate = date('Y-m-d 23:59:59', strtotime($NewEndDate));
-                        AccountBalanceSubscriptionLog::InsertSubscriptionBalanceDeatilLog($ProcessID,$AccountSubscriptionID, $AccountBalanceLogID, $NewStartDate, $NewEndDate, $FirstTimeBilling, $QuarterSubscription, $decimal_places);
+                        AccountBalanceSubscriptionLog::InsertSubscriptionBalanceDetailLog($ProcessID,$AccountSubscriptionID, $AccountBalanceLogID, $NewStartDate, $NewEndDate, $FirstTimeBilling, $QuarterSubscription, $decimal_places);
                         $FirstTimeBilling=0;
                     }
                 }
@@ -201,7 +201,7 @@ class AccountBalanceSubscriptionLog extends Model
             }
 
             if($newbilled==0){
-                AccountBalanceSubscriptionLog::InsertSubscriptionBalanceDeatilLog($ProcessID,$AccountSubscriptionID,$AccountBalanceLogID, $NewStartDate,$NewEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places);
+                AccountBalanceSubscriptionLog::InsertSubscriptionBalanceDetailLog($ProcessID,$AccountSubscriptionID,$AccountBalanceLogID, $NewStartDate,$NewEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places);
             }
             /**
              * Regular end start
@@ -212,7 +212,7 @@ class AccountBalanceSubscriptionLog extends Model
 
     }
 
-    public static function InsertSubscriptionBalanceDeatilLog($ProcessID,$AccountSubscriptionID,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places){
+    public static function InsertSubscriptionBalanceDetailLog($ProcessID,$AccountSubscriptionID,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places){
 
         $SubscriptionCharge = AccountSubscription::getSubscriptionAmount($AccountSubscriptionID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription);
         // convert currency
@@ -602,7 +602,7 @@ class AccountBalanceSubscriptionLog extends Model
                 if ($billed == 0) {
                     $NewEndDate = date('Y-m-d 23:59:59', strtotime($NewEndDate));
 
-                    AccountBalanceSubscriptionLog::InsertMonthlyBalanceDeatilLog($ProcessID,$data, $AccountBalanceLogID, $NewStartDate, $NewEndDate, $FirstTimeBilling, $QuarterSubscription, $decimal_places);
+                    AccountBalanceSubscriptionLog::InsertMonthlyBalanceDetailLog($ProcessID,$data, $AccountBalanceLogID, $NewStartDate, $NewEndDate, $FirstTimeBilling, $QuarterSubscription, $decimal_places);
                     $FirstTimeBilling=0;
                 }
             }
@@ -670,7 +670,7 @@ class AccountBalanceSubscriptionLog extends Model
         log::info('newbilled '.$newbilled);
 
         if($newbilled==0){
-            AccountBalanceSubscriptionLog::InsertMonthlyBalanceDeatilLog($ProcessID,$data,$AccountBalanceLogID, $NewStartDate,$NewEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places);
+            AccountBalanceSubscriptionLog::InsertMonthlyBalanceDetailLog($ProcessID,$data,$AccountBalanceLogID, $NewStartDate,$NewEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places);
         }
         /**
          * Regular end start
@@ -681,7 +681,7 @@ class AccountBalanceSubscriptionLog extends Model
 
     }
 
-    public static function InsertMonthlyBalanceDeatilLog($ProcessID,$data,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places){
+    public static function InsertMonthlyBalanceDetailLog($ProcessID,$data,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places){
         log::info('Monthly balance log '.' '.$data['AccountID'].' '.$data['Description']);
         $SubscriptionCharge = $data['MonthlyCost'];
         $ServiceID = $data['ServiceID'];
