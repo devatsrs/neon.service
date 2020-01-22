@@ -289,7 +289,7 @@ class InvoiceGenerate {
             $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
             $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
             $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
-            $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
+            $FullInvoiceNumber = Company::getCompanyField($Account->CompanyId, "InvoiceNumberPrefix") . $LastInvoiceNumber;
 
             $decimal_places = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
             $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
@@ -314,7 +314,7 @@ class InvoiceGenerate {
 
             //Creating Invoice
             $InvoiceData = array(
-                "CompanyID" 	=> $Account->CompanyID,
+                "CompanyID" 	=> $Account->CompanyId,
                 "AccountID" 	=> $AccountID,
                 "ServiceID" 	=> 0,
                 "Address" 		=> $InvoiceToAddress,
