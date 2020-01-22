@@ -130,21 +130,19 @@ class InvoiceGenerator extends Command {
         try {
             $errors = $message = [];
             /** regular invoice start */
-            $SingleInvoice = 0;
             $CustomerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Customers,$InvoiceGenerationEmail,$ProcessID,$JobID,"Customer");
-            $AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
-            $PartnerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Partners,$InvoiceGenerationEmail,$ProcessID,$JobID,"Partner");
-
             if(isset($CustomerResponse['errors']))
                 $errors  = array_merge($CustomerResponse['errors'], $errors);
             if(isset($CustomerResponse['message']))
                 $message = array_merge($CustomerResponse['message'], $errors);
 
+            $AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
             if(isset($AffiliateResponse['errors']))
                 $errors  = array_merge($AffiliateResponse['errors'], $errors);
             if(isset($AffiliateResponse['message']))
                 $message = array_merge($AffiliateResponse['message'], $errors);
 
+            $PartnerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Partners,$InvoiceGenerationEmail,$ProcessID,$JobID,"Partner");
             if(isset($PartnerResponse['errors']))
                 $errors  = array_merge($PartnerResponse['errors'], $errors);
             if(isset($PartnerResponse['message']))

@@ -110,6 +110,7 @@ class InvoiceGenerate {
             $Account = json_decode(json_encode($Account),true);
             $AccountID   = $Account['AccountID'];
             $AccountName = $Account['AccountName'];
+            $CompanyID   = $Account['CompanyId'];
 
             try {
                 // Check if 1st invoice sent
