@@ -215,6 +215,12 @@ class InvoiceGenerate {
                         } while(empty($errors) && strtotime($NextInvoiceDate) <= strtotime($today));
 
                         if(empty($errors)) {
+                            InvoicePeriodLog::where([
+                                'AccountID' => $AccountID,
+                                'AccountType' => $InvoiceAccountType,
+                                'Status' => 0
+                            ])->update(['Status' => 1]);
+
                             DB::connection('sqlsrv2')->commit();
                             DB::commit();
                         } else {
