@@ -110,7 +110,6 @@ class InvoiceGenerate {
             $Account = json_decode(json_encode($Account),true);
             $AccountID   = $Account['AccountID'];
             $AccountName = $Account['AccountName'];
-            $CompanyID   = $Account['CompanyId'];
 
             try {
                 // Check if 1st invoice sent
@@ -292,7 +291,7 @@ class InvoiceGenerate {
             $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
             $FullInvoiceNumber = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix") . $LastInvoiceNumber;
 
-            $decimal_places = Helper::get_round_decimal_places($CompanyID,$Account->AccountID);
+            $decimal_places = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
             $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
             $AlreadyBilled = 0;
 
