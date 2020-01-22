@@ -106,6 +106,7 @@ class InvoiceGenerate {
         // Note: Accounts must be join with Billing Details
         foreach($Accounts as $Account){
 
+
             $Account = json_decode(json_encode($Account),true);
             $AccountID   = $Account['AccountID'];
             $AccountName = $Account['AccountName'];
@@ -298,6 +299,11 @@ class InvoiceGenerate {
                 $AlreadyBilled = self::checkIfAlreadyBilled($AccountID, $StartDate, $EndDate);
                 //If Already Billed
                 if ($AlreadyBilled) {
+                    InvoicePeriodLog::where([
+                        'AccountID' => $AccountID,
+                        'AccountType' => $InvoiceAccountType,
+                        'Status' => 0
+                    ])->update(['Status' => 1]);
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
                     return array("status" => "failure", "message" => $error);
                 }

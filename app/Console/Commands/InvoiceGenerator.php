@@ -88,16 +88,16 @@ class InvoiceGenerator extends Command {
         $Affiliates = DB::connection('sqlsrv2')->select($query,["Affiliate",$today]);
         $Partners   = DB::connection('sqlsrv2')->select($query,["Partner",$today]);
 
-        Log::info("Customers " . json_encode($Customers->count()));
-        Log::info("Affiliates " . json_encode($Affiliates->count()));
-        Log::info("Partners " . json_encode($Partners->count()));
-
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
 
         $CustomerIDs  = array_pluck($Customers, 'AccountID');
         $AffiliateIDs = array_pluck($Affiliates, 'AccountID');
         $PartnerIDs   = array_pluck($Partners, 'AccountID');
+
+        Log::info("Customers " . json_encode($CustomerIDs));
+        Log::info("Affiliates " . json_encode($AffiliateIDs));
+        Log::info("Partners " . json_encode($PartnerIDs));
 
         if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
             $UserID = $arguments["UserID"];
@@ -131,9 +131,9 @@ class InvoiceGenerator extends Command {
             $errors = $message = [];
             /** regular invoice start */
             $SingleInvoice = 0;
-            $CustomerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$CustomerIDs,$InvoiceGenerationEmail,$ProcessID,$JobID,"Customer");
-            $AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$AffiliateIDs,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
-            $PartnerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$PartnerIDs,$InvoiceGenerationEmail,$ProcessID,$JobID,"Partner");
+            $CustomerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Customers,$InvoiceGenerationEmail,$ProcessID,$JobID,"Customer");
+            $AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
+            $PartnerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Partners,$InvoiceGenerationEmail,$ProcessID,$JobID,"Partner");
 
             if(isset($CustomerResponse['errors']))
                 $errors  = array_merge($CustomerResponse['errors'], $errors);
