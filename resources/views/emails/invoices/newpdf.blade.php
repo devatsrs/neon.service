@@ -306,7 +306,7 @@
                             <table class="table table-striped">
                                 <tr></tr>
                                 <tr>
-                                    <th style="font-size: 18px; width: 85%">{{cus_lang("CUST_PANEL_PAGE_ANALYSIS_HEADING_INVOICES_&_EXPENSES_LBL_TOTAL_INVOICE")}}</th>
+                                    <th style="font-size: 18px; width: 85%">{{ $InvoiceSummary['Name'] }}</th>
                                     <th class="text-right" style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}} ({{$CurrencySymbol}})</th>
                                 </tr>
                                 <tr>

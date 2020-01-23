@@ -759,7 +759,7 @@ class InvoiceGenerate {
                     $TotalPages++;
                     if($InvoiceAccountType != "Customer"){
                         foreach($InvoiceComponent as $InvoiceComponentDetail){
-                            if(isset($InvoiceComponentDetail['data']['GrandTotal']) && $InvoiceComponent['data']['GrandTotal'] > 0){
+                            if(isset($InvoiceComponentDetail['data']['GrandTotal']) && $InvoiceComponentDetail['data']['GrandTotal'] > 0){
                                 $TotalPages++;
                             }
                         }
