@@ -307,7 +307,7 @@
                                 <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargesAmount) }}</h4>
                             </div>
                         </div>
-                        @foreach($InvoiceSummary as $key => $InvoiceComponent)
+                        @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
                             @if($InvoiceComponent['GrandTotal'] > 0)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
