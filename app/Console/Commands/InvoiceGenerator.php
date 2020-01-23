@@ -136,7 +136,8 @@ class InvoiceGenerator extends Command {
             if(isset($CustomerResponse['message']))
                 $message = array_merge($CustomerResponse['message'], $errors);
 
-            $AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
+
+            /*$AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
             if(isset($AffiliateResponse['errors']))
                 $errors  = array_merge($AffiliateResponse['errors'], $errors);
             if(isset($AffiliateResponse['message']))
@@ -146,7 +147,7 @@ class InvoiceGenerator extends Command {
             if(isset($PartnerResponse['errors']))
                 $errors  = array_merge($PartnerResponse['errors'], $errors);
             if(isset($PartnerResponse['message']))
-                $message = array_merge($PartnerResponse['message'], $errors);
+                $message = array_merge($PartnerResponse['message'], $errors);*/
 
             if(count($errors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');

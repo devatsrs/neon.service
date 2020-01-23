@@ -3430,6 +3430,27 @@ class Invoice extends \Eloquent {
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
 
             $CID = $invoiceComponent->CustomerID;
+            if(!isset($data[$CID])){
+                $data[$CID]['Name'] = $invoiceComponent->AccountName;
+                $data[$CID]['OneOffSubTotal'] = InvoiceComponentDetail::where('Component', 'OneOffCost')->where(['CustomerID' => $CID])
+                    ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->sum('SubTotal');
+
+                $data[$CID]['MonthlySubTotal'] = InvoiceComponentDetail::where('Component', 'MonthlyCost')->where(['CustomerID' => $CID])
+                    ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->sum('SubTotal');
+
+                $data[$CID]['UsageSubTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                    ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
+                    ->sum('SubTotal');
+
+                $data[$CID]['TotalVAT'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                    ->sum('TotalTax');
+
+                $data[$CID]['GrandTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                    ->sum('TotalCost');
+            }
+
             if(!isset($data[$CID][$index])){
                 $data[$CID][$index] = [
                     'AccountServiceID' => $invoiceComponent->AccountServiceID,

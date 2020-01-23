@@ -558,13 +558,16 @@ class InvoiceGenerate {
         $Invoice = Invoice::find($InvoiceID);
         if($InvoiceAccountType == "Affiliate"){
             $InvoiceComponents = Invoice::generateAffiliateComponentsData($InvoiceDetailID, $decimal_places);
+        }
+        elseif($InvoiceAccountType == "Partner"){
+            //$InvoiceComponents = Invoice::generateAffiliateComponentsData($InvoiceDetailID, $decimal_places);
         } else {
             $InvoiceComponents = Invoice::generatePdfComponentsData($InvoiceDetailID, $decimal_places);
         }
 
         Log::info("Component Data " . json_encode($InvoiceComponents));
 
-        /*$pdf_path = self::generate_pdf($InvoiceID, $InvoiceComponents);
+        $pdf_path = self::generate_pdf($InvoiceID, $InvoiceAccountType,$InvoiceComponents);
         if(empty($pdf_path)){
             $error = self::$InvoiceGenerationErrorReasons["PDF"];
             return array("status" => "failure", "message" => $error);
@@ -572,7 +575,7 @@ class InvoiceGenerate {
             $Invoice->update(["PDF" => $pdf_path]);
         }
 
-        $ubl_path = self::generate_ubl_invoice($Invoice->InvoiceID,$InvoiceComponents,$decimal_places);
+        /*$ubl_path = self::generate_ubl_invoice($Invoice->InvoiceID,$InvoiceComponents,$decimal_places);
         if (empty($ubl_path)) {
             $error['message'] = 'Failed to generate Invoice UBL File.';
             $error['status'] = 'failure';
@@ -582,7 +585,7 @@ class InvoiceGenerate {
         }*/
     }
 
-    public static function generate_pdf($InvoiceID, $InvoiceComponents){
+    public static function generate_pdf($InvoiceID, $InvoiceAccountType, $InvoiceComponents){
         $Invoice = Invoice::find($InvoiceID);
         if($Invoice != false) {
             $language = Account::where("AccountID", $Invoice->AccountID)
@@ -624,10 +627,9 @@ class InvoiceGenerate {
                 ->sum('SubTotal');
 
             // Getting total Usage cost
-            $UsageSubTotal = InvoiceDetail::where([
-                'InvoiceID' => $InvoiceID,
-                'ProductType' => Product::USAGE
-            ])->sum('LineTotal');
+            $UsageSubTotal = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
+                ->sum('SubTotal');
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
             $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);
@@ -635,12 +637,9 @@ class InvoiceGenerate {
             $TotalVAT           = number_format($Invoice->TotalTax,$RoundChargesAmount);
             $GrandTotal         = number_format($Invoice->GrandTotal,$RoundChargesAmount);
 
-            Log::info("Component data " . json_encode($InvoiceComponents));
             $PageCounter = $TotalPages = 1;
-
-            if(count($InvoiceComponents))
-                foreach($InvoiceComponents as $key => $InvoiceComponent)
-                    if($InvoiceComponent['GrandTotal'] > 0) $TotalPages++;
+            $TotalPages = self::pdfPageCounter($InvoiceComponents, $InvoiceAccountType, $TotalPages);
+            Log::info("Component data " . json_encode($InvoiceComponents));
 
             App::setLocale($language->ISOCode);
 
@@ -752,6 +751,23 @@ class InvoiceGenerate {
     }
 
 
+    public static function pdfPageCounter($InvoiceComponents, $InvoiceAccountType, $TotalPages){
+
+        if(count($InvoiceComponents))
+            foreach($InvoiceComponents as $key => $InvoiceComponent) {
+                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0) {
+                    $TotalPages++;
+                    if($InvoiceAccountType != "Customer"){
+                        foreach($InvoiceComponent as $InvoiceComponentDetail){
+                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0){
+                                $TotalPages++;
+                            }
+                        }
+                    }
+                }
+            }
+        return $TotalPages;
+    }
 
     public static  function generate_ubl_invoice($InvoiceID, $InvoiceComponents, $RoundChargesAmount){
         if($InvoiceID>0) {
