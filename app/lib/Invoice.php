@@ -3451,8 +3451,8 @@ class Invoice extends \Eloquent {
                     ->sum('TotalCost');
             }
 
-            if(!isset($data[$CID][$index])){
-                $data[$CID][$index] = [
+            if(!isset($data[$CID]['data'][$index])){
+                $data[$CID]['data'][$index] = [
                     'AccountServiceID' => $invoiceComponent->AccountServiceID,
                     'CLI'        => $invoiceComponent->CLI,
                     'CustomerID' => $invoiceComponent->CustomerID,
@@ -3464,17 +3464,17 @@ class Invoice extends \Eloquent {
                     'GrandTotal' => $invoiceComponent->TotalCost,
                 ];
             } else {
-                $data[$CID][$index]['SubTotal']   += $invoiceComponent->SubTotal;
-                $data[$CID][$index]['TotalTax']   += $invoiceComponent->TotalTax;
-                $data[$CID][$index]['GrandTotal'] += $invoiceComponent->TotalCost;
+                $data[$CID]['data'][$index]['SubTotal']   += $invoiceComponent->SubTotal;
+                $data[$CID]['data'][$index]['TotalTax']   += $invoiceComponent->TotalTax;
+                $data[$CID]['data'][$index]['GrandTotal'] += $invoiceComponent->TotalCost;
             }
 
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
-                if(!isset($data[$CID][$index][$Component])) {
-                    $data[$CID][$index][$Component] = [
+                if(!isset($data[$CID]['data'][$index][$Component])) {
+                    $data[$CID]['data'][$index][$Component] = [
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
                         'Discount'  => (float)$invoiceComponent->Discount,
                         'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
@@ -3486,7 +3486,7 @@ class Invoice extends \Eloquent {
                     ];
                 } else {
 
-                    $arrData = $data[$CID][$index][$Component];
+                    $arrData = $data[$CID]['data'][$index][$Component];
 
                     $arrData['Discount']  += (float)$invoiceComponent->Discount;
                     $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
@@ -3497,7 +3497,7 @@ class Invoice extends \Eloquent {
 
                     $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
-                    $data[$CID][$index][$Component] = $arrData;
+                    $data[$CID]['data'][$index][$Component] = $arrData;
                 }
 
             } else {
@@ -3549,7 +3549,7 @@ class Invoice extends \Eloquent {
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
-                $data[$CID][$index]['components'][] = [
+                $data[$CID]['data'][$index]['components'][] = [
                     'Title'         => $Title,
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,

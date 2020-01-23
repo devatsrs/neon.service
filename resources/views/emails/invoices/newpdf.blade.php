@@ -270,13 +270,43 @@
                 @foreach($InvoiceComponents as $key => $InvoiceSummary)
                     @if($InvoiceSummary['GrandTotal'] > 0)
                         <?php $PageCounter += 1; ?>
+                            <div class="page_break"></div>
+                            <div id="CompanyInfo">
+                                <br>
+                                <div class="infoDetail">
+                                    <table class="table">
+                                        <tr>
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                            <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
+                                            <td style="width: 40%"></td>
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
+                                            <td style="width: 15%">{{ $Account->AccountName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
+                                            <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
+                                            <td></td>
+                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}}</td>
+                                            <td>{{ $InvoicePeriod }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
+                                            <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
+                                            <td></td>
+                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PAGE")}}</td>
+                                            <td>{{ $PageCounter }}/{{ $TotalPages }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
                         <br>
                         <br>
                         <div class="totalTable">
                             <table class="table table-striped">
                                 <tr></tr>
                                 <tr>
-                                    <th style="font-size: 18px; width: 85%">{{cus_lang("CUST_PANEL_PAGE_ANALYSIS_HEADING_INVOICES_&_EXPENSES_LBL_TOTAL_INVOICE")}}</th>
+                                    <th style="font-size: 18px; width: 85%">{{ $InvoiceSummary['Name'] }}</th>
                                     <th class="text-right" style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}} ({{$CurrencySymbol}})</th>
                                 </tr>
                                 <tr>
@@ -307,7 +337,7 @@
                                 <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargesAmount) }}</h4>
                             </div>
                         </div>
-                        @foreach($InvoiceSummary as $key => $InvoiceComponent)
+                        @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
                             @if($InvoiceComponent['GrandTotal'] > 0)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
