@@ -1,6 +1,7 @@
 <?php namespace App\Console\Commands;
 
 use App\Lib\Account;
+use App\Lib\AccountBilling;
 use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\CronJob;
@@ -77,23 +78,26 @@ class InvoiceGenerator extends Command {
         Log::useFiles(storage_path().'/logs/invoicegenerator-'.$CompanyID.'-'.date('Y-m-d').'.log');
 
         $Products = Product::getAllProductName($CompanyID);
-        $Taxes = TaxRate::getAllTaxName($CompanyID);
+        $Taxes    = TaxRate::getAllTaxName($CompanyID);
         $data['Products'] = $Products;
-        $data['Taxes'] = $Taxes;
+        $data['Taxes']    = $Taxes;
 
+        $query = "CALL prc_getInvoicePeriodLogs(?,?)";
 
-        // Get Active Accounts which has BillingCycleType set
-        $Accounts = Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->get();
+        $Customers  = DB::connection('sqlsrv2')->select($query,["Customer",$today]);
+        $Affiliates = DB::connection('sqlsrv2')->select($query,["Affiliate",$today]);
+        $Partners   = DB::connection('sqlsrv2')->select($query,["Partner",$today]);
 
-
-        Log::info("Getting Accounts " . Account::join('tblAccountBilling','tblAccountBilling.AccountID','=','tblAccount.AccountID')->select(["tblAccount.AccountID","AccountName"])->where(["Status" => 1,"AccountType" => 1,'IsCustomer' => 1])->where('tblAccountBilling.NextInvoiceDate','<=',$today)->whereNotNull('tblAccountBilling.BillingCycleType')->toSql());
-        Log::info("Accounts " . json_encode($Accounts));
         $InvoiceGenerationEmail = isset($cronsetting['SuccessEmail']) ? $cronsetting['SuccessEmail'] :'';
         $InvoiceGenerationEmail = explode(",",$InvoiceGenerationEmail);
 
+        $CustomerIDs  = array_pluck($Customers, 'AccountID');
+        $AffiliateIDs = array_pluck($Affiliates, 'AccountID');
+        $PartnerIDs   = array_pluck($Partners, 'AccountID');
 
-
-        $AccountIDs = array_pluck($Accounts, 'AccountID');
+        Log::info("Customers " . json_encode($CustomerIDs));
+        Log::info("Affiliates " . json_encode($AffiliateIDs));
+        Log::info("Partners " . json_encode($PartnerIDs));
 
         if (isset($arguments["UserID"]) && User::where("UserID", $arguments["UserID"])->count() > 0) {
             $UserID = $arguments["UserID"];
@@ -104,10 +108,6 @@ class InvoiceGenerator extends Command {
 
         if((int)$JobID == 0) {
 
-            /**
-             * Create a Job
-             */
-
             $jobType = JobType::where(["Code" => 'BI'])->get(["JobTypeID", "Title"]);
             $jobStatus = JobStatus::where(["Code" => "I"])->get(["JobStatusID"]);
             $jobdata["CompanyID"] = $CompanyID;
@@ -117,7 +117,7 @@ class InvoiceGenerator extends Command {
             $jobdata["Title"] = "[Auto] " . (isset($jobType[0]->Title) ? $jobType[0]->Title : '') . ' Generate & Send';
             $jobdata["Description"] = isset($jobType[0]->Title) ? $jobType[0]->Title : '';
             $jobdata["CreatedBy"] = "System";
-            $jobdata["Options"] = json_encode(array("accounts" => $AccountIDs,'CronJobID'=>$CronJobID));
+            $jobdata["Options"] = json_encode(array("accounts" => array_merge($CustomerIDs,$AffiliateIDs,$PartnerIDs),'CronJobID'=>$CronJobID));
             $jobdata["created_at"] = $date;
             $jobdata["updated_at"] = $date;
             $JobID = Job::insertGetId($jobdata);
@@ -128,12 +128,26 @@ class InvoiceGenerator extends Command {
         /** ************************************************************/
 
         try {
+            $errors = $message = [];
             /** regular invoice start */
-            $SingleInvoice = 0;
-            $response = InvoiceGenerate::GenerateInvoice($CompanyID,$AccountIDs,$InvoiceGenerationEmail,$ProcessID,$JobID);
-            $errors = isset($response['errors'])?$response['errors']:array();
-            $message = isset($response['message'])?$response['message']:array();
+            $CustomerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Customers,$InvoiceGenerationEmail,$ProcessID,$JobID,"Customer");
+            if(isset($CustomerResponse['errors']))
+                $errors  = array_merge($CustomerResponse['errors'], $errors);
+            if(isset($CustomerResponse['message']))
+                $message = array_merge($CustomerResponse['message'], $errors);
 
+
+            /*$AffiliateResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Affiliates,$InvoiceGenerationEmail,$ProcessID,$JobID,"Affiliate");
+            if(isset($AffiliateResponse['errors']))
+                $errors  = array_merge($AffiliateResponse['errors'], $errors);
+            if(isset($AffiliateResponse['message']))
+                $message = array_merge($AffiliateResponse['message'], $errors);
+
+            $PartnerResponse = InvoiceGenerate::GenerateInvoice($CompanyID,$Partners,$InvoiceGenerationEmail,$ProcessID,$JobID,"Partner");
+            if(isset($PartnerResponse['errors']))
+                $errors  = array_merge($PartnerResponse['errors'], $errors);
+            if(isset($PartnerResponse['message']))
+                $message = array_merge($PartnerResponse['message'], $errors);*/
 
             if(count($errors)>0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
