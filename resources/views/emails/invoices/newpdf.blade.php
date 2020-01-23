@@ -281,21 +281,21 @@
                                 </tr>
                                 <tr>
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
-                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargeAmount) }}</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
                                 @if($InvoiceSummary['OneOffSubTotal'] > 0)
                                     <tr>
                                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargeAmount) }}</td>
+                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
                                     </tr>
                                 @endif
                                 <tr>
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TRAFFIC_COST")}}</td>
-                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['UsageSubTotal'], $RoundChargeAmount) }}</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['UsageSubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
                                 <tr>
                                     <td>VAT</td>
-                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['TotalVAT'], $RoundChargeAmount) }}</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['TotalVAT'], $RoundChargesAmount) }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -304,7 +304,7 @@
                             <div class="termsDiv pull-left">
                             </div>
                             <div class="totalAmount pull-right">
-                                <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargeAmount) }}</h4>
+                                <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargesAmount) }}</h4>
                             </div>
                         </div>
                         @foreach($InvoiceSummary as $key => $InvoiceComponent)
