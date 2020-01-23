@@ -67,7 +67,7 @@ class ActiveCall extends \Eloquent {
         if($Duration > $OldDuration) {
 
             Log::error("CALL  prc_UpdateDiscountDetails ('" . $ActiveCallID . "',0) start");
-            DB::statement("CALL  prc_UpdateDiscountDetails ('" . $ActiveCallID . "',0)");
+            DB::connection('neon_routingengine')->statement("CALL  prc_UpdateDiscountDetails ('" . $ActiveCallID . "',0)");
             Log::error("CALL  prc_UpdateDiscountDetails ('" . $ActiveCallID . "',0) end");
 
             $BilledDuration = $Duration;
