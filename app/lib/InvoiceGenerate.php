@@ -84,11 +84,12 @@ class InvoiceGenerate {
         return $Tax;
     }
 
-    public static function checkIfAlreadyBilled($AccountID, $StartDate, $EndDate){
+    public static function checkIfAlreadyBilled($AccountID, $InvoiceAccountType, $StartDate, $EndDate){
+        $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
         $alreadyBilled = InvoiceDetail::leftJoin("tblInvoice","tblInvoice.InvoiceID", "=", "tblInvoiceDetail.InvoiceID")
             ->where([
                 'tblInvoice.AccountID' => $AccountID,
-                'tblInvoiceDetail.ProductType' => Product::USAGE,
+                'tblInvoiceDetail.ProductType' => $Product,
                 'tblInvoiceDetail.StartDate' => $StartDate,
                 'tblInvoiceDetail.EndDate' => $EndDate,
             ])->first();
@@ -208,6 +209,7 @@ class InvoiceGenerate {
                                 $NextInvoiceDate = $NewNextInvoiceDate;
                                 $LastInvoiceDate = $oldNextInvoiceDate;
                                 $NextChargeDate  = $NewNextChargeDate;
+                                $LastChargeDate  = $NewLastChargeDate;
                             } else {
                                 $errors[] = $response["message"];
                                 $skip_accounts[] = $AccountID;
@@ -296,14 +298,16 @@ class InvoiceGenerate {
             $AlreadyBilled = 0;
 
             if($FirstInvoice == 0){
-                $AlreadyBilled = self::checkIfAlreadyBilled($AccountID, $StartDate, $EndDate);
+                $AlreadyBilled = self::checkIfAlreadyBilled($AccountID, $InvoiceAccountType, $StartDate, $EndDate);
                 //If Already Billed
                 if ($AlreadyBilled) {
+
                     InvoicePeriodLog::where([
                         'AccountID' => $AccountID,
                         'AccountType' => $InvoiceAccountType,
                         'Status' => 0
                     ])->update(['Status' => 1]);
+
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
                     return array("status" => "failure", "message" => $error);
                 }
@@ -343,11 +347,7 @@ class InvoiceGenerate {
             ])->pluck('AccountBalanceLogID');
 
             if($AccountBalanceLogID != false) {
-
-                if($InvoiceAccountType == "Affiliate")
-                    self::addAffiliateInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
-                else
-                    self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
+                self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
 
                 return [
                     'status' => 'success',
@@ -357,6 +357,7 @@ class InvoiceGenerate {
             } else {
                 return ['status' => "failure", "message" => $AccountID . ": Has no Balance Log ID"];
             }
+
         } catch (\Exception $err) {
             Log::error($err);
             return ['status' => "failure", "message" => $AccountID . ": " . $err->getMessage()];
@@ -367,27 +368,33 @@ class InvoiceGenerate {
 
         $Account = Account::find($AccountID);
         // Fetching Usage Data
-        $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
-            ->where('Date', '>=', $StartDate)
-            ->where('Date', '<=', $EndDate)
-            ->sum('TotalAmount');
-
-        Log::error('Usage Total ' . $UsageGrandTotal);
-
+        $UsageGrandTotal = 0;
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
-        if($UsageGrandTotal > 0) {
-            $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
-            $UsageTotalTax = $TotalTax;
-            $UsageSubTotal = $UsageGrandTotal - $TotalTax;
+
+        if($InvoiceAccountType != "Affiliate") {
+            $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
+                ->where('Date', '>=', $StartDate)
+                ->where('Date', '<=', $EndDate)
+                ->sum('TotalAmount');
+
+            Log::error('Usage Total ' . $UsageGrandTotal);
+
+            if ($UsageGrandTotal > 0) {
+                $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
+                $UsageTotalTax = $TotalTax;
+                $UsageSubTotal = $UsageGrandTotal - $TotalTax;
+            }
         }
 
         $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
         $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
 
+        $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
+
         $InvoiceDetailArray = [
             'InvoiceID'          => $InvoiceID,
-            'ProductType'        => Product::USAGE,
+            'ProductType'        => $Product,
             'Description'        => $ProductDescription,
             'Price'              => number_format($UsageSubTotal, $decimal_places, '.', ''),
             'Qty'                => 1,
@@ -407,12 +414,48 @@ class InvoiceGenerate {
 
         $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
 
-        // Adding Monthly and Components data
-        $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
+        // If affiliate invoice then add affiliate data in component
+        // and update usage invoice detail
+        if($InvoiceAccountType == "Affiliate") {
+            // Adding Affiliate Components data
+            $query = "CALL prc_insertAffiliateInvoiceComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
+
+        } else {
+
+            // Note: Must run before prc_addInvoicePrepaidComponents
+            if($InvoiceAccountType == "Partner") {
+                // Adding Affiliate Components data
+                $que = "CALL prc_insertPartnerAffiliateComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
+
+                Log::error($que);
+                DB::connection('sqlsrv2')->select($que);
+            }
+
+            // Adding Monthly and Components data
+            $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
+
+        }
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
+        if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
+            $Usage = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailID)
+                ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
+                ->get();
+
+            $UsageDiscount   = $Usage->sum('DiscountPrice');
+            $UsageSubTotal   += $Usage->sum('SubTotal');
+            $UsageTotalTax   += $Usage->sum('TotalTax');
+            $UsageGrandTotal += $Usage->sum('TotalCost');
+
+            $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
+            $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
+            $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+            $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
+            $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+            $InvoiceDetail->save();
+        }
 
         // Adding Monthly in Invoice Detail
         $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
@@ -436,6 +479,7 @@ class InvoiceGenerate {
             'DiscountLineAmount' => number_format($Monthly->sum('DiscountPrice'), $decimal_places, '.', ''),
             'LineTotal'          => number_format($Monthly->sum('SubTotal'), $decimal_places, '.', '')
         ];
+
         InvoiceDetail::create($MonthlyInvoiceDetail);
 
 
@@ -461,8 +505,8 @@ class InvoiceGenerate {
             'DiscountLineAmount' => number_format($OneOff->sum('DiscountPrice'), $decimal_places, '.', ''),
             'LineTotal'          => number_format($OneOff->sum('SubTotal'), $decimal_places, '.', '')
         ];
-        InvoiceDetail::create($OneOffInvoiceDetail);
 
+        InvoiceDetail::create($OneOffInvoiceDetail);
 
         // Adding Monthly Cost Total in Invoice
         $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
@@ -487,87 +531,20 @@ class InvoiceGenerate {
         $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
         $Invoice->save();
 
-        self::generateExportFiles($InvoiceID,$InvoiceDetailID,$InvoiceAccountType,$decimal_places);
-    }
-
-    // Affiliate Invoice
-    public static function addAffiliateInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places,$CurrencyID){
-
-        $Account = Account::find($AccountID);
-        $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
-        $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
-
-        $InvoiceDetailArray = [
-            'InvoiceID'          => $InvoiceID,
-            'ProductType'        => Product::INVOICE_PERIOD,
-            'Description'        => $ProductDescription,
-            'Price'              => number_format(0, $decimal_places, '.', ''),
-            'Qty'                => 1,
-            'CurrencyID'         => $CurrencyID,
-            'StartDate'          => $StartDate,
-            'EndDate'            => $EndDate,
-            'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
-            'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
-            'TaxAmount'          => number_format(0, $decimal_places, '.', ''),
-            'DiscountType'       => 0,
-            'DiscountAmount'     => 0,
-            'DiscountLineAmount' => 0,
-            'LineTotal'          => number_format(0, $decimal_places, '.', '')
-        ];
-
-        $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
-
-        $InvoiceDetailID = $InvoiceDetail->InvoiceDetailID;
-
-        // Adding Affiliate Components data
-        $query = "CALL prc_insertAffiliateInvoiceComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
-
-        Log::error($query);
-        DB::connection('sqlsrv2')->select($query);
-
-        // Adding Monthly in Invoice Detail
-        $InvoiceComponent = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)->get();
-
-        // Totals of Usage and Monthly Cost
-        $InvoiceDiscount    = $InvoiceComponent->sum('DiscountPrice');
-        $InvoiceSubTotal    = $InvoiceComponent->sum('SubTotal');
-        $InvoiceTaxTotal    = $InvoiceComponent->sum('TaxTotal');
-        $InvoiceGrandTotal  = $InvoiceComponent->sum('TotalCost');
-
-        //Updating Invoice Detail Totals
-        $InvoiceDetail            = InvoiceDetail::find($InvoiceDetailID);
-        $InvoiceDetail->DiscountAmount = number_format($InvoiceDiscount, $decimal_places, '.', '');
-        $InvoiceDetail->Price     = number_format($InvoiceSubTotal, $decimal_places, '.', '');
-        $InvoiceDetail->TaxAmount = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
-        $InvoiceDetail->LineTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
-        $InvoiceDetail->save();
-
-        //Updating Invoice Totals
         $Invoice = Invoice::find($InvoiceID);
-        $Invoice->TotalDiscount = number_format($InvoiceDiscount, $decimal_places, '.', '');
-        $Invoice->SubTotal = number_format($InvoiceSubTotal, $decimal_places, '.', '');
-        $Invoice->TotalTax = number_format($InvoiceTaxTotal, $decimal_places, '.', '');
-        $Invoice->GrandTotal = number_format($InvoiceGrandTotal, $decimal_places, '.', '');
-        $Invoice->save();
-
-        self::generateExportFiles($InvoiceID,$InvoiceDetailID,$InvoiceAccountType,$decimal_places);
-    }
-
-    public static function generateExportFiles($InvoiceID,$InvoiceDetailID,$InvoiceAccountType,$decimal_places){
-
-        $Invoice = Invoice::find($InvoiceID);
+        $InvoiceComponents = $AffiliateInvoiceComponents = [];
         if($InvoiceAccountType == "Affiliate"){
-            $InvoiceComponents = Invoice::generateAffiliateComponentsData($InvoiceDetailID, $decimal_places);
-        }
-        elseif($InvoiceAccountType == "Partner"){
-            //$InvoiceComponents = Invoice::generateAffiliateComponentsData($InvoiceDetailID, $decimal_places);
+            $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
+        } elseif($InvoiceAccountType == "Partner"){
+            $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
+            $AffiliateInvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places, 1);
         } else {
-            $InvoiceComponents = Invoice::generatePdfComponentsData($InvoiceDetailID, $decimal_places);
+            $InvoiceComponents = Invoice::getComponentsData($InvoiceDetailID, $decimal_places);
         }
 
         Log::info("Component Data " . json_encode($InvoiceComponents));
 
-        $pdf_path = self::generate_pdf($InvoiceID, $InvoiceAccountType,$InvoiceComponents);
+        $pdf_path = self::generate_pdf($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents);
         if(empty($pdf_path)){
             $error = self::$InvoiceGenerationErrorReasons["PDF"];
             return array("status" => "failure", "message" => $error);
@@ -585,7 +562,8 @@ class InvoiceGenerate {
         }*/
     }
 
-    public static function generate_pdf($InvoiceID, $InvoiceAccountType, $InvoiceComponents){
+
+    public static function generate_pdf($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents = []){
         $Invoice = Invoice::find($InvoiceID);
         if($Invoice != false) {
             $language = Account::where("AccountID", $Invoice->AccountID)
@@ -639,6 +617,9 @@ class InvoiceGenerate {
 
             $PageCounter = $TotalPages = 1;
             $TotalPages = self::pdfPageCounter($InvoiceComponents, $InvoiceAccountType, $TotalPages);
+            if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents))
+                $TotalPages = self::pdfPageCounter($AffiliateInvoiceComponents, $InvoiceAccountType, $TotalPages);
+
             Log::info("Component data " . json_encode($InvoiceComponents));
 
             App::setLocale($language->ISOCode);
