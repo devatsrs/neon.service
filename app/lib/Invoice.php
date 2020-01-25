@@ -3416,9 +3416,7 @@ class Invoice extends \Eloquent {
 
 
     public static function getComponentDataByCustomer($InvoiceDetailIDs, $RoundChargesAmount, $IsAffiliate = 0){
-        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
         $data = [];
-
         $InvoiceComponents = self::getComponentsData($InvoiceDetailIDs,$IsAffiliate);
 
         foreach($InvoiceComponents as $invoiceComponent){

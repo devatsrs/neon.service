@@ -146,6 +146,7 @@ class InvoiceGenerate {
                     if (strtotime($NextInvoiceDate) <= strtotime($today)) {
                         Log::info(' ========================== Invoice Send Start =============================');
                         $errors = [];
+                        $alreadyBilled = 0;
                         DB::beginTransaction();
                         DB::connection('sqlsrv2')->beginTransaction();
 
@@ -213,6 +214,7 @@ class InvoiceGenerate {
                             } else {
                                 $errors[] = $response["message"];
                                 $skip_accounts[] = $AccountID;
+                                $alreadyBilled = isset($response['alreadyBilled']) ? 1 : 0;
                             }
 
                         } while(empty($errors) && strtotime($NextInvoiceDate) <= strtotime($today));
@@ -230,8 +232,7 @@ class InvoiceGenerate {
                         } else {
                             DB::rollback();
                             DB::connection('sqlsrv2')->rollback();
-                            $alreadyInvoicedError = Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                            if($alreadyInvoicedError == $errors[0]['message']){
+                            if($alreadyBilled == 1){
                                 InvoicePeriodLog::where([
                                     'AccountID' => $AccountID,
                                     'AccountType' => $InvoiceAccountType,
@@ -312,7 +313,7 @@ class InvoiceGenerate {
                 //If Already Billed
                 if ($AlreadyBilled) {
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                    return array("status" => "failure", "message" => $error);
+                    return array("status" => "failure", "message" => $error, "alreadyBilled" => 1);
                 }
             }
 
@@ -422,21 +423,12 @@ class InvoiceGenerate {
         if($InvoiceAccountType == "Affiliate") {
             // Adding Affiliate Components data
             $query = "CALL prc_insertAffiliateInvoiceComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
-
+        } elseif($InvoiceAccountType == "Partner") {
+            // Adding Partner Components data
+            $query = "CALL prc_insertPartnerInvoiceComponentData($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
         } else {
-
-            // Note: Must run before prc_addInvoicePrepaidComponents
-            if($InvoiceAccountType == "Partner") {
-                // Adding Affiliate Components data
-                $que = "CALL prc_insertPartnerAffiliateComponentData($AccountID,$InvoiceDetailID,'$StartDate','$EndDate')";
-
-                Log::error($que);
-                DB::connection('sqlsrv2')->select($que);
-            }
-
             // Adding Monthly and Components data
             $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
-
         }
 
         Log::error($query);
