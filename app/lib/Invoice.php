@@ -3265,7 +3265,7 @@ class Invoice extends \Eloquent {
     }
 
 
-    const PerCallComponents = [
+    public static $PerCallComponents = [
         ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"]
     ];
 
@@ -3387,10 +3387,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = in_array($Component,self::PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = in_array($Component,self::$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
 
                 $UnitPrice = 0;
-                if(in_array($Component,self::PerCallComponents) && $Quantity > 0){
+                if(in_array($Component,self::$PerCallComponents) && $Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
@@ -3500,10 +3500,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = in_array($Component,self::PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = in_array($Component,self::$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
 
                 $UnitPrice = 0;
-                if(in_array($Component,self::PerCallComponents) && $Quantity > 0){
+                if(in_array($Component,self::$PerCallComponents) && $Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
