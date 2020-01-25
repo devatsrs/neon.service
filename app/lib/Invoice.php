@@ -3269,7 +3269,6 @@ class Invoice extends \Eloquent {
         ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"]
     ];
 
-
     public static function getComponentTitle($InvoiceComponent){
 
         $Title = "";
