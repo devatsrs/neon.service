@@ -338,6 +338,8 @@ class InvoiceGenerate {
             );
 
             $Invoice = Invoice::insertInvoice($InvoiceData);
+            // Updating last invoice number in company
+            Company::where("CompanyID", $CompanyID)->update(["LastInvoiceNumber" => $LastInvoiceNumber]);
             $InvoiceID = $Invoice->InvoiceID;
 
             Log::error('$AccountID  '. $AccountID);

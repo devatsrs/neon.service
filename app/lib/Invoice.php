@@ -3296,10 +3296,10 @@ class Invoice extends \Eloquent {
         if($InvoiceComponent->Destination != "")
             $Title .= " " . $InvoiceComponent->Destination;
 
-        if($InvoiceComponent->Origination != "")
+        if($InvoiceComponent->Origination != "" && $InvoiceComponent->Origination != "NA")
             $Title .= " of " . $InvoiceComponent->Origination;
 
-        if($InvoiceComponent->Timezone != "")
+        if($InvoiceComponent->Timezone != "" && $InvoiceComponent->Timezone != "Default")
             $Title .= " " . $InvoiceComponent->Timezone;
         return $Title;
     }
@@ -3309,11 +3309,12 @@ class Invoice extends \Eloquent {
         //Getting all CLIs data
         return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
             ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
                 $join->on('cli.CLI', '=', 'id.CLI');
                 $join->on('cli.AccountServiceID','=','id.AccountServiceID');
             })
+            ->leftJoin("speakintelligentRM.tblAccountServicePackage as pkg","pkg.AccountServicePackageID","=","cli.AccountServicePackageID")
             ->leftJoin("speakintelligentRM.tblAccount as ac","ac.AccountID","=","id.CustomerID")
             ->leftJoin("speakintelligentRM.tblTimezones as tz","tz.TimezonesID","=","id.TimezonesID")
             ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
@@ -3337,7 +3338,7 @@ class Invoice extends \Eloquent {
                     'CLI'        => $invoiceComponent->CLI,
                     'CustomerID' => $invoiceComponent->CustomerID,
                     'CountryID'  => $invoiceComponent->CountryID,
-                    'PackageID'  => $invoiceComponent->PackageID,
+                    'PackageID'  => $invoiceComponent->PackageId,
                     'Prefix'     => $invoiceComponent->Prefix,
                     'DiscountPrice'   => $invoiceComponent->DiscountPrice,
                     'SubTotal'   => $invoiceComponent->SubTotal,
@@ -3386,10 +3387,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = in_array($Component,self::$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if(in_array($Component,self::$PerCallComponents) && $Quantity > 0){
+                if($Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
@@ -3421,7 +3422,7 @@ class Invoice extends \Eloquent {
         $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
 
         foreach($InvoiceComponents as $invoiceComponent){
-            $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
+            $index = $invoiceComponent->CLI ."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
 
             $CID = $invoiceComponent->CustomerID;
             if(!isset($data[$CID])){
@@ -3451,7 +3452,7 @@ class Invoice extends \Eloquent {
                     'CLI'        => $invoiceComponent->CLI,
                     'CustomerID' => $invoiceComponent->CustomerID,
                     'CountryID'  => $invoiceComponent->CountryID,
-                    'PackageID'  => $invoiceComponent->PackageID,
+                    'PackageID'  => $invoiceComponent->PackageId,
                     'Prefix'     => $invoiceComponent->Prefix,
                     'SubTotal'   => $invoiceComponent->SubTotal,
                     'TotalTax'   => $invoiceComponent->TotalTax,
@@ -3498,10 +3499,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = in_array($Component,self::$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if(in_array($Component,self::$PerCallComponents) && $Quantity > 0){
+                if($Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
