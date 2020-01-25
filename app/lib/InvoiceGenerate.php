@@ -231,7 +231,7 @@ class InvoiceGenerate {
                             DB::rollback();
                             DB::connection('sqlsrv2')->rollback();
                             $alreadyInvoicedError = Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
-                            if(in_array($alreadyInvoicedError,$errors)){
+                            if($alreadyInvoicedError == $errors[0]['message']){
                                 InvoicePeriodLog::where([
                                     'AccountID' => $AccountID,
                                     'AccountType' => $InvoiceAccountType,
