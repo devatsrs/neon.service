@@ -230,6 +230,15 @@ class InvoiceGenerate {
                         } else {
                             DB::rollback();
                             DB::connection('sqlsrv2')->rollback();
+                            $alreadyInvoicedError = Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
+                            if(in_array($alreadyInvoicedError,$errors)){
+                                InvoicePeriodLog::where([
+                                    'AccountID' => $AccountID,
+                                    'AccountType' => $InvoiceAccountType,
+                                    'Status' => 0
+                                ])->update(['Status' => 1]);
+                            }
+
                             Log::info('Invoice rollback  AccountID = ' . $AccountID);
                             Log::info(' ========================== Error  =============================');
                             Log::info('Invoice with Error - ' . print_r($response, true));
@@ -302,13 +311,6 @@ class InvoiceGenerate {
                 $AlreadyBilled = self::checkIfAlreadyBilled($AccountID, $InvoiceAccountType, $StartDate, $EndDate);
                 //If Already Billed
                 if ($AlreadyBilled) {
-
-                    InvoicePeriodLog::where([
-                        'AccountID' => $AccountID,
-                        'AccountType' => $InvoiceAccountType,
-                        'Status' => 0
-                    ])->update(['Status' => 1]);
-
                     $error = $Account->AccountName . ' ' . Invoice::$InvoiceGenrationErrorReasons["AlreadyInvoiced"];
                     return array("status" => "failure", "message" => $error);
                 }
