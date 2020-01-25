@@ -3418,6 +3418,7 @@ class Invoice extends \Eloquent {
     public static function getComponentDataByCustomer($InvoiceDetailIDs, $RoundChargesAmount, $IsAffiliate = 0){
         $data = [];
         $InvoiceComponents = self::getComponentsData($InvoiceDetailIDs,$IsAffiliate);
+        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
 
         foreach($InvoiceComponents as $invoiceComponent){
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
