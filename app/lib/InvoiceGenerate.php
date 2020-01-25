@@ -539,7 +539,7 @@ class InvoiceGenerate {
             $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
             $AffiliateInvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places, 1);
         } else {
-            $InvoiceComponents = Invoice::getComponentsData($InvoiceDetailID, $decimal_places);
+            $InvoiceComponents = Invoice::getCustomerComponents($InvoiceDetailID, $decimal_places);
         }
 
         Log::info("Component Data " . json_encode($InvoiceComponents));
