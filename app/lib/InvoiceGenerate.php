@@ -145,7 +145,7 @@ class InvoiceGenerate {
 
                     if (strtotime($NextInvoiceDate) <= strtotime($today)) {
                         Log::info(' ========================== Invoice Send Start =============================');
-
+                        $errors = [];
                         DB::beginTransaction();
                         DB::connection('sqlsrv2')->beginTransaction();
 
@@ -217,6 +217,7 @@ class InvoiceGenerate {
 
                         } while(empty($errors) && strtotime($NextInvoiceDate) <= strtotime($today));
 
+                        Log::info("Update period log. " . json_encode(empty($errors)));
                         if(empty($errors)) {
                             InvoicePeriodLog::where([
                                 'AccountID' => $AccountID,
