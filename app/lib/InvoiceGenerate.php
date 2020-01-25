@@ -435,7 +435,7 @@ class InvoiceGenerate {
         DB::connection('sqlsrv2')->select($query);
 
         if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
-            $Usage = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailID)
+            $Usage = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
                 ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
                 ->get();
 
