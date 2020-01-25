@@ -3306,6 +3306,7 @@ class Invoice extends \Eloquent {
     }
 
     public static function getComponentsData($InvoiceDetailIDs, $IsAffiliate = 0){
+        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
         //Getting all CLIs data
         return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
@@ -3324,7 +3325,6 @@ class Invoice extends \Eloquent {
 
 
     public static function getCustomerComponents($InvoiceDetailIDs, $RoundChargesAmount){
-        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
         $data = [];
         //Getting all CLIs data
         $InvoiceComponents = self::getComponentsData($InvoiceDetailIDs);
