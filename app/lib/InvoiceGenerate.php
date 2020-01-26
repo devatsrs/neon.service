@@ -885,7 +885,7 @@ class InvoiceGenerate {
         } elseif(in_array($InvoiceAccountType,["Affiliate", "Partner"])){
             $invoiceLines = self::getUBLInvoiceByCustomer($invoiceLines,$InvoiceComponents,$InvoicePeriod,$unitCode,$RoundChargesAmount);
             if(!empty($AffiliateInvoiceComponents))
-                $invoiceLines = self::getUBLCustomerInvoice($invoiceLines,$AffiliateInvoiceComponents,$InvoicePeriod,$unitCode,$RoundChargesAmount);
+                $invoiceLines = self::getUBLInvoiceByCustomer($invoiceLines,$AffiliateInvoiceComponents,$InvoicePeriod,$unitCode,$RoundChargesAmount);
         }
 
 // taxe TVA
