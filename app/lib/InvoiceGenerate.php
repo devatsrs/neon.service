@@ -548,7 +548,7 @@ class InvoiceGenerate {
         $Invoice->save();
 
         $Invoice = Invoice::find($InvoiceID);
-        $InvoiceComponents = $AffiliateInvoiceComponents = [];
+        $AffiliateInvoiceComponents = [];
         if($InvoiceAccountType == "Affiliate"){
             $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
         } elseif($InvoiceAccountType == "Partner"){
@@ -755,7 +755,7 @@ class InvoiceGenerate {
         return '';
     }
 
-    public static  function generate_ubl_invoice($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents = [],$RoundChargesAmount){
+    public static  function generate_ubl($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents = [],$RoundChargesAmount){
         if($InvoiceID>0) {
             $Invoice = Invoice::find($InvoiceID);
             $Account = Account::find($Invoice->AccountID);
