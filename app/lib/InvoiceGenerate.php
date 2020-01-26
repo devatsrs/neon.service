@@ -777,39 +777,22 @@ class InvoiceGenerate {
             }
             if (is_writable($dir)) {
                 $AccountName = $Account->AccountName;
-                $IsReseller = Account::where(array('AccountID'=>$AccountID))->pluck('IsReseller');
-                if(empty($IsReseller)){
-                    Log::info('Reseller ==> 0');
-                    $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
-                }else{
-                    Log::info('Reseller ==> 1');
-                    $GatewayAccount =  CompanyGateway::where(array('Status'=>1))->get(['CompanyGatewayID']);
-                }
                 $ShowZeroCall = 0;
-                $AccountBillingTimeZone = Account::getBillingTimeZone($AccountID);
-                foreach ($GatewayAccount as $GatewayAccountRow) {
-                    $CompanyGatewayID = $GatewayAccountRow['CompanyGatewayID'];
-                    $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($CompanyGatewayID);
-                    $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
-                    if (!empty($AccountBillingTimeZone)) {
-                        $BillingTimeZone = $AccountBillingTimeZone;
-                    }
-                    $BillingStartDate = change_timezone($BillingTimeZone, $TimeZone, $StartDate, $CompanyID);
-                    $BillingEndDate = change_timezone($BillingTimeZone, $TimeZone, $EndDate, $CompanyID);
-                    $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','" . 0 . "','".$CompanyGatewayID."','" . $BillingStartDate . "','" . $BillingEndDate . "',".$ShowZeroCall.")";
-                    Log::info($query);
-                    $result_data = DB::connection('sqlsrv2')->select($query);
-                    $usage_data = json_decode(json_encode($result_data), true);
 
-                    if(count($usage_data)) {
-                        $local_file = $dir . '/' . str_slug($InvoiceID . "-" . $CompanyGatewayID) . '-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
+                $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','" . 0 . "','0','" . $StartDate . "','" . $EndDate . "',".$ShowZeroCall.")";
+                Log::info($query);
+                $result_data = DB::connection('sqlsrv2')->select($query);
+                $usage_data = json_decode(json_encode($result_data), true);
 
-                        Log::info("CDR : ". json_encode($usage_data));
-                        $output = Helper::array_to_csv($usage_data);
-                        file_put_contents($local_file, $output);
-                        if (file_exists($local_file)) {
-                            $zipfiles[] = $local_file;
-                        }
+                Log::info("CDR : ". json_encode($usage_data));
+                if(count($usage_data)) {
+                    $local_file = $dir . '/' . str_slug($InvoiceID) . '-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
+
+                    Log::info("CDR : ". json_encode($usage_data));
+                    $output = Helper::array_to_csv($usage_data);
+                    file_put_contents($local_file, $output);
+                    if (file_exists($local_file)) {
+                        $zipfiles[] = $local_file;
                     }
                 }
 
