@@ -3304,12 +3304,29 @@ class Invoice extends \Eloquent {
         return $Title;
     }
 
+    public static function getMonthlyTitle($InvoiceComponent){
+
+        $Title = "";
+
+        $Component = $InvoiceComponent->Component . "_" . $InvoiceComponent->ProductType;
+        $ComponentTitles = [
+            "MonthlyCost_2" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_ACCESS"),
+            "MonthlyCost_3" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_PACKAGE"),
+            "OneOffCost_2"  => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_ACCESS"),
+            "OneOffCost_3"  => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_PACKAGE"),
+        ];
+        if(isset($ComponentTitles[$Component]))
+            $Title = $ComponentTitles[$Component];
+
+        return $Title;
+    }
+
     public static function getComponentsData($InvoiceDetailIDs, $IsAffiliate = 0){
         $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
         //Getting all CLIs data
         return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.ProductType","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
             ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
                 $join->on('cli.CLI', '=', 'id.CLI');
                 $join->on('cli.AccountServiceID','=','id.AccountServiceID');
@@ -3321,7 +3338,7 @@ class Invoice extends \Eloquent {
             ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
             ->where('id.IsAffiliate', $IsAffiliate)
             ->get();
-}
+    }
 
 
     public static function getCustomerComponents($InvoiceDetailIDs, $RoundChargesAmount){
@@ -3352,12 +3369,19 @@ class Invoice extends \Eloquent {
                 $data[$index]['GrandTotal'] += $invoiceComponent->TotalCost;
             }
 
+            // Product type
+            // 0 = Account Level
+            // 1 = Termination
+            // 2 = Access
+            // 3 = Package
+            $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
-                if(!isset($data[$index][$Component])) {
-                    $data[$index][$Component] = [
+                if(!isset($data[$index][$Component][$ProductType])) {
+                    $data[$index][$Component][$ProductType] = [
+                        'Title'     => self::getMonthlyTitle($invoiceComponent),
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
                         'Discount'  => (float)$invoiceComponent->Discount,
                         'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
@@ -3369,7 +3393,7 @@ class Invoice extends \Eloquent {
                     ];
                 } else {
 
-                    $arrData = $data[$index][$Component];
+                    $arrData = $data[$index][$Component][$ProductType];
 
                     $arrData['Discount']  += (float)$invoiceComponent->Discount;
                     $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
@@ -3380,7 +3404,7 @@ class Invoice extends \Eloquent {
 
                     $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
-                    $data[$index][$Component] = $arrData;
+                    $data[$index][$Component][$ProductType] = $arrData;
                 }
 
             } else {
@@ -3464,12 +3488,19 @@ class Invoice extends \Eloquent {
                 $data[$CID]['data'][$index]['GrandTotal'] += $invoiceComponent->TotalCost;
             }
 
+            // Product type
+            // 0 = Account Level
+            // 1 = Termination
+            // 2 = Access
+            // 3 = Package
+            $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
-                if(!isset($data[$CID]['data'][$index][$Component])) {
-                    $data[$CID]['data'][$index][$Component] = [
+                if(!isset($data[$CID]['data'][$index][$Component][$ProductType])) {
+                    $data[$CID]['data'][$index][$Component][$ProductType] = [
+                        'Title'     => self::getMonthlyTitle($invoiceComponent),
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
                         'Discount'  => (float)$invoiceComponent->Discount,
                         'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
@@ -3481,7 +3512,7 @@ class Invoice extends \Eloquent {
                     ];
                 } else {
 
-                    $arrData = $data[$CID]['data'][$index][$Component];
+                    $arrData = $data[$CID]['data'][$index][$Component][$ProductType];
 
                     $arrData['Discount']  += (float)$invoiceComponent->Discount;
                     $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
@@ -3492,7 +3523,7 @@ class Invoice extends \Eloquent {
 
                     $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
-                    $data[$CID]['data'][$index][$Component] = $arrData;
+                    $data[$CID]['data'][$index][$Component][$ProductType] = $arrData;
                 }
 
             } else {
