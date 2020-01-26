@@ -576,15 +576,16 @@ class InvoiceGenerate {
         } else {
             $Invoice->update(["UblInvoice" => $ubl_path]);
         }
-        /*$cdr_path = self::generate_usage_file($InvoiceID, $StartDate, $EndDate);
+
+        $cdr_path = self::generate_cdr($InvoiceID, $StartDate, $EndDate);
 
         if(empty($cdr_path)){
             $error['message'] = 'Failed to generate Invoice CDR File.';
             $error['status'] = 'failure';
             return $error;
         }else {
-            $Invoice->update(["CDR" => $cdr_path]);
-        }*/
+            $Invoice->update(["UsagePath" => $cdr_path]);
+        }
     }
 
 
@@ -753,6 +754,87 @@ class InvoiceGenerate {
             }
         }
         return '';
+    }
+
+    public static  function generate_cdr($InvoiceID, $StartDate, $EndDate){
+
+        $fullPath = "";
+        $Invoice = Invoice::find($InvoiceID);
+        $AccountID = $Invoice->AccountID;
+        $Account = Account::find($AccountID);
+        $CompanyID = $Invoice->CompanyID;
+        if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
+            $ProcessID = Uuid::generate();
+            $UPLOADPATH = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH');
+            $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
+            $dir = $UPLOADPATH . '/' . $amazonPath;
+            if (!file_exists($dir)) {
+                RemoteSSH::make_dir($CompanyID,$dir);
+                //RemoteSSH::run($CompanyID, "mkdir -p " . $dir);
+                //RemoteSSH::run($CompanyID, "chmod -R 777 " . $dir);
+            }
+            if (is_writable($dir)) {
+                $AccountName = $Account->AccountName;
+                $IsReseller = Account::where(array('AccountID'=>$AccountID))->pluck('IsReseller');
+                if(empty($IsReseller)){
+                    Log::info('Reseller ==> 0');
+                    $GatewayAccount =  GatewayAccount::where(array('AccountID'=>$AccountID))->distinct()->get(['CompanyGatewayID']);
+                }else{
+                    Log::info('Reseller ==> 1');
+                    $GatewayAccount =  CompanyGateway::where(array('Status'=>1))->get(['CompanyGatewayID']);
+                }
+                $ShowZeroCall = 0;
+                $AccountBillingTimeZone = Account::getBillingTimeZone($AccountID);
+                foreach ($GatewayAccount as $GatewayAccountRow) {
+                    $CompanyGatewayID = $GatewayAccountRow['CompanyGatewayID'];
+                    $BillingTimeZone = CompanyGateway::getGatewayBillingTimeZone($CompanyGatewayID);
+                    $TimeZone = CompanyGateway::getGatewayTimeZone($CompanyGatewayID);
+                    if (!empty($AccountBillingTimeZone)) {
+                        $BillingTimeZone = $AccountBillingTimeZone;
+                    }
+                    $BillingStartDate = change_timezone($BillingTimeZone, $TimeZone, $StartDate, $CompanyID);
+                    $BillingEndDate = change_timezone($BillingTimeZone, $TimeZone, $EndDate, $CompanyID);
+                    $query = "CALL prc_getInvoiceUsage(" . $CompanyID . ",'" . $AccountID . "','" . 0 . "','".$CompanyGatewayID."','" . $BillingStartDate . "','" . $BillingEndDate . "',".$ShowZeroCall.")";
+                    Log::info($query);
+                    $result_data = DB::connection('sqlsrv2')->select($query);
+                    $usage_data = json_decode(json_encode($result_data), true);
+
+                    if(count($usage_data)) {
+                        $local_file = $dir . '/' . str_slug($InvoiceID . "-" . $CompanyGatewayID) . '-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
+
+                        $output = Helper::array_to_csv($usage_data);
+                        file_put_contents($local_file, $output);
+                        if (file_exists($local_file)) {
+                            $zipfiles[] = $local_file;
+                        }
+                    }
+                }
+
+                if (!empty($zipfiles)) {
+
+                    // when files only one then csv download other wise zip of all csv download
+                    if(count($zipfiles)==1){
+                        $local_zip_file = $zipfiles[0];
+                    }else{
+
+                        $local_zip_file = $dir . '/' . str_slug($AccountName) . '-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.zip';
+
+                        /* make zip of all csv files */
+
+                        Zipper::make($local_zip_file)->add($zipfiles)->close();
+                    }
+
+                    $fullPath = $amazonPath . basename($local_zip_file); //$destinationPath . $file_name;
+                    if (!AmazonS3::upload($local_zip_file, $amazonPath, $CompanyID)) {
+                        throw new Exception('Error in Amazon upload');
+                    }
+
+                    AmazonS3::delete($Invoice->UsagePath,$CompanyID); // Delete old usage file from amazon=
+                }
+            }
+
+        }
+        return $fullPath;
     }
 
     public static  function generate_ubl($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents = [],$RoundChargesAmount){
