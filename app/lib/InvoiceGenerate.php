@@ -577,14 +577,16 @@ class InvoiceGenerate {
             $Invoice->update(["UblInvoice" => $ubl_path]);
         }
 
-        $cdr_path = self::generate_cdr($InvoiceID, $StartDate, $EndDate);
+        if($InvoiceAccountType != "Affiliate") {
+            $cdr_path = self::generate_cdr($InvoiceID, $StartDate, $EndDate);
 
-        if(empty($cdr_path)){
-            $error['message'] = 'Failed to generate Invoice CDR File.';
-            $error['status'] = 'failure';
-            return $error;
-        }else {
-            $Invoice->update(["UsagePath" => $cdr_path]);
+            if (empty($cdr_path)) {
+                $error['message'] = 'Failed to generate Invoice CDR File.';
+                $error['status'] = 'failure';
+                return $error;
+            } else {
+                $Invoice->update(["UsagePath" => $cdr_path]);
+            }
         }
     }
 
@@ -802,6 +804,7 @@ class InvoiceGenerate {
                     if(count($usage_data)) {
                         $local_file = $dir . '/' . str_slug($InvoiceID . "-" . $CompanyGatewayID) . '-' . date("d-m-Y-H-i-s", strtotime($StartDate)) . '-TO-' . date("d-m-Y-H-i-s", strtotime($EndDate)) . '__' . $ProcessID . '.csv';
 
+                        Log::info("CDR : ". json_encode($usage_data));
                         $output = Helper::array_to_csv($usage_data);
                         file_put_contents($local_file, $output);
                         if (file_exists($local_file)) {
