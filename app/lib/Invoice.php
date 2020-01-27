@@ -3265,23 +3265,83 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static function generatePdfComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
+    public static $PerCallComponents = [
+        ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"]
+    ];
+
+    public static function getComponentTitle($InvoiceComponent){
+
+        $Title = "";
+
+        $Component = $InvoiceComponent->Component;
+        $ComponentTitles = [
+            "RecordingCostPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE"),
+            "PackageCostPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE"),
+            "SurchargePerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE"),
+            "SurchargePerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL"),
+            "CollectionCostAmount" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT"),
+            "CostPerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL"),
+            "CostPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE"),
+            "OutpaymentPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE"),
+            "OutpaymentPerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_CALL"),
+            "Chargeback" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_CHARGEBACK"),
+            "Surcharges" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE"),
+        ];
+
+        if($InvoiceComponent->Type == "Outbound")
+            $Title = cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_COMPONENT_LBL_TERMINATION");
+
+        $Title .= isset($ComponentTitles[$Component]) ? $ComponentTitles[$Component] : $Component;
+
+        if($InvoiceComponent->Destination != "")
+            $Title .= " " . $InvoiceComponent->Destination;
+
+        if($InvoiceComponent->Origination != "" && $InvoiceComponent->Origination != "NA")
+            $Title .= " of " . $InvoiceComponent->Origination;
+
+        if($InvoiceComponent->Timezone != "" && $InvoiceComponent->Timezone != "Default")
+            $Title .= " " . $InvoiceComponent->Timezone;
+        return $Title;
+    }
+
+    public static function getMonthlyTitle($InvoiceComponent){
+
+        $Title = "";
+
+        $Component = $InvoiceComponent->Component . "_" . $InvoiceComponent->ProductType;
+        $ComponentTitles = [
+            "MonthlyCost_2" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_ACCESS"),
+            "MonthlyCost_3" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_MONTHLY_COST_PACKAGE"),
+            "OneOffCost_2"  => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_ACCESS"),
+            "OneOffCost_3"  => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_ONE_OFF_COST_PACKAGE"),
+        ];
+        if(isset($ComponentTitles[$Component]))
+            $Title = $ComponentTitles[$Component];
+
+        return $Title;
+    }
+
+    public static function getComponentsData($InvoiceDetailIDs, $IsAffiliate = 0){
         $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
-        $data = [];
         //Getting all CLIs data
-        $InvoiceComponents = DB::connection('sqlsrv2')
+        return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","ac.AccountName")
-            ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
-                $join->on('cli.CLI', '=', 'id.CLI');
-                $join->on('cli.AccountServiceID','=','id.AccountServiceID');
-            })
+            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.ProductType","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
+            ->join("speakintelligentRM.tblCLIRateTable as cli", "cli.CLIRateTableID","=","id.CLIRateTableID")
+            ->leftJoin("speakintelligentRM.tblAccountServicePackage as pkg","pkg.AccountServicePackageID","=","cli.AccountServicePackageID")
             ->leftJoin("speakintelligentRM.tblAccount as ac","ac.AccountID","=","id.CustomerID")
             ->leftJoin("speakintelligentRM.tblTimezones as tz","tz.TimezonesID","=","id.TimezonesID")
             ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
             ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
+            ->where('id.IsAffiliate', $IsAffiliate)
             ->get();
-        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"];
+    }
+
+
+    public static function getCustomerComponents($InvoiceDetailIDs, $RoundChargesAmount){
+        $data = [];
+        //Getting all CLIs data
+        $InvoiceComponents = self::getComponentsData($InvoiceDetailIDs);
 
         foreach($InvoiceComponents as $invoiceComponent){
             $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
@@ -3292,24 +3352,33 @@ class Invoice extends \Eloquent {
                     'CLI'        => $invoiceComponent->CLI,
                     'CustomerID' => $invoiceComponent->CustomerID,
                     'CountryID'  => $invoiceComponent->CountryID,
-                    'PackageID'  => $invoiceComponent->PackageID,
+                    'PackageID'  => $invoiceComponent->PackageId,
                     'Prefix'     => $invoiceComponent->Prefix,
+                    'DiscountPrice'   => $invoiceComponent->DiscountPrice,
                     'SubTotal'   => $invoiceComponent->SubTotal,
                     'TotalTax'   => $invoiceComponent->TotalTax,
                     'GrandTotal' => $invoiceComponent->TotalCost,
                 ];
             } else {
+                $data[$index]['DiscountPrice']   += $invoiceComponent->DiscountPrice;
                 $data[$index]['SubTotal']   += $invoiceComponent->SubTotal;
                 $data[$index]['TotalTax']   += $invoiceComponent->TotalTax;
                 $data[$index]['GrandTotal'] += $invoiceComponent->TotalCost;
             }
 
+            // Product type
+            // 0 = Account Level
+            // 1 = Termination
+            // 2 = Access
+            // 3 = Package
+            $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
-                if(!isset($data[$index][$Component])) {
-                    $data[$index][$Component] = [
+                if(!isset($data[$index][$Component][$ProductType])) {
+                    $data[$index][$Component][$ProductType] = [
+                        'Title'     => self::getMonthlyTitle($invoiceComponent),
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
                         'Discount'  => (float)$invoiceComponent->Discount,
                         'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
@@ -3321,7 +3390,7 @@ class Invoice extends \Eloquent {
                     ];
                 } else {
 
-                    $arrData = $data[$index][$Component];
+                    $arrData = $data[$index][$Component][$ProductType];
 
                     $arrData['Discount']  += (float)$invoiceComponent->Discount;
                     $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
@@ -3332,55 +3401,17 @@ class Invoice extends \Eloquent {
 
                     $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
-                    $data[$index][$Component] = $arrData;
+                    $data[$index][$Component][$ProductType] = $arrData;
                 }
 
             } else {
 
-                $Title = "";
+                $Title = self::getComponentTitle($invoiceComponent);
 
-                if($invoiceComponent->Type == "Outbound")
-                    $Title = cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_COMPONENT_LBL_TERMINATION");
-
-                if($Component == "RecordingCostPerMinute"){
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE");
-                } elseif($Component == "PackageCostPerMinute"){
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE");
-                } elseif($Component == "SurchargePerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE");
-                } elseif($Component == "SurchargePerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL");
-                } elseif($Component == "CollectionCostAmount") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT");
-                } elseif($Component == "CostPerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL");
-                } elseif($Component == "CostPerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE");
-                } elseif($Component == "OutpaymentPerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE");
-                } elseif($Component == "OutpaymentPerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_CALL");
-                } elseif($Component == "Chargeback") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_CHARGEBACK");
-                } elseif($Component == "Surcharges") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE");
-                } else {
-                    $Title .= $Component;
-                }
-
-                if($invoiceComponent->Destination != "")
-                    $Title .= " " . $invoiceComponent->Destination;
-
-                if($invoiceComponent->Origination != "")
-                    $Title .= " of " . $invoiceComponent->Origination;
-
-                if($invoiceComponent->Timezone != "")
-                    $Title .= " " . $invoiceComponent->Timezone;
-
-                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if(in_array($Component,$PerCallComponents) && $Quantity > 0){
+                if($Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
@@ -3389,9 +3420,9 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : '',
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
                     'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
@@ -3406,28 +3437,13 @@ class Invoice extends \Eloquent {
     }
 
 
-
-
-    public static function generateAffiliateComponentsData($InvoiceDetailIDs, $RoundChargesAmount){
-        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
+    public static function getComponentDataByCustomer($InvoiceDetailIDs, $RoundChargesAmount, $IsAffiliate = 0){
         $data = [];
-        //Getting all CLIs data
-        $InvoiceComponents = DB::connection('sqlsrv2')
-            ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","cli.PackageID","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
-            ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
-                $join->on('cli.CLI', '=', 'id.CLI');
-                $join->on('cli.AccountServiceID','=','id.AccountServiceID');
-            })
-            ->leftJoin("speakintelligentRM.tblAccount as ac","ac.AccountID","=","id.CustomerID")
-            ->leftJoin("speakintelligentRM.tblTimezones as tz","tz.TimezonesID","=","id.TimezonesID")
-            ->leftJoin("speakintelligentRM.tblRate as rt","rt.RateID","=","id.RateID")
-            ->whereIn('id.InvoiceDetailID',$InvoiceDetailIDs)
-            ->get();
-        $PerCallComponents = ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"];
+        $InvoiceComponents = self::getComponentsData($InvoiceDetailIDs,$IsAffiliate);
+        $InvoiceDetailIDs = is_array($InvoiceDetailIDs) ? $InvoiceDetailIDs : [$InvoiceDetailIDs];
 
         foreach($InvoiceComponents as $invoiceComponent){
-            $index = $invoiceComponent->CLI."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
+            $index = $invoiceComponent->CLI ."_".$invoiceComponent->AccountServiceID."_".$invoiceComponent->CountryID;
 
             $CID = $invoiceComponent->CustomerID;
             if(!isset($data[$CID])){
@@ -3457,7 +3473,7 @@ class Invoice extends \Eloquent {
                     'CLI'        => $invoiceComponent->CLI,
                     'CustomerID' => $invoiceComponent->CustomerID,
                     'CountryID'  => $invoiceComponent->CountryID,
-                    'PackageID'  => $invoiceComponent->PackageID,
+                    'PackageID'  => $invoiceComponent->PackageId,
                     'Prefix'     => $invoiceComponent->Prefix,
                     'SubTotal'   => $invoiceComponent->SubTotal,
                     'TotalTax'   => $invoiceComponent->TotalTax,
@@ -3469,12 +3485,19 @@ class Invoice extends \Eloquent {
                 $data[$CID]['data'][$index]['GrandTotal'] += $invoiceComponent->TotalCost;
             }
 
+            // Product type
+            // 0 = Account Level
+            // 1 = Termination
+            // 2 = Access
+            // 3 = Package
+            $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
             $Quantity  = (int)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
-                if(!isset($data[$CID]['data'][$index][$Component])) {
-                    $data[$CID]['data'][$index][$Component] = [
+                if(!isset($data[$CID]['data'][$index][$Component][$ProductType])) {
+                    $data[$CID]['data'][$index][$Component][$ProductType] = [
+                        'Title'     => self::getMonthlyTitle($invoiceComponent),
                         'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
                         'Discount'  => (float)$invoiceComponent->Discount,
                         'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
@@ -3486,7 +3509,7 @@ class Invoice extends \Eloquent {
                     ];
                 } else {
 
-                    $arrData = $data[$CID]['data'][$index][$Component];
+                    $arrData = $data[$CID]['data'][$index][$Component][$ProductType];
 
                     $arrData['Discount']  += (float)$invoiceComponent->Discount;
                     $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
@@ -3497,55 +3520,17 @@ class Invoice extends \Eloquent {
 
                     $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
-                    $data[$CID]['data'][$index][$Component] = $arrData;
+                    $data[$CID]['data'][$index][$Component][$ProductType] = $arrData;
                 }
 
             } else {
 
-                $Title = "";
+                $Title = self::getComponentTitle($invoiceComponent);
 
-                if($invoiceComponent->Type == "Outbound")
-                    $Title = cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_COMPONENT_LBL_TERMINATION");
-
-                if($Component == "RecordingCostPerMinute"){
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_RECORDING_COST_PER_MINUTE");
-                } elseif($Component == "PackageCostPerMinute"){
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_PACKAGE_COST_PER_MINUTE");
-                } elseif($Component == "SurchargePerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE");
-                } elseif($Component == "SurchargePerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL");
-                } elseif($Component == "CollectionCostAmount") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT");
-                } elseif($Component == "CostPerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL");
-                } elseif($Component == "CostPerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE");
-                } elseif($Component == "OutpaymentPerMinute") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE");
-                } elseif($Component == "OutpaymentPerCall") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_CALL");
-                } elseif($Component == "Chargeback") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_CHARGEBACK");
-                } elseif($Component == "Surcharges") {
-                    $Title .= cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE");
-                } else {
-                    $Title .= $Component;
-                }
-
-                if($invoiceComponent->Destination != "")
-                    $Title .= " " . $invoiceComponent->Destination;
-
-                if($invoiceComponent->Origination != "")
-                    $Title .= " of " . $invoiceComponent->Origination;
-
-                if($invoiceComponent->Timezone != "")
-                    $Title .= " " . $invoiceComponent->Timezone;
-
-                $Quantity = in_array($Component,$PerCallComponents) ? $invoiceComponent->Quantity : (int)$invoiceComponent->Duration / 60;
+                $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if(in_array($Component,$PerCallComponents) && $Quantity > 0){
+                if($Quantity > 0){
                     $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
                 }
 
@@ -3554,9 +3539,9 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : '',
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
                     'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
