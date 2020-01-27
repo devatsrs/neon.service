@@ -278,9 +278,10 @@
                         <div class="clearfix"></div>
                     @endif
                 @endforeach
-            @elseif($InvoiceAccountType == "Affiliate" || $InvoiceAccountType == "Partner")
+            @endif
+            @if($InvoiceAccountType == "Affiliate" || $InvoiceAccountType == "Partner")
                 @foreach($InvoiceComponents as $key => $InvoiceSummary)
-                        @if($InvoiceSummary['GrandTotal'] > 0.000000)
+                    @if($InvoiceSummary['GrandTotal'] > 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -468,197 +469,197 @@
                         @endforeach
                     @endif
                 @endforeach
-                @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents) )
-                    @foreach($AffiliateInvoiceComponents as $key => $InvoiceSummary)
-                        @if($InvoiceSummary['GrandTotal'] > 0.000000)
-                            <?php $PageCounter += 1; ?>
-                            <div class="page_break"></div>
-                            <div id="CompanyInfo">
-                                <br>
-                                <div class="infoDetail">
-                                    <table class="table">
-                                        <tr>
-                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
-                                            <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
-                                            <td style="width: 40%"></td>
-                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
-                                            <td style="width: 15%">{{ $Account->AccountName }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
-                                            <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
-                                            <td></td>
-                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}}</td>
-                                            <td>{{ $InvoicePeriod }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
-                                            <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
-                                            <td></td>
-                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PAGE")}}</td>
-                                            <td>{{ $PageCounter }}/{{ $TotalPages }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="clearfix"></div>
+            @endif
+            @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents) )
+                @foreach($AffiliateInvoiceComponents as $key => $InvoiceSummary)
+                    @if($InvoiceSummary['GrandTotal'] > 0.000000)
+                        <?php $PageCounter += 1; ?>
+                        <div class="page_break"></div>
+                        <div id="CompanyInfo">
                             <br>
-                            <br>
-                            <div class="totalTable">
-                                <table class="table table-striped">
-                                    <tr></tr>
+                            <div class="infoDetail">
+                                <table class="table">
                                     <tr>
-                                        <th style="font-size: 18px; width: 85%">{{ $InvoiceSummary['Name'] }}</th>
-                                        <th class="text-right" style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}} ({{$CurrencySymbol}})</th>
+                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
+                                        <td style="width: 40%"></td>
+                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
+                                        <td style="width: 15%">{{ $Account->AccountName }}</td>
                                     </tr>
                                     <tr>
-                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
-                                    </tr>
-                                    @if($InvoiceSummary['OneOffSubTotal'] != 0)
-                                        <tr>
-                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
-                                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
-                                        </tr>
-                                    @endif
-                                    <tr>
-                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TRAFFIC_COST")}}</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['UsageSubTotal'], $RoundChargesAmount) }}</td>
+                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
+                                        <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
+                                        <td></td>
+                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}}</td>
+                                        <td>{{ $InvoicePeriod }}</td>
                                     </tr>
                                     <tr>
-                                        <td>VAT</td>
-                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['TotalVAT'], $RoundChargesAmount) }}</td>
+                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
+                                        <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
+                                        <td></td>
+                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PAGE")}}</td>
+                                        <td>{{ $PageCounter }}/{{ $TotalPages }}</td>
                                     </tr>
                                 </table>
                             </div>
-                            <div class="clearfix"></div>
-                            <div>
-                                <div class="termsDiv pull-left">
-                                </div>
-                                <div class="totalAmount pull-right">
-                                    <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargesAmount) }}</h4>
-                                </div>
+                        </div>
+                        <div class="clearfix"></div>
+                        <br>
+                        <br>
+                        <div class="totalTable">
+                            <table class="table table-striped">
+                                <tr></tr>
+                                <tr>
+                                    <th style="font-size: 18px; width: 85%">{{ $InvoiceSummary['Name'] }}</th>
+                                    <th class="text-right" style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_AMOUNT")}} ({{$CurrencySymbol}})</th>
+                                </tr>
+                                <tr>
+                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
+                                </tr>
+                                @if($InvoiceSummary['OneOffSubTotal'] != 0)
+                                    <tr>
+                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
+                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
+                                    </tr>
+                                @endif
+                                <tr>
+                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TRAFFIC_COST")}}</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['UsageSubTotal'], $RoundChargesAmount) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>VAT</td>
+                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['TotalVAT'], $RoundChargesAmount) }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div>
+                            <div class="termsDiv pull-left">
                             </div>
-                            @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                                @if($InvoiceComponent['GrandTotal'] > 0.000000)
-                                    <?php $PageCounter += 1; ?>
-                                    <div class="page_break"></div>
-                                    <div id="CompanyInfo">
-                                        <br>
-                                        <div class="infoDetail">
-                                            <table class="table">
-                                                <tr>
-                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
-                                                    <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
-                                                    <td style="width: 40%"></td>
-                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
-                                                    <td style="width: 15%">{{ $Account->AccountName }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
-                                                    <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
-                                                    <td></td>
-                                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}}</td>
-                                                    <td>{{ $InvoicePeriod }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
-                                                    <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
-                                                    <td></td>
-                                                    <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PAGE")}}</td>
-                                                    <td>{{ $PageCounter }}/{{ $TotalPages }}</td>
-                                                </tr>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div class="clearfix"></div>
-                                    <div class="detailTable">
-                                        <table class="table table-striped">
+                            <div class="totalAmount pull-right">
+                                <h4>{{$CurrencySymbol}} {{ number_format($InvoiceSummary['GrandTotal'], $RoundChargesAmount) }}</h4>
+                            </div>
+                        </div>
+                        @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
+                            @if($InvoiceComponent['GrandTotal'] > 0.000000)
+                                <?php $PageCounter += 1; ?>
+                                <div class="page_break"></div>
+                                <div id="CompanyInfo">
+                                    <br>
+                                    <div class="infoDetail">
+                                        <table class="table">
                                             <tr>
-                                                <th style="width: 40%">{{ \App\Lib\Country::getCountryCode($InvoiceComponent['CountryID']) }} {{ $InvoiceComponent['CLI'] }} {{ \App\Lib\Package::getServiceNameByID($InvoiceComponent['PackageID']) }}</th>
-                                                <th class="text-right" style="width: 12%">Standard price ({{$CurrencySymbol}}) </th>
-                                                <!--<th class="text-right" style="width: 12%">Disc. %</th>-->
-                                                <th class="text-right" style="width: 12%">Disc. Price ({{$CurrencySymbol}})</th>
-                                                <th class="text-right" style="width: 12%">Qty</th>
-                                                <th class="text-right" style="width: 12%">Amount ({{$CurrencySymbol}})</th>
+                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
+                                                <td style="width: 40%"></td>
+                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
+                                                <td style="width: 15%">{{ $Account->AccountName }}</td>
                                             </tr>
-                                            @if(isset($InvoiceComponent['MonthlyCost']) && !empty($InvoiceComponent['MonthlyCost']))
-                                                <tr>
-                                                    <th colspan="5">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") }} {{ $InvoicePeriod }}</th>
-                                                </tr>
-                                                @foreach($InvoiceComponent['MonthlyCost'] as $k => $MonthlyData)
-                                                    <tr>
-                                                        @if(isset($MonthlyData['Title']) && !empty($MonthlyData['Title']))
-                                                            <td>{{$MonthlyData['Title']}}</td>
-                                                        @else
-                                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_INVOICE_NUMBER")}}</td>
-                                                        @endif
-                                                        <td class="text-right">@if(!empty($MonthlyData['Price'])){{$CurrencySymbol}} {{ number_format($MonthlyData['Price'], $RoundChargesAmount) }}@endif</td>
-                                                        <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
-                                   -->
-                                                        <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                        <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], 0) }} @endif</td>
-                                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @endif
-                                            @if(isset($InvoiceComponent['OneOffCost']) && !empty($InvoiceComponent['OneOffCost']))
-                                                @foreach($InvoiceComponent['OneOffCost'] as $k => $OneOffData)
-                                                    <tr>
-                                                        @if(isset($OneOffData['Title']) && !empty($OneOffData['Title']))
-                                                            <td>{{$OneOffData['Title']}}</td>
-                                                        @else
-                                                            <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</td>
-                                                        @endif
-                                                        <td class="text-right">@if(!empty($OneOffData['Price'])){{$CurrencySymbol}} {{ number_format($OneOffData['Price'], $RoundChargesAmount) }}@endif</td>
-                                                        <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
-                                    -->
-                                                        <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                        <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], 0) }} @endif</td>
-                                                        <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @endif
-                                            @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
-                                                <tr>
-                                                    <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TRAFFIC_COST")}}</th>
-                                                </tr>
-                                                @foreach($InvoiceComponent['components'] as $component => $comp)
-                                                    @if($comp['Quantity'] != 0)
-                                                        <tr>
-                                                            <td>{{ $comp['Title'] }}</td>
-                                                            <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
-                                                            <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
-                                                            <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                            <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
-                                                            <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
-                                                        </tr>
-                                                    @endif
-                                                @endforeach
-                                            @endif
-                                            <tr style="font-size: 15px">
-                                                <th class="text-right" colspan="3">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
+                                            <tr>
+                                                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_DATE")}}</td>
+                                                <td>{{ date($dateFormat,strtotime($Invoice->IssueDate))}}</td>
                                                 <td></td>
-                                                <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount) }}</td>
+                                                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_PERIOD")}}</td>
+                                                <td>{{ $InvoicePeriod }}</td>
                                             </tr>
-                                            <tr style="font-size: 15px">
-                                                <th class="text-right" colspan="3">VAT</th>
+                                            <tr>
+                                                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
+                                                <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
                                                 <td></td>
-                                                <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount) }}</td>
-                                            </tr>
-                                            <tr style="font-size: 15px">
-                                                <th class="text-right" colspan="3">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
-                                                <td></td>
-                                                <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount) }}</td>
+                                                <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PAGE")}}</td>
+                                                <td>{{ $PageCounter }}/{{ $TotalPages }}</td>
                                             </tr>
                                         </table>
                                     </div>
-                                    <div class="clearfix"></div>
-                                @endif
-                            @endforeach
-                        @endif
-                    @endforeach
-                @endif
+                                </div>
+                                <div class="clearfix"></div>
+                                <div class="detailTable">
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th style="width: 40%">{{ \App\Lib\Country::getCountryCode($InvoiceComponent['CountryID']) }} {{ $InvoiceComponent['CLI'] }} {{ \App\Lib\Package::getServiceNameByID($InvoiceComponent['PackageID']) }}</th>
+                                            <th class="text-right" style="width: 12%">Standard price ({{$CurrencySymbol}}) </th>
+                                            <!--<th class="text-right" style="width: 12%">Disc. %</th>-->
+                                            <th class="text-right" style="width: 12%">Disc. Price ({{$CurrencySymbol}})</th>
+                                            <th class="text-right" style="width: 12%">Qty</th>
+                                            <th class="text-right" style="width: 12%">Amount ({{$CurrencySymbol}})</th>
+                                        </tr>
+                                        @if(isset($InvoiceComponent['MonthlyCost']) && !empty($InvoiceComponent['MonthlyCost']))
+                                            <tr>
+                                                <th colspan="5">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST") }} {{ $InvoicePeriod }}</th>
+                                            </tr>
+                                            @foreach($InvoiceComponent['MonthlyCost'] as $k => $MonthlyData)
+                                                <tr>
+                                                    @if(isset($MonthlyData['Title']) && !empty($MonthlyData['Title']))
+                                                        <td>{{$MonthlyData['Title']}}</td>
+                                                    @else
+                                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_INVOICE_NUMBER")}}</td>
+                                                    @endif
+                                                    <td class="text-right">@if(!empty($MonthlyData['Price'])){{$CurrencySymbol}} {{ number_format($MonthlyData['Price'], $RoundChargesAmount) }}@endif</td>
+                                                    <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
+                                   -->
+                                                    <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        @if(isset($InvoiceComponent['OneOffCost']) && !empty($InvoiceComponent['OneOffCost']))
+                                            @foreach($InvoiceComponent['OneOffCost'] as $k => $OneOffData)
+                                                <tr>
+                                                    @if(isset($OneOffData['Title']) && !empty($OneOffData['Title']))
+                                                        <td>{{$OneOffData['Title']}}</td>
+                                                    @else
+                                                        <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_ADDITIONAL")}}</td>
+                                                    @endif
+                                                    <td class="text-right">@if(!empty($OneOffData['Price'])){{$CurrencySymbol}} {{ number_format($OneOffData['Price'], $RoundChargesAmount) }}@endif</td>
+                                                    <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
+                                    -->
+                                                    <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        @if(isset($InvoiceComponent['components']) && count($InvoiceComponent['components'])>0)
+                                            <tr>
+                                                <th>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TRAFFIC_COST")}}</th>
+                                            </tr>
+                                            @foreach($InvoiceComponent['components'] as $component => $comp)
+                                                @if($comp['Quantity'] != 0)
+                                                    <tr>
+                                                        <td>{{ $comp['Title'] }}</td>
+                                                        <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
+                                                        <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
+                                                        <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
+                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
+                                                        <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
+                                                    </tr>
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                        <tr style="font-size: 15px">
+                                            <th class="text-right" colspan="3">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_SUB_TOTAL")}}</th>
+                                            <td></td>
+                                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['SubTotal'], $RoundChargesAmount) }}</td>
+                                        </tr>
+                                        <tr style="font-size: 15px">
+                                            <th class="text-right" colspan="3">VAT</th>
+                                            <td></td>
+                                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['TotalTax'], $RoundChargesAmount) }}</td>
+                                        </tr>
+                                        <tr style="font-size: 15px">
+                                            <th class="text-right" colspan="3">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_GRAND_TOTAL")}}</th>
+                                            <td></td>
+                                            <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceComponent['GrandTotal'], $RoundChargesAmount) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="clearfix"></div>
+                            @endif
+                        @endforeach
+                    @endif
+                @endforeach
             @endif
         @endif
     </div>
