@@ -3327,10 +3327,7 @@ class Invoice extends \Eloquent {
         return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
             ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.ProductType","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
-            ->join("speakintelligentRM.tblCLIRateTable as cli", function($join) {
-                $join->on('cli.CLI', '=', 'id.CLI');
-                $join->on('cli.AccountServiceID','=','id.AccountServiceID');
-            })
+            ->join("speakintelligentRM.tblCLIRateTable as cli", "cli.CLIRateTableID","=","id.CLIRateTableID")
             ->leftJoin("speakintelligentRM.tblAccountServicePackage as pkg","pkg.AccountServicePackageID","=","cli.AccountServicePackageID")
             ->leftJoin("speakintelligentRM.tblAccount as ac","ac.AccountID","=","id.CustomerID")
             ->leftJoin("speakintelligentRM.tblTimezones as tz","tz.TimezonesID","=","id.TimezonesID")
