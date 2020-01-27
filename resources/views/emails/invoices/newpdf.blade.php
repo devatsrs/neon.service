@@ -133,7 +133,7 @@
                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                     <td class="text-right">{{$CurrencySymbol}} {{ $MonthlySubTotal }}</td>
                 </tr>
-                @if($OneOffSubTotal > 0)
+                @if($OneOffSubTotal != 0)
                     <tr>
                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                         <td class="text-right">{{$CurrencySymbol}} {{ $OneOffSubTotal }}</td>
@@ -162,7 +162,7 @@
         @if(count($InvoiceComponents))
             @if($InvoiceAccountType == "Customer")
                 @foreach($InvoiceComponents as $key => $InvoiceComponent)
-                    @if($InvoiceComponent['GrandTotal'] > 0)
+                    @if($InvoiceComponent['GrandTotal'] > 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -280,7 +280,7 @@
                 @endforeach
             @elseif($InvoiceAccountType == "Affiliate" || $InvoiceAccountType == "Partner")
                 @foreach($InvoiceComponents as $key => $InvoiceSummary)
-                        @if($InvoiceSummary['GrandTotal'] > 0)
+                        @if($InvoiceSummary['GrandTotal'] > 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -325,7 +325,7 @@
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
-                                @if($InvoiceSummary['OneOffSubTotal'] > 0)
+                                @if($InvoiceSummary['OneOffSubTotal'] != 0)
                                     <tr>
                                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                                         <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
@@ -350,7 +350,7 @@
                             </div>
                         </div>
                         @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                            @if($InvoiceComponent['GrandTotal'] > 0)
+                            @if($InvoiceComponent['GrandTotal'] > 0.000000)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
                                 <div id="CompanyInfo">
@@ -470,7 +470,7 @@
                 @endforeach
                 @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents) )
                     @foreach($AffiliateInvoiceComponents as $key => $InvoiceSummary)
-                        @if($InvoiceSummary['GrandTotal'] > 0)
+                        @if($InvoiceSummary['GrandTotal'] > 0.000000)
                             <?php $PageCounter += 1; ?>
                             <div class="page_break"></div>
                             <div id="CompanyInfo">
@@ -515,7 +515,7 @@
                                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                                         <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
                                     </tr>
-                                    @if($InvoiceSummary['OneOffSubTotal'] > 0)
+                                    @if($InvoiceSummary['OneOffSubTotal'] != 0)
                                         <tr>
                                             <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                                             <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
@@ -540,7 +540,7 @@
                                 </div>
                             </div>
                             @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                                @if($InvoiceComponent['GrandTotal'] > 0)
+                                @if($InvoiceComponent['GrandTotal'] > 0.000000)
                                     <?php $PageCounter += 1; ?>
                                     <div class="page_break"></div>
                                     <div id="CompanyInfo">

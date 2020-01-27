@@ -559,6 +559,7 @@ class InvoiceGenerate {
         }
 
         Log::info("Component Data " . json_encode($InvoiceComponents));
+        Log::info("Affiliate Component Data " . json_encode($AffiliateInvoiceComponents));
 
         $pdf_path = self::generate_pdf($InvoiceID, $InvoiceAccountType, $InvoiceComponents, $AffiliateInvoiceComponents,$decimal_places);
         if(empty($pdf_path)){
@@ -647,7 +648,7 @@ class InvoiceGenerate {
             if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents))
                 $TotalPages = self::pdfPageCounter($AffiliateInvoiceComponents, $InvoiceAccountType, $TotalPages);
 
-            Log::info("Component data " . json_encode($InvoiceComponents));
+            //Log::info("Component data " . json_encode($InvoiceComponents));
 
             App::setLocale($language->ISOCode);
 
@@ -765,7 +766,7 @@ class InvoiceGenerate {
         $AccountID = $Invoice->AccountID;
         $Account = Account::find($AccountID);
         $CompanyID = $Invoice->CompanyID;
-        if(!empty($CompanyID) && !empty($AccountID) && !empty($InvoiceID) ) {
+        if(!empty($InvoiceID) ) {
             $ProcessID = Uuid::generate();
             $UPLOADPATH = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH');
             $amazonPath = AmazonS3::generate_path(AmazonS3::$dir['INVOICE_USAGE_FILE'], $CompanyID, $AccountID);
@@ -1119,9 +1120,9 @@ class InvoiceGenerate {
 
         foreach($InvoiceComponents as $InvoiceSummary) {
             $Name = $InvoiceSummary['Name'];
-            if($InvoiceSummary['GrandTotal'] > 0)
+            if($InvoiceSummary['GrandTotal'] > 0.000000)
                 foreach($InvoiceSummary['data'] as $key => $InvoiceComponent){
-                    if($InvoiceComponent['GrandTotal'] > 0){
+                    if($InvoiceComponent['GrandTotal'] > 0.000000){
                         //product
                         $description = $Name . " - " . Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['CLI'] . " " . Package::getServiceNameByID($InvoiceComponent['PackageID']);
 
