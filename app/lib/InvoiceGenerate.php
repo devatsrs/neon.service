@@ -654,8 +654,8 @@ class InvoiceGenerate {
 
             $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
             $LogoCompanyID = $CompanyID;
-            $LogoUrl = $Reseller->LogoUrl;
-            $LogoAS3Key = $Reseller->LogoAS3Key;
+            $LogoUrl = !empty($Reseller->LogoUrl) ? $Reseller->LogoUrl : "";
+            $LogoAS3Key = !empty($Reseller->LogoAS3Key) ? $Reseller->LogoAS3Key : "";
             if($InvoiceAccountType == "Partner") {
                 $LogoCompanyID = $Reseller->CompanyID;
                 $Company = Company::where(['CompanyID', $LogoCompanyID])->first();
