@@ -653,15 +653,25 @@ class InvoiceGenerate {
             App::setLocale($language->ISOCode);
 
             $Reseller = Reseller::where('ChildCompanyID', $CompanyID)->first();
-            if (empty($Reseller->LogoUrl) || AmazonS3::unSignedUrl($Reseller->LogoAS3Key, $CompanyID) == '') {
-                $as3url =  base_path().'/resources/assets/images/250x100.png';
-            } else {
-                $as3url = (AmazonS3::unSignedUrl($Reseller->LogoAS3Key,$CompanyID));
+            $LogoCompanyID = $CompanyID;
+            $LogoUrl = $Reseller->LogoUrl;
+            $LogoAS3Key = $Reseller->LogoAS3Key;
+            if($InvoiceAccountType == "Partner") {
+                $LogoCompanyID = $Reseller->CompanyID;
+                $Company = Company::where(['CompanyID', $LogoCompanyID])->first();
+                $LogoUrl = $Company->LogoUrl;
+                $LogoAS3Key = $Company->LogoAS3Key;
             }
 
-            $logo_path = CompanyConfiguration::get($CompanyID,'UPLOAD_PATH');
+            if (empty($LogoUrl) || AmazonS3::unSignedUrl($LogoAS3Key, $LogoCompanyID) == '') {
+                $as3url =  base_path().'/resources/assets/images/250x100.png';
+            } else {
+                $as3url = (AmazonS3::unSignedUrl($LogoAS3Key,$CompanyID));
+            }
+
+            $logo_path = CompanyConfiguration::get($LogoCompanyID,'UPLOAD_PATH');
             //@mkdir($logo_path, 0777, true);
-            RemoteSSH::make_dir($CompanyID,$logo_path);
+            RemoteSSH::make_dir($LogoCompanyID,$logo_path);
             //RemoteSSH::run($CompanyID,"chmod -R 777 " . $logo_path);
             $logo = $logo_path . '/' . basename($as3url);
             file_put_contents($logo, file_get_contents($as3url));
