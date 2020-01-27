@@ -159,7 +159,7 @@
             </div>
         </div>
         <div class="clearfix"></div>
-        @if(count($InvoiceComponents))
+        @if(count($InvoiceComponents) || count($AffiliateInvoiceComponents))
             @if($InvoiceAccountType == "Customer")
                 @foreach($InvoiceComponents as $key => $InvoiceComponent)
                     @if($InvoiceComponent['GrandTotal'] > 0.000000)
@@ -470,7 +470,7 @@
                     @endif
                 @endforeach
             @endif
-            @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents) )
+            @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents))
                 @foreach($AffiliateInvoiceComponents as $key => $InvoiceSummary)
                     @if($InvoiceSummary['GrandTotal'] > 0.000000)
                         <?php $PageCounter += 1; ?>

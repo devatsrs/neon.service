@@ -102,11 +102,11 @@ class InvoiceGenerate {
 
         if(count($InvoiceComponents))
             foreach($InvoiceComponents as $key => $InvoiceComponent) {
-                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0) {
+                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0.00000) {
                     $TotalPages++;
                     if($InvoiceAccountType != "Customer"){
                         foreach($InvoiceComponent['data'] as $InvoiceComponentDetail){
-                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] > 0){
+                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] > 0.000000){
                                 $TotalPages++;
                             }
                         }
