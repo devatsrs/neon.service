@@ -78,7 +78,7 @@ class TriggerDataCleanUp extends Command {
 			$joblogdata['created_by'] = 'RMScheduler';
 			CronJob::createLog($CronJobID);
 
-			DB::statement('CALL prc_deleteProcessedTriggerData();');
+			DB::connection('neon_routingengine')->statement('CALL prc_deleteProcessedTriggerData();');
 
 			$joblogdata['Message'] = 'Success';
 			$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
