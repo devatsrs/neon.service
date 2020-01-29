@@ -59,7 +59,7 @@ class AccountBalanceLog extends Model
                             AccountBalanceSubscriptionLog::insertPartnerSubscriptionLog($CompanyID,$AccountID,$ProcessID,$SubscriptionDatas);// need to remove comment
                         }
                     }
-                  //  DB::statement("CALL prc_ProcessSubscriptionDiscountPlan ('" . $ProcessID . "')");
+                    DB::statement("CALL prc_ProcessSubscriptionDiscountPlan ('" . $ProcessID . "')");
 
                     DB::commit();
                     DB::connection('sqlsrv2')->commit();
