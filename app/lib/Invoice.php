@@ -1149,16 +1149,14 @@ class Invoice extends \Eloquent {
                 $status['message'] = 'No recurring class found against '.$Invoice->InvoiceID;
 
             }
-        }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
+        }elseif(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
             $canSend=1;
         }
+        Log::info('$canSend:' . json_encode($canSend));
+
         if( $EMAIL_TO_CUSTOMER == 1 && $canSend == 1  && $GrandTotal > 0 ) {
 
             $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
-            //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
-            //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
-            //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
-            //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
             if(!empty($InvoiceGenerationEmail)) {
                 $InvoiceGenerationEmail = explode(',',$InvoiceGenerationEmail);
                 foreach ($InvoiceGenerationEmail as $singleemail) {

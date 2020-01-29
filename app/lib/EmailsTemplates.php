@@ -68,7 +68,7 @@ class EmailsTemplates{
 		$userID											=	isset($data['UserID'])?$data['UserID']:0;
 		/*try{*/
 				$InvoiceData   							=  	 Invoice::find($InvoiceID);
-				$InvoiceDetailPeriod 					= 	 InvoiceDetail::where(["InvoiceID" => $InvoiceID,'ProductType'=>Product::INVOICE_PERIOD])->first();
+				$InvoiceDetailPeriod 					= 	 InvoiceDetail::where(["InvoiceID" => $InvoiceID])->whereIn('ProductType',[Product::INVOICE_PERIOD, Product::USAGE])->first();
 				$AccoutData 							=	 Account::find($InvoiceData->AccountID);
 				$EmailTemplate 							= 	 EmailTemplate::getSystemEmailTemplate($CompanyID, Invoice::EMAILTEMPLATE, $AccoutData->LanguageID);
 				if($type=="subject"){
