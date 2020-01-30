@@ -149,6 +149,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\GridExport',
 		'App\Console\Commands\ExactInvoiceExport',
 		'App\Console\Commands\ExactPaymentImport',
+		'App\Console\Commands\TriggerDataCleanUp',
 
 	];
 

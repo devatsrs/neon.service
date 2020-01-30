@@ -320,7 +320,8 @@ class InvoiceGenerate {
             $Terms = isset($Reseller->TermsAndCondition) ? $Reseller->TermsAndCondition : '';
             $FooterTerm = isset($Reseller->FooterTerm) ? $Reseller->FooterTerm : '';
             $LastInvoiceNumber = self::getNextInvoiceNumber($CompanyID);
-            $FullInvoiceNumber = Company::getCompanyField($Account->CompanyId, "InvoiceNumberPrefix") . $LastInvoiceNumber;
+            $InvoiceNumberPrefix = Company::getCompanyField($Account->CompanyId, "InvoiceNumberPrefix");
+            $FullInvoiceNumber   = $InvoiceNumberPrefix . $LastInvoiceNumber;
 
             $decimal_places = Helper::get_round_decimal_places($Account->CompanyId,$Account->AccountID);
             $isPostPaid = $BillingType === AccountBilling::BILLINGTYPE_POSTPAID;
@@ -353,6 +354,7 @@ class InvoiceGenerate {
                 "InvoiceStatus" => Invoice::AWAITING,
                 "InvoiceNumber" => $LastInvoiceNumber,
                 "FullInvoiceNumber" => $FullInvoiceNumber,
+                "AccountType" => $InvoiceAccountType
             );
 
             $Invoice = Invoice::insertInvoice($InvoiceData);
@@ -373,9 +375,17 @@ class InvoiceGenerate {
             if($AccountBalanceLogID != false) {
                 self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $FirstInvoice, $decimal_places, $Account->CurrencyId);
 
+                $Invoice = Invoice::find($InvoiceID);
+                $CompanyName = Company::getName($Account->CompanyId);
+                $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$Account->CompanyId,$InvoiceGenerationEmail,$ProcessID,$JobID);
+
+                $error_1 = "";
+                if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
+                    $error_1 = $status['message'];
+                }
                 return [
                     'status' => 'success',
-                    'message' => $AccountID . ' Account Invoice added successfully'
+                    'message' => $AccountID . ' Account Invoice added successfully.' . $error_1
                 ];
 
             } else {

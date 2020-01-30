@@ -1149,16 +1149,14 @@ class Invoice extends \Eloquent {
                 $status['message'] = 'No recurring class found against '.$Invoice->InvoiceID;
 
             }
-        }else if(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
+        }elseif(AccountBilling::getSendInvoiceSetting($Account->AccountID) == 'automatically'){
             $canSend=1;
         }
+        Log::info('$canSend:' . json_encode($canSend));
+
         if( $EMAIL_TO_CUSTOMER == 1 && $canSend == 1  && $GrandTotal > 0 ) {
 
             $InvoiceGenerationEmail = Notification::getNotificationMail(['CompanyID' => $CompanyID, 'NotificationType' => Notification::InvoiceCopy]);
-            //$CustomerEmail = $Account->BillingEmail;    //$CustomerEmail = 'deven@code-desk.com'; //explode(",", $CustomerEmail);
-            //$emaildata['data']['InvoiceLink'] = getenv("WEBURL") . '/invoice/' . $Account->AccountID . '-' . $Invoice->InvoiceID . '/cview';
-            //$emaildata['EmailTo'] = $InvoiceGenerationEmail; //'girish.vadher@code-desk.com'; //$Company->InvoiceGenerationEmail; //$Account->BillingEmail;
-            //$status = Helper::sendMail('emails.invoices.bulk_invoice_email', $emaildata);
             if(!empty($InvoiceGenerationEmail)) {
                 $InvoiceGenerationEmail = explode(',',$InvoiceGenerationEmail);
                 foreach ($InvoiceGenerationEmail as $singleemail) {
@@ -3420,7 +3418,7 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                     'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
@@ -3539,7 +3537,7 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                     'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
