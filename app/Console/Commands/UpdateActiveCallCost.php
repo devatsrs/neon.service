@@ -87,19 +87,20 @@ class UpdateActiveCallCost extends Command {
 			Log::useFiles(storage_path() . '/logs/updateactivecallcost-' . $CompanyID . '-' . date('Y-m-d') . '.log');
 
 			//Log::info('Account Balance Start.');
-
-			$ActiveCalls = ActiveCall::where(['EndCall'=>0])->orderBy('ActiveCallID')->get();
-			if(!empty($ActiveCalls) && count($ActiveCalls)>0){
-				foreach($ActiveCalls as $ActiveCall){
-					try {
-						ActiveCall::updateActiveCallCost($ActiveCall->ActiveCallID);
-						$Success[] = '1';
-					}catch (Exception $ev) {
-						Log::error($ev);
-						$errors[] = 'Cost Update Failed ActiveCallID :' . $ActiveCall->ActiveCallID . ' Reason : ' . $ev->getMessage();
+			while(1) { // infinite loop
+				$ActiveCalls = ActiveCall::where(['EndCall' => 0])->orderBy('ActiveCallID')->get();
+				if (!empty($ActiveCalls) && count($ActiveCalls) > 0) {
+					foreach ($ActiveCalls as $ActiveCall) {
+						try {
+							ActiveCall::updateActiveCallCost($ActiveCall->ActiveCallID);
+							$Success[] = '1';
+						} catch (Exception $ev) {
+							Log::error($ev);
+							//$errors[] = 'Cost Update Failed ActiveCallID :' . $ActiveCall->ActiveCallID . ' Reason : ' . $ev->getMessage();
+						}
 					}
 				}
-			}
+			} // infinite loop over
 
 			if(count($errors) > 0 && count($Success)>0){
 				$joblogdata['Message'] = 'Success: ' . implode(',\n\r', $errors);

@@ -30,6 +30,11 @@ class CronHelper {
             foreach($arguments as $argument_key => $argument_value) {
                 $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
             }
+        }else if($command_name == 'send_active_call_alert' && count($arguments) > 0){
+            unset($arguments['APIURL']);
+            foreach($arguments as $argument_key => $argument_value) {
+                $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
+            }
         }else if(count($arguments) > 0) {
             foreach($arguments as $argument_key => $argument_value) {
                 $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
