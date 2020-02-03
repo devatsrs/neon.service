@@ -354,6 +354,7 @@ class InvoiceGenerate {
                 "InvoiceStatus" => Invoice::AWAITING,
                 "InvoiceNumber" => $LastInvoiceNumber,
                 "FullInvoiceNumber" => $FullInvoiceNumber,
+                "AccountType" => $InvoiceAccountType
             );
 
             $Invoice = Invoice::insertInvoice($InvoiceData);

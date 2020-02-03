@@ -150,7 +150,8 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\ExactInvoiceExport',
 		'App\Console\Commands\ExactPaymentImport',
 		'App\Console\Commands\TriggerDataCleanUp',
-
+		'App\Console\Commands\TriggerDataCleanUp',
+		'App\Console\Commands\SendActiveCallAlert',
 	];
 
 	/**

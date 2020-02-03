@@ -22,6 +22,13 @@ class ActiveCall extends \Eloquent {
         return ActiveCall::where(['AccountID'=>$AccountID,'EndCall'=>0])->groupby('UUID')->lists('UUID');
 
     }
+    public static function getUniqueAccountIDByComapny($CompanyID){
+        return ActiveCall::join('tblAccount','tblActiveCall.AccountID','=','tblAccount.AccountID')
+            ->where(['tblAccount.BillingType'=>1])
+            ->where(['tblActiveCall.CompanyID'=>$CompanyID,'tblActiveCall.EndCall'=>0])
+            ->select('tblActiveCall.AccountID')
+            ->groupby('tblActiveCall.AccountID')->lists('tblActiveCall.AccountID');
+    }
 
     public static function updateActiveCallCost($ActiveCallID){
         $ActiveCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->first();
