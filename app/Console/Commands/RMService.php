@@ -401,7 +401,7 @@ class RMService extends Command {
             }
 
             //------------------------ Cron job start here------------------------//
-            if($CompanyID == 1){
+            //if($CompanyID == 1){
                 $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
                 foreach ($cmdarray as $com) {
                     if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
@@ -411,7 +411,7 @@ class RMService extends Command {
                         }
                     }
                 }
-            }
+            //}
             
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
                 if (isset($allpendingrs->JobID) && $allpendingrs->JobID>0) {
