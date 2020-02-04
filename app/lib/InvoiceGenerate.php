@@ -363,7 +363,7 @@ class InvoiceGenerate {
             $InvoiceID = $Invoice->InvoiceID;
 
             // Adding Invoice History
-            InvoiceHistory::addInvoiceHistoryDetail($InvoiceID,$AccountID,0,$FirstInvoice,0);
+            InvoiceHistory::addInvoiceHistoryDetail($InvoiceID,$AccountID,$InvoiceAccountType,0,$FirstInvoice,0);
             Log::error('$AccountID  '. $AccountID);
             Log::error('$isPostPaid  '. $isPostPaid);
             Log::error('$StartDate  '. $StartDate);
@@ -468,10 +468,11 @@ class InvoiceGenerate {
         DB::connection('sqlsrv2')->select($query);
 
         // Adding Affiliate Usage
-        if($InvoiceAccountType == 'Affiliate'){
+        if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
             $Usage = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
-                ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
-                ->get();
+                ->whereNotIn('Component',['OneOffCost','MonthlyCost']);
+            if($InvoiceAccountType == "Partner") $Usage->where('IsAffiliate',1);
+            $Usage->get();
 
             $UsageDiscount   = $Usage->sum('DiscountPrice');
             $UsageSubTotal   += $Usage->sum('SubTotal');
@@ -645,9 +646,10 @@ class InvoiceGenerate {
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
+            $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
             // Getting total Usage cost
             $UsageSubTotal = InvoiceDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
-                ->sum('LineTotal');
+                ->where(["ProductType" => $Product])->sum('LineTotal');
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
             $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);
