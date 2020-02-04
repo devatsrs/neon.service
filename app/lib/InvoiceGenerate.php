@@ -417,7 +417,7 @@ class InvoiceGenerate {
 
             Log::error('Usage Total ' . $UsageGrandTotal);
 
-            if ($UsageGrandTotal > 0) {
+            if ($UsageGrandTotal != 0) {
                 $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
                 $UsageTotalTax = $TotalTax;
                 $UsageSubTotal = $UsageGrandTotal - $TotalTax;
@@ -986,7 +986,7 @@ class InvoiceGenerate {
         $tax = $Account->TaxRateID != "" ? explode(",",$Account->TaxRateID) : "";
         $tax = !empty($tax) ? TaxRate::find($tax[0]) : false;
         $tax = $tax != false ? $tax->Title : "";
-        $taxPercentage = $Invoice->GrandTotal > 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
+        $taxPercentage = $Invoice->GrandTotal != 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
         $taxCategory->setId($Account->TaxRateID);
         $taxCategory->setName($tax);
         $taxCategory->setPercent($taxPercentage);
