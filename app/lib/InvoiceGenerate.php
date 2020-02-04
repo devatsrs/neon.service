@@ -362,6 +362,8 @@ class InvoiceGenerate {
             Company::where("CompanyID", $CompanyID)->update(["LastInvoiceNumber" => $LastInvoiceNumber]);
             $InvoiceID = $Invoice->InvoiceID;
 
+            // Adding Invoice History
+            InvoiceHistory::addInvoiceHistoryDetail($InvoiceID,$AccountID,$InvoiceAccountType,0,$FirstInvoice,0);
             Log::error('$AccountID  '. $AccountID);
             Log::error('$isPostPaid  '. $isPostPaid);
             Log::error('$StartDate  '. $StartDate);
@@ -406,6 +408,7 @@ class InvoiceGenerate {
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
 
+        // Adding Usage data of Partner and Customer Invoice
         if($InvoiceAccountType != "Affiliate") {
             $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
                 ->where('Date', '>=', $StartDate)
@@ -414,7 +417,7 @@ class InvoiceGenerate {
 
             Log::error('Usage Total ' . $UsageGrandTotal);
 
-            if ($UsageGrandTotal > 0) {
+            if ($UsageGrandTotal != 0) {
                 $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
                 $UsageTotalTax = $TotalTax;
                 $UsageSubTotal = $UsageGrandTotal - $TotalTax;
@@ -464,10 +467,12 @@ class InvoiceGenerate {
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
+        // Adding Affiliate Usage
         if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
             $Usage = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
-                ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
-                ->get();
+                ->whereNotIn('Component',['OneOffCost','MonthlyCost']);
+            if($InvoiceAccountType == "Partner") $Usage->where('IsAffiliate',1);
+            $Usage->get();
 
             $UsageDiscount   = $Usage->sum('DiscountPrice');
             $UsageSubTotal   += $Usage->sum('SubTotal');
@@ -641,10 +646,10 @@ class InvoiceGenerate {
                 ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                 ->sum('SubTotal');
 
+            $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
             // Getting total Usage cost
-            $UsageSubTotal = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
-                ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
-                ->sum('SubTotal');
+            $UsageSubTotal = InvoiceDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                ->where(["ProductType" => $Product])->sum('LineTotal');
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
             $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);
@@ -981,7 +986,7 @@ class InvoiceGenerate {
         $tax = $Account->TaxRateID != "" ? explode(",",$Account->TaxRateID) : "";
         $tax = !empty($tax) ? TaxRate::find($tax[0]) : false;
         $tax = $tax != false ? $tax->Title : "";
-        $taxPercentage = $Invoice->GrandTotal > 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
+        $taxPercentage = $Invoice->GrandTotal != 0 ? number_format(((float)$Invoice->TotalTax / (float)$Invoice->GrandTotal) * 100, 2) : 0.00;
         $taxCategory->setId($Account->TaxRateID);
         $taxCategory->setName($tax);
         $taxCategory->setPercent($taxPercentage);

@@ -23,8 +23,8 @@ class ActiveCall extends \Eloquent {
 
     }
     public static function getUniqueAccountIDByComapny($CompanyID){
-        return ActiveCall::join('tblAccount','tblActiveCall.AccountID','=','tblAccount.AccountID')
-            ->where(['tblAccount.BillingType'=>1])
+        return ActiveCall::join('tblAPIAccountBalance','tblActiveCall.AccountID','=','tblAPIAccountBalance.AccountID')
+            ->where(['tblAPIAccountBalance.BillingType'=>1])
             ->where(['tblActiveCall.CompanyID'=>$CompanyID,'tblActiveCall.EndCall'=>0])
             ->select('tblActiveCall.AccountID')
             ->groupby('tblActiveCall.AccountID')->lists('tblActiveCall.AccountID');

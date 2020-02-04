@@ -95,6 +95,7 @@ class ActiveCallBalanceAlert extends Command {
                 */
                 $Count = 0;
                 while(1) { // infinite loop
+                    log::info('Loop is working');
                     $Count++;
                     $ActiveCallAccountIDs = ActiveCall::getUniqueAccountIDByComapny($CompanyID);
                     if (!empty($ActiveCallAccountIDs)) {
@@ -109,7 +110,7 @@ class ActiveCallBalanceAlert extends Command {
                                // log::info('AccountID : ' . $AccountID . ' - has_balance : ' . $has_balance . ' - BalanceAmount : ' . $BalanceAmount);
 
                                 if (isset($has_balance) && $has_balance == 0) {
-                                 //   log::info('Balance is low');
+                                    log::info('Balance is low');
                                     Helper::trigger_command($CompanyID, "send_active_call_alert", $AccountID . ' ' . $APIURL);
                                 }
 
