@@ -95,26 +95,50 @@ class ActiveCallBalanceAlert extends Command {
                 */
                 $Count = 0;
                 while(1) { // infinite loop
-                    log::info('Loop is working');
-                    $Count++;
-                    $ActiveCallAccountIDs = ActiveCall::getUniqueAccountIDByComapny($CompanyID);
-                    if (!empty($ActiveCallAccountIDs)) {
-                        foreach ($ActiveCallAccountIDs as $AccountID) {
+                    try {
+                        log::info('Loop is working');
+                        $Count++;
+                        $ActiveCallAccountIDs = ActiveCall::getUniqueAccountIDByComapny($CompanyID);
+                        if (!empty($ActiveCallAccountIDs)) {
+                            foreach ($ActiveCallAccountIDs as $AccountID) {
 
-                            $AccountBalanceData = DB::connection('neon_routingengine')->select("call prc_getActiveCallCostByAccount ('" . $AccountID . "')");
-                            if (count($AccountBalanceData) > 0) {
-                                //log::info(print_r($AccountBalanceData,true));
-                                $has_balance = $AccountBalanceData[0]->has_balance;
-                                $BalanceAmount = $AccountBalanceData[0]->BalanceAmount;
+                                $AccountBalanceData = DB::connection('neon_routingengine')->select("call prc_getActiveCallCostByAccount ('" . $AccountID . "')");
+                                if (count($AccountBalanceData) > 0) {
+                                    //log::info(print_r($AccountBalanceData,true));
+                                    $has_balance = $AccountBalanceData[0]->has_balance;
+                                    $BalanceAmount = $AccountBalanceData[0]->BalanceAmount;
 
-                               // log::info('AccountID : ' . $AccountID . ' - has_balance : ' . $has_balance . ' - BalanceAmount : ' . $BalanceAmount);
+                                   // log::info('AccountID : ' . $AccountID . ' - has_balance : ' . $has_balance . ' - BalanceAmount : ' . $BalanceAmount);
 
-                                if (isset($has_balance) && $has_balance == 0) {
-                                    log::info('Balance is low');
-                                    Helper::trigger_command($CompanyID, "send_active_call_alert", $AccountID . ' ' . $APIURL);
+                                    if (isset($has_balance) && $has_balance == 0) {
+                                        log::info('Balance is low');
+                                        Helper::trigger_command($CompanyID, "send_active_call_alert", $AccountID . ' ' . $APIURL);
+                                    }
+
                                 }
 
                             }
+                        }
+                    }catch (\Exception $ev) {
+                        try {
+                            Log::error($ev);
+                        }catch (\Exception $ev) {
+
+                        }
+
+                        try {
+                            $joblogdata['Message'] = 'Error:' . $ev->getMessage();
+                            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                            //CronJobLog::insert($joblogdata);
+                            CronJobLog::createLog($MainCronJobID, $joblogdata);
+                        }catch (\Exception $evv){
+
+                        }
+                        try{
+                            if (!empty($cronsetting['ErrorEmail'])) {
+                                $result = CronJob::CronJobErrorEmailSend($MainCronJobID, $ev);
+                            }
+                        }catch (\Exception $evvv){
 
                         }
                     }
@@ -129,7 +153,7 @@ class ActiveCallBalanceAlert extends Command {
 
 
             }catch (\Exception $e) {
-                Log::error($e);
+                Log::error($e->getMessage());
                 $joblogdata['Message'] ='Error:'.$e->getMessage();
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                 //CronJobLog::insert($joblogdata);
