@@ -132,8 +132,11 @@ class InvoiceReminder extends Command
                         }
                         $query = $CompanyID.",'".$AccountID."','".$InvoiceNumber."','".$IssueDateStart."','".$IssueDateEnd."','".$InvoiceType."','".$InvoiceStatus."',".$Overdue.",' ',' ',' ',' ',2";
                         if(isset($criteria->zerovalueinvoice) && !empty($criteria->zerovalueinvoice) && $criteria->zerovalueinvoice=='true'){
-                            $query = $query.',0,1';
+                            $query = $query.',0,0,1';
+                        }else{
+                            $query = $query.',0,0,0';
                         }
+                        $query.=",'',".$job->JobLoggedUserID; //userID
                         $query.=",''";//Tag
                         $query =  "CALL prc_getInvoice(".$query.")";
 
