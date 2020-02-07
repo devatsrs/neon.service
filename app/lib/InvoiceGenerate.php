@@ -410,7 +410,11 @@ class InvoiceGenerate {
 
         // Adding Usage data of Partner and Customer Invoice
         if($InvoiceAccountType != "Affiliate") {
-            $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
+            $UsageGrandTotal = AccountBalanceUsageLog::where([
+                'AccountBalanceLogID' => $AccountBalanceLogID,
+                // Type 0 will get only partner's data in case of Partner invoice
+                'Type' => 0,
+            ])
                 ->where('Date', '>=', $StartDate)
                 ->where('Date', '<=', $EndDate)
                 ->sum('TotalAmount');
@@ -460,14 +464,14 @@ class InvoiceGenerate {
             // Adding Partner Components data
             $query = "CALL prc_insertPartnerInvoiceComponentData($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
         } else {
-            // Adding Monthly and Components data
+            // Adding Customer Components data
             $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
         }
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
-        // Adding Affiliate Usage
+        // Adding Affiliate and Partner's Affiliate Usage Total
         if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
             $Usage = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
                 ->whereNotIn('Component',['OneOffCost','MonthlyCost']);
