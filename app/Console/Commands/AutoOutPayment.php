@@ -189,7 +189,7 @@ class AutoOutPayment extends Command {
         $localIP = env('SERVER_LOCAL_IP');
         $url =  !empty($localIP) ? "http://$localIP/" : $url;
         Log::info("Out Payment API URL" . $url);
-        $APIresponse = NeonAPI::callAPI($postdata,"api/requestFund",$url);
+        $APIresponse = NeonAPI::callAPI($postdata,"api/requestFund",$url,'application/json');
         //dd($APIresponse);
         if (isset($APIresponse["error"])) {
             Log::info(print_r($APIresponse["error"],true));
