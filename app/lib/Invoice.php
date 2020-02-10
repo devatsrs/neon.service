@@ -3263,8 +3263,12 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static $PerCallComponents = [
-        ["CostPerCall", "SurchargePerCall", "OutpaymentPerCall"]
+    public static $PerMinuteComponents = [
+        "RecordingCostPerMinute",
+        "PackageCostPerMinute",
+        "SurchargePerMinute",
+        "CostPerMinute",
+        "OutpaymentPerMinute"
     ];
 
     public static function getComponentTitle($InvoiceComponent){
@@ -3406,7 +3410,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = $invoiceComponent->Quantity;
+                if(in_array($Component, self::$PerMinuteComponents))
+                    $Quantity = ceil((float)$invoiceComponent->Duration / 60);
+                else
+                    $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
                 if($Quantity > 0){
@@ -3525,7 +3532,10 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                $Quantity = $invoiceComponent->Quantity;
+                if(in_array($Component, self::$PerMinuteComponents))
+                    $Quantity = ceil((float)$invoiceComponent->Duration / 60);
+                else
+                    $Quantity = $invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
                 if($Quantity > 0){

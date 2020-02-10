@@ -409,14 +409,22 @@ class InvoiceGenerate {
         $UsageTotalTax = 0;
 
         // Adding Usage data of Partner and Customer Invoice
-        if($InvoiceAccountType != "Affiliate") {
-            $UsageGrandTotal = AccountBalanceUsageLog::where('AccountBalanceLogID', $AccountBalanceLogID)
+        // In case of Affiliate, Usage by default will be 0
+        // As we don't enter affiliate data in usage logs
+        if(in_array($InvoiceAccountType,['Customer', 'Partner'])) {
+            $UsageGrandTotal = AccountBalanceUsageLog::where([
+                'AccountBalanceLogID' => $AccountBalanceLogID,
+                // Type 0 will get only partner's data in case of Partner invoice
+                'Type' => 0,
+            ])
                 ->where('Date', '>=', $StartDate)
                 ->where('Date', '<=', $EndDate)
                 ->sum('TotalAmount');
 
             Log::error('Usage Total ' . $UsageGrandTotal);
 
+            // Calculating Tax and Subtotal
+            // Because we only have amount inclusive tax in usage logs
             if ($UsageGrandTotal != 0) {
                 $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
                 $UsageTotalTax = $TotalTax;
@@ -427,7 +435,9 @@ class InvoiceGenerate {
         $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
         $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
 
+        // For Affiliate we use Invoice Period otherwise we use Usage
         $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
+
 
         $InvoiceDetailArray = [
             'InvoiceID'          => $InvoiceID,
@@ -460,18 +470,27 @@ class InvoiceGenerate {
             // Adding Partner Components data
             $query = "CALL prc_insertPartnerInvoiceComponentData($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
         } else {
-            // Adding Monthly and Components data
+            // Adding Customer Components data
             $query = "CALL prc_addInvoicePrepaidComponents($AccountID,$AccountBalanceLogID,$InvoiceID,$InvoiceDetailID,'$StartDate','$EndDate')";
         }
+
+        // Note: We only add components against Usage/InvoicePeriod Product Invoice Detail ID
+        // Usage In case Customer and Partner / Invoice Period In case of Affiliate
 
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
-        // Adding Affiliate Usage
+        // Adding Affiliate Usage Total and Partner's Affiliate Usage Total in tblInvoiceDetail
         if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
+
+            // Select * from components where component is not OneOff or Monthly
             $Usage = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
                 ->whereNotIn('Component',['OneOffCost','MonthlyCost']);
-            if($InvoiceAccountType == "Partner") $Usage->where('IsAffiliate',1);
+
+            // For partner we only need affiliate's usage
+            if($InvoiceAccountType == "Partner")
+                $Usage->where('IsAffiliate',1);
+
             $Usage->get();
 
             $UsageDiscount   = $Usage->sum('DiscountPrice');
@@ -479,15 +498,16 @@ class InvoiceGenerate {
             $UsageTotalTax   += $Usage->sum('TotalTax');
             $UsageGrandTotal += $Usage->sum('TotalCost');
 
+            // Updating Invoice detail as Usage data is updated for partner and affiliate
             $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
             $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
             $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
             $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
             $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
             $InvoiceDetail->save();
-        }
+         }
 
-        // Adding Monthly in Invoice Detail
+        // Adding Monthly Product in Invoice Detail from Components
         $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
             ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
@@ -513,7 +533,7 @@ class InvoiceGenerate {
         InvoiceDetail::create($MonthlyInvoiceDetail);
 
 
-        // Adding OneOffCost in Invoice Detail
+        // Adding OneOffCost Product in Invoice Detail from Components
         $OneOff = InvoiceComponentDetail::where('Component', 'OneOffCost')
             ->where('InvoiceDetailID', $InvoiceDetailID)
             ->get();
@@ -538,17 +558,18 @@ class InvoiceGenerate {
 
         InvoiceDetail::create($OneOffInvoiceDetail);
 
-        // Adding Monthly Cost Total in Invoice
+        // Getting Total of Monthly And OneOff Cost from Components
         $MonthlyCost = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
             ->whereIn('Component', ['OneOffCost', 'MonthlyCost'])->get();
 
-        $InvoiceDiscount    = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
-            ->sum('DiscountPrice');
+        // Getting Total of all discount from Components
+        $InvoiceDiscount    = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)->sum('DiscountPrice');
+
         $MonthlySubtotal    = $MonthlyCost->sum('SubTotal');
         $MonthlyTax         = $MonthlyCost->sum('TotalTax');
         $MonthlyGrandTotal  = $MonthlyCost->sum('TotalCost');
 
-        // Totals of Usage and Monthly Cost
+        // Totals of Usage and Monthly Cost to update totals of tblInvoice
         $InvoiceSubTotal    = $MonthlySubtotal + $UsageSubTotal;
         $InvoiceTaxTotal    = $MonthlyTax + $UsageTotalTax;
         $InvoiceGrandTotal  = $MonthlyGrandTotal + $UsageGrandTotal;
@@ -564,11 +585,14 @@ class InvoiceGenerate {
         $Invoice = Invoice::find($InvoiceID);
         $AffiliateInvoiceComponents = [];
         if($InvoiceAccountType == "Affiliate"){
+            // If Affiliate Invoice then getting values by customers only
             $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
         } elseif($InvoiceAccountType == "Partner"){
+            // If Partner Invoice then getting values by customers and affiliates
             $InvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places);
             $AffiliateInvoiceComponents = Invoice::getComponentDataByCustomer($InvoiceDetailID, $decimal_places, 1);
         } else {
+            // If Customer Invoice then only get customer's component data
             $InvoiceComponents = Invoice::getCustomerComponents($InvoiceDetailID, $decimal_places);
         }
 
@@ -592,6 +616,7 @@ class InvoiceGenerate {
             $Invoice->update(["UblInvoice" => $ubl_path]);
         }
 
+        // CDRs do not generate against affiliates
         if($InvoiceAccountType != "Affiliate") {
             $cdr_path = self::generate_cdr($InvoiceID, $StartDate, $EndDate);
 
@@ -616,8 +641,8 @@ class InvoiceGenerate {
                 ->first();
 
             $AccountID  = $Invoice->AccountID;
-
             $Account    = Account::find($AccountID);
+
             $CompanyID  = $Account->CompanyId;
             $Company    = Company::find($CompanyID);
 
@@ -629,27 +654,32 @@ class InvoiceGenerate {
             $AccountBilling = AccountBilling::where(['AccountID' => $AccountID])->first();
             $UploadPath     = CompanyConfiguration::get($CompanyID, 'UPLOAD_PATH');
 
-            $InvoiceDetails = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->get();
-
-            // Calculating Start Date
-            $StartDate        = $InvoiceDetails->first()->StartDate;
-            $InvoicePeriod    = $InvoiceDetails != false ? date("M 'y", strtotime($StartDate)) : "";
-            $InvoiceDetailIDs = InvoiceDetail::where(["InvoiceID" => $InvoiceID])->lists('InvoiceDetailID');
-
-            // Getting total Monthly cost
-            $MonthlySubTotal = InvoiceComponentDetail::where('Component', 'MonthlyCost')
-                ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
-                ->sum('SubTotal');
-
-            // Getting total OneOffCost
-            $OneOffSubTotal = InvoiceComponentDetail::where('Component', 'OneOffCost')
-                ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
-                ->sum('SubTotal');
 
             $Product = $InvoiceAccountType != "Affiliate" ? Product::USAGE : Product::INVOICE_PERIOD;
-            // Getting total Usage cost
-            $UsageSubTotal = InvoiceDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
-                ->where(["ProductType" => $Product])->sum('LineTotal');
+            $UsageInvoiceDetail = InvoiceDetail::where([
+                "InvoiceID"     => $InvoiceID,
+                "ProductType"   => $Product
+            ])->firstOrFail();
+
+            // Calculating Start Date
+            $InvoiceDetailID  = $UsageInvoiceDetail->InvoiceDetailID;
+            $StartDate        = $UsageInvoiceDetail->StartDate;
+            $InvoicePeriod    = date("M 'y", strtotime($StartDate));
+
+            // Getting total Monthly Cost
+            $MonthlySubTotal = InvoiceComponentDetail::where([
+                'InvoiceDetailID'   => $InvoiceDetailID,
+                'Component'         => 'MonthlyCost',
+            ])->sum('SubTotal');
+
+            // Getting total OneOff Cost
+            $OneOffSubTotal = InvoiceComponentDetail::where([
+                'InvoiceDetailID'   => $InvoiceDetailID,
+                'Component'         => 'OneOffCost',
+            ])->sum('SubTotal');
+
+            // Getting total Usage Cost
+            $UsageSubTotal  = $UsageInvoiceDetail->LineTotal;
 
             $MonthlySubTotal    = number_format($MonthlySubTotal,$RoundChargesAmount);
             $OneOffSubTotal     = number_format($OneOffSubTotal,$RoundChargesAmount);

@@ -88,17 +88,38 @@ class UpdateActiveCallCost extends Command {
 
 			//Log::info('Account Balance Start.');
 			while(1) { // infinite loop
-				$ActiveCalls = ActiveCall::where(['EndCall' => 0])->orderBy('ActiveCallID')->get();
-				if (!empty($ActiveCalls) && count($ActiveCalls) > 0) {
-					foreach ($ActiveCalls as $ActiveCall) {
-						try {
-							ActiveCall::updateActiveCallCost($ActiveCall->ActiveCallID);
-							$Success[] = '1';
-						} catch (Exception $ev) {
-							Log::error($ev);
-							//$errors[] = 'Cost Update Failed ActiveCallID :' . $ActiveCall->ActiveCallID . ' Reason : ' . $ev->getMessage();
+				try {
+					$ActiveCalls = ActiveCall::where(['EndCall' => 0])->orderBy('ActiveCallID')->get();
+					if (!empty($ActiveCalls) && count($ActiveCalls) > 0) {
+						foreach ($ActiveCalls as $ActiveCall) {
+								ActiveCall::updateActiveCallCost($ActiveCall->ActiveCallID);
+								$Success[] = '1';
 						}
 					}
+				} catch (Exception $ev) {
+					//$errors[] = 'Cost Update Failed ActiveCallID :' . $ActiveCall->ActiveCallID . ' Reason : ' . $ev->getMessage();
+					try {
+						Log::error($ev);
+					}catch (\Exception $ev) {
+
+					}
+
+					try {
+						$joblogdata['Message'] = 'Error:' . $ev->getMessage();
+						$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+						//CronJobLog::insert($joblogdata);
+						CronJobLog::createLog($CronJobID, $joblogdata);
+					}catch (\Exception $evv){
+
+					}
+					try{
+						if (!empty($cronsetting['ErrorEmail'])) {
+							CronJob::CronJobErrorEmailSend($CronJobID, $ev);
+						}
+					}catch (\Exception $evvv){
+
+					}
+
 				}
 			} // infinite loop over
 
@@ -114,7 +135,7 @@ class UpdateActiveCallCost extends Command {
 			}
 
 			//CronJobLog::insert($joblogdata);
-			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".$joblogdata['CronJobStatus'].",'".date('Y-m-d H:i:s')."','RMScheduler','".$joblogdata['Message']."')");
+			DB::select("CALL prc_CreateCronJobLog(?,?,?,?,?)",array($CronJobID,$joblogdata['CronJobStatus'],date('Y-m-d H:i:s'),'RMScheduler',$joblogdata['Message']));
 
 
 		}catch (\Exception $e){
@@ -126,7 +147,7 @@ class UpdateActiveCallCost extends Command {
 			$joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
 			//CronJobLog::insert($joblogdata);
 
-			DB::select("CALL prc_CreateCronJobLog(".$CronJobID.",".CronJob::CRON_FAIL.",'".date('Y-m-d H:i:s')."','RMScheduler','".$joblogdata['Message']."')");
+			DB::select("CALL prc_CreateCronJobLog(?,?,?,?,?)",array($CronJobID,CronJob::CRON_FAIL,date('Y-m-d H:i:s'),'RMScheduler',$joblogdata['Message']));
 
 			if(!empty($cronsetting['ErrorEmail'])) {
 
