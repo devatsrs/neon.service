@@ -86,16 +86,18 @@ class AutoOutPayment extends Command {
             $CompanyConfiguration = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'API'])->pluck('Value');
             foreach($AutoOutPaymentList as $AutoOutPaymentAccount) {
 
-                $BillingType = AccountBilling::where([
+                /*$BillingType = AccountBilling::where([
                     'AccountID'=>$AutoOutPaymentAccount->AccountID,
                     'ServiceID'=>0
                 ])->pluck('BillingType');
                 $BalanceAmount = AccountBalance::getNewAccountBalance($CompanyID, $AutoOutPaymentAccount->AccountID);
                 if(isset($BillingType) && $BillingType==1){
                     $BalanceAmount = AccountBalanceLog::getPrepaidAccountBalance($AutoOutPaymentAccount->AccountID);
-                }
+                }*/
 
-                if((float)$BalanceAmount >= (float)$AutoOutPaymentAccount->OutPaymentThreshold) {
+                $AvailableOutPayment = (float)$AutoOutPaymentAccount->OutPaymentAvailable;
+                $OutPaymentThreshold = (float)$AutoOutPaymentAccount->OutPaymentThreshold;
+                if($AvailableOutPayment >= $OutPaymentThreshold) {
                     $OutPaymentAccount = $this::callOutPaymentApi($AutoOutPaymentAccount, $CompanyConfiguration);
                     if ($OutPaymentAccount[0] == "success") {
                         $successRecord = array();
