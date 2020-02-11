@@ -621,10 +621,12 @@ class CronJob extends \Eloquent {
         $Cron  = CronJob::where(['CronJobID' => $CronJobID , 'CompanyID' => $CompanyID])->first();
         if($Type == Nodes::CRONJOB){
             $Nodes = json_decode($Cron->Settings,true);
+            $Nodes = $Nodes['Nodes'];
         }else{
             $NodesFromCompany = CompanyConfiguration::where(['Key'=>'Nodes','CompanyID' => $CompanyID])->first();
             if($NodesFromCompany){
                 $Nodes = json_decode($NodesFromCompany->Value,true);
+                $Nodes = $Nodes['Nodes'];
             }else{
                 $Nodes = [];
             }   
