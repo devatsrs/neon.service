@@ -29,7 +29,7 @@ class AccountPaymentAutomation extends \Eloquent
         }
         $localIP = env('SERVER_LOCAL_IP');
         $url =  !empty($localIP) ? "http://$localIP/" : $url;
-        $APIresponse = NeonAPI::callAPI($postdata, "api/depositFund", $url);
+        $APIresponse = NeonAPI::callAPI($postdata, "api/depositFund", $url,'application/json');
         Log::info("API Response". json_encode($APIresponse));
         if (isset($APIresponse["error"])) {
             try {

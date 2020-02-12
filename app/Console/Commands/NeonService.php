@@ -48,7 +48,11 @@ class NeonService extends Command {
 
 		Log::info($this->name . "########### Service Starts ###########");
 
-		$Company = Company::all();
+		$Company = Company::select('tblCompany.CompanyID')
+		->leftJoin('tblReseller', 'tblReseller.ChildCompanyID','=','tblCompany.CompanyID')
+        ->leftJoin('tblAccount', 'tblReseller.AccountID','=','tblAccount.AccountID')
+        ->where('tblAccount.Status','=',1)->OrwhereNull('tblReseller.AccountID')
+        ->orderBy("tblCompany.CompanyID")->get();
 		foreach($Company as $CompanID){
             $PHP_EXE_PATH = CompanyConfiguration::get($CompanID->CompanyID,'PHP_EXE_PATH');
             $RMArtisanFileLocation = CompanyConfiguration::get($CompanID->CompanyID,'RM_ARTISAN_FILE_LOCATION');

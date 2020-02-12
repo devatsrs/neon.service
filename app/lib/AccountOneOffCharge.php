@@ -28,7 +28,7 @@ class AccountOneOffCharge extends \Eloquent {
                 if($AccountOneOffCharge->Date <= $Today ) {
                     $Count = AccountBalanceSubscriptionLog::where(['ProductType' => Product::ONEOFFCHARGE, 'ParentID' => $AccountOneOffCharge->AccountOneOffChargeID, 'StartDate' => $AccountOneOffCharge->Date])->count();
                     if ($Count == 0) {
-                        AccountBalanceSubscriptionLog::CreateOneOffChargeBalanceLog($BillingType, $AccountOneOffCharge->AccountOneOffChargeID, $AccountOneOffCharge->Date, $AccountOneOffCharge->Date);
+                        AccountBalanceSubscriptionLog::CreateOneOffChargeBalanceLog($ProcessID,$BillingType, $AccountOneOffCharge->AccountOneOffChargeID, $AccountOneOffCharge->Date, $AccountOneOffCharge->Date);
                     }
                 }
             }

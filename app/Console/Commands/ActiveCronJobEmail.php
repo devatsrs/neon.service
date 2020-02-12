@@ -61,8 +61,9 @@ class ActiveCronJobEmail extends Command {
         $MainCronJobID = $arguments['CronJobID'];
         $MainCronJob = CronJob::find($MainCronJobID);
         //$maindataactive['Active'] = 1;
-        $maindataactive['PID'] = $getmypid;
-        $MainCronJob->update($maindataactive);
+        /*$maindataactive['PID'] = $getmypid;
+        $MainCronJob->update($maindataactive);*/
+        //CronJob::activateCronJob($MainCronJob);
 
         $joblogdata = array();
         $joblogdata['CronJobID'] = $MainCronJobID;
@@ -71,7 +72,7 @@ class ActiveCronJobEmail extends Command {
 
         $Maincronsetting = json_decode($MainCronJob->Settings,true);
         $ActiveCronJobEmailMinute = isset($Maincronsetting['AlertEmailInterval']) ? $Maincronsetting['AlertEmailInterval'] : '';
-        CronJob::createLog($MainCronJobID);
+        //CronJob::createLog($MainCronJobID);
         Log::useFiles(storage_path() . '/logs/activecronjob-' . date('Y-m-d') . '.log');
         Log::error(' ========================== active cronjob start =============================');
         try {
@@ -80,6 +81,10 @@ class ActiveCronJobEmail extends Command {
             $msg="";
             foreach($acarray as $ac) {
                 if (isset($ac->CronJobID) && $ac->CronJobID > 0) {
+                    $CurrentServerIp = getenv("SERVER_LOCAL_IP");
+                    if($CurrentServerIp != $ac->RunningOnServer) {
+                        continue;
+                    }
 
                     Log::error(' ========================== active cronjob email start =============================');
                     $CronJobID = $ac->CronJobID;
@@ -100,34 +105,25 @@ class ActiveCronJobEmail extends Command {
 
                         $limitTime = isset($cronsetting['ThresholdTime']) ? $cronsetting['ThresholdTime'] : '';
                         //check cron job is running more than limit time
-                        if(isset($minute) && (int)$minute > (int)$limitTime )
-                        {
-							Log::error("LastRunTime ". $LastRunTime );
-							Log::error("Minutes ". $minute . " >  " . (int)$limitTime);
-                            Log::error("CronJob Active Need To Update");
-							
-                            $emailstatus = CronJob::ActiveCronJobEmailSend($ac);
+                        if($limitTime != -1) {
+                            if (isset($minute) && (int)$minute >= (int)$limitTime) {
+                                Log::error("LastRunTime " . $LastRunTime);
+                                Log::error("Minutes " . $minute . " >  " . (int)$limitTime);
+                                Log::error("CronJob Active Need To Update");
 
-                            $msg.=$JobTitle." - Running Since ".$minute." min <br>";
+                                $emailstatus = CronJob::ActiveCronJobEmailSend($ac);
+                                $msg .= $JobTitle . " - Running Since " . $minute . " min <br>";
 
-                            if($emailstatus == -1 ){
-
-                                // Error Email is not setup.
-                                //Log::info($JobTitle . "  - Error Email not setup ");
-
+                                if ($emailstatus == -1) {
+                                    // Error Email is not setup.
+                                    //Log::info($JobTitle . "  - Error Email not setup ");
+                                } else if (isset($emailstatus['status']) && $emailstatus['status'] == 1) {
+                                    CronJob::find($CronJobID)->update(['EmailSendTime' => date('Y-m-d H:i:s')]);
+                                    //Log::error($JobTitle . "  - Threshold limit Email Sent  -  Time : " . $EmailSendTime);
+                                } else {
+                                    Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailstatus, true));
+                                }
                             }
-                            else if (isset($emailstatus['status']) && $emailstatus['status'] == 1) {
-
-                                CronJob::find($CronJobID)->update(['EmailSendTime'=>date('Y-m-d H:i:s')]);
-
-                                //Log::error($JobTitle . "  - Threshold limit Email Sent  -  Time : " . $EmailSendTime);
-
-                            } else {
-
-                                Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailstatus, true));
-                            }
-
-
                         }
 
                     }catch (\Exception $err) {
@@ -145,12 +141,20 @@ class ActiveCronJobEmail extends Command {
             //$joblogdata['Message'] = 'Success';
             $joblogdata['Message'] = $Message;
             $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            CronJobLog::insert($joblogdata);
+            //CronJobLog::insert($joblogdata);
+
+            // if lock error occurs then comment below line
+            //CronJobLog::createLog($MainCronJobID,$joblogdata);
+
         }catch (\Exception $e) {
             Log::error($e);
             $joblogdata['Message'] ='Error:'.$e->getMessage();
             $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-            CronJobLog::insert($joblogdata);
+            //CronJobLog::insert($joblogdata);
+
+            // if lock error occurs then comment below line
+            //CronJobLog::createLog($MainCronJobID,$joblogdata);
+
             if(!empty($Maincronsetting['ErrorEmail'])) 
             {
                 $result = CronJob::CronJobErrorEmailSend($MainCronJobID,$e);
@@ -159,8 +163,10 @@ class ActiveCronJobEmail extends Command {
             }
         }
         //$maindataactive['Active'] = 0;
-        $maindataactive['PID'] = '';
-        $MainCronJob->update($maindataactive);
+        /*$maindataactive['PID'] = '';
+        $MainCronJob->update($maindataactive);*/
+
+        //CronJob::deactivateCronJob($MainCronJob);
 
         if(!empty($Maincronsetting['SuccessEmail'])){
             $result = CronJob::CronJobSuccessEmailSend($MainCronJobID);

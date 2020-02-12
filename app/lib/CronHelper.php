@@ -30,6 +30,11 @@ class CronHelper {
             foreach($arguments as $argument_key => $argument_value) {
                 $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
             }
+        }else if($command_name == 'send_active_call_alert' && count($arguments) > 0){
+            unset($arguments['APIURL']);
+            foreach($arguments as $argument_key => $argument_value) {
+                $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
+            }
         }else if(count($arguments) > 0) {
             foreach($arguments as $argument_key => $argument_value) {
                 $lock_command_file .= "_" . $argument_key . "_" . $argument_value;
@@ -49,6 +54,12 @@ class CronHelper {
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 
         if(!empty($arguments['CronJobID'])){
+            $CronJob = CronJob::find($arguments['CronJobID']);
+            $CronJobCommand = DB::table('tblCronJobCommand')->where(["CronJobCommandID"=>$CronJob->CronJobCommandID])->first();
+            if($CronJobCommand->Command != 'activecronjobemail') { // skip activecronjobemail
+                $CurrentServerIp = getenv("SERVER_LOCAL_IP");
+                $CronJob->update(["RunningOnServer" => $CurrentServerIp]);
+            }
             $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
         }
         if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1) {

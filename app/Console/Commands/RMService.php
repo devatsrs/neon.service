@@ -401,16 +401,18 @@ class RMService extends Command {
             }
 
             //------------------------ Cron job start here------------------------//
-          
-            $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
-            foreach ($cmdarray as $com) {
-                if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
-                    if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID,Nodes::CRONJOB)){
-                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
+            //if($CompanyID == 1){
+                $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
+                foreach ($cmdarray as $com) {
+                    if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
+                        // activecronjobemail cronjob will run on all servers
+                        if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID,Nodes::CRONJOB) || $com->Command == 'activecronjobemail' || $com->Command == 'servercleanup'){
+                            pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
+                        }
                     }
                 }
-                
-            }
+            //}
+            
             foreach($allpending['data']['PendingCustomerRateSheet'] as $allpendingrs){
                 if (isset($allpendingrs->JobID) && $allpendingrs->JobID>0) {
                     if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrs->JobID,$CompanyID,Nodes::JOB)){

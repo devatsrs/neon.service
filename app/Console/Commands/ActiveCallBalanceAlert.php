@@ -79,7 +79,7 @@ class ActiveCallBalanceAlert extends Command {
         $BlockCallAPI=isset($Maincronsetting['BlockCallAPI'])?$Maincronsetting['BlockCallAPI']:'';
 
         CronJob::createLog($MainCronJobID);
-        Log::useFiles(storage_path() . '/logs/activecallbalancealert-' . date('Y-m-d') . '.log');
+        Log::useFiles(storage_path() . '/logs/activecallbalancealert-' .$CompanyID.'-'. date('Y-m-d') . '.log');
         Log::error(' ========================== active Call Balance start =============================');
 
         if($APIURL!=''){
@@ -93,72 +93,67 @@ class ActiveCallBalanceAlert extends Command {
                  * This cronjob will check (accountbalance - live call balance) of Account (Active Call)
                  * if account balance is zero or less than we will send reminder (alert)
                 */
+                $Count = 0;
+                while(1) { // infinite loop
+                    try {
+                        log::info('Loop is working');
+                        $Count++;
+                        $ActiveCallAccountIDs = ActiveCall::getUniqueAccountIDByComapny($CompanyID);
+                        if (!empty($ActiveCallAccountIDs)) {
+                            foreach ($ActiveCallAccountIDs as $AccountID) {
 
-                $ActiveCallAccountIDs=ActiveCall::getUniqueAccountID();
-                if(!empty($ActiveCallAccountIDs)) {
-                    foreach ($ActiveCallAccountIDs as $AccountID) {
-                        $AccountBalance = AccountBalance::getAccountBalanceWithActiveCallRE($AccountID);
-                        if ($AccountBalance <= 0) {
-                            /** check auto top up is on or not */
+                                $AccountBalanceData = DB::connection('neon_routingengine')->select("call prc_getActiveCallCostByAccount ('" . $AccountID . "')");
+                                if (count($AccountBalanceData) > 0) {
+                                    //log::info(print_r($AccountBalanceData,true));
+                                    $has_balance = $AccountBalanceData[0]->has_balance;
+                                    $BalanceAmount = $AccountBalanceData[0]->BalanceAmount;
 
-                            log::info($APIURL);
-                            $UUIDS = ActiveCall::getUUIDByAccountID($AccountID);
-                            if (!empty($UUIDS[0])) {
-                                $ActiveCallArr = array();
-                                $ActiveCallArr['CustomerID'] = $AccountID;
-                                $ActiveCallArr['Balance'] = $AccountBalance;
-                                $ActiveCallArr['UUID'] = $UUIDS;
-                                $LowBalanceArr[] = $ActiveCallArr;
-                            } else {
-                                $ErrorAccount[] = $AccountID;
+                                   // log::info('AccountID : ' . $AccountID . ' - has_balance : ' . $has_balance . ' - BalanceAmount : ' . $BalanceAmount);
+
+                                    if (isset($has_balance) && $has_balance == 0) {
+                                        log::info('Balance is low');
+                                        Helper::trigger_command($CompanyID, "send_active_call_alert", $AccountID . ' ' . $APIURL);
+                                    }
+
+                                }
+
                             }
+                        }
+                    }catch (\Exception $ev) {
+                        try {
+                            Log::error($ev);
+                        }catch (\Exception $ev) {
 
                         }
 
+                        try {
+                            $joblogdata['Message'] = 'Error:' . $ev->getMessage();
+                            $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                            //CronJobLog::insert($joblogdata);
+                            CronJobLog::createLog($MainCronJobID, $joblogdata);
+                        }catch (\Exception $evv){
+
+                        }
+                        try{
+                            if (!empty($cronsetting['ErrorEmail'])) {
+                                $result = CronJob::CronJobErrorEmailSend($MainCronJobID, $ev);
+                            }
+                        }catch (\Exception $evvv){
+
+                        }
                     }
-                }
+                } // infinite loop over
 
                 //Log::info(print_r($LowBalanceArr,true));die;
 
-                if(!empty($LowBalanceArr)){
-                    $Result = SpeakIntelligenceAPI::BalanceAlert($APIURL,$LowBalanceArr);
-                    Log::info("=====API Response =====");
-                    Log::info(print_r($Result,true));
-                    /*
-                    if($BlockCallAPI != ''){
-                        Log::info("=====Block Call API Start =====");
-                        foreach($LowBalanceArr as $Callblock){
-                            $BlockCallsApiArr = array();
-                            $BlockCallsApiArr['AccountID']      = $Callblock['CustomerID'];
-                            $BlockCallsApiArr['UUID']           = implode(",", $Callblock['UUID']);
-                            $BlockCallsApiArr['DisconnectTime'] = date("Y-m-d H:i:s");
-                            $BlockCallsApiArr['BlockReason']    = 'Insufficient Balance';
-                            $JSONInput = json_encode($BlockCallsApiArr, true);
-                            $Result = NeonAPI::callAPI($JSONInput,'',$BlockCallAPI,'application/json');
-                            Log::info("Block call api response." . json_encode($Result));
-                        }
-                    }else{
-                        $joblogdata['Message'] ="Block Call API URL Not Found.";
-                        $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
-                        $Error=1;
-                    }*/
-
-                    $joblogdata['Message'] = "success";
-                    $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-
-                    if(!empty($ErrorAccount)){
-                        $joblogdata['Message'].=" <br/>";
-                        $joblogdata['Message'].=" No UUID Found On the Following Account: ";
-                        $joblogdata['Message'].=implode(",",$ErrorAccount);
-                    }
-                }else{
+                if(empty($LowBalanceArr)){
                     $joblogdata['Message'] = "No Records Found.";
                     $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
                 }
 
 
             }catch (\Exception $e) {
-                Log::error($e);
+                Log::error($e->getMessage());
                 $joblogdata['Message'] ='Error:'.$e->getMessage();
                 $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
                 //CronJobLog::insert($joblogdata);

@@ -67,6 +67,7 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== Vendor Balance alert END===========');*/
 
+
         Log::info('============== CDR Post Process START===========');
         try {
             TempUsageDetail::PostProcessCDR($CompanyID,$ProcessID);
