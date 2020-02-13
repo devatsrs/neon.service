@@ -339,7 +339,7 @@ class ActiveCall extends \Eloquent {
                         $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
                         if(!empty($CollectionCostPercentage) && $TotalOutPayment > 0){
                             $TotalOutPaymentTax = $TotalOutPayment * (1.21);
-                            $CollectionCostPercentage = $TotalOutPaymentTax * ($CollectionCostPercentage/100);
+                            $CollectionCostPercentage = ($TotalOutPaymentTax * $CollectionCostPercentage);
                             //Discount
                             if(!empty($DiscountID) && $CollectionCostPercentage > 0 && !empty($CollectionCostPercentageDiscount)){
                                 $CollectionCostPercentage = $CollectionCostPercentage - (($CollectionCostPercentage * $CollectionCostPercentageDiscount)/100);
