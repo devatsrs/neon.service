@@ -505,7 +505,7 @@ class InvoiceGenerate {
             $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
             $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
             $InvoiceDetail->save();
-         }
+        }
 
         // Adding Monthly Product in Invoice Detail from Components
         $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
@@ -974,31 +974,29 @@ class InvoiceGenerate {
         $InvoicePeriod    = $InvoiceDetails != false ? date("M 'y", strtotime($StartDate)) : "";
 
         foreach($InvoiceDetails as $InvoiceDetail) {
-            if (in_array($InvoiceDetail->ProductType, [Product::SUBSCRIPTION, Product::ONEOFFCHARGE])) {
-                //product
-                $item = new \App\UblInvoice\Item();
-                $item->setName($InvoiceDetail->Description);
-                $item->setDescription($InvoiceDetail->Description);
-                $item->setSellersItemIdentification($InvoiceDetail->ProductID);
+            //product
+            $item = new \App\UblInvoice\Item();
+            $item->setName($InvoiceDetail->Description);
+            $item->setDescription($InvoiceDetail->Description);
+            $item->setSellersItemIdentification($InvoiceDetail->ProductID);
 
-                //price
-                $price = new \App\UblInvoice\Price();
-                $price->setBaseQuantity($InvoiceDetail->Qty);
-                $price->setUnitCode($unitCode);
-                $price->setPriceAmount($InvoiceDetail->Price);
+            //price
+            $price = new \App\UblInvoice\Price();
+            $price->setBaseQuantity($InvoiceDetail->Qty);
+            $price->setUnitCode($unitCode);
+            $price->setPriceAmount($InvoiceDetail->Price);
 
-                //line
-                $invoiceLine = new \App\UblInvoice\InvoiceLine();
-                $invoiceLine->setId($InvoiceDetail->InvoiceDetailID);
-                $invoiceLine->setItem($item);
+            //line
+            $invoiceLine = new \App\UblInvoice\InvoiceLine();
+            $invoiceLine->setId($InvoiceDetail->InvoiceDetailID);
+            $invoiceLine->setItem($item);
 
-                $invoiceLine->setPrice($price);
-                $invoiceLine->setUnitCode($unitCode);
-                $invoiceLine->setInvoicedQuantity($InvoiceDetail->Qty);
-                $invoiceLine->setLineExtensionAmount($InvoiceDetail->Price);
-                $invoiceLine->setTaxTotal($InvoiceDetail->TaxAmount);
-                $invoiceLines[] = $invoiceLine;
-            }
+            $invoiceLine->setPrice($price);
+            $invoiceLine->setUnitCode($unitCode);
+            $invoiceLine->setInvoicedQuantity($InvoiceDetail->Qty);
+            $invoiceLine->setLineExtensionAmount($InvoiceDetail->Price);
+            $invoiceLine->setTaxTotal($InvoiceDetail->TaxAmount);
+            $invoiceLines[] = $invoiceLine;
         }
 
         if($InvoiceAccountType == "Customer"){
