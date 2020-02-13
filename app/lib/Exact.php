@@ -1,5 +1,6 @@
 <?php
 namespace App\Lib;
+use App\Lib\SiteIntegration;
 use Illuminate\Support\Facades\Log;
 
 class Exact
@@ -20,10 +21,13 @@ class Exact
         $this->CompanyID     = $CompanyID;
         $this->redirect_url  = CompanyConfiguration::get($CompanyID, 'WEB_URL') . "/exact";
 
-        $ExactIntegration       = Integration::where(['CompanyID'=>$CompanyID,'Slug'=>ExactAuthentication::ExactConfigKey])->first();
+        /*$ExactIntegration       = Integration::where(['CompanyID'=>$CompanyID,'Slug'=>ExactAuthentication::ExactConfigKey])->first();
         $EXACT_CONFIGURATION    = IntegrationConfiguration::where(array('CompanyId'=>$CompanyID,"IntegrationID"=>$ExactIntegration->IntegrationID))->first();
-        $EXACT_CONFIGURATION    = json_decode($EXACT_CONFIGURATION->Settings, true);
+        $EXACT_CONFIGURATION    = json_decode($EXACT_CONFIGURATION->Settings, true);*/
         //$EXACT_CONFIGURATION    = json_decode(CompanyConfiguration::get($CompanyID, ExactAuthentication::ExactConfigKey), true);
+
+        $EXACT_CONFIGURATION = SiteIntegration::CheckIntegrationConfiguration(true,ExactAuthentication::ExactConfigKey,$CompanyID);
+        $EXACT_CONFIGURATION = json_decode(json_encode($EXACT_CONFIGURATION), true);
 
         if(!empty($EXACT_CONFIGURATION['ExactClientID']) && !empty($EXACT_CONFIGURATION['ExactClientSecret'])) {
             $this->client_id     = $EXACT_CONFIGURATION['ExactClientID'];
@@ -84,7 +88,9 @@ class Exact
                     $response['faultString']    = "Error while updating access_token in database.";
                 }
             } else {
-                $error = isset($result['error']) ? $result['error']['message'] : 'refreshAccessToken : No response from Exact API';
+                $Company = Company::find($this->CompanyID);
+                $error = isset($result['error']['message']) ? $result['error']['message'] : 'refreshAccessToken : No response from Exact API';
+                $error = isset($result['error']) && isset($result['error_description']) ? $result['error'].', '.$result['error_description'].' Company: '.$Company->CompanyName : $error;
                 $response['faultCode']      = !empty($result['error']['code']) ? $result['error']['code'] : "";
                 $response['faultString']    = $error;
             }
@@ -257,6 +263,10 @@ class Exact
         return $response;
     }
 
+    public function setDivision($Division) {
+        $this->CurrentDivision = $Division;
+    }
+
     public function get($URL,$filter,$select)
     {
         $response       = array();
@@ -371,7 +381,7 @@ class Exact
                 $request_headers[] = 'Prefer: return=representation';
             //}
 
-            if($API_URL != ExactAuthentication::DIVISION_URL) {
+            /*if($API_URL != ExactAuthentication::DIVISION_URL) {
                 if(empty($this->CurrentDivision)) {
                     $division = $this->getDivision();
 
@@ -382,7 +392,8 @@ class Exact
                 //array_walk_recursive($division, array($this, 'getCurrentDivisionFromArray'));
 
                 $URL = str_replace('{division}', $this->CurrentDivision, $URL);
-            }
+            }*/
+            $URL = str_replace('{division}', $this->CurrentDivision, $URL);
         } else {
             $request_headers[] = 'Content-Type: application/x-www-form-urlencoded';
         }
@@ -420,19 +431,50 @@ class Exact
 
         curl_setopt($ch, CURLOPT_URL, $URL);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
+        //curl_setopt($ch, CURLOPT_HEADER, true); // to get response headers
 
-        $result = curl_exec($ch);
-        if($API_URL == ExactAuthentication::RECEIVABLESLISTBYACCOUNT) {
-            Log::info($result);
-        }
-        $result = json_decode($result, true);
-        $result = $this->parseResponse($result);
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+            function($curl, $header) use (&$headers)
+            {
+                $len = strlen($header);
+                $header = explode(':', $header, 2);
+                if (count($header) < 2) // ignore invalid headers
+                    return $len;
+
+                $headers[strtolower(trim($header[0]))][] = trim($header[1]);
+
+                return $len;
+            }
+        );
+
+        $result     = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $result     = $this->parseResponse($result,$headers,$statusCode);
 
         return $result;
     }
 
-    public function parseResponse($response)
+    public function parseResponse($response,$headers,$statusCode)
     {
+        $limit_array_keys = array('x-ratelimit-limit','x-ratelimit-remaining','x-ratelimit-reset','x-ratelimit-minutely-limit','x-ratelimit-minutely-remaining','x-ratelimit-minutely-reset');
+        //Log::info([$response,$headers]);
+        $response = json_decode($response, true);
+
+        $limit_array = [];
+        foreach ($headers as $key => $value) {
+            if(in_array($key,$limit_array_keys)) {
+                $limit_array[$key] = $value[0];
+            }
+        }
+
+        if(isset($limit_array['x-ratelimit-minutely-remaining']) && $limit_array['x-ratelimit-minutely-remaining'] <= 1) {
+            $CurrentTime    = (time()*1000);//round(microtime(true) * 1000); // epoch time in milliseconds
+            $SleepTime      = ($limit_array['x-ratelimit-minutely-reset'] - $CurrentTime)/1000;
+            $SleepTime      += 1;
+            //Log::info("Sleep : ".$SleepTime);
+            sleep($SleepTime);
+        }
+
         if(isset($response['d']['results']))  {
             $response = $response['d']['results'];
         } else if (isset($response['d']))  {
@@ -441,6 +483,10 @@ class Exact
             //$response['error']['code']      = $response['error']['code'];
             $response['error']['message']   = $response['error']['message']['value'];
         }
+
+        /*$response['limit_array'] 	= $limit_array;
+        $response['headers'] 		= $headers;
+        $response['statusCode'] 	= $statusCode;*/
 
         return $response;
     }
