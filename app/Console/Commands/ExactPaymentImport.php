@@ -87,87 +87,116 @@ class ExactPaymentImport extends Command {
 		$error = $success = [];
 		try {
 			CronJob::createLog($CronJobID);
-			$exact = new Exact($CompanyID);
 
-			$PendingPaymentInvoices_q = "CALL prc_getExactPendingInvoicePayment()";
+			// get all company integration list, against which integration is setup
+			$Integration_q 		= "SELECT ic.CompanyId,ic.Settings
+								   FROM tblIntegration i
+								   JOIN	tblIntegrationConfiguration ic ON i.IntegrationID = ic.IntegrationID
+								   WHERE i.Slug='exact'";
 
-			$PendingPaymentInvoices = DB::connection('sqlsrv2')->select($PendingPaymentInvoices_q);
+			$Integrations 		= DB::select($Integration_q);
 
-			$PendingInvoicesExact = $PendingInvoicesNeon = [];
-			foreach ($PendingPaymentInvoices as $PendingPaymentInvoice) {
-				$PendingInvoicesNeon[] = $PendingPaymentInvoice->InvoiceNumber;
-				$Account = $exact->getAccount($PendingPaymentInvoice->Number);
+			// loop through all company integration
+			foreach ($Integrations as $IntegrationData) {
+				$CompanyID 		= $IntegrationData->CompanyId; // integration CompanyID
+				$MappedGLCode 	= !empty($IntegrationData->Settings) ? json_decode($IntegrationData->Settings, true) : [];
 
-				if (!isset($Account['faultString']) && !empty($Account[0]['ID'])) {
-					$ReceivableList = $exact->getReceivablesListByAccount($Account[0]['ID']);
+				// object of exact of main company in which integration is setup
+				$exact = new Exact($CompanyID);
 
-					if (!isset($ReceivableList['faultString']) && count($ReceivableList) > 0) {
-						foreach ($ReceivableList as $key => $value) {
-							$PendingInvoicesExact[] = $value['YourRef'];
+				// check if Division is mapped against company in exact integration or not
+				if (isset($MappedGLCode['Division']) && is_array($MappedGLCode['Division'])) {
+					// loop through Divisions which is mapped in integration, divisions are separate company
+					foreach ($MappedGLCode['Division'] as $CompanyID => $Division) {
+						$Division = trim($Division);
+						// only process further if Division code is set against company in integration, blank will be skipped
+						if (!empty($Division)) {
+							// set CurrentDivision to which invoice will be posted
+							$exact->setDivision($Division);
+
+							$PendingPaymentInvoices_q = "CALL prc_getExactPendingInvoicePayment($CompanyID)";
+							$PendingPaymentInvoices = DB::connection('sqlsrv2')->select($PendingPaymentInvoices_q);
+
+							$PendingInvoicesExact = $PendingInvoicesNeon = [];
+							foreach ($PendingPaymentInvoices as $PendingPaymentInvoice) {
+								$PendingInvoicesNeon[] = $PendingPaymentInvoice->InvoiceNumber;
+								$Account = $exact->getAccount($PendingPaymentInvoice->Number);
+
+								if (!isset($Account['faultString']) && !empty($Account[0]['ID'])) {
+									$ReceivableList = $exact->getReceivablesListByAccount($Account[0]['ID']);
+
+									if (!isset($ReceivableList['faultString']) && count($ReceivableList) > 0) {
+										foreach ($ReceivableList as $key => $value) {
+											$PendingInvoicesExact[] = $value['YourRef'];
+										}
+									} else { // need to change this
+										if (empty($ReceivableList['nodata'])) {
+											$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") has Error: <br/>" . $ReceivableList['faultString'];
+										}
+									}
+								} else {
+									if (!empty($Account['nodata'])) { // if account not found
+										$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") not exist in Exact.";
+									} else { // if error
+										$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") has Error: <br/>" . $Account['faultString'];
+									}
+								}
+							}
+
+							// $PendingInvoicesExact will have only invoices which are not paid in Exact
+							// $PendingInvoicesNeon will have all invoices which have pending payment in Neon
+							// So, we will find out which invoices need to mark paid based on which invoices are pending in Exact
+							$ToBePaidInvoices = array_diff($PendingInvoicesNeon,$PendingInvoicesExact); // will return all invoice which is in $PendingInvoicesNeon but not in $PendingInvoicesExact
+
+							DB::connection('sqlsrv2')->beginTransaction();
+
+							foreach ($ToBePaidInvoices as $key => $value) {
+								$Invoice = Invoice::where("InvoiceNumber",$value)->first();
+								$Account = Account::find($Invoice->AccountID);
+
+								// get invoice components by InvoiceID
+								$invoice_components_q = "CALL prc_getPendingInvoiceListForExact($CompanyID,$Invoice->InvoiceID)";
+								$invoice_components = DB::connection('sqlsrv2')->select($invoice_components_q);
+
+								// if PaymentMethod is not set then skip the invoice
+								if(!empty($Account->PaymentMethod)) {
+									// if PaymentMethod is WireTransfer or DirectDebit or Invoice is outpayment invoice then need to create payment entry
+									if(in_array($Account->PaymentMethod,['WireTransfer','DirectDebit']) || ($Invoice->ItemInvoice == 1 && $invoice_components[0]->Component == 'Outpayment')) {
+										$paymentdata = array();
+										$paymentdata['CompanyID'] 		= $Invoice->CompanyID;
+										$paymentdata['AccountID'] 		= $Invoice->AccountID;
+										$paymentdata['InvoiceNo'] 		= $Invoice->FullInvoiceNumber;
+										$paymentdata['InvoiceID'] 		= (int)$Invoice->InvoiceID;
+										$paymentdata['PaymentDate'] 	= date('Y-m-d');
+										$paymentdata['PaymentMethod'] 	= "";//$transactionResponse['transaction_payment_method'];
+										$paymentdata['CurrencyID'] 		= $Account->CurrencyId;
+										$paymentdata['PaymentType'] 	= 'Payment In';
+										$paymentdata['Notes'] 			= "Payment Inserted By ExactPaymentImport cronjob at ".date('Y-m-d H:i:s');
+										$paymentdata['Amount'] 			= floatval($Invoice->GrandTotal);
+										$paymentdata['Status'] 			= 'Approved';
+										$paymentdata['created_at'] 		= date('Y-m-d H:i:s');
+										$paymentdata['updated_at'] 		= date('Y-m-d H:i:s');
+										$paymentdata['CreatedBy'] 		= "ExactPaymentImport";
+										$paymentdata['ModifyBy'] 		= "ExactPaymentImport";
+
+										Payment::insert($paymentdata);
+										ExactInvoiceLog::where(['InvoiceID'=>$Invoice->InvoiceID])->update(["PaymentStatus"=>1]);
+										$Invoice->update(["InvoiceStatus"=>'paid']);
+									} else {
+										ExactInvoiceLog::where(['InvoiceID'=>$Invoice->InvoiceID])->update(["PaymentStatus"=>1]);
+									}
+									$countInvoicePaymentImported++;
+									$success[] = "Payment for Invoice ".$Invoice->InvoiceNumber." successfully imported.";
+								} else {
+									$error[] = "Invoice ".$Invoice->InvoiceNumber." is skipped due to Payment Method is not set on account.";
+								}
+							}
+							DB::connection('sqlsrv2')->commit();
+
 						}
-					} else { // need to change this
-						if (empty($ReceivableList['nodata'])) {
-							$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") has Error: <br/>" . $ReceivableList['faultString'];
-						}
-					}
-				} else {
-					if (!empty($Account['nodata'])) { // if account not found
-						$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") not exist in Exact.";
-					} else { // if error
-						$error[] = "Account " . $PendingPaymentInvoice->AccountName . "(" . $PendingPaymentInvoice->Number . ") has Error: <br/>" . $Account['faultString'];
 					}
 				}
 			}
-
-			// $PendingInvoicesExact will have only invoices which are not paid in Exact
-			// $PendingInvoicesNeon will have all invoices which have pending payment in Neon
-			// So, we will find out which invoices need to mark paid based on which invoices are pending in Exact
-			$ToBePaidInvoices = array_diff($PendingInvoicesNeon,$PendingInvoicesExact); // will return all invoice which is in $PendingInvoicesNeon but not in $PendingInvoicesExact
-
-			DB::connection('sqlsrv2')->beginTransaction();
-
-			foreach ($ToBePaidInvoices as $key => $value) {
-				$Invoice = Invoice::where("InvoiceNumber",$value)->first();
-				$Account = Account::find($Invoice->AccountID);
-
-				// get invoice components by InvoiceID
-				$invoice_components_q = "CALL prc_getPendingInvoiceListForExact($Invoice->InvoiceID)";
-				$invoice_components = DB::connection('sqlsrv2')->select($invoice_components_q);
-
-				// if PaymentMethod is not set then skip the invoice
-				if(!empty($Account->PaymentMethod)) {
-					// if PaymentMethod is WireTransfer or DirectDebit or Invoice is outpayment invoice then need to create payment entry
-					if(in_array($Account->PaymentMethod,['WireTransfer','DirectDebit']) || ($Invoice->ItemInvoice == 1 && $invoice_components[0]->Component == 'Outpayment')) {
-						$paymentdata = array();
-						$paymentdata['CompanyID'] 		= $Invoice->CompanyID;
-						$paymentdata['AccountID'] 		= $Invoice->AccountID;
-						$paymentdata['InvoiceNo'] 		= $Invoice->FullInvoiceNumber;
-						$paymentdata['InvoiceID'] 		= (int)$Invoice->InvoiceID;
-						$paymentdata['PaymentDate'] 	= date('Y-m-d');
-						$paymentdata['PaymentMethod'] 	= "";//$transactionResponse['transaction_payment_method'];
-						$paymentdata['CurrencyID'] 		= $Account->CurrencyId;
-						$paymentdata['PaymentType'] 	= 'Payment In';
-						$paymentdata['Notes'] 			= "Payment Inserted By ExactPaymentImport cronjob at ".date('Y-m-d H:i:s');
-						$paymentdata['Amount'] 			= floatval($Invoice->GrandTotal);
-						$paymentdata['Status'] 			= 'Approved';
-						$paymentdata['created_at'] 		= date('Y-m-d H:i:s');
-						$paymentdata['updated_at'] 		= date('Y-m-d H:i:s');
-						$paymentdata['CreatedBy'] 		= "ExactPaymentImport";
-						$paymentdata['ModifyBy'] 		= "ExactPaymentImport";
-
-						Payment::insert($paymentdata);
-						ExactInvoiceLog::where(['InvoiceID'=>$Invoice->InvoiceID])->update(["PaymentStatus"=>1]);
-						$Invoice->update(["InvoiceStatus"=>'paid']);
-					} else {
-						ExactInvoiceLog::where(['InvoiceID'=>$Invoice->InvoiceID])->update(["PaymentStatus"=>1]);
-					}
-					$countInvoicePaymentImported++;
-					$success[] = "Payment for Invoice ".$Invoice->InvoiceNumber." successfully imported.";
-				} else {
-					$error[] = "Invoice ".$Invoice->InvoiceNumber." is skipped due to Payment Method is not set on account.";
-				}
-			}
-			DB::connection('sqlsrv2')->commit();
 
 			if(empty($error)) {
 				$joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
