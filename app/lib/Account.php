@@ -200,7 +200,7 @@ class Account extends \Eloquent {
         if(!empty($Account->Owner))
         {
             $AccountManager = User::find($Account->Owner);
-            $AccountManagerEmail = $AccountManager->EmailAddress;
+            $AccountManagerEmail = !empty($AccountManager) ? $AccountManager->EmailAddress : '';
         }
         return $AccountManagerEmail;
     }
