@@ -340,7 +340,7 @@ class ExactInvoiceExport extends Command {
 											ExactInvoiceLog::insert($invoice_log_data);
 										} else {
 											// Error while creating Invoice in Exact
-											$error[] = $ExactInvoice['faultString'];
+											$error[] = $ExactInvoice['faultString'].' Invoice : '.$InvoiceNumber;
 											// remove/rollback created document from exact
 											$exact->deleteDocument($Document);
 										}
