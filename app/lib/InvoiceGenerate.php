@@ -115,6 +115,62 @@ class InvoiceGenerate {
         return $TotalPages;
     }
 
+
+    public static function getBillingTypeChangeDates($AccountID,$StartDate,$EndDate){
+
+        $BillingTypeLogs = AccountBillingTypeLog::where('AccountID', $AccountID)
+            ->whereBetween('Date',[$StartDate, $EndDate])
+            ->orderBy('Date', 'asc')->get();
+
+
+        $returnArr = [];
+        if($BillingTypeLogs != false && $BillingTypeLogs->count() > 0) {
+
+            $FilteredLogs = [];
+            $PreviousBillingType = 0;
+
+            // Removing Repeat Billing Types
+            foreach($BillingTypeLogs as $BillingTypeLog){
+                if($BillingTypeLog->BillingType != $PreviousBillingType){
+                    $PreviousBillingType = $BillingTypeLog->BillingType;
+                    $FilteredLogs[] = $BillingTypeLog;
+                }
+            }
+
+            $TotalEntries = count($FilteredLogs);
+            $PreviousDate = false;
+            foreach ($FilteredLogs as $count => $BillingTypeLog) {
+                $BillingDate = $BillingTypeLog->Date;
+                $PrevBillingType = $BillingTypeLog->OldBillingType;
+                $ChangedBillingType = $BillingTypeLog->BillingType;
+                $LastDateOfCurrentDate = date("Y-m-d", strtotime("-1 day", strtotime($BillingDate)));
+
+                if(!empty($returnArr)){
+                    $returnArr[$PreviousDate]['EndDate'] = $LastDateOfCurrentDate;
+                } else {
+                    // IF First Log And Log Date is greater then StartDate
+                    if (strtotime($BillingDate) > strtotime($StartDate)) {
+                        $returnArr[$StartDate] = [
+                            'StartDate' => $StartDate,
+                            'EndDate'   => $LastDateOfCurrentDate,
+                            'Billing'   => $PrevBillingType,
+                        ];
+                    }
+                }
+
+                $PreviousDate = $BillingDate;
+                $EndDateValue = $TotalEntries == $count + 1 ? $EndDate : false;
+                $returnArr[$BillingDate] = [
+                    'StartDate' => $BillingDate,
+                    'EndDate'   => $EndDateValue,
+                    'Billing'   => $ChangedBillingType,
+                ];
+            }
+        }
+
+        return $returnArr;
+    }
+
     public static function GenerateInvoice($CompanyID,$Accounts,$InvoiceGenerationEmail,$ProcessID,$JobID,$InvoiceAccountType = "Customer")
     {
         Log::useFiles(storage_path() . '/logs/GenerateInvoice-' . date('Y-m-d') . '.log');
@@ -168,10 +224,29 @@ class InvoiceGenerate {
                         DB::beginTransaction();
                         DB::connection('sqlsrv2')->beginTransaction();
 
+
                         do {
                             Log::info('Invoice::sendInvoice(' . $CompanyID . ',' . $AccountID . ',' . $LastInvoiceDate . ',' . $NextInvoiceDate . ',' . implode(",", $InvoiceGenerationEmail) . ')');
 
-                            $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastChargeDate, $NextChargeDate, $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID);
+                            $LogsData = self::getBillingTypeChangeDates($AccountID,$LastChargeDate,$NextChargeDate);
+                            Log::info('Billing Logs Data Count - ' . count($LogsData));
+                            Log::info('Billing Logs Data - ' . print_r($LogsData, true));
+                            if(!empty($LogsData)){
+
+                                foreach($LogsData as $log) {
+                                    $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $log['StartDate'], $log['EndDate'], $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID);
+
+                                    if (!isset($response["status"]) || $response["status"] != 'success') {
+                                        $errors[] = $response["message"];
+                                        $skip_accounts[] = $AccountID;
+                                        $alreadyBilled = isset($response['alreadyBilled']) ? 1 : 0;
+                                        break;
+                                    }
+                                }
+
+                            } else {
+                                $response = self::sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastChargeDate, $NextChargeDate, $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID);
+                            }
 
                             Log::info('Invoice::sendInvoice done');
 
@@ -229,6 +304,7 @@ class InvoiceGenerate {
                                 $LastInvoiceDate = $oldNextInvoiceDate;
                                 $NextChargeDate  = $NewNextChargeDate;
                                 $LastChargeDate  = $NewLastChargeDate;
+                                $FirstInvoice    = 0;
                             } else {
                                 $errors[] = $response["message"];
                                 $skip_accounts[] = $AccountID;
@@ -293,11 +369,10 @@ class InvoiceGenerate {
         return $response;
     }
 
-
     public static function sendInvoice($CompanyID, $AccountID, $FirstInvoice, $LastChargeDate, $NextChargeDate, $InvoiceAccountType, $InvoiceGenerationEmail, $ProcessID, $JobID){
 
         try {
-            $Today=date('Y-m-d');
+            $Today            = date('Y-m-d');
             $Account          = Account::find($AccountID);
             $AccountBilling   = AccountBilling::where(['AccountID' => $AccountID])->first();
             $StartDate        = date("Y-m-d 00:00:00", strtotime($LastChargeDate));
