@@ -139,6 +139,7 @@ class InvoiceGenerate {
 
             $TotalEntries = count($FilteredLogs);
             $PreviousDate = false;
+            $StartDateCheck = false;
             foreach ($FilteredLogs as $count => $BillingTypeLog) {
                 $BillingDate = $BillingTypeLog->Date;
                 $PrevBillingType = $BillingTypeLog->OldBillingType;
@@ -155,16 +156,18 @@ class InvoiceGenerate {
                             'EndDate'   => $LastDateOfCurrentDate,
                             'Billing'   => $PrevBillingType,
                         ];
-                    }
+                    } else $StartDateCheck = true;
                 }
 
                 $PreviousDate = $BillingDate;
                 $EndDateValue = $TotalEntries == $count + 1 ? $EndDate : false;
                 $returnArr[$BillingDate] = [
-                    'StartDate' => $BillingDate,
+                    'StartDate' => $StartDateCheck == true ? $StartDate : $BillingDate,
                     'EndDate'   => $EndDateValue,
                     'Billing'   => $ChangedBillingType,
                 ];
+
+                $StartDateCheck = false;
             }
         }
 
