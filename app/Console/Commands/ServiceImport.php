@@ -117,7 +117,7 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['OrderID'])) {
-                        $tempItemData['OrderId'] = "1";
+                        $tempItemData['OrderID'] = "1";
                     }
 
                     if (isset($temp_row['PackageProductId'])) {
@@ -149,12 +149,11 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['NumberProductId'])) {
-                        $Number['ProductId'] = $temp_row['NumberProductId'];
+                        $Number['ProductID'] = $temp_row['NumberProductId'];
                     }
 
-                    if (isset($temp_row['InboundTariffCategoryId'])) {
-                        $Number['InboundTariffCategoryID'] = $temp_row['InboundTariffCategoryId'];
-                    }
+                    $Number['InboundTariffCategoryID'] = "1";
+                    
 
                     array_push($tempItemData['Numbers'] ,  $Number);
                     
@@ -178,7 +177,7 @@ class ServiceImport extends Command {
 
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] .= count($errorslog).' Service import log errors: '.implode(',\n\r',$errorslog);
+                $jobdata['JobStatusMessage'] = count($errorslog).' Service import log errors: '.implode(',\n\r',$errorslog);
                 Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
