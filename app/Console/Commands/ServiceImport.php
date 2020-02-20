@@ -86,7 +86,7 @@ class ServiceImport extends Command {
             Log::info(count($results) . '  - Records Found ');
 
             $lineno = 2;
-            $error = array();
+            $errorslog = array();
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
             Job::where(["JobID" => $JobID])->update($jobdata);
             foreach ($results as $temp_row) {
@@ -95,17 +95,17 @@ class ServiceImport extends Command {
                 if(!empty($checkemptyrow)){
                     $tempItemData = array();
                     $tempItemData['AccountDynamicField'] = array();
-                    $tempItemData['Number'] = array();
+                    $tempItemData['Numbers'] = array();
                     $Number = array();
-                    if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
-                        $tempItemData['AccountNo'] = $temp_row['AccountNo'];
-                    } 
-                    if (isset($temp_row['AccountID'])) {
-                        $tempItemData['AccountID'] = trim($temp_row['AccountID']);
-                    }
+                    // if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
+                    //     $tempItemData['AccountNo'] = $temp_row['AccountNo'];
+                    // } 
+                    // if (isset($temp_row['AccountID'])) {
+                    //     $tempItemData['AccountID'] = trim($temp_row['AccountID']);
+                    // }
                     
 
-                    if (isset($temp_row['Customer'])) {
+                    if (isset($temp_row['CustomerId'])) {
                         array_push($tempItemData['AccountDynamicField'] ,  [
                             "Name" => "CustomerID",
                             "Value" => $temp_row['CustomerId']
@@ -117,7 +117,7 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['OrderID'])) {
-                        $tempItemData['OrderId'] = $temp_row['OrderID'];
+                        $tempItemData['OrderId'] = "1";
                     }
 
                     if (isset($temp_row['PackageProductId'])) {
@@ -156,18 +156,17 @@ class ServiceImport extends Command {
                         $Number['InboundTariffCategoryID'] = $temp_row['InboundTariffCategoryId'];
                     }
 
-                    array_push($tempItemData['Number'] ,  $Number);
+                    array_push($tempItemData['Numbers'] ,  $Number);
                     
-                    
-                    if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
-                        $PricingJSONInput = json_encode($tempItemData, true);
-                        $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
-                        if($Response['HTTP_CODE'] != 200){
-                            $errorslog[] = $temp_row['AccountName'] . ':' . $Response['error'];
-                        }                
-                    } else {
-                        Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
-                    }
+                    //if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                    $PricingJSONInput = json_encode($tempItemData, true);
+                    $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
+                    if($Response['HTTP_CODE'] != 200){
+                        $errorslog[] = $temp_row['Number'] . ':' . $Response['error'];
+                    }                
+                    //} else {
+                        //Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
+                    //}
                 }
             }   
             $job = Job::find($JobID);
@@ -180,6 +179,7 @@ class ServiceImport extends Command {
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] .= count($errorslog).' Service import log errors: '.implode(',\n\r',$errorslog);
+                Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
         }catch (\Exception $ex){
