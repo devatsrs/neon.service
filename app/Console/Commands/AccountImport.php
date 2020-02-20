@@ -318,7 +318,7 @@ class AccountImport extends Command {
             }
             
             foreach ($results as $temp_row) {
-                if($temp_row['IsPartner'] != 1 || $temp_row['IsReseller'] != 1){
+                if($temp_row['IsPartner'] != 1 && $temp_row['IsReseller'] != 1){
                     $checkemptyrow = array_filter(array_values($temp_row));
                     if(!empty($checkemptyrow)){
                         $tempItemData = array();
