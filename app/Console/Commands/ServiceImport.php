@@ -161,7 +161,7 @@ class ServiceImport extends Command {
                     
                     if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
                         $PricingJSONInput = json_encode($tempItemData, true);
-                        $Response = NeonAPI::callAPI($PricingJSONInput , 'api/addNewAccountService' , $url,'application/json');
+                        $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
                         if($Response['HTTP_CODE'] != 200){
                             $errorslog[] = $temp_row['AccountName'] . ':' . $Response['error'];
                         }                
