@@ -85,7 +85,7 @@ class AccountImport extends Command {
             Log::info(count($results) . '  - Records Found ');
 
             $lineno = 2;
-            $error = array();
+            $errorslog = array();
 
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
             Job::where(["JobID" => $JobID])->update($jobdata);
@@ -551,6 +551,7 @@ class AccountImport extends Command {
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
                 $jobdata['JobStatusMessage'] .= count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
+                Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
         }catch (\Exception $ex){
