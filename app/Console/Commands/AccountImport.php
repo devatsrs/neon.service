@@ -173,7 +173,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['BillingStartDate'])) {
-                            $tempItemData['BillingStartDate'] = date('Y-m-d', strtotime(str_replace('/', '-', $temp_row['BillingStartDate'])));
+                            $tempItemData['BillingStartDate'] = "2019-12-01";
                         }
 
                         if (isset($temp_row['AutoTopup'])) {
@@ -242,9 +242,9 @@ class AccountImport extends Command {
                             $tempItemData['PaymentMethodID'] = "1";
                         }
                         
-                        if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
-                            $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
-                        }
+                        // if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
+                        //     $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
+                        // }
 
                         if (isset($temp_row['BankAccount'])) {
                             $tempItemData['BankAccount'] = $temp_row['BankAccount'];
@@ -397,7 +397,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['BillingStartDate'])) {
-                            $tempItemData['BillingStartDate'] = date('Y-m-d', strtotime(str_replace('/', '-', $temp_row['BillingStartDate'])));
+                            $tempItemData['BillingStartDate'] = "2019-12-01";
                         }
 
                         if (isset($temp_row['AutoTopup'])) {
@@ -463,12 +463,12 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['PaymentMethod'])) {
-                            $tempItemData['PaymentMethodID'] = "1";
+                            $tempItemData['PaymentMethodID'] = $temp_row['PaymentMethod'];
                         }
                         
-                        if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
-                            $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
-                        }
+                        // if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
+                        //     $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
+                        // }
 
                         if (isset($temp_row['BankAccount'])) {
                             $tempItemData['BankAccount'] = $temp_row['BankAccount'];
