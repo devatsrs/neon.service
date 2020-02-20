@@ -67,16 +67,8 @@ class ServiceImport extends Command {
         $job = Job::find($JobID);
         $jobfile = JobFile::where(['JobID' => $JobID])->first();
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
-        if ($jobfile->FilePath) {
-            $path = AmazonS3::unSignedUrl($jobfile->FilePath, $CompanyID);
-            if (strpos($path, "https://") !== false) {
-                $file = $TEMP_PATH . basename($path);
-                file_put_contents($file, file_get_contents($path));
-                $jobfile->FilePath = $file;
-            } else {
-                $jobfile->FilePath = $path;
-            }
-        }
+        $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
+
 
 		//$dir = 'C:\Users\lenovo\Documents\accounts\Accounts.xlsx';
        
@@ -95,7 +87,8 @@ class ServiceImport extends Command {
 
             $lineno = 2;
             $error = array();
-
+            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
+            Job::where(["JobID" => $JobID])->update($jobdata);
             foreach ($results as $temp_row) {
             
                 $checkemptyrow = array_filter(array_values($temp_row));
@@ -168,7 +161,7 @@ class ServiceImport extends Command {
                     
                     if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
                         $PricingJSONInput = json_encode($tempItemData, true);
-                        $Response = NeonAPI::callAPI($PricingJSONInput , 'api/addNewAccountService' , 'http://localhost/neon/web/staging/public/','json');
+                        $Response = NeonAPI::callAPI($PricingJSONInput , 'api/addNewAccountService' , $url,'application/json');
                         if($Response['HTTP_CODE'] != 200){
                             $errorslog[] = $temp_row['AccountName'] . ':' . $Response['error'];
                         }                
@@ -186,7 +179,7 @@ class ServiceImport extends Command {
 
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] .= count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
+                $jobdata['JobStatusMessage'] .= count($errorslog).' Service import log errors: '.implode(',\n\r',$errorslog);
             }
 
         }catch (\Exception $ex){
