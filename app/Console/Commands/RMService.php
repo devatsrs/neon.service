@@ -99,7 +99,9 @@ class RMService extends Command {
                 'PendingBulkCreditNoteSend',
                 'TerminationRateOperation',
                 'TerminationRateMargin',
-                'GridExport'
+                'GridExport',
+                'AccountImport',
+                'ServiceImport' 
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -468,6 +470,22 @@ class RMService extends Command {
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." gridexport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+
+            foreach($allpending['data']['AccountImport'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." accountimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+
+            foreach($allpending['data']['ServiceImport'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." serviceimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }
                 }
             }
