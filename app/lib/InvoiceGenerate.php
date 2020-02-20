@@ -149,7 +149,7 @@ class InvoiceGenerate {
                     $returnArr[$PreviousDate]['EndDate'] = $LastDateOfCurrentDate;
                 } else {
                     // IF First Log And Log Date is greater then StartDate
-                    if (strtotime($BillingDate) > strtotime($StartDate)) {
+                    if (strtotime($BillingDate) > strtotime($StartDate) && $PrevBillingType != $ChangedBillingType) {
                         $returnArr[$StartDate] = [
                             'StartDate' => $StartDate,
                             'EndDate'   => $LastDateOfCurrentDate,
