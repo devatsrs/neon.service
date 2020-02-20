@@ -125,19 +125,23 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['NumberStartDate'])) {
-                        $Number['ContractStartDate'] = $temp_row['NumberStartDate'];
+                        $NumberStartDate = explode('.',$temp_row['NumberStartDate']);
+                        $Number['ContractStartDate'] = $NumberStartDate[0];
                     }
 
                     if (isset($temp_row['NumberEndDate'])) {
-                        $Number['ContractEndDate'] = $temp_row['NumberEndDate'];
+                        $NumberEndDate = explode('.',$temp_row['NumberEndDate']);
+                        $Number['ContractEndDate'] = $NumberEndDate[0];
                     }
                     
                     if (isset($temp_row['PackageStartDate'])) {
-                        $Number['PackageStartDate'] = $temp_row['PackageStartDate'];
+                        $PackageStartDate = explode('.',$temp_row['PackageStartDate']);
+                        $Number['PackageStartDate'] = $PackageStartDate[0];
                     }
 
                     if (isset($temp_row['PackageEndDate'])) {
-                        $Number['PackageEndDate'] = $temp_row['PackageEndDate'];
+                        $PackageEndDate = explode('.',$temp_row['PackageEndDate']);
+                        $Number['PackageEndDate'] =  $PackageEndDate[0];
                     }
 
                     if (isset($temp_row['PackageContractId'])) {
