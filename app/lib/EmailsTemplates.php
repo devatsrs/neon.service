@@ -295,11 +295,20 @@ class EmailsTemplates{
 			$array['BillingCity']			=	 $AccoutData->BillingCity;
 			$array['BillingPostCode']		=	 $AccoutData->BillingPostCode;
 			$array['BillingCountry']		=	 $AccoutData->BillingCountry;
-			$array['CustomerID']			=	 $dynamicfields['CustomerID'];
-			$array['RegisterDutchFoundation']			=	 $dynamicfields['Register Dutch Foundation'];
-			$array['COCNumber']			=	 $dynamicfields['COC Number'];
-			$array['DutchProvider']			=	 $dynamicfields['Dutch Provider'];
-			
+			if(!empty($AccoutData->CustomerID))
+				$array['CustomerID']		=	 $AccoutData->CustomerID;
+
+		if($dynamicfields != false) {
+
+			if(isset($dynamicfields['CustomerID']) && !isset($array['CustomerID']))
+				$array['CustomerID'] = $dynamicfields['CustomerID'];
+			if(isset($dynamicfields['Register Dutch Foundation']))
+				$array['RegisterDutchFoundation'] = $dynamicfields['Register Dutch Foundation'];
+			if(isset($dynamicfields['COC Number']))
+				$array['COCNumber'] = $dynamicfields['COC Number'];
+			if(isset($dynamicfields['Dutch Provider']))
+				$array['DutchProvider'] = $dynamicfields['Dutch Provider'];
+		}
 				
 			$array['Currency']				=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Code");		
 			$array['CurrencySign']			=	 Currency::where(["CurrencyId"=>$AccoutData->CurrencyId])->pluck("Symbol");

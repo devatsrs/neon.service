@@ -100,6 +100,8 @@ class RMService extends Command {
                 'TerminationRateOperation',
                 'TerminationRateMargin',
                 'GridExport',
+                'AccountImport',
+                'ServiceImport',
                 'DataImportFromTemplateFile'
             ));
 
@@ -472,6 +474,22 @@ class RMService extends Command {
                     }
                 }
             }
+            foreach($allpending['data']['AccountImport'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." accountimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+
+            foreach($allpending['data']['ServiceImport'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." serviceimport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+
             //Data Import From Template File
             foreach($allpending['data']['DataImportFromTemplateFile'] as $allpendingrow){
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {

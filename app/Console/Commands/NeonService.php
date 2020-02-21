@@ -51,15 +51,20 @@ class NeonService extends Command {
 		$Company = Company::select('tblCompany.CompanyID')
 		->leftJoin('tblReseller', 'tblReseller.ChildCompanyID','=','tblCompany.CompanyID')
         ->leftJoin('tblAccount', 'tblReseller.AccountID','=','tblAccount.AccountID')
-        ->where('tblAccount.Status','=',1)->OrwhereNull('tblReseller.AccountID')
-        ->orderBy("tblCompany.CompanyID")->get();
+        ->where('tblAccount.Status','=',1)
+		->orderBy("tblCompany.CompanyID")->get();
+
+		$Company = json_decode($Company,true);
+        $AddCompany['CompanyID'] = 1;
+        array_push($Company, $AddCompany);
+		
 		foreach($Company as $CompanID){
-            $PHP_EXE_PATH = CompanyConfiguration::get($CompanID->CompanyID,'PHP_EXE_PATH');
-            $RMArtisanFileLocation = CompanyConfiguration::get($CompanID->CompanyID,'RM_ARTISAN_FILE_LOCATION');
+            $PHP_EXE_PATH = CompanyConfiguration::get($CompanID['CompanyID'],'PHP_EXE_PATH');
+            $RMArtisanFileLocation = CompanyConfiguration::get($CompanID['CompanyID'],'RM_ARTISAN_FILE_LOCATION');
 			if(getenv('APP_OS') == 'Linux') {
-				pclose(popen( $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID->CompanyID . " &","r"));
+				pclose(popen( $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID['CompanyID'] . " &","r"));
 			}else{
-				pclose(popen("start /B " . $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID->CompanyID. " ", "r"));
+				pclose(popen("start /B " . $PHP_EXE_PATH." ".$RMArtisanFileLocation.' rmservice '.$CompanID['CompanyID']. " ", "r"));
 			}
 			Log::info('neon service started');
 		}
