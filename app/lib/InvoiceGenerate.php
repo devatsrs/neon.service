@@ -119,7 +119,7 @@ class InvoiceGenerate {
     public static function getBillingTypeChangeDates($AccountID,$StartDate,$EndDate){
 
         $BillingTypeLogs = AccountBillingTypeLog::where('AccountID', $AccountID)
-            ->where("OldBillingType","<>","BillingType")
+            ->where("OldBillingType","!=","BillingType")
             ->whereBetween('Date',[$StartDate, $EndDate])
             ->orderBy('Date', 'asc')->get();
 
@@ -132,11 +132,14 @@ class InvoiceGenerate {
 
             // Removing Repeat Billing Types
             foreach($BillingTypeLogs as $BillingTypeLog){
-                if($BillingTypeLog->BillingType != $PreviousBillingType){
-                    $PreviousBillingType = $BillingTypeLog->BillingType;
+                $BillingType = $BillingTypeLog->BillingType;
+                if($BillingType != $PreviousBillingType && $BillingTypeLog->OldBillingType != $BillingType){
+                    $PreviousBillingType = $BillingType;
                     $FilteredLogs[] = $BillingTypeLog;
                 }
             }
+
+            Log::info("Filtered Billing Array: " . json_encode($FilteredLogs));
 
             $TotalEntries = count($FilteredLogs);
             $PreviousDate = false;
