@@ -139,6 +139,7 @@ class InvoiceGenerate {
 
             $TotalEntries = count($FilteredLogs);
             $PreviousDate = false;
+            $StartDateCheck = false;
             foreach ($FilteredLogs as $count => $BillingTypeLog) {
                 $BillingDate = $BillingTypeLog->Date;
                 $PrevBillingType = $BillingTypeLog->OldBillingType;
@@ -149,22 +150,24 @@ class InvoiceGenerate {
                     $returnArr[$PreviousDate]['EndDate'] = $LastDateOfCurrentDate;
                 } else {
                     // IF First Log And Log Date is greater then StartDate
-                    if (strtotime($BillingDate) > strtotime($StartDate)) {
+                    if (strtotime($BillingDate) > strtotime($StartDate) && $PrevBillingType != $ChangedBillingType) {
                         $returnArr[$StartDate] = [
                             'StartDate' => $StartDate,
                             'EndDate'   => $LastDateOfCurrentDate,
                             'Billing'   => $PrevBillingType,
                         ];
-                    }
+                    } else $StartDateCheck = true;
                 }
 
                 $PreviousDate = $BillingDate;
                 $EndDateValue = $TotalEntries == $count + 1 ? $EndDate : false;
                 $returnArr[$BillingDate] = [
-                    'StartDate' => $BillingDate,
+                    'StartDate' => $StartDateCheck == true ? $StartDate : $BillingDate,
                     'EndDate'   => $EndDateValue,
                     'Billing'   => $ChangedBillingType,
                 ];
+
+                $StartDateCheck = false;
             }
         }
 

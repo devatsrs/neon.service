@@ -67,16 +67,8 @@ class ServiceImport extends Command {
         $job = Job::find($JobID);
         $jobfile = JobFile::where(['JobID' => $JobID])->first();
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
-        if ($jobfile->FilePath) {
-            $path = AmazonS3::unSignedUrl($jobfile->FilePath, $CompanyID);
-            if (strpos($path, "https://") !== false) {
-                $file = $TEMP_PATH . basename($path);
-                file_put_contents($file, file_get_contents($path));
-                $jobfile->FilePath = $file;
-            } else {
-                $jobfile->FilePath = $path;
-            }
-        }
+        $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
+
 
 		//$dir = 'C:\Users\lenovo\Documents\accounts\Accounts.xlsx';
        
@@ -94,25 +86,26 @@ class ServiceImport extends Command {
             Log::info(count($results) . '  - Records Found ');
 
             $lineno = 2;
-            $error = array();
-
+            $errorslog = array();
+            $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
+            Job::where(["JobID" => $JobID])->update($jobdata);
             foreach ($results as $temp_row) {
             
                 $checkemptyrow = array_filter(array_values($temp_row));
                 if(!empty($checkemptyrow)){
                     $tempItemData = array();
                     $tempItemData['AccountDynamicField'] = array();
-                    $tempItemData['Number'] = array();
+                    $tempItemData['Numbers'] = array();
                     $Number = array();
-                    if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
-                        $tempItemData['AccountNo'] = $temp_row['AccountNo'];
-                    } 
-                    if (isset($temp_row['AccountID'])) {
-                        $tempItemData['AccountID'] = trim($temp_row['AccountID']);
-                    }
+                    // if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
+                    //     $tempItemData['AccountNo'] = $temp_row['AccountNo'];
+                    // } 
+                    // if (isset($temp_row['AccountID'])) {
+                    //     $tempItemData['AccountID'] = trim($temp_row['AccountID']);
+                    // }
                     
 
-                    if (isset($temp_row['Customer'])) {
+                    if (isset($temp_row['CustomerId'])) {
                         array_push($tempItemData['AccountDynamicField'] ,  [
                             "Name" => "CustomerID",
                             "Value" => $temp_row['CustomerId']
@@ -124,7 +117,7 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['OrderID'])) {
-                        $tempItemData['OrderId'] = $temp_row['OrderID'];
+                        $tempItemData['OrderID'] = "1";
                     }
 
                     if (isset($temp_row['PackageProductId'])) {
@@ -132,19 +125,23 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['NumberStartDate'])) {
-                        $Number['ContractStartDate'] = $temp_row['NumberStartDate'];
+                        $NumberStartDate = explode(' ',$temp_row['NumberStartDate']);
+                        $Number['ContractStartDate'] = $NumberStartDate[0];
                     }
 
                     if (isset($temp_row['NumberEndDate'])) {
-                        $Number['ContractEndDate'] = $temp_row['NumberEndDate'];
+                        $NumberEndDate = explode(' ',$temp_row['NumberEndDate']);
+                        $Number['ContractEndDate'] = $NumberEndDate[0];
                     }
                     
                     if (isset($temp_row['PackageStartDate'])) {
-                        $Number['PackageStartDate'] = $temp_row['PackageStartDate'];
+                        $PackageStartDate = explode(' ',$temp_row['PackageStartDate']);
+                        $Number['PackageStartDate'] = $PackageStartDate[0];
                     }
 
                     if (isset($temp_row['PackageEndDate'])) {
-                        $Number['PackageEndDate'] = $temp_row['PackageEndDate'];
+                        $PackageEndDate = explode(' ',$temp_row['PackageEndDate']);
+                        $Number['PackageEndDate'] =  $PackageEndDate[0];
                     }
 
                     if (isset($temp_row['PackageContractId'])) {
@@ -156,25 +153,23 @@ class ServiceImport extends Command {
                     }
 
                     if (isset($temp_row['NumberProductId'])) {
-                        $Number['ProductId'] = $temp_row['NumberProductId'];
+                        $Number['ProductID'] = $temp_row['NumberProductId'];
                     }
 
-                    if (isset($temp_row['InboundTariffCategoryId'])) {
-                        $Number['InboundTariffCategoryID'] = $temp_row['InboundTariffCategoryId'];
-                    }
+                    $Number['InboundTariffCategoryID'] = "1";
+                    
 
-                    array_push($tempItemData['Number'] ,  $Number);
+                    array_push($tempItemData['Numbers'] ,  $Number);
                     
-                    
-                    if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
-                        $PricingJSONInput = json_encode($tempItemData, true);
-                        $Response = NeonAPI::callAPI($PricingJSONInput , 'api/addNewAccountService' , 'http://localhost/neon/web/staging/public/','json');
-                        if($Response['HTTP_CODE'] != 200){
-                            $errorslog[] = $temp_row['AccountName'] . ':' . $Response['error'];
-                        }                
-                    } else {
-                        Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
-                    }
+                    //if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                    $PricingJSONInput = json_encode($tempItemData, true);
+                    $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
+                    if($Response['HTTP_CODE'] != 200){
+                        $errorslog[] = $temp_row['Number'] . ':' . $Response['error'];
+                    }                
+                    //} else {
+                        //Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
+                    //}
                 }
             }   
             $job = Job::find($JobID);
@@ -186,7 +181,8 @@ class ServiceImport extends Command {
 
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] .= count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
+                $jobdata['JobStatusMessage'] = count($errorslog).' Service import log errors: '.implode(',\n\r',$errorslog);
+                Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
         }catch (\Exception $ex){
