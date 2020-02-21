@@ -99,7 +99,8 @@ class RMService extends Command {
                 'PendingBulkCreditNoteSend',
                 'TerminationRateOperation',
                 'TerminationRateMargin',
-                'GridExport'
+                'GridExport',
+                'DataImportFromTemplateFile'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -468,6 +469,14 @@ class RMService extends Command {
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." gridexport " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+            //Data Import From Template File
+            foreach($allpending['data']['DataImportFromTemplateFile'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." dataimportfromtemplatefile " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }
                 }
             }
