@@ -373,7 +373,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['IsAffiliate'])) {
-                            $tempItemData['IsAffiliate'] = $temp_row['IsAffiliate'];
+                            $tempItemData['IsAffiliateAccount'] = $temp_row['IsAffiliate'];
                         }
 
                         if (isset($temp_row['Currency'])) {
