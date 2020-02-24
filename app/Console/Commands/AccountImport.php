@@ -106,7 +106,7 @@ class AccountImport extends Command {
                         if (isset($temp_row['Phone'])) {
                             $tempItemData['Phone'] = $temp_row['Phone'];
                         }
-                        if (isset($temp_row['BilllingAddress1'])) {
+                        if (isset($temp_row['BillingAddress1'])) {
                             $tempItemData['BillingAddress1'] = $temp_row['BillingAddress1'];
                         }
                         if (isset($temp_row['BillingAddress2'])) {
@@ -120,10 +120,9 @@ class AccountImport extends Command {
                             $tempItemData['BillingCity'] = $temp_row['BillingCity'];
                         }
 
-                        if (isset($temp_row['BilllingPostCode'])) {
-                            $tempItemData['BilllingPostCode'] = $temp_row['BilllingPostCode'];
+                        if (isset($temp_row['BillingPostCode'])) {
+                            $tempItemData['BillingPostCode'] = $temp_row['BillingPostCode'];
                         }
-
 
                         if (isset($temp_row['BillingEmail'])) {
                             $tempItemData['BillingEmail'] = $temp_row['BillingEmail'];
@@ -131,6 +130,7 @@ class AccountImport extends Command {
                         
                         if (isset($temp_row['BillingCountryIso'])) {
                             $tempItemData['CountryIso2'] = $temp_row['BillingCountryIso'];
+                            $tempItemData['BillingCountryIso2'] = $temp_row['BillingCountryIso'];
                         }
 
                         if (isset($temp_row['IsVendor'])) {
@@ -327,15 +327,19 @@ class AccountImport extends Command {
                         if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
                             $tempItemData['AccountNo'] = $temp_row['AccountNo'];
                         } 
+                        
                         if (isset($temp_row['AccountName'])) {
                             $tempItemData['AccountName'] = trim($temp_row['AccountName']);
                         }
+
                         if (isset($temp_row['Phone'])) {
                             $tempItemData['Phone'] = $temp_row['Phone'];
                         }
-                        if (isset($temp_row['BilllingAddress1'])) {
+
+                        if (isset($temp_row['BillingAddress1'])) {
                             $tempItemData['BillingAddress1'] = $temp_row['BillingAddress1'];
                         }
+
                         if (isset($temp_row['BillingAddress2'])) {
                             $tempItemData['BillingAddress2'] = $temp_row['BillingAddress2'];
                         }
@@ -347,17 +351,18 @@ class AccountImport extends Command {
                             $tempItemData['BillingCity'] = $temp_row['BillingCity'];
                         }
 
-                        if (isset($temp_row['BilllingPostCode'])) {
-                            $tempItemData['BilllingPostCode'] = $temp_row['BilllingPostCode'];
+                        if (isset($temp_row['BillingPostCode'])) {
+                            $tempItemData['BillingPostCode'] = $temp_row['BillingPostCode'];
                         }
 
-
+                        
                         if (isset($temp_row['BillingEmail'])) {
                             $tempItemData['BillingEmail'] = $temp_row['BillingEmail'];
                         }
                         
                         if (isset($temp_row['BillingCountryIso'])) {
                             $tempItemData['CountryIso2'] = $temp_row['BillingCountryIso'];
+                            $tempItemData['BillingCountryIso2'] = $temp_row['BillingCountryIso'];
                         }
 
                         if (isset($temp_row['IsVendor'])) {
@@ -373,7 +378,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['IsAffiliate'])) {
-                            $tempItemData['IsAffiliate'] = $temp_row['IsAffiliate'];
+                            $tempItemData['IsAffiliateAccount'] = $temp_row['IsAffiliate'];
                         }
 
                         if (isset($temp_row['Currency'])) {

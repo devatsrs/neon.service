@@ -154,6 +154,7 @@ class Kernel extends ConsoleKernel {
 		'App\Console\Commands\TriggerDataCleanUp',
 		'App\Console\Commands\TriggerDataCleanUp',
 		'App\Console\Commands\SendActiveCallAlert',
+		'App\Console\Commands\DataImportFromTemplateFile',
 	];
 
 	/**
