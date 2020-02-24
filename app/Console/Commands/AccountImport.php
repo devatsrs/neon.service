@@ -239,7 +239,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['PaymentMethod'])) {
-                            $tempItemData['PaymentMethodID'] = "1";
+                            $tempItemData['PaymentMethodID'] = $temp_row['PaymentMethod'];
                         }
                         
                         // if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
@@ -327,7 +327,7 @@ class AccountImport extends Command {
                         if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
                             $tempItemData['AccountNo'] = $temp_row['AccountNo'];
                         } 
-                        
+
                         if (isset($temp_row['AccountName'])) {
                             $tempItemData['AccountName'] = trim($temp_row['AccountName']);
                         }
