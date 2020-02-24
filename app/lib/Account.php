@@ -442,7 +442,7 @@ class Account extends \Eloquent {
     {
         $Accounts = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
             ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId','tblAccount.AccountName', DB::raw("0 as `Reseller`"))
-            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0))
+            ->where(array('Status' => 1, 'AccountType' => 1, 'Billing' => 1, 'IsCustomer' => 1, 'tblAccountBilling.ServiceID' => 0, 'tblAccountBilling.AccountServiceID' => 0))
             ->whereNotIn('tblAccountBilling.AccountID', function($query){
                 $query->select('AccountID')
                     ->from('tblReseller')
