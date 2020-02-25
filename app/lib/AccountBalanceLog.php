@@ -36,7 +36,7 @@ class AccountBalanceLog extends Model
             ->get();
          * */
 
-        $Accounts = Account::getAllAccounts();
+        $Accounts = Account::getAllAccounts([1,8,9]);
         foreach ($Accounts as $Account) {
                 $AccountID = $Account['AccountID'];
                 $CompanyID = $Account['CompanyId'];
