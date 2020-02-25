@@ -150,7 +150,7 @@ class DataImportFromTemplateFile extends Command
 								$error[] = $JobStatusMessage1['Message'];
 							}
 							$job = Job::find($JobID);
-							$jobdata['JobStatusMessage'] = implode(',\n\r',fix_jobstatus_meassage($error));
+							$jobdata['JobStatusMessage'] = implode(',\n\r',$error);
 							$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
 							$jobdata['updated_at'] = date('Y-m-d H:i:s');
 							$jobdata['ModifiedBy'] = 'RMScheduler';
