@@ -69,7 +69,6 @@ class ImportCDRs extends Command
 		$getmypid = getmypid(); // get proccess id added by abubakar
 		$JobID = $arguments["JobID"];
 		$job = Job::find($JobID);
-
 		$bacth_insert_limit = 1000;
 		$counter 			= 0;
 		$batch_insert_array = [];
@@ -79,24 +78,14 @@ class ImportCDRs extends Command
 		Log::useFiles(storage_path() . '/logs/importcdrs-' .  $JobID. '-' . date('Y-m-d') . '.log');
 		Log::info('importcdrs starts');
 		try {
-			$TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
 			$ProcessID = Uuid::generate();
 			Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
 			if (!empty($job)) {
 				$jobfile = JobFile::where(['JobID' => $JobID])->first();
 
 				if ($jobfile->FilePath) {
-					$path = AmazonS3::unSignedUrl($jobfile->FilePath, $CompanyID);
-					if (strpos($path, "https://") !== false) {
-						$file = $TEMP_PATH . basename($path);
-						file_put_contents($file, file_get_contents($path));
-						$jobfile->FilePath = $file;
-					} else {
-						$jobfile->FilePath = $path;
-					}
-
-					$file_name = $file_name2 = $file_name_with_path = $jobfile->FilePath;
-
+					
+					$file_name = $jobfile->FilePath;
 					$NeonExcel 	= new NeonExcelIO($file_name);
 					$results 	= $NeonExcel->read();
 
