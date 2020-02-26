@@ -102,7 +102,8 @@ class RMService extends Command {
                 'GridExport',
                 'AccountImport',
                 'ServiceImport',
-                'DataImportFromTemplateFile'
+                'DataImportFromTemplateFile',
+                'ImportCDRs'
             ));
 
             /*$cmdarray = $allpending['data']['getVosDownloadCommand'];
@@ -495,6 +496,14 @@ class RMService extends Command {
                 if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
                     if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
                         pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." dataimportfromtemplatefile " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
+                    }
+                }
+            }
+
+            foreach($allpending['data']['ImportCDRs'] as $allpendingrow){
+                if (isset($allpendingrow->JobID) && $allpendingrow->JobID>0) {
+                    if(Nodes::GetActiveNodeFromCronjobNodes($allpendingrow->JobID,$CompanyID,Nodes::JOB)){
+                        pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation." importcdrs " . $CompanyID . " " . $allpendingrow->JobID . " ". " &","r"));
                     }
                 }
             }
