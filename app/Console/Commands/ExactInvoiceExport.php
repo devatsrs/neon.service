@@ -157,13 +157,13 @@ class ExactInvoiceExport extends Command {
 								$PaymentCondition = $BillingType = '';
 								if ($invoice->BillingType == 1) { // prepaid
 									$BillingType = 'Prepaid';
-									if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_PREPAID])) {
+									/*if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_PREPAID])) {
 										$PaymentCondition = $MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_PREPAID];
-									}
+									}*/
 								} else { // postpaid
 									//need to change when we know how to know which type to send
 									$BillingType = 'Postpaid';
-									if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_POSTPAID])) {
+									/*if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_POSTPAID])) {
 										$PaymentCondition = $MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_POSTPAID];
 									}
 									if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_ONCREDIT])) {
@@ -174,14 +174,14 @@ class ExactInvoiceExport extends Command {
 									}
 									if (!empty($MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_DIRECTDEBIT])) {
 										$PaymentCondition = $MappedGLCode[ExactAuthentication::KEY_PAYMENT_CONDITION][ExactAuthentication::KEY_PAYMENT_CONDITION_DIRECTDEBIT];
-									}
+									}*/
 								}
 
-								if ($PaymentCondition == '') {
+								/*if ($PaymentCondition == '') {
 									$error[] = "Code Not mapped against " . $BillingType . " Payment Condition, please map it in order to post " . $BillingType . " invoice to exact.";
 									// if payment condition is not mapped then skip invoice
 									continue;
-								}
+								}*/
 								$error = array_unique($error); // remove multiple same error message and keep just one
 
 								// get account from exact by neon account number
@@ -318,7 +318,7 @@ class ExactInvoiceExport extends Command {
 										$invoice_data['ReportingPeriod'] = $invoice_desc_month;
 										$invoice_data['EntryDate'] = $invoice->IssueDate;
 										$invoice_data['DueDate'] = date('Y-m-d', strtotime($invoice->IssueDate . ' + ' . $DueDays . ' days'));
-										$invoice_data['PaymentCondition'] = $PaymentCondition;
+										//$invoice_data['PaymentCondition'] = $PaymentCondition;
 										$invoice_data['SalesEntryLines'] = $SalesEntryLines;
 
 										$ExactInvoice = $exact->createSalesEntry($invoice_data);
