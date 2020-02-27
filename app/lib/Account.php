@@ -438,7 +438,7 @@ class Account extends \Eloquent {
         return $Accounts2;
     }
 
-    public static function getAllAccounts()
+    public static function getAllAccounts($CompanyIDs = [])
     {
         $Accounts = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
             ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId','tblAccount.AccountName', DB::raw("0 as `Reseller`"))
@@ -447,8 +447,12 @@ class Account extends \Eloquent {
                 $query->select('AccountID')
                     ->from('tblReseller')
                     ->where('status',1);
-            })
-            ->get()->toArray();
+            });
+
+        if(!empty($CompanyIDs))
+            $Accounts->whereIn('tblAccount.CompanyId',$CompanyIDs);
+
+        $Accounts = $Accounts->get()->toArray();
 
         $Accounts1 = AccountBilling::join('tblAccount', 'tblAccount.AccountID', '=', 'tblAccountBilling.AccountID')
             ->select('tblAccountBilling.AccountID', 'tblAccount.CompanyId', 'tblAccount.AccountName',DB::raw("1 as `Reseller`"))
@@ -457,8 +461,12 @@ class Account extends \Eloquent {
                 $query->select('AccountID')
                     ->from('tblReseller')
                     ->where('status',1);
-            })
-            ->get()->toArray();
+            });
+
+        if(!empty($CompanyIDs))
+            $Accounts1->whereIn('tblAccount.CompanyId',$CompanyIDs);
+
+            $Accounts1 = $Accounts1->get()->toArray();
 
         $Accounts2 = array_merge($Accounts,$Accounts1);
 
