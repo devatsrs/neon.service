@@ -210,7 +210,7 @@ class AccountBalanceLog extends Model
                 $ServiceID = $AccountService->ServiceID;
                 $AccountServiceID = $AccountService->AccountServiceID;
 
-                $CliRateTables = CLIRateTable::where(['AccountServiceID'=>$AccountServiceID])->where('NumberStartDate','<=',$Today)->get();
+                $CliRateTables = CLIRateTable::where(['AccountServiceID'=>$AccountServiceID])->where(['Status'=>1])->where('NumberStartDate','<=',$Today)->get();
                 if(!empty($CliRateTables)) {
                     foreach ($CliRateTables as $CliRateTable) {
                         $CLIRateTableID = $CliRateTable->CLIRateTableID;
