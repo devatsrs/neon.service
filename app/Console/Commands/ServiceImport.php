@@ -240,7 +240,9 @@ class ServiceImport extends Command {
                         Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
                     }
                 }
-            }   
+            }
+            
+            DB::table('tmp_services')::truncate();
            
             $job = Job::find($JobID);
             $jobdata['JobStatusMessage'] = 'Accounts have imported successfully';
