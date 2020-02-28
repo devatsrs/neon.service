@@ -233,11 +233,11 @@ class ServiceImport extends Command {
                     //if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
                     $PricingJSONInput = json_encode($tempItemData, true);
                     $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
-                    Log::info($temp_row['Number'] .' '. print_r($Response,true));
+                    Log::info($temp_row['NumberPurchased'] .' '. print_r($Response,true));
                     if($Response['HTTP_CODE'] != 200){
-                        $errorslog[] = $temp_row['Number'] . ':' . $Response['error'];
+                        $errorslog[] = $temp_row['NumberPurchased'] . ':' . $Response['error'];
                     } else {
-                        Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
+                        //Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
                     }
                 }
             }
