@@ -71,10 +71,12 @@ class ExactPaymentImport extends Command {
 		$CompanyID = $arguments["CompanyID"];
 		$CronJob = CronJob::find($CronJobID);
 		$cronsetting = json_decode($CronJob->Settings,true);
-		$dataactive['Active'] = 1;
+		/*$dataactive['Active'] = 1;
 		$dataactive['PID'] = $getmypid;
 		$dataactive['LastRunTime'] = date('Y-m-d H:i:00');
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::activateCronJob($CronJob);
+		CronJob::createLog($CronJobID);
 
 		Log::useFiles(storage_path() . '/logs/exactpaymentimport-'. date('Y-m-d').'.log');
 		Log::info(' ========================== import exact invoice payment start =============================');
@@ -228,9 +230,10 @@ class ExactPaymentImport extends Command {
 			}
 		}
 
-		$dataactive['Active'] = 0;
+		/*$dataactive['Active'] = 0;
 		$dataactive['PID'] = '';
-		$CronJob->update($dataactive);
+		$CronJob->update($dataactive);*/
+		CronJob::deactivateCronJob($CronJob);
 		if(!empty($cronsetting['SuccessEmail'])) {
 			$result = CronJob::CronJobSuccessEmailSend($CronJobID);
 			Log::error("**Email Sent Status ".$result['status']);
