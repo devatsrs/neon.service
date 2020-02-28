@@ -242,7 +242,7 @@ class ServiceImport extends Command {
                 }
             }
             
-            DB::table('tmp_services')::truncate();
+            DB::table('tmp_services')->truncate();
            
             $job = Job::find($JobID);
             $jobdata['JobStatusMessage'] = 'Accounts have imported successfully';
