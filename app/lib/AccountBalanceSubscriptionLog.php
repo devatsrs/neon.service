@@ -721,7 +721,7 @@ class AccountBalanceSubscriptionLog extends Model
 
     public static function InsertMonthlyBalanceDetailLog($ProcessID,$data,$AccountBalanceLogID, $SubscriptionStartDate,$SubscriptionEndDate, $FirstTimeBilling,$QuarterSubscription,$decimal_places,$IsBillingChanged){
         log::info('Monthly balance log '.' '.$data['AccountID'].' '.$data['Description']);
-        $SubscriptionCharge = $data['MonthlyCost'];
+        $SubscriptionCharge = str_replace(',','',$data['MonthlyCost']);
         $ServiceID = $data['ServiceID'];
         $AccountServiceID = $data['AccountServiceID'];
         $AccountID = $data['AccountID'];
@@ -824,7 +824,7 @@ class AccountBalanceSubscriptionLog extends Model
 
             $AccountBalanceLogID = AccountBalanceLog::where(['AccountID'=>$AccountID])->pluck('AccountBalanceLogID');
             $IssueDate=date('Y-m-d');
-
+            $OneOffCost = str_replace(',','',$OneOffCost);
             $singlePrice = $OneOffCost;
 
             $LineTotal = ($singlePrice) * 1;
@@ -882,7 +882,7 @@ class AccountBalanceSubscriptionLog extends Model
         $SubscriptionDatas = json_decode(json_encode($SubscriptionDatas),true);
         foreach($SubscriptionDatas as $SubscriptionData){
             if(!empty($SubscriptionData['IsBillingChanged']) && !empty($SubscriptionData['Price'])){
-                $MonthlyCost = $SubscriptionData['Price'];
+                $MonthlyCost = str_replace(',','',$SubscriptionData['Price']);
                 $StartDate = $SubscriptionData['StartDate'];
                 $EndDate = $SubscriptionData['EndDate'];
                 $checkEndDate = date('Y-m-d 00:00:00', strtotime('+1 day', strtotime($EndDate)));
@@ -898,7 +898,7 @@ class AccountBalanceSubscriptionLog extends Model
                     $SubscriptionData['Price'] = number_format($MonthlyCost, 6);
                 }
             }
-
+            $SubscriptionData['Price'] = str_replace(',','',$SubscriptionData['Price']);
             $singlePrice = number_format($SubscriptionData['Price'], $decimal_places, '.', '');
             $LineTotal = ($singlePrice) * 1;
             $LineTotal = number_format($LineTotal, $decimal_places, '.', '');
