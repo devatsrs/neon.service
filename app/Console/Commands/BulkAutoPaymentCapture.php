@@ -72,7 +72,7 @@ class BulkAutoPaymentCapture extends Command {
      */
     public function fire()
     {
-
+		$unPaidInvoices = [];
         CronHelper::before_cronrun($this->name, $this );
 
         $arguments = $this->argument();
@@ -102,7 +102,10 @@ class BulkAutoPaymentCapture extends Command {
             ->where('AutoPaymentSetting','<>','never')
             ->where('AutoPayMethod','<>','0')
             ->get();
-
+		
+		$TransData = BulkAutoPaymentCapture::getTransactions($CompanyID);
+		$TransactionsIDs = array_column($TransData, 'transaction_id');
+		
         /**  Create a Job */
         $UserID = User::where("CompanyID", $CompanyID)->where(["AdminUser"=>1,"Status"=>1])->min("UserID");
         $CreatedBy = User::get_user_full_name($UserID);
@@ -133,6 +136,7 @@ class BulkAutoPaymentCapture extends Command {
                     }
                     $AutoPaymentSetting=$account->AutoPaymentSetting;
                     $PaymentMethod=$account->PaymentMethod;
+					
                     if($AccountBalanceGateway==1){
                         $PaymentMethod='AccountBalance';
                     }
@@ -148,12 +152,20 @@ class BulkAutoPaymentCapture extends Command {
                     }
                     /**  Get All UnPaid  Invoice */
                     $AutoPay = 1;
-                    Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."', '".$AutoPay."' ) ");
+                    
+					
+					if($account->PaymentMethod == 'Forte'){
+						Log::error("CALL  prc_getPaymentPendingInvoiceForForte ('" . $CompanyID . "', '" . $AccountID . "' ) ");
+						
+						$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoiceForForte( ' . $CompanyID . ',' . $AccountID .")");					
+					}else {
+						Log::error("CALL  prc_getPaymentPendingInvoice ('" . $CompanyID . "', '" . $AccountID . "', '".$PaymentDueInDays."', '".$AutoPay."' ) ");
 
-                    $unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
-
-                    log::info('PaymentPendingInvoice Count - '.count($unPaidInvoices));
-
+						$unPaidInvoices = DB::connection('sqlsrv2')->select('CALL prc_getPaymentPendingInvoice( ' . $CompanyID . ',' . $AccountID .',' . $PaymentDueInDays .',' . $AutoPay .")");
+					}
+					
+					log::info('PaymentPendingInvoice Count - '.count($unPaidInvoices));
+					/////////////
                     if(!empty($unPaidInvoices)) {
 
                         if (!empty($PaymentMethod)) {
@@ -169,7 +181,7 @@ class BulkAutoPaymentCapture extends Command {
                                     $CustomerProfile=1;
                                 }else{
                                     $CustomerProfile = AccountPaymentProfile::getActiveProfile($AccountID, $PaymentGatewayID);
-                                    if (!empty($CustomerProfile) && $PaymentMethod == 'StripeACH' && $PaymentMethod == 'GoCardLess') {
+                                    if (!empty($CustomerProfile) && ($PaymentMethod == 'StripeACH' || $PaymentMethod == 'GoCardLess' ||$PaymentMethod == 'Forte')) {
                                         $StripeObj = json_decode($CustomerProfile->Options);
                                         if (empty($StripeObj->VerifyStatus) || $StripeObj->VerifyStatus !== 'verified') {
                                             $VerifyStatus = 0;
@@ -190,8 +202,12 @@ class BulkAutoPaymentCapture extends Command {
                                         }
                                     }
                                 }
-
-
+								
+								$isForte = 0;
+                                if($account->PaymentMethod == 'Forte'){
+                                    $isForte = 1;
+                                }
+								
                                 if (!empty($CustomerProfile) && $VerifyStatus=='1') {
                                     $PaymentGateway = $PaymentMethod;
                                     if($PaymentMethod=='AccountBalance') {
@@ -228,7 +244,7 @@ class BulkAutoPaymentCapture extends Command {
                                         $transactionResponse = PaymentGateway::addTransaction($PaymentGateway, $outstanginamount, $options, $account, $AccountPaymentProfileID, $CompanyID);
 
                                     Log::info("Transaction end");
-                                    if (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1) {
+                                    if ($account->PaymentMethod == 'Forte' || (isset($transactionResponse['response_code']) && $transactionResponse['response_code'] == 1)) {
                                         foreach ($unPaidInvoices as $Invoiceid) {
                                             /**  Update Invoice as Paid */
                                             $Invoice = Invoice::find($Invoiceid->InvoiceID);
@@ -244,13 +260,15 @@ class BulkAutoPaymentCapture extends Command {
                                             $paymentdata['Notes'] = $transactionResponse['transaction_notes'];
                                             $paymentdata['Amount'] = floatval($Invoiceid->RemaingAmount);
                                             $paymentdata['Status'] = $isGoCardLess == 1 ? 'Pending Approval' : 'Approved';
+											
                                             $paymentdata['created_at'] = date('Y-m-d H:i:s');
                                             $paymentdata['updated_at'] = date('Y-m-d H:i:s');
                                             $paymentdata['CreatedBy'] = $CreatedBy;
                                             $paymentdata['ModifyBy'] = $CreatedBy;
-                                            if($PaymentMethod!='AccountBalance') {
+                                            if($account->PaymentMethod !='AccountBalance' ||  $account->PaymentMethod == 'Forte') {
                                                 Payment::insert($paymentdata);
                                             }
+											
                                             $transactiondata = array();
                                             $transactiondata['CompanyID'] = $account->CompanyId;
                                             $transactiondata['AccountID'] = $account->AccountID;
@@ -263,13 +281,32 @@ class BulkAutoPaymentCapture extends Command {
                                             $transactiondata['updated_at'] = date('Y-m-d H:i:s');
                                             $transactiondata['CreatedBy'] = 'RMScheduler';
                                             $transactiondata['ModifyBy'] = 'RMScheduler';
+											
                                             TransactionLog::insert($transactiondata);
 
                                             if($isGoCardLess == 1)
                                                 $Invoice->update(array('InvoiceStatus' => Invoice::AWAITING));
                                             else
                                                 $Invoice->update(array('InvoiceStatus' => Invoice::PAID));
-
+											
+											if(!empty($unPaidInvoices) && $account->PaymentMethod == 'Forte'){
+												foreach($unPaidInvoices as $payment){
+													$transaction_id = $payment->TransactionID;
+													if(in_array($transaction_id, $TransactionsIDs)){
+														foreach($TransData as $transaction){ 
+															if($transaction['status'] == 'funded') {
+																$paymentdata['Status'] = Invoice::PAID;
+																Payment::update($paymentdata);
+																$Invoice->update(array('InvoiceStatus' => Invoice::PAID));
+															}else if($transaction['status'] == 'rejected'){
+																$paymentdata['Status'] = Invoice::CANCEL;
+																Payment::update($paymentdata);
+																$Invoice->update(array('InvoiceStatus' => Invoice::AWAITING));
+															}
+														}
+													}	
+												}
+											}
                                             $Emaildata = array();
                                             $CustomerEmail = '';
                                             if ($EMAIL_TO_CUSTOMER == 1) {
@@ -341,14 +378,30 @@ class BulkAutoPaymentCapture extends Command {
                                             }else{
                                                 $transactiondata['Transaction'] = '';
                                             }
+											
                                             $transactiondata['Notes'] = $transactionResponse['transaction_notes'];
                                             $transactiondata['Amount'] = floatval($Invoiceid->RemaingAmount);
                                             $transactiondata['Status'] = TransactionLog::FAILED;
+											
                                             $transactiondata['created_at'] = date('Y-m-d H:i:s');
                                             $transactiondata['updated_at'] = date('Y-m-d H:i:s');
                                             $transactiondata['CreatedBy'] = $CreatedBy;
                                             $transactiondata['ModifyBy'] = $CreatedBy;
-                                            TransactionLog::insert($transactiondata);
+											if(!empty($unPaidInvoices) || $account->PaymentMethod == 'Forte'){
+												foreach($unPaidInvoices as $payment){
+													$transaction_id = $payment->TransactionID;
+													if(in_array($transaction_id, $TransactionsIDs)){
+														foreach($TransData as $transaction){ 
+																$transactiondata['Status'] = TransactionLog::FAILED;
+																TransactionLog::insert($transactiondata);
+															
+														}
+													}	
+												}
+											}else {
+												 TransactionLog::insert($transactiondata);
+											}
+                                           
 
                                             $Emaildata = array();
                                             $Emaildata['Subject'] = $fullnumber . 'Invoice Payment';
@@ -475,7 +528,52 @@ class BulkAutoPaymentCapture extends Command {
 
     }
 
+    public static function getTransactions($CompanyID) 
+    {
+		$data = $configData = [];
+		$configData = BulkAutoPaymentCapture::getConfiguration($CompanyID);
+		$authToken            =   base64_encode($configData['accessID'] . ':' . $configData['apiSecureKey']);
+        $httpHeader = [
+            'Authorization: Basic '.$authToken,
+            'X-Forte-Auth-Organization-Id: org_'.$configData['organizationID'],
+            'Accept:application/json',
+            'Content-Type: application/json'
+        ];
+        $url = "https://sandbox.forte.net/api/v3/organizations/org_".$configData['organizationID']."/locations/loc_".$configData['locationID']."/transactions/sale?filter=start_received_date+eq+'2020-02-26'+and+end_received_date+eq+'2020-02-27'";
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_VERBOSE, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 50);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');  //POST, GET, PUT or DELETE (Create, Read, Update or Delete)
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $httpHeader);
 
+        $response = curl_exec($ch);
+        $info     = curl_getinfo($ch);
+        curl_close($ch);
+        $data = json_decode($response);
+        // Validate the response - the only successful code is 0
+		$transactionsData = [];
+        if($info['http_code'] == 200){
+			$i = 0;
+			foreach($data->results as $result) {
+				$transactionsData[$i]['status'] 		= $result->status;
+				$transactionsData[$i]['transaction_id'] = $result->transaction_id;
+				$i++;
+			}
+		}
+        // Make the response a little more useable
+        return $transactionsData;
+    }
+
+    public static function getConfiguration($CompanyID) {
+		$data =  DB::table('tblIntegrationConfiguration')
+		->join('tblIntegration','tblIntegration.IntegrationID','=','tblIntegrationConfiguration.IntegrationID')
+		->select('tblIntegrationConfiguration.Settings')
+		->where(array('tblIntegration.CompanyID'=>$CompanyID, 'tblIntegration.Slug'=>'forte'))
+		->first();
+		return json_decode($data->Settings, true);
+    }
 
 
 }
