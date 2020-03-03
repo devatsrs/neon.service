@@ -79,18 +79,20 @@ class AccountBalanceUsageLog extends Model
             $data['updated_at']=date('Y-m-d H:i:s');
             AccountBalanceUsageLog::create($data);
         }
-        $AccountBalanceUsageLogID = AccountBalanceUsageLog::where(['AccountBalanceLogID'=>$AccountBalanceLogID,'Type'=>0,'Date'=>$UsageStartDate])->pluck('AccountBalanceUsageLogID');
-        //$TotalTax = AccountBalanceTaxRateLog::CreateUsageAccountBalanceTax($AccountID,$AccountBalanceUsageLogID,$TotalCharges);
         $TotalTax = 0;
         $GrandTotal = $TotalCharges + $TotalTax;
-        $UpdateData=array();
-        $UpdateData['UsageAmount']=$TotalCharges;
-        $UpdateData['TotalTax']=$TotalTax;
-        $UpdateData['TotalAmount']=$GrandTotal;
-        $UpdateData['updated_at']=date('Y-m-d H:i:s');
-        AccountBalanceUsageLog::where(['AccountBalanceUsageLogID'=>$AccountBalanceUsageLogID])->update($UpdateData);
+        if(!empty($TotalCharges)) {
+            $AccountBalanceUsageLogID = AccountBalanceUsageLog::where(['AccountBalanceLogID' => $AccountBalanceLogID, 'Type' => 0, 'Date' => $UsageStartDate])->pluck('AccountBalanceUsageLogID');
+            //$TotalTax = AccountBalanceTaxRateLog::CreateUsageAccountBalanceTax($AccountID,$AccountBalanceUsageLogID,$TotalCharges);
 
-        AccountBalanceUsageLog::CreateResellerUsageLogDaily($AccountID,$AccountBalanceLogID,$UsageStartDate);
+            $UpdateData = array();
+            $UpdateData['UsageAmount'] = $TotalCharges;
+            $UpdateData['TotalTax'] = $TotalTax;
+            $UpdateData['TotalAmount'] = $GrandTotal;
+            $UpdateData['updated_at'] = date('Y-m-d H:i:s');
+            AccountBalanceUsageLog::where(['AccountBalanceUsageLogID' => $AccountBalanceUsageLogID])->update($UpdateData);
+            AccountBalanceUsageLog::CreateResellerUsageLogDaily($AccountID, $AccountBalanceLogID, $UsageStartDate);
+        }
         return $GrandTotal;
     }
 

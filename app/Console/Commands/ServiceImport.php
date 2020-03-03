@@ -70,7 +70,7 @@ class ServiceImport extends Command {
         $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
 
-		//$dir = 'C:\Users\lenovo\Documents\accounts\Accounts.xlsx';
+		//$filepath = 'C:\Users\lenovo\Documents\accounts\Service.xlsx';
        
         Log::useFiles(storage_path() . '/logs/impotServiceData-' . date('Y-m-d') . '.log');
 
@@ -94,69 +94,138 @@ class ServiceImport extends Command {
                 $checkemptyrow = array_filter(array_values($temp_row));
                 if(!empty($checkemptyrow)){
                     $tempItemData = array();
-                    $tempItemData['AccountDynamicField'] = array();
-                    $tempItemData['Numbers'] = array();
-                    $Number = array();
-                    // if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountNo'])) {
-                    //     $tempItemData['AccountNo'] = $temp_row['AccountNo'];
-                    // } 
-                    // if (isset($temp_row['AccountID'])) {
-                    //     $tempItemData['AccountID'] = trim($temp_row['AccountID']);
-                    // }
                     
-
                     if (isset($temp_row['CustomerId'])) {
-                        array_push($tempItemData['AccountDynamicField'] ,  [
-                            "Name" => "CustomerID",
-                            "Value" => $temp_row['CustomerId']
-                        ]);
+                        $tempItemData['CustomerID'] = $temp_row['CustomerId'];
                     }
 
                     if (isset($temp_row['Number'])) {
-                        $Number['NumberPurchased'] = $temp_row['Number'];
+                        $tempItemData['NumberPurchased'] = $temp_row['Number'];
                     }
 
-                    if (isset($temp_row['OrderID'])) {
-                        $tempItemData['OrderID'] = "1";
+                    if (isset($temp_row['OrderId'])) {
+                        $tempItemData['OrderID'] = $temp_row['OrderId'];                        ;
                     }
 
                     if (isset($temp_row['PackageProductId'])) {
-                        $Number['PackageProductID'] = $temp_row['PackageProductId'];
+                        $tempItemData['PackageProductID'] = $temp_row['PackageProductId'];
                     }
 
                     if (isset($temp_row['NumberStartDate'])) {
                         $NumberStartDate = explode(' ',$temp_row['NumberStartDate']);
-                        $Number['ContractStartDate'] = $NumberStartDate[0];
+                        $tempItemData['ContractStartDate'] = $NumberStartDate[0];
                     }
 
                     if (isset($temp_row['NumberEndDate'])) {
                         $NumberEndDate = explode(' ',$temp_row['NumberEndDate']);
-                        $Number['ContractEndDate'] = $NumberEndDate[0];
+                        $tempItemData['ContractEndDate'] = $NumberEndDate[0];
                     }
                     
                     if (isset($temp_row['PackageStartDate'])) {
                         $PackageStartDate = explode(' ',$temp_row['PackageStartDate']);
-                        $Number['PackageStartDate'] = $PackageStartDate[0];
+                        $tempItemData['PackageStartDate'] = $PackageStartDate[0];
                     }
 
                     if (isset($temp_row['PackageEndDate'])) {
                         $PackageEndDate = explode(' ',$temp_row['PackageEndDate']);
-                        $Number['PackageEndDate'] =  $PackageEndDate[0];
+                        $tempItemData['PackageEndDate'] =  $PackageEndDate[0];
                     }
 
                     if (isset($temp_row['PackageContractId'])) {
-                        $Number['PackageContractID'] = $temp_row['PackageContractId'];
+                        $tempItemData['PackageContractID'] = $temp_row['PackageContractId'];
                     }
 
                     if (isset($temp_row['NumberContractId'])) {
-                        $Number['NumberContractID'] = $temp_row['NumberContractId'];
+                        $tempItemData['NumberContractID'] = $temp_row['NumberContractId'];
                     }
 
                     if (isset($temp_row['NumberProductId'])) {
-                        $Number['ProductID'] = $temp_row['NumberProductId'];
+                        $tempItemData['ProductID'] = $temp_row['NumberProductId'];
                     }
 
-                    $Number['InboundTariffCategoryID'] = "1";
+                    if (isset($temp_row['InboundTariffCategoryID']) && !empty($temp_row['InboundTariffCategoryID']) &&  $temp_row['InboundTariffCategoryID'] != "NULL") {
+                        $tempItemData['InboundTariffCategoryID'] = $temp_row['InboundTariffCategoryID'];
+                    }else{
+                        $tempItemData['InboundTariffCategoryID'] = "1";
+                    }
+
+                    DB::table('tmp_services')->insert($tempItemData);
+                    Log::info($temp_row['Number'] .' has added in tmp_services table');
+                }
+            } 
+
+            $chats = DB::select(DB::raw('SELECT a.*
+            FROM tmp_services AS a
+            WHERE PackageStartDate = (
+                SELECT MAX(PackageStartDate)
+                FROM tmp_services AS b
+                WHERE a.NumberPurchased = b.NumberPurchased
+            )group by a.NumberPurchased'));
+            // $sub = DB::table('tmp_services')->orderby('PackageStartDate' , 'DESC');
+
+            //     $chats = DB::table(DB::raw("({$sub->toSql()}) as sub"))
+            //     ->groupBy('NumberPurchased')
+            //     ->get();
+            // $var = DB::table('tmp_services')->select(DB::raw('distinct NumberPurchased,PackageStartDate`'))
+            // ->orderby('PackageStartDate' , 'desc')->get();
+            $results = json_decode(json_encode($chats),true);
+            foreach ($results as $temp_row) {
+            
+                $checkemptyrow = array_filter(array_values($temp_row));
+                if(!empty($checkemptyrow)){
+                    $tempItemData = array();
+                    $tempItemData['AccountDynamicField'] = array();
+                    $tempItemData['Numbers'] = array();
+                    $Number = array();
+                    
+                    if (isset($temp_row['CustomerID'])) {
+                        array_push($tempItemData['AccountDynamicField'] ,  [
+                            "Name" => "CustomerID",
+                            "Value" => $temp_row['CustomerID']
+                        ]);
+                    }
+
+                    if (isset($temp_row['NumberPurchased'])) {
+                        $Number['NumberPurchased'] = $temp_row['NumberPurchased'];
+                    }
+
+                    if (isset($temp_row['OrderID'])) {
+                        $tempItemData['OrderID'] = $temp_row['OrderID'];                        ;
+                    }
+
+                    if (isset($temp_row['PackageProductID'])) {
+                        $Number['PackageProductID'] = $temp_row['PackageProductID'];
+                    }
+
+                    if (isset($temp_row['ContractStartDate'])) {
+                        $Number['ContractStartDate'] = $temp_row['ContractStartDate'];
+                    }
+
+                    if (isset($temp_row['ContractEndDate'])) {
+                        $Number['ContractEndDate'] = $temp_row['ContractEndDate'];
+                    }
+                    
+                    if (isset($temp_row['PackageStartDate'])) {
+                        $Number['PackageStartDate'] = $temp_row['PackageStartDate'];
+                    }
+
+                    if (isset($temp_row['PackageEndDate'])) {
+                        $Number['PackageEndDate'] =  $temp_row['PackageEndDate'];
+                    }
+
+                    if (isset($temp_row['PackageContractID'])) {
+                        $Number['PackageContractID'] = $temp_row['PackageContractID'];
+                    }
+
+                    if (isset($temp_row['NumberContractID'])) {
+                        $Number['NumberContractID'] = $temp_row['NumberContractID'];
+                    }
+
+                    if (isset($temp_row['ProductID'])) {
+                        $Number['ProductID'] = $temp_row['ProductID'];
+                    }
+
+                    $Number['InboundTariffCategoryID'] = $temp_row['InboundTariffCategoryID'];
                     
 
                     array_push($tempItemData['Numbers'] ,  $Number);
@@ -164,14 +233,17 @@ class ServiceImport extends Command {
                     //if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
                     $PricingJSONInput = json_encode($tempItemData, true);
                     $Response = NeonAPI::callAPI($PricingJSONInput , '/api/addNewAccountService' , $url,'application/json');
+                    Log::info($temp_row['NumberPurchased'] .' '. print_r($Response,true));
                     if($Response['HTTP_CODE'] != 200){
-                        $errorslog[] = $temp_row['Number'] . ':' . $Response['error'];
-                    }                
-                    //} else {
+                        $errorslog[] = $temp_row['NumberPurchased'] . ':' . $Response['error'];
+                    } else {
                         //Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
-                    //}
+                    }
                 }
-            }   
+            }
+            
+            DB::table('tmp_services')->truncate();
+           
             $job = Job::find($JobID);
             $jobdata['JobStatusMessage'] = 'Accounts have imported successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');

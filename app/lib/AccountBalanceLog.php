@@ -210,7 +210,7 @@ class AccountBalanceLog extends Model
                 $ServiceID = $AccountService->ServiceID;
                 $AccountServiceID = $AccountService->AccountServiceID;
 
-                $CliRateTables = CLIRateTable::where(['AccountServiceID'=>$AccountServiceID])->where('NumberStartDate','<=',$Today)->get();
+                $CliRateTables = CLIRateTable::where(['AccountServiceID'=>$AccountServiceID])->where(['Status'=>1])->where('NumberStartDate','<=',$Today)->get();
                 if(!empty($CliRateTables)) {
                     foreach ($CliRateTables as $CliRateTable) {
                         $CLIRateTableID = $CliRateTable->CLIRateTableID;
@@ -236,11 +236,6 @@ class AccountBalanceLog extends Model
         $AccountBilling=AccountBilling::where(['AccountID'=>$AccountID,'ServiceID'=>0,'AccountServiceID'=>0])->first();
         $BillingType = $AccountBilling->BillingType;
 
-        $CliRateTable=CLIRateTable::where(['CLIRateTableID'=>$CLIRateTableID])->first();
-
-        $AccountServicePackage = DB::table('tblAccountServicePackage')->where(['AccountServicePackageID'=>$AccountServicePackageID])->first();
-
-        $CLIRateTableID = $CliRateTable->CLIRateTableID;
         $Count = 1;
         $ServiceBilling = DB::table('tblServiceBilling')->where(['AccountID' => $AccountID, 'ServiceID' => $ServiceID, 'AccountServiceID' => $AccountServiceID, 'CLIRateTableID' => $CLIRateTableID,'AccountServicePackageID' => $AccountServicePackageID, 'AccountSubscriptionID' => 0])->first();
         if (empty($ServiceBilling)) {
@@ -254,6 +249,10 @@ class AccountBalanceLog extends Model
                 if (empty($AccountBilling->BillingStartDate)) {
                     return;
                 }
+
+                $CliRateTable=CLIRateTable::where(['CLIRateTableID'=>$CLIRateTableID])->first();
+
+                $AccountServicePackage = DB::table('tblAccountServicePackage')->where(['AccountServicePackageID'=>$AccountServicePackageID])->first();
 
                 if($AccountServicePackageID > 0){
                     $LatsCycleDate = $AccountServicePackage->PackageStartDate;
