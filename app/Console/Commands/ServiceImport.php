@@ -242,8 +242,6 @@ class ServiceImport extends Command {
                 }
             }
             
-            DB::table('tmp_services')->truncate();
-           
             $job = Job::find($JobID);
             $jobdata['JobStatusMessage'] = 'Accounts have imported successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
@@ -266,7 +264,9 @@ class ServiceImport extends Command {
             $jobdata['ModifiedBy'] = 'RMScheduler';
             Job::where(["JobID" => $JobID])->update($jobdata);
             Log::error($ex);
+            DB::table('tmp_services')->truncate();
         }
+        DB::table('tmp_services')->truncate();
         Job::send_job_status_email($job,$CompanyID);
 
         CronHelper::after_cronrun($this->name, $this);
