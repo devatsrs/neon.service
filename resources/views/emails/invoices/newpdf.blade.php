@@ -225,7 +225,7 @@
                                             <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                             <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                            <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                            <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                             <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                         </tr>
                                     @endforeach
@@ -242,7 +242,7 @@
                                             <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                             <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                            <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                            <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                             <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                         </tr>
                                     @endforeach
@@ -258,7 +258,7 @@
                                                 <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                 <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                 <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format($comp['Quantity'], $RoundChargesAmount)  }} @endif</td>
+                                                <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount)  }} @endif</td>
                                                 <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                             </tr>
                                         @endif
@@ -414,7 +414,7 @@
                                                     <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                                     <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -431,7 +431,7 @@
                                                     <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                                     <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -447,7 +447,7 @@
                                                         <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                         <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format($comp['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                         <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                                     </tr>
                                                 @endif
@@ -605,7 +605,7 @@
                                                     <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                                     <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -622,7 +622,7 @@
                                                     <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                                     <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -638,7 +638,7 @@
                                                         <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                         <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format($comp['Quantity'], $RoundChargesAmount) }} @endif</td>
+                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                         <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                                     </tr>
                                                 @endif
