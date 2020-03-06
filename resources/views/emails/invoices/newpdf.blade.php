@@ -68,7 +68,11 @@
             <div class="pull-right infoDiv">
                 <table class="table">
                     <tr>
-                        <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                        @if($print_type == "Proforma")
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                        @else
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                        @endif
                         <td>{{ $Invoice->FullInvoiceNumber }}</td>
                     </tr>
                     <tr>
@@ -176,7 +180,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -295,7 +303,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -365,7 +377,11 @@
                                     <div class="infoDetail">
                                         <table class="table">
                                             <tr>
-                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @if($print_type == "Proforma")
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                                @else
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @endif
                                                 <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                                 <td style="width: 40%"></td>
                                                 <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -486,7 +502,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -556,7 +576,11 @@
                                     <div class="infoDetail">
                                         <table class="table">
                                             <tr>
-                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @if($print_type == "Proforma")
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                                @else
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @endif
                                                 <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                                 <td style="width: 40%"></td>
                                                 <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>

@@ -829,6 +829,9 @@ class InvoiceGenerate {
             $PaymentDueInDays = AccountBilling::getPaymentDueInDays($Invoice->AccountID,0);
 
             $print_type = 'Invoice';
+            if($AccountBilling->BillingType == AccountBilling::BILLINGTYPE_PREPAID)
+                $print_type = "Proforma";
+            
             $body = View::make('emails.invoices.newpdf', get_defined_vars())->render();
             $body = htmlspecialchars_decode($body);
 
