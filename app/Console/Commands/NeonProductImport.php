@@ -109,11 +109,13 @@ class NeonProductImport extends Command {
                 $APIResponse = NeonAPI::callGetAPI($Getdata,$APIMethod,$APIUrl,$APIKey);
                 if (isset($APIResponse["error"])) {
                     Log::info('z_neonproductimport1 Error in  api/Products service.' . print_r($APIResponse["error"]));
+                    $errors[] = "Error in  api/Products service." . print_r($APIResponse["error"]);
                 } else {
                     $ProductResponses = json_decode($APIResponse["response"]);
                     
                     $ProductResponsesoutput = print_r($ProductResponses, true);
                     Log::info('ProductResponsesoutput Not Array service.' . $ProductResponsesoutput);
+                    
                     
                     if (is_array($ProductResponses) || is_object($ProductResponses)){
                         foreach($ProductResponses as $ProductResponse) {
@@ -225,26 +227,33 @@ class NeonProductImport extends Command {
     //                                    }
                                 }
                         }
+
+                        $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
+                        //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
+                        $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducts()");
+                    }else{
+                        $errors[] = "Api response is not valid";
                     }   
                 }
             }else{
                 Log::info('z_neonproductimport5 Not Find DynamicFieldsID.');
+                $errors[] = "Not Find DynamicFieldsID.";
             }
             
             
             //Insert other Company Packages
-            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "','" . $PackageId . "')");
-            //$result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducttemp( '" . $CompanyID . "','" . $FieldsProductID . "')");
-            
-            
-            $result = DB::connection('sqlsrv')->select("CALL  Prc_ImportProducts()");
-            
-            
+           
             Log::info('z_neonproductimport Next step in  api/Products service.');
-            //Track The Log          
-            $joblogdata['Message'] = 'neonproductimport Successfully Done';
-            $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
-            CronJobLog::insert($joblogdata);
+            if(isset($errors) && count($errors) > 0){
+                $joblogdata['Message'] = count($errors).' Account import log errors: '.implode(',\n\r',$errors);
+                $joblogdata['CronJobStatus'] = CronJob::CRON_FAIL;
+                CronJobLog::insert($joblogdata);
+            }else{
+                $joblogdata['Message'] = 'neonproductimport Successfully Done';
+                $joblogdata['CronJobStatus'] = CronJob::CRON_SUCCESS;
+                CronJobLog::insert($joblogdata);
+            }
+            
           //  DB::connection('neon_routingengine')->commit(); 
             
             $result = CronJob::CronJobSuccessEmailSend($CronJobID);
