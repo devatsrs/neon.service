@@ -3282,6 +3282,7 @@ class Invoice extends \Eloquent {
             "SurchargePerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE"),
             "SurchargePerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL"),
             "CollectionCostAmount" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT"),
+            "CollectionCostPercentage" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_PERCENTAGE"),
             "CostPerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL"),
             "CostPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE"),
             "OutpaymentPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE"),
