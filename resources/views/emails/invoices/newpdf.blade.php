@@ -59,7 +59,11 @@
     <div class="invoiceBody">
         <div id="CompanyInfo">
             <div class="pull-right infoDiv">
-                <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_TITLE")}}</h2>
+                @if($print_type == "Proforma")
+                    <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_TITLE")}}</h2>
+                @else
+                    <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_TITLE")}}</h2>
+                @endif
             </div>
             <div class="clearfix"></div>
             <div class="pull-left addrDiv">
