@@ -434,8 +434,13 @@ class InvoiceGenerate {
                 "InvoiceStatus" => Invoice::AWAITING,
                 "InvoiceNumber" => $LastInvoiceNumber,
                 "FullInvoiceNumber" => $FullInvoiceNumber,
-                "AccountType" => $InvoiceAccountType
+                "AccountType"   => $InvoiceAccountType
             );
+
+            $AccountDynamicField = Account::getDynamicfields("PONumber",$AccountID,$Account->CompanyId);
+            if(isset($AccountDynamicField['PONumber']) && !empty($AccountDynamicField['PONumber'])){
+                $InvoiceData['PONumber'] = $AccountDynamicField['PONumber'];
+            }
 
             $Invoice = Invoice::insertInvoice($InvoiceData);
             // Updating last invoice number in company
@@ -494,7 +499,8 @@ class InvoiceGenerate {
         if(in_array($InvoiceAccountType,['Customer', 'Partner'])) {
             $UsageGrandTotal = AccountBalanceUsageLog::where([
                 'AccountBalanceLogID' => $AccountBalanceLogID,
-                // Type 0 will get only partner's data in case of Partner invoice
+                // Type = 0 check is optional for customer but for partner there's 2 types of data
+                // Partner's data and Partner's user data (in negative) and we only need partner's data
                 'Type' => 0,
             ])
                 ->where('Date', '>=', $StartDate)

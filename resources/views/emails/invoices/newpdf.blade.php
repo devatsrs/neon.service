@@ -83,6 +83,12 @@
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
                         <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
                     </tr>
+                    @if(isset($Account->VatNumber) && !empty($Account->VatNumber))
+                    <tr>
+                        <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_VAT_NO")}}</td>
+                        <td>{{ $Account->VatNumber }}</td>
+                    </tr>
+                    @endif
                     @if(!empty($MultiCurrencies))
                         @foreach($MultiCurrencies as $multiCurrency)
                             <tr>
