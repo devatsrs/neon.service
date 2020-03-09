@@ -94,6 +94,15 @@ class NeonAlert extends \Eloquent {
         }
         Log::info('============== LowStockReminder alert END===========');
 
+        Log::info('============== Deal alert START===========');
+        try {
+            Deal::sendDealAlert($CompanyID);
+        } catch (\Exception $e) {
+            Log::error($e);
+            $cronjobdata[] = 'LowStockReminder alert failed';
+        }
+        Log::info('============== Deal alert START===========');
+
         return $cronjobdata;
     }
 

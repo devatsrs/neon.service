@@ -21,6 +21,7 @@ class AccountEmailLog extends \Eloquent {
 	const ReportEmail = 11;
 	const BalanceWarning = 12;
 	const AccountBalanceEmailReminder = 13;
+	const DealAlert = 14;
 
     public static function getLastMessageIDByTicketID($TicketID){
 
