@@ -281,6 +281,8 @@ class AccountBalanceSubscriptionLog extends Model
             $SubscriptionLogData['TotalAmount']=$TotalActivationFeeCharge;
             $SubscriptionLogData['CustomerSubscriptionLogID']=0;
             $SubscriptionLogData['CLIRateTableID']=0;
+            $SubscriptionLogData['IsBillingChanged'] = 0;
+            $SubscriptionLogData['IsSpecialRateTable']=0;
             $SubscriptionLogData['ProcessID']=$ProcessID;
             /*
             $SubscriptionLogData['DiscountAmount']=0;
@@ -331,7 +333,8 @@ class AccountBalanceSubscriptionLog extends Model
             $SubscriptionLogData['DiscountType'] = $AccountSubscription->DiscountType;
         }
         $SubscriptionLogData["DiscountLineAmount"] = $DiscountLineAmount;
-        $OneOffChargeLogData['IsBillingChanged'] = 0;
+        $SubscriptionLogData['IsBillingChanged'] = 0;
+        $SubscriptionLogData['IsSpecialRateTable'] = 0;
         $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
         $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
         $NewAccountBalanceSubscriptionLog = AccountBalanceSubscriptionLog::create($SubscriptionLogData);
@@ -411,6 +414,7 @@ class AccountBalanceSubscriptionLog extends Model
         }
         $OneOffChargeLogData["DiscountLineAmount"] = $DiscountLineAmount;
         $OneOffChargeLogData['IsBillingChanged'] = 0;
+        $OneOffChargeLogData['IsSpecialRateTable'] = 0;
         $OneOffChargeLogData['created_at']=date('Y-m-d H:i:s');
         $OneOffChargeLogData['updated_at']=date('Y-m-d H:i:s');
         $AccountBalanceOneOffLog = AccountBalanceSubscriptionLog::create($OneOffChargeLogData);
@@ -453,6 +457,8 @@ class AccountBalanceSubscriptionLog extends Model
             foreach($AccountServiceNumberDatas as $AccountServiceNumberData){
                 $CLIRateTableID = $AccountServiceNumberData->CLIRateTableID;
                 $AccountServicePackageID = $AccountServiceNumberData->AccountServicePackageID;
+                $IsSpecialRateTable = $AccountServiceNumberData->IsSpecialRateTable;
+                $IsSpecialPackageRateTable = $AccountServiceNumberData->IsSpecialPackageRateTable;
 
                 $CliRateTables = CLIRateTable::where(['CLIRateTableID'=>$CLIRateTableID])->where('NumberStartDate','<=',$Today)->first();
                 if(!empty($CliRateTables)){
@@ -461,17 +467,17 @@ class AccountBalanceSubscriptionLog extends Model
                     if(empty($NewAccountServicePackageID)) {
                         if (!empty($AccountServiceNumberData->MonthlyCost)) {
                             //log::info('MonthlyCost '.$AccountServiceNumberData->MonthlyCost);
-                            AccountBalanceSubscriptionLog::calculateMonthlyCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->MonthlyCost, 'Number', $CLIRateTableID, $StartDate, $EndDate, $CLIRateTableID,$NewAccountServicePackageID);
+                            AccountBalanceSubscriptionLog::calculateMonthlyCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->MonthlyCost, 'Number', $CLIRateTableID, $StartDate, $EndDate, $CLIRateTableID,$NewAccountServicePackageID,$IsSpecialRateTable);
                         }
                         //OneOff Cost
                         if (!empty($AccountServiceNumberData->OneOffCost)) {
                             //log::info('OneOffCost '.$AccountServiceNumberData->OneOffCost);
-                            AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->OneOffCost, 'Number', $CLIRateTableID, Product::NUMBER_ONEOFFCHARGE, $CLIRateTableID);
+                            AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->OneOffCost, 'Number', $CLIRateTableID, Product::NUMBER_ONEOFFCHARGE, $CLIRateTableID,$IsSpecialRateTable);
                         }
                         //Registration Cost
                         if (!empty($AccountServiceNumberData->RegistrationCostPerNumber)) {
                             //log::info('RegistrationCostPerNumber '.$AccountServiceNumberData->RegistrationCostPerNumber);
-                            AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->RegistrationCostPerNumber, 'Number', $CLIRateTableID, Product::NUMBER_REGISTRATIONCOST, $CLIRateTableID);
+                            AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->RegistrationCostPerNumber, 'Number', $CLIRateTableID, Product::NUMBER_REGISTRATIONCOST, $CLIRateTableID,$IsSpecialRateTable);
                         }
                     }
                     if($NewAccountServicePackageID > 0) {
@@ -480,12 +486,12 @@ class AccountBalanceSubscriptionLog extends Model
                         if ($PackageStartDate <= $Today) {
                             if (!empty($AccountServiceNumberData->PKGMonthlyCost)) {
                                 //log::info('PKGMonthlyCost '.$AccountServiceNumberData->PKGMonthlyCost);
-                                AccountBalanceSubscriptionLog::calculateMonthlyCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->PKGMonthlyCost, 'Package', $AccountServicePackageID, $StartDate, $EndDate, $CLIRateTableID,$NewAccountServicePackageID);
+                                AccountBalanceSubscriptionLog::calculateMonthlyCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->PKGMonthlyCost, 'Package', $AccountServicePackageID, $StartDate, $EndDate, $CLIRateTableID,$NewAccountServicePackageID,$IsSpecialPackageRateTable);
                             }
                             //OneOff Cost
                             if (!empty($AccountServiceNumberData->PKGOneOffCost)) {
                                 //log::info('PKGOneOffCost '.$AccountServiceNumberData->PKGOneOffCost);
-                                AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->PKGOneOffCost, 'Package', $AccountServicePackageID, Product::PACKAGE_ONEOFFCHARGE, $CLIRateTableID);
+                                AccountBalanceSubscriptionLog::calculateOneOffCost($ProcessID, $AccountServiceNumberData->CLI, $AccountServiceNumberData->PKGOneOffCost, 'Package', $AccountServicePackageID, Product::PACKAGE_ONEOFFCHARGE, $CLIRateTableID,$IsSpecialPackageRateTable);
                             }
                         }
                     }
@@ -494,7 +500,7 @@ class AccountBalanceSubscriptionLog extends Model
         }
     }
 
-    public static function calculateMonthlyCost($ProcessID,$CLI,$MonthlyCost,$Type,$ParentID,$StartDate,$EndDate,$CLIRateTableID,$NewAccountServicePackageID){
+    public static function calculateMonthlyCost($ProcessID,$CLI,$MonthlyCost,$Type,$ParentID,$StartDate,$EndDate,$CLIRateTableID,$NewAccountServicePackageID,$IsSpecialRateTable){
         $BillingType = 1;
         $AccountSubscriptionID = 0;
         log::info('old StartDate : '.$StartDate.' old EndDate : '.$EndDate);
@@ -550,6 +556,7 @@ class AccountBalanceSubscriptionLog extends Model
         $data['ParentID'] =  $ParentID;
         $data['Description'] = $Description;
         $data['CLIRateTableID'] = $CLIRateTableID;
+        $data['IsSpecialRateTable'] = $IsSpecialRateTable;
 
         $IsAdvance = 1;
         $FirstTimeBilling = 0;
@@ -759,6 +766,7 @@ class AccountBalanceSubscriptionLog extends Model
         $SubscriptionLogData['ProcessID']=$ProcessID;
         $SubscriptionLogData["DiscountLineAmount"] = $DiscountLineAmount;
         $SubscriptionLogData['IsBillingChanged'] = $IsBillingChanged;
+        $SubscriptionLogData['IsSpecialRateTable'] = $data['IsSpecialRateTable'];
         $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
         $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
 
@@ -777,7 +785,7 @@ class AccountBalanceSubscriptionLog extends Model
 
     }
 
-    public static function calculateOneOffCost($ProcessID,$CLI,$OneOffCost,$Type,$ParentID,$ProductType,$CLIRateTableID){
+    public static function calculateOneOffCost($ProcessID,$CLI,$OneOffCost,$Type,$ParentID,$ProductType,$CLIRateTableID,$IsSpecialRateTable){
         log::info('Monthly One off log '.' '.$ParentID.' '.$ProductType);
         /* $Count = AccountBalanceSubscriptionLog::where(['ProductType' => $ProductType, 'ParentID' => $ParentID])
             ->where('Description', 'like','%'.$CLI.'%')
@@ -859,6 +867,7 @@ class AccountBalanceSubscriptionLog extends Model
                 $OneOffChargeLogData['ProcessID'] = $ProcessID;
                 $OneOffChargeLogData["DiscountLineAmount"] = $DiscountLineAmount;
                 $OneOffChargeLogData['IsBillingChanged'] = 0;
+                $OneOffChargeLogData['IsSpecialRateTable'] = $IsSpecialRateTable;
                 $OneOffChargeLogData['created_at'] = date('Y-m-d H:i:s');
                 $OneOffChargeLogData['updated_at'] = date('Y-m-d H:i:s');
                 $AccountBalanceOneOffLog = AccountBalanceSubscriptionLog::create($OneOffChargeLogData);
@@ -922,7 +931,8 @@ class AccountBalanceSubscriptionLog extends Model
             $SubscriptionLogData["CustomerSubscriptionLogID"] = $SubscriptionData["CustomerSubscriptionLogID"];
             $SubscriptionLogData["CLIRateTableID"] = $SubscriptionData["CLIRateTableID"];
             $SubscriptionLogData["ProcessID"] = $ProcessID;
-            $OneOffChargeLogData['IsBillingChanged'] = $SubscriptionData['IsBillingChanged']; // need to change
+            $SubscriptionLogData['IsBillingChanged'] = $SubscriptionData['IsBillingChanged']; // need to change
+            $SubscriptionLogData['IsSpecialRateTable'] = 0; // need to change
             $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
             $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
 
