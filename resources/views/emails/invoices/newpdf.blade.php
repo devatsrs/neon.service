@@ -59,7 +59,11 @@
     <div class="invoiceBody">
         <div id="CompanyInfo">
             <div class="pull-right infoDiv">
-                <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_TITLE")}}</h2>
+                @if($print_type == "Proforma")
+                    <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_TITLE")}}</h2>
+                @else
+                    <h2>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_TITLE")}}</h2>
+                @endif
             </div>
             <div class="clearfix"></div>
             <div class="pull-left addrDiv">
@@ -68,7 +72,11 @@
             <div class="pull-right infoDiv">
                 <table class="table">
                     <tr>
-                        <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                        @if($print_type == "Proforma")
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                        @else
+                            <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                        @endif
                         <td>{{ $Invoice->FullInvoiceNumber }}</td>
                     </tr>
                     <tr>
@@ -83,6 +91,12 @@
                         <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_DUE_DATE")}}</td>
                         <td>{{date($dateFormat,strtotime($Invoice->IssueDate.' +' . $PaymentDueInDays . ' days'))}}</td>
                     </tr>
+                    @if(isset($Account->VatNumber) && !empty($Account->VatNumber))
+                    <tr>
+                        <td width="45%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_VAT_NO")}}</td>
+                        <td>{{ $Account->VatNumber }}</td>
+                    </tr>
+                    @endif
                     @if(!empty($MultiCurrencies))
                         @foreach($MultiCurrencies as $multiCurrency)
                             <tr>
@@ -170,7 +184,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -219,7 +237,7 @@
                                             <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                             <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                            <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], 0) }} @endif</td>
+                                            <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                             <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                         </tr>
                                     @endforeach
@@ -236,7 +254,7 @@
                                             <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                             <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                            <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], 0) }} @endif</td>
+                                            <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                             <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                         </tr>
                                     @endforeach
@@ -252,7 +270,7 @@
                                                 <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                 <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                 <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
+                                                <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount)  }} @endif</td>
                                                 <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                             </tr>
                                         @endif
@@ -289,7 +307,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -359,7 +381,11 @@
                                     <div class="infoDetail">
                                         <table class="table">
                                             <tr>
-                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @if($print_type == "Proforma")
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                                @else
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @endif
                                                 <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                                 <td style="width: 40%"></td>
                                                 <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -408,7 +434,7 @@
                                                     <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                                     <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -425,7 +451,7 @@
                                                     <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                                     <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -441,7 +467,7 @@
                                                         <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                         <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
+                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                         <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                                     </tr>
                                                 @endif
@@ -480,7 +506,11 @@
                             <div class="infoDetail">
                                 <table class="table">
                                     <tr>
-                                        <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @if($print_type == "Proforma")
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                        @else
+                                            <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                        @endif
                                         <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                         <td style="width: 40%"></td>
                                         <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -550,7 +580,11 @@
                                     <div class="infoDetail">
                                         <table class="table">
                                             <tr>
-                                                <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @if($print_type == "Proforma")
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_PROFORMA_NO")}}</td>
+                                                @else
+                                                    <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_LBL_INVOICE_NO")}}</td>
+                                                @endif
                                                 <td style="width: 15%">{{$Invoice->FullInvoiceNumber}}</td>
                                                 <td style="width: 40%"></td>
                                                 <td style="width: 15%">{{cus_lang("CUST_PANEL_PAGE_INVOICE_TBL_AC_NAME")}}</td>
@@ -599,7 +633,7 @@
                                                     <!-- <td class="text-right">@if(!empty($MonthlyData['Discount'])){{ number_format($MonthlyData['Discount'], $RoundChargesAmount) }} @endif</td>
                                    -->
                                                     <td class="text-right">@if(!empty($MonthlyData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($MonthlyData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format($MonthlyData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($MonthlyData['Quantity'])){{ number_format((float)$MonthlyData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($MonthlyData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -616,7 +650,7 @@
                                                     <!--<td class="text-right">@if(!empty($OneOffData['Discount'])){{ number_format($OneOffData['Discount'], $RoundChargesAmount) }} @endif</td>
                                     -->
                                                     <td class="text-right">@if(!empty($OneOffData['DiscountPrice'])){{$CurrencySymbol}} {{ number_format($OneOffData['DiscountPrice'], $RoundChargesAmount) }} @endif</td>
-                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format($OneOffData['Quantity'], 0) }} @endif</td>
+                                                    <td class="text-right">@if(!empty($OneOffData['Quantity'])){{ number_format((float)$OneOffData['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($OneOffData['SubTotal'], $RoundChargesAmount) }}</td>
                                                 </tr>
                                             @endforeach
@@ -632,7 +666,7 @@
                                                         <td class="text-right">@if(!empty($comp['Price'])){{$CurrencySymbol}} {{ $comp['Price'] }} @endif</td>
                                                         <!--<td class="text-right">@if(!empty($comp['Discount'])){{ $comp['Discount'] }} @endif</td>-->
                                                         <td class="text-right">@if(!empty($comp['DiscountPrice'])){{$CurrencySymbol}} {{ $comp['DiscountPrice'] }} @endif</td>
-                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ $comp['Quantity'] }} @endif</td>
+                                                        <td class="text-right">@if(!empty($comp['Quantity'])){{ number_format((float)$comp['Quantity'], $RoundChargesAmount) }} @endif</td>
                                                         <td class="text-right">{{$CurrencySymbol}} {{ $comp['SubTotal'] }}</td>
                                                     </tr>
                                                 @endif

@@ -3282,6 +3282,7 @@ class Invoice extends \Eloquent {
             "SurchargePerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_SURCHARGE_PER_MINUTE"),
             "SurchargePerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_SURCHARGE_PER_CALL"),
             "CollectionCostAmount" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_AMOUNT"),
+            "CollectionCostPercentage" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COLLECTION_COST_PERCENTAGE"),
             "CostPerCall" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_CALL"),
             "CostPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_COST_PER_MINUTE"),
             "OutpaymentPerMinute" => cus_lang("PAGE_INVOICE_PDF_LBL_COMPONENT_OUTPAYMENT_PER_MINUTE"),
@@ -3298,8 +3299,15 @@ class Invoice extends \Eloquent {
         if($InvoiceComponent->Destination != "")
             $Title .= " " . $InvoiceComponent->Destination;
 
+        $TerminationType = "";
+        if($InvoiceComponent->TerminationType != "" && $InvoiceComponent->TerminationType != "NA")
+            $TerminationType = " " . $InvoiceComponent->TerminationType;
+
         if($InvoiceComponent->Origination != "" && $InvoiceComponent->Origination != "NA")
-            $Title .= " of " . $InvoiceComponent->Origination;
+            $Title .= " of" . $TerminationType . " " . $InvoiceComponent->Origination;
+        elseif($TerminationType != "")
+            $Title .= " of" . $TerminationType;
+
 
         if($InvoiceComponent->Timezone != "" && $InvoiceComponent->Timezone != "Default")
             $Title .= " " . $InvoiceComponent->Timezone;
@@ -3328,7 +3336,7 @@ class Invoice extends \Eloquent {
         //Getting all CLIs data
         return DB::connection('sqlsrv2')
             ->table("tblInvoiceComponentDetail as id")
-            ->select("tz.Title as Timezone","rt.Description as Destination","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.ProductType","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
+            ->select("tz.Title as Timezone","rt.Description as Destination","rt.Type as TerminationType","cli.CountryID","cli.Prefix","pkg.PackageId","id.InvoiceComponentDetailID","id.CLI","id.AccountServiceID","id.RateID","id.Component","id.Origination","id.Discount","id.DiscountPrice","id.Type","id.ProductType","id.Quantity","id.Duration","id.SubTotal","id.TotalTax","id.TotalCost","id.CustomerID","ac.AccountName")
             ->join("speakintelligentRM.tblCLIRateTable as cli", "cli.CLIRateTableID","=","id.CLIRateTableID")
             ->leftJoin("speakintelligentRM.tblAccountServicePackage as pkg","pkg.AccountServicePackageID","=","cli.AccountServicePackageID")
             ->leftJoin("speakintelligentRM.tblAccount as ac","ac.AccountID","=","id.CustomerID")
@@ -3410,14 +3418,22 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                if(in_array($Component, self::$PerMinuteComponents))
-                    $Quantity = ceil((float)$invoiceComponent->Duration / 60);
-                else
-                    $Quantity = $invoiceComponent->Quantity;
+                $iSeconds = (float)$invoiceComponent->Duration;
+                if(in_array($Component, self::$PerMinuteComponents)) {
+                    $min = intval($iSeconds / 60);
+                    $Quantity = (float)$min . '.' . str_pad(($iSeconds % 60), 2, '0', STR_PAD_LEFT);
+                } else
+                    $Quantity = (float)$invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if($Quantity > 0){
-                    $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
+                if($Quantity > 0.00000){
+                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice);
+
+                    if(in_array($Component, self::$PerMinuteComponents)) {
+                        $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
+                    } else {
+                        $UnitPrice = $RemainingStandardPrice / $Quantity;
+                    }
                 }
 
                 $data[$index]['components'][] = [
@@ -3429,7 +3445,7 @@ class Invoice extends \Eloquent {
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                     'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
+                    'Quantity'      => $Quantity > 0.0000 ? number_format($Quantity,$RoundChargesAmount) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
@@ -3532,14 +3548,22 @@ class Invoice extends \Eloquent {
 
                 $Title = self::getComponentTitle($invoiceComponent);
 
-                if(in_array($Component, self::$PerMinuteComponents))
-                    $Quantity = ceil((float)$invoiceComponent->Duration / 60);
-                else
-                    $Quantity = $invoiceComponent->Quantity;
+                $iSeconds = (float)$invoiceComponent->Duration;
+                if(in_array($Component, self::$PerMinuteComponents)) {
+                    $min = intval($iSeconds / 60);
+                    $Quantity = (float)$min . '.' . str_pad(($iSeconds % 60), 2, '0', STR_PAD_LEFT);
+                } else
+                    $Quantity = (float)$invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
-                if($Quantity > 0){
-                    $UnitPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice ) / $Quantity;
+                if($Quantity > 0.00000){
+                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice);
+
+                    if(in_array($Component, self::$PerMinuteComponents)) {
+                        $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
+                    } else {
+                        $UnitPrice = $RemainingStandardPrice / $Quantity;
+                    }
                 }
 
                 $data[$CID]['data'][$index]['components'][] = [
@@ -3551,7 +3575,7 @@ class Invoice extends \Eloquent {
                     'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
                     'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity'      => $Quantity > 0 ? number_format($Quantity,0) : '',
+                    'Quantity'      => $Quantity > 0.0000 ? number_format($Quantity,$RoundChargesAmount) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
