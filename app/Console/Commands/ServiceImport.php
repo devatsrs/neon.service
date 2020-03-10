@@ -70,12 +70,12 @@ class ServiceImport extends Command {
         $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
 
-		//$filepath = 'C:\Users\lenovo\Documents\accounts\Service.xlsx';
+		$filepath = 'C:\Users\lenovo\Documents\accounts\Service.xlsx';
        
         Log::useFiles(storage_path() . '/logs/impotServiceData-' . date('Y-m-d') . '.log');
 
         try {
-            $filepath = $jobfile->FilePath;
+            //$filepath = $jobfile->FilePath;
 
             Log::info($filepath . '  - Processing ');
 
@@ -169,6 +169,8 @@ class ServiceImport extends Command {
             // $var = DB::table('tmp_services')->select(DB::raw('distinct NumberPurchased,PackageStartDate`'))
             // ->orderby('PackageStartDate' , 'desc')->get();
             $results = json_decode(json_encode($chats),true);
+            var_dump($results);
+            die;
             foreach ($results as $temp_row) {
             
                 $checkemptyrow = array_filter(array_values($temp_row));
@@ -243,7 +245,7 @@ class ServiceImport extends Command {
             }
             
             $job = Job::find($JobID);
-            $jobdata['JobStatusMessage'] = 'Accounts have imported successfully';
+            $jobdata['JobStatusMessage'] = 'Service have imported successfully';
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'S')->pluck('JobStatusID');
             $jobdata['updated_at'] = date('Y-m-d H:i:s');
             $jobdata['ModifiedBy'] = 'RMScheduler';

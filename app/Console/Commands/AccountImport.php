@@ -303,7 +303,7 @@ class AccountImport extends Command {
                         }
 
                         
-                        if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                        if (isset($temp_row['AccountNo']) && isset($temp_row['AccountName']) && isset($temp_row['CustomerId']) && isset($temp_row['BillingType']) && isset($temp_row['BillingStartDate'])) {
                             $PricingJSONInput = json_encode($tempItemData, true);
                             $Response = NeonAPI::callAPI($PricingJSONInput , '/api/createAccount' , $url ,'application/json');
                             Log::info($temp_row['AccountNo'] . print_r($Response,true));
@@ -535,7 +535,7 @@ class AccountImport extends Command {
                         }
 
                         
-                        if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                        if (isset($temp_row['AccountNo']) && isset($temp_row['AccountName']) && isset($temp_row['CustomerId']) && isset($temp_row['BillingType']) && isset($temp_row['BillingStartDate'])) {
                             $PricingJSONInput = json_encode($tempItemData, true);
                             $Response = NeonAPI::callAPI($PricingJSONInput , '/api/createAccount' , $url ,'application/json');
                             Log::info($temp_row['AccountNo'] . print_r($Response,true));
@@ -544,7 +544,7 @@ class AccountImport extends Command {
                             }   
                         } else {
                             Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
-                            $errorslog[] = !isset($temp_row['AccountNo']) ? $temp_row['AccountName']: $temp_row['AccountNo'] . ' skipped line number' . $lineno;
+                            $errorslog[] = (!isset($temp_row['AccountNo']) ? $temp_row['AccountName']: $temp_row['AccountNo']) . ' skipped line number' . $lineno;
                         }
                     }
                 }    
@@ -559,7 +559,7 @@ class AccountImport extends Command {
 
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] .= count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
+                $jobdata['JobStatusMessage'] = count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
                 Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
