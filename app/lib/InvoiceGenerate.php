@@ -541,6 +541,7 @@ class InvoiceGenerate {
         $UsageGrandTotal = 0;
         $UsageSubTotal = 0;
         $UsageTotalTax = 0;
+        $UsageDiscount = 0;
 
         // Adding Usage data of Partner and Customer Invoice
         // In case of Affiliate, Usage by default will be 0
@@ -558,8 +559,8 @@ class InvoiceGenerate {
 
             // Select * from components where component is not OneOff or Monthly
             $TotalOutPayment = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
-                ->whereNotIn('Component',['OutpaymentPerCall','OutpaymentPerMinute'])
-            ->sum("TotalCost");
+                ->whereIn('Component',['OutpaymentPerCall','OutpaymentPerMinute'])
+                ->sum("TotalCost");
 
             if($TotalOutPayment != false and $TotalOutPayment < 0){
                 Log::error('Outpayment Total ' . $TotalOutPayment);
@@ -596,14 +597,15 @@ class InvoiceGenerate {
             $UsageTotalTax   += $Usage->sum('TotalTax');
             $UsageGrandTotal += $Usage->sum('TotalCost');
 
-            // Updating Invoice detail as Usage data is updated for partner and affiliate
-            $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
-            $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
-            $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
-            $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
-            $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
-            $InvoiceDetail->save();
         }
+
+        // Updating Invoice detail as Usage data is updated for partner and affiliate
+        $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
+        $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
+        $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
+        $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail->save();
 
         // Adding Monthly Product in Invoice Detail from Components
         $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
