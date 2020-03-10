@@ -101,11 +101,11 @@ class InvoiceGenerate {
 
         if(count($InvoiceComponents))
             foreach($InvoiceComponents as $key => $InvoiceComponent) {
-                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0.00000) {
+                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] != 0.00000) {
                     $TotalPages++;
                     if($InvoiceAccountType != "Customer"){
                         foreach($InvoiceComponent['data'] as $InvoiceComponentDetail){
-                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] > 0.000000){
+                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] != 0.000000){
                                 $TotalPages++;
                             }
                         }
@@ -1273,9 +1273,9 @@ class InvoiceGenerate {
 
         foreach($InvoiceComponents as $InvoiceSummary) {
             $Name = $InvoiceSummary['Name'];
-            if($InvoiceSummary['GrandTotal'] > 0.000000)
+            if($InvoiceSummary['GrandTotal'] != 0.000000)
                 foreach($InvoiceSummary['data'] as $key => $InvoiceComponent){
-                    if($InvoiceComponent['GrandTotal'] > 0.000000){
+                    if($InvoiceComponent['GrandTotal'] != 0.000000){
                         //product
                         $description = $Name . " - " . Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['CLI'] . " " . Package::getServiceNameByID($InvoiceComponent['PackageID']);
 

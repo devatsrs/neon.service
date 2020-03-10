@@ -176,7 +176,7 @@
         @if(count($InvoiceComponents) || count($AffiliateInvoiceComponents))
             @if($InvoiceAccountType == "Customer")
                 @foreach($InvoiceComponents as $key => $InvoiceComponent)
-                    @if($InvoiceComponent['GrandTotal'] > 0.000000)
+                    @if($InvoiceComponent['GrandTotal'] != 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -299,7 +299,7 @@
             @endif
             @if($InvoiceAccountType == "Affiliate" || $InvoiceAccountType == "Partner")
                 @foreach($InvoiceComponents as $key => $InvoiceSummary)
-                    @if($InvoiceSummary['GrandTotal'] > 0.000000)
+                    @if($InvoiceSummary['GrandTotal'] != 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -373,7 +373,7 @@
                             </div>
                         </div>
                         @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                            @if($InvoiceComponent['GrandTotal'] > 0.000000)
+                            @if($InvoiceComponent['GrandTotal'] != 0.000000)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
                                 <div id="CompanyInfo">
@@ -498,7 +498,7 @@
             @endif
             @if($InvoiceAccountType == "Partner" && !empty($AffiliateInvoiceComponents))
                 @foreach($AffiliateInvoiceComponents as $key => $InvoiceSummary)
-                    @if($InvoiceSummary['GrandTotal'] > 0.000000)
+                    @if($InvoiceSummary['GrandTotal'] != 0.000000)
                         <?php $PageCounter += 1; ?>
                         <div class="page_break"></div>
                         <div id="CompanyInfo">
@@ -572,7 +572,7 @@
                             </div>
                         </div>
                         @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                            @if($InvoiceComponent['GrandTotal'] > 0.000000)
+                            @if($InvoiceComponent['GrandTotal'] !=`0.000000)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
                                 <div id="CompanyInfo">
