@@ -572,7 +572,7 @@
                             </div>
                         </div>
                         @foreach($InvoiceSummary['data'] as $k => $InvoiceComponent)
-                            @if($InvoiceComponent['GrandTotal'] !=`0.000000)
+                            @if($InvoiceComponent['GrandTotal'] != 0.000000)
                                 <?php $PageCounter += 1; ?>
                                 <div class="page_break"></div>
                                 <div id="CompanyInfo">
