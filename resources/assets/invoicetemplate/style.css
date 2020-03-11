@@ -12,7 +12,7 @@
 }
 header {
     padding: 10px 0;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     /*border-bottom: 1px solid #AAAAAA;*/
 }
 #logo {
@@ -40,8 +40,10 @@ h1, h2, h3 {
 #CompanyInfo tr td:first-child{
 
 }
-.infoDiv h2{
+.infoDiv h2 {
     padding-left: 5px;
+    padding-top: 10px;
+    font-size: 28px;
 }
 
 .credentialDiv {

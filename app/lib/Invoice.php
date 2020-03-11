@@ -3409,7 +3409,7 @@ class Invoice extends \Eloquent {
                     $arrData['TotalTax']  += $invoiceComponent->TotalTax;
                     $arrData['TotalCost'] += $invoiceComponent->TotalCost;
 
-                    $arrData['Price'] = (float)$arrData['Quantity'] > 0 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
+                    $arrData['Price'] = (float)$arrData['Quantity'] > 0.00000 ? ($arrData['SubTotal'] / $arrData['Quantity']) : 0;
 
                     $data[$index][$Component][$ProductType] = $arrData;
                 }
@@ -3441,11 +3441,11 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
-                    'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice != 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
+                    'Discount'      => $invoiceComponent->Discount != 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice != 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity'      => $Quantity > 0.0000 ? number_format($Quantity,$RoundChargesAmount) : '',
+                    'Quantity'      => $Quantity != 0.00000 ? number_format($Quantity,$RoundChargesAmount) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),
@@ -3469,22 +3469,27 @@ class Invoice extends \Eloquent {
             $CID = $invoiceComponent->CustomerID;
             if(!isset($data[$CID])){
                 $data[$CID]['Name'] = $invoiceComponent->AccountName;
-                $data[$CID]['OneOffSubTotal'] = InvoiceComponentDetail::where('Component', 'OneOffCost')->where(['CustomerID' => $CID])
+                $data[$CID]['OneOffSubTotal'] = InvoiceComponentDetail::where('Component', 'OneOffCost')
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                     ->sum('SubTotal');
 
-                $data[$CID]['MonthlySubTotal'] = InvoiceComponentDetail::where('Component', 'MonthlyCost')->where(['CustomerID' => $CID])
+                $data[$CID]['MonthlySubTotal'] = InvoiceComponentDetail::where('Component', 'MonthlyCost')
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                     ->sum('SubTotal');
 
-                $data[$CID]['UsageSubTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['UsageSubTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
                     ->sum('SubTotal');
 
-                $data[$CID]['TotalVAT'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['TotalVAT'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->sum('TotalTax');
 
-                $data[$CID]['GrandTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['GrandTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->sum('TotalCost');
             }
 
@@ -3571,11 +3576,11 @@ class Invoice extends \Eloquent {
                     'Type'          => $invoiceComponent->Type,
                     'Origination'   => $invoiceComponent->Origination,
                     'Component'     => $Component,
-                    'Price'         => $UnitPrice > 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
-                    'Discount'      => $invoiceComponent->Discount > 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice > 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'Price'         => $UnitPrice != 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
+                    'Discount'      => $invoiceComponent->Discount != 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $invoiceComponent->DiscountPrice != 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
-                    'Quantity'      => $Quantity > 0.0000 ? number_format($Quantity,$RoundChargesAmount) : '',
+                    'Quantity'      => $Quantity > 0.00000 ? number_format($Quantity,$RoundChargesAmount) : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
                     'TotalTax'      => number_format($invoiceComponent->TotalTax,$RoundChargesAmount),
                     'TotalCost'     => number_format($invoiceComponent->TotalCost,$RoundChargesAmount),

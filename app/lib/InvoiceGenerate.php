@@ -101,11 +101,11 @@ class InvoiceGenerate {
 
         if(count($InvoiceComponents))
             foreach($InvoiceComponents as $key => $InvoiceComponent) {
-                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] > 0.00000) {
+                if (isset($InvoiceComponent['GrandTotal']) && $InvoiceComponent['GrandTotal'] != 0.00000) {
                     $TotalPages++;
                     if($InvoiceAccountType != "Customer"){
                         foreach($InvoiceComponent['data'] as $InvoiceComponentDetail){
-                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] > 0.000000){
+                            if(isset($InvoiceComponentDetail['GrandTotal']) && $InvoiceComponentDetail['GrandTotal'] != 0.000000){
                                 $TotalPages++;
                             }
                         }
@@ -488,35 +488,6 @@ class InvoiceGenerate {
     public static function addInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceAccountType, $FirstInvoice, $decimal_places,$CurrencyID){
 
         $Account = Account::find($AccountID);
-        // Fetching Usage Data
-        $UsageGrandTotal = 0;
-        $UsageSubTotal = 0;
-        $UsageTotalTax = 0;
-
-        // Adding Usage data of Partner and Customer Invoice
-        // In case of Affiliate, Usage by default will be 0
-        // As we don't enter affiliate data in usage logs
-        if(in_array($InvoiceAccountType,['Customer', 'Partner'])) {
-            $UsageGrandTotal = AccountBalanceUsageLog::where([
-                'AccountBalanceLogID' => $AccountBalanceLogID,
-                // Type = 0 check is optional for customer but for partner there's 2 types of data
-                // Partner's data and Partner's user data (in negative) and we only need partner's data
-                'Type' => 0,
-            ])
-                ->where('Date', '>=', $StartDate)
-                ->where('Date', '<=', $EndDate)
-                ->sum('TotalAmount');
-
-            Log::error('Usage Total ' . $UsageGrandTotal);
-
-            // Calculating Tax and Subtotal
-            // Because we only have amount inclusive tax in usage logs
-            if ($UsageGrandTotal != 0) {
-                $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
-                $UsageTotalTax = $TotalTax;
-                $UsageSubTotal = $UsageGrandTotal - $TotalTax;
-            }
-        }
 
         $ProductDescription = "From " . date("Y-m-d", strtotime($StartDate)) . " To " . date("Y-m-d", strtotime($EndDate));
         $TaxRates = !empty($Account->TaxRateID) ? explode(",", $Account->TaxRateID) : [];
@@ -529,18 +500,18 @@ class InvoiceGenerate {
             'InvoiceID'          => $InvoiceID,
             'ProductType'        => $Product,
             'Description'        => $ProductDescription,
-            'Price'              => number_format($UsageSubTotal, $decimal_places, '.', ''),
+            'Price'              => number_format(0, $decimal_places, '.', ''),
             'Qty'                => 1,
             'CurrencyID'         => $CurrencyID,
             'StartDate'          => $StartDate,
             'EndDate'            => $EndDate,
             'TaxRateID'          => isset($TaxRates[0]) ? $TaxRates[0] : 0,
             'TaxRateID2'         => isset($TaxRates[1]) ? $TaxRates[1] : 0,
-            'TaxAmount'          => number_format($UsageTotalTax, $decimal_places, '.', ''),
+            'TaxAmount'          => number_format(0, $decimal_places, '.', ''),
             'DiscountType'       => 0,
             'DiscountAmount'     => 0,
             'DiscountLineAmount' => 0,
-            'LineTotal'          => number_format($UsageSubTotal, $decimal_places, '.', '')
+            'LineTotal'          => number_format(0, $decimal_places, '.', '')
         ];
 
         $InvoiceDetail = InvoiceDetail::create($InvoiceDetailArray);
@@ -566,6 +537,48 @@ class InvoiceGenerate {
         Log::error($query);
         DB::connection('sqlsrv2')->select($query);
 
+        // Usage Data
+        $UsageGrandTotal = 0;
+        $UsageSubTotal = 0;
+        $UsageTotalTax = 0;
+        $UsageDiscount = 0;
+
+        // Adding Usage data of Partner and Customer Invoice
+        // In case of Affiliate, Usage by default will be 0
+        // As we don't enter affiliate data in usage logs
+        if(in_array($InvoiceAccountType,['Customer', 'Partner'])) {
+            $UsageGrandTotal = AccountBalanceUsageLog::where([
+                'AccountBalanceLogID' => $AccountBalanceLogID,
+                // Type = 0 check is optional for customer but for partner there's 2 types of data
+                // Partner's data and Partner's user data (in negative) and we only need partner's data
+                'Type' => 0,
+            ])
+                ->where('Date', '>=', $StartDate)
+                ->where('Date', '<=', $EndDate)
+                ->sum('TotalAmount');
+
+            // Select * from components where component is not OneOff or Monthly
+            $TotalOutPayment = InvoiceComponentDetail::where('InvoiceDetailID', $InvoiceDetailID)
+                ->whereIn('Component',['OutpaymentPerCall','OutpaymentPerMinute'])
+                ->sum("TotalCost");
+
+            if($TotalOutPayment != false and $TotalOutPayment < 0){
+                Log::error('Outpayment Total ' . $TotalOutPayment);
+                $UsageGrandTotal += $TotalOutPayment;
+            }
+
+            Log::error('Usage Total ' . $UsageGrandTotal);
+
+            // Calculating Tax and Subtotal
+            // Because we only have amount inclusive tax in usage logs
+            if ($UsageGrandTotal != 0) {
+                $TotalTax = self::calculateTaxFromGrandTotal($AccountID, $UsageGrandTotal);
+                $UsageTotalTax = $TotalTax;
+                $UsageSubTotal = $UsageGrandTotal - $TotalTax;
+            }
+        }
+
+
         // Adding Affiliate Usage Total and Partner's Affiliate Usage Total in tblInvoiceDetail
         if(in_array($InvoiceAccountType, ['Affiliate','Partner'])){
 
@@ -584,14 +597,15 @@ class InvoiceGenerate {
             $UsageTotalTax   += $Usage->sum('TotalTax');
             $UsageGrandTotal += $Usage->sum('TotalCost');
 
-            // Updating Invoice detail as Usage data is updated for partner and affiliate
-            $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
-            $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
-            $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
-            $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
-            $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
-            $InvoiceDetail->save();
         }
+
+        // Updating Invoice detail as Usage data is updated for partner and affiliate
+        $InvoiceDetail = InvoiceDetail::find($InvoiceDetailID);
+        $InvoiceDetail['DiscountLineAmount'] = number_format($UsageDiscount, $decimal_places, '.', '');
+        $InvoiceDetail['Price'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail['TaxAmount'] = number_format($UsageTotalTax, $decimal_places, '.', '');
+        $InvoiceDetail['LineTotal'] = number_format($UsageSubTotal, $decimal_places, '.', '');
+        $InvoiceDetail->save();
 
         // Adding Monthly Product in Invoice Detail from Components
         $Monthly = InvoiceComponentDetail::where('Component', 'MonthlyCost')
@@ -1259,9 +1273,9 @@ class InvoiceGenerate {
 
         foreach($InvoiceComponents as $InvoiceSummary) {
             $Name = $InvoiceSummary['Name'];
-            if($InvoiceSummary['GrandTotal'] > 0.000000)
+            if($InvoiceSummary['GrandTotal'] != 0.000000)
                 foreach($InvoiceSummary['data'] as $key => $InvoiceComponent){
-                    if($InvoiceComponent['GrandTotal'] > 0.000000){
+                    if($InvoiceComponent['GrandTotal'] != 0.000000){
                         //product
                         $description = $Name . " - " . Country::getCountryCode($InvoiceComponent['CountryID']) . " " . $InvoiceComponent['CLI'] . " " . Package::getServiceNameByID($InvoiceComponent['PackageID']);
 

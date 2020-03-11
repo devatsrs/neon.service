@@ -113,6 +113,7 @@ class DataImportFromTemplateFile extends Command
 						$row_data['CurrencyName'] 			= trim($temp_row['CurrencyName']);
 						$row_data['TariffCode'] 			= trim($temp_row['TariffCode']);
 						$row_data['TerminationCountryIso2'] = trim($temp_row['TerminationCountryIso2']);
+						$row_data['InOutboundProvider_E'] 	= trim($temp_row['InOutboundProvider_E']);
 						$row_data['InOutboundType'] 		= trim($temp_row['InOutboundType']);
 						$row_data['AccountNumber'] 			= trim($temp_row['AccountNumber']);
 						$row_data['product'] 				= trim($temp_row['product']);
