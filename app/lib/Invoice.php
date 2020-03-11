@@ -3469,22 +3469,27 @@ class Invoice extends \Eloquent {
             $CID = $invoiceComponent->CustomerID;
             if(!isset($data[$CID])){
                 $data[$CID]['Name'] = $invoiceComponent->AccountName;
-                $data[$CID]['OneOffSubTotal'] = InvoiceComponentDetail::where('Component', 'OneOffCost')->where(['CustomerID' => $CID])
+                $data[$CID]['OneOffSubTotal'] = InvoiceComponentDetail::where('Component', 'OneOffCost')
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                     ->sum('SubTotal');
 
-                $data[$CID]['MonthlySubTotal'] = InvoiceComponentDetail::where('Component', 'MonthlyCost')->where(['CustomerID' => $CID])
+                $data[$CID]['MonthlySubTotal'] = InvoiceComponentDetail::where('Component', 'MonthlyCost')
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereIn('InvoiceDetailID', $InvoiceDetailIDs)
                     ->sum('SubTotal');
 
-                $data[$CID]['UsageSubTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['UsageSubTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->whereNotIn('Component',['OneOffCost','MonthlyCost'])
                     ->sum('SubTotal');
 
-                $data[$CID]['TotalVAT'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['TotalVAT'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->sum('TotalTax');
 
-                $data[$CID]['GrandTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)->where(['CustomerID' => $CID])
+                $data[$CID]['GrandTotal'] = InvoiceComponentDetail::whereIn('InvoiceDetailID', $InvoiceDetailIDs)
+                    ->where(['CustomerID' => $CID, 'IsAffiliate' => $IsAffiliate])
                     ->sum('TotalCost');
             }
 

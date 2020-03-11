@@ -147,7 +147,7 @@
                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                     <td class="text-right">{{$CurrencySymbol}} {{ $MonthlySubTotal }}</td>
                 </tr>
-                @if($OneOffSubTotal != 0)
+                @if($OneOffSubTotal != 0.00000)
                     <tr>
                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                         <td class="text-right">{{$CurrencySymbol}} {{ $OneOffSubTotal }}</td>
@@ -348,7 +348,7 @@
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
-                                @if($InvoiceSummary['OneOffSubTotal'] != 0)
+                                @if($InvoiceSummary['OneOffSubTotal'] != 0.000000)
                                     <tr>
                                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                                         <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
@@ -547,7 +547,7 @@
                                     <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_MONTHLY_COST")}} {{ $InvoicePeriod }}</td>
                                     <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['MonthlySubTotal'], $RoundChargesAmount) }}</td>
                                 </tr>
-                                @if($InvoiceSummary['OneOffSubTotal'] != 0)
+                                @if($InvoiceSummary['OneOffSubTotal'] != 0.00000)
                                     <tr>
                                         <td>{{cus_lang("CUST_PANEL_PAGE_INVOICE_PDF_TBL_TOTAL_ADDITIONAL_CHARGES")}}</td>
                                         <td class="text-right">{{$CurrencySymbol}} {{ number_format($InvoiceSummary['OneOffSubTotal'], $RoundChargesAmount) }}</td>
