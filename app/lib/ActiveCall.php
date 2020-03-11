@@ -207,7 +207,11 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['PackageCostPerMinute'] = $PackageCostPerMinute;
                 $UpdateData['RecordingCostPerMinute'] = $RecordingCostPerMinute;
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
-                $ActiveCall->update($UpdateData);
+
+                $EndCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->pluck('EndCall');
+                if(empty($EndCall)) {
+                    $ActiveCall->update($UpdateData);
+                }
                 //log::info('New Cost '.$Cost);
 
             }
@@ -333,7 +337,7 @@ class ActiveCall extends \Eloquent {
                             }
                         }
 
-                        $Cost = $PackageCostPerMinute + $RecordingCostPerMinute + $CostPerCall + $CostPerMinute + $SurchargePerCall + $SurchargePerMinute + $Surcharges +$CollectionCostAmount - $OutpaymentPerCall - $OutpaymentPerMinute;
+                        $Cost = $PackageCostPerMinute + $RecordingCostPerMinute + $CostPerCall + $CostPerMinute + $SurchargePerCall + $SurchargePerMinute + $Surcharges +$CollectionCostAmount;
 
                         $CollectionCostPercentage = isset($RateTableDIDRate->DID_CollectionCostPercentage)?$RateTableDIDRate->DID_CollectionCostPercentage:0;
                         $TotalOutPayment = $OutpaymentPerCall + $OutpaymentPerMinute;
@@ -386,7 +390,11 @@ class ActiveCall extends \Eloquent {
                 $UpdateData['RecordingCostPerMinute'] = $RecordingCostPerMinute;
 
                 $UpdateData['updated_at'] = date('Y-m-d H:i:s');
-                $ActiveCall->update($UpdateData);
+
+                $EndCall = ActiveCall::where(['ActiveCallID'=>$ActiveCallID])->pluck('EndCall');
+                if(empty($EndCall)) {
+                    $ActiveCall->update($UpdateData);
+                }
                 //log::info('New Cost '.$Cost);
             }
         }

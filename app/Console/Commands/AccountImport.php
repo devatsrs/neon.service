@@ -69,7 +69,7 @@ class AccountImport extends Command {
         $TEMP_PATH = CompanyConfiguration::get($CompanyID,'TEMP_PATH').'/';
         $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
-		// $dir = 'C:\Users\lenovo\Documents\accounts\Accounts.xlsx';
+		//$filepath = 'C:\Users\lenovo\Documents\accounts\AccountN.xlsx';
        
         Log::useFiles(storage_path() . '/logs/impotAccountData-' . date('Y-m-d') . '.log');
 
@@ -89,9 +89,10 @@ class AccountImport extends Command {
 
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
             Job::where(["JobID" => $JobID])->update($jobdata);
-
             foreach ($results as $temp_row) {
-                if($temp_row['IsPartner'] == 1 || $temp_row['IsReseller'] == 1){
+                $keys = str_replace( ' ', '', array_keys( $temp_row ) );
+                $temp_row = array_combine( $keys, array_values( $temp_row ) );
+                if($temp_row['IsPartner'] == 1){
                     $checkemptyrow = array_filter(array_values($temp_row));
                     if(!empty($checkemptyrow)){
                         $tempItemData = array();
@@ -173,7 +174,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['BillingStartDate'])) {
-                            $tempItemData['BillingStartDate'] = "2019-12-01";
+                            $tempItemData['BillingStartDate'] = date('Y-m-d',strtotime(str_replace('/' , '-' , $temp_row['BillingStartDate'])));
                         }
 
                         if (isset($temp_row['AutoTopup'])) {
@@ -207,12 +208,12 @@ class AccountImport extends Command {
                             ]);
                         }
 
-                        // if (isset($temp_row['poNumber'])) {
-                        //     array_push($tempItemData['AccountDynamicField'] , [
-                        //         "Name" => "PONumber",
-                        //         "Value" => $temp_row['poNumber']
-                        //     ]);
-                        // }
+                        if (isset($temp_row['poNumber'])) {
+                            array_push($tempItemData['AccountDynamicField'] , [
+                                "Name" => "PONumber",
+                                "Value" => $temp_row['poNumber']
+                            ]);
+                        }
 
                         if (isset($temp_row['RegisterDutchFoundation'])) {
                             array_push($tempItemData['AccountDynamicField'] ,  [
@@ -242,9 +243,9 @@ class AccountImport extends Command {
                             $tempItemData['PaymentMethodID'] = $temp_row['PaymentMethod'];
                         }
                         
-                        // if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
-                        //     $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
-                        // }
+                        if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] != "NULL" && $temp_row['OutpaymentMethod'] != "") {
+                            $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
+                        }
 
                         if (isset($temp_row['BankAccount'])) {
                             $tempItemData['BankAccount'] = $temp_row['BankAccount'];
@@ -302,7 +303,7 @@ class AccountImport extends Command {
                         }
 
                         
-                        if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                        if (isset($temp_row['AccountNo']) && isset($temp_row['AccountName']) && isset($temp_row['CustomerId']) && isset($temp_row['BillingType']) && isset($temp_row['BillingStartDate'])) {
                             $PricingJSONInput = json_encode($tempItemData, true);
                             $Response = NeonAPI::callAPI($PricingJSONInput , '/api/createAccount' , $url ,'application/json');
                             Log::info($temp_row['AccountNo'] . print_r($Response,true));
@@ -311,6 +312,7 @@ class AccountImport extends Command {
                             }   
                         } else {
                             Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
+                            $errorslog[] = !isset($temp_row['AccountNo']) ? $temp_row['AccountName']: $temp_row['AccountNo'] . ' skipped line number' . $lineno;
 
                         }
                     }
@@ -318,6 +320,8 @@ class AccountImport extends Command {
             }
             
             foreach ($results as $temp_row) {
+                $keys = str_replace( ' ', '', array_keys( $temp_row ) );
+                $temp_row = array_combine( $keys, array_values( $temp_row ) );
                 if($temp_row['IsPartner'] != 1 && $temp_row['IsReseller'] != 1){
                     $checkemptyrow = array_filter(array_values($temp_row));
                     if(!empty($checkemptyrow)){
@@ -402,7 +406,7 @@ class AccountImport extends Command {
                         }
 
                         if (isset($temp_row['BillingStartDate'])) {
-                            $tempItemData['BillingStartDate'] = "2019-12-01";
+                            $tempItemData['BillingStartDate'] = date('Y-m-d',strtotime(str_replace('/' , '-' , $temp_row['BillingStartDate'])));
                         }
 
                         if (isset($temp_row['AutoTopup'])) {
@@ -436,12 +440,12 @@ class AccountImport extends Command {
                             ]);
                         }
 
-                        // if (isset($temp_row['poNumber'])) {
-                        //     array_push($tempItemData['AccountDynamicField'] , [
-                        //         "Name" => "PONumber",
-                        //         "Value" => $temp_row['poNumber']
-                        //     ]);
-                        // }
+                        if (isset($temp_row['poNumber'])) {
+                            array_push($tempItemData['AccountDynamicField'] , [
+                                "Name" => "PONumber",
+                                "Value" => $temp_row['poNumber']
+                            ]);
+                        }
 
                         if (isset($temp_row['RegisterDutchFoundation'])) {
                             array_push($tempItemData['AccountDynamicField'] ,  [
@@ -471,9 +475,9 @@ class AccountImport extends Command {
                             $tempItemData['PaymentMethodID'] = $temp_row['PaymentMethod'];
                         }
                         
-                        // if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] == "NULL") {
-                        //     $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
-                        // }
+                        if (isset($temp_row['OutpaymentMethod']) && !empty($temp_row['OutpaymentMethod']) && $temp_row['OutpaymentMethod'] != "NULL" && $temp_row['OutpaymentMethod'] != "") {
+                            $tempItemData['PayoutMethodID'] = $temp_row['OutpaymentMethod'];
+                        }
 
                         if (isset($temp_row['BankAccount'])) {
                             $tempItemData['BankAccount'] = $temp_row['BankAccount'];
@@ -531,7 +535,7 @@ class AccountImport extends Command {
                         }
 
                         
-                        if (isset($temp_row['AccountNo']) && !empty($temp_row['AccountName']) && isset($temp_row['CustomerId']) && !empty($temp_row['CustomerId']) && isset($temp_row['BillingType']) && !empty($temp_row['BillingType']) && isset($temp_row['BillingStartDate']) && !empty($temp_row['BillingStartDate'])) {
+                        if (isset($temp_row['AccountNo']) && isset($temp_row['AccountName']) && isset($temp_row['CustomerId']) && isset($temp_row['BillingType']) && isset($temp_row['BillingStartDate'])) {
                             $PricingJSONInput = json_encode($tempItemData, true);
                             $Response = NeonAPI::callAPI($PricingJSONInput , '/api/createAccount' , $url ,'application/json');
                             Log::info($temp_row['AccountNo'] . print_r($Response,true));
@@ -540,7 +544,7 @@ class AccountImport extends Command {
                             }   
                         } else {
                             Log::error($temp_row['AccountNo'] . ' skipped line number' . $lineno);
-
+                            $errorslog[] = (!isset($temp_row['AccountNo']) ? $temp_row['AccountName']: $temp_row['AccountNo']) . ' skipped line number' . $lineno;
                         }
                     }
                 }    
@@ -555,7 +559,7 @@ class AccountImport extends Command {
 
             if(isset($errorslog) && count($errorslog) > 0){
                 $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
-                $jobdata['JobStatusMessage'] .= count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
+                $jobdata['JobStatusMessage'] = count($errorslog).' Account import log errors: '.implode(',\n\r',$errorslog);
                 Job::where(["JobID" => $JobID])->update($jobdata);
             }
 
