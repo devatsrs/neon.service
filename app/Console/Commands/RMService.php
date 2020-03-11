@@ -53,7 +53,8 @@ class RMService extends Command {
             $CompanyID = $arguments["CompanyID"];
             $PHP_EXE_PATH = CompanyConfiguration::get($CompanyID,'PHP_EXE_PATH');
             $RMArtisanFileLocation = CompanyConfiguration::get($CompanyID,'RM_ARTISAN_FILE_LOCATION');
-            $query = "CALL prc_CronJobAllPending ( $CompanyID )";
+            $CurrentTime = date('Y-m-d H:i:s');
+            $query = "CALL prc_CronJobAllPending ( $CompanyID , '$CurrentTime' )";
             $allpending = DataTableSql::of($query)->getProcResult(array(
                 'PendingUploadCDR',
                 'PendingInvoiceGenerate',
@@ -408,7 +409,7 @@ class RMService extends Command {
             //if($CompanyID == 1){
                 $cmdarray  = $allpending['data']['getActiveCronCommand'];//CronJob::getActiveCronCommand($CompanyID. " &","r"));
                 foreach ($cmdarray as $com) {
-                    if (CronJob::checkStatus($com->CronJobID,$com->Command)) {
+                    if (CronJob::checkStatus($com->CronJobID,$com->Command) || $com->ThresholdTimeOut == 1) {
                         // activecronjobemail cronjob will run on all servers
                         if(Nodes::GetActiveNodeFromCronjobNodes($com->CronJobID,$CompanyID,Nodes::CRONJOB) || $com->Command == 'activecronjobemail' || $com->Command == 'servercleanup'){
                             pclose(popen($PHP_EXE_PATH." ".$RMArtisanFileLocation. " " . $com->Command . " " . $CompanyID . " " . $com->CronJobID . " ". " &","r"));
