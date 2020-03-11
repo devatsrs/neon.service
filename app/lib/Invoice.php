@@ -3427,7 +3427,7 @@ class Invoice extends \Eloquent {
 
                 $UnitPrice = 0;
                 if($Quantity > 0.00000){
-                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice);
+                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal + $invoiceComponent->DiscountPrice);
 
                     if(in_array($Component, self::$PerMinuteComponents)) {
                         $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
@@ -3562,7 +3562,7 @@ class Invoice extends \Eloquent {
 
                 $UnitPrice = 0;
                 if($Quantity > 0.00000){
-                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal - $invoiceComponent->DiscountPrice);
+                    $RemainingStandardPrice = (float)($invoiceComponent->SubTotal + $invoiceComponent->DiscountPrice);
 
                     if(in_array($Component, self::$PerMinuteComponents)) {
                         $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
