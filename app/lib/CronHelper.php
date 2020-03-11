@@ -48,24 +48,38 @@ class CronHelper {
         $arguments = $Cron->argument();
         $MysqlProcess=0;
         if(isset($arguments["CompanyID"]) && !empty($arguments["CompanyID"])){
-
             Company::setup_timezone($arguments["CompanyID"]);
         }
         $lock_command_file = self::get_command_file_name($command_name,$Cron);
 
         if(!empty($arguments['CronJobID'])){
             $CronJob = CronJob::find($arguments['CronJobID']);
-            $CronJobCommand = DB::table('tblCronJobCommand')->where(["CronJobCommandID"=>$CronJob->CronJobCommandID])->first();
-            if($CronJobCommand->Command != 'activecronjobemail') { // skip activecronjobemail
+            $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
+        }
+        if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1 || (isset($CronJob->Active) && $CronJob->Active == 1)) {
+            $check = 0;
+            if(!empty($arguments['CronJobID'])) {
+                // check if threshold time is exceeded then terminate the job
+                $check = self::checkCronJobThreshold($arguments['CronJobID']);
+            }
+            if($check == 0) {
+                Log::info($lock_command_file . " Already running....####");
+                Log::info("#### MysqlProcess=" . $MysqlProcess);
+                exit;
+            }
+        }
+        if(!empty($arguments['CronJobID'])) {
+            // if next run time is not come yet
+            if (!CronJob::checkStatus($arguments['CronJobID'], '')) {
+                exit;
+            }
+        }
+        if(isset($CronJob)) {
+            $CronJobCommand = DB::table('tblCronJobCommand')->where(["CronJobCommandID" => $CronJob->CronJobCommandID])->first();
+            if ($CronJobCommand->Command != 'activecronjobemail') { // skip activecronjobemail
                 $CurrentServerIp = getenv("SERVER_LOCAL_IP");
                 $CronJob->update(["RunningOnServer" => $CurrentServerIp]);
             }
-            $MysqlProcess=self::isMysqlPIDExists($arguments['CronJobID']);
-        }
-        if(($pid = CronHelper::lock(1,$lock_command_file)) ==  FALSE || $MysqlProcess==1) {
-            Log::info( $lock_command_file ." Already running....####");
-            Log::info("#### MysqlProcess=".$MysqlProcess);
-            exit;
         }
         Log::info( $lock_command_file ." #Starts# ");
     }
@@ -149,6 +163,39 @@ class CronHelper {
                 }
         }
         return $isExists;
+    }
+    
+    public static function checkCronJobThreshold($CronJobID) {
+        $CronJob            = CronJob::find($CronJobID);
+        $Settings           = json_decode($CronJob->Settings,true);
+        $LastRunTime        = $CronJob->LastRunTime;
+
+        //check cron job is running time
+        $minute     = CronJob::calcTimeDiff($LastRunTime);
+        $limitTime  = isset($Settings['ThresholdTime']) ? $Settings['ThresholdTime'] : '';
+
+        if($limitTime != -1) {
+
+            $CurrentServerIp = getenv("SERVER_LOCAL_IP");
+            if($CurrentServerIp != $CronJob->RunningOnServer) {
+                return 0;
+            }
+
+            if (isset($minute) && (int)$minute >= (int)$limitTime) {
+                $emailStatus = CronJob::ActiveCronJobEmailSend($CronJob);
+
+                if ($emailStatus == -1) {
+                    //Log::info($JobTitle . "  - Error Email not setup ");
+                } else if (isset($emailStatus['status']) && $emailStatus['status'] == 1) {
+                    $CronJob->update(['EmailSendTime' => date('Y-m-d H:i:s')]);
+                } else {
+                    Log::error('Failed to send Active Cron Job Email Reason - ' . print_r($emailStatus, true));
+                }
+
+                return 1;
+            }
+        }
+        return 0;
     }
 
 }

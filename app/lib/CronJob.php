@@ -259,6 +259,8 @@ class CronJob extends \Eloquent {
 
     public static function checkStatus($CronJobID,$Command){
         $CronJob =  CronJob::find($CronJobID);
+        $CronJobCommand =  DB::table('tblCronJobCommand')->where(['CronJobCommandID'=>$CronJob->CronJobCommandID])->first();
+        $Command = $CronJobCommand->Command;
         $cronsetting = json_decode($CronJob->Settings);
         if(!empty($CronJob) && isset($cronsetting->JobTime) && $cronsetting->JobTime == 'SECONDS') {
             if (CronJob::calcTimeRun($CronJob,$Command) == date('Y-m-d H:i:s')) {
