@@ -932,7 +932,7 @@ class AccountBalanceSubscriptionLog extends Model
             $SubscriptionLogData["CLIRateTableID"] = $SubscriptionData["CLIRateTableID"];
             $SubscriptionLogData["ProcessID"] = $ProcessID;
             $SubscriptionLogData['IsBillingChanged'] = $SubscriptionData['IsBillingChanged']; // need to change
-            $SubscriptionLogData['IsSpecialRateTable'] = 0; // need to change
+            $SubscriptionLogData['IsSpecialRateTable'] =$SubscriptionData['IsSpecialRateTable'];
             $SubscriptionLogData['created_at']=date('Y-m-d H:i:s');
             $SubscriptionLogData['updated_at']=date('Y-m-d H:i:s');
 
