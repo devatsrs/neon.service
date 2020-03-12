@@ -76,7 +76,7 @@ class ImportCDRs extends Command
 		$CompanyID = $arguments["CompanyID"];
 
 		Log::useFiles(storage_path() . '/logs/importcdrs-' .  $JobID. '-' . date('Y-m-d') . '.log');
-		Log::info('importcdrs starts');
+		Log::info('importcdrs starts '.$JobID);
 		try {
 			$ProcessID = Uuid::generate();
 			Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Update by Abubakar
@@ -137,14 +137,14 @@ class ImportCDRs extends Command
 							foreach ($JobStatusMessage as $JobStatusMessage1) {
 								$error[] = $JobStatusMessage1['Message'];
 							}
-							$job = Job::find($JobID);
+							//$job = Job::find($JobID);
 							$jobdata['JobStatusMessage'] = implode(',\n\r',$error);
 							$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','PF')->pluck('JobStatusID');
 							$jobdata['updated_at'] = date('Y-m-d H:i:s');
 							$jobdata['ModifiedBy'] = 'RMScheduler';
 							Job::where(["JobID" => $JobID])->update($jobdata);
 						}elseif(!empty($JobStatusMessage[0]['Message'])){
-							$job = Job::find($JobID);
+							//$job = Job::find($JobID);
 							$jobdata['JobStatusMessage'] = $JobStatusMessage[0]['Message'];
 							$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code','S')->pluck('JobStatusID');
 							$jobdata['updated_at'] = date('Y-m-d H:i:s');
