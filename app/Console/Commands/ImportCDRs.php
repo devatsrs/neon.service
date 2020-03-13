@@ -86,6 +86,9 @@ class ImportCDRs extends Command
 				if ($jobfile->FilePath) {
 					
 					$file_name = $jobfile->FilePath;
+					$joboptions = json_decode($jobfile->Options);
+					$Date_Format = $joboptions->date_format;
+
 					$NeonExcel 	= new NeonExcelIO($file_name);
 					$results 	= $NeonExcel->read();
 
@@ -96,8 +99,8 @@ class ImportCDRs extends Command
 							$row_data['ProcessID'] = $ProcessID;
 							$row_data['ServiceNumber'] = trim($temp_row['Number']);
 							$row_data['CustomerID'] = trim($temp_row['CustomerID']);
-							$row_data['connect_time'] = date('Y-m-d H:i:s',strtotime(str_replace('/' , '-' , $temp_row['ConnectTime'])));
-							$row_data['disconnect_time'] = date('Y-m-d H:i:s',strtotime(str_replace('/' , '-' , $temp_row['DisconnectTime'])));
+							$row_data['connect_time'] = formatDate(str_replace( '/','-',$temp_row['ConnectTime']), $Date_Format);
+							$row_data['disconnect_time'] = formatDate(str_replace( '/','-',$temp_row['DisconnectTime']), $Date_Format);
 							$row_data['billed_duration'] = trim($temp_row['BilledDuration']);
 							$row_data['Duration'] = trim($temp_row['BilledDuration']);
 							$row_data['CLI'] = trim($temp_row['CLI']);
