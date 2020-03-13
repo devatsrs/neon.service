@@ -897,7 +897,7 @@ class RateTableDIDRateUpload extends Command
                                         $tempratetabledata['TimezonesID'] = $TimezoneID;
 
                                         if (isset($tempratetabledata['Code']) && isset($tempratetabledata['Description']) && ($CostComponentsMapped>0 || $tempratetabledata['Change'] == 'D') && isset($tempratetabledata['EffectiveDate'])) {
-
+                                            $tempratetabledata['City'] = trim($tempratetabledata['City']);
                                             $check_city_key = $tempratetabledata['AccessType'].'-'.$tempratetabledata['CountryCode'].'-'.$tempratetabledata['Code'].'-'.$tempratetabledata['City'];
                                             if(array_key_exists($check_city_key,$CompareMappedCityList)) {
                                                 $tempratetabledata['City'] = $CompareMappedCityList[$check_city_key]['CityValue'];
