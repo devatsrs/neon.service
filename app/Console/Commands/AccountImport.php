@@ -166,9 +166,18 @@ class AccountImport extends Command {
                             $tempItemData['PartnerID'] = $temp_row['parentId'];
                         }
 
-                        $tempItemData['PartnerEmail'] = 'neon@speakintelligence.com';
-                        $tempItemData['PartnerPanelPassword'] = 'Welcome12345';
-                      
+                        if (isset($temp_row['PartnerEmail'])) {
+                            $tempItemData['PartnerEmail'] = $temp_row['PartnerEmail']; 
+                        }else{
+                            $tempItemData['PartnerEmail'] = 'neon@speakintelligence.com';
+                        }
+                        
+                        if (isset($temp_row['PartnerEmail'])) {
+                            $tempItemData['PartnerPanelPassword'] = $temp_row['PartnerEmail'];
+                        }else{
+                            $tempItemData['PartnerPanelPassword'] = 'Welcome12345';
+                        }
+
                         if (isset($temp_row['LanguageIso'])) {
                             $tempItemData['LanguageIso2'] = $temp_row['LanguageIso'];
                         }

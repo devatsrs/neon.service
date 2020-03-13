@@ -70,22 +70,20 @@ class ServiceImport extends Command {
         $url = CompanyConfiguration::where(['CompanyID' => $CompanyID, 'Key' => 'WEB_URL'])->pluck('Value');
 
 
-		$filepath = 'C:\Users\lenovo\Documents\accounts\Service.xlsx';
+		//$filepath = 'C:\Users\lenovo\Documents\accounts\Service.xlsx';
        
         Log::useFiles(storage_path() . '/logs/impotServiceData-' . date('Y-m-d') . '.log');
 
         try {
-            //$filepath = $jobfile->FilePath;
+            $filepath = $jobfile->FilePath;
 
             Log::info($filepath . '  - Processing ');
 
-            //$results = Excel::load($filepath)->toArray();
             $NeonExcel = new NeonExcelIO($filepath);
             $results = $NeonExcel->read();
 
             Log::info(count($results) . '  - Records Found ');
 
-            $lineno = 2;
             $errorslog = array();
             $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'I')->pluck('JobStatusID');
             Job::where(["JobID" => $JobID])->update($jobdata);
@@ -159,18 +157,10 @@ class ServiceImport extends Command {
             WHERE PackageStartDate = (
                 SELECT MAX(PackageStartDate)
                 FROM tmp_services AS b
-                WHERE a.NumberPurchased = b.NumberPurchased
-            )group by a.NumberPurchased'));
-            // $sub = DB::table('tmp_services')->orderby('PackageStartDate' , 'DESC');
+                WHERE a.NumberContractID = b.NumberContractID and a.CustomerID = b.CustomerID
+            )group by  a.CustomerID , a.NumberContractID'));
 
-            //     $chats = DB::table(DB::raw("({$sub->toSql()}) as sub"))
-            //     ->groupBy('NumberPurchased')
-            //     ->get();
-            // $var = DB::table('tmp_services')->select(DB::raw('distinct NumberPurchased,PackageStartDate`'))
-            // ->orderby('PackageStartDate' , 'desc')->get();
             $results = json_decode(json_encode($chats),true);
-            var_dump($results);
-            die;
             foreach ($results as $temp_row) {
             
                 $checkemptyrow = array_filter(array_values($temp_row));

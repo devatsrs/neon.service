@@ -268,6 +268,10 @@ class AccountBalanceLog extends Model
                     $BillingCycleValue = $LatsCycleDate;
                 }
 
+                if($BillingType == AccountBilling::BILLINGTYPE_POSTPAID && $LatsCycleDate < $AccountBilling->BillingStartDate){
+                    $LatsCycleDate = $AccountBilling->BillingStartDate;
+                }
+
                 //$LatsCycleDate = $AccountBilling->BillingStartDate;
                 $ServiceBillingData = array();
                 $ServiceBillingData['AccountID'] = $AccountID;
