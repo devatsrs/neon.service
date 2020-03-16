@@ -130,11 +130,11 @@ class ImportCDRs extends Command
 
 					try{
 						$query = "CALL prc_calculateCDR('$ProcessID')";
-						DB::connection('sqlsrvcdr')->beginTransaction();
+						//DB::connection('sqlsrvcdr')->beginTransaction();
 						Log::info("start ".$query);
 						$JobStatusMessage = DB::connection('sqlsrvcdr')->select($query);
 						Log::info("end ".$query);
-						DB::connection('sqlsrvcdr')->commit();
+						//DB::connection('sqlsrvcdr')->commit();
 
 						$JobStatusMessage = array_reverse(json_decode(json_encode($JobStatusMessage),true));
 						if(count($JobStatusMessage) > 1){
@@ -157,7 +157,7 @@ class ImportCDRs extends Command
 							Job::where(["JobID" => $JobID])->update($jobdata);
 						}
 					}catch ( Exception $err ){
-						DB::connection('sqlsrvcdr')->rollback();
+						//DB::connection('sqlsrvcdr')->rollback();
 						Log::error($err);
 						$jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
 						$jobdata['JobStatusMessage'] = 'Exception: ' . $err->getMessage();
