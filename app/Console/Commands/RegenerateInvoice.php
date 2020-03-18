@@ -176,7 +176,7 @@ class RegenerateInvoice extends Command {
                     $job = Job::find($JobID);
                     $JobStatusMessage = $job->JobStatusMessage;
                     $jobdata['JobStatusID'] = DB::table('tblJobStatus')->where('Code', 'F')->pluck('JobStatusID');
-                    $jobdata['JobStatusMessage'] .= $JobStatusMessage . '\n\r' . $e->getMessage();
+                    $jobdata['JobStatusMessage'] = $JobStatusMessage . '\n\r' . $e->getMessage();
                     Job::where(["JobID" => $JobID])->update($jobdata);
                     $job = Job::find($JobID);
                     Job::send_job_status_email($job, $CompanyID);
