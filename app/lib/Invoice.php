@@ -169,30 +169,46 @@ class Invoice extends \Eloquent {
 
                 AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
 
-                Log::info('Regenerating invoice data');
-                Log::info("InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId)");
+                $InvoiceDetail = InvoiceDetail::where('InvoiceID', $InvoiceID)->count();
+                Log::info('Regenerating invoice data deleted' . json_encode($InvoiceDetail));
 
-                // Adding Invoice Data
-                InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
+                if($InvoiceDetail == 0){
+                    DB::connection('sqlsrv2')->commit();
+                    DB::commit();
 
-                DB::connection('sqlsrv2')->commit();
-                DB::commit();
+                    DB::beginTransaction();
+                    DB::connection('sqlsrv2')->beginTransaction();
+                    Log::info('Regenerating invoice data');
+                    Log::info("InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId)");
 
-                Log::info('Invoice Regenerated InvoiceID = ' . $InvoiceID);
+                    // Adding Invoice Data
+                    InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
 
-                Log::info('Sending Email');
-                // Sending Email
-                $Invoice = Invoice::find($InvoiceID);
-                $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
-                $CompanyName = Company::getName($Account->CompanyId);
+                    DB::connection('sqlsrv2')->commit();
+                    DB::commit();
 
-                $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,$ProcessID,$JobID);
+                    Log::info('Invoice Regenerated InvoiceID = ' . $InvoiceID);
 
-                if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
-                    Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
+                    Log::info('Sending Email');
+                    // Sending Email
+                    $Invoice = Invoice::find($InvoiceID);
+                    $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
+                    $CompanyName = Company::getName($Account->CompanyId);
+
+                    $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,$ProcessID,$JobID);
+
+                    if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
+                        Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
+                    }
+
+                    return true;
+                } else {
+                    DB::rollback();
+                    DB::connection('sqlsrv2')->rollback();
+                    Log::error("$InvoiceID : Invoice Regenerate Rollback. Data not deleted.");
+                    return false;
                 }
 
-                return true;
 
             } catch (\Exception $err) {
                 DB::rollback();
