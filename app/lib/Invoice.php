@@ -3511,13 +3511,18 @@ class Invoice extends \Eloquent {
                     $Quantity = (float)$invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
+                $DiscountPrice = 0;
                 if($Quantity > 0.00000){
                     $RemainingStandardPrice = (float)($invoiceComponent->SubTotal + $invoiceComponent->DiscountPrice);
 
                     if(in_array($Component, self::$PerMinuteComponents)) {
                         $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
+                        if($invoiceComponent->DiscountPrice != 0.000000)
+                            $DiscountPrice = (float)($invoiceComponent->DiscountPrice / $iSeconds) * 60;
                     } else {
                         $UnitPrice = $RemainingStandardPrice / $Quantity;
+                        if($invoiceComponent->DiscountPrice != 0.000000)
+                            $DiscountPrice = (float)$invoiceComponent->DiscountPrice  / $Quantity;
                     }
                 }
 
@@ -3528,7 +3533,7 @@ class Invoice extends \Eloquent {
                     'Component'     => $Component,
                     'Price'         => $UnitPrice != 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
                     'Discount'      => $invoiceComponent->Discount != 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice != 0.00000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $DiscountPrice != 0.00000 ? number_format($DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
                     'Quantity'      => $Quantity > 0.00000 ? $Quantity : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
@@ -3646,13 +3651,18 @@ class Invoice extends \Eloquent {
                     $Quantity = (float)$invoiceComponent->Quantity;
 
                 $UnitPrice = 0;
+                $DiscountPrice = 0;
                 if($Quantity > 0.00000){
                     $RemainingStandardPrice = (float)($invoiceComponent->SubTotal + $invoiceComponent->DiscountPrice);
 
                     if(in_array($Component, self::$PerMinuteComponents)) {
                         $UnitPrice = (float)($RemainingStandardPrice / $iSeconds) * 60;
+                        if($invoiceComponent->DiscountPrice != 0.000000)
+                            $DiscountPrice = (float)($invoiceComponent->DiscountPrice / $iSeconds) * 60;
                     } else {
                         $UnitPrice = $RemainingStandardPrice / $Quantity;
+                        if($invoiceComponent->DiscountPrice != 0.000000)
+                            $DiscountPrice = (float)$invoiceComponent->DiscountPrice  / $Quantity;
                     }
                 }
 
@@ -3663,7 +3673,7 @@ class Invoice extends \Eloquent {
                     'Component'     => $Component,
                     'Price'         => $UnitPrice != 0.000000 ? number_format($UnitPrice,$RoundChargesAmount) : 0,
                     'Discount'      => $invoiceComponent->Discount != 0 ? number_format($invoiceComponent->Discount,$RoundChargesAmount) : '',
-                    'DiscountPrice' => $invoiceComponent->DiscountPrice != 0.000000 ? number_format($invoiceComponent->DiscountPrice,$RoundChargesAmount) : '',
+                    'DiscountPrice' => $DiscountPrice != 0.000000 ? number_format($DiscountPrice,$RoundChargesAmount) : '',
                     'Duration'      => number_format($invoiceComponent->Duration,$RoundChargesAmount),
                     'Quantity'      => $Quantity > 0.00000 ? $Quantity : '',
                     'SubTotal'      => number_format($invoiceComponent->SubTotal,$RoundChargesAmount),
