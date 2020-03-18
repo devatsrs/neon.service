@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Lib\CompanyGateway;
 use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\Job;
@@ -62,7 +63,6 @@ class RegenerateInvoice extends Command {
         $getmypid = getmypid(); // get proccess id added by abubakar
         $CompanyID = $arguments["CompanyID"];
         $JobID = $arguments["JobID"];
-        $message = array();
         $jobdata = array();
 
         $job = Job::find($JobID);
@@ -72,11 +72,10 @@ class RegenerateInvoice extends Command {
         $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
 
-
         Log::useFiles(storage_path() . '/logs/regenerateinvoice-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
 
         try {
-            $ProcessID = Uuid::generate();
+            $ProcessID = CompanyGateway::getProcessID();
             Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (isset($joboptions->InvoiceIDs)) {
 
@@ -115,7 +114,7 @@ class RegenerateInvoice extends Command {
                     if(!empty($CustomerInvoices)){
                         Log::info("Customers Invoice Regeneration Started against " . json_encode($CustomerIDs));
                         foreach($CustomerInvoices as $CustomerInvoice){
-                            $resp = Invoice::regenerateInvoiceData($CustomerInvoice, $InvoiceCopyEmail, $JobID);
+                            $resp = Invoice::regenerateInvoiceData($CustomerInvoice, $InvoiceCopyEmail, $JobID, $ProcessID);
                             if($resp === false) $skippedInvoiceNumbers[] = $CustomerInvoice->InvoiceNumber;
                         }
                     }

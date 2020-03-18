@@ -150,7 +150,7 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0){
+    public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0, $ProcessID = 0){
 
 
         $InvoiceID      = $InvoiceData->InvoiceID;
@@ -181,6 +181,7 @@ class Invoice extends \Eloquent {
                 AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
 
                 Log::info('Regenerating invoice data');
+                Log::info("InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId)");
 
                 // Adding Invoice Data
                 InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
@@ -196,7 +197,7 @@ class Invoice extends \Eloquent {
                 $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
                 $CompanyName = Company::getName($Account->CompanyId);
 
-                $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,0,$JobID);
+                $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,$ProcessID,$JobID);
 
                 if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
                     Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
