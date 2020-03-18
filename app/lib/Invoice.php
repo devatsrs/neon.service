@@ -140,6 +140,82 @@ class Invoice extends \Eloquent {
     }
 
 
+    public static function getMonthlyInvoicesData($InvoiceIDs){
+        return Invoice::join("tblInvoiceDetail","tblInvoiceDetail.InvoiceID","=","tblInvoice.InvoiceID")
+            ->join("speak")
+            ->whereIn("tblInvoice.InvoiceID", $InvoiceIDs)
+            ->whereIn("tblInvoiceDetail.ProductType",[Product::USAGE, Product::INVOICE_PERIOD])
+            ->select("tblInvoiceDetail.StartDate","tblInvoiceDetail.EndDate","tblInvoice.AccountType","tblInvoice.InvoiceNumber","tblInvoice.InvoiceID","tblInvoice.AccountID","tblInvoice.InvoiceID.CompanyID")
+            ->groupBy("tblInvoice.InvoiceID")
+            ->get();
+    }
+
+    public static function delInvoiceData($InvoiceID) {
+        InvoiceDetail::where('InvoiceID', $InvoiceID)->delete();
+        InvoiceComponentDetail::leftJoin('tblInvoiceDetail', "tblInvoiceDetail.InvoiceDetailID","=","tblInvoiceComponentDetail.InvoiceDetailID")
+            ->whereNull("tblInvoiceDetail.InvoiceDetailID")->delete();
+        AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
+    }
+
+    public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0){
+
+        DB::beginTransaction();
+        DB::connection('sqlsrv2')->beginTransaction();
+
+        $InvoiceID      = $InvoiceData->InvoiceID;
+        $AccountID      = $InvoiceData->AccountID;
+        $CompanyID      = $InvoiceData->CompanyID;
+        $AccountType    = $InvoiceData->AccountType;
+        $StartDate      = $InvoiceData->StartDate;
+        $EndDate        = $InvoiceData->EndDate;
+
+        try {
+            self::delInvoiceData($InvoiceID);
+            $Account = Account::find($AccountID);
+            $BalanceLog = AccountBalanceLog::where('AccountID',$AccountID)->first();
+
+            if($Account != false && $BalanceLog != false) {
+
+                $AccountBalanceLogID = $BalanceLog->AccountBalanceLogID;
+                $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID);
+
+                // Adding Invoice Data
+                InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
+
+                DB::connection('sqlsrv2')->commit();
+                DB::commit();
+                Log::info('Invoice Regenerated InvoiceID = ' . $InvoiceID);
+
+                // Sending Email
+                $Invoice = Invoice::find($InvoiceID);
+                $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
+                $CompanyName = Company::getName($Account->CompanyId);
+
+                $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,0,$JobID);
+                if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
+                    Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
+                }
+
+                return true;
+
+            } else {
+                DB::rollback();
+                DB::connection('sqlsrv2')->rollback();
+
+                Log::error("$InvoiceID : Invoice Regenerate Rollback. $AccountID : Has no Balance Log ID.");
+
+                return false;
+            }
+        } catch (\Exception $err) {
+            DB::rollback();
+            DB::connection('sqlsrv2')->rollback();
+
+            Log::error("$InvoiceID: Invoice Regenerate Rollback. Failed.");
+            Log::error($err);
+
+            return false;
+        }
+    }
 
     /**
      * Invoice Generation Date
