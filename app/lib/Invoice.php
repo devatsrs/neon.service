@@ -144,7 +144,7 @@ class Invoice extends \Eloquent {
         return Invoice::join("tblInvoiceDetail","tblInvoiceDetail.InvoiceID","=","tblInvoice.InvoiceID")
             ->whereIn("tblInvoice.InvoiceID", $InvoiceIDs)
             ->whereIn("tblInvoiceDetail.ProductType",[Product::USAGE, Product::INVOICE_PERIOD])
-            ->select("tblInvoiceDetail.StartDate","tblInvoiceDetail.EndDate","tblInvoice.AccountType","tblInvoice.InvoiceNumber","tblInvoice.InvoiceID","tblInvoice.AccountID","tblInvoice.InvoiceID.CompanyID")
+            ->select("tblInvoiceDetail.StartDate","tblInvoiceDetail.EndDate","tblInvoice.AccountType","tblInvoice.InvoiceNumber","tblInvoice.InvoiceID","tblInvoice.AccountID","tblInvoice.CompanyID")
             ->groupBy("tblInvoice.InvoiceID")
             ->get();
     }
