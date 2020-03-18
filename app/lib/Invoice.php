@@ -140,18 +140,7 @@ class Invoice extends \Eloquent {
     }
 
 
-    public static function getMonthlyInvoicesData($InvoiceIDs){
-        return Invoice::join("tblInvoiceDetail","tblInvoiceDetail.InvoiceID","=","tblInvoice.InvoiceID")
-            ->whereIn("tblInvoice.InvoiceID", $InvoiceIDs)
-            ->whereIn("tblInvoiceDetail.ProductType",[Product::USAGE, Product::INVOICE_PERIOD])
-            ->select("tblInvoiceDetail.StartDate","tblInvoiceDetail.EndDate","tblInvoice.AccountType","tblInvoice.InvoiceNumber","tblInvoice.InvoiceID","tblInvoice.AccountID","tblInvoice.CompanyID")
-            ->groupBy("tblInvoice.InvoiceID")
-            ->get();
-    }
-
-
     public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0, $ProcessID = 0){
-
 
         $InvoiceID      = $InvoiceData->InvoiceID;
         $AccountID      = $InvoiceData->AccountID;

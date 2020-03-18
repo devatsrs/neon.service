@@ -5,6 +5,7 @@ use App\Lib\CronHelper;
 use App\Lib\Invoice;
 use App\Lib\Job;
 use App\Lib\Notification;
+use App\Lib\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +59,7 @@ class RegenerateInvoice extends Command {
     public function fire()
     {
         CronHelper::before_cronrun($this->name, $this );
-
+        $ProcessID = CompanyGateway::getProcessID();
         $arguments = $this->argument();
         $getmypid = getmypid(); // get proccess id added by abubakar
         $CompanyID = $arguments["CompanyID"];
@@ -72,19 +73,23 @@ class RegenerateInvoice extends Command {
         $InvoiceCopyEmail = !empty($InvoiceCopyEmail)?$InvoiceCopyEmail:'';
         $InvoiceCopyEmail = explode(",",$InvoiceCopyEmail);
 
+        Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
         Log::useFiles(storage_path() . '/logs/regenerateinvoice-' . $CompanyID . '-' . $JobID . '-' . date('Y-m-d') . '.log');
 
         try {
-            $ProcessID = CompanyGateway::getProcessID();
-            Job::JobStatusProcess($JobID, $ProcessID,$getmypid);//Change by abubakar
             if (isset($joboptions->InvoiceIDs)) {
+
 
                 $InvoiceIDs = explode(',',$joboptions->InvoiceIDs);
                 if (count($InvoiceIDs) > 0) {
 
-                    $Invoices = Invoice::getMonthlyInvoicesData($InvoiceIDs);
+                    $Invoices = Invoice::join("tblInvoiceDetail","tblInvoiceDetail.InvoiceID","=","tblInvoice.InvoiceID")
+                        ->whereIn("tblInvoice.InvoiceID", $InvoiceIDs)
+                        ->whereIn("tblInvoiceDetail.ProductType",[Product::USAGE, Product::INVOICE_PERIOD])
+                        ->select("tblInvoiceDetail.StartDate","tblInvoiceDetail.EndDate","tblInvoice.AccountType","tblInvoice.InvoiceNumber","tblInvoice.InvoiceID","tblInvoice.AccountID","tblInvoice.CompanyID")
+                        ->groupBy("tblInvoice.InvoiceID")
+                        ->get();
 
-                    $TotalInvoices = $Invoices->count();
                     $CustomerInvoices   = [];
                     $AffiliateInvoices  = [];
                     $PartnerInvoices    = [];
@@ -122,7 +127,7 @@ class RegenerateInvoice extends Command {
                     if(!empty($AffiliateInvoices)){
                         Log::info("Affiliates Invoice Regeneration Started against " . json_encode($AffiliateIDs));
                         foreach($AffiliateInvoices as $AffiliateInvoice){
-                            $resp = Invoice::regenerateInvoiceData($AffiliateInvoice, $InvoiceCopyEmail, $JobID);
+                            $resp = Invoice::regenerateInvoiceData($AffiliateInvoice, $InvoiceCopyEmail, $JobID, $ProcessID);
                             if($resp === false) $skippedInvoiceNumbers[] = $CustomerInvoice->InvoiceNumber;
                         }
                     }
@@ -130,7 +135,7 @@ class RegenerateInvoice extends Command {
                     if(!empty($PartnerInvoices)){
                         Log::info("Partners Invoice Regeneration Started against " . json_encode($PartnerIDs));
                         foreach($PartnerInvoices as $PartnerInvoice){
-                            $resp = Invoice::regenerateInvoiceData($PartnerInvoice, $InvoiceCopyEmail, $JobID);
+                            $resp = Invoice::regenerateInvoiceData($PartnerInvoice, $InvoiceCopyEmail, $JobID, $ProcessID);
                             if($resp === false) $skippedInvoiceNumbers[] = $CustomerInvoice->InvoiceNumber;
                         }
                     }
@@ -138,6 +143,7 @@ class RegenerateInvoice extends Command {
                     Log::error(' ========================== Invoice Send Loop End =============================');
 
                     $TotalSkipped = count($skippedInvoiceNumbers);
+                    $TotalInvoices = $Invoices->count();
                     Log::error('Total skipped invoice '. $TotalSkipped);
 
                     if ($TotalSkipped > 0) {
