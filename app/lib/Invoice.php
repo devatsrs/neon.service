@@ -140,6 +140,91 @@ class Invoice extends \Eloquent {
     }
 
 
+    public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0, $ProcessID = 0){
+
+        $InvoiceID      = $InvoiceData->InvoiceID;
+        $AccountID      = $InvoiceData->AccountID;
+        $CompanyID      = $InvoiceData->CompanyID;
+        $AccountType    = $InvoiceData->AccountType;
+        $StartDate      = $InvoiceData->StartDate;
+        $EndDate        = $InvoiceData->EndDate;
+
+        $Account = Account::find($AccountID);
+        $BalanceLog = AccountBalanceLog::where('AccountID',$AccountID)->first();
+        $AccountBalanceLogID = $BalanceLog->AccountBalanceLogID;
+
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID);
+
+        if($Account != false && $BalanceLog != false) {
+
+            try {
+                DB::beginTransaction();
+                DB::connection('sqlsrv2')->beginTransaction();
+
+                Log::info('Deleting invoice InvoiceID = ' . $InvoiceID);
+
+                InvoiceDetail::where('InvoiceID', $InvoiceID)->delete();
+                InvoiceComponentDetail::leftJoin('tblInvoiceDetail', "tblInvoiceDetail.InvoiceDetailID","=","tblInvoiceComponentDetail.InvoiceDetailID")
+                    ->whereNull("tblInvoiceDetail.InvoiceDetailID")->delete();
+
+                AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
+
+                $InvoiceDetail = InvoiceDetail::where('InvoiceID', $InvoiceID)->count();
+                Log::info('Regenerating invoice data deleted' . json_encode($InvoiceDetail));
+
+                if($InvoiceDetail == 0){
+                    DB::connection('sqlsrv2')->commit();
+                    DB::commit();
+
+                    DB::beginTransaction();
+                    DB::connection('sqlsrv2')->beginTransaction();
+                    Log::info('Regenerating invoice data');
+                    Log::info("InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId)");
+
+                    // Adding Invoice Data
+                    InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
+
+                    DB::connection('sqlsrv2')->commit();
+                    DB::commit();
+
+                    Log::info('Invoice Regenerated InvoiceID = ' . $InvoiceID);
+
+                    Log::info('Sending Email');
+                    // Sending Email
+                    $Invoice = Invoice::find($InvoiceID);
+                    $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
+                    $CompanyName = Company::getName($Account->CompanyId);
+
+                    $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,$ProcessID,$JobID);
+
+                    if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
+                        Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
+                    }
+
+                    return true;
+                } else {
+                    DB::rollback();
+                    DB::connection('sqlsrv2')->rollback();
+                    Log::error("$InvoiceID : Invoice Regenerate Rollback. Data not deleted.");
+                    return false;
+                }
+
+
+            } catch (\Exception $err) {
+                DB::rollback();
+                DB::connection('sqlsrv2')->rollback();
+
+                Log::error("$InvoiceID: Invoice Regenerate Rollback. Failed.");
+                Log::error($err);
+
+                return false;
+            }
+
+        } else {
+            Log::error("$InvoiceID : Invoice Regenerate Rollback. $AccountID : Has no Balance Log ID.");
+            return false;
+        }
+    }
 
     /**
      * Invoice Generation Date

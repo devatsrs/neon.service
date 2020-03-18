@@ -460,7 +460,7 @@ class InvoiceGenerate {
             ])->pluck('AccountBalanceLogID');
 
             if($AccountBalanceLogID != false) {
-                self::addInvoiceData($JobID,$CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $FirstInvoice, $decimal_places, $Account->CurrencyId);
+                self::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $InvoiceAccountType, $decimal_places, $Account->CurrencyId);
 
                 $Invoice = Invoice::find($InvoiceID);
                 $CompanyName = Company::getName($Account->CompanyId);
@@ -485,7 +485,7 @@ class InvoiceGenerate {
         }
     }
 
-    public static function addInvoiceData($JobID,$CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceAccountType, $FirstInvoice, $decimal_places,$CurrencyID){
+    public static function addInvoiceData($CompanyID,$AccountID,$InvoiceID,$StartDate,$EndDate, $AccountBalanceLogID,$InvoiceAccountType, $decimal_places, $CurrencyID){
 
         $Account = Account::find($AccountID);
 
