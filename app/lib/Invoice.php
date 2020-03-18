@@ -149,17 +149,9 @@ class Invoice extends \Eloquent {
             ->get();
     }
 
-    public static function delInvoiceData($InvoiceID) {
-        InvoiceDetail::where('InvoiceID', $InvoiceID)->delete();
-        InvoiceComponentDetail::leftJoin('tblInvoiceDetail', "tblInvoiceDetail.InvoiceDetailID","=","tblInvoiceComponentDetail.InvoiceDetailID")
-            ->whereNull("tblInvoiceDetail.InvoiceDetailID")->delete();
-        AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
-    }
 
     public static function regenerateInvoiceData($InvoiceData, $InvoiceEmail, $JobID = 0){
 
-        DB::beginTransaction();
-        DB::connection('sqlsrv2')->beginTransaction();
 
         $InvoiceID      = $InvoiceData->InvoiceID;
         $AccountID      = $InvoiceData->AccountID;
@@ -168,50 +160,62 @@ class Invoice extends \Eloquent {
         $StartDate      = $InvoiceData->StartDate;
         $EndDate        = $InvoiceData->EndDate;
 
-        try {
-            self::delInvoiceData($InvoiceID);
-            $Account = Account::find($AccountID);
-            $BalanceLog = AccountBalanceLog::where('AccountID',$AccountID)->first();
+        $Account = Account::find($AccountID);
+        $BalanceLog = AccountBalanceLog::where('AccountID',$AccountID)->first();
+        $AccountBalanceLogID = $BalanceLog->AccountBalanceLogID;
 
-            if($Account != false && $BalanceLog != false) {
+        $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID);
 
-                $AccountBalanceLogID = $BalanceLog->AccountBalanceLogID;
-                $decimal_places = Helper::get_round_decimal_places($CompanyID,$AccountID);
+        if($Account != false && $BalanceLog != false) {
+
+            try {
+                DB::beginTransaction();
+                DB::connection('sqlsrv2')->beginTransaction();
+
+                Log::info('Deleting invoice InvoiceID = ' . $InvoiceID);
+
+                InvoiceDetail::where('InvoiceID', $InvoiceID)->delete();
+                InvoiceComponentDetail::leftJoin('tblInvoiceDetail', "tblInvoiceDetail.InvoiceDetailID","=","tblInvoiceComponentDetail.InvoiceDetailID")
+                    ->whereNull("tblInvoiceDetail.InvoiceDetailID")->delete();
+
+                AccountBalanceSubscriptionLog::where('InvoiceID', $InvoiceID)->update(['InvoiceID' => 0]);
+
+                Log::info('Regenerating invoice data');
 
                 // Adding Invoice Data
                 InvoiceGenerate::addInvoiceData($CompanyID, $AccountID, $InvoiceID, $StartDate, $EndDate, $AccountBalanceLogID, $AccountType, $decimal_places, $Account->CurrencyId);
 
                 DB::connection('sqlsrv2')->commit();
                 DB::commit();
+
                 Log::info('Invoice Regenerated InvoiceID = ' . $InvoiceID);
 
+                Log::info('Sending Email');
                 // Sending Email
                 $Invoice = Invoice::find($InvoiceID);
                 $InvoiceNumberPrefix = Company::getCompanyField($CompanyID, "InvoiceNumberPrefix");
                 $CompanyName = Company::getName($Account->CompanyId);
 
                 $status = Invoice::EmailToCustomer($Account,$Invoice->GrandTotal,$Invoice,$InvoiceNumberPrefix,$CompanyName,$CompanyID,$InvoiceEmail,0,$JobID);
+
                 if(isset($status['status']) && isset($status['message']) && $status['status']=='failure'){
                     Log::info('Email sent failed against InvoiceID = ' . $InvoiceID);
                 }
 
                 return true;
 
-            } else {
+            } catch (\Exception $err) {
                 DB::rollback();
                 DB::connection('sqlsrv2')->rollback();
 
-                Log::error("$InvoiceID : Invoice Regenerate Rollback. $AccountID : Has no Balance Log ID.");
+                Log::error("$InvoiceID: Invoice Regenerate Rollback. Failed.");
+                Log::error($err);
 
                 return false;
             }
-        } catch (\Exception $err) {
-            DB::rollback();
-            DB::connection('sqlsrv2')->rollback();
 
-            Log::error("$InvoiceID: Invoice Regenerate Rollback. Failed.");
-            Log::error($err);
-
+        } else {
+            Log::error("$InvoiceID : Invoice Regenerate Rollback. $AccountID : Has no Balance Log ID.");
             return false;
         }
     }
