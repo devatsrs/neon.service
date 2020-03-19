@@ -3468,17 +3468,23 @@ class Invoice extends \Eloquent {
             // 3 = Package
             $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
-            $Quantity  = (int)$invoiceComponent->Quantity;
+            $Quantity  = (float)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
+
+                $SubTotal = (float)$invoiceComponent->SubTotal;
+                $DiscountPrice = (float)$invoiceComponent->DiscountPrice;
+                $UnitPrice = $Quantity > 0 ? (float) (($SubTotal + $DiscountPrice) / $Quantity) : 0;
+                $UnitDiscountPrice = $Quantity > 0 ? (float)$DiscountPrice / $Quantity : 0;
+
                 if(!isset($data[$index][$Component][$ProductType])) {
                     $data[$index][$Component][$ProductType] = [
                         'Title'     => self::getMonthlyTitle($invoiceComponent),
-                        'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
+                        'Price'     =>  $UnitPrice,
                         'Discount'  => (float)$invoiceComponent->Discount,
-                        'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
+                        'DiscountPrice' => $UnitDiscountPrice,
                         'Quantity'  => $Quantity,
-                        'SubTotal'  => $invoiceComponent->SubTotal,
+                        'SubTotal'  => $SubTotal,
                         'TotalTax'  => $invoiceComponent->TotalTax,
                         'TotalCost' => $invoiceComponent->TotalCost,
                         'ID'        => $invoiceComponent->InvoiceComponentDetailID,
@@ -3487,10 +3493,8 @@ class Invoice extends \Eloquent {
 
                     $arrData = $data[$index][$Component][$ProductType];
 
-                    $arrData['Discount']  += (float)$invoiceComponent->Discount;
-                    $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
                     $arrData['Quantity']  += $Quantity;
-                    $arrData['SubTotal']  += $invoiceComponent->SubTotal;
+                    $arrData['SubTotal']  += $SubTotal;
                     $arrData['TotalTax']  += $invoiceComponent->TotalTax;
                     $arrData['TotalCost'] += $invoiceComponent->TotalCost;
 
@@ -3522,7 +3526,7 @@ class Invoice extends \Eloquent {
                     } else {
                         $UnitPrice = $RemainingStandardPrice / $Quantity;
                         if($invoiceComponent->DiscountPrice != 0.000000)
-                            $DiscountPrice = (float)$invoiceComponent->DiscountPrice  / $Quantity;
+                            $DiscountPrice = (float)$invoiceComponent->DiscountPrice / $Quantity;
                     }
                 }
 
@@ -3608,17 +3612,23 @@ class Invoice extends \Eloquent {
             // 3 = Package
             $ProductType = $invoiceComponent->ProductType;
             $Component = $invoiceComponent->Component;
-            $Quantity  = (int)$invoiceComponent->Quantity;
+            $Quantity  = (float)$invoiceComponent->Quantity;
 
             if(in_array($Component, ['OneOffCost', 'MonthlyCost'])){
+
+                $SubTotal = (float)$invoiceComponent->SubTotal;
+                $DiscountPrice = (float)$invoiceComponent->DiscountPrice;
+                $UnitPrice = $Quantity > 0 ? (float) (($SubTotal + $DiscountPrice) / $Quantity) : 0;
+                $UnitDiscountPrice = $Quantity > 0 ? (float)$DiscountPrice / $Quantity : 0;
+
                 if(!isset($data[$CID]['data'][$index][$Component][$ProductType])) {
                     $data[$CID]['data'][$index][$Component][$ProductType] = [
                         'Title'     => self::getMonthlyTitle($invoiceComponent),
-                        'Price'     => (float)$Quantity > 0 ? ($invoiceComponent->SubTotal / $Quantity) : 0,
+                        'Price'     => (float)$UnitPrice,
                         'Discount'  => (float)$invoiceComponent->Discount,
-                        'DiscountPrice' => (float)$invoiceComponent->DiscountPrice,
+                        'DiscountPrice' => (float)$UnitDiscountPrice,
                         'Quantity'  => $Quantity,
-                        'SubTotal'  => $invoiceComponent->SubTotal,
+                        'SubTotal'  => $SubTotal,
                         'TotalTax'  => $invoiceComponent->TotalTax,
                         'TotalCost' => $invoiceComponent->TotalCost,
                         'ID'        => $invoiceComponent->InvoiceComponentDetailID,
@@ -3627,10 +3637,8 @@ class Invoice extends \Eloquent {
 
                     $arrData = $data[$CID]['data'][$index][$Component][$ProductType];
 
-                    $arrData['Discount']  += (float)$invoiceComponent->Discount;
-                    $arrData['DiscountPrice'] += (float)$invoiceComponent->DiscountPrice;
                     $arrData['Quantity']  += $Quantity;
-                    $arrData['SubTotal']  += $invoiceComponent->SubTotal;
+                    $arrData['SubTotal']  += $SubTotal;
                     $arrData['TotalTax']  += $invoiceComponent->TotalTax;
                     $arrData['TotalCost'] += $invoiceComponent->TotalCost;
 
