@@ -108,6 +108,7 @@ class ImportCDRs extends Command
 							$row_data['is_inbound'] = trim($temp_row['IsInbound']);
 							$row_data['UUID'] = trim($temp_row['UUID']);
 							$row_data['OriginType'] = trim($temp_row['OriginType']);
+							$row_data['ContractID'] = trim($temp_row['ContractID']);
 							$row_data['OriginProvider'] = trim($temp_row['OriginProvider']);
 							$row_data['created_at'] = date('Y-m-d H:i:s');
 
